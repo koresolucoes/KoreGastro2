@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
       <h1 class="text-2xl font-bold text-white mb-4">Nenhuma Estação de Produção Encontrada</h1>
@@ -23,39 +23,123 @@
     </div>
 
     <div class="flex-1 overflow-y-auto pr-2">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        @for (order of kdsOrders(); track order.id) {
-          <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 flex flex-col">
-            <div class="p-3 text-white font-bold" [ngClass]="getTicketHeaderClass(order.order_items)">
-              Mesa {{ order.table_number }} - Pedido #{{ order.id.substring(0, 4) }}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        @for (ticket of groupedKdsTickets(); track ticket.tableNumber) {
+          <div 
+            (click)="openDetailModal(ticket)"
+            class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col cursor-pointer hover:border-blue-500 transition-colors">
+            <div class="p-3 text-white font-bold flex justify-between items-center" [ngClass]="ticket.ticketTimerColor">
+              <span>Mesa {{ ticket.tableNumber }}</span>
+              <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
             </div>
             <ul class="p-3 space-y-2 flex-1">
-              @for (item of order.order_items; track item.id) {
+              @for (item of ticket.items; track item.id) {
                 <li 
-                  (click)="updateStatus(order, item)"
-                  class="border-l-4 p-2 rounded-r-md cursor-pointer"
+                  (click)="$event.stopPropagation(); updateStatus(item)"
+                  class="border-l-4 p-3 rounded-r-md transition-all"
+                  [class.bg-blue-500/10]="item.status === 'EM_PREPARO' && !item.isCritical"
+                  [class.bg-yellow-500/10]="item.status === 'PENDENTE' && !item.isCritical"
+                  [class.border-red-500]="item.isCritical"
+                  [class.border-l-8]="item.isCritical"
+                  [class.bg-red-900/40]="item.isCritical"
                   [ngClass]="getItemStatusClass(item.status)">
+
+                  @if(item.isCritical) {
+                    <div class="flex items-center gap-2 mb-2 text-red-300">
+                      <svg class="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                      <span class="font-bold uppercase text-sm">Atenção Especial</span>
+                    </div>
+                  }
+
                   <div class="flex justify-between items-center">
-                    <span class="font-bold text-lg">{{ item.quantity }}x {{ item.name }}</span>
-                    <span class="text-xs font-mono">{{ item.status }}</span>
+                    <span class="font-bold text-lg text-white">{{ item.quantity }}x {{ item.name }}</span>
+                    <span class="text-xs font-mono px-2 py-1 rounded" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'">
+                      {{ item.status.replace('_', ' ') }}
+                    </span>
                   </div>
                   @if (item.notes) {
-                    <p class="text-sm text-gray-400 mt-1 italic">"{{ item.notes }}"</p>
+                    <p class="text-sm mt-1 italic" [class.text-red-300]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p>
                   }
                 </li>
               }
             </ul>
              <div class="text-xs text-center text-gray-500 p-2 border-t border-gray-700">
-                {{ order.timestamp | date:'HH:mm' }}
+                Recebido às {{ ticket.oldestTimestamp | date:'HH:mm' }}
               </div>
           </div>
         }
-         @if (kdsOrders().length === 0) {
+         @if (groupedKdsTickets().length === 0) {
           <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
-            <p class="text-gray-500">Nenhum pedido para esta estação.</p>
+            <div class="text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-400">Nenhum pedido ativo</h3>
+              <p class="mt-1 text-sm text-gray-500">Aguardando novos pedidos para esta estação.</p>
+            </div>
           </div>
         }
       </div>
     </div>
   }
 </div>
+
+
+<!-- Details Modal -->
+@if(isDetailModalOpen() && selectedTicketForDetail(); as ticket) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="closeDetailModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">Detalhes do Pedido da Mesa</h3>
+        <button (click)="closeDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 flex-1 overflow-y-auto">
+        <div class="grid grid-cols-3 gap-4 text-center mb-6 pb-4 border-b border-gray-600">
+            <div><p class="text-sm text-gray-400">Mesa</p><p class="text-lg font-semibold text-white">{{ ticket.tableNumber }}</p></div>
+            <div><p class="text-sm text-gray-400">Pedido Mais Antigo</p><p class="text-lg font-semibold text-white">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p></div>
+            <div><p class="text-sm text-gray-400">Tempo Total</p><p class="text-lg font-semibold font-mono" [class.text-red-400]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p></div>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-white mb-3">Itens do Pedido (ordenado por tempo de preparo)</h4>
+            <ul class="space-y-3">
+                @for (item of ticket.items; track item.id) {
+                <li class="p-3 rounded-lg flex gap-4" [class.bg-red-900/40]="item.isCritical" [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCritical" [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCritical">
+                  <div class="flex-1">
+                      @if(item.isCritical) {
+                        <div class="flex items-center gap-2 mb-2 text-red-300">
+                          <svg class="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                          <span class="font-bold uppercase text-sm">Atenção Especial</span>
+                        </div>
+                      }
+                      <p class="font-bold text-white">{{ item.quantity }}x {{ item.name }}</p>
+                      @if(item.notes) { <p class="text-sm italic" [class.text-red-300]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p> }
+                      <p class="text-xs font-mono mt-1" [ngClass]="item.timerColor">
+                        {{ item.status.replace('_', ' ') }} - {{ formatTime(item.elapsedTimeSeconds) }}
+                      </p>
+                  </div>
+                  <div class="w-1/3 text-xs border-l border-gray-500 pl-4">
+                    <p class="font-semibold text-gray-300 mb-1">Histórico do Item</p>
+                    <ul class="space-y-1">
+                      @for(history of getStatusHistory(item.status_timestamps); track history.status) {
+                        <li class="flex items-center gap-2">
+                          <span class="font-mono text-gray-400">{{ history.time | date:'HH:mm:ss' }}</span>
+                          <span class="font-semibold text-gray-200 uppercase">{{ history.status.replace('_', ' ') }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </li>
+                }
+            </ul>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-900/50 flex justify-end gap-3">
+         <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Fechar</button>
+         <button (click)="printTicket(ticket)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Imprimir</button>
+      </div>
+    </div>
+  </div>
+}

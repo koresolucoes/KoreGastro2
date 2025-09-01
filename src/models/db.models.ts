@@ -1,8 +1,24 @@
+
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
 export type OrderItemStatus = 'AGUARDANDO' | 'PENDENTE' | 'EM_PREPARO' | 'PRONTO';
 export type OrderType = 'Dine-in' | 'Takeout' | 'QuickSale';
-export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta';
+export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de Caixa';
+
+export interface IngredientCategory {
+    id: string;
+    name: string;
+    created_at: string;
+}
+
+export interface Supplier {
+    id: string;
+    name: string;
+    contact_person?: string;
+    phone?: string;
+    email?: string;
+    created_at: string;
+}
 
 export interface Ingredient {
     id: string;
@@ -11,6 +27,20 @@ export interface Ingredient {
     stock: number;
     cost: number;
     min_stock: number;
+    created_at: string;
+    category_id: string | null;
+    supplier_id: string | null;
+    expiration_date?: string | null;
+    last_movement_at?: string | null;
+    ingredient_categories?: { name: string } | null; // For joined data
+    suppliers?: { name: string } | null; // For joined data
+}
+
+export interface InventoryMovement {
+    id: string;
+    ingredient_id: string;
+    quantity_change: number;
+    reason: string;
     created_at: string;
 }
 
@@ -24,6 +54,21 @@ export interface Station {
     id: string;
     name: string;
     created_at: string;
+    auto_print_orders: boolean;
+    printer_name?: string | null;
+}
+
+export interface RecipePreparation {
+    id:string;
+    recipe_id: string;
+    station_id: string;
+    name: string;
+    prep_instructions?: string | null;
+    display_order: number;
+    created_at: string;
+    // For UI
+    station_name?: string;
+    recipe_ingredients?: RecipeIngredient[];
 }
 
 export interface Recipe {
@@ -33,15 +78,19 @@ export interface Recipe {
     price: number;
     category_id: string;
     prep_time_in_minutes?: number;
-    station_id: string;
+    operational_cost?: number | null;
     is_available: boolean;
     created_at: string;
+    hasStock?: boolean;
 }
 
 export interface RecipeIngredient {
     recipe_id: string;
     ingredient_id: string;
     quantity: number;
+    preparation_id: string;
+    // Joined data for UI
+    ingredients?: Pick<Ingredient, 'name' | 'unit' | 'cost'>;
 }
 
 export interface Employee {
@@ -97,6 +146,7 @@ export interface OrderItem {
     status_timestamps?: any;
     created_at: string;
     price: number;
+    group_id?: string | null;
 }
 
 export interface Customer {
@@ -114,4 +164,18 @@ export interface Transaction {
     type: TransactionType;
     amount: number;
     date: string;
+}
+
+export interface CashierClosing {
+    id: string;
+    closed_at: string;
+    opening_balance: number;
+    total_revenue: number;
+    total_expenses: number;
+    expected_cash_in_drawer: number;
+    counted_cash: number;
+    difference: number;
+    payment_summary: any; // JSONB
+    notes?: string | null;
+    closed_by_employee_id?: string | null;
 }

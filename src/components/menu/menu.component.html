@@ -1,0 +1,57 @@
+<div class="container mx-auto max-w-4xl">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-extrabold text-white tracking-tight sm:text-5xl">Nosso Cardápio</h1>
+    <p class="mt-4 text-xl text-gray-400">Pratos feitos com os melhores ingredientes frescos.</p>
+  </div>
+
+  <div class="mb-10 max-w-lg mx-auto">
+    <div class="relative">
+      <input 
+        type="text" 
+        [value]="searchTerm()" 
+        (input)="searchTerm.set($any($event.target).value)"
+        placeholder="Buscar prato ou ingrediente..." 
+        class="w-full bg-gray-800 border border-gray-700 rounded-full pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg">
+      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <svg class="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  @if (onlineMenu().length > 0) {
+    <div class="space-y-12">
+      @for(group of onlineMenu(); track group.categoryName) {
+        <div>
+          <h2 class="text-2xl font-bold text-blue-400 border-b-2 border-gray-700 pb-2 mb-6">{{ group.categoryName }}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            @for(recipe of group.recipes; track recipe.id) {
+              <div class="flex justify-between items-start gap-4">
+                <div>
+                  <h3 class="font-semibold text-white">{{ recipe.name }}</h3>
+                  @if(recipe.description) {
+                    <p class="text-sm text-gray-400">{{ recipe.description }}</p>
+                  }
+                </div>
+                <p class="font-semibold text-white whitespace-nowrap">{{ recipe.price | currency:'BRL' }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="text-center py-20 bg-gray-800 rounded-lg">
+      <svg class="mx-auto h-12 w-12 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.5 4.5 0 0018 12a4.5 4.5 0 00-2.818-4.182M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 12a3 3 0 116 0 3 3 0 01-6 0z" />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-white">Nenhum prato encontrado</h3>
+      @if (searchTerm()) {
+        <p class="mt-1 text-sm text-gray-500">Nenhum resultado para "{{ searchTerm() }}". Tente buscar por outro termo.</p>
+      } @else {
+        <p class="mt-1 text-sm text-gray-500">Nenhum prato está disponível para exibição no momento. Por favor, volte mais tarde.</p>
+      }
+    </div>
+  }
+</div>

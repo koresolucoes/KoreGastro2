@@ -42,7 +42,7 @@
           <div 
             (click)="selectTable(table)"
             (mousedown)="startDrag($event, table, 'move')"
-            class="absolute flex flex-col items-center justify-center text-white font-bold rounded-md border-2"
+            class="absolute flex flex-col items-center justify-center text-white font-bold rounded-md border-2 p-1"
             [class.cursor-pointer]="!isEditMode()"
             [class.cursor-move]="isEditMode()"
             [class.ring-2]="isEditMode()"
@@ -54,8 +54,30 @@
             [style.width.%]="table.width"
             [style.height.%]="table.height"
             [ngClass]="getTableStatusClass(table.status)">
-            <span class="text-2xl">{{ table.number }}</span>
-            <span class="text-xs font-normal uppercase tracking-wider">{{ table.status }}</span>
+            
+            <div class="flex flex-col items-center justify-center text-center flex-1">
+              <span class="text-2xl leading-tight">{{ table.number }}</span>
+              
+              @if (table.status === 'OCUPADA') {
+                  @let status = getProductionStatusForTable(table.number);
+                  @if (status.total > 0) {
+                      <span class="text-[10px] font-mono leading-tight bg-black/20 px-1.5 py-0.5 rounded-md mt-1">
+                        {{ status.ready }}/{{ status.total }} PRONTOS
+                      </span>
+                  }
+              }
+              
+              <span class="text-xs font-normal uppercase tracking-wider leading-tight mt-1">{{ table.status }}</span>
+            </div>
+
+            @if (table.status === 'OCUPADA' && !isEditMode()) {
+                @let status = getProductionStatusForTable(table.number);
+                @if (status.total > 0) {
+                    <div class="absolute bottom-2 left-2 right-2 h-2 rounded-full overflow-hidden bg-black/30" title="{{ status.ready }} de {{ status.total }} itens prontos">
+                        <div class="h-full bg-green-400 transition-all duration-300" [style.width.%]="(status.ready / status.total) * 100"></div>
+                    </div>
+                }
+            }
 
             @if(isEditMode()) {
                @if(table.status === 'LIVRE') {
@@ -101,18 +123,31 @@
 
       @if (currentOrder()) {
           <div class="p-2">
+            <div class="relative mb-2">
+                <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
              <div class="flex space-x-2 overflow-x-auto p-2 -mx-2">
+              <button (click)="selectCategory(null)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap"
+                 [class.bg-blue-600]="selectedCategory() === null"
+                 [class.text-white]="selectedCategory() === null"
+                 [class.bg-gray-700]="selectedCategory() !== null"
+                 [class.text-gray-300]="selectedCategory() !== null">
+                  Todas
+                </button>
               @for (category of categories(); track category.id) {
                 <button (click)="selectCategory(category)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap"
-                 [class.bg-blue-600]="(selectedCategory() ?? categories()[0])?.id === category.id"
-                 [class.text-white]="(selectedCategory() ?? categories()[0])?.id === category.id"
-                 [class.bg-gray-700]="(selectedCategory() ?? categories()[0])?.id !== category.id"
-                 [class.text-gray-300]="(selectedCategory() ?? categories()[0])?.id !== category.id">
+                 [class.bg-blue-600]="selectedCategory()?.id === category.id"
+                 [class.text-white]="selectedCategory()?.id === category.id"
+                 [class.bg-gray-700]="selectedCategory()?.id !== category.id"
+                 [class.text-gray-300]="selectedCategory()?.id !== category.id">
                   {{ category.name }}
                 </button>
               }
             </div>
-            <div class="grid grid-cols-2 gap-2 mt-2 h-48 overflow-y-auto pr-2">
+            <div class="grid grid-cols-2 gap-2 mt-2 h-40 overflow-y-auto pr-2">
                @for (recipe of filteredRecipes(); track recipe.id) {
                 <div (click)="addToCart(recipe)" class="bg-gray-700 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-600">
                   <p class="font-semibold text-sm">{{ recipe.name }}</p>
@@ -124,25 +159,44 @@
           <!-- Order Summary -->
           <div class="flex-1 p-4 overflow-y-auto border-t border-gray-700">
             <h3 class="font-semibold text-white mb-2">Resumo do Pedido</h3>
-            @if (currentOrder()?.order_items.length === 0 && shoppingCart().length === 0) {
+            @if (groupedOrderItems().length === 0 && shoppingCart().length === 0) {
               <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
                 <svg class="w-12 h-12 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
                 <span class="font-semibold">O pedido está vazio.</span>
                 <span class="text-xs mt-1">Adicione itens do menu para começar.</span>
               </div>
             } @else {
-              <ul class="space-y-2">
-                @if(currentOrder(); as order) {
-                   @for(item of order.order_items; track item.id) {
-                    <li class="flex justify-between items-center text-sm bg-gray-700/50 p-2 rounded">
-                      <div>
-                        <p>{{ item.name }} <span class="text-gray-400">x{{ item.quantity }}</span></p>
-                        <p class="text-xs text-gray-400 uppercase">{{ item.status }}</p>
-                      </div>
-                      <span class="font-medium">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                    </li>
-                  }
-                }
+              <ul class="space-y-3">
+                 @for(displayItem of groupedOrderItems(); track displayItem.isGroup ? displayItem.groupId : displayItem.item.id) {
+                   @if(displayItem.isGroup) {
+                      <li class="bg-gray-700/50 p-2 rounded-lg">
+                        <div class="flex justify-between items-center text-sm">
+                            <p class="font-semibold">{{ displayItem.recipeName }} <span class="text-gray-400">x{{ displayItem.quantity }}</span></p>
+                            <span class="font-medium">{{ (displayItem.totalPrice * displayItem.quantity) | currency:'BRL' }}</span>
+                        </div>
+                        <ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">
+                            @for(subItem of displayItem.items; track subItem.id) {
+                                <li class="flex justify-between items-center text-xs">
+                                    <p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p>
+                                    <p class="uppercase" [ngClass]="getOrderItemStatusClass(subItem.status)">
+                                        {{ subItem.status.replace('_', ' ') }}
+                                    </p>
+                                </li>
+                            }
+                        </ul>
+                      </li>
+                   } @else {
+                      <li class="flex justify-between items-center text-sm bg-gray-700/50 p-2 rounded">
+                        <div>
+                          <p>{{ displayItem.item.name }} <span class="text-gray-400">x{{ displayItem.item.quantity }}</span></p>
+                          <p class="text-xs uppercase" [ngClass]="getOrderItemStatusClass(displayItem.item.status)">
+                            {{ displayItem.item.status.replace('_', ' ') }}
+                          </p>
+                        </div>
+                        <span class="font-medium">{{ (displayItem.item.price * displayItem.item.quantity) | currency:'BRL' }}</span>
+                      </li>
+                   }
+                 }
                  @for(item of shoppingCart(); track item.recipe.id) {
                     <li class="flex justify-between items-center text-sm bg-blue-600/20 p-2 rounded">
                       <div>

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
-import { Hall, Table, Order, Recipe, Category } from '../../models/db.models';
+import { Hall, Table, Order, Recipe, Category, OrderItemStatus, OrderItem } from '../../models/db.models';
 
 interface CartItem {
     recipe: Recipe;
@@ -26,6 +26,24 @@ export interface Payment {
   method: PaymentMethod;
   amount: number;
 }
+
+interface GroupedOrderItem {
+  isGroup: true;
+  groupId: string;
+  recipeName: string;
+  recipeId: string;
+  quantity: number;
+  totalPrice: number;
+  items: OrderItem[];
+}
+
+interface SingleOrderItem {
+  isGroup: false;
+  item: OrderItem;
+}
+
+type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
+
 
 @Component({
   selector: 'app-pos',
@@ -114,15 +132,57 @@ export class PosComponent {
     return this.isEditMode() ? this.tablesInEdit() : this.filteredTables();
   });
 
-  selectedCategory: WritableSignal<Category | null> = signal(this.categories()[0] || null);
+  selectedCategory: WritableSignal<Category | null> = signal(null);
+  recipeSearchTerm = signal('');
 
   filteredRecipes = computed(() => {
-      const category = this.selectedCategory() ?? this.categories()[0];
-      if (!category) return this.recipes();
-      return this.recipes().filter(r => r.category_id === category.id);
+      const category = this.selectedCategory();
+      const term = this.recipeSearchTerm().toLowerCase();
+      let recipesToShow = this.recipes();
+
+      if (category) {
+          recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
+      }
+      
+      if (term) {
+          recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
+      }
+
+      return recipesToShow;
   });
   
   shoppingCart = signal<CartItem[]>([]);
+
+  groupedOrderItems = computed(() => {
+    const order = this.currentOrder();
+    if (!order) return [];
+
+    const items = order.order_items;
+    const grouped = new Map<string, GroupedOrderItem>();
+    const singles: SingleOrderItem[] = [];
+    const recipesMap = this.dataService.recipesById();
+
+    for (const item of items) {
+      if (item.group_id) {
+        if (!grouped.has(item.group_id)) {
+          const recipe = recipesMap.get(item.recipe_id);
+          grouped.set(item.group_id, {
+            isGroup: true,
+            groupId: item.group_id,
+            recipeName: recipe?.name ?? 'Prato Desconhecido',
+            recipeId: item.recipe_id,
+            quantity: item.quantity,
+            totalPrice: recipe?.price ?? 0,
+            items: [],
+          });
+        }
+        grouped.get(item.group_id)!.items.push(item);
+      } else {
+        singles.push({ isGroup: false, item });
+      }
+    }
+    return [...Array.from(grouped.values()), ...singles];
+  });
   
   orderTotal = computed(() => {
     const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
@@ -308,7 +368,7 @@ export class PosComponent {
     this.selectedHall.set(hall);
     if (this.isEditMode()) { this.tablesInEdit.set(JSON.parse(JSON.stringify(this.filteredTables()))); }
   }
-  selectCategory(category: Category) { this.selectedCategory.set(category); }
+  selectCategory(category: Category | null) { this.selectedCategory.set(category); }
   async selectTable(table: Table) {
     if (this.isEditMode()) return;
     this.isOrderPanelOpen.set(true);
@@ -318,7 +378,9 @@ export class PosComponent {
     const orderExists = this.dataService.getOrderByTableNumber(table.number);
     if (!orderExists && table.status === 'LIVRE') {
       const result = await this.dataService.createOrderForTable(table);
-      if (!result.success) { this.orderError.set(result.error?.message ?? 'Erro desconhecido.'); }
+      if (!result.success) { 
+        this.orderError.set(result.error?.message ?? 'Erro desconhecido.'); 
+      }
     }
   }
   addToCart(recipe: Recipe) {
@@ -336,7 +398,7 @@ export class PosComponent {
   async sendOrder() {
     const order = this.currentOrder(), cart = this.shoppingCart();
     if (order && cart.length > 0) {
-      const result = await this.dataService.addItemsToOrder(order.id, cart.map(c => ({ ...c, station_id: c.recipe.station_id })));
+      const result = await this.dataService.addItemsToOrder(order.id, cart.map(c => ({ ...c })));
       if (result.success) { this.shoppingCart.set([]); } else {
         alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
       }
@@ -418,6 +480,32 @@ export class PosComponent {
     this.isPaymentModalOpen.set(false);
     this.orderError.set(null);
   }
+
+  getProductionStatusForTable(tableNumber: number): { ready: number, total: number } {
+    const order = this.dataService.getOrderByTableNumber(tableNumber);
+    if (!order || !order.order_items || order.order_items.length === 0) {
+      return { ready: 0, total: 0 };
+    }
+
+    const itemsInProduction = order.order_items.filter(item => item.status !== 'AGUARDANDO');
+    const readyItems = itemsInProduction.filter(item => item.status === 'PRONTO');
+
+    return {
+      ready: readyItems.length,
+      total: itemsInProduction.length,
+    };
+  }
+
+  getOrderItemStatusClass(status: OrderItemStatus): string {
+    switch (status) {
+      case 'PENDENTE': return 'text-yellow-400';
+      case 'EM_PREPARO': return 'text-blue-400';
+      case 'PRONTO': return 'text-green-400 font-bold';
+      case 'AGUARDANDO': return 'text-gray-400';
+      default: return 'text-gray-500';
+    }
+  }
+
   getTableStatusClass(status: Table['status']): string {
     switch (status) {
       case 'LIVRE': return 'bg-green-500 hover:bg-green-400 border-green-300 shadow-lg shadow-green-500/20';

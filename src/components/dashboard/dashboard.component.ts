@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -9,14 +9,16 @@ import { SupabaseService } from '../../services/supabase.service';
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   private dataService = inject(SupabaseService);
   
+  ngOnInit() {
+    this.dataService.fetchDashboardData();
+  }
+  
   totalSales = computed(() => {
-    return this.dataService.orders()
-        .filter(o => o.is_completed)
-        .flatMap(o => o.order_items || [])
-        .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return this.dataService.dashboardTransactions()
+        .reduce((sum, item) => sum + item.amount, 0);
   });
   
   openTables = computed(() => this.dataService.tables().filter(t => t.status === 'OCUPADA').length);
@@ -36,4 +38,30 @@ export class DashboardComponent {
     { label: 'Pedidos na Cozinha', value: this.pendingKdsItems(), icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
   ]);
 
+  bestSellingItems = computed(() => {
+    const itemCounts = new Map<string, { name: string, quantity: number }>();
+    
+    this.dataService.dashboardCompletedOrders().flatMap(o => o.order_items).forEach(item => {
+        const existing = itemCounts.get(item.recipe_id);
+        if (existing) {
+            existing.quantity += item.quantity;
+        } else {
+            itemCounts.set(item.recipe_id, {
+                name: item.name,
+                quantity: item.quantity,
+            });
+        }
+    });
+    
+    return Array.from(itemCounts.values())
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5); // Top 5
+  });
+
+  recentTransactions = computed(() => {
+    return this.dataService.dashboardTransactions()
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  });
 }

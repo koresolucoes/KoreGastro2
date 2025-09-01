@@ -1,9 +1,79 @@
-
 <div class="container mx-auto">
-  <h1 class="text-3xl font-bold text-white mb-6">Relatórios</h1>
-  <div class="bg-gray-800 rounded-lg p-8 flex flex-col items-center justify-center h-96">
-    <svg class="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2z"></path></svg>
-    <h2 class="text-2xl font-semibold text-gray-400">Módulo de Relatórios em Desenvolvimento</h2>
-    <p class="text-gray-500 mt-2">Relatórios de vendas, estoque e financeiros estarão disponíveis aqui em breve.</p>
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <h1 class="text-3xl font-bold text-white">Relatórios de Vendas</h1>
+    <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
+      <button 
+        (click)="setPeriod('day')"
+        class="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+        [class.bg-blue-600]="period() === 'day'"
+        [class.text-white]="period() === 'day'">
+        Hoje
+      </button>
+      <button 
+        (click)="setPeriod('week')"
+        class="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+        [class.bg-blue-600]="period() === 'week'"
+        [class.text-white]="period() === 'week'">
+        Esta Semana
+      </button>
+      <button 
+        (click)="setPeriod('month')"
+        class="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+        [class.bg-blue-600]="period() === 'month'"
+        [class.text-white]="period() === 'month'">
+        Este Mês
+      </button>
+    </div>
   </div>
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-96">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    </div>
+  } @else {
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      @for (stat of stats(); track stat.label) {
+        <div class="bg-gray-800 rounded-lg p-6">
+          <p class="text-gray-400 text-sm font-medium">{{ stat.label }}</p>
+          <p class="text-3xl font-bold text-white mt-2">
+            {{ stat.isCurrency ? (stat.value | currency:'BRL') : stat.value }}
+          </p>
+        </div>
+      }
+    </div>
+
+    <!-- Best Sellers -->
+    <div class="bg-gray-800 rounded-lg overflow-hidden">
+      <div class="p-6 border-b border-gray-700">
+        <h2 class="text-xl font-semibold text-white">Itens Mais Vendidos</h2>
+      </div>
+      @if (bestSellingItems().length === 0) {
+        <p class="text-center text-gray-500 py-16">Nenhum item vendido no período selecionado.</p>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+              <tr>
+                <th scope="col" class="px-6 py-3">#</th>
+                <th scope="col" class="px-6 py-3">Item</th>
+                <th scope="col" class="px-6 py-3 text-right">Quantidade Vendida</th>
+                <th scope="col" class="px-6 py-3 text-right">Receita Gerada</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of bestSellingItems(); track item.name; let i = $index) {
+                <tr class="border-b border-gray-700 hover:bg-gray-700/30">
+                  <td class="px-6 py-4 font-medium text-white">{{ i + 1 }}</td>
+                  <td class="px-6 py-4 font-medium text-white">{{ item.name }}</td>
+                  <td class="px-6 py-4 text-right">{{ item.quantity }}</td>
+                  <td class="px-6 py-4 text-right">{{ item.revenue | currency:'BRL' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
 </div>
