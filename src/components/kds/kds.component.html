@@ -1,0 +1,61 @@
+<div class="h-full flex flex-col">
+  @if (stations().length === 0) {
+    <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
+      <h1 class="text-2xl font-bold text-white mb-4">Nenhuma Estação de Produção Encontrada</h1>
+      <p class="text-gray-400">Para usar o KDS, primeiro você precisa cadastrar as estações (ex: Cozinha, Bar).</p>
+      <p class="text-gray-500 text-sm mt-2">Verifique se os dados foram inseridos na tabela 'stations' do seu banco de dados.</p>
+    </div>
+  } @else {
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold text-white">Kitchen Display System (KDS)</h1>
+      <div class="flex space-x-2 bg-gray-700 p-1 rounded-lg">
+        @for (station of stations(); track station.id) {
+          <button 
+            (click)="selectStation(station)"
+            class="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+            [class.bg-blue-600]="(selectedStation() ?? stations()[0])?.id === station.id"
+            [class.text-white]="(selectedStation() ?? stations()[0])?.id === station.id"
+            [class.text-gray-300]="(selectedStation() ?? stations()[0])?.id !== station.id">
+            {{ station.name }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pr-2">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        @for (order of kdsOrders(); track order.id) {
+          <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 flex flex-col">
+            <div class="p-3 text-white font-bold" [ngClass]="getTicketHeaderClass(order.order_items)">
+              Mesa {{ order.table_number }} - Pedido #{{ order.id.substring(0, 4) }}
+            </div>
+            <ul class="p-3 space-y-2 flex-1">
+              @for (item of order.order_items; track item.id) {
+                <li 
+                  (click)="updateStatus(order, item)"
+                  class="border-l-4 p-2 rounded-r-md cursor-pointer"
+                  [ngClass]="getItemStatusClass(item.status)">
+                  <div class="flex justify-between items-center">
+                    <span class="font-bold text-lg">{{ item.quantity }}x {{ item.name }}</span>
+                    <span class="text-xs font-mono">{{ item.status }}</span>
+                  </div>
+                  @if (item.notes) {
+                    <p class="text-sm text-gray-400 mt-1 italic">"{{ item.notes }}"</p>
+                  }
+                </li>
+              }
+            </ul>
+             <div class="text-xs text-center text-gray-500 p-2 border-t border-gray-700">
+                {{ order.timestamp | date:'HH:mm' }}
+              </div>
+          </div>
+        }
+         @if (kdsOrders().length === 0) {
+          <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
+            <p class="text-gray-500">Nenhum pedido para esta estação.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
