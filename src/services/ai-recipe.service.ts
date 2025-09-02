@@ -1,8 +1,7 @@
-
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { AuthService } from './auth.service';
-import { Recipe, RecipePreparation, RecipeIngredient } from '../models/db.models';
+import { Recipe, RecipePreparation, RecipeIngredient, Ingredient } from '../models/db.models';
 import { environment } from '../config/environment';
 import { SupabaseStateService } from './supabase-state.service';
 import { SettingsDataService } from './settings-data.service';
@@ -90,24 +89,74 @@ export class AiRecipeService {
 
   private async processAiPreparations(aiPreparations: any[], recipeId: string): Promise<(RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[]> {
     const preparationsForState: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] = [];
-    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.name.toLowerCase(), i]));
-    const stationsMap = new Map(this.stateService.stations().map(s => [s.name.toLowerCase(), s]));
+    // Normalize names from DB once: trim and lowercase
+    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.name.trim().toLowerCase(), i]));
+    const stationsMap = new Map(this.stateService.stations().map(s => [s.name.trim().toLowerCase(), s]));
     const userId = this.authService.currentUser()!.id;
 
     for (const [i, prep] of aiPreparations.entries()) {
         const recipe_ingredients: RecipeIngredient[] = [];
         for (const ing of prep.ingredients) {
-            let ingredient = ingredientsMap.get(ing.name.toLowerCase());
-            if (!ingredient) {
-                const { data } = await this.inventoryDataService.addIngredient({ name: ing.name, unit: ing.unit, cost: 0, stock: 0, min_stock: 0 });
-                if (!data) continue;
-                ingredient = data;
-                ingredientsMap.set(ing.name.toLowerCase(), ingredient);
+            if (!ing.name || typeof ing.name !== 'string' || ing.name.trim() === '') {
+                continue; // Safety check for valid ingredient name
             }
-            recipe_ingredients.push({ recipe_id: recipeId, ingredient_id: ingredient.id, quantity: ing.quantity, preparation_id: `temp-${i}`, user_id: userId, ingredients: { name: ingredient.name, unit: ing.unit, cost: ingredient.cost } });
+
+            const normalizedName = ing.name.trim().toLowerCase();
+            let ingredient: Ingredient | undefined | null = ingredientsMap.get(normalizedName);
+
+            // Simple plural/singular check if no direct match is found
+            if (!ingredient) {
+                if (normalizedName.endsWith('s')) {
+                    const singular = normalizedName.slice(0, -1);
+                    if (ingredientsMap.has(singular)) {
+                        ingredient = ingredientsMap.get(singular);
+                    }
+                } else {
+                    const plural = normalizedName + 's';
+                    if (ingredientsMap.has(plural)) {
+                        ingredient = ingredientsMap.get(plural);
+                    }
+                }
+            }
+            
+            if (!ingredient) {
+                // Ingredient doesn't exist, create it.
+                // Use the original (but trimmed) name from the AI for creation to preserve casing.
+                const newIngredientName = ing.name.trim();
+                const { data: newIngredient, error } = await this.inventoryDataService.addIngredient({ name: newIngredientName, unit: ing.unit, cost: 0, stock: 0, min_stock: 0 });
+                
+                if (error || !newIngredient) {
+                    console.error(`Failed to create new ingredient '${newIngredientName}':`, error);
+                    continue; // Skip this ingredient if creation fails
+                }
+                ingredient = newIngredient;
+                // Add the new ingredient to our map so it can be found by subsequent lookups in the same run
+                ingredientsMap.set(newIngredientName.toLowerCase(), ingredient);
+            }
+            
+            recipe_ingredients.push({
+                recipe_id: recipeId,
+                ingredient_id: ingredient.id,
+                quantity: ing.quantity,
+                preparation_id: `temp-${i}`, // Temporary ID for this prep step
+                user_id: userId,
+                // Include joined data for the UI to display immediately
+                ingredients: { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost }
+            });
         }
-        const station = stationsMap.get(prep.station_name.toLowerCase());
-        preparationsForState.push({ id: `temp-${i}`, recipe_id: recipeId, name: prep.name, station_id: station?.id || this.stateService.stations()[0]?.id, display_order: i, created_at: new Date().toISOString(), user_id: userId, recipe_ingredients });
+        
+        // Find station, falling back to the first available station if not found
+        const station = stationsMap.get(prep.station_name.trim().toLowerCase());
+        preparationsForState.push({
+            id: `temp-${i}`, // Temporary ID
+            recipe_id: recipeId,
+            name: prep.name,
+            station_id: station?.id || this.stateService.stations()[0]?.id,
+            display_order: i,
+            created_at: new Date().toISOString(),
+            user_id: userId,
+            recipe_ingredients // Attach the processed ingredients
+        });
     }
     return preparationsForState;
   }

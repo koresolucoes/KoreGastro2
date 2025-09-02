@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Recipe, RecipeIngredient, Ingredient, Category, IngredientUnit, Station, RecipePreparation } from '../../models/db.models';
@@ -78,14 +79,23 @@ export class TechnicalSheetsComponent {
   prepTimeInMinutes = signal<number>(0);
   isRegeneratingWithAI = signal(false);
 
+  prepWithActiveSearch = signal<string | null>(null);
+
   filteredIngredientsForTechSheet = computed(() => {
     const term = this.techSheetSearchTerm().toLowerCase();
-    const currentIngredientIds = new Set(this.currentPreparations().flatMap(p => p.recipe_ingredients).map(ri => ri.ingredient_id));
-    if (!term) return [];
+    if (!term || !this.prepWithActiveSearch()) return [];
+    
+    const activePrep = this.currentPreparations().find(p => p.id === this.prepWithActiveSearch());
+    if (!activePrep) return [];
+    
+    const currentIngredientIds = new Set(activePrep.recipe_ingredients.map(ri => ri.ingredient_id));
     return this.ingredients().filter(i => !currentIngredientIds.has(i.id) && i.name.toLowerCase().includes(term)).slice(0, 5);
   });
 
-  showCreateIngredientOption = computed(() => this.techSheetSearchTerm().trim().length > 1 && this.filteredIngredientsForTechSheet().length === 0);
+  showCreateIngredientOption = computed(() => {
+      if (!this.prepWithActiveSearch() || !this.techSheetSearchTerm().trim()) return false;
+      return this.techSheetSearchTerm().trim().length > 1 && this.filteredIngredientsForTechSheet().length === 0
+  });
 
   techSheetTotalCost = computed(() => {
     const ingredientsCost = this.currentPreparations().flatMap(p => p.recipe_ingredients).reduce((sum, ri) => {
@@ -137,12 +147,24 @@ export class TechnicalSheetsComponent {
 
   removePreparation(prepId: string) { this.currentPreparations.update(preps => preps.filter(p => p.id !== prepId)); }
   updatePreparationField(prepId: string, field: keyof RecipePreparation, value: string) { this.currentPreparations.update(preps => preps.map(p => p.id === prepId ? { ...p, [field]: value } : p)); }
-  handleSearchBlur() { setTimeout(() => this.techSheetSearchTerm.set(''), 150); }
+  
+  activateSearchForPrep(prepId: string) {
+    this.prepWithActiveSearch.set(prepId);
+    this.techSheetSearchTerm.set('');
+  }
+
+  handleSearchBlur() { 
+      setTimeout(() => {
+        this.prepWithActiveSearch.set(null)
+        this.techSheetSearchTerm.set('');
+      }, 150); 
+  }
 
   addIngredientToTechSheet(prepId: string, ingredient: Ingredient) {
     const userId = this.authService.currentUser()?.id; if (!userId) return;
     this.currentPreparations.update(preps => preps.map(p => p.id === prepId ? { ...p, recipe_ingredients: [...p.recipe_ingredients, { recipe_id: p.recipe_id, preparation_id: p.id, ingredient_id: ingredient.id, quantity: 1, user_id: userId, ingredients: { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost } }] } : p));
     this.techSheetSearchTerm.set('');
+    this.prepWithActiveSearch.set(null);
   }
 
   removeIngredientFromTechSheet(prepId: string, ingredientId: string) { this.currentPreparations.update(preps => preps.map(p => p.id === prepId ? { ...p, recipe_ingredients: p.recipe_ingredients.filter(ri => ri.ingredient_id !== ingredientId) } : p)); }
@@ -177,17 +199,19 @@ export class TechnicalSheetsComponent {
   newIngredientUnit = signal<IngredientUnit>('g');
   newIngredientCost = signal<number>(0);
   availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
-  activePrepForIngredientAdd = signal<string | null>(null);
 
   openNewIngredientModal(prepId: string) {
     this.newIngredientName.set(this.techSheetSearchTerm());
-    this.activePrepForIngredientAdd.set(prepId);
+    this.prepWithActiveSearch.set(prepId); // Keep track of which prep initiated this
     this.isNewIngredientModalOpen.set(true);
     this.techSheetSearchTerm.set('');
   }
-  closeNewIngredientModal() { this.isNewIngredientModalOpen.set(false); }
+  closeNewIngredientModal() { 
+    this.isNewIngredientModalOpen.set(false);
+    this.prepWithActiveSearch.set(null);
+  }
   async createAndAddIngredient() {
-    const prepId = this.activePrepForIngredientAdd(); if (!prepId) return;
+    const prepId = this.prepWithActiveSearch(); if (!prepId) return;
     const data = { name: this.newIngredientName().trim(), unit: this.newIngredientUnit(), cost: this.newIngredientCost() || 0, stock: 0, min_stock: 0 };
     if (!data.name) { alert('Nome é obrigatório.'); return; }
     const { success, error, data: created } = await this.inventoryDataService.addIngredient(data);
@@ -212,7 +236,10 @@ export class TechnicalSheetsComponent {
     const form = this.newRecipeForm();
     if (!form.name || !form.category_id) { alert('Preencha Nome e Categoria.'); return; }
     const { success, error, data: newRecipe } = await this.recipeDataService.addRecipe(form);
-    if (success && newRecipe) { this.closeAddRecipeModal(); this.openTechSheetModal(newRecipe); } 
+    if (success && newRecipe) { 
+        this.closeAddRecipeModal(); 
+        this.openTechSheetModal(newRecipe); 
+    } 
     else alert(`Falha: ${error?.message}`);
   }
   async generateTechSheetWithAI() {

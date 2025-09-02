@@ -1,6 +1,3 @@
-
-
-
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
     <div>
@@ -119,8 +116,9 @@
 <!-- Tech Sheet Modal -->
 @if(isTechSheetModalOpen() && selectedRecipeForTechSheet(); as recipe) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeTechSheetModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="flex-shrink-0 p-4 border-b border-gray-700">
         <div class="flex justify-between items-center">
             <div class="flex-1">
                 <h3 class="text-xl font-bold text-white">Ficha Técnica</h3>
@@ -140,8 +138,29 @@
             </div>
         </div>
       </div>
-      <div class="p-6 flex-1 flex flex-col overflow-y-auto space-y-4 -mr-2 pr-2">
+      
+      <!-- Body -->
+      <div class="flex-1 p-6 space-y-4 overflow-y-auto">
+        <!-- Recipe Details -->
+        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+            <h4 class="font-semibold text-white mb-3">Detalhes e Precificação do Prato</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label for="selling-price" class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
+                  <input type="number" id="selling-price" [value]="techSheetSellingPrice()" (input)="techSheetSellingPrice.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="prep-time" class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (min)</label>
+                  <input type="number" id="prep-time" [value]="prepTimeInMinutes()" (input)="prepTimeInMinutes.set(+$any($event.target).value)" placeholder="15" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label for="op-cost" class="block text-sm font-medium text-gray-300 mb-1">Custo Operacional Fixo (R$)</label>
+                  <input type="number" id="op-cost" [value]="operationalCost()" (input)="operationalCost.set(+$any($event.target).value)" placeholder="Gás, Eletricidade, etc." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
         
+        <!-- Preparations -->
         @for(prep of currentPreparations(); track prep.id; let i = $index) {
           <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
             <div class="flex items-center justify-between mb-3">
@@ -153,31 +172,13 @@
                   }
                 </select>
               </div>
-              <button (click)="removePreparation(prep.id)" class="ml-4 p-2 text-red-500 hover:text-red-400" title="Remover esta preparação">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.02-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-              </button>
-            </div>
-            
-            <div class="relative mb-3">
-              <input type="text"
-                     [value]="techSheetSearchTerm()"
-                     (input)="techSheetSearchTerm.set($any($event.target).value)" 
-                     (blur)="handleSearchBlur()"
-                     placeholder="Buscar ingrediente..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-              @if(techSheetSearchTerm()) {
-                <ul class="absolute top-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mt-1 z-10 max-h-48 overflow-y-auto">
-                    @for(ing of filteredIngredientsForTechSheet(); track ing.id) {
-                        <li (mousedown)="addIngredientToTechSheet(prep.id, ing)" class="p-2 hover:bg-gray-500 cursor-pointer">{{ ing.name }}</li>
-                    }
-                    @if(showCreateIngredientOption()) {
-                        <li (mousedown)="openNewIngredientModal(prep.id)" class="p-2 hover:bg-blue-500 cursor-pointer text-blue-200 font-semibold">
-                           + Criar ingrediente "{{ techSheetSearchTerm() }}"
-                        </li>
-                    }
-                </ul>
+              @if (currentPreparations().length > 1) {
+                <button (click)="removePreparation(prep.id)" class="ml-4 p-2 text-red-500 hover:text-red-400" title="Remover esta preparação">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.02-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                </button>
               }
             </div>
-
+            
             <ul class="space-y-2 mb-3">
               @for(ri of prep.recipe_ingredients; track ri.ingredient_id) {
                 @let ingredient = getIngredientDetails(ri.ingredient_id);
@@ -197,53 +198,54 @@
               }
             </ul>
 
-            <textarea [value]="prep.prep_instructions || ''" (change)="updatePreparationField(prep.id, 'prep_instructions', $any($event.target).value)" rows="2" placeholder="Instruções para esta preparação..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"></textarea>
+            @if (prepWithActiveSearch() === prep.id) {
+                <div class="relative">
+                  <input type="text" [value]="techSheetSearchTerm()" (input)="techSheetSearchTerm.set($any($event.target).value)" (blur)="handleSearchBlur()" placeholder="Buscar ingrediente..." class="w-full bg-gray-700 border border-blue-500 rounded-lg px-3 py-2 text-white">
+                  @if(techSheetSearchTerm()) {
+                    <ul class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto">
+                        @for(ing of filteredIngredientsForTechSheet(); track ing.id) {
+                            <li (mousedown)="addIngredientToTechSheet(prep.id, ing)" class="p-2 hover:bg-gray-500 cursor-pointer">{{ ing.name }}</li>
+                        }
+                        @if(showCreateIngredientOption()) {
+                            <li (mousedown)="openNewIngredientModal(prep.id)" class="p-2 hover:bg-blue-500 cursor-pointer text-blue-200 font-semibold">
+                               + Criar ingrediente "{{ techSheetSearchTerm() }}"
+                            </li>
+                        }
+                    </ul>
+                  }
+                </div>
+            } @else {
+                <button (click)="activateSearchForPrep(prep.id)" class="w-full text-center py-1.5 px-4 text-sm border-2 border-dashed border-gray-600 text-gray-400 rounded-lg hover:bg-gray-700 hover:border-gray-500 hover:text-white transition-colors">
+                    + Adicionar Ingrediente
+                </button>
+            }
+
+            <textarea [value]="prep.prep_instructions || ''" (change)="updatePreparationField(prep.id, 'prep_instructions', $any($event.target).value)" rows="2" placeholder="Instruções para esta preparação..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm mt-3"></textarea>
           </div>
         }
         
         <div class="text-center">
             <button (click)="addPreparation()" class="w-full text-center py-2 px-4 border-2 border-dashed border-gray-600 text-gray-400 rounded-lg hover:bg-gray-700 hover:border-gray-500 hover:text-white transition-colors">
-                + Adicionar Preparação
+                + Adicionar Etapa de Preparação
             </button>
         </div>
-
-        <div class="mt-auto space-y-4">
-            <div>
-              <label for="op-cost" class="block text-sm font-medium text-gray-300 mb-1">Custo Operacional Fixo (Gás, Eletricidade, etc.)</label>
-              <input type="number" id="op-cost" [value]="operationalCost()" (input)="operationalCost.set(+$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div class="pt-4 border-t border-gray-600">
-                <h4 class="font-semibold text-white mb-2">Precificação e Custos</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="grid grid-cols-2 gap-4">
-                      <div>
-                        <label for="selling-price" class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
-                        <input type="number" id="selling-price" [value]="techSheetSellingPrice()" (input)="techSheetSellingPrice.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      </div>
-                       <div>
-                        <label for="prep-time" class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (min)</label>
-                        <input type="number" id="prep-time" [value]="prepTimeInMinutes()" (input)="prepTimeInMinutes.set(+$any($event.target).value)" placeholder="15" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-gray-900/50 p-3 rounded-lg text-center">
-                            <label class="block text-xs text-gray-400">CMV</label>
-                            <p class="font-bold text-lg text-white">{{ techSheetCMV() | number:'1.1-2' }}%</p>
-                        </div>
-                        <div class="bg-gray-900/50 p-3 rounded-lg text-center">
-                            <label class="block text-xs text-gray-400">Margem</label>
-                            <p class="font-bold text-lg" [class.text-green-400]="techSheetProfitMargin() >= 0" [class.text-red-400]="techSheetProfitMargin() < 0">{{ techSheetProfitMargin() | number:'1.1-2' }}%</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-between items-center">
-         <div>
-            <span class="text-sm text-gray-400">Custo Total do Prato:</span>
-            <span class="ml-2 text-lg font-bold text-white">{{ techSheetTotalCost() | currency:'BRL' }}</span>
+
+      <!-- Footer -->
+      <div class="flex-shrink-0 p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
+         <div class="flex items-center gap-6">
+            <div class="text-center">
+                <label class="block text-xs text-gray-400">Custo Total</label>
+                <p class="font-bold text-lg text-white">{{ techSheetTotalCost() | currency:'BRL' }}</p>
+            </div>
+             <div class="text-center">
+                <label class="block text-xs text-gray-400">CMV</label>
+                <p class="font-bold text-lg text-white">{{ techSheetCMV() | number:'1.1-2' }}%</p>
+            </div>
+            <div class="text-center">
+                <label class="block text-xs text-gray-400">Margem</label>
+                <p class="font-bold text-lg" [class.text-green-400]="techSheetProfitMargin() >= 0" [class.text-red-400]="techSheetProfitMargin() < 0">{{ techSheetProfitMargin() | number:'1.1-2' }}%</p>
+            </div>
          </div>
          <div class="flex gap-3">
              <button (click)="closeTechSheetModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
@@ -325,7 +327,7 @@
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
          <button (click)="closeAddRecipeModal()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50">Cancelar</button>
-         <button (click)="saveNewRecipe()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50">Salvar e Montar Manualmente</button>
+         <button (click)="saveNewRecipe()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50">Criar Manualmente</button>
          <button (click)="generateTechSheetWithAI()" [disabled]="isGeneratingTechSheet() || !newRecipeForm().name.trim()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             @if(isGeneratingTechSheet()) {
               <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
