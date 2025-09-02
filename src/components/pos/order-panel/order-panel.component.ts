@@ -8,6 +8,7 @@ import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } 
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
+import { environment } from '../../../config/environment';
 
 interface CartItem {
     id: string;
@@ -68,7 +69,6 @@ export class OrderPanelComponent {
   noteInput = signal('');
 
   // AI Upselling Signals
-  // FIX: Removed hardcoded API key and made the AI client non-nullable.
   private ai: GoogleGenAI;
   upsellSuggestions = signal<Recipe[]>([]);
   isGeneratingSuggestions = signal(false);
@@ -84,8 +84,7 @@ export class OrderPanelComponent {
   });
 
   constructor() {
-    // FIX: Initialize GoogleGenAI with the API key from environment variables.
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
 
     // Reset cart when table changes
     effect(() => {
@@ -236,7 +235,6 @@ export class OrderPanelComponent {
   }
 
   async generateUpsellSuggestions() {
-    // FIX: Removed !this.ai check as it is now initialized in the constructor.
     this.isGeneratingSuggestions.set(true);
     this.upsellSuggestions.set([]);
 

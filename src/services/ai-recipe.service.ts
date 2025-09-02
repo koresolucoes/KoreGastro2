@@ -1,11 +1,13 @@
 
 
+
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 import { Recipe, RecipePreparation, RecipeIngredient, Category } from '../models/db.models';
 import { supabase } from './supabase-client';
+import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -13,19 +15,16 @@ import { supabase } from './supabase-client';
 export class AiRecipeService {
   private dataService: SupabaseService;
   private authService: AuthService;
-  // FIX: Removed hardcoded API key and made the AI client non-nullable.
   private ai: GoogleGenAI;
 
   constructor() {
     this.dataService = inject(SupabaseService);
     this.authService = inject(AuthService);
     
-    // FIX: Initialize GoogleGenAI with the API key from environment variables.
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
   }
   
   async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] }> {
-    // FIX: Removed !this.ai check as it is initialized in the constructor.
     // Step 1: Ensure at least one station exists, create a default one if not.
     let stations = this.dataService.stations();
     if (stations.length === 0) {
@@ -35,7 +34,6 @@ export class AiRecipeService {
         }
         // Instead of refetching, we can be optimistic and add it to the signal, or just use a mock object for this flow.
         // For simplicity and robustness, we will refetch from SupabaseService's raw client.
-        // FIX: Directly use the imported supabase client instead of trying to access it via SupabaseService.
         const { data: refetchedStations } = await supabase.from('stations').select('*').eq('user_id', this.authService.currentUser()!.id);
         stations = refetchedStations || [];
         if (stations.length === 0) throw new Error('Could not verify station creation.');
@@ -140,7 +138,6 @@ export class AiRecipeService {
   }
 
   async generateTechSheetForRecipe(recipe: Recipe): Promise<{ preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[], operational_cost: number, prep_time_in_minutes: number }> {
-    // FIX: Removed !this.ai check as it is initialized in the constructor.
     const stations = this.dataService.stations();
     if (stations.length === 0) {
         throw new Error('No production stations found. Please create one in Settings first.');

@@ -22,6 +22,14 @@
       background: #6b7280; /* bg-gray-500 */
     }
   </style>
+<script>
+  // Polyfill `process` for browser environment to avoid crashing the app
+  // when it tries to access environment variables. This allows for graceful
+  // error handling if the variables are not injected by the deployment platform.
+  if (typeof window.process === 'undefined') {
+    window.process = { env: {} };
+  }
+</script>
 <script type="importmap">
 {
   "imports": {
