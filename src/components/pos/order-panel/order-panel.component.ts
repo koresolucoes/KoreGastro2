@@ -1,6 +1,6 @@
 
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef, ElementRef, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -64,11 +64,6 @@ export class OrderPanelComponent {
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
-  // Floating Action Bar State
-  isFooterVisible = signal(true);
-  scrollContainerRef = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
-  footerActionsRef = viewChild<ElementRef<HTMLDivElement>>('footerActions');
-
   // Notes Modal Signals
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
@@ -107,30 +102,6 @@ export class OrderPanelComponent {
       } else {
         this.upsellSuggestions.set([]);
       }
-    });
-
-    // Effect for IntersectionObserver to control floating action bar visibility
-    effect((onCleanup) => {
-        const scrollElRef = this.scrollContainerRef();
-        const footerElRef = this.footerActionsRef();
-
-        // Only set up the observer if both elements are present in the DOM
-        if (scrollElRef && footerElRef) {
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    this.isFooterVisible.set(entry.isIntersecting);
-                },
-                { 
-                  root: scrollElRef.nativeElement,
-                  threshold: 0.1
-                }
-            );
-
-            observer.observe(footerElRef.nativeElement);
-
-            // The onCleanup function will be called when the effect is re-run or destroyed.
-            onCleanup(() => observer.disconnect());
-        }
     });
   }
 

@@ -1,9 +1,10 @@
 
+
 @if (isEmployeeLoginModalOpen()) {
   <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
       @if (!selectedEmployeeForLogin()) {
-        <h2 class.="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para iniciar</h2>
+        <h2 class="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para iniciar</h2>
         @if (employees().length > 0) {
           <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @for(employee of employees(); track employee.id) {
@@ -118,7 +119,7 @@
               }
 
               <div class="flex flex-col items-center justify-center text-center flex-1 w-full overflow-hidden">
-                <span class="text-lg sm:text-2xl md:text-3xl font-bold leading-none">{{ table.number }}</span>
+                <span class="text-base sm:text-xl md:text-3xl font-bold leading-none">{{ table.number }}</span>
                 
                 @if (table.status === 'OCUPADA') {
                     @if(table.employee_id) {
@@ -265,17 +266,17 @@
     @if(isPaymentModalOpen()) {
       <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePaymentModal(true)">
         <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-          <div class="flex justify-between items-center p-4 border-b border-gray-700">
+          <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
             <h3 class="text-xl font-bold text-white">Registrar Pagamento - Mesa {{ selectedTable()?.number }}</h3>
             <button (click)="closePaymentModal(true)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
           </div>
 
-          <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+          <div class="flex-1 flex flex-col md:flex-row min-h-0">
             <!-- Left Side: Order Summary -->
-            <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col">
-              <h4 class="font-semibold text-lg text-white mb-4">Resumo da Conta</h4>
+            <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col flex-1 md:flex-auto min-h-0">
+              <h4 class="font-semibold text-lg text-white mb-4 flex-shrink-0">Resumo da Conta</h4>
               <div class="flex-1 overflow-y-auto pr-2">
                 @if(currentOrder(); as order) {
                   <ul class="space-y-2">
@@ -290,7 +291,7 @@
                   </ul>
                 }
               </div>
-              <div class="pt-4 border-t border-gray-700">
+              <div class="pt-4 border-t border-gray-700 flex-shrink-0">
                 <div class="flex justify-between items-center text-lg mb-2">
                   <span>Gorjeta</span>
                   <input type="number" [value]="tipAmount()" (input)="tipAmount.set(+$any($event.target).value)" placeholder="0,00" class="w-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -303,14 +304,14 @@
             </div>
 
             <!-- Right Side: Payment Input -->
-            <div class="w-full md:w-1/2 p-4 flex flex-col">
-              <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700">
+            <div class="w-full md:w-1/2 p-4 flex flex-col flex-1 md:flex-auto min-h-0">
+              <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700 flex-shrink-0">
                 <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
                 <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0" [class.text-gray-400]="balanceDue() === 0">{{ balanceDue() | currency:'BRL' }}</p></div>
                 <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
               </div>
               
-              <div class="space-y-4 mb-4">
+              <div class="space-y-4 mb-4 flex-shrink-0">
                 <div>
                   <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
                   <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -349,7 +350,7 @@
                 }
               </div>
               
-              <div class="pt-4 mt-auto">
+              <div class="pt-4 mt-auto flex-shrink-0">
                 <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
                   Finalizar e Liberar Mesa
                 </button>
