@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { User, RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, OrderItemStatus, Transaction, IngredientCategory, Supplier, RecipeIngredient, IngredientUnit, RecipePreparation, CashierClosing, TransactionType, Employee, Promotion, PromotionRecipe, TableStatus } from '../models/db.models';
@@ -229,15 +230,17 @@ export class SupabaseService {
     }
   }
 
-  private async handleOrderChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
-    const orderId = payload.new?.id ?? (payload.old as { id?: string })?.id;
+  private async handleOrderChange(payload: RealtimePostgresChangesPayload<Partial<Order>>) {
+    // FIX: The 'old' property on a payload can be an empty object for INSERT events, which causes a type error on direct property access. A type guard is needed for safe property access.
+    const orderId = payload.new?.id ?? ('id' in payload.old && payload.old.id ? payload.old.id : undefined);
     if (orderId) {
         await this.refetchAndProcessOrder(orderId);
     }
   }
 
-  private async handleOrderItemChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
-      const orderId = (payload.new as { order_id?: string })?.order_id ?? (payload.old as { order_id?: string })?.order_id;
+  private async handleOrderItemChange(payload: RealtimePostgresChangesPayload<Partial<OrderItem>>) {
+      // FIX: The `old` property of a payload can be an empty object for INSERT events, which causes a type error on direct property access. A type guard is needed for safe property access.
+      const orderId = payload.new?.order_id ?? ('order_id' in payload.old && payload.old.order_id ? payload.old.order_id : undefined);
       if (orderId) {
           await this.refetchAndProcessOrder(orderId);
       }
