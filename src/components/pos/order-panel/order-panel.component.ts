@@ -3,10 +3,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
-import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
-import { environment } from '../../../config/environment';
 import { SupabaseStateService } from '../../../services/supabase-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 
@@ -69,11 +67,6 @@ export class OrderPanelComponent {
   editingCartItemId = signal<string | null>(null);
   noteInput = signal('');
 
-  // AI Upselling Signals
-  private ai: GoogleGenAI | null = null;
-  upsellSuggestions = signal<Recipe[]>([]);
-  isGeneratingSuggestions = signal(false);
-
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
   recipePrices = computed(() => {
@@ -85,23 +78,9 @@ export class OrderPanelComponent {
   });
 
   constructor() {
-    if (environment.geminiApiKey && !environment.geminiApiKey.includes('YOUR_GEMINI_API_KEY')) {
-      this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
-    }
-
     effect(() => {
       this.selectedTable();
       untracked(() => this.shoppingCart.set([]));
-    });
-
-    effect(() => {
-      const cart = this.shoppingCart();
-      this.selectedTable();
-      if (cart.length > 0) {
-        untracked(() => this.generateUpsellSuggestions());
-      } else {
-        this.upsellSuggestions.set([]);
-      }
     });
   }
 
@@ -197,49 +176,6 @@ export class OrderPanelComponent {
       const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
       if (result.success) this.shoppingCart.set([]);
       else alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
-    }
-  }
-
-  async generateUpsellSuggestions() {
-    if (!this.ai) {
-      console.log('AI suggestions disabled. API key not configured.');
-      this.isGeneratingSuggestions.set(false);
-      this.upsellSuggestions.set([]);
-      return;
-    }
-
-    this.isGeneratingSuggestions.set(true);
-    this.upsellSuggestions.set([]);
-
-    try {
-        const cartItems = this.shoppingCart().map(item => `${item.quantity}x ${item.recipe.name}`).join(', ');
-        const currentCartIds = new Set(this.shoppingCart().map(item => item.recipe.id));
-        const menu = this.recipes().filter(r => r.is_available && r.hasStock && !currentCartIds.has(r.id)).map(r => `- ${r.name} (ID: ${r.id})`).join('\n');
-        const prompt = `Você é um sommelier e vendedor especialista. Um cliente pediu: ${cartItems}. Com base no cardápio, sugira 3 a 4 itens complementares. Cardápio: ${menu}. Retorne APENAS um JSON com uma chave "suggestions", que é um array de objetos, cada um com uma chave "recipe_id" com o ID exato.`;
-        
-        const response = await this.ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: { type: Type.OBJECT, properties: { suggestions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { recipe_id: { type: Type.STRING } } } } } }
-            }
-        });
-
-        const jsonResponse = JSON.parse(response.text);
-        const suggestedIds: string[] = jsonResponse.suggestions.map((s: any) => s.recipe_id);
-        const recipesMap = this.stateService.recipesById();
-        this.upsellSuggestions.set(suggestedIds.map(id => recipesMap.get(id)).filter((r): r is Recipe => r !== undefined));
-    } catch (error: any) {
-        const errorString = String(error.message || JSON.stringify(error));
-        if (errorString.includes('API key not valid') || errorString.includes('API_KEY_INVALID')) {
-            console.error('AI suggestions failed: Invalid Gemini API key. Check `src/config/environment.ts`.');
-        } else {
-            console.error('Error generating upsell suggestions:', error);
-        }
-        this.upsellSuggestions.set([]);
-    } finally {
-        this.isGeneratingSuggestions.set(false);
     }
   }
 

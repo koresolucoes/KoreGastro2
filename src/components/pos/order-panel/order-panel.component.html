@@ -1,4 +1,4 @@
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full relative">
     @if (selectedTable(); as table) {
       <!-- Header -->
       <div class="p-4 border-b border-gray-700 flex-shrink-0">
@@ -11,7 +11,7 @@
       </div>
 
       <!-- Main Content Area (Single Scrollable Body) -->
-      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 pb-48">
         @if (currentOrder()) {
             <!-- Menu Section -->
             <div class="w-full flex flex-col">
@@ -39,25 +39,6 @@
                         <p class="font-semibold text-sm leading-tight">{{ recipe.name }}</p>
                         <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
                       </div>
-                    }
-                  </div>
-                  <div class="pt-4 mt-4 border-t border-gray-700">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-semibold text-white">Sugestões Inteligentes</h3>
-                        <button (click)="generateUpsellSuggestions()" [disabled]="isGeneratingSuggestions()" class="p-1 text-gray-400 hover:text-white rounded-full hover:bg-gray-600 disabled:opacity-50 disabled:cursor-wait" title="Gerar novas sugestões">
-                            <svg class="w-5 h-5" [class.animate-spin]="isGeneratingSuggestions()" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.181-3.183m-4.991-2.695v-2.121a3.375 3.375 0 00-3.375-3.375H8.25m11.664 0l-3.182 3.182a8.25 8.25 0 01-11.664 0l-3.182-3.182m4.992 5.318v4.992h-4.992" /></svg>
-                        </button>
-                    </div>
-                    @if (isGeneratingSuggestions()) {
-                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
-                            @for (_ of [1,2,3]; track $index) { <div class="bg-gray-700/50 p-2 rounded-lg animate-pulse h-[56px]"><div class="h-4 bg-gray-600 rounded w-3/4 mb-2"></div><div class="h-3 bg-gray-600 rounded w-1/2"></div></div> }
-                        </div>
-                    } @else if (upsellSuggestions().length > 0) {
-                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
-                            @for (suggestion of upsellSuggestions(); track suggestion.id) {
-                                <div (click)="addToCart(suggestion)" class="bg-indigo-600/20 border border-indigo-500 p-2 rounded-lg text-center cursor-pointer hover:bg-indigo-600/40"><p class="font-semibold text-sm text-indigo-200">{{ suggestion.name }}</p><p class="text-xs text-gray-400">{{ suggestion.price | currency:'BRL' }}</p></div>
-                            }
-                        </div>
                     }
                   </div>
               </div>
@@ -132,7 +113,7 @@
 
       <!-- Footer with Actions -->
       @if(currentOrder()) {
-        <div class="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-800">
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-gray-800">
             <div class="flex justify-between items-center mb-4"><span class="text-lg font-bold text-white">Total</span><span class="text-lg font-bold text-white">{{ orderTotal() | currency:'BRL' }}</span></div>
             <div class="grid grid-cols-2 gap-2">
                 <button (click)="sendOrder()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed" [disabled]="shoppingCart().length === 0">Enviar Pedido</button>
