@@ -504,6 +504,17 @@ export class PosComponent {
     };
   }
 
+  getEmployeeInitials(employeeId: string | undefined): string {
+    if (!employeeId) return '';
+    const name = this.employeeNameMap().get(employeeId);
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return (parts[0].substring(0, 2)).toUpperCase();
+  }
+
   getOrderItemStatusClass(status: OrderItemStatus): string {
     switch (status) {
       case 'PENDENTE': return 'text-yellow-400';
