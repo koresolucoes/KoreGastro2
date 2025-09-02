@@ -1,3 +1,5 @@
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
@@ -42,6 +44,7 @@ export class InventoryComponent {
     adjustmentReason = signal('');
     adjustmentCustomReason = signal('');
     adjustmentSupplierId = signal<string | null>(null);
+    adjustmentExpirationDate = signal<string | null>(null);
 
     // Deletion management
     ingredientPendingDeletion = signal<Ingredient | null>(null);
@@ -159,10 +162,10 @@ export class InventoryComponent {
         this.ingredientForm.update(form => {
             const newForm = { ...form };
             if (field === 'category_id' || field === 'supplier_id') {
-                newForm[field] = value === 'null' ? null : value;
+                // FIX: Treat an empty string from a select as null to prevent DB errors for UUID fields.
+                newForm[field] = (value === 'null' || value === '') ? null : value;
             } else if (field === 'name' || field === 'unit' || field === 'expiration_date' || field === 'last_movement_at') {
                 newForm[field] = value as any;
-            // FIX: Use 'else if' to specifically target numeric fields and avoid incorrect type assignments.
             } else if (field === 'stock' || field === 'cost' || field === 'min_stock') {
                 const numValue = parseFloat(value);
                 if (!isNaN(numValue)) {
@@ -206,6 +209,7 @@ export class InventoryComponent {
         this.adjustmentReason.set(this.entryReasons[0]);
         this.adjustmentCustomReason.set('');
         this.adjustmentSupplierId.set(null);
+        this.adjustmentExpirationDate.set(ingredient.expiration_date || null);
         this.isAdjustmentModalOpen.set(true);
     }
 
@@ -253,8 +257,9 @@ export class InventoryComponent {
         }
         
         const quantityChange = this.adjustmentType() === 'entry' ? quantity : -quantity;
+        const expirationDate = this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null;
 
-        const result = await this.dataService.adjustIngredientStock(ingredient.id, quantityChange, finalReason);
+        const result = await this.dataService.adjustIngredientStock(ingredient.id, quantityChange, finalReason, expirationDate);
         if (result.success) {
             this.closeAdjustmentModal();
         } else {

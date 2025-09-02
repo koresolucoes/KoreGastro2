@@ -29,6 +29,10 @@ interface SingleOrderItem {
 
 type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
 
+// IMPORTANT: To enable the AI feature, paste your Gemini API Key here.
+// Note: For production environments, it is strongly recommended to handle API keys
+// on a secure backend server instead of exposing them in the client-side code.
+const GEMINI_API_KEY = 'AIzaSyA05tQSdiJt1HHWT8o5jSxfuNixh7i_6UQ'; // <-- PASTE YOUR GEMINI API KEY HERE
 
 @Component({
   selector: 'app-order-panel',
@@ -66,9 +70,11 @@ export class OrderPanelComponent {
   upsellSuggestions = signal<Recipe[]>([]);
   isGeneratingSuggestions = signal(false);
 
+  criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
+
   constructor() {
-    if (process.env.API_KEY) {
-        this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    if (GEMINI_API_KEY) {
+        this.ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     } else {
         console.warn('Gemini API key not found. Upselling feature will be disabled.');
     }
@@ -89,6 +95,16 @@ export class OrderPanelComponent {
         this.upsellSuggestions.set([]);
       }
     });
+  }
+
+  isItemCritical(item: OrderItem): boolean {
+    const note = item.notes?.toLowerCase() ?? '';
+    if (!note) return false;
+    return this.criticalKeywords.some(keyword => note.includes(keyword));
+  }
+  
+  isAttentionAcknowledged(item: OrderItem): boolean {
+    return !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'];
   }
 
   filteredRecipes = computed(() => {

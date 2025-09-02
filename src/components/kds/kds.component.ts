@@ -21,6 +21,7 @@ type ProcessedOrderItem = OrderItem & {
   isLate: boolean;
   isCritical: boolean; // Flag for items needing special attention
   prepTime: number; // Prep time in minutes for sorting
+  attention_acknowledged: boolean;
 };
 
 @Component({
@@ -101,8 +102,9 @@ export class KdsComponent implements OnInit, OnDestroy {
                 const isLate = elapsedTimeSeconds > prepTimeSecs;
                 const note = item.notes?.toLowerCase() ?? '';
                 const isCritical = criticalKeywords.some(keyword => note.includes(keyword));
+                const attention_acknowledged = !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'];
 
-                tableItems.push({ ...item, elapsedTimeSeconds, timerColor, isLate, isCritical, prepTime: prepTimeMins });
+                tableItems.push({ ...item, elapsedTimeSeconds, timerColor, isLate, isCritical, prepTime: prepTimeMins, attention_acknowledged });
             }
         }
 
@@ -139,6 +141,11 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     selectStation(station: Station) {
         this.selectedStation.set(station);
+    }
+    
+    async acknowledgeAttention(item: ProcessedOrderItem, event: MouseEvent) {
+        event.stopPropagation();
+        await this.dataService.acknowledgeOrderItemAttention(item.id);
     }
     
     async updateStatus(item: OrderItem) {

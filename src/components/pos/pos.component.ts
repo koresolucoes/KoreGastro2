@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
-import { Hall, Table, Order, Category, OrderItemStatus } from '../../models/db.models';
+import { Hall, Table, Order, Category, OrderItemStatus, OrderItem } from '../../models/db.models';
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { AuthService } from '../../services/auth.service';
 
@@ -63,6 +63,8 @@ export class PosComponent {
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
   tipAmount = signal(0);
   
+  criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
+  
   currentOrder = computed(() => {
     const table = this.selectedTable();
     if (!table) return null;
@@ -100,6 +102,21 @@ export class PosComponent {
             this.selectedHall.set(null);
         }
     });
+  }
+
+  isItemCritical(item: OrderItem): boolean {
+    const note = item.notes?.toLowerCase() ?? '';
+    if (!note) return false;
+    return this.criticalKeywords.some(keyword => note.includes(keyword));
+  }
+
+  getUnacknowledgedCriticalItemsCount(tableNumber: number): number {
+    const order = this.dataService.getOrderByTableNumber(tableNumber);
+    if (!order || !order.order_items) return 0;
+
+    return order.order_items.filter(item => 
+      this.isItemCritical(item) && !item.status_timestamps?.['ATTENTION_ACKNOWLEDGED']
+    ).length;
   }
   
   filteredTables = computed(() => {

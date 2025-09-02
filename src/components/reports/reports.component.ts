@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -21,11 +21,8 @@ export class ReportsComponent implements OnInit {
     transactions = this.dataService.transactions;
 
     ngOnInit() {
-        effect(() => {
-            if (this.dataService.isDataLoaded()) {
-                this.isLoading.set(false);
-            }
-        });
+        // Fetch the initial data for the default period ('day') when the component loads.
+        this.loadData();
     }
     
     async setPeriod(newPeriod: ReportPeriod) {
@@ -58,7 +55,8 @@ export class ReportsComponent implements OnInit {
             case 'week':
                 // Adjust to get the start of the week (Sunday)
                 const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
-                startDate = new Date(now.setDate(now.getDate() - dayOfWeek));
+                const newNow = new Date(); // Create a new date object to avoid mutation
+                startDate = new Date(newNow.setDate(newNow.getDate() - dayOfWeek));
                 startDate.setHours(0, 0, 0, 0);
                 break;
             case 'month':

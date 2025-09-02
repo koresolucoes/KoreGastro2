@@ -1,7 +1,5 @@
 
-
-
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
@@ -10,12 +8,20 @@ import { CashierClosing } from '../models/db.models';
   providedIn: 'root',
 })
 export class PrintingService {
-  private datePipe = inject(DatePipe);
-  private currencyPipe = inject(CurrencyPipe);
-  private decimalPipe = inject(DecimalPipe);
+  private datePipe: DatePipe;
+  private currencyPipe: CurrencyPipe;
+  private decimalPipe: DecimalPipe;
+
   // New queue structure: Key is station ID
   private printQueue = new Map<string, { station: Station, itemsByOrder: Map<string, {order: Order, items: OrderItem[]}> }>();
   private printTimeout: any;
+
+  constructor() {
+    const locale = inject(LOCALE_ID);
+    this.datePipe = new DatePipe(locale);
+    this.currencyPipe = new CurrencyPipe(locale);
+    this.decimalPipe = new DecimalPipe(locale);
+  }
 
   /**
    * Queues an item for printing, batching multiple items for the same order/station

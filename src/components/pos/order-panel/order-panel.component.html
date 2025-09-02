@@ -77,9 +77,47 @@
                   <ul class="space-y-3">
                     @for(displayItem of groupedOrderItems(); track displayItem.isGroup ? displayItem.groupId : displayItem.item.id) {
                       @if(displayItem.isGroup) {
-                        <li class="bg-gray-700/50 p-2 rounded-lg"><div class="flex justify-between items-center text-sm"><p class="font-semibold">{{ displayItem.recipeName }} <span class="text-gray-400">x{{ displayItem.quantity }}</span></p><span class="font-medium">{{ (displayItem.totalPrice * displayItem.quantity) | currency:'BRL' }}</span></div><ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">@for(subItem of displayItem.items; track subItem.id) {<li class="flex justify-between items-center text-xs"><p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p><p [ngClass]="getOrderItemStatusClass(subItem.status)">{{ subItem.status.replace('_', ' ') }}</p></li>}</ul></li>
+                        <li class="bg-gray-700/50 p-2 rounded-lg">
+                          <div class="flex justify-between items-center text-sm">
+                            <div class="flex items-center gap-2">
+                              @if(isItemCritical(displayItem.items[0])) {
+                                <span [title]="isAttentionAcknowledged(displayItem.items[0]) ? 'Atenção especial confirmada pela cozinha' : 'Atenção especial pendente de confirmação'">
+                                  @if(isAttentionAcknowledged(displayItem.items[0])) {
+                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  } @else {
+                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                  }
+                                </span>
+                              }
+                              <p class="font-semibold">{{ displayItem.recipeName }} <span class="text-gray-400">x{{ displayItem.quantity }}</span></p>
+                            </div>
+                            <span class="font-medium ml-2">{{ (displayItem.totalPrice * displayItem.quantity) | currency:'BRL' }}</span>
+                          </div>
+                          @if(displayItem.items[0].notes) {
+                           <p class="text-xs italic text-yellow-300 mt-1 pt-1 border-t border-gray-600/50">"{{ displayItem.items[0].notes }}"</p>
+                          }
+                          <ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">@for(subItem of displayItem.items; track subItem.id) {<li class="flex justify-between items-center text-xs"><p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p><p [ngClass]="getOrderItemStatusClass(subItem.status)">{{ subItem.status.replace('_', ' ') }}</p></li>}</ul></li>
                       } @else {
-                        <li class="flex flex-col text-sm bg-gray-700/50 p-2 rounded"><div class="flex justify-between items-center"><div><p>{{ displayItem.item.name }} <span class="text-gray-400">x{{ displayItem.item.quantity }}</span></p><p class="text-xs" [ngClass]="getOrderItemStatusClass(displayItem.item.status)">{{ displayItem.item.status.replace('_', ' ') }}</p></div><span class="font-medium">{{ (displayItem.item.price * displayItem.item.quantity) | currency:'BRL' }}</span></div>@if(displayItem.item.notes) {<p class="text-xs italic text-yellow-300 mt-1 pt-1 border-t border-gray-600/50">"{{ displayItem.item.notes }}"</p>}</li>
+                        <li class="flex flex-col text-sm bg-gray-700/50 p-2 rounded">
+                          <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                              @if(isItemCritical(displayItem.item)) {
+                                <span [title]="isAttentionAcknowledged(displayItem.item) ? 'Atenção especial confirmada pela cozinha' : 'Atenção especial pendente de confirmação'">
+                                  @if(isAttentionAcknowledged(displayItem.item)) {
+                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  } @else {
+                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                  }
+                                </span>
+                              }
+                              <div>
+                                <p>{{ displayItem.item.name }} <span class="text-gray-400">x{{ displayItem.item.quantity }}</span></p>
+                                <p class="text-xs" [ngClass]="getOrderItemStatusClass(displayItem.item.status)">{{ displayItem.item.status.replace('_', ' ') }}</p>
+                              </div>
+                            </div>
+                            <span class="font-medium ml-2">{{ (displayItem.item.price * displayItem.item.quantity) | currency:'BRL' }}</span>
+                          </div>
+                          @if(displayItem.item.notes) {<p class="text-xs italic text-yellow-300 mt-1 pt-1 border-t border-gray-600/50">"{{ displayItem.item.notes }}"</p>}</li>
                       }
                     }
                     @for(item of shoppingCart(); track item.id) {

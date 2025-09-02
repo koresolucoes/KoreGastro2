@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { RealtimeChannel, User } from '@supabase/supabase-js';
 import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, OrderItemStatus, Transaction, IngredientCategory, Supplier, RecipeIngredient, IngredientUnit, RecipePreparation, CashierClosing, TransactionType } from '../models/db.models';
@@ -14,6 +20,7 @@ export type PaymentInfo = { method: string; amount: number };
 export class SupabaseService {
   private printingService = inject(PrintingService);
   private authService = inject(AuthService);
+  private userChannel: RealtimeChannel | null = null;
   
   private currentUser = this.authService.currentUser;
 
@@ -76,12 +83,22 @@ export class SupabaseService {
   constructor() {
     effect(() => {
         const user = this.currentUser();
+        
+        // Clean up previous channel subscription to prevent conflicts
+        if (this.userChannel) {
+          supabase.removeChannel(this.userChannel)
+            .catch(error => console.error('Error removing previous realtime channel:', error));
+          this.userChannel = null;
+        }
+
         if (user) {
             this.loadInitialData(user.id);
             this.listenForChanges(user.id);
         } else {
             this.clearAllData();
-            supabase.removeAllChannels(); // Clean up all realtime subscriptions on logout
+            // This is a good safety net if other channels are ever used.
+            supabase.removeAllChannels()
+              .catch(error => console.error('Error removing all realtime channels on logout:', error));
         }
     });
   }
@@ -227,11 +244,14 @@ export class SupabaseService {
   }
   
   private listenForChanges(userId: string) {
-    // A channel for all tables specific to the user
-    supabase.channel(`user-db-changes-${userId}`)
+    // A single, managed channel for all user-specific database changes.
+    this.userChannel = supabase.channel(`user-db-changes-${userId}`);
+
+    this.userChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.halls, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.tables, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.stations, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.categories, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.recipes, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${userId}` }, (payload) => this.handleIngredientChange(payload))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.ingredientCategories, p))
@@ -246,7 +266,17 @@ export class SupabaseService {
           const startDate = lastClosing ? new Date(lastClosing) : new Date();
           if (!lastClosing) startDate.setHours(0,0,0,0);
           this.fetchSalesDataForPeriod(startDate, new Date());
-      }).subscribe();
+      }).subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to realtime channel for user ${userId}`);
+        } else {
+          const errorDetails = err ? JSON.stringify(err) : 'No error object provided.';
+          console.error(`Realtime channel for user ${userId} encountered an issue. Status: ${status}`, errorDetails);
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('CHANNEL_ERROR often indicates a problem with Row Level Security (RLS) policies or database permissions for the subscribed table(s). Ensure the authenticated user has SELECT permissions.');
+          }
+        }
+      });
   }
 
   private handleGenericChange<T extends { id: string }>(dataSignal: WritableSignal<T[]>, payload: any) {
@@ -284,7 +314,7 @@ export class SupabaseService {
         if (payload.eventType === 'INSERT') {
           this.recipeIngredients.update(ri => [...ri, data as RecipeIngredient]);
         } else {
-           this.recipeIngredients.update(ri => ri.map(item => (item.recipe_id === data.recipe_id && item.ingredient_id === data.ingredient_id) ? data as RecipeIngredient : item));
+           this.recipeIngredients.update(ri => ri.map(item => (item.recipe_id === data.recipe_id && item.ingredient_id === data.recipe_id) ? data as RecipeIngredient : item));
         }
       }
     } else if (payload.eventType === 'DELETE') {
@@ -440,6 +470,33 @@ export class SupabaseService {
       .from('order_items')
       .update({ status: newStatus, status_timestamps: newTimestamps })
       .eq('id', itemId).eq('user_id', userId);
+  }
+
+  async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean; error: any }> {
+    const userId = this.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const { data: currentItem, error: fetchError } = await supabase
+      .from('order_items')
+      .select('status_timestamps')
+      .eq('id', itemId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      console.error("KDS: Falha ao buscar item do pedido para confirmar atenção.", fetchError);
+      return { success: false, error: fetchError };
+    }
+
+    const newTimestamps = { ...(currentItem.status_timestamps || {}), 'ATTENTION_ACKNOWLEDGED': new Date().toISOString() };
+
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status_timestamps: newTimestamps })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+      
+    return { success: !error, error };
   }
 
   async upsertTables(tables: Table[]): Promise<{ success: boolean; error: any }> {
@@ -603,21 +660,42 @@ export class SupabaseService {
   }
 
   // --- Inventory Movement ---
-  async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string): Promise<{ success: boolean; error: any }> {
+  async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string, expirationDate?: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     // RPCs need to be secured with user_id inside the function definition in Supabase SQL Editor
-    const { error } = await supabase.rpc('adjust_stock', {
+    const { error: rpcError } = await supabase.rpc('adjust_stock', {
         p_ingredient_id: ingredientId,
         p_quantity_change: quantityChange,
         p_reason: reason
     });
-    return { success: !error, error };
+
+    if (rpcError) {
+        return { success: false, error: rpcError };
+    }
+    
+    // If it's a stock entry and an expiration date is provided, update it.
+    if (quantityChange > 0 && expirationDate) {
+        const { error: updateError } = await supabase.from('ingredients').update({ expiration_date: expirationDate }).eq('id', ingredientId);
+        if (updateError) {
+            console.error(`Stock was adjusted for ${ingredientId}, but failed to update expiration date.`, updateError);
+            // The main operation succeeded, so we don't return an error, but we log it.
+        }
+    }
+
+    return { success: true, error: null };
   }
 
   // --- Recipe & Technical Sheet Management ---
-  async addRecipe(recipeData: Omit<Recipe, 'id' | 'created_at' | 'is_available' | 'price' | 'hasStock' | 'user_id'>): Promise<{ success: boolean; error: any, data: Recipe | null }> {
+  async addRecipeCategory(name: string): Promise<{ success: boolean; error: any, data: Category | null }> {
+    const userId = this.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
+    const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
+    return { success: !error, error, data };
+  }
+
+  async addRecipe(recipeData: Partial<Omit<Recipe, 'id' | 'created_at' | 'is_available' | 'price' | 'hasStock' | 'user_id'>>): Promise<{ success: boolean; error: any, data: Recipe | null }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
 
@@ -629,6 +707,23 @@ export class SupabaseService {
     return { success: !error, error, data };
   }
 
+  async deleteRecipe(recipeId: string): Promise<{ success: boolean; error: any }> {
+    const userId = this.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    // Order matters: ingredients -> preparations -> recipe
+    const { error: ingError } = await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId).eq('user_id', userId);
+    if (ingError) return { success: false, error: { message: `Failed to delete ingredients: ${ingError.message}` } };
+
+    const { error: prepError } = await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId).eq('user_id', userId);
+    if (prepError) return { success: false, error: { message: `Failed to delete preparations: ${prepError.message}` } };
+
+    const { error: recipeError } = await supabase.from('recipes').delete().eq('id', recipeId).eq('user_id', userId);
+    if (recipeError) return { success: false, error: { message: `Failed to delete recipe: ${recipeError.message}` } };
+
+    return { success: true, error: null };
+  }
+
   async updateRecipeAvailability(recipeId: string, is_available: boolean): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
@@ -636,7 +731,8 @@ export class SupabaseService {
     return { success: !error, error };
   }
 
-  async updateRecipe(recipeId: string, updates: { operational_cost?: number; price?: number, prep_time_in_minutes?: number }): Promise<{ success: boolean; error: any }> {
+  // FIX: Allow updating 'description' to support AI-generated content.
+  async updateRecipe(recipeId: string, updates: { description?: string; operational_cost?: number; price?: number, prep_time_in_minutes?: number }): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const { error } = await supabase.from('recipes').update(updates).eq('id', recipeId).eq('user_id', userId);
@@ -706,8 +802,21 @@ export class SupabaseService {
               }));
       });
 
-      if (allIngredientsToInsert.length > 0) {
-          const { error: insertIngredientsError } = await supabase.from('recipe_ingredients').insert(allIngredientsToInsert);
+      // FIX: Aggregate ingredients that might appear in multiple preparations to avoid duplicate key error.
+      const uniqueIngredients = new Map<string, typeof allIngredientsToInsert[0]>();
+      for (const ingredient of allIngredientsToInsert) {
+          const existing = uniqueIngredients.get(ingredient.ingredient_id);
+          if (existing) {
+              existing.quantity += ingredient.quantity;
+          } else {
+              uniqueIngredients.set(ingredient.ingredient_id, { ...ingredient });
+          }
+      }
+      const finalIngredientsToInsert = Array.from(uniqueIngredients.values());
+
+
+      if (finalIngredientsToInsert.length > 0) {
+          const { error: insertIngredientsError } = await supabase.from('recipe_ingredients').insert(finalIngredientsToInsert);
           if (insertIngredientsError) return { success: false, error: insertIngredientsError };
       }
 

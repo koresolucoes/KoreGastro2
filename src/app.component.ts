@@ -16,4 +16,6 @@ export class AppComponent {
   // Inject services here to ensure they are initialized at the root level.
   authService = inject(AuthService);
   supabaseService = inject(SupabaseService);
+
+  currentUser = this.authService.currentUser;
 }

@@ -45,9 +45,17 @@
                   [ngClass]="getItemStatusClass(item.status)">
 
                   @if(item.isCritical) {
-                    <div class="flex items-center gap-2 mb-2 text-red-300">
-                      <svg class="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                      <span class="font-bold uppercase text-sm">Atenção Especial</span>
+                    <div class="flex items-center justify-between gap-2 mb-2 text-red-300">
+                      <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                        <span class="font-bold uppercase text-sm">Atenção Especial</span>
+                      </div>
+                      @if(item.attention_acknowledged) {
+                        <span class="flex items-center gap-1 text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded-full">
+                          <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                          Ciente
+                        </span>
+                      }
                     </div>
                   }
 
@@ -59,6 +67,14 @@
                   </div>
                   @if (item.notes) {
                     <p class="text-sm mt-1 italic" [class.text-red-300]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p>
+                  }
+
+                  @if(item.isCritical && !item.attention_acknowledged) {
+                    <div class="mt-3 pt-3 border-t border-red-500/20">
+                      <button (click)="acknowledgeAttention(item, $event)" class="w-full text-center py-1.5 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-colors">
+                        Ciente da Atenção Especial
+                      </button>
+                    </div>
                   }
                 </li>
               }

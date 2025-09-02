@@ -18,9 +18,5 @@ bootstrapApplication(AppComponent, {
     provideRouter(APP_ROUTES, withHashLocation()),
     // Set the default locale for the application
     { provide: LOCALE_ID, useValue: 'pt-BR' },
-    // Provide DatePipe at the root level so it can be injected
-    DatePipe,
-    CurrencyPipe,
-    DecimalPipe,
   ],
 }).catch(err => console.error(err));

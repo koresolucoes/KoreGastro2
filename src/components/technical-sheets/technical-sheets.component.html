@@ -1,5 +1,6 @@
 
 
+
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
     <div>
@@ -66,28 +67,39 @@
             <p class="text-sm text-gray-400 mt-1">{{ recipeCategoryMap().get(recipe.category_id) }}</p>
           </div>
           <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center text-sm">
-            <div class="text-gray-300">
-                <span class="font-medium">{{ status?.count || 0 }}</span> Ingredientes
-                <span class="text-gray-400 mx-2">|</span>
-                <span class="font-semibold" [class.text-yellow-400]="!recipe.price || recipe.price === 0">
-                    {{ recipe.price > 0 ? (recipe.price | currency:'BRL') : 'A definir' }}
-                </span>
-            </div>
-             <div class="flex items-center space-x-2" (click)="$event.stopPropagation()">
-                <button 
-                    (click)="toggleAvailability(recipe)" 
-                    [disabled]="!recipe.hasStock"
-                    [class.bg-green-600]="recipe.is_available" 
-                    [class.bg-gray-600]="!recipe.is_available"
-                    class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    [title]="!recipe.hasStock ? 'Prato sem estoque, não pode ser ativado' : (recipe.is_available ? 'Marcar como indisponível' : 'Marcar como disponível')">
-                    <span 
-                        [class.translate-x-5]="recipe.is_available" 
-                        [class.translate-x-0]="!recipe.is_available"
-                        class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200">
+            @if(recipePendingDeletion()?.id === recipe.id) {
+                <div class="flex gap-2 justify-center items-center w-full">
+                    <span class="text-sm text-red-300 font-semibold">Tem certeza?</span>
+                    <button (click)="confirmDeleteRecipe()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim, Deletar</button>
+                    <button (click)="cancelDeleteRecipe()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                </div>
+            } @else {
+                <div class="text-gray-300">
+                    <span class="font-medium">{{ status?.count || 0 }}</span> Ingredientes
+                    <span class="text-gray-400 mx-2">|</span>
+                    <span class="font-semibold" [class.text-yellow-400]="!recipe.price || recipe.price === 0">
+                        {{ recipe.price > 0 ? (recipe.price | currency:'BRL') : 'A definir' }}
                     </span>
-                </button>
-            </div>
+                </div>
+                 <div class="flex items-center space-x-2" (click)="$event.stopPropagation()">
+                    <button (click)="requestDeleteRecipe(recipe)" class="text-gray-500 hover:text-red-400" title="Deletar Prato">
+                      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.02-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                    </button>
+                    <button 
+                        (click)="toggleAvailability(recipe)" 
+                        [disabled]="!recipe.hasStock"
+                        [class.bg-green-600]="recipe.is_available" 
+                        [class.bg-gray-600]="!recipe.is_available"
+                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        [title]="!recipe.hasStock ? 'Prato sem estoque, não pode ser ativado' : (recipe.is_available ? 'Marcar como indisponível' : 'Marcar como disponível')">
+                        <span 
+                            [class.translate-x-5]="recipe.is_available" 
+                            [class.translate-x-0]="!recipe.is_available"
+                            class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200">
+                        </span>
+                    </button>
+                </div>
+            }
           </div>
         </div>
       }
@@ -110,11 +122,22 @@
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
       <div class="p-4 border-b border-gray-700">
         <div class="flex justify-between items-center">
-            <div>
+            <div class="flex-1">
                 <h3 class="text-xl font-bold text-white">Ficha Técnica</h3>
                 <p class="text-gray-400">{{ recipe.name }}</p>
             </div>
-            <button (click)="closeTechSheetModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <div class="flex items-center gap-3">
+              <button (click)="regenerateTechSheetWithAI()" [disabled]="isRegeneratingWithAI()" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-50 disabled:cursor-wait">
+                @if(isRegeneratingWithAI()) {
+                  <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <span>Gerando...</span>
+                } @else {
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+                  <span>Preencher com IA</span>
+                }
+              </button>
+              <button (click)="closeTechSheetModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
         </div>
       </div>
       <div class="p-6 flex-1 flex flex-col overflow-y-auto space-y-4 -mr-2 pr-2">
@@ -275,32 +298,45 @@
         <button (click)="closeAddRecipeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Prato *</label>
-          <input type="text" [value]="newRecipeForm().name" (input)="updateNewRecipeFormField('name', $event)" placeholder="Ex: Filé Mignon com Fritas" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Descrição (opcional)</label>
-          <textarea rows="3" [value]="newRecipeForm().description" (input)="updateNewRecipeFormField('description', $event)" placeholder="Breve descrição do prato para o cardápio" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <fieldset [disabled]="isGeneratingTechSheet()">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Categoria *</label>
-              <select (change)="updateNewRecipeFormField('category_id', $event)" [value]="newRecipeForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                @for (cat of recipeCategories(); track cat.id) {
-                  <option [value]="cat.id">{{ cat.name }}</option>
-                }
-              </select>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Prato *</label>
+              <input type="text" [value]="newRecipeForm().name" (input)="updateNewRecipeFormField('name', $event)" placeholder="Ex: Filé Mignon com Fritas" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (minutos) *</label>
-              <input type="number" [value]="newRecipeForm().prep_time_in_minutes" (input)="updateNewRecipeFormField('prep_time_in_minutes', $event)" placeholder="15" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-medium text-gray-300 mb-1">Descrição (opcional)</label>
+              <textarea rows="3" [value]="newRecipeForm().description" (input)="updateNewRecipeFormField('description', $event)" placeholder="Breve descrição do prato para o cardápio" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
-        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Categoria *</label>
+                  <select (change)="updateNewRecipeFormField('category_id', $event)" [value]="newRecipeForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    @for (cat of recipeCategories(); track cat.id) {
+                      <option [value]="cat.id">{{ cat.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (minutos) *</label>
+                  <input type="number" [value]="newRecipeForm().prep_time_in_minutes" (input)="updateNewRecipeFormField('prep_time_in_minutes', $event)" placeholder="15" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </fieldset>
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-         <button (click)="closeAddRecipeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-         <button (click)="saveNewRecipe()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar e Montar Ficha</button>
+         <button (click)="closeAddRecipeModal()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50">Cancelar</button>
+         <button (click)="saveNewRecipe()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50">Salvar e Montar Manualmente</button>
+         <button (click)="generateTechSheetWithAI()" [disabled]="isGeneratingTechSheet() || !newRecipeForm().name.trim()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            @if(isGeneratingTechSheet()) {
+              <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Gerando...</span>
+            } @else {
+              <span>Gerar com IA</span>
+            }
+         </button>
       </div>
     </div>
   </div>

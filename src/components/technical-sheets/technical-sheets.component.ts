@@ -1,11 +1,13 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { Recipe, RecipeIngredient, Ingredient, Category, IngredientUnit, Station, RecipePreparation } from '../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from '../../services/auth.service';
+import { AiRecipeService } from '../../services/ai-recipe.service';
 
 interface NewRecipeForm {
   name: string;
@@ -24,6 +26,7 @@ interface NewRecipeForm {
 export class TechnicalSheetsComponent {
   private dataService = inject(SupabaseService);
   private authService = inject(AuthService);
+  private aiRecipeService = inject(AiRecipeService);
 
   // Data Signals from Service
   recipesWithStockStatus = this.dataService.recipesWithStockStatus;
@@ -36,6 +39,9 @@ export class TechnicalSheetsComponent {
   // Filter and Search
   searchTerm = signal('');
   selectedCategoryId = signal<string | 'all'>('all');
+
+  // Deletion management
+  recipePendingDeletion = signal<Recipe | null>(null);
 
   // --- Computed properties for display ---
   recipeCategoryMap = computed(() => {
@@ -85,6 +91,7 @@ export class TechnicalSheetsComponent {
   operationalCost = signal<number>(0);
   techSheetSellingPrice = signal<number>(0);
   prepTimeInMinutes = signal<number>(0);
+  isRegeneratingWithAI = signal(false);
 
   filteredIngredientsForTechSheet = computed(() => {
     const term = this.techSheetSearchTerm().toLowerCase();
@@ -126,37 +133,41 @@ export class TechnicalSheetsComponent {
     return this.ingredients().find(i => i.id === ingredientId);
   }
 
-  openTechSheetModal(recipe: Recipe) {
+  openTechSheetModal(recipe: Recipe, initialPreparations?: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[]) {
     this.selectedRecipeForTechSheet.set(recipe);
     this.operationalCost.set(recipe.operational_cost || 0);
     this.techSheetSellingPrice.set(recipe.price || 0);
     this.prepTimeInMinutes.set(recipe.prep_time_in_minutes || 15);
-    
-    // FIX: Get user ID to add to new preparation object.
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return;
 
-    let preps = this.dataService.getRecipePreparations(recipe.id);
-    const ingredientsForRecipe = this.dataService.getRecipeIngredients(recipe.id);
+    if (initialPreparations) {
+        this.currentPreparations.set(initialPreparations);
+    } else {
+        const userId = this.authService.currentUser()?.id;
+        if (!userId) return;
 
-    if (preps.length === 0) {
-        preps.push({
-            id: `temp-${uuidv4()}`,
-            recipe_id: recipe.id,
-            name: 'Preparação Principal',
-            station_id: this.stations()[0]?.id || '',
-            display_order: 0,
-            created_at: new Date().toISOString(),
-            user_id: userId,
-        });
+        let preps = this.dataService.getRecipePreparations(recipe.id);
+        const ingredientsForRecipe = this.dataService.getRecipeIngredients(recipe.id);
+
+        if (preps.length === 0) {
+            preps.push({
+                id: `temp-${uuidv4()}`,
+                recipe_id: recipe.id,
+                name: 'Preparação Principal',
+                station_id: this.stations()[0]?.id || '',
+                display_order: 0,
+                created_at: new Date().toISOString(),
+                user_id: userId,
+            });
+        }
+
+        const prepsWithIngredients = preps.map(p => ({
+            ...p,
+            recipe_ingredients: ingredientsForRecipe.filter(ri => ri.preparation_id === p.id)
+        }));
+
+        this.currentPreparations.set(JSON.parse(JSON.stringify(prepsWithIngredients)));
     }
-
-    const prepsWithIngredients = preps.map(p => ({
-        ...p,
-        recipe_ingredients: ingredientsForRecipe.filter(ri => ri.preparation_id === p.id)
-    }));
     
-    this.currentPreparations.set(JSON.parse(JSON.stringify(prepsWithIngredients)));
     this.isTechSheetModalOpen.set(true);
   }
 
@@ -265,6 +276,23 @@ export class TechnicalSheetsComponent {
     }
   }
 
+  async regenerateTechSheetWithAI() {
+      const recipe = this.selectedRecipeForTechSheet();
+      if (!recipe) return;
+
+      this.isRegeneratingWithAI.set(true);
+      try {
+          const aiResult = await this.aiRecipeService.generateTechSheetForRecipe(recipe);
+          this.currentPreparations.set(aiResult.preparations);
+          this.operationalCost.set(aiResult.operational_cost);
+          this.prepTimeInMinutes.set(aiResult.prep_time_in_minutes);
+      } catch (error) {
+          alert(`Ocorreu um erro ao gerar a ficha técnica com IA: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+          this.isRegeneratingWithAI.set(false);
+      }
+  }
+
   // --- Quick Add Ingredient Modal ---
   isNewIngredientModalOpen = signal(false);
   newIngredientName = signal('');
@@ -323,6 +351,8 @@ export class TechnicalSheetsComponent {
     description: '',
     prep_time_in_minutes: 15
   });
+  isGeneratingTechSheet = signal(false);
+
 
   openAddRecipeModal() {
     this.newRecipeForm.set({
@@ -372,6 +402,31 @@ export class TechnicalSheetsComponent {
     }
   }
 
+  async generateTechSheetWithAI() {
+    const form = this.newRecipeForm();
+    if (!form.name.trim()) {
+        alert('Por favor, insira o nome do prato para gerar a ficha técnica.');
+        return;
+    }
+
+    this.isGeneratingTechSheet.set(true);
+
+    try {
+        // The service does all the heavy lifting: checks/creates stations, categories, ingredients, and the recipe shell.
+        const { recipe, preparations } = await this.aiRecipeService.generateFullRecipe(form.name);
+        
+        // Now, we have a created recipe and the tech sheet data ready for the modal.
+        this.closeAddRecipeModal();
+        this.openTechSheetModal(recipe, preparations);
+
+    } catch (error) {
+        alert(`Ocorreu um erro ao gerar a ficha técnica com IA: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(error);
+    } finally {
+        this.isGeneratingTechSheet.set(false);
+    }
+  }
+
   // --- Availability Management ---
   async toggleAvailability(recipe: Recipe) {
     if (!recipe.hasStock) return;
@@ -380,6 +435,26 @@ export class TechnicalSheetsComponent {
     const { success, error } = await this.dataService.updateRecipeAvailability(recipe.id, newAvailability);
     if (!success) {
       alert(`Falha ao atualizar a disponibilidade. Erro: ${error?.message}`);
+    }
+  }
+
+  // --- Deletion ---
+  requestDeleteRecipe(recipe: Recipe) {
+    this.recipePendingDeletion.set(recipe);
+  }
+
+  cancelDeleteRecipe() {
+    this.recipePendingDeletion.set(null);
+  }
+  
+  async confirmDeleteRecipe() {
+    const recipeToDelete = this.recipePendingDeletion();
+    if (recipeToDelete) {
+        const { success, error } = await this.dataService.deleteRecipe(recipeToDelete.id);
+        if (!success) {
+            alert(`Falha ao deletar o prato. Erro: ${error?.message}`);
+        }
+        this.recipePendingDeletion.set(null);
     }
   }
 }
