@@ -22,13 +22,6 @@
       background: #6b7280; /* bg-gray-500 */
     }
   </style>
-<script>
-  // Polyfill `process` for browser environments.
-  // This is necessary to prevent a "process is not defined" runtime error.
-  // We expect Vercel's build process to perform a static replacement of any
-  // `process.env.VAR_NAME` occurrences with the actual environment variable value.
-  window.process = window.process || { env: {} };
-</script>
 <script type="importmap">
 {
   "imports": {

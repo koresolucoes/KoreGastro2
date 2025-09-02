@@ -1,13 +1,14 @@
 
 
 
+
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 import { Recipe, RecipePreparation, RecipeIngredient, Category } from '../models/db.models';
 import { supabase } from './supabase-client';
-import { environment } from '../config/environment';
+import { appConfig } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +22,7 @@ export class AiRecipeService {
     this.dataService = inject(SupabaseService);
     this.authService = inject(AuthService);
     
-    this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
+    this.ai = new GoogleGenAI({ apiKey: appConfig.geminiApiKey });
   }
   
   async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] }> {

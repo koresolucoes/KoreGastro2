@@ -1,6 +1,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
@@ -8,7 +9,7 @@ import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } 
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
-import { environment } from '../../../config/environment';
+import { appConfig } from '../../../config/environment';
 
 interface CartItem {
     id: string;
@@ -84,7 +85,7 @@ export class OrderPanelComponent {
   });
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
+    this.ai = new GoogleGenAI({ apiKey: appConfig.geminiApiKey });
 
     // Reset cart when table changes
     effect(() => {
