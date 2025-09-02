@@ -1,8 +1,8 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { Employee, Transaction } from '../../models/db.models';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 type ReportPeriod = 'day' | 'week' | 'month';
 
@@ -21,13 +21,13 @@ interface EmployeePerformance {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PerformanceComponent implements OnInit {
-    private dataService = inject(SupabaseService);
+    private stateService = inject(SupabaseStateService);
 
     period = signal<ReportPeriod>('day');
     isLoading = signal(true);
     
-    tipTransactions = this.dataService.performanceTipTransactions;
-    employees = this.dataService.employees;
+    tipTransactions = this.stateService.performanceTipTransactions;
+    employees = this.stateService.employees;
 
     ngOnInit() {
         this.loadData();
@@ -42,7 +42,7 @@ export class PerformanceComponent implements OnInit {
         this.isLoading.set(true);
         try {
             const { startDate, endDate } = this.getDateRange();
-            await this.dataService.fetchPerformanceDataForPeriod(startDate, endDate);
+            await this.stateService.fetchPerformanceDataForPeriod(startDate, endDate);
         } catch (error) {
             console.error("Error loading performance data", error);
         } finally {
@@ -62,8 +62,7 @@ export class PerformanceComponent implements OnInit {
                 break;
             case 'week':
                 const dayOfWeek = now.getDay();
-                const newNow = new Date();
-                startDate = new Date(newNow.setDate(newNow.getDate() - dayOfWeek));
+                startDate = new Date(new Date().setDate(now.getDate() - dayOfWeek));
                 startDate.setHours(0, 0, 0, 0);
                 break;
             case 'month':

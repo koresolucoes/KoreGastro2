@@ -2,8 +2,9 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier } from '../../models/db.models';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { InventoryDataService } from '../../services/inventory-data.service';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -26,17 +27,17 @@ type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventoryComponent {
-    dataService = inject(SupabaseService);
-    ingredients = this.dataService.ingredients;
-    categories = this.dataService.ingredientCategories;
-    suppliers = this.dataService.suppliers;
+    stateService = inject(SupabaseStateService);
+    inventoryDataService = inject(InventoryDataService);
     
-    // CRUD Modal and Form management
+    ingredients = this.stateService.ingredients;
+    categories = this.stateService.ingredientCategories;
+    suppliers = this.stateService.suppliers;
+    
     isModalOpen = signal(false);
     editingIngredient = signal<Partial<Ingredient> | null>(null);
     ingredientForm = signal<Partial<Ingredient>>(EMPTY_INGREDIENT);
     
-    // Adjustment Modal
     isAdjustmentModalOpen = signal(false);
     adjustmentIngredient = signal<Ingredient | null>(null);
     adjustmentQuantity = signal(0);
@@ -46,10 +47,8 @@ export class InventoryComponent {
     adjustmentSupplierId = signal<string | null>(null);
     adjustmentExpirationDate = signal<string | null>(null);
 
-    // Deletion management
     ingredientPendingDeletion = signal<Ingredient | null>(null);
 
-    // Filter states
     activeDashboardFilter = signal<DashboardFilter>('all');
     activeCategoryFilter = signal<string | null>(null);
     searchTerm = signal('');
@@ -58,16 +57,11 @@ export class InventoryComponent {
     entryReasons = ['Compra de Fornecedor', 'Devolução', 'Correção de Contagem', 'Outro'];
     exitReasons = ['Perda / Quebra', 'Vencimento', 'Consumo Interno', 'Outro'];
 
-    // Dashboard computed values
-    totalInventoryCost = computed(() => {
-        return this.ingredients().reduce((sum, item) => sum + (item.stock * item.cost), 0);
-    });
+    totalInventoryCost = computed(() => this.ingredients().reduce((sum, item) => sum + (item.stock * item.cost), 0));
     lowStockCount = computed(() => this.ingredients().filter(i => this.isLowStock(i.stock, i.min_stock)).length);
     expiringSoonCount = computed(() => this.ingredients().filter(i => this.isExpiringSoon(i.expiration_date)).length);
     stagnantStockCount = computed(() => this.ingredients().filter(i => this.isStagnant(i.last_movement_at)).length);
 
-
-    // Filtering logic
     filteredIngredients = computed(() => {
         const dashboardFilter = this.activeDashboardFilter();
         const categoryFilter = this.activeCategoryFilter();
@@ -80,24 +74,13 @@ export class InventoryComponent {
 
         let filteredByDashboard: Ingredient[];
         switch (dashboardFilter) {
-            case 'low_stock':
-                filteredByDashboard = ingredients.filter(i => this.isLowStock(i.stock, i.min_stock));
-                break;
-            case 'expiring_soon':
-                filteredByDashboard = ingredients.filter(i => this.isExpiringSoon(i.expiration_date));
-                break;
-            case 'stagnant':
-                filteredByDashboard = ingredients.filter(i => this.isStagnant(i.last_movement_at));
-                break;
-            case 'all':
-            default:
-                filteredByDashboard = ingredients;
+            case 'low_stock': filteredByDashboard = ingredients.filter(i => this.isLowStock(i.stock, i.min_stock)); break;
+            case 'expiring_soon': filteredByDashboard = ingredients.filter(i => this.isExpiringSoon(i.expiration_date)); break;
+            case 'stagnant': filteredByDashboard = ingredients.filter(i => this.isStagnant(i.last_movement_at)); break;
+            default: filteredByDashboard = ingredients;
         }
         
-        if (!term) {
-            return filteredByDashboard;
-        }
-
+        if (!term) return filteredByDashboard;
         return filteredByDashboard.filter(i => i.name.toLowerCase().includes(term));
     });
     
@@ -108,41 +91,27 @@ export class InventoryComponent {
         return ingredient.stock + change;
     });
 
-    setDashboardFilter(filter: DashboardFilter) {
-        this.activeDashboardFilter.set(filter);
-    }
+    setDashboardFilter(filter: DashboardFilter) { this.activeDashboardFilter.set(filter); }
+    setCategoryFilter(categoryId: string | null) { this.activeCategoryFilter.set(categoryId); }
 
-    setCategoryFilter(categoryId: string | null) {
-        this.activeCategoryFilter.set(categoryId);
-    }
-
-    isLowStock(stock: number, minStock: number): boolean {
-        return stock < minStock;
-    }
-
+    isLowStock(stock: number, minStock: number): boolean { return stock < minStock; }
     isExpiringSoon(expirationDate?: string | null): boolean {
         if (!expirationDate) return false;
         const today = new Date();
-        const sevenDaysFromNow = new Date(today);
+        const sevenDaysFromNow = new Date();
         sevenDaysFromNow.setDate(today.getDate() + 7);
         const expDate = new Date(expirationDate);
         return expDate <= sevenDaysFromNow && expDate >= today;
     }
-
     isStagnant(lastMovementDate?: string | null): boolean {
-        if (!lastMovementDate) return true; // Never moved
+        if (!lastMovementDate) return true;
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         return new Date(lastMovementDate) < thirtyDaysAgo;
     }
 
-    // --- CRUD Modal ---
     openAddModal() {
-        this.ingredientForm.set({ 
-            ...EMPTY_INGREDIENT, 
-            category_id: this.categories()[0]?.id ?? null,
-            supplier_id: this.suppliers()[0]?.id ?? null,
-        });
+        this.ingredientForm.set({ ...EMPTY_INGREDIENT, category_id: this.categories()[0]?.id ?? null, supplier_id: this.suppliers()[0]?.id ?? null });
         this.editingIngredient.set(null);
         this.isModalOpen.set(true);
     }
@@ -161,16 +130,11 @@ export class InventoryComponent {
     updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'ingredient_categories' | 'suppliers'>, value: string) {
         this.ingredientForm.update(form => {
             const newForm = { ...form };
-            if (field === 'category_id' || field === 'supplier_id') {
-                // FIX: Treat an empty string from a select as null to prevent DB errors for UUID fields.
-                newForm[field] = (value === 'null' || value === '') ? null : value;
-            } else if (field === 'name' || field === 'unit' || field === 'expiration_date' || field === 'last_movement_at') {
-                newForm[field] = value as any;
-            } else if (field === 'stock' || field === 'cost' || field === 'min_stock') {
+            if (field === 'category_id' || field === 'supplier_id') newForm[field] = (value === 'null' || value === '') ? null : value;
+            else if (field === 'name' || field === 'unit' || field === 'expiration_date' || field === 'last_movement_at') newForm[field] = value as any;
+            else if (field === 'stock' || field === 'cost' || field === 'min_stock') {
                 const numValue = parseFloat(value);
-                if (!isNaN(numValue)) {
-                    newForm[field] = numValue;
-                }
+                if (!isNaN(numValue)) newForm[field] = numValue;
             }
             return newForm;
         });
@@ -178,30 +142,17 @@ export class InventoryComponent {
 
     async saveIngredient() {
         const formValue = this.ingredientForm();
-        if (!formValue.name || formValue.name.trim() === '') {
-            alert('O nome do ingrediente é obrigatório.');
-            return;
-        }
+        if (!formValue.name?.trim()) { alert('O nome do ingrediente é obrigatório.'); return; }
 
-        let result;
-        const { ingredient_categories, suppliers, ...dbFormValue } = formValue; // Remove joined data before sending
+        const { ingredient_categories, suppliers, ...dbFormValue } = formValue;
+        const result = this.editingIngredient()?.id
+            ? await this.inventoryDataService.updateIngredient({ ...dbFormValue, id: this.editingIngredient()!.id! })
+            : await this.inventoryDataService.addIngredient(dbFormValue);
 
-        if (this.editingIngredient() && this.editingIngredient()!.id) {
-            const ingredientToUpdate = { ...dbFormValue, id: this.editingIngredient()!.id! };
-            result = await this.dataService.updateIngredient(ingredientToUpdate);
-        } else {
-            const { id, created_at, ...newIngredientData } = dbFormValue;
-            result = await this.dataService.addIngredient(newIngredientData as Omit<Ingredient, 'id' | 'created_at'>);
-        }
-
-        if (result.success) {
-            this.closeModal();
-        } else {
-            alert(`Falha ao salvar o ingrediente. Erro: ${result.error?.message}`);
-        }
+        if (result.success) this.closeModal();
+        else alert(`Falha ao salvar. Erro: ${result.error?.message}`);
     }
 
-    // --- Adjustment Modal ---
     openAdjustmentModal(ingredient: Ingredient) {
         this.adjustmentIngredient.set(ingredient);
         this.adjustmentQuantity.set(0);
@@ -213,9 +164,7 @@ export class InventoryComponent {
         this.isAdjustmentModalOpen.set(true);
     }
 
-    closeAdjustmentModal() {
-        this.isAdjustmentModalOpen.set(false);
-    }
+    closeAdjustmentModal() { this.isAdjustmentModalOpen.set(false); }
     
     setAdjustmentType(type: 'entry' | 'exit') {
         this.adjustmentType.set(type);
@@ -228,62 +177,31 @@ export class InventoryComponent {
     async handleAdjustStock() {
         const ingredient = this.adjustmentIngredient();
         const quantity = this.adjustmentQuantity();
-        
-        if (!ingredient || quantity <= 0) {
-            alert('A quantidade do ajuste deve ser maior que zero.');
-            return;
-        }
-
-        if (this.adjustmentType() === 'exit' && quantity > ingredient.stock) {
-            alert('A quantidade de saída não pode ser maior que o estoque atual.');
-            return;
-        }
+        if (!ingredient || quantity <= 0) { alert('A quantidade deve ser maior que zero.'); return; }
+        if (this.adjustmentType() === 'exit' && quantity > ingredient.stock) { alert('Saída maior que o estoque.'); return; }
 
         let finalReason = this.adjustmentReason();
         if (finalReason === 'Outro') {
             finalReason = this.adjustmentCustomReason().trim();
-            if (!finalReason) {
-                alert('Por favor, especifique o motivo do ajuste.');
-                return;
-            }
-        } else if (finalReason === 'Compra de Fornecedor') {
-            const supplierId = this.adjustmentSupplierId();
-            if (supplierId) {
-                const supplierName = this.suppliers().find(s => s.id === supplierId)?.name;
-                if (supplierName) {
-                    finalReason = `${finalReason} - ${supplierName}`;
-                }
-            }
+            if (!finalReason) { alert('Especifique o motivo.'); return; }
+        } else if (finalReason === 'Compra de Fornecedor' && this.adjustmentSupplierId()) {
+            const supplierName = this.suppliers().find(s => s.id === this.adjustmentSupplierId())?.name;
+            if (supplierName) finalReason = `${finalReason} - ${supplierName}`;
         }
         
-        const quantityChange = this.adjustmentType() === 'entry' ? quantity : -quantity;
-        const expirationDate = this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null;
-
-        const result = await this.dataService.adjustIngredientStock(ingredient.id, quantityChange, finalReason, expirationDate);
-        if (result.success) {
-            this.closeAdjustmentModal();
-        } else {
-            alert(`Falha ao ajustar o estoque. Erro: ${result.error?.message}`);
-        }
+        const result = await this.inventoryDataService.adjustIngredientStock(ingredient.id, this.adjustmentType() === 'entry' ? quantity : -quantity, finalReason, this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null);
+        if (result.success) this.closeAdjustmentModal();
+        else alert(`Falha ao ajustar estoque. Erro: ${result.error?.message}`);
     }
 
-
-    // --- Deletion ---
-    requestDeleteIngredient(ingredient: Ingredient) {
-        this.ingredientPendingDeletion.set(ingredient);
-    }
-
-    cancelDeleteIngredient() {
-        this.ingredientPendingDeletion.set(null);
-    }
+    requestDeleteIngredient(ingredient: Ingredient) { this.ingredientPendingDeletion.set(ingredient); }
+    cancelDeleteIngredient() { this.ingredientPendingDeletion.set(null); }
     
     async confirmDeleteIngredient() {
-        const ingredientToDelete = this.ingredientPendingDeletion();
-        if (ingredientToDelete) {
-            const result = await this.dataService.deleteIngredient(ingredientToDelete.id);
-            if (!result.success) {
-                alert(`Falha ao deletar o ingrediente. Erro: ${result.error?.message}`);
-            }
+        const ingredient = this.ingredientPendingDeletion();
+        if (ingredient) {
+            const result = await this.inventoryDataService.deleteIngredient(ingredient.id);
+            if (!result.success) alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             this.ingredientPendingDeletion.set(null);
         }
     }

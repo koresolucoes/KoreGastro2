@@ -1,13 +1,13 @@
 
 
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { PrintingService } from '../../services/printing.service';
 import { Category, Order, Recipe, Transaction, CashierClosing } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { CashierDataService } from '../../services/cashier-data.service';
 
 type CashierView = 'quickSale' | 'cashDrawer' | 'reprint';
 
@@ -35,16 +35,17 @@ interface PaymentSummary {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CashierComponent {
-  dataService = inject(SupabaseService);
+  stateService = inject(SupabaseStateService);
+  cashierDataService = inject(CashierDataService);
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
 
   view: WritableSignal<CashierView> = signal('quickSale');
-  isLoading = computed(() => !this.dataService.isDataLoaded());
+  isLoading = computed(() => !this.stateService.isDataLoaded());
 
   // --- Quick Sale Signals ---
-  categories = this.dataService.categories;
-  recipes = this.dataService.recipesWithStockStatus;
+  categories = this.stateService.categories;
+  recipes = this.stateService.recipesWithStockStatus;
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
   quickSaleCart = signal<CartItem[]>([]);
@@ -61,8 +62,8 @@ export class CashierComponent {
   newExpenseAmount = signal<number | null>(null);
 
   // --- Data Signals for Views ---
-  completedOrders = this.dataService.completedOrders;
-  transactions = this.dataService.transactions;
+  completedOrders = this.stateService.completedOrders;
+  transactions = this.stateService.transactions;
   
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
@@ -150,7 +151,7 @@ export class CashierComponent {
   async finalizePayment() {
     const cart = this.quickSaleCart();
     if (!cart || !this.isPaymentComplete()) return;
-    const { success, error } = await this.dataService.finalizeQuickSalePayment(cart, this.payments());
+    const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cart, this.payments());
     if (success) {
       alert('Venda registrada com sucesso!');
       this.closePaymentModal();
@@ -188,9 +189,7 @@ export class CashierComponent {
 
   expectedCashInDrawer = computed(() => {
     const cashRevenue = this.revenueSummary().find(d => d.method === 'Dinheiro')?.total ?? 0;
-    // Assuming expenses are paid in cash. A more complex system would track payment method for expenses too.
-    const cashExpenses = this.totalExpenses();
-    return this.openingBalance() + cashRevenue - cashExpenses;
+    return this.openingBalance() + cashRevenue - this.totalExpenses();
   });
 
   cashDifference = computed(() => {
@@ -206,7 +205,7 @@ export class CashierComponent {
         alert('Por favor, preencha a descrição e um valor válido para a despesa.');
         return;
     }
-    const { success, error } = await this.dataService.logTransaction(description, amount, 'Despesa');
+    const { success, error } = await this.cashierDataService.logTransaction(description, amount, 'Despesa');
     if (success) {
         this.newExpenseDescription.set('');
         this.newExpenseAmount.set(null);
@@ -243,13 +242,12 @@ export class CashierComponent {
         notes: this.closingNotes().trim()
     };
     
-    const { success, error, data: savedClosing } = await this.dataService.closeCashier(closingData as any);
+    const { success, error, data: savedClosing } = await this.cashierDataService.closeCashier(closingData as any);
     
     if (success && savedClosing) {
         this.printClosingReport(savedClosing);
         this.closeClosingModal();
         alert('Caixa fechado com sucesso!');
-        // Data for the new session will be loaded automatically by the service's realtime listener for transactions.
     } else {
         alert(`Falha ao fechar o caixa. Erro: ${error?.message}`);
     }

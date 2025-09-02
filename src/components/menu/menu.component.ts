@@ -1,9 +1,9 @@
 
 import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { Recipe } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 interface MenuGroup {
   categoryName: string;
@@ -18,7 +18,7 @@ interface MenuGroup {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuComponent {
-  private dataService = inject(SupabaseService);
+  private stateService = inject(SupabaseStateService);
   private pricingService = inject(PricingService);
 
   searchTerm = signal('');
@@ -26,7 +26,7 @@ export class MenuComponent {
   onlineMenu = computed(() => {
     const term = this.searchTerm().toLowerCase();
     
-    let availableRecipes = this.dataService.recipesWithStockStatus()
+    let availableRecipes = this.stateService.recipesWithStockStatus()
       .filter(recipe => recipe.is_available && recipe.hasStock);
 
     if (term) {
@@ -36,7 +36,7 @@ export class MenuComponent {
       );
     }
     
-    const categories = this.dataService.categories();
+    const categories = this.stateService.categories();
     const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
     const recipesWithPrice = availableRecipes.map(recipe => ({

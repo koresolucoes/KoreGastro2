@@ -2,10 +2,11 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
 import { Hall, Table, Order, Category, OrderItemStatus, OrderItem, Employee } from '../../models/db.models';
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { AuthService } from '../../services/auth.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { PosDataService } from '../../services/pos-data.service';
 
 type DragAction = 'move' | 'resize';
 interface DragState {
@@ -35,12 +36,13 @@ export interface Payment {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PosComponent {
-  dataService = inject(SupabaseService);
+  stateService = inject(SupabaseStateService);
+  posDataService = inject(PosDataService);
   authService = inject(AuthService);
   
-  halls = this.dataService.halls;
-  tables = this.dataService.tables;
-  employees = this.dataService.employees;
+  halls = this.stateService.halls;
+  tables = this.stateService.tables;
+  employees = this.stateService.employees;
 
   // Employee Session
   activeEmployee = signal<Employee | null>(null);
@@ -78,7 +80,7 @@ export class PosComponent {
   currentOrder = computed(() => {
     const table = this.selectedTable();
     if (!table) return null;
-    return this.dataService.getOrderByTableNumber(table.number) ?? null;
+    return this.posDataService.getOrderByTableNumber(table.number) ?? null;
   });
 
   employeeNameMap = computed(() => {
@@ -164,7 +166,7 @@ export class PosComponent {
   }
 
   getUnacknowledgedCriticalItemsCount(tableNumber: number): number {
-    const order = this.dataService.getOrderByTableNumber(tableNumber);
+    const order = this.posDataService.getOrderByTableNumber(tableNumber);
     if (!order || !order.order_items) return 0;
 
     return order.order_items.filter(item => 
@@ -233,7 +235,7 @@ export class PosComponent {
   async saveHallName() {
     const hall = this.editingHall();
     if (hall && hall.name.trim()) {
-      const { success, error } = await this.dataService.updateHall(hall.id, hall.name.trim());
+      const { success, error } = await this.posDataService.updateHall(hall.id, hall.name.trim());
       if (success) { this.cancelEditingHall(); } else {
         alert(`Falha ao salvar o nome do salão. Erro: ${error?.message}`);
       }
@@ -242,7 +244,7 @@ export class PosComponent {
   async handleAddHall() {
     const name = this.newHallName().trim();
     if (name) {
-      const { success, error } = await this.dataService.addHall(name);
+      const { success, error } = await this.posDataService.addHall(name);
       if (success) { this.newHallName.set(''); } else {
         alert(`Falha ao adicionar o salão. Erro: ${error?.message}`);
       }
@@ -255,14 +257,14 @@ export class PosComponent {
   cancelDeleteHall() { this.hallPendingDeletion.set(null); }
   async confirmDeleteHall(hall: Hall) {
     if (this.tables().filter(t => t.hall_id === hall.id).length > 0) {
-      const { success, error } = await this.dataService.deleteTablesByHallId(hall.id);
+      const { success, error } = await this.posDataService.deleteTablesByHallId(hall.id);
       if (!success) {
         alert(`Falha ao deletar as mesas do salão. Erro: ${error?.message}`);
         this.hallPendingDeletion.set(null);
         return;
       }
     }
-    const { success, error } = await this.dataService.deleteHall(hall.id);
+    const { success, error } = await this.posDataService.deleteHall(hall.id);
     if (!success) {
       alert(`Falha ao deletar o salão. Erro: ${error?.message}`);
     }
@@ -288,7 +290,6 @@ export class PosComponent {
   addTable() {
     const hall = this.selectedHall();
     if (!hall) return;
-    // FIX: Add user_id to new table object. Get user_id from AuthService.
     const userId = this.authService.currentUser()?.id;
     if (!userId) return;
 
@@ -326,11 +327,11 @@ export class PosComponent {
     const editTableIds = new Set(tablesToUpsert.map(t => t.id));
     const tablesToDelete = this.filteredTables().filter(t => !editTableIds.has(t.id));
     if (tablesToDelete.length > 0) {
-      const results = await Promise.all(tablesToDelete.map(t => this.dataService.deleteTable(t.id)));
+      const results = await Promise.all(tablesToDelete.map(t => this.posDataService.deleteTable(t.id)));
       if (results.some(res => !res.success)) { alert(`Falha ao deletar uma ou mais mesas.`); return; }
     }
     if (tablesToUpsert.length > 0) {
-      const { success, error } = await this.dataService.upsertTables(tablesToUpsert);
+      const { success, error } = await this.posDataService.upsertTables(tablesToUpsert);
       if (!success) { alert(`Falha ao salvar o layout das mesas. Erro: ${error?.message}`); return; }
     }
     this.isEditMode.set(false);
@@ -376,15 +377,13 @@ export class PosComponent {
 
     this.selectedTable.set(table);
     this.orderError.set(null);
-    const orderExists = this.dataService.getOrderByTableNumber(table.number);
+    const orderExists = this.posDataService.getOrderByTableNumber(table.number);
 
-    // If no order exists and the table is free, create a new "pending" order.
-    // The table status itself will only be changed when an item is sent.
     if (!orderExists && table.status === 'LIVRE') {
-      const result = await this.dataService.createOrderForTable(table);
+      const result = await this.posDataService.createOrderForTable(table);
       if (!result.success) { 
         this.orderError.set(result.error?.message ?? 'Erro desconhecido ao criar pedido.');
-        return; // Don't open modal if order creation fails.
+        return;
       }
     }
     
@@ -394,9 +393,9 @@ export class PosComponent {
   async handleCheckoutStarted() {
     const table = this.selectedTable();
     if (!table || !this.currentOrder() || this.currentOrder()?.order_items.length === 0) return;
-    const { success, error } = await this.dataService.updateTableStatus(table.id, 'PAGANDO');
+    const { success, error } = await this.posDataService.updateTableStatus(table.id, 'PAGANDO');
     if (success) { 
-        this.isOrderModalOpen.set(false); // Do not clear selectedTable yet
+        this.isOrderModalOpen.set(false);
         this.openPaymentModal(); 
     } else {
         alert(`Falha ao iniciar o fechamento da conta. Erro: ${error?.message}`);
@@ -415,7 +414,7 @@ export class PosComponent {
     if (revertStatus) {
         const table = this.selectedTable();
         if (table && table.status === 'PAGANDO') {
-            await this.dataService.updateTableStatus(table.id, 'OCUPADA');
+            await this.posDataService.updateTableStatus(table.id, 'OCUPADA');
         }
     }
   }
@@ -442,7 +441,7 @@ export class PosComponent {
   async finalizePayment() {
     const order = this.currentOrder(), table = this.selectedTable(), total = this.orderTotal(), currentPayments = this.payments(), tip = this.tipAmount();
     if (!order || !table || !this.isPaymentComplete()) return;
-    const { success, error } = await this.dataService.finalizeOrderPayment(order.id, table.id, total, currentPayments, tip);
+    const { success, error } = await this.posDataService.finalizeOrderPayment(order.id, table.id, total, currentPayments, tip);
     if (success) {
         alert('Pagamento registrado e mesa liberada com sucesso!');
         this.closePaymentModal(false);
@@ -454,7 +453,7 @@ export class PosComponent {
   async moveOrder(destinationTable: Table) {
     const order = this.currentOrder(), sourceTable = this.selectedTable();
     if (order && sourceTable && destinationTable) {
-        await this.dataService.moveOrderToTable(order, sourceTable, destinationTable);
+        await this.posDataService.moveOrderToTable(order, sourceTable, destinationTable);
         this.closeMoveModal();
         this.closeOrderModal();
     }
@@ -466,9 +465,8 @@ export class PosComponent {
     const order = this.currentOrder();
     const table = this.selectedTable();
 
-    // If an order was created for a free table but no items were ever sent, delete the empty order.
     if (order && table && table.status === 'LIVRE' && order.order_items.length === 0) {
-        await this.dataService.deleteEmptyOrder(order.id);
+        await this.posDataService.deleteEmptyOrder(order.id);
     }
 
     this.isOrderModalOpen.set(false);
@@ -482,7 +480,7 @@ export class PosComponent {
     const table = this.selectedTable();
 
     if (order && table && table.status === 'OCUPADA' && order.order_items.length === 0) {
-        const { success, error } = await this.dataService.releaseTable(table.id, order.id);
+        const { success, error } = await this.posDataService.releaseTable(table.id, order.id);
         if (success) {
             this.closeOrderModal();
         } else {
@@ -492,7 +490,7 @@ export class PosComponent {
   }
 
   getProductionStatusForTable(tableNumber: number): { ready: number, total: number } {
-    const order = this.dataService.getOrderByTableNumber(tableNumber);
+    const order = this.posDataService.getOrderByTableNumber(tableNumber);
     if (!order || !order.order_items || order.order_items.length === 0) {
       return { ready: 0, total: 0 };
     }

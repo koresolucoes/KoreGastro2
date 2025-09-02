@@ -1,9 +1,11 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { PosDataService } from '../../services/pos-data.service';
+import { SettingsDataService } from '../../services/settings-data.service';
 
 // Define a type for a consolidated ticket grouped by table
 interface GroupedTicket {
@@ -33,11 +35,14 @@ type ProcessedOrderItem = OrderItem & {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KdsComponent implements OnInit, OnDestroy {
-    dataService = inject(SupabaseService);
+    stateService = inject(SupabaseStateService);
+    posDataService = inject(PosDataService);
+    settingsDataService = inject(SettingsDataService);
     printingService = inject(PrintingService);
-    stations = this.dataService.stations;
-    employees = this.dataService.employees;
-    recipesById = this.dataService.recipesById;
+    
+    stations = this.stateService.stations;
+    employees = this.stateService.employees;
+    recipesById = this.stateService.recipesById;
     selectedStation = signal<Station | null>(null);
 
     // Timer for real-time updates
@@ -83,7 +88,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         // 1. Group items by table number from all open orders
         const itemsByTable = new Map<number, ProcessedOrderItem[]>();
-        for (const order of this.dataService.openOrders()) {
+        for (const order of this.stateService.openOrders()) {
             const relevantItems = order.order_items.filter(
                 item => item.station_id === station.id && item.status !== 'AGUARDANDO' && item.status !== 'PRONTO'
             );
@@ -153,7 +158,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const station = this.selectedStation();
         if (!station) return;
         
-        const { success, error } = await this.dataService.assignEmployeeToStation(station.id, employeeId);
+        const { success, error } = await this.settingsDataService.assignEmployeeToStation(station.id, employeeId);
         if (!success) {
             alert(`Falha ao atribuir funcionário: ${error?.message}`);
         }
@@ -165,14 +170,13 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (this.updatingItems().has(item.id)) return;
 
         this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.dataService.acknowledgeOrderItemAttention(item.id);
+        const { success, error } = await this.posDataService.acknowledgeOrderItemAttention(item.id);
         
         if (!success) {
             console.error('Failed to acknowledge attention:', error);
             alert(`Erro ao confirmar ciência: ${error?.message}`);
         }
         
-        // Realtime will eventually update the UI, we just remove the loading state.
         this.updatingItems.update(set => {
             const newSet = new Set(set);
             newSet.delete(item.id);
@@ -181,7 +185,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
     
     async updateStatus(item: OrderItem) {
-        if (this.updatingItems().has(item.id)) return; // Prevent double-clicks
+        if (this.updatingItems().has(item.id)) return;
 
         let nextStatus: OrderItemStatus;
         switch (item.status) {
@@ -191,15 +195,13 @@ export class KdsComponent implements OnInit, OnDestroy {
         }
         
         this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.dataService.updateOrderItemStatus(item.id, nextStatus);
+        const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
 
         if (!success) {
             console.error('Failed to update item status:', error);
             alert(`Erro ao atualizar o status do item: ${error?.message}`);
         }
         
-        // The realtime update will handle the final UI change. We just need to remove the updating state
-        // regardless of success or failure to allow the user to try again.
         this.updatingItems.update(set => {
             const newSet = new Set(set);
             newSet.delete(item.id);
@@ -220,15 +222,13 @@ export class KdsComponent implements OnInit, OnDestroy {
     printTicket(ticket: GroupedTicket) {
         const station = this.selectedStation();
         if (station) {
-            // Create a pseudo-order object for the printing service
             const orderShellForPrinting = {
-                id: ticket.items[0]?.order_id || 'N/A', // Use an item's order_id for reference
+                id: ticket.items[0]?.order_id || 'N/A',
                 table_number: ticket.tableNumber,
                 timestamp: ticket.oldestTimestamp,
             } as Order;
             this.printingService.printOrder(orderShellForPrinting, ticket.items, station);
         } else {
-            console.error('Nenhuma estação selecionada, não é possível imprimir.');
             alert('Erro: Nenhuma estação selecionada.');
         }
     }

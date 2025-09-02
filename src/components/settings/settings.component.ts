@@ -1,8 +1,10 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
 import { Station, IngredientCategory, Supplier, Employee } from '../../models/db.models';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { SettingsDataService } from '../../services/settings-data.service';
+import { InventoryDataService } from '../../services/inventory-data.service';
 
 @Component({
   selector: 'app-settings',
@@ -12,13 +14,15 @@ import { Station, IngredientCategory, Supplier, Employee } from '../../models/db
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
-  private dataService = inject(SupabaseService);
+  private stateService = inject(SupabaseStateService);
+  private settingsDataService = inject(SettingsDataService);
+  private inventoryDataService = inject(InventoryDataService);
 
   // Data Signals from Service
-  stations = this.dataService.stations;
-  categories = this.dataService.ingredientCategories;
-  suppliers = this.dataService.suppliers;
-  employees = this.dataService.employees;
+  stations = this.stateService.stations;
+  categories = this.stateService.ingredientCategories;
+  suppliers = this.stateService.suppliers;
+  employees = this.stateService.employees;
 
   // Search terms
   stationSearchTerm = signal('');
@@ -61,7 +65,7 @@ export class SettingsComponent {
 
   async handleAddStation() {
     const name = this.newStationName().trim(); if (!name) return;
-    const { success, error } = await this.dataService.addStation(name);
+    const { success, error } = await this.settingsDataService.addStation(name);
     if (success) { this.newStationName.set(''); } else { alert(`Falha: ${error?.message}`); }
   }
   startEditingStation(s: Station) { this.editingStation.set({ ...s }); this.stationPendingDeletion.set(null); }
@@ -72,14 +76,14 @@ export class SettingsComponent {
   }
   async saveStation() {
     const station = this.editingStation(); if (!station?.name.trim()) return;
-    const { success, error } = await this.dataService.updateStation(station.id, station.name.trim());
+    const { success, error } = await this.settingsDataService.updateStation(station.id, station.name.trim());
     if (success) { this.cancelEditingStation(); } else { alert(`Falha: ${error?.message}`); }
   }
   requestDeleteStation(s: Station) { this.stationPendingDeletion.set(s); this.editingStation.set(null); }
   cancelDeleteStation() { this.stationPendingDeletion.set(null); }
   async confirmDeleteStation() {
     const station = this.stationPendingDeletion(); if (!station) return;
-    const { success, error } = await this.dataService.deleteStation(station.id);
+    const { success, error } = await this.settingsDataService.deleteStation(station.id);
     if (!success) { alert(`Falha: ${error?.message}`); }
     this.stationPendingDeletion.set(null);
   }
@@ -88,10 +92,9 @@ export class SettingsComponent {
   editingPrinterForStation = signal<string | null>(null);
 
   async toggleAutoPrint(station: Station) {
-    const { success, error } = await this.dataService.updateStationAutoPrint(station.id, !station.auto_print_orders);
+    const { success, error } = await this.settingsDataService.updateStationAutoPrint(station.id, !station.auto_print_orders);
     if (!success) {
       alert(`Falha ao atualizar a configuração de impressão. Erro: ${error?.message}`);
-      // The UI will be correct because it's bound to the service signal which hasn't changed
     }
   }
 
@@ -109,7 +112,7 @@ export class SettingsComponent {
         this.editingPrinterForStation.set(null);
         return;
     }
-    const { success, error } = await this.dataService.updateStationPrinter(station.id, trimmedName);
+    const { success, error } = await this.settingsDataService.updateStationPrinter(station.id, trimmedName);
     if (!success) {
       alert(`Falha ao salvar o nome da impressora. Erro: ${error?.message}`);
     }
@@ -124,7 +127,7 @@ export class SettingsComponent {
 
   async handleAddCategory() {
     const name = this.newCategoryName().trim(); if (!name) return;
-    const { success, error } = await this.dataService.addIngredientCategory(name);
+    const { success, error } = await this.inventoryDataService.addIngredientCategory(name);
     if (success) { this.newCategoryName.set(''); } else { alert(`Falha: ${error?.message}`); }
   }
   startEditingCategory(c: IngredientCategory) { this.editingCategory.set({ ...c }); this.categoryPendingDeletion.set(null); }
@@ -135,14 +138,14 @@ export class SettingsComponent {
   }
   async saveCategory() {
     const category = this.editingCategory(); if (!category?.name.trim()) return;
-    const { success, error } = await this.dataService.updateIngredientCategory(category.id, category.name.trim());
+    const { success, error } = await this.inventoryDataService.updateIngredientCategory(category.id, category.name.trim());
     if (success) { this.cancelEditingCategory(); } else { alert(`Falha: ${error?.message}`); }
   }
   requestDeleteCategory(c: IngredientCategory) { this.categoryPendingDeletion.set(c); this.editingCategory.set(null); }
   cancelDeleteCategory() { this.categoryPendingDeletion.set(null); }
   async confirmDeleteCategory() {
     const category = this.categoryPendingDeletion(); if (!category) return;
-    const { success, error } = await this.dataService.deleteIngredientCategory(category.id);
+    const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
     if (!success) { alert(`Falha: ${error?.message}`); }
     this.categoryPendingDeletion.set(null);
   }
@@ -163,9 +166,9 @@ export class SettingsComponent {
     const form = this.supplierForm(); if (!form.name?.trim()) { alert('Nome é obrigatório'); return; }
     let res;
     if (this.editingSupplier()) {
-      res = await this.dataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
+      res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
     } else {
-      res = await this.dataService.addSupplier(form as any);
+      res = await this.inventoryDataService.addSupplier(form as any);
     }
     if (res.success) { this.closeSupplierModal(); } else { alert(`Falha: ${res.error?.message}`); }
   }
@@ -173,7 +176,7 @@ export class SettingsComponent {
   cancelDeleteSupplier() { this.supplierPendingDeletion.set(null); }
   async confirmDeleteSupplier() {
     const supplier = this.supplierPendingDeletion(); if (!supplier) return;
-    const { success, error } = await this.dataService.deleteSupplier(supplier.id);
+    const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
     if (!success) { alert(`Falha: ${error?.message}`); }
     this.supplierPendingDeletion.set(null);
   }
@@ -198,9 +201,9 @@ export class SettingsComponent {
     
     let res;
     if (this.editingEmployee()) {
-      res = await this.dataService.updateEmployee({ ...form, id: this.editingEmployee()!.id });
+      res = await this.settingsDataService.updateEmployee({ ...form, id: this.editingEmployee()!.id });
     } else {
-      res = await this.dataService.addEmployee(form as any);
+      res = await this.settingsDataService.addEmployee(form as any);
     }
     if (res.success) { this.closeEmployeeModal(); } else { alert(`Falha ao salvar funcionário: ${res.error?.message}`); }
   }
@@ -208,7 +211,7 @@ export class SettingsComponent {
   cancelDeleteEmployee() { this.employeePendingDeletion.set(null); }
   async confirmDeleteEmployee() {
     const employee = this.employeePendingDeletion(); if (!employee) return;
-    const { success, error } = await this.dataService.deleteEmployee(employee.id);
+    const { success, error } = await this.settingsDataService.deleteEmployee(employee.id);
     if (!success) { alert(`Falha ao deletar funcionário: ${error?.message}`); }
     this.employeePendingDeletion.set(null);
   }

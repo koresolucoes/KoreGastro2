@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -10,21 +10,21 @@ import { SupabaseService } from '../../services/supabase.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
-  private dataService = inject(SupabaseService);
+  private stateService = inject(SupabaseStateService);
   
-  isLoading = computed(() => !this.dataService.isDataLoaded());
+  isLoading = computed(() => !this.stateService.isDataLoaded());
 
   totalSales = computed(() => {
-    return this.dataService.dashboardTransactions()
+    return this.stateService.dashboardTransactions()
         .reduce((sum, item) => sum + item.amount, 0);
   });
   
-  openTables = computed(() => this.dataService.tables().filter(t => t.status === 'OCUPADA').length);
+  openTables = computed(() => this.stateService.tables().filter(t => t.status === 'OCUPADA').length);
   
-  lowStockItems = computed(() => this.dataService.ingredients().filter(i => i.stock < i.min_stock).length);
+  lowStockItems = computed(() => this.stateService.ingredients().filter(i => i.stock < i.min_stock).length);
 
   pendingKdsItems = computed(() => {
-    return this.dataService.openOrders()
+    return this.stateService.openOrders()
         .flatMap(o => o.order_items || [])
         .filter(item => item.status === 'PENDENTE' || item.status === 'EM_PREPARO').length;
   });
@@ -39,7 +39,7 @@ export class DashboardComponent {
   bestSellingItems = computed(() => {
     const itemCounts = new Map<string, { name: string, quantity: number }>();
     
-    this.dataService.dashboardCompletedOrders().flatMap(o => o.order_items).forEach(item => {
+    this.stateService.dashboardCompletedOrders().flatMap(o => o.order_items).forEach(item => {
         const existing = itemCounts.get(item.recipe_id);
         if (existing) {
             existing.quantity += item.quantity;
@@ -57,7 +57,7 @@ export class DashboardComponent {
   });
 
   recentTransactions = computed(() => {
-    return this.dataService.dashboardTransactions()
+    return this.stateService.dashboardTransactions()
       .slice()
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);

@@ -1,12 +1,14 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../../services/supabase.service';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
 import { environment } from '../../../config/environment';
+import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { PosDataService } from '../../../services/pos-data.service';
 
 interface CartItem {
     id: string;
@@ -40,7 +42,8 @@ type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderPanelComponent {
-  dataService = inject(SupabaseService);
+  stateService = inject(SupabaseStateService);
+  posDataService = inject(PosDataService);
   pricingService = inject(PricingService);
 
   // Inputs & Outputs
@@ -56,8 +59,8 @@ export class OrderPanelComponent {
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);
-  categories = this.dataService.categories;
-  recipes = this.dataService.recipes;
+  categories = this.stateService.categories;
+  recipes = this.stateService.recipes;
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
@@ -86,16 +89,14 @@ export class OrderPanelComponent {
       this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
     }
 
-    // Reset cart when table changes
     effect(() => {
-        const table = this.selectedTable();
+        this.selectedTable();
         untracked(() => this.shoppingCart.set([]));
     });
 
-    // Generate suggestions when cart changes
     effect(() => {
       const cart = this.shoppingCart();
-      const table = this.selectedTable(); // react to table change
+      this.selectedTable();
       if (cart.length > 0) {
         untracked(() => this.generateUpsellSuggestions());
       } else {
@@ -118,15 +119,8 @@ export class OrderPanelComponent {
       const category = this.selectedCategory();
       const term = this.recipeSearchTerm().toLowerCase();
       let recipesToShow = this.recipes();
-
-      if (category) {
-          recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
-      }
-      
-      if (term) {
-          recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
-      }
-
+      if (category) recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
+      if (term) recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
       return recipesToShow;
   });
   
@@ -137,20 +131,15 @@ export class OrderPanelComponent {
     const items = order.order_items;
     const grouped = new Map<string, GroupedOrderItem>();
     const singles: SingleOrderItem[] = [];
-    const recipesMap = this.dataService.recipesById();
+    const recipesMap = this.stateService.recipesById();
 
     for (const item of items) {
       if (item.group_id) {
         if (!grouped.has(item.group_id)) {
           const recipe = recipesMap.get(item.recipe_id);
           grouped.set(item.group_id, {
-            isGroup: true,
-            groupId: item.group_id,
-            recipeName: recipe?.name ?? 'Prato Desconhecido',
-            recipeId: item.recipe_id,
-            quantity: item.quantity,
-            totalPrice: item.price,
-            items: [],
+            isGroup: true, groupId: item.group_id, recipeName: recipe?.name ?? 'Prato Desconhecido',
+            recipeId: item.recipe_id, quantity: item.quantity, totalPrice: item.price, items: [],
           });
         }
         grouped.get(item.group_id)!.items.push(item);
@@ -171,23 +160,11 @@ export class OrderPanelComponent {
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
   
   addToCart(recipe: Recipe) {
-    const newItem: CartItem = {
-      id: uuidv4(),
-      recipe,
-      quantity: 1,
-      notes: ''
-    };
-    this.shoppingCart.update(cart => [...cart, newItem]);
+    this.shoppingCart.update(cart => [...cart, { id: uuidv4(), recipe, quantity: 1, notes: '' }]);
   }
 
   updateCartItemQuantity(itemId: string, change: -1 | 1) {
-    this.shoppingCart.update(cart => 
-        cart.map(item => 
-            item.id === itemId 
-            ? { ...item, quantity: Math.max(0, item.quantity + change) }
-            : item
-        ).filter(item => item.quantity > 0)
-    );
+    this.shoppingCart.update(cart => cart.map(item => item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item).filter(item => item.quantity > 0));
   }
 
   removeFromCart(itemId: string) {
@@ -209,34 +186,22 @@ export class OrderPanelComponent {
   saveNote() {
     const itemId = this.editingCartItemId();
     if (!itemId) return;
-    
-    const newNote = this.noteInput().trim();
-    this.shoppingCart.update(cart => 
-        cart.map(item => item.id === itemId ? { ...item, notes: newNote } : item)
-    );
+    this.shoppingCart.update(cart => cart.map(item => item.id === itemId ? { ...item, notes: this.noteInput().trim() } : item));
     this.closeNotesModal();
   }
 
   async sendOrder() {
-    const order = this.currentOrder();
-    const table = this.selectedTable();
-    const employee = this.activeEmployee();
-    const cart = this.shoppingCart();
-
+    const order = this.currentOrder(), table = this.selectedTable(), employee = this.activeEmployee(), cart = this.shoppingCart();
     if (order && table && employee && cart.length > 0) {
       const itemsToSend = cart.map(c => ({ recipe: c.recipe, quantity: c.quantity, notes: c.notes }));
-      const result = await this.dataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
-      if (result.success) {
-        this.shoppingCart.set([]);
-      } else {
-        alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
-      }
+      const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
+      if (result.success) this.shoppingCart.set([]);
+      else alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
     }
   }
 
   async generateUpsellSuggestions() {
     if (!this.ai) {
-      // Silently fail if AI is not configured.
       console.log('AI suggestions disabled. API key not configured.');
       this.isGeneratingSuggestions.set(false);
       this.upsellSuggestions.set([]);
@@ -249,54 +214,29 @@ export class OrderPanelComponent {
     try {
         const cartItems = this.shoppingCart().map(item => `${item.quantity}x ${item.recipe.name}`).join(', ');
         const currentCartIds = new Set(this.shoppingCart().map(item => item.recipe.id));
-
-        const menu = this.recipes()
-            .filter(r => r.is_available && r.hasStock && !currentCartIds.has(r.id))
-            .map(r => `- ${r.name} (ID: ${r.id})`)
-            .join('\n');
-
-        const prompt = `Você é um sommelier e vendedor especialista em um restaurante.
-            Um cliente pediu os seguintes itens: ${cartItems}.
-            Com base no pedido atual e no cardápio abaixo, sugira 3 a 4 itens complementares (bebidas, acompanhamentos, sobremesas) para aumentar o valor da venda (upsell/cross-sell).
-            Não sugira itens que já estão no carrinho.
-            Cardápio disponível:
-            ${menu}
-            Retorne APENAS um objeto JSON com uma chave "suggestions", que é um array de objetos. Cada objeto deve ter apenas uma chave "recipe_id" contendo o ID exato do prato sugerido do cardápio.`;
-
-        const responseSchema = {
-            type: Type.OBJECT,
-            properties: {
-                suggestions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: { recipe_id: { type: Type.STRING } }
-                    }
-                }
-            }
-        };
-
+        const menu = this.recipes().filter(r => r.is_available && r.hasStock && !currentCartIds.has(r.id)).map(r => `- ${r.name} (ID: ${r.id})`).join('\n');
+        const prompt = `Você é um sommelier e vendedor especialista. Um cliente pediu: ${cartItems}. Com base no cardápio, sugira 3 a 4 itens complementares. Cardápio: ${menu}. Retorne APENAS um JSON com uma chave "suggestions", que é um array de objetos, cada um com uma chave "recipe_id" com o ID exato.`;
+        
         const response = await this.ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
-                responseSchema: responseSchema,
+                responseSchema: { type: Type.OBJECT, properties: { suggestions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { recipe_id: { type: Type.STRING } } } } } }
             }
         });
 
         const jsonResponse = JSON.parse(response.text);
         const suggestedIds: string[] = jsonResponse.suggestions.map((s: any) => s.recipe_id);
-        
-        const recipesMap = this.dataService.recipesById();
-        const suggestions = suggestedIds
-            .map(id => recipesMap.get(id))
-            .filter((r): r is Recipe => r !== undefined);
-
-        this.upsellSuggestions.set(suggestions);
-
-    } catch (error) {
-        console.error('Error generating upsell suggestions:', error);
+        const recipesMap = this.stateService.recipesById();
+        this.upsellSuggestions.set(suggestedIds.map(id => recipesMap.get(id)).filter((r): r is Recipe => r !== undefined));
+    } catch (error: any) {
+        const errorString = String(error.message || JSON.stringify(error));
+        if (errorString.includes('API key not valid') || errorString.includes('API_KEY_INVALID')) {
+            console.error('AI suggestions failed: Invalid Gemini API key. Check `src/config/environment.ts`.');
+        } else {
+            console.error('Error generating upsell suggestions:', error);
+        }
         this.upsellSuggestions.set([]);
     } finally {
         this.isGeneratingSuggestions.set(false);
@@ -304,10 +244,7 @@ export class OrderPanelComponent {
   }
 
   startCheckout() {
-    if (this.shoppingCart().length > 0) {
-        alert('Você tem itens no carrinho. Por favor, envie o pedido antes de fechar a conta.');
-        return;
-    }
+    if (this.shoppingCart().length > 0) { alert('Envie os itens no carrinho antes de fechar a conta.'); return; }
     this.checkoutStarted.emit();
   }
 
@@ -320,5 +257,4 @@ export class OrderPanelComponent {
       default: return 'text-gray-500';
     }
   }
-
 }

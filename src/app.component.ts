@@ -3,7 +3,7 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
-import { SupabaseService } from './services/supabase.service';
+import { SupabaseStateService } from './services/supabase-state.service';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +15,7 @@ import { SupabaseService } from './services/supabase.service';
 export class AppComponent {
   // Inject services here to ensure they are initialized at the root level.
   authService = inject(AuthService);
-  supabaseService = inject(SupabaseService);
+  supabaseStateService = inject(SupabaseStateService);
 
   currentUser = this.authService.currentUser;
 }

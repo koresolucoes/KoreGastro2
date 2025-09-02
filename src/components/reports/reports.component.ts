@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../services/supabase.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { CashierDataService } from '../../services/cashier-data.service';
 
 type ReportPeriod = 'day' | 'week' | 'month';
 
@@ -12,16 +13,16 @@ type ReportPeriod = 'day' | 'week' | 'month';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReportsComponent implements OnInit {
-    private dataService = inject(SupabaseService);
+    private stateService = inject(SupabaseStateService);
+    private cashierDataService = inject(CashierDataService);
 
     period = signal<ReportPeriod>('day');
     isLoading = signal(true);
     
-    completedOrders = this.dataService.completedOrders;
-    transactions = this.dataService.transactions;
+    completedOrders = this.stateService.completedOrders;
+    transactions = this.stateService.transactions;
 
     ngOnInit() {
-        // Fetch the initial data for the default period ('day') when the component loads.
         this.loadData();
     }
     
@@ -34,7 +35,7 @@ export class ReportsComponent implements OnInit {
         this.isLoading.set(true);
         try {
             const { startDate, endDate } = this.getDateRange();
-            await this.dataService.fetchSalesDataForPeriod(startDate, endDate);
+            await this.stateService.fetchSalesDataForPeriod(startDate, endDate);
         } catch (error) {
             console.error("Error loading report data", error);
         } finally {
@@ -53,10 +54,8 @@ export class ReportsComponent implements OnInit {
                 startDate.setHours(0, 0, 0, 0);
                 break;
             case 'week':
-                // Adjust to get the start of the week (Sunday)
-                const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
-                const newNow = new Date(); // Create a new date object to avoid mutation
-                startDate = new Date(newNow.setDate(newNow.getDate() - dayOfWeek));
+                const dayOfWeek = now.getDay();
+                startDate = new Date(now.setDate(now.getDate() - dayOfWeek));
                 startDate.setHours(0, 0, 0, 0);
                 break;
             case 'month':

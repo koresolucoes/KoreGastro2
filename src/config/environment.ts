@@ -23,5 +23,5 @@ export const environment = {
    * Your API key for the Gemini API from Google AI Studio.
    * Found in Google AI Studio under "Get API key".
    */
-  geminiApiKey: 'AIzaSyA05tQSdiJt1HHWT8o5jSxfuNixh7i_6UQY',
+  geminiApiKey: 'AIzaSyBqpYe3AhNnT6Vyzz_p7B1s-jwn7P6n-Ms',
 };
