@@ -1,19 +1,27 @@
-// This file reads environment variables. In a browser environment, `process` is not
-// available by default. A polyfill is added in `index.html` to prevent crashes.
-// For deployment on platforms like Vercel, a build step is required to substitute
-// these placeholder values with the actual environment variables.
+// This file reads environment variables using `import.meta.env`, which is the
+// standard method for Vite-based environments like Vercel's build process.
+// Vercel will replace these variables with your project's environment variables
+// at build time, but only if they are prefixed with `VITE_`.
 
-declare var process: {
-  env: {
-    VITE_SUPABASE_URL?: string;
-    VITE_SUPABASE_ANON_KEY?: string;
-    VITE_API_KEY?: string; // Gemini API Key
-  };
-};
+// TypeScript needs to know about `import.meta.env`.
+// We declare the shape of the env variables we expect.
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string;
+  readonly VITE_SUPABASE_ANON_KEY: string;
+  readonly VITE_API_KEY: string;
+}
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-const geminiApiKey = process.env.VITE_API_KEY;
+// FIX: Augment the global ImportMeta interface to include the `env` property.
+// This must be done inside a `declare global` block when inside a module.
+declare global {
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const geminiApiKey = import.meta.env.VITE_API_KEY;
 
 // We throw errors if the variables aren't set.
 // This provides a clear failure mode during development or if the Vercel deployment is misconfigured.
