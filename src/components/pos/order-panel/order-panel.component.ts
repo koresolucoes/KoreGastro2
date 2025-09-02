@@ -1,7 +1,4 @@
 
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
@@ -9,7 +6,7 @@ import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } 
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
-import { appConfig } from '../../../config/environment';
+import { environment } from '../../../config/environment';
 
 interface CartItem {
     id: string;
@@ -70,7 +67,7 @@ export class OrderPanelComponent {
   noteInput = signal('');
 
   // AI Upselling Signals
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
   upsellSuggestions = signal<Recipe[]>([]);
   isGeneratingSuggestions = signal(false);
 
@@ -85,7 +82,9 @@ export class OrderPanelComponent {
   });
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: appConfig.geminiApiKey });
+    if (environment.geminiApiKey && !environment.geminiApiKey.includes('YOUR_GEMINI_API_KEY')) {
+      this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
+    }
 
     // Reset cart when table changes
     effect(() => {
@@ -236,6 +235,14 @@ export class OrderPanelComponent {
   }
 
   async generateUpsellSuggestions() {
+    if (!this.ai) {
+      // Silently fail if AI is not configured.
+      console.log('AI suggestions disabled. API key not configured.');
+      this.isGeneratingSuggestions.set(false);
+      this.upsellSuggestions.set([]);
+      return;
+    }
+
     this.isGeneratingSuggestions.set(true);
     this.upsellSuggestions.set([]);
 

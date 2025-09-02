@@ -8,23 +8,20 @@ import localePt from '@angular/common/locales/pt';
 
 import { AppComponent } from './src/app.component';
 import { APP_ROUTES } from './src/app.routes';
-import { loadEnvironmentConfig } from './src/config/environment';
+
+// The Supabase client will be initialized automatically when its module is imported by other services.
+// No explicit initialization is needed here anymore.
 
 // Register the locale data for pt-BR
 registerLocaleData(localePt);
 
 /**
- * Asynchronous main function to ensure configuration is loaded
- * before the Angular application is bootstrapped.
+ * Main function to bootstrap the Angular application.
  */
-async function bootstrap() {
+function bootstrap() {
   try {
-    // Fetch and set the runtime configuration from the serverless function.
-    // This must complete before any service that depends on the config is created.
-    await loadEnvironmentConfig();
-
-    // Now that the config is loaded, bootstrap the Angular application.
-    await bootstrapApplication(AppComponent, {
+    // With a static config, we can bootstrap the application synchronously.
+    bootstrapApplication(AppComponent, {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter(APP_ROUTES, withHashLocation()),
@@ -34,7 +31,8 @@ async function bootstrap() {
     });
   } catch (err) {
     console.error('Failed to bootstrap the application:', err);
-    // The error is already displayed on the screen by the config loader.
+    // Errors related to configuration will now be displayed on the screen
+    // by the client initializer, providing clearer feedback.
   }
 }
 

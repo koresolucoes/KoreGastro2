@@ -1,14 +1,11 @@
 
-
-
-
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 import { Recipe, RecipePreparation, RecipeIngredient, Category } from '../models/db.models';
 import { supabase } from './supabase-client';
-import { appConfig } from '../config/environment';
+import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -16,16 +13,24 @@ import { appConfig } from '../config/environment';
 export class AiRecipeService {
   private dataService: SupabaseService;
   private authService: AuthService;
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
 
   constructor() {
     this.dataService = inject(SupabaseService);
     this.authService = inject(AuthService);
     
-    this.ai = new GoogleGenAI({ apiKey: appConfig.geminiApiKey });
+    if (environment.geminiApiKey && !environment.geminiApiKey.includes('YOUR_GEMINI_API_KEY')) {
+      this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
+    } else {
+      console.warn('Gemini API Key is not configured in src/config/environment.ts. AI recipe features will be disabled.');
+    }
   }
   
   async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] }> {
+    if (!this.ai) {
+      throw new Error('Serviço de IA não configurado. Por favor, adicione sua Gemini API Key no arquivo src/config/environment.ts');
+    }
+
     // Step 1: Ensure at least one station exists, create a default one if not.
     let stations = this.dataService.stations();
     if (stations.length === 0) {
@@ -139,6 +144,10 @@ export class AiRecipeService {
   }
 
   async generateTechSheetForRecipe(recipe: Recipe): Promise<{ preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[], operational_cost: number, prep_time_in_minutes: number }> {
+    if (!this.ai) {
+      throw new Error('Serviço de IA não configurado. Por favor, adicione sua Gemini API Key no arquivo src/config/environment.ts');
+    }
+    
     const stations = this.dataService.stations();
     if (stations.length === 0) {
         throw new Error('No production stations found. Please create one in Settings first.');
