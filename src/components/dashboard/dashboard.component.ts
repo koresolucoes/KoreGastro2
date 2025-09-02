@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -9,13 +9,11 @@ import { SupabaseService } from '../../services/supabase.service';
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   private dataService = inject(SupabaseService);
   
-  ngOnInit() {
-    this.dataService.fetchDashboardData();
-  }
-  
+  isLoading = computed(() => !this.dataService.isDataLoaded());
+
   totalSales = computed(() => {
     return this.dataService.dashboardTransactions()
         .reduce((sum, item) => sum + item.amount, 0);

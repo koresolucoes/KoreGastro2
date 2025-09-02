@@ -1,12 +1,9 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
-import { Hall, Table, Order, Recipe, Category, OrderItemStatus, OrderItem } from '../../models/db.models';
-
-interface CartItem {
-    recipe: Recipe;
-    quantity: number;
-}
+import { Hall, Table, Order, Category, OrderItemStatus } from '../../models/db.models';
+import { OrderPanelComponent } from './order-panel/order-panel.component';
+import { AuthService } from '../../services/auth.service';
 
 type DragAction = 'move' | 'resize';
 interface DragState {
@@ -27,44 +24,26 @@ export interface Payment {
   amount: number;
 }
 
-interface GroupedOrderItem {
-  isGroup: true;
-  groupId: string;
-  recipeName: string;
-  recipeId: string;
-  quantity: number;
-  totalPrice: number;
-  items: OrderItem[];
-}
-
-interface SingleOrderItem {
-  isGroup: false;
-  item: OrderItem;
-}
-
-type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
-
 
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, OrderPanelComponent],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PosComponent {
   dataService = inject(SupabaseService);
+  authService = inject(AuthService);
   
   halls = this.dataService.halls;
   tables = this.dataService.tables;
-  categories = this.dataService.categories;
-  recipes = this.dataService.recipes;
 
   selectedHall: WritableSignal<Hall | null> = signal(null);
   selectedTable: WritableSignal<Table | null> = signal(null);
   orderError = signal<string | null>(null);
   
-  isOrderPanelOpen = signal(false);
+  isOrderModalOpen = signal(false);
   isEditMode = signal(false);
   tablesInEdit: WritableSignal<Table[]> = signal([]);
   dragState = signal<DragState | null>(null);
@@ -82,7 +61,8 @@ export class PosComponent {
   payments = signal<Payment[]>([]);
   paymentAmountInput = signal(''); // Use string for easier input handling
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
-
+  tipAmount = signal(0);
+  
   currentOrder = computed(() => {
     const table = this.selectedTable();
     if (!table) return null;
@@ -131,64 +111,12 @@ export class PosComponent {
   tablesToDisplay = computed(() => {
     return this.isEditMode() ? this.tablesInEdit() : this.filteredTables();
   });
-
-  selectedCategory: WritableSignal<Category | null> = signal(null);
-  recipeSearchTerm = signal('');
-
-  filteredRecipes = computed(() => {
-      const category = this.selectedCategory();
-      const term = this.recipeSearchTerm().toLowerCase();
-      let recipesToShow = this.recipes();
-
-      if (category) {
-          recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
-      }
-      
-      if (term) {
-          recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
-      }
-
-      return recipesToShow;
-  });
-  
-  shoppingCart = signal<CartItem[]>([]);
-
-  groupedOrderItems = computed(() => {
-    const order = this.currentOrder();
-    if (!order) return [];
-
-    const items = order.order_items;
-    const grouped = new Map<string, GroupedOrderItem>();
-    const singles: SingleOrderItem[] = [];
-    const recipesMap = this.dataService.recipesById();
-
-    for (const item of items) {
-      if (item.group_id) {
-        if (!grouped.has(item.group_id)) {
-          const recipe = recipesMap.get(item.recipe_id);
-          grouped.set(item.group_id, {
-            isGroup: true,
-            groupId: item.group_id,
-            recipeName: recipe?.name ?? 'Prato Desconhecido',
-            recipeId: item.recipe_id,
-            quantity: item.quantity,
-            totalPrice: recipe?.price ?? 0,
-            items: [],
-          });
-        }
-        grouped.get(item.group_id)!.items.push(item);
-      } else {
-        singles.push({ isGroup: false, item });
-      }
-    }
-    return [...Array.from(grouped.values()), ...singles];
-  });
   
   orderTotal = computed(() => {
-    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
-    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (item.recipe.price * item.quantity), 0);
-    return currentItemsTotal + cartItemsTotal;
+    return this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
   });
+
+  orderTotalWithTip = computed(() => this.orderTotal() + this.tipAmount());
 
   availableTablesForMove = computed(() => {
     const hallId = this.selectedHall()?.id;
@@ -200,7 +128,7 @@ export class PosComponent {
   totalPaid = computed(() => this.payments().reduce((sum, p) => sum + p.amount, 0));
 
   balanceDue = computed(() => {
-      const total = this.orderTotal();
+      const total = this.orderTotalWithTip();
       const paid = this.totalPaid();
       return parseFloat((total - paid).toFixed(2));
   });
@@ -290,6 +218,10 @@ export class PosComponent {
   addTable() {
     const hall = this.selectedHall();
     if (!hall) return;
+    // FIX: Add user_id to new table object. Get user_id from AuthService.
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
     const allHalls = this.halls();
     const hallIndex = allHalls.findIndex(h => h.id === hall.id);
     const startNumber = ((hallIndex >= 0 ? hallIndex : 0) * 100) + 101;
@@ -312,7 +244,7 @@ export class PosComponent {
       newX = step; newY = currentCanvas.height + gap;
       this.editModeCanvasSize.update(size => ({ ...size, height: size.height + newTableHeight + gap + step }));
     }
-    const newTable: Table = { id: `temp-${Date.now()}`, number: nextAvailableNumber, hall_id: hall.id, status: 'LIVRE', x: newX, y: newY, width: newTableWidth, height: newTableHeight, created_at: new Date().toISOString() };
+    const newTable: Table = { id: `temp-${Date.now()}`, number: nextAvailableNumber, hall_id: hall.id, status: 'LIVRE', x: newX, y: newY, width: newTableWidth, height: newTableHeight, created_at: new Date().toISOString(), user_id: userId };
     this.tablesInEdit.update(tables => [...tables, newTable]);
   }
   deleteTable(e: MouseEvent, tableId: string) {
@@ -368,11 +300,10 @@ export class PosComponent {
     this.selectedHall.set(hall);
     if (this.isEditMode()) { this.tablesInEdit.set(JSON.parse(JSON.stringify(this.filteredTables()))); }
   }
-  selectCategory(category: Category | null) { this.selectedCategory.set(category); }
+  
   async selectTable(table: Table) {
     if (this.isEditMode()) return;
-    this.isOrderPanelOpen.set(true);
-    this.shoppingCart.set([]);
+    this.isOrderModalOpen.set(true);
     this.orderError.set(null);
     this.selectedTable.set(table);
     const orderExists = this.dataService.getOrderByTableNumber(table.number);
@@ -383,41 +314,22 @@ export class PosComponent {
       }
     }
   }
-  addToCart(recipe: Recipe) {
-    this.shoppingCart.update(cart => {
-        const item = cart.find(i => i.recipe.id === recipe.id);
-        return item ? cart.map(i => i.recipe.id === recipe.id ? { ...i, quantity: i.quantity + 1 } : i) : [...cart, { recipe, quantity: 1 }];
-    });
-  }
-  removeFromCart(recipeId: string) {
-      this.shoppingCart.update(cart => {
-          const item = cart.find(i => i.recipe.id === recipeId);
-          return item && item.quantity > 1 ? cart.map(i => i.recipe.id === recipeId ? {...i, quantity: i.quantity - 1} : i) : cart.filter(i => i.recipe.id !== recipeId);
-      });
-  }
-  async sendOrder() {
-    const order = this.currentOrder(), cart = this.shoppingCart();
-    if (order && cart.length > 0) {
-      const result = await this.dataService.addItemsToOrder(order.id, cart.map(c => ({ ...c })));
-      if (result.success) { this.shoppingCart.set([]); } else {
-        alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
-      }
-    }
-  }
-  async startCheckout() {
-    if (this.shoppingCart().length > 0) {
-        alert('Você tem itens no carrinho. Por favor, envie o pedido antes de fechar a conta.');
-        return;
-    }
+  
+  async handleCheckoutStarted() {
     const table = this.selectedTable();
     if (!table || !this.currentOrder() || this.currentOrder()?.order_items.length === 0) return;
     const { success, error } = await this.dataService.updateTableStatus(table.id, 'PAGANDO');
-    if (success) { this.openPaymentModal(); } else {
+    if (success) { 
+        this.isOrderModalOpen.set(false); // Do not clear selectedTable yet
+        this.openPaymentModal(); 
+    } else {
         alert(`Falha ao iniciar o fechamento da conta. Erro: ${error?.message}`);
     }
   }
+
   openPaymentModal() {
     this.payments.set([]);
+    this.tipAmount.set(0);
     this.paymentAmountInput.set(this.balanceDue() > 0 ? this.balanceDue().toString() : '');
     this.selectedPaymentMethod.set('Dinheiro');
     this.isPaymentModalOpen.set(true);
@@ -452,13 +364,13 @@ export class PosComponent {
       this.paymentAmountInput.set(newBalance > 0 ? newBalance.toString() : '');
   }
   async finalizePayment() {
-    const order = this.currentOrder(), table = this.selectedTable(), total = this.orderTotal(), currentPayments = this.payments();
+    const order = this.currentOrder(), table = this.selectedTable(), total = this.orderTotal(), currentPayments = this.payments(), tip = this.tipAmount();
     if (!order || !table || !this.isPaymentComplete()) return;
-    const { success, error } = await this.dataService.finalizeOrderPayment(order.id, table.id, total, currentPayments);
+    const { success, error } = await this.dataService.finalizeOrderPayment(order.id, table.id, total, currentPayments, tip);
     if (success) {
         alert('Pagamento registrado e mesa liberada com sucesso!');
         this.closePaymentModal(false);
-        this.closePanel();
+        this.closeOrderModal();
     } else {
         alert(`Falha ao finalizar o pagamento. Erro: ${error?.message}`);
     }
@@ -468,17 +380,17 @@ export class PosComponent {
     if (order && sourceTable && destinationTable) {
         await this.dataService.moveOrderToTable(order, sourceTable, destinationTable);
         this.closeMoveModal();
-        this.closePanel();
+        this.closeOrderModal();
     }
   }
   openMoveModal() { this.isMoveModalOpen.set(true); }
   closeMoveModal() { this.isMoveModalOpen.set(false); }
-  closePanel() {
-    this.isOrderPanelOpen.set(false);
+  
+  closeOrderModal() {
+    this.isOrderModalOpen.set(false);
     this.selectedTable.set(null);
-    this.shoppingCart.set([]);
-    this.isPaymentModalOpen.set(false);
     this.orderError.set(null);
+    this.tipAmount.set(0);
   }
 
   getProductionStatusForTable(tableNumber: number): { ready: number, total: number } {

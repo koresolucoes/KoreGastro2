@@ -1,6 +1,6 @@
 
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { PrintingService } from '../../services/printing.service';
@@ -31,12 +31,12 @@ interface PaymentSummary {
   templateUrl: './cashier.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CashierComponent implements OnInit {
+export class CashierComponent {
   dataService = inject(SupabaseService);
   printingService = inject(PrintingService);
 
   view: WritableSignal<CashierView> = signal('quickSale');
-  isLoading = signal(true);
+  isLoading = computed(() => !this.dataService.isDataLoaded());
 
   // --- Quick Sale Signals ---
   categories = this.dataService.categories;
@@ -63,28 +63,6 @@ export class CashierComponent implements OnInit {
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<Order | null>(null);
-
-  ngOnInit() {
-    this.loadDataForSession();
-  }
-
-  async loadDataForSession() {
-    this.isLoading.set(true);
-    try {
-        const lastClosing = this.dataService.lastCashierClosing();
-        const startDate = lastClosing ? new Date(lastClosing.closed_at) : new Date();
-        
-        if (!lastClosing) {
-            startDate.setHours(0, 0, 0, 0); // Start of today if no closing ever happened
-        }
-
-        await this.dataService.fetchSalesDataForPeriod(startDate, new Date());
-    } catch (error) {
-        console.error("Error loading cashier data", error);
-    } finally {
-        this.isLoading.set(false);
-    }
-  }
 
   // --- Quick Sale Computeds & Methods ---
   filteredRecipes = computed(() => {
@@ -256,7 +234,7 @@ export class CashierComponent implements OnInit {
         this.printClosingReport(savedClosing);
         this.closeClosingModal();
         alert('Caixa fechado com sucesso!');
-        this.loadDataForSession(); // Refresh data for the new day
+        // Data for the new session will be loaded automatically by the service's realtime listener for transactions.
     } else {
         alert(`Falha ao fechar o caixa. Erro: ${error?.message}`);
     }

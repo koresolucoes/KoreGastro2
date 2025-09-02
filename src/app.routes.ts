@@ -9,17 +9,20 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { TechnicalSheetsComponent } from './components/technical-sheets/technical-sheets.component';
 import { MenuComponent } from './components/menu/menu.component';
 import { CashierComponent } from './components/cashier/cashier.component';
+import { LoginComponent } from './components/auth/login.component';
+import { authGuard } from './guards/auth.guard';
 
 export const APP_ROUTES: Routes = [
+  { path: 'login', component: LoginComponent },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'pos', component: PosComponent },
-  { path: 'kds', component: KdsComponent },
-  { path: 'cashier', component: CashierComponent },
-  { path: 'inventory', component: InventoryComponent },
-  { path: 'menu', component: MenuComponent },
-  { path: 'technical-sheets', component: TechnicalSheetsComponent },
-  { path: 'reports', component: ReportsComponent },
-  { path: 'settings', component: SettingsComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'pos', component: PosComponent, canActivate: [authGuard] },
+  { path: 'kds', component: KdsComponent, canActivate: [authGuard] },
+  { path: 'cashier', component: CashierComponent, canActivate: [authGuard] },
+  { path: 'inventory', component: InventoryComponent, canActivate: [authGuard] },
+  { path: 'menu', component: MenuComponent, canActivate: [authGuard] },
+  { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [authGuard] },
+  { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
+  { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page
 ];

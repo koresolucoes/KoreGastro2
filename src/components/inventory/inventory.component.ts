@@ -162,7 +162,8 @@ export class InventoryComponent {
                 newForm[field] = value === 'null' ? null : value;
             } else if (field === 'name' || field === 'unit' || field === 'expiration_date' || field === 'last_movement_at') {
                 newForm[field] = value as any;
-            } else {
+            // FIX: Use 'else if' to specifically target numeric fields and avoid incorrect type assignments.
+            } else if (field === 'stock' || field === 'cost' || field === 'min_stock') {
                 const numValue = parseFloat(value);
                 if (!isNaN(numValue)) {
                     newForm[field] = numValue;

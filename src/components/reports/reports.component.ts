@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -21,7 +21,11 @@ export class ReportsComponent implements OnInit {
     transactions = this.dataService.transactions;
 
     ngOnInit() {
-        this.loadData();
+        effect(() => {
+            if (this.dataService.isDataLoaded()) {
+                this.isLoading.set(false);
+            }
+        });
     }
     
     async setPeriod(newPeriod: ReportPeriod) {

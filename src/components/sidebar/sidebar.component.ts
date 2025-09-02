@@ -1,7 +1,8 @@
 
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,6 +12,11 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
+  authService = inject(AuthService);
+  router = inject(Router);
+  
+  currentUser = this.authService.currentUser;
+  
   isSidebarOpen = signal(true);
 
   navItems = [
@@ -27,5 +33,10 @@ export class SidebarComponent {
 
   toggleSidebar() {
     this.isSidebarOpen.update(value => !value);
+  }
+  
+  async signOut() {
+    await this.authService.signOut();
+    this.router.navigate(['/login']);
   }
 }

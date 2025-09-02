@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { Recipe, RecipeIngredient, Ingredient, Category, IngredientUnit, Station, RecipePreparation } from '../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthService } from '../../services/auth.service';
 
 interface NewRecipeForm {
   name: string;
@@ -22,6 +23,7 @@ interface NewRecipeForm {
 })
 export class TechnicalSheetsComponent {
   private dataService = inject(SupabaseService);
+  private authService = inject(AuthService);
 
   // Data Signals from Service
   recipesWithStockStatus = this.dataService.recipesWithStockStatus;
@@ -130,6 +132,10 @@ export class TechnicalSheetsComponent {
     this.techSheetSellingPrice.set(recipe.price || 0);
     this.prepTimeInMinutes.set(recipe.prep_time_in_minutes || 15);
     
+    // FIX: Get user ID to add to new preparation object.
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
     let preps = this.dataService.getRecipePreparations(recipe.id);
     const ingredientsForRecipe = this.dataService.getRecipeIngredients(recipe.id);
 
@@ -140,7 +146,8 @@ export class TechnicalSheetsComponent {
             name: 'Preparação Principal',
             station_id: this.stations()[0]?.id || '',
             display_order: 0,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            user_id: userId,
         });
     }
 
@@ -156,6 +163,10 @@ export class TechnicalSheetsComponent {
   closeTechSheetModal() { this.isTechSheetModalOpen.set(false); }
   
   addPreparation() {
+    // FIX: Add user_id to new preparation object.
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
     this.currentPreparations.update(preps => [
         ...preps,
         {
@@ -166,6 +177,7 @@ export class TechnicalSheetsComponent {
             prep_instructions: '',
             display_order: preps.length,
             created_at: new Date().toISOString(),
+            user_id: userId,
             recipe_ingredients: []
         }
     ]);
@@ -187,6 +199,10 @@ export class TechnicalSheetsComponent {
   }
 
   addIngredientToTechSheet(prepId: string, ingredient: Ingredient) {
+    // FIX: Add user_id to new recipe ingredient object.
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
     this.currentPreparations.update(preps => preps.map(p => {
         if (p.id === prepId) {
             const newIngredients = [...p.recipe_ingredients, {
@@ -194,6 +210,7 @@ export class TechnicalSheetsComponent {
                 preparation_id: p.id,
                 ingredient_id: ingredient.id,
                 quantity: 1, // Default quantity to 1 instead of 0
+                user_id: userId,
                 ingredients: { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost }
             }];
             return { ...p, recipe_ingredients: newIngredients };

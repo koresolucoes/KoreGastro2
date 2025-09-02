@@ -9,6 +9,7 @@ export interface IngredientCategory {
     id: string;
     name: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Supplier {
@@ -18,6 +19,7 @@ export interface Supplier {
     phone?: string;
     email?: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Ingredient {
@@ -32,6 +34,7 @@ export interface Ingredient {
     supplier_id: string | null;
     expiration_date?: string | null;
     last_movement_at?: string | null;
+    user_id: string;
     ingredient_categories?: { name: string } | null; // For joined data
     suppliers?: { name: string } | null; // For joined data
 }
@@ -42,12 +45,14 @@ export interface InventoryMovement {
     quantity_change: number;
     reason: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Category {
     id: string;
     name: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Station {
@@ -56,6 +61,7 @@ export interface Station {
     created_at: string;
     auto_print_orders: boolean;
     printer_name?: string | null;
+    user_id: string;
 }
 
 export interface RecipePreparation {
@@ -66,6 +72,7 @@ export interface RecipePreparation {
     prep_instructions?: string | null;
     display_order: number;
     created_at: string;
+    user_id: string;
     // For UI
     station_name?: string;
     recipe_ingredients?: RecipeIngredient[];
@@ -81,6 +88,7 @@ export interface Recipe {
     operational_cost?: number | null;
     is_available: boolean;
     created_at: string;
+    user_id: string;
     hasStock?: boolean;
 }
 
@@ -89,6 +97,7 @@ export interface RecipeIngredient {
     ingredient_id: string;
     quantity: number;
     preparation_id: string;
+    user_id: string;
     // Joined data for UI
     ingredients?: Pick<Ingredient, 'name' | 'unit' | 'cost'>;
 }
@@ -99,12 +108,14 @@ export interface Employee {
     role?: string;
     pin?: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Hall {
     id: string;
     name: string;
     created_at: string;
+    user_id: string;
 }
 
 export interface Table {
@@ -119,6 +130,7 @@ export interface Table {
     employee_id?: string;
     customer_count?: number;
     created_at: string;
+    user_id: string;
 }
 
 export interface Order {
@@ -131,6 +143,7 @@ export interface Order {
     is_completed: boolean;
     completed_at?: string;
     order_items: OrderItem[];
+    user_id: string;
 }
 
 export interface OrderItem {
@@ -147,6 +160,7 @@ export interface OrderItem {
     created_at: string;
     price: number;
     group_id?: string | null;
+    user_id: string;
 }
 
 export interface Customer {
@@ -156,6 +170,7 @@ export interface Customer {
     email?: string;
     visits: number;
     created_at: string;
+    user_id: string;
 }
 
 export interface Transaction {
@@ -164,6 +179,7 @@ export interface Transaction {
     type: TransactionType;
     amount: number;
     date: string;
+    user_id: string;
 }
 
 export interface CashierClosing {
@@ -178,4 +194,5 @@ export interface CashierClosing {
     payment_summary: any; // JSONB
     notes?: string | null;
     closed_by_employee_id?: string | null;
+    user_id: string;
 }
