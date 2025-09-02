@@ -1,4 +1,4 @@
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full relative">
     @if (selectedTable(); as table) {
       <!-- Header -->
       <div class="p-4 border-b border-gray-700 flex-shrink-0">
@@ -11,7 +11,7 @@
       </div>
 
       <!-- Main Content (Scrollable Area) -->
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto pb-56">
         @if (currentOrder()) {
           <div class="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-3 gap-4 p-4">
               <!-- Left Side: Menu -->
@@ -138,7 +138,7 @@
 
       <!-- Footer with Actions -->
       @if(currentOrder()) {
-        <div class="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-900">
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-gray-900/95 backdrop-blur-sm">
             <div class="flex justify-between items-center mb-4"><span class="text-lg font-bold text-white">Total</span><span class="text-lg font-bold text-white">{{ orderTotal() | currency:'BRL' }}</span></div>
             <div class="grid grid-cols-2 gap-2">
                 <button (click)="sendOrder()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed" [disabled]="shoppingCart().length === 0">Enviar Pedido</button>
