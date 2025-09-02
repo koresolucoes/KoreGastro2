@@ -66,8 +66,8 @@ export class OrderPanelComponent {
 
   // Floating Action Bar State
   isFooterVisible = signal(true);
-  scrollContainerRef = viewChild.required<ElementRef<HTMLDivElement>>('scrollContainer');
-  footerActionsRef = viewChild.required<ElementRef<HTMLDivElement>>('footerActions');
+  scrollContainerRef = viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
+  footerActionsRef = viewChild<ElementRef<HTMLDivElement>>('footerActions');
 
   // Notes Modal Signals
   isNotesModalOpen = signal(false);
@@ -110,25 +110,27 @@ export class OrderPanelComponent {
     });
 
     // Effect for IntersectionObserver to control floating action bar visibility
-    effect(() => {
-        const scrollEl = this.scrollContainerRef().nativeElement;
-        const footerEl = this.footerActionsRef().nativeElement;
+    effect((onCleanup) => {
+        const scrollElRef = this.scrollContainerRef();
+        const footerElRef = this.footerActionsRef();
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                // Use isIntersecting to check if the element is in the viewport of the root
-                this.isFooterVisible.set(entry.isIntersecting);
-            },
-            { 
-              root: scrollEl, // The scrollable container
-              threshold: 0.1  // Trigger when even a small part is visible/hidden
-            }
-        );
+        // Only set up the observer if both elements are present in the DOM
+        if (scrollElRef && footerElRef) {
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    this.isFooterVisible.set(entry.isIntersecting);
+                },
+                { 
+                  root: scrollElRef.nativeElement,
+                  threshold: 0.1
+                }
+            );
 
-        observer.observe(footerEl);
+            observer.observe(footerElRef.nativeElement);
 
-        // Cleanup function is automatically handled by Angular's effect
-        return () => observer.disconnect();
+            // The onCleanup function will be called when the effect is re-run or destroyed.
+            onCleanup(() => observer.disconnect());
+        }
     });
   }
 
