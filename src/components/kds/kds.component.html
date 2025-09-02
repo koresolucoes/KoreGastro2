@@ -1,4 +1,5 @@
 
+
 <div class.="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -22,7 +23,7 @@
           </button>
         </div>
       </div>
-      <div class="flex space-x-2 bg-gray-700 p-1 rounded-lg">
+      <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
         @for (station of stations(); track station.id) {
           <button 
             (click)="selectStation(station)"

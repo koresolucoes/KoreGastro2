@@ -104,7 +104,7 @@
   } @else {
     <div class="text-center py-16 bg-gray-800 rounded-lg">
       <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2-2H5a2 2 0 01-2-2z" />
       </svg>
       <h3 class="mt-2 text-sm font-medium text-white">Nenhum prato encontrado</h3>
       <p class="mt-1 text-sm text-gray-500">Tente ajustar seus filtros de busca ou adicione um novo prato.</p>
@@ -163,8 +163,8 @@
         <!-- Preparations -->
         @for(prep of currentPreparations(); track prep.id; let i = $index) {
           <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-4 flex-1">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-3">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
                 <input type="text" [value]="prep.name" (change)="updatePreparationField(prep.id, 'name', $any($event.target).value)" class="flex-1 bg-gray-700 text-lg font-semibold border border-gray-600 rounded-lg px-3 py-1 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500">
                 <select [value]="prep.station_id" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                   @for(station of stations(); track station.id) {
@@ -173,7 +173,7 @@
                 </select>
               </div>
               @if (currentPreparations().length > 1) {
-                <button (click)="removePreparation(prep.id)" class="ml-4 p-2 text-red-500 hover:text-red-400" title="Remover esta preparação">
+                <button (click)="removePreparation(prep.id)" class="ml-auto sm:ml-4 p-2 text-red-500 hover:text-red-400" title="Remover esta preparação">
                   <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.02-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                 </button>
               }
@@ -182,16 +182,16 @@
             <ul class="space-y-2 mb-3">
               @for(ri of prep.recipe_ingredients; track ri.ingredient_id) {
                 @let ingredient = getIngredientDetails(ri.ingredient_id);
-                <li class="flex items-center gap-4 bg-gray-700/50 p-2 rounded-lg">
-                   <div class="flex-1">
+                <li class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 bg-gray-700/50 p-2 rounded-lg">
+                   <div class="flex-1 w-full">
                      <p class="font-medium text-white">{{ ri.ingredients?.name || ingredient?.name }}</p>
                      <p class="text-xs text-gray-400">Custo: {{ (ingredient?.cost || 0) | currency:'BRL' }} / {{ ingredient?.unit }}</p>
                    </div>
-                   <div class="flex items-center gap-2">
+                   <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                       <input type="number" [value]="ri.quantity" (change)="updateTechSheetIngredientQuantity(prep.id, ri.ingredient_id, $event)" min="0" step="any" class="w-24 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white text-right" placeholder="Qtd.">
                       <span class="w-8 text-gray-400 uppercase text-sm font-semibold">{{ ingredient?.unit }}</span>
                    </div>
-                   <button (click)="removeIngredientFromTechSheet(prep.id, ri.ingredient_id)" class="p-1 text-red-500 hover:text-red-400" title="Remover ingrediente">
+                   <button (click)="removeIngredientFromTechSheet(prep.id, ri.ingredient_id)" class="p-1 text-red-500 hover:text-red-400 self-end sm:self-center" title="Remover ingrediente">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                    </button>
                 </li>
@@ -232,8 +232,8 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex-shrink-0 p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
-         <div class="flex items-center gap-6">
+      <div class="flex-shrink-0 p-4 bg-gray-900/50 flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-4 border-t border-gray-700">
+         <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
             <div class="text-center">
                 <label class="block text-xs text-gray-400">Custo Total</label>
                 <p class="font-bold text-lg text-white">{{ techSheetTotalCost() | currency:'BRL' }}</p>
@@ -247,7 +247,7 @@
                 <p class="font-bold text-lg" [class.text-green-400]="techSheetProfitMargin() >= 0" [class.text-red-400]="techSheetProfitMargin() < 0">{{ techSheetProfitMargin() | number:'1.1-2' }}%</p>
             </div>
          </div>
-         <div class="flex gap-3">
+         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
              <button (click)="closeTechSheetModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
              <button (click)="saveTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Ficha Técnica</button>
          </div>
