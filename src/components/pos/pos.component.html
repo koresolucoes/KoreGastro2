@@ -1,5 +1,3 @@
-
-
 @if (isEmployeeLoginModalOpen()) {
   <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
@@ -119,7 +117,7 @@
               }
 
               <div class="flex flex-col items-center justify-center text-center flex-1 w-full overflow-hidden">
-                <span class="text-base sm:text-xl md:text-3xl font-bold leading-none">{{ table.number }}</span>
+                <span class="text-xl sm:text-2xl md:text-3xl font-bold leading-none">{{ table.number }}</span>
                 
                 @if (table.status === 'OCUPADA') {
                     @if(table.employee_id) {
@@ -273,89 +271,90 @@
             </button>
           </div>
 
-          <div class="flex-1 flex flex-col md:flex-row min-h-0">
-            <!-- Left Side: Order Summary -->
-            <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col flex-1 md:flex-auto min-h-0">
-              <h4 class="font-semibold text-lg text-white mb-4 flex-shrink-0">Resumo da Conta</h4>
-              <div class="flex-1 overflow-y-auto pr-2">
-                @if(currentOrder(); as order) {
-                  <ul class="space-y-2">
-                    @for(item of order.order_items; track item.id) {
-                      <li class="flex justify-between items-center text-sm">
-                        <div>
-                          <p>{{ item.name }} <span class="text-gray-400">x{{ item.quantity }}</span></p>
-                        </div>
-                        <span class="font-medium">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                      </li>
-                    }
-                  </ul>
-                }
-              </div>
-              <div class="pt-4 border-t border-gray-700 flex-shrink-0">
-                <div class="flex justify-between items-center text-lg mb-2">
-                  <span>Gorjeta</span>
-                  <input type="number" [value]="tipAmount()" (input)="tipAmount.set(+$any($event.target).value)" placeholder="0,00" class="w-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div class="flex-1 min-h-0 overflow-y-auto">
+            <div class="flex flex-col md:flex-row">
+              <!-- Left Side: Order Summary -->
+              <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col">
+                <h4 class="font-semibold text-lg text-white mb-4 flex-shrink-0">Resumo da Conta</h4>
+                <div class="pr-2">
+                  @if(currentOrder(); as order) {
+                    <ul class="space-y-2">
+                      @for(item of order.order_items; track item.id) {
+                        <li class="flex justify-between items-center text-sm">
+                          <div>
+                            <p>{{ item.name }} <span class="text-gray-400">x{{ item.quantity }}</span></p>
+                          </div>
+                          <span class="font-medium">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
                 </div>
-                <div class="flex justify-between items-center text-2xl font-bold text-white">
-                  <span>Total</span>
-                  <span>{{ orderTotalWithTip() | currency:'BRL' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Side: Payment Input -->
-            <div class="w-full md:w-1/2 p-4 flex flex-col flex-1 md:flex-auto min-h-0">
-              <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700 flex-shrink-0">
-                <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
-                <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0" [class.text-gray-400]="balanceDue() === 0">{{ balanceDue() | currency:'BRL' }}</p></div>
-                <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
-              </div>
-              
-              <div class="space-y-4 mb-4 flex-shrink-0">
-                <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
-                  <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
-                  <div class="grid grid-cols-3 gap-2">
-                    <button (click)="selectedPaymentMethod.set('Dinheiro')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Dinheiro'" [class.text-white]="selectedPaymentMethod() === 'Dinheiro'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Dinheiro'">Dinheiro</button>
-                    <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Crédito'">Crédito</button>
-                    <button (click)="selectedPaymentMethod.set('Cartão de Débito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Débito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Débito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Débito'">Débito</button>
-                    <button (click)="selectedPaymentMethod.set('PIX')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'PIX'" [class.text-white]="selectedPaymentMethod() === 'PIX'" [class.bg-gray-700]="selectedPaymentMethod() !== 'PIX'">PIX</button>
-                    <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.text-white]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
+                <div class="pt-4 border-t border-gray-700 flex-shrink-0 mt-auto">
+                  <div class="flex justify-between items-center text-lg mb-2">
+                    <span>Gorjeta</span>
+                    <input type="number" [value]="tipAmount()" (input)="tipAmount.set(+$any($event.target).value)" placeholder="0,00" class="w-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div class="flex justify-between items-center text-2xl font-bold text-white">
+                    <span>Total</span>
+                    <span>{{ orderTotalWithTip() | currency:'BRL' }}</span>
                   </div>
                 </div>
-                <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Adicionar Pagamento</button>
               </div>
 
-              <div class="flex-1 border-t border-gray-700 pt-4 overflow-y-auto">
-                <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
-                @if(payments().length === 0) {
-                  <p class="text-sm text-center text-gray-500 py-4">Nenhum pagamento adicionado.</p>
-                } @else {
-                  <ul class="space-y-2">
-                    @for(payment of payments(); track $index) {
-                      <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md text-sm">
-                        <span class="font-medium text-gray-300">{{ payment.method }}</span>
-                        <div class="flex items-center gap-3">
-                          <span class="font-semibold text-white">{{ payment.amount | currency:'BRL' }}</span>
-                          <button (click)="removePayment($index)" class="text-red-500 hover:text-red-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          </button>
-                        </div>
-                      </li>
-                    }
-                  </ul>
-                }
-              </div>
-              
-              <div class="pt-4 mt-auto flex-shrink-0">
-                <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
-                  Finalizar e Liberar Mesa
-                </button>
+              <!-- Right Side: Payment Input -->
+              <div class="w-full md:w-1/2 p-4 flex flex-col">
+                <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700 flex-shrink-0">
+                  <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
+                  <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0" [class.text-gray-400]="balanceDue() === 0">{{ balanceDue() | currency:'BRL' }}</p></div>
+                  <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
+                </div>
+                
+                <div class="space-y-4 mb-4 flex-shrink-0">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
+                    <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button (click)="selectedPaymentMethod.set('Dinheiro')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Dinheiro'" [class.text-white]="selectedPaymentMethod() === 'Dinheiro'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Dinheiro'">Dinheiro</button>
+                      <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Crédito'">Crédito</button>
+                      <button (click)="selectedPaymentMethod.set('Cartão de Débito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Débito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Débito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Débito'">Débito</button>
+                      <button (click)="selectedPaymentMethod.set('PIX')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'PIX'" [class.text-white]="selectedPaymentMethod() === 'PIX'" [class.bg-gray-700]="selectedPaymentMethod() !== 'PIX'">PIX</button>
+                      <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.text-white]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
+                    </div>
+                  </div>
+                  <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Adicionar Pagamento</button>
+                </div>
+
+                <div class="border-t border-gray-700 pt-4">
+                  <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
+                  @if(payments().length === 0) {
+                    <p class="text-sm text-center text-gray-500 py-4">Nenhum pagamento adicionado.</p>
+                  } @else {
+                    <ul class="space-y-2">
+                      @for(payment of payments(); track $index) {
+                        <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md text-sm">
+                          <span class="font-medium text-gray-300">{{ payment.method }}</span>
+                          <div class="flex items-center gap-3">
+                            <span class="font-semibold text-white">{{ payment.amount | currency:'BRL' }}</span>
+                            <button (click)="removePayment($index)" class="text-red-500 hover:text-red-400">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
               </div>
             </div>
+          </div>
+          <div class="p-4 mt-auto flex-shrink-0 border-t border-gray-700">
+            <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
+              Finalizar e Liberar Mesa
+            </button>
           </div>
         </div>
       </div>
