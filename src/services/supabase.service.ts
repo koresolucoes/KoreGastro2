@@ -1,4 +1,3 @@
-
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { User, RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, OrderItemStatus, Transaction, IngredientCategory, Supplier, RecipeIngredient, IngredientUnit, RecipePreparation, CashierClosing, TransactionType, Employee, Promotion, PromotionRecipe, TableStatus } from '../models/db.models';
@@ -51,6 +50,9 @@ export class SupabaseService {
   // Signals for dashboard
   dashboardTransactions = signal<Transaction[]>([]);
   dashboardCompletedOrders = signal<Order[]>([]);
+
+  // Signals for performance page
+  performanceTipTransactions = signal<Transaction[]>([]);
 
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
 
@@ -121,7 +123,7 @@ export class SupabaseService {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderItemChange(p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.tables, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.halls, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.stations, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'stations', '*, employees(*)', this.stations))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.categories, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipes, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'employees', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.employees, p))
@@ -147,7 +149,8 @@ export class SupabaseService {
   // Generic handler for simple tables with an 'id' primary key
   private handleSignalChange<T extends { id: string }>(
     signal: WritableSignal<T[]>,
-    payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
+    // FIX: Use Partial<T> to correctly type the payload, especially for DELETE events where `old` may be incomplete.
+    payload: RealtimePostgresChangesPayload<Partial<T>>
   ) {
     // user_id check is no longer needed due to server-side filtering
     switch (payload.eventType) {
@@ -158,9 +161,10 @@ export class SupabaseService {
             signal.update(current => current.map(item => item.id === (payload.new as T).id ? payload.new as T : item));
             break;
         case 'DELETE':
-            // FIX: `payload.old` can be an empty object. Cast to a type with an optional `id` and check for truthiness.
-            const oldId = (payload.old as { id?: string }).id;
-            if (oldId) {
+            // FIX: The `old` property on a payload can be an empty object on non-delete events.
+            // Using a type guard (`in`) is safer than direct casting to ensure `id` exists before access.
+            if ('id' in payload.old && payload.old.id) {
+                const oldId = payload.old.id;
                 signal.update(current => current.filter(item => item.id !== oldId));
             }
             break;
@@ -259,6 +263,7 @@ export class SupabaseService {
       this.cashierClosings.set([]);
       this.dashboardTransactions.set([]);
       this.dashboardCompletedOrders.set([]);
+      this.performanceTipTransactions.set([]);
       this.isDataLoaded.set(false);
   }
 
@@ -285,7 +290,7 @@ export class SupabaseService {
       ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId),
         supabase.from('tables').select('*').eq('user_id', userId),
-        supabase.from('stations').select('*').eq('user_id', userId),
+        supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
         supabase.from('categories').select('*').eq('user_id', userId),
         supabase.from('orders').select('*, order_items(*)').eq('is_completed', false).eq('user_id', userId),
         supabase.from('employees').select('*').eq('user_id', userId),
@@ -405,22 +410,25 @@ export class SupabaseService {
     return this.openOrders().find(o => o.table_number === tableNumber);
   }
 
-  async createOrderForTable(table: Table, employeeId: string): Promise<{ success: boolean; error: any; data?: Order }> {
+  async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { data: newOrderData, error: orderError } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select().single();
-    if (orderError || !newOrderData) { return { success: false, error: { ...orderError, message: `Falha ao criar pedido na tabela 'orders'. ${orderError?.message ?? ''}` } }; }
-    const { error: tableError } = await supabase.from('tables').update({ status: 'OCUPADA', employee_id: employeeId }).eq('id', table.id).eq('user_id', userId);
-    if (tableError) {
-      await supabase.from('orders').delete().eq('id', newOrderData.id);
-      return { success: false, error: { ...tableError, message: `Falha ao atualizar status na tabela 'tables'. ${tableError.message}` } };
+    const { data: newOrderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId })
+        .select()
+        .single();
+    
+    if (orderError) {
+      return { success: false, error: orderError };
     }
-    // Realtime will handle state updates.
+    
+    // Realtime will handle the state update.
     return { success: true, error: null, data: { ...newOrderData, order_items: [] } };
   }
 
-  async addItemsToOrder(orderId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
+  async addItemsToOrder(orderId: string, tableId: string, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -483,6 +491,18 @@ export class SupabaseService {
         const { data: insertedItems, error } = await supabase.from('order_items').insert(allItemsToInsert).select();
         
         if (error) return { success: false, error };
+        
+        // After successfully inserting items, update the table status to Occupied.
+        // This marks the moment the table is officially in use.
+        const { error: tableError } = await supabase
+            .from('tables')
+            .update({ status: 'OCUPADA', employee_id: employeeId })
+            .eq('id', tableId);
+        
+        if (tableError) {
+             console.error(`CRITICAL: Items for order ${orderId} were added, but failed to update table ${tableId} status. Manual correction needed.`, tableError);
+             // Don't return error to user as items WERE sent.
+        }
 
         // Auto-print if necessary
         const stationsForPrinting = new Map<string, { station: Station, items: OrderItem[] }>();
@@ -511,6 +531,30 @@ export class SupabaseService {
     }
     return { success: true, error: null };
   }
+
+  async deleteEmptyOrder(orderId: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+    return { success: !error, error };
+  }
+
+  async releaseTable(tableId: string, orderId: string): Promise<{ success: boolean; error: any }> {
+    const { error: tableError } = await supabase
+        .from('tables')
+        .update({ status: 'LIVRE', employee_id: null })
+        .eq('id', tableId);
+
+    if (tableError) return { success: false, error: tableError };
+
+    // Also delete the associated empty order to keep the database clean
+    const { error: orderError } = await supabase.from('orders').delete().eq('id', orderId);
+    if (orderError) {
+        console.error("Failed to delete empty order while releasing table:", orderError);
+        return { success: false, error: orderError };
+    }
+    
+    return { success: true, error: null };
+  }
+
 
   // --- POS Component Methods ---
   async updateHall(id: string, name: string): Promise<{ success: boolean; error: any }> {
@@ -574,11 +618,13 @@ export class SupabaseService {
           });
       }
       if (tip > 0) {
+          const table = this.tables().find(t => t.id === tableId);
           transactionsToInsert.push({
               description: `Gorjeta Pedido #${orderIdShort}`,
               type: 'Gorjeta',
               amount: tip,
-              user_id: userId
+              user_id: userId,
+              employee_id: table?.employee_id || null
           });
       }
 
@@ -673,6 +719,28 @@ export class SupabaseService {
     this.transactions.set(transactions.data || []);
     return { success: true, error: null };
   }
+  
+    async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean, error: any }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('type', 'Gorjeta')
+            .gte('date', startDate.toISOString())
+            .lte('date', endDate.toISOString());
+    
+        if (error) {
+            console.error('Error fetching performance data:', error);
+            this.performanceTipTransactions.set([]);
+            return { success: false, error };
+        }
+    
+        this.performanceTipTransactions.set(data || []);
+        return { success: true, error: null };
+    }
 
   async addStation(name: string): Promise<{ success: boolean, error: any }> {
     const userId = this.currentUser()?.id;
@@ -701,6 +769,11 @@ export class SupabaseService {
     return { success: !error, error };
   }
   
+  async assignEmployeeToStation(stationId: string, employeeId: string | null): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('stations').update({ employee_id: employeeId }).eq('id', stationId);
+    return { success: !error, error };
+  }
+
     async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
         const userId = this.currentUser()?.id;
         if (!userId) return { success: false, error: { message: 'User not authenticated' } };

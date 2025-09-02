@@ -11,6 +11,7 @@ import { MenuComponent } from './components/menu/menu.component';
 import { CashierComponent } from './components/cashier/cashier.component';
 import { LoginComponent } from './components/auth/login.component';
 import { authGuard } from './guards/auth.guard';
+import { PerformanceComponent } from './components/performance/performance.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -22,6 +23,7 @@ export const APP_ROUTES: Routes = [
   { path: 'inventory', component: InventoryComponent, canActivate: [authGuard] },
   { path: 'menu', component: MenuComponent, canActivate: [authGuard] },
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [authGuard] },
+  { path: 'performance', component: PerformanceComponent, canActivate: [authGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page

@@ -132,9 +132,13 @@
                     <button (click)="sendOrder()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed" [disabled]="shoppingCart().length === 0">Enviar Pedido</button>
                     <button (click)="startCheckout()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed" [disabled]="shoppingCart().length > 0 || currentOrder()?.order_items.length === 0">Fechar Conta</button>
                 </div>
-                @if(currentOrder() && selectedTable()?.status === 'OCUPADA') {
-                  <div class="mt-2"><button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500 transition-colors">Mover Mesa</button></div>
-                }
+                <div class="mt-2">
+                  @if(currentOrder() && selectedTable()?.status === 'OCUPADA' && currentOrder()!.order_items.length === 0) {
+                      <button (click)="releaseTable.emit()" class="w-full bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-500 transition-colors">Liberar Mesa</button>
+                  } @else if(currentOrder() && selectedTable()?.status === 'OCUPADA') {
+                      <button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500 transition-colors">Mover Mesa</button>
+                  }
+                </div>
               </div>
             </div>
           } @else {

@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
@@ -78,6 +79,10 @@ export class PosComponent {
     const table = this.selectedTable();
     if (!table) return null;
     return this.dataService.getOrderByTableNumber(table.number) ?? null;
+  });
+
+  employeeNameMap = computed(() => {
+    return new Map(this.employees().map(e => [e.id, e.name]));
   });
 
   editModeCanvasSize = signal({ width: 100, height: 100 }); // in percentages
@@ -368,16 +373,22 @@ export class PosComponent {
   
   async selectTable(table: Table) {
     if (this.isEditMode() || !this.activeEmployee()) return;
-    this.isOrderModalOpen.set(true);
-    this.orderError.set(null);
+
     this.selectedTable.set(table);
+    this.orderError.set(null);
     const orderExists = this.dataService.getOrderByTableNumber(table.number);
+
+    // If no order exists and the table is free, create a new "pending" order.
+    // The table status itself will only be changed when an item is sent.
     if (!orderExists && table.status === 'LIVRE') {
-      const result = await this.dataService.createOrderForTable(table, this.activeEmployee()!.id);
+      const result = await this.dataService.createOrderForTable(table);
       if (!result.success) { 
-        this.orderError.set(result.error?.message ?? 'Erro desconhecido.'); 
+        this.orderError.set(result.error?.message ?? 'Erro desconhecido ao criar pedido.');
+        return; // Don't open modal if order creation fails.
       }
     }
+    
+    this.isOrderModalOpen.set(true);
   }
   
   async handleCheckoutStarted() {
@@ -451,11 +462,33 @@ export class PosComponent {
   openMoveModal() { this.isMoveModalOpen.set(true); }
   closeMoveModal() { this.isMoveModalOpen.set(false); }
   
-  closeOrderModal() {
+  async closeOrderModal() {
+    const order = this.currentOrder();
+    const table = this.selectedTable();
+
+    // If an order was created for a free table but no items were ever sent, delete the empty order.
+    if (order && table && table.status === 'LIVRE' && order.order_items.length === 0) {
+        await this.dataService.deleteEmptyOrder(order.id);
+    }
+
     this.isOrderModalOpen.set(false);
     this.selectedTable.set(null);
     this.orderError.set(null);
     this.tipAmount.set(0);
+  }
+
+  async handleReleaseTable() {
+    const order = this.currentOrder();
+    const table = this.selectedTable();
+
+    if (order && table && table.status === 'OCUPADA' && order.order_items.length === 0) {
+        const { success, error } = await this.dataService.releaseTable(table.id, order.id);
+        if (success) {
+            this.closeOrderModal();
+        } else {
+            alert(`Falha ao liberar a mesa: ${error?.message}`);
+        }
+    }
   }
 
   getProductionStatusForTable(tableNumber: number): { ready: number, total: number } {

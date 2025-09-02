@@ -1,7 +1,8 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
-import { Station, Order, OrderItem, OrderItemStatus, Recipe } from '../../models/db.models';
+import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
 
 // Define a type for a consolidated ticket grouped by table
@@ -35,6 +36,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     dataService = inject(SupabaseService);
     printingService = inject(PrintingService);
     stations = this.dataService.stations;
+    employees = this.dataService.employees;
     recipesById = this.dataService.recipesById;
     selectedStation = signal<Station | null>(null);
 
@@ -48,6 +50,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     // Modal management
     isDetailModalOpen = signal(false);
     selectedTicketForDetail = signal<GroupedTicket | null>(null);
+    isAssignEmployeeModalOpen = signal(false);
 
     constructor() {
         effect(() => {
@@ -144,6 +147,17 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     selectStation(station: Station) {
         this.selectedStation.set(station);
+    }
+    
+    async assignEmployeeToStation(employeeId: string | null) {
+        const station = this.selectedStation();
+        if (!station) return;
+        
+        const { success, error } = await this.dataService.assignEmployeeToStation(station.id, employeeId);
+        if (!success) {
+            alert(`Falha ao atribuir funcionário: ${error?.message}`);
+        }
+        this.isAssignEmployeeModalOpen.set(false);
     }
     
     async acknowledgeAttention(item: ProcessedOrderItem, event: MouseEvent) {

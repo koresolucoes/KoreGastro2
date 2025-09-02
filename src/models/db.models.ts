@@ -63,6 +63,8 @@ export interface Station {
     auto_print_orders: boolean;
     printer_name?: string | null;
     user_id: string;
+    employee_id?: string | null;
+    employees?: Employee | null;
 }
 
 export interface RecipePreparation {
@@ -181,6 +183,7 @@ export interface Transaction {
     amount: number;
     date: string;
     user_id: string;
+    employee_id?: string | null;
 }
 
 export interface CashierClosing {

@@ -1,4 +1,5 @@
 
+
 @if (isEmployeeLoginModalOpen()) {
   <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
@@ -127,6 +128,11 @@
                           {{ status.ready }}/{{ status.total }} PRONTOS
                         </span>
                     }
+                    @if(table.employee_id) {
+                        <span class="text-[10px] font-semibold truncate leading-tight mt-1 max-w-full px-1">
+                          {{ employeeNameMap().get(table.employee_id) }}
+                        </span>
+                    }
                 }
                 
                 <span class="text-xs font-normal uppercase tracking-wider leading-tight mt-1">{{ table.status }}</span>
@@ -166,9 +172,11 @@
                 [selectedTable]="selectedTable()"
                 [currentOrder]="currentOrder()"
                 [orderError]="orderError()"
+                [activeEmployee]="activeEmployee()"
                 (closePanel)="closeOrderModal()"
                 (checkoutStarted)="handleCheckoutStarted()"
                 (moveOrderClicked)="openMoveModal()"
+                (releaseTable)="handleReleaseTable()"
             ></app-order-panel>
         </div>
       </div>

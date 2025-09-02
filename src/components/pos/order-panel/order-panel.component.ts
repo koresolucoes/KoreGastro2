@@ -1,9 +1,10 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem } from '../../../models/db.models';
+import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
@@ -47,10 +48,12 @@ export class OrderPanelComponent {
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
   currentOrder: InputSignal<Order | null> = input.required<Order | null>();
   orderError: InputSignal<string | null> = input.required<string | null>();
+  activeEmployee: InputSignal<Employee | null> = input.required<Employee | null>();
 
   closePanel: OutputEmitterRef<void> = output<void>();
   checkoutStarted: OutputEmitterRef<void> = output<void>();
   moveOrderClicked: OutputEmitterRef<void> = output<void>();
+  releaseTable: OutputEmitterRef<void> = output<void>();
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);
@@ -216,10 +219,17 @@ export class OrderPanelComponent {
   }
 
   async sendOrder() {
-    const order = this.currentOrder(), cart = this.shoppingCart();
-    if (order && cart.length > 0) {
-      const result = await this.dataService.addItemsToOrder(order.id, cart);
-      if (result.success) { this.shoppingCart.set([]); } else {
+    const order = this.currentOrder();
+    const table = this.selectedTable();
+    const employee = this.activeEmployee();
+    const cart = this.shoppingCart();
+
+    if (order && table && employee && cart.length > 0) {
+      const itemsToSend = cart.map(c => ({ recipe: c.recipe, quantity: c.quantity, notes: c.notes }));
+      const result = await this.dataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
+      if (result.success) {
+        this.shoppingCart.set([]);
+      } else {
         alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
       }
     }
