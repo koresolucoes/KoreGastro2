@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { SupabaseService } from './supabase.service';
@@ -6,33 +7,25 @@ import { AuthService } from './auth.service';
 import { Recipe, RecipePreparation, RecipeIngredient, Category } from '../models/db.models';
 import { supabase } from './supabase-client';
 
-// This is not ideal, but for the scope of this applet, we'll keep it here.
-const GEMINI_API_KEY = 'AIzaSyA05tQSdiJt1HHWT8o5jSxfuNixh7i_6UQ'; 
-
 @Injectable({
   providedIn: 'root',
 })
 export class AiRecipeService {
   private dataService: SupabaseService;
   private authService: AuthService;
-  private ai: GoogleGenAI | null = null;
+  // FIX: Removed hardcoded API key and made the AI client non-nullable.
+  private ai: GoogleGenAI;
 
   constructor() {
     this.dataService = inject(SupabaseService);
     this.authService = inject(AuthService);
     
-    if (GEMINI_API_KEY) {
-        this.ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    } else {
-        console.warn('Gemini API key not found. AI features will be disabled.');
-    }
+    // FIX: Initialize GoogleGenAI with the API key from environment variables.
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
   
   async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] }> {
-    if (!this.ai) {
-      throw new Error('AI Service is not initialized. Check API Key.');
-    }
-
+    // FIX: Removed !this.ai check as it is initialized in the constructor.
     // Step 1: Ensure at least one station exists, create a default one if not.
     let stations = this.dataService.stations();
     if (stations.length === 0) {
@@ -147,10 +140,7 @@ export class AiRecipeService {
   }
 
   async generateTechSheetForRecipe(recipe: Recipe): Promise<{ preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[], operational_cost: number, prep_time_in_minutes: number }> {
-    if (!this.ai) {
-      throw new Error('AI Service is not initialized. Check API Key.');
-    }
-
+    // FIX: Removed !this.ai check as it is initialized in the constructor.
     const stations = this.dataService.stations();
     if (stations.length === 0) {
         throw new Error('No production stations found. Please create one in Settings first.');
@@ -236,68 +226,45 @@ export class AiRecipeService {
     const stationsMap = new Map(stations.map(s => [s.name.toLowerCase(), s]));
     const userId = this.authService.currentUser()!.id;
 
-    const aggregatedIngredients = new Map<string, {
-        totalQuantity: number;
-        firstPrepTempId: string;
-        ingredient: any;
-        unit: any;
-    }>();
-
     for (const [prepIndex, prep] of aiPreparations.entries()) {
         const station = stationsMap.get(prep.station_name.toLowerCase());
-        preparationsForState.push({
-            id: `temp-${prepIndex}`,
-            recipe_id: recipeId,
-            name: prep.name,
-            station_id: station?.id || stations[0]?.id,
-            display_order: prepIndex,
-            created_at: new Date().toISOString(),
-            user_id: userId,
-            recipe_ingredients: []
-        });
-    }
-    
-    for (const [prepIndex, prep] of aiPreparations.entries()) {
-        const currentPrepTempId = `temp-${prepIndex}`;
+        const recipe_ingredients: RecipeIngredient[] = [];
+        const prepTempId = `temp-${prepIndex}`;
+
         for (const ing of prep.ingredients) {
             let ingredient = ingredientsMap.get(ing.name.toLowerCase());
             if (!ingredient) {
                 const { data, error } = await this.dataService.addIngredient({ name: ing.name, unit: ing.unit, cost: 0, stock: 0, min_stock: 0, category_id: null, supplier_id: null });
                 if (error || !data) {
                     console.error(`Falha ao criar novo ingrediente "${ing.name}":`, error);
-                    continue;
+                    continue; // Skip this ingredient if it fails to be created
                 }
                 ingredient = data;
-                ingredientsMap.set(ing.name.toLowerCase(), ingredient);
+                ingredientsMap.set(ing.name.toLowerCase(), ingredient); // Add to map to avoid re-creating
             }
-
-            const existing = aggregatedIngredients.get(ingredient.id);
-            if (existing) {
-                existing.totalQuantity += ing.quantity;
-            } else {
-                aggregatedIngredients.set(ingredient.id, {
-                    totalQuantity: ing.quantity,
-                    firstPrepTempId: currentPrepTempId,
-                    ingredient: ingredient,
-                    unit: ing.unit
-                });
-            }
-        }
-    }
-
-    for (const [ingredientId, aggData] of aggregatedIngredients.entries()) {
-        const targetPrep = preparationsForState.find(p => p.id === aggData.firstPrepTempId);
-        if (targetPrep) {
-            targetPrep.recipe_ingredients.push({
+            
+            recipe_ingredients.push({
                 recipe_id: recipeId,
-                ingredient_id: ingredientId,
-                quantity: aggData.totalQuantity,
-                preparation_id: targetPrep.id,
+                ingredient_id: ingredient.id,
+                quantity: ing.quantity,
+                preparation_id: prepTempId,
                 user_id: userId,
-                ingredients: { name: aggData.ingredient.name, unit: aggData.unit, cost: aggData.ingredient.cost }
+                ingredients: { name: ingredient.name, unit: ing.unit, cost: ingredient.cost }
             });
         }
+
+        preparationsForState.push({
+            id: prepTempId,
+            recipe_id: recipeId,
+            name: prep.name,
+            station_id: station?.id || stations[0]?.id,
+            display_order: prepIndex,
+            created_at: new Date().toISOString(),
+            user_id: userId,
+            recipe_ingredients: recipe_ingredients,
+        });
     }
+    
     return preparationsForState;
   }
 }

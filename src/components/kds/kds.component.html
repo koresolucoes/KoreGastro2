@@ -36,12 +36,14 @@
               @for (item of ticket.items; track item.id) {
                 <li 
                   (click)="$event.stopPropagation(); updateStatus(item)"
-                  class="border-l-4 p-3 rounded-r-md transition-all"
+                  class="border-l-4 p-3 rounded-r-md transition-all relative"
                   [class.bg-blue-500/10]="item.status === 'EM_PREPARO' && !item.isCritical"
                   [class.bg-yellow-500/10]="item.status === 'PENDENTE' && !item.isCritical"
                   [class.border-red-500]="item.isCritical"
                   [class.border-l-8]="item.isCritical"
                   [class.bg-red-900/40]="item.isCritical"
+                  [class.opacity-50]="updatingItems().has(item.id)"
+                  [class.pointer-events-none]="updatingItems().has(item.id)"
                   [ngClass]="getItemStatusClass(item.status)">
 
                   @if(item.isCritical) {
@@ -71,9 +73,19 @@
 
                   @if(item.isCritical && !item.attention_acknowledged) {
                     <div class="mt-3 pt-3 border-t border-red-500/20">
-                      <button (click)="acknowledgeAttention(item, $event)" class="w-full text-center py-1.5 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-colors">
-                        Ciente da Atenção Especial
+                      <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-wait">
+                        @if(updatingItems().has(item.id)) {
+                          <span>Aguarde...</span>
+                        } @else {
+                          <span>Ciente da Atenção Especial</span>
+                        }
                       </button>
+                    </div>
+                  }
+
+                  @if(updatingItems().has(item.id)) {
+                    <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center rounded-md">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     </div>
                   }
                 </li>

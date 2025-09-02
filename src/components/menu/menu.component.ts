@@ -1,11 +1,13 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { Recipe } from '../../models/db.models';
+import { PricingService } from '../../services/pricing.service';
 
 interface MenuGroup {
   categoryName: string;
-  recipes: Recipe[];
+  recipes: (Recipe & { effectivePrice: number })[];
 }
 
 @Component({
@@ -17,6 +19,7 @@ interface MenuGroup {
 })
 export class MenuComponent {
   private dataService = inject(SupabaseService);
+  private pricingService = inject(PricingService);
 
   searchTerm = signal('');
 
@@ -36,14 +39,19 @@ export class MenuComponent {
     const categories = this.dataService.categories();
     const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
-    const grouped = availableRecipes.reduce((acc, recipe) => {
+    const recipesWithPrice = availableRecipes.map(recipe => ({
+        ...recipe,
+        effectivePrice: this.pricingService.getEffectivePrice(recipe)
+    }));
+
+    const grouped = recipesWithPrice.reduce((acc, recipe) => {
       const categoryName = categoryMap.get(recipe.category_id) || 'Outros';
       if (!acc[categoryName]) {
         acc[categoryName] = [];
       }
       acc[categoryName].push(recipe);
       return acc;
-    }, {} as Record<string, Recipe[]>);
+    }, {} as Record<string, (Recipe & { effectivePrice: number })[]>);
 
     return Object.keys(grouped)
       .map(categoryName => ({

@@ -1,10 +1,13 @@
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { PrintingService } from '../../services/printing.service';
 import { Category, Order, Recipe, Transaction, CashierClosing } from '../../models/db.models';
+import { PricingService } from '../../services/pricing.service';
 
 type CashierView = 'quickSale' | 'cashDrawer' | 'reprint';
 
@@ -34,6 +37,7 @@ interface PaymentSummary {
 export class CashierComponent {
   dataService = inject(SupabaseService);
   printingService = inject(PrintingService);
+  pricingService = inject(PricingService);
 
   view: WritableSignal<CashierView> = signal('quickSale');
   isLoading = computed(() => !this.dataService.isDataLoaded());
@@ -64,6 +68,14 @@ export class CashierComponent {
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<Order | null>(null);
 
+  recipePrices = computed(() => {
+    const priceMap = new Map<string, number>();
+    for (const recipe of this.recipes()) {
+      priceMap.set(recipe.id, this.pricingService.getEffectivePrice(recipe));
+    }
+    return priceMap;
+  });
+
   // --- Quick Sale Computeds & Methods ---
   filteredRecipes = computed(() => {
     const category = this.selectedCategory();
@@ -78,7 +90,10 @@ export class CashierComponent {
     return recipesToShow;
   });
 
-  cartTotal = computed(() => this.quickSaleCart().reduce((sum, item) => sum + item.recipe.price * item.quantity, 0));
+  cartTotal = computed(() => {
+    const prices = this.recipePrices();
+    return this.quickSaleCart().reduce((sum, item) => sum + (prices.get(item.recipe.id) ?? item.recipe.price) * item.quantity, 0)
+  });
   totalPaid = computed(() => this.payments().reduce((sum, p) => sum + p.amount, 0));
   balanceDue = computed(() => parseFloat((this.cartTotal() - this.totalPaid()).toFixed(2)));
   change = computed(() => {

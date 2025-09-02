@@ -1,3 +1,4 @@
+
 <div class="container mx-auto">
   <h1 class="text-3xl font-bold text-white mb-6">Configurações</h1>
 
@@ -92,6 +93,42 @@
         } @else { 
             <p class="text-center text-gray-500 py-4">Nenhuma estação de produção configurada.</p> 
         }
+    </div>
+
+    <!-- Panel: Employee Management -->
+    <div class="bg-gray-800 rounded-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Gestão de Funcionários</h2>
+            <button (click)="openAddEmployeeModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors text-sm">Adicionar</button>
+        </div>
+        <div class="relative mb-4">
+            <input type="text" [value]="employeeSearchTerm()" (input)="employeeSearchTerm.set($any($event.target).value)" placeholder="Buscar funcionário..." class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </div>
+         @if (filteredEmployees().length > 0) {
+          <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
+            @for(item of filteredEmployees(); track item.id) {
+                <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+                    @if (employeePendingDeletion()?.id === item.id) {
+                        <span class="text-sm text-red-300">Certeza?</span>
+                        <button (click)="confirmDeleteEmployee()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
+                        <button (click)="cancelDeleteEmployee()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                    } @else {
+                        <div class="flex-1">
+                            <p class="text-white font-semibold">{{ item.name }}</p>
+                            <p class="text-xs text-gray-400">{{ item.role || 'Sem cargo' }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button (click)="openEditEmployeeModal(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                            <button (click)="requestDeleteEmployee(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                    }
+                </li>
+            }
+          </ul>
+        } @else { <p class="text-center text-gray-500 py-4">Nenhum funcionário encontrado.</p> }
     </div>
 
     <!-- Panel: Ingredient Category Management -->
@@ -193,6 +230,38 @@
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
          <button (click)="closeSupplierModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
          <button (click)="saveSupplier()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Employee Modal -->
+@if(isEmployeeModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeEmployeeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingEmployee() ? 'Editar Funcionário' : 'Novo Funcionário' }}</h3>
+        <button (click)="closeEmployeeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome Completo *</label>
+          <input type="text" [value]="employeeForm().name || ''" (input)="updateEmployeeFormField('name', $any($event.target).value)" placeholder="Nome do Funcionário" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Cargo</label>
+            <input type="text" [value]="employeeForm().role || ''" (input)="updateEmployeeFormField('role', $any($event.target).value)" placeholder="Ex: Garçom, Cozinheiro" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">PIN (4 dígitos)</label>
+            <input type="password" [value]="employeeForm().pin || ''" (input)="updateEmployeeFormField('pin', $any($event.target).value)" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="••••" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white tracking-widest text-center">
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="closeEmployeeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="saveEmployee()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
       </div>
     </div>
   </div>

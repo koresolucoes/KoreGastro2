@@ -1,9 +1,12 @@
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem } from '../../../models/db.models';
 import { GoogleGenAI, Type } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
+import { PricingService } from '../../../services/pricing.service';
 
 interface CartItem {
     id: string;
@@ -29,11 +32,6 @@ interface SingleOrderItem {
 
 type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
 
-// IMPORTANT: To enable the AI feature, paste your Gemini API Key here.
-// Note: For production environments, it is strongly recommended to handle API keys
-// on a secure backend server instead of exposing them in the client-side code.
-const GEMINI_API_KEY = 'AIzaSyA05tQSdiJt1HHWT8o5jSxfuNixh7i_6UQ'; // <-- PASTE YOUR GEMINI API KEY HERE
-
 @Component({
   selector: 'app-order-panel',
   standalone: true,
@@ -43,6 +41,7 @@ const GEMINI_API_KEY = 'AIzaSyA05tQSdiJt1HHWT8o5jSxfuNixh7i_6UQ'; // <-- PASTE Y
 })
 export class OrderPanelComponent {
   dataService = inject(SupabaseService);
+  pricingService = inject(PricingService);
 
   // Inputs & Outputs
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
@@ -66,18 +65,24 @@ export class OrderPanelComponent {
   noteInput = signal('');
 
   // AI Upselling Signals
-  private ai: GoogleGenAI | null = null;
+  // FIX: Removed hardcoded API key and made the AI client non-nullable.
+  private ai: GoogleGenAI;
   upsellSuggestions = signal<Recipe[]>([]);
   isGeneratingSuggestions = signal(false);
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
-  constructor() {
-    if (GEMINI_API_KEY) {
-        this.ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    } else {
-        console.warn('Gemini API key not found. Upselling feature will be disabled.');
+  recipePrices = computed(() => {
+    const priceMap = new Map<string, number>();
+    for (const recipe of this.recipes()) {
+      priceMap.set(recipe.id, this.pricingService.getEffectivePrice(recipe));
     }
+    return priceMap;
+  });
+
+  constructor() {
+    // FIX: Initialize GoogleGenAI with the API key from environment variables.
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     // Reset cart when table changes
     effect(() => {
@@ -142,7 +147,7 @@ export class OrderPanelComponent {
             recipeName: recipe?.name ?? 'Prato Desconhecido',
             recipeId: item.recipe_id,
             quantity: item.quantity,
-            totalPrice: recipe?.price ?? 0,
+            totalPrice: item.price,
             items: [],
           });
         }
@@ -155,8 +160,9 @@ export class OrderPanelComponent {
   });
   
   orderTotal = computed(() => {
-    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
-    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (item.recipe.price * item.quantity), 0);
+    const prices = this.recipePrices();
+    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + item.price, 0) ?? 0;
+    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (prices.get(item.recipe.id)! * item.quantity), 0);
     return currentItemsTotal + cartItemsTotal;
   });
 
@@ -220,8 +226,7 @@ export class OrderPanelComponent {
   }
 
   async generateUpsellSuggestions() {
-    if (!this.ai) return;
-
+    // FIX: Removed !this.ai check as it is now initialized in the constructor.
     this.isGeneratingSuggestions.set(true);
     this.upsellSuggestions.set([]);
 

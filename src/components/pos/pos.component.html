@@ -1,303 +1,359 @@
-<div class="h-full flex flex-col gap-4">
-  <!-- Main Content: Halls and Tables -->
-  <div class="flex-1 bg-gray-800 rounded-lg p-4 flex flex-col">
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
-      <h1 class="text-2xl font-bold text-white shrink-0">Ponto de Venda (PDV)</h1>
-      <div class="flex flex-wrap items-center justify-start md:justify-end gap-2 w-full">
-        @if(isEditMode()) {
-          <button (click)="openHallManager()" class="px-4 py-2 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors whitespace-nowrap">Gerenciar Salões</button>
-          <button (click)="addTable()" class="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap">Adicionar Mesa</button>
-          <button (click)="saveLayout()" class="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors whitespace-nowrap">Salvar Layout</button>
-          <button (click)="cancelEdit()" class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors whitespace-nowrap">Cancelar</button>
+
+@if (isEmployeeLoginModalOpen()) {
+  <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
+      @if (!selectedEmployeeForLogin()) {
+        <h2 class.="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para iniciar</h2>
+        @if (employees().length > 0) {
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @for(employee of employees(); track employee.id) {
+              <button (click)="selectEmployeeForLogin(employee)" class="flex flex-col items-center gap-2 p-4 bg-gray-700 rounded-lg hover:bg-blue-600 hover:text-white transition-colors">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="font-semibold text-center">{{ employee.name }}</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="text-center text-gray-400">Nenhum funcionário cadastrado. Adicione funcionários na tela de Configurações.</p>
         }
-        <button (click)="toggleEditMode()" class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap" [class.ring-2]="isEditMode()" [class.ring-offset-2]="isEditMode()" [class.ring-offset-gray-800]="isEditMode()" [class.ring-blue-500]="isEditMode()">
-          {{ isEditMode() ? 'Sair da Edição' : 'Editar Layout' }}
-        </button>
-        <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
-          @for (hall of halls(); track hall.id) {
-            <button 
-              (click)="selectHall(hall)"
-              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-              [class.bg-blue-600]="selectedHall()?.id === hall.id"
-              [class.text-white]="selectedHall()?.id === hall.id"
-              [class.text-gray-300]="selectedHall()?.id !== hall.id">
-              {{ hall.name }}
-            </button>
-          }
-        </div>
-      </div>
-    </div>
-    
-    <div 
-      class="relative flex-1 bg-gray-900/50 rounded-lg overflow-auto border-2 border-gray-700"
-      (mouseup)="stopDrag()"
-      (mouseleave)="stopDrag()">
-      <div 
-        class="relative"
-        (mousemove)="onMouseMove($event)"
-        [style.width.%]="canvasSize().width"
-        [style.height.%]="canvasSize().height"
-      >
-        @for (table of tablesToDisplay(); track table.id) {
-          @let unacknowledgedCount = getUnacknowledgedCriticalItemsCount(table.number);
-          <div 
-            (click)="selectTable(table)"
-            (mousedown)="startDrag($event, table, 'move')"
-            class="absolute flex flex-col items-center justify-center text-white font-bold rounded-md border-2 p-1"
-            [class.cursor-pointer]="!isEditMode()"
-            [class.cursor-move]="isEditMode()"
-            [class.ring-2]="isEditMode()"
-            [class.ring-offset-2]="isEditMode()"
-            [class.ring-offset-gray-900]="isEditMode()"
-            [class.ring-indigo-500]="isEditMode()"
-            [style.left.%]="table.x"
-            [style.top.%]="table.y"
-            [style.width.%]="table.width"
-            [style.height.%]="table.height"
-            [ngClass]="getTableStatusClass(table.status)">
-            
-            @if (unacknowledgedCount > 0 && !isEditMode()) {
-              <div class="absolute top-1 right-1 bg-red-600 rounded-full h-5 w-5 flex items-center justify-center text-white font-bold text-xs animate-pulse" title="{{unacknowledgedCount}} iten(s) com atenção especial pendente de ciência na cozinha.">
-                !
-              </div>
-            }
-
-            <div class="flex flex-col items-center justify-center text-center flex-1">
-              <span class="text-2xl leading-tight">{{ table.number }}</span>
-              
-              @if (table.status === 'OCUPADA') {
-                  @let status = getProductionStatusForTable(table.number);
-                  @if (status.total > 0) {
-                      <span class="text-[10px] font-mono leading-tight bg-black/20 px-1.5 py-0.5 rounded-md mt-1">
-                        {{ status.ready }}/{{ status.total }} PRONTOS
-                      </span>
-                  }
-              }
-              
-              <span class="text-xs font-normal uppercase tracking-wider leading-tight mt-1">{{ table.status }}</span>
-            </div>
-
-            @if (table.status === 'OCUPADA' && !isEditMode()) {
-                @let status = getProductionStatusForTable(table.number);
-                @if (status.total > 0) {
-                    <div class="absolute bottom-2 left-2 right-2 h-2 rounded-full overflow-hidden bg-black/30" title="{{ status.ready }} de {{ status.total }} itens prontos">
-                        <div class="h-full bg-green-400 transition-all duration-300" [style.width.%]="(status.ready / status.total) * 100"></div>
-                    </div>
-                }
-            }
-
-            @if(isEditMode()) {
-               @if(table.status === 'LIVRE') {
-                  <button (click)="deleteTable($event, table.id)" (mousedown)="$event.stopPropagation()" class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 rounded-full p-1 text-white z-10">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                  </button>
-               }
-              <div 
-                class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full cursor-se-resize border-2 border-gray-800 z-10"
-                (mousedown)="startDrag($event, table, 'resize')">
+      } @else {
+        <div class="max-w-sm mx-auto">
+          <button (click)="selectedEmployeeForLogin.set(null)" class="text-sm text-blue-400 hover:underline mb-4">&larr; Voltar para seleção de usuário</button>
+          <h2 class="text-2xl font-bold text-white text-center mb-2">Olá, {{ selectedEmployeeForLogin()?.name }}</h2>
+          <p class="text-center text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
+          <div class="flex justify-center items-center gap-3 mb-4">
+            @for (_ of [1,2,3,4]; track $index) {
+              <div class="w-12 h-14 rounded-lg flex items-center justify-center text-3xl font-bold" [class.bg-gray-700]="!enteredPin()[$index]" [class.bg-blue-500]="!!enteredPin()[$index]">
+                {{ enteredPin()[$index] ? '*' : '' }}
               </div>
             }
           </div>
-        }
-      </div>
+          @if (pinError()) {
+            <p class="text-red-400 text-center text-sm font-semibold animate-pulse">{{ pinError() }}</p>
+          }
+          <div class="grid grid-cols-3 gap-3 mt-6">
+            @for (digit of ['1','2','3','4','5','6','7','8','9']; track digit) {
+              <button (click)="enterPinDigit(digit)" class="p-4 text-2xl font-bold bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">{{ digit }}</button>
+            }
+            <button (click)="backspacePin()" class="p-4 text-lg font-bold bg-gray-600 hover:bg-gray-500 transition-colors">Apagar</button>
+            <button (click)="enterPinDigit('0')" class="p-4 text-2xl font-bold bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">0</button>
+            <button (click)="clearPin()" class="p-4 text-lg font-bold bg-gray-600 hover:bg-gray-500 transition-colors">Limpar</button>
+          </div>
+        </div>
+      }
     </div>
   </div>
+}
 
-  <!-- Order Modal -->
-  @if(isOrderModalOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4 sm:p-6 lg:p-8" (click)="closeOrderModal()">
-      <div class="bg-gray-800 rounded-lg shadow-xl w-full h-full flex flex-col" (click)="$event.stopPropagation()">
-          <app-order-panel
-              [selectedTable]="selectedTable()"
-              [currentOrder]="currentOrder()"
-              [orderError]="orderError()"
-              (closePanel)="closeOrderModal()"
-              (checkoutStarted)="handleCheckoutStarted()"
-              (moveOrderClicked)="openMoveModal()"
-          ></app-order-panel>
+@if(!isEmployeeLoginModalOpen()) {
+  <div class="h-full flex flex-col gap-4">
+    <!-- Main Content: Halls and Tables -->
+    <div class="flex-1 bg-gray-800 rounded-lg p-4 flex flex-col">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+        <div class="flex items-center gap-4">
+          <h1 class="text-2xl font-bold text-white shrink-0">Ponto de Venda (PDV)</h1>
+          <div class="bg-gray-700 px-3 py-1.5 rounded-lg text-sm">
+            <span class="text-gray-400">Atendente: </span>
+            <span class="font-semibold text-white">{{ activeEmployee()?.name }}</span>
+            <button (click)="logoutEmployee()" class="ml-2 text-blue-400 hover:underline text-xs">(Trocar)</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-start md:justify-end gap-2 w-full">
+          @if(isEditMode()) {
+            <button (click)="openHallManager()" class="px-4 py-2 text-sm font-medium rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors whitespace-nowrap">Gerenciar Salões</button>
+            <button (click)="addTable()" class="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap">Adicionar Mesa</button>
+            <button (click)="saveLayout()" class="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors whitespace-nowrap">Salvar Layout</button>
+            <button (click)="cancelEdit()" class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors whitespace-nowrap">Cancelar</button>
+          }
+          <button (click)="toggleEditMode()" class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap" [class.ring-2]="isEditMode()" [class.ring-offset-2]="isEditMode()" [class.ring-offset-gray-800]="isEditMode()" [class.ring-blue-500]="isEditMode()">
+            {{ isEditMode() ? 'Sair da Edição' : 'Editar Layout' }}
+          </button>
+          <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
+            @for (hall of halls(); track hall.id) {
+              <button 
+                (click)="selectHall(hall)"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                [class.bg-blue-600]="selectedHall()?.id === hall.id"
+                [class.text-white]="selectedHall()?.id === hall.id"
+                [class.text-gray-300]="selectedHall()?.id !== hall.id">
+                {{ hall.name }}
+              </button>
+            }
+          </div>
+        </div>
       </div>
-    </div>
-  }
-
-  <!-- Move Table Modal -->
-  @if(isMoveModalOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeMoveModal()">
-      <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
-        <h3 class="text-xl font-bold text-white mb-4">Mover pedido da Mesa {{ selectedTable()?.number }} para:</h3>
-        <div class="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
-          @for(table of availableTablesForMove(); track table.id) {
-            <button 
-              (click)="moveOrder(table)"
-              class="p-4 rounded-lg text-white font-bold"
+      
+      <div 
+        class="relative flex-1 bg-gray-900/50 rounded-lg overflow-auto border-2 border-gray-700"
+        (mouseup)="stopDrag()"
+        (mouseleave)="stopDrag()">
+        <div 
+          class="relative"
+          (mousemove)="onMouseMove($event)"
+          [style.width.%]="canvasSize().width"
+          [style.height.%]="canvasSize().height"
+        >
+          @for (table of tablesToDisplay(); track table.id) {
+            @let unacknowledgedCount = getUnacknowledgedCriticalItemsCount(table.number);
+            <div 
+              (click)="selectTable(table)"
+              (mousedown)="startDrag($event, table, 'move')"
+              class="absolute flex flex-col items-center justify-center text-white font-bold rounded-md border-2 p-1"
+              [class.cursor-pointer]="!isEditMode()"
+              [class.cursor-move]="isEditMode()"
+              [class.ring-2]="isEditMode()"
+              [class.ring-offset-2]="isEditMode()"
+              [class.ring-offset-gray-900]="isEditMode()"
+              [class.ring-indigo-500]="isEditMode()"
+              [style.left.%]="table.x"
+              [style.top.%]="table.y"
+              [style.width.%]="table.width"
+              [style.height.%]="table.height"
               [ngClass]="getTableStatusClass(table.status)">
-              {{ table.number }}
-            </button>
+              
+              @if (unacknowledgedCount > 0 && !isEditMode()) {
+                <div class="absolute top-1 right-1 bg-red-600 rounded-full h-5 w-5 flex items-center justify-center text-white font-bold text-xs animate-pulse" title="{{unacknowledgedCount}} iten(s) com atenção especial pendente de ciência na cozinha.">
+                  !
+                </div>
+              }
+
+              <div class="flex flex-col items-center justify-center text-center flex-1">
+                <span class="text-2xl leading-tight">{{ table.number }}</span>
+                
+                @if (table.status === 'OCUPADA') {
+                    @let status = getProductionStatusForTable(table.number);
+                    @if (status.total > 0) {
+                        <span class="text-[10px] font-mono leading-tight bg-black/20 px-1.5 py-0.5 rounded-md mt-1">
+                          {{ status.ready }}/{{ status.total }} PRONTOS
+                        </span>
+                    }
+                }
+                
+                <span class="text-xs font-normal uppercase tracking-wider leading-tight mt-1">{{ table.status }}</span>
+              </div>
+
+              @if (table.status === 'OCUPADA' && !isEditMode()) {
+                  @let status = getProductionStatusForTable(table.number);
+                  @if (status.total > 0) {
+                      <div class="absolute bottom-2 left-2 right-2 h-2 rounded-full overflow-hidden bg-black/30" title="{{ status.ready }} de {{ status.total }} itens prontos">
+                          <div class="h-full bg-green-400 transition-all duration-300" [style.width.%]="(status.ready / status.total) * 100"></div>
+                      </div>
+                  }
+              }
+
+              @if(isEditMode()) {
+                 @if(table.status === 'LIVRE') {
+                    <button (click)="deleteTable($event, table.id)" (mousedown)="$event.stopPropagation()" class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 rounded-full p-1 text-white z-10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                 }
+                <div 
+                  class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full cursor-se-resize border-2 border-gray-800 z-10"
+                  (mousedown)="startDrag($event, table, 'resize')">
+                </div>
+              }
+            </div>
           }
         </div>
-         @if(availableTablesForMove().length === 0) {
-            <p class="text-center text-gray-400 py-8">Nenhuma mesa livre disponível neste salão.</p>
-         }
-        <button (click)="closeMoveModal()" class="mt-4 w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500">
-          Cancelar
-        </button>
       </div>
     </div>
-  }
 
-  <!-- Hall Manager Modal -->
-  @if(isHallManagerOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeHallManager()">
-      <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg" (click)="$event.stopPropagation()">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-xl font-bold text-white">Gerenciar Salões</h3>
-          <button (click)="closeHallManager()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <!-- Order Modal -->
+    @if(isOrderModalOpen()) {
+      <div class="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4 sm:p-6 lg:p-8" (click)="closeOrderModal()">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full h-full flex flex-col" (click)="$event.stopPropagation()">
+            <app-order-panel
+                [selectedTable]="selectedTable()"
+                [currentOrder]="currentOrder()"
+                [orderError]="orderError()"
+                (closePanel)="closeOrderModal()"
+                (checkoutStarted)="handleCheckoutStarted()"
+                (moveOrderClicked)="openMoveModal()"
+            ></app-order-panel>
+        </div>
+      </div>
+    }
+
+    <!-- Move Table Modal -->
+    @if(isMoveModalOpen()) {
+      <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeMoveModal()">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
+          <h3 class="text-xl font-bold text-white mb-4">Mover pedido da Mesa {{ selectedTable()?.number }} para:</h3>
+          <div class="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+            @for(table of availableTablesForMove(); track table.id) {
+              <button 
+                (click)="moveOrder(table)"
+                class="p-4 rounded-lg text-white font-bold"
+                [ngClass]="getTableStatusClass(table.status)">
+                {{ table.number }}
+              </button>
+            }
+          </div>
+           @if(availableTablesForMove().length === 0) {
+              <p class="text-center text-gray-400 py-8">Nenhuma mesa livre disponível neste salão.</p>
+           }
+          <button (click)="closeMoveModal()" class="mt-4 w-full bg-gray-600 text-white font-bold py-2 rounded-lg hover:bg-gray-500">
+            Cancelar
           </button>
         </div>
-        
-        <div class="mb-6">
-          <h4 class="font-semibold text-white mb-2">Adicionar Novo Salão</h4>
-          <div class="flex gap-2">
-            <input type="text" [value]="newHallName()" (input)="newHallName.set($any($event.target).value)" (keydown.enter)="handleAddHall()" placeholder="Nome do Salão (e.g. Varanda)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button (click)="handleAddHall()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Adicionar</button>
+      </div>
+    }
+
+    <!-- Hall Manager Modal -->
+    @if(isHallManagerOpen()) {
+      <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeHallManager()">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg" (click)="$event.stopPropagation()">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-white">Gerenciar Salões</h3>
+            <button (click)="closeHallManager()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
           </div>
-        </div>
-  
-        <div>
-          <h4 class="font-semibold text-white mb-2">Salões Existentes</h4>
-          <ul class="space-y-2 max-h-64 overflow-y-auto pr-2">
-            @for(hall of halls(); track hall.id) {
-              <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
-                @if (editingHall()?.id === hall.id) {
-                  <div class="flex-1 flex gap-2 items-center">
-                     <input type="text" [value]="editingHall()?.name || ''" (input)="updateEditingHallName($event)" (keydown.enter)="saveHallName()" (keydown.escape)="cancelEditingHall()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <button (click)="saveHallName()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
-                      <button (click)="cancelEditingHall()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                  </div>
-                } @else {
-                  @if (hallPendingDeletion() === hall.id) {
-                    <div class="flex-1 flex flex-col items-start text-sm">
-                      <span class="text-red-300 font-semibold">Tem certeza?</span>
-                      @if (tablesInHallCount(hall.id) > 0) {
-                        <span class="text-xs text-yellow-400 mt-1">Isto também deletará {{ tablesInHallCount(hall.id) }} mesa(s) neste salão.</span>
-                      }
-                      <div class="flex gap-2 items-center mt-2">
-                        <button (click)="confirmDeleteHall(hall)" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white transition-colors">Sim, Deletar</button>
-                        <button (click)="cancelDeleteHall()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-                      </div>
+          
+          <div class="mb-6">
+            <h4 class="font-semibold text-white mb-2">Adicionar Novo Salão</h4>
+            <div class="flex gap-2">
+              <input type="text" [value]="newHallName()" (input)="newHallName.set($any($event.target).value)" (keydown.enter)="handleAddHall()" placeholder="Nome do Salão (e.g. Varanda)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button (click)="handleAddHall()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Adicionar</button>
+            </div>
+          </div>
+    
+          <div>
+            <h4 class="font-semibold text-white mb-2">Salões Existentes</h4>
+            <ul class="space-y-2 max-h-64 overflow-y-auto pr-2">
+              @for(hall of halls(); track hall.id) {
+                <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+                  @if (editingHall()?.id === hall.id) {
+                    <div class="flex-1 flex gap-2 items-center">
+                       <input type="text" [value]="editingHall()?.name || ''" (input)="updateEditingHallName($event)" (keydown.enter)="saveHallName()" (keydown.escape)="cancelEditingHall()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button (click)="saveHallName()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                        <button (click)="cancelEditingHall()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                     </div>
                   } @else {
-                    <span class="text-white">{{ hall.name }}</span>
-                    <div class="flex items-center gap-2">
-                        <button (click)="startEditingHall(hall)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
-                        <button (click)="requestDeleteHall(hall)" class="p-2 text-red-400 hover:text-red-300" title="Deletar Salão"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                    </div>
+                    @if (hallPendingDeletion() === hall.id) {
+                      <div class="flex-1 flex flex-col items-start text-sm">
+                        <span class="text-red-300 font-semibold">Tem certeza?</span>
+                        @if (tablesInHallCount(hall.id) > 0) {
+                          <span class="text-xs text-yellow-400 mt-1">Isto também deletará {{ tablesInHallCount(hall.id) }} mesa(s) neste salão.</span>
+                        }
+                        <div class="flex gap-2 items-center mt-2">
+                          <button (click)="confirmDeleteHall(hall)" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white transition-colors">Sim, Deletar</button>
+                          <button (click)="cancelDeleteHall()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+                        </div>
+                      </div>
+                    } @else {
+                      <span class="text-white">{{ hall.name }}</span>
+                      <div class="flex items-center gap-2">
+                          <button (click)="startEditingHall(hall)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                          <button (click)="requestDeleteHall(hall)" class="p-2 text-red-400 hover:text-red-300" title="Deletar Salão"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                      </div>
+                    }
                   }
-                }
-              </li>
-            }
-          </ul>
+                </li>
+              }
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
-  }
+    }
 
-  <!-- Payment Modal -->
-  @if(isPaymentModalOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePaymentModal(true)">
-      <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-        <div class="flex justify-between items-center p-4 border-b border-gray-700">
-          <h3 class="text-xl font-bold text-white">Registrar Pagamento - Mesa {{ selectedTable()?.number }}</h3>
-          <button (click)="closePaymentModal(true)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
-        </div>
-
-        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-          <!-- Left Side: Order Summary -->
-          <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col">
-            <h4 class="font-semibold text-lg text-white mb-4">Resumo da Conta</h4>
-            <div class="flex-1 overflow-y-auto pr-2">
-              @if(currentOrder(); as order) {
-                <ul class="space-y-2">
-                  @for(item of order.order_items; track item.id) {
-                    <li class="flex justify-between items-center text-sm">
-                      <div>
-                        <p>{{ item.name }} <span class="text-gray-400">x{{ item.quantity }}</span></p>
-                      </div>
-                      <span class="font-medium">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
-            <div class="pt-4 border-t border-gray-700">
-              <div class="flex justify-between items-center text-lg mb-2">
-                <span>Gorjeta</span>
-                <input type="number" [value]="tipAmount()" (input)="tipAmount.set(+$any($event.target).value)" placeholder="0,00" class="w-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500">
-              </div>
-              <div class="flex justify-between items-center text-2xl font-bold text-white">
-                <span>Total</span>
-                <span>{{ orderTotalWithTip() | currency:'BRL' }}</span>
-              </div>
-            </div>
+    <!-- Payment Modal -->
+    @if(isPaymentModalOpen()) {
+      <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePaymentModal(true)">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+          <div class="flex justify-between items-center p-4 border-b border-gray-700">
+            <h3 class="text-xl font-bold text-white">Registrar Pagamento - Mesa {{ selectedTable()?.number }}</h3>
+            <button (click)="closePaymentModal(true)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
           </div>
 
-          <!-- Right Side: Payment Input -->
-          <div class="w-full md:w-1/2 p-4 flex flex-col">
-            <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700">
-              <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
-              <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0" [class.text-gray-400]="balanceDue() === 0">{{ balanceDue() | currency:'BRL' }}</p></div>
-              <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
-            </div>
-            
-            <div class="space-y-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
-                <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <!-- Left Side: Order Summary -->
+            <div class="w-full md:w-1/2 p-4 border-r-0 md:border-r border-b md:border-b-0 border-gray-700 flex flex-col">
+              <h4 class="font-semibold text-lg text-white mb-4">Resumo da Conta</h4>
+              <div class="flex-1 overflow-y-auto pr-2">
+                @if(currentOrder(); as order) {
+                  <ul class="space-y-2">
+                    @for(item of order.order_items; track item.id) {
+                      <li class="flex justify-between items-center text-sm">
+                        <div>
+                          <p>{{ item.name }} <span class="text-gray-400">x{{ item.quantity }}</span></p>
+                        </div>
+                        <span class="font-medium">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
-                <div class="grid grid-cols-3 gap-2">
-                  <button (click)="selectedPaymentMethod.set('Dinheiro')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Dinheiro'" [class.text-white]="selectedPaymentMethod() === 'Dinheiro'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Dinheiro'">Dinheiro</button>
-                  <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Crédito'">Crédito</button>
-                  <button (click)="selectedPaymentMethod.set('Cartão de Débito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Débito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Débito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Débito'">Débito</button>
-                  <button (click)="selectedPaymentMethod.set('PIX')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'PIX'" [class.text-white]="selectedPaymentMethod() === 'PIX'" [class.bg-gray-700]="selectedPaymentMethod() !== 'PIX'">PIX</button>
-                  <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.text-white]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
+              <div class="pt-4 border-t border-gray-700">
+                <div class="flex justify-between items-center text-lg mb-2">
+                  <span>Gorjeta</span>
+                  <input type="number" [value]="tipAmount()" (input)="tipAmount.set(+$any($event.target).value)" placeholder="0,00" class="w-32 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-right focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex justify-between items-center text-2xl font-bold text-white">
+                  <span>Total</span>
+                  <span>{{ orderTotalWithTip() | currency:'BRL' }}</span>
                 </div>
               </div>
-              <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Adicionar Pagamento</button>
             </div>
 
-            <div class="flex-1 border-t border-gray-700 pt-4 overflow-y-auto">
-              <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
-              @if(payments().length === 0) {
-                <p class="text-sm text-center text-gray-500 py-4">Nenhum pagamento adicionado.</p>
-              } @else {
-                <ul class="space-y-2">
-                  @for(payment of payments(); track $index) {
-                    <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md text-sm">
-                      <span class="font-medium text-gray-300">{{ payment.method }}</span>
-                      <div class="flex items-center gap-3">
-                        <span class="font-semibold text-white">{{ payment.amount | currency:'BRL' }}</span>
-                        <button (click)="removePayment($index)" class="text-red-500 hover:text-red-400">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </button>
-                      </div>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
-            
-            <div class="pt-4 mt-auto">
-              <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
-                Finalizar e Liberar Mesa
-              </button>
+            <!-- Right Side: Payment Input -->
+            <div class="w-full md:w-1/2 p-4 flex flex-col">
+              <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700">
+                <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
+                <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0" [class.text-gray-400]="balanceDue() === 0">{{ balanceDue() | currency:'BRL' }}</p></div>
+                <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
+              </div>
+              
+              <div class="space-y-4 mb-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
+                  <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button (click)="selectedPaymentMethod.set('Dinheiro')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Dinheiro'" [class.text-white]="selectedPaymentMethod() === 'Dinheiro'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Dinheiro'">Dinheiro</button>
+                    <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Crédito'">Crédito</button>
+                    <button (click)="selectedPaymentMethod.set('Cartão de Débito')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Débito'" [class.text-white]="selectedPaymentMethod() === 'Cartão de Débito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Débito'">Débito</button>
+                    <button (click)="selectedPaymentMethod.set('PIX')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors" [class.bg-blue-600]="selectedPaymentMethod() === 'PIX'" [class.text-white]="selectedPaymentMethod() === 'PIX'" [class.bg-gray-700]="selectedPaymentMethod() !== 'PIX'">PIX</button>
+                    <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md transition-colors col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.text-white]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
+                  </div>
+                </div>
+                <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Adicionar Pagamento</button>
+              </div>
+
+              <div class="flex-1 border-t border-gray-700 pt-4 overflow-y-auto">
+                <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
+                @if(payments().length === 0) {
+                  <p class="text-sm text-center text-gray-500 py-4">Nenhum pagamento adicionado.</p>
+                } @else {
+                  <ul class="space-y-2">
+                    @for(payment of payments(); track $index) {
+                      <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md text-sm">
+                        <span class="font-medium text-gray-300">{{ payment.method }}</span>
+                        <div class="flex items-center gap-3">
+                          <span class="font-semibold text-white">{{ payment.amount | currency:'BRL' }}</span>
+                          <button (click)="removePayment($index)" class="text-red-500 hover:text-red-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          </button>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+              
+              <div class="pt-4 mt-auto">
+                <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
+                  Finalizar e Liberar Mesa
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  }
-</div>
+    }
+  </div>
+}

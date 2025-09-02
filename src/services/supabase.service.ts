@@ -1,18 +1,15 @@
 
-
-
-
-
-
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
-import { RealtimeChannel, User } from '@supabase/supabase-js';
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, OrderItemStatus, Transaction, IngredientCategory, Supplier, RecipeIngredient, IngredientUnit, RecipePreparation, CashierClosing, TransactionType } from '../models/db.models';
+import { User, RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, OrderItemStatus, Transaction, IngredientCategory, Supplier, RecipeIngredient, IngredientUnit, RecipePreparation, CashierClosing, TransactionType, Employee, Promotion, PromotionRecipe, TableStatus } from '../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PrintingService } from './printing.service';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client'; // Use the shared client
+import { PricingService } from './pricing.service';
 
 export type PaymentInfo = { method: string; amount: number };
+interface QuickSaleCartItem { recipe: Recipe; quantity: number; }
 
 @Injectable({
   providedIn: 'root',
@@ -20,9 +17,10 @@ export type PaymentInfo = { method: string; amount: number };
 export class SupabaseService {
   private printingService = inject(PrintingService);
   private authService = inject(AuthService);
-  private userChannel: RealtimeChannel | null = null;
+  private pricingService = inject(PricingService);
   
   private currentUser = this.authService.currentUser;
+  private realtimeChannel: RealtimeChannel | null = null;
 
   isDataLoaded = signal(false);
 
@@ -32,6 +30,7 @@ export class SupabaseService {
   categories = signal<Category[]>([]);
   recipes = signal<Recipe[]>([]);
   orders = signal<Order[]>([]);
+  employees = signal<Employee[]>([]);
   
   // Inventory & Suppliers
   ingredients = signal<Ingredient[]>([]);
@@ -39,6 +38,10 @@ export class SupabaseService {
   suppliers = signal<Supplier[]>([]);
   recipeIngredients = signal<RecipeIngredient[]>([]);
   recipePreparations = signal<RecipePreparation[]>([]);
+
+  // Promotions
+  promotions = signal<Promotion[]>([]);
+  promotionRecipes = signal<PromotionRecipe[]>([]);
 
   // Signals for reports & cashier
   completedOrders = signal<Order[]>([]);
@@ -55,7 +58,9 @@ export class SupabaseService {
   
   lastCashierClosing = computed(() => {
     const closings = this.cashierClosings();
-    return closings.length > 0 ? closings[0] : null;
+    if (closings.length === 0) return null;
+    // Sort to make sure we get the very last one
+    return closings.sort((a,b) => new Date(b.closed_at).getTime() - new Date(a.closed_at).getTime())[0];
   });
 
   recipesWithStockStatus = computed(() => {
@@ -83,24 +88,155 @@ export class SupabaseService {
   constructor() {
     effect(() => {
         const user = this.currentUser();
-        
-        // Clean up previous channel subscription to prevent conflicts
-        if (this.userChannel) {
-          supabase.removeChannel(this.userChannel)
-            .catch(error => console.error('Error removing previous realtime channel:', error));
-          this.userChannel = null;
-        }
-
         if (user) {
             this.loadInitialData(user.id);
-            this.listenForChanges(user.id);
+            this.subscribeToChanges(user.id);
         } else {
+            this.unsubscribeFromChanges();
             this.clearAllData();
-            // This is a good safety net if other channels are ever used.
-            supabase.removeAllChannels()
-              .catch(error => console.error('Error removing all realtime channels on logout:', error));
         }
     });
+
+    // Effect to sync promotion data to the PricingService, breaking the circular dependency.
+    effect(() => {
+      this.pricingService.promotions.set(this.promotions());
+      this.pricingService.promotionRecipes.set(this.promotionRecipes());
+    });
+  }
+
+  private unsubscribeFromChanges() {
+    if (this.realtimeChannel) {
+        supabase.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+        console.log('Unsubscribed from realtime changes.');
+    }
+  }
+
+  private subscribeToChanges(userId: string) {
+    this.unsubscribeFromChanges(); // Ensure no multiple channels are running
+    
+    // Use a user-specific channel name for better isolation and apply server-side filtering
+    this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderChange(p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderItemChange(p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.tables, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.halls, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.stations, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.categories, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipes, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.employees, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.ingredientCategories, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.suppliers, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_preparations', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipePreparations, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.promotions, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'ingredients', '*, ingredient_categories(name), suppliers(name)', this.ingredients))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeIngredients))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotion_recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'promotion_recipes', '*, recipes(name)', this.promotionRecipes))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cashier_closings', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Connected to real-time updates on channel: db-changes:${userId}`);
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime subscription error:', err);
+        }
+      });
+  }
+
+  // Generic handler for simple tables with an 'id' primary key
+  private handleSignalChange<T extends { id: string }>(
+    signal: WritableSignal<T[]>,
+    payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
+  ) {
+    // user_id check is no longer needed due to server-side filtering
+    switch (payload.eventType) {
+        case 'INSERT':
+            signal.update(current => [...current, payload.new as T]);
+            break;
+        case 'UPDATE':
+            signal.update(current => current.map(item => item.id === (payload.new as T).id ? payload.new as T : item));
+            break;
+        case 'DELETE':
+            // FIX: `payload.old` can be an empty object. Cast to a type with an optional `id` and check for truthiness.
+            const oldId = (payload.old as { id?: string }).id;
+            if (oldId) {
+                signal.update(current => current.filter(item => item.id !== oldId));
+            }
+            break;
+    }
+  }
+
+  // Handler to refetch an entire table, useful for tables with joins or complex keys
+  private async refetchTableOnChanges<T>(
+    payload: RealtimePostgresChangesPayload<{ [key: string]: any }>,
+    tableName: string,
+    selectQuery: string,
+    signal: WritableSignal<T[]>
+  ) {
+    const userId = this.currentUser()?.id;
+    // The payload user_id check is removed, but we still need the userId for the fetch query.
+    if (!userId) return;
+
+    const { data, error } = await supabase.from(tableName).select(selectQuery).eq('user_id', userId);
+    if (error) {
+        console.error(`Error refetching ${tableName}:`, error);
+    } else {
+        signal.set(data as T[] || []);
+    }
+  }
+  
+  // Handler for tables that affect dashboard/cashier views
+  private async handleDashboardDataChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
+    // user_id check is no longer needed due to server-side filtering
+    await this.refreshDashboardAndCashierData();
+  }
+
+  /**
+   * Centralized logic to refetch an order and update the local state.
+   * Handles inserts, updates, and deletions gracefully.
+   */
+  private async refetchAndProcessOrder(orderId: string) {
+    const { data: order } = await supabase.from('orders').select('*, order_items(*)').eq('id', orderId).single();
+
+    // Case 1: Order was deleted or no longer exists. Remove from local state.
+    if (!order) {
+        this.orders.update(current => current.filter(o => o.id !== orderId));
+        return;
+    }
+
+    // Case 2: Order was completed. Remove from open orders and refresh related data.
+    if (order.is_completed) {
+        this.orders.update(current => current.filter(o => o.id !== orderId));
+        this.refreshDashboardAndCashierData();
+        return;
+    }
+
+    // Case 3: Order is active. Process prices and update/insert into local state.
+    const [processedOrder] = this.processOrdersWithPrices([order]);
+    const orderExists = this.orders().some(o => o.id === orderId);
+
+    if (orderExists) {
+        // Update existing order
+        this.orders.update(current => current.map(o => o.id === orderId ? processedOrder : o));
+    } else {
+        // Add new order
+        this.orders.update(current => [...current, processedOrder]);
+    }
+  }
+
+  private async handleOrderChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
+    const orderId = payload.new?.id ?? (payload.old as { id?: string })?.id;
+    if (orderId) {
+        await this.refetchAndProcessOrder(orderId);
+    }
+  }
+
+  private async handleOrderItemChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
+      const orderId = (payload.new as { order_id?: string })?.order_id ?? (payload.old as { order_id?: string })?.order_id;
+      if (orderId) {
+          await this.refetchAndProcessOrder(orderId);
+      }
   }
 
   private clearAllData() {
@@ -110,11 +246,14 @@ export class SupabaseService {
       this.categories.set([]);
       this.recipes.set([]);
       this.orders.set([]);
+      this.employees.set([]);
       this.ingredients.set([]);
       this.ingredientCategories.set([]);
       this.suppliers.set([]);
       this.recipeIngredients.set([]);
       this.recipePreparations.set([]);
+      this.promotions.set([]);
+      this.promotionRecipes.set([]);
       this.completedOrders.set([]);
       this.transactions.set([]);
       this.cashierClosings.set([]);
@@ -126,71 +265,91 @@ export class SupabaseService {
   private async loadInitialData(userId: string) {
     this.isDataLoaded.set(false);
     try {
+      await this.refreshData(userId);
+    } catch (error) {
+        console.error('Catastrophic error during initial data load:', error);
+        this.clearAllData();
+    } finally {
+        this.isDataLoaded.set(true);
+    }
+  }
+
+  private async refreshData(userId: string) {
+    try {
       await this.fetchRecipes(userId); 
     
-      const today = new Date();
-      const isoEndDate = today.toISOString();
-      today.setHours(0, 0, 0, 0);
-      const isoStartDate = today.toISOString();
-      
-      const lastClosing = this.lastCashierClosing();
-      const cashierStartDate = lastClosing ? new Date(lastClosing.closed_at) : new Date(isoStartDate);
-
       const [
           halls, tables, stations, categories, openOrders, 
-          ingredients, ingredientCategories, suppliers, 
-          recipeIngredients, recipePreparations, cashierClosings,
-          initialCompletedOrders, initialTransactions
+          employees, ingredients, ingredientCategories, suppliers, 
+          recipeIngredients, recipePreparations, promotions, promotionRecipes
       ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId),
         supabase.from('tables').select('*').eq('user_id', userId),
         supabase.from('stations').select('*').eq('user_id', userId),
         supabase.from('categories').select('*').eq('user_id', userId),
         supabase.from('orders').select('*, order_items(*)').eq('is_completed', false).eq('user_id', userId),
+        supabase.from('employees').select('*').eq('user_id', userId),
         supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
         supabase.from('ingredient_categories').select('*').eq('user_id', userId),
         supabase.from('suppliers').select('*').eq('user_id', userId),
         supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
         supabase.from('recipe_preparations').select('*').eq('user_id', userId),
-        supabase.from('cashier_closings').select('*').eq('user_id', userId),
-        supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
-        supabase.from('transactions').select('*').gte('date', cashierStartDate.toISOString()).lte('date', isoEndDate).eq('user_id', userId)
+        supabase.from('promotions').select('*').eq('user_id', userId),
+        supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId)
       ]);
 
-      if (halls.error) console.error('Error fetching halls:', halls.error); this.halls.set(halls.data || []);
-      if (tables.error) console.error('Error fetching tables:', tables.error); this.tables.set(tables.data || []);
-      if (stations.error) console.error('Error fetching stations:', stations.error); this.stations.set(stations.data || []);
-      if (categories.error) console.error('Error fetching categories:', categories.error); this.categories.set(categories.data || []);
-      if (openOrders.error) console.error('Error fetching orders:', openOrders.error); this.setOrdersWithPrices(openOrders.data || []);
-      if (ingredients.error) console.error('Error fetching ingredients:', ingredients.error); this.ingredients.set((ingredients.data as Ingredient[]) || []);
-      if (ingredientCategories.error) console.error('Error fetching ingredient categories:', ingredientCategories.error); this.ingredientCategories.set(ingredientCategories.data || []);
-      if (suppliers.error) console.error('Error fetching suppliers:', suppliers.error); this.suppliers.set(suppliers.data || []);
-      if (recipeIngredients.error) console.error('Error fetching recipe ingredients:', recipeIngredients.error); this.recipeIngredients.set((recipeIngredients.data as RecipeIngredient[]) || []);
-      if (recipePreparations.error) console.error('Error fetching recipe preparations:', recipePreparations.error); this.recipePreparations.set(recipePreparations.data || []);
+      if (halls.error) console.error('Error fetching halls:', halls.error); else this.halls.set(halls.data || []);
+      if (tables.error) console.error('Error fetching tables:', tables.error); else this.tables.set(tables.data || []);
+      if (stations.error) console.error('Error fetching stations:', stations.error); else this.stations.set(stations.data || []);
+      if (categories.error) console.error('Error fetching categories:', categories.error); else this.categories.set(categories.data || []);
+      if (openOrders.error) console.error('Error fetching orders:', openOrders.error); else this.setOrdersWithPrices(openOrders.data || []);
+      if (employees.error) console.error('Error fetching employees:', employees.error); else this.employees.set(employees.data || []);
+      if (ingredients.error) console.error('Error fetching ingredients:', ingredients.error); else this.ingredients.set((ingredients.data as Ingredient[]) || []);
+      if (ingredientCategories.error) console.error('Error fetching ingredient categories:', ingredientCategories.error); else this.ingredientCategories.set(ingredientCategories.data || []);
+      if (suppliers.error) console.error('Error fetching suppliers:', suppliers.error); else this.suppliers.set(suppliers.data || []);
+      if (recipeIngredients.error) console.error('Error fetching recipe ingredients:', recipeIngredients.error); else this.recipeIngredients.set((recipeIngredients.data as RecipeIngredient[]) || []);
+      if (recipePreparations.error) console.error('Error fetching recipe preparations:', recipePreparations.error); else this.recipePreparations.set(recipePreparations.data || []);
       
-      if (cashierClosings.error) {
-          console.error('Error fetching cashier closings:', cashierClosings.error);
-          this.cashierClosings.set([]);
-      } else {
-          const sortedData = (cashierClosings.data || []).sort((a: CashierClosing, b: CashierClosing) => new Date(b.closed_at).getTime() - new Date(a.closed_at).getTime());
-          this.cashierClosings.set(sortedData);
-      }
-
-      if (initialCompletedOrders.error) console.error('Error fetching completed orders:', initialCompletedOrders.error);
-      const ordersToday = (initialCompletedOrders.data || []).filter(o => new Date(o.completed_at || 0) >= today);
-      this.setCompletedOrdersWithPrices(initialCompletedOrders.data || []);
-      this.setDashboardCompletedOrdersWithPrices(ordersToday);
-
-      if (initialTransactions.error) console.error('Error fetching transactions:', initialTransactions.error);
-      const transactionsToday = (initialTransactions.data || []).filter(t => new Date(t.date) >= today);
-      this.transactions.set(initialTransactions.data || []);
-      this.dashboardTransactions.set(transactionsToday.filter(t => t.type === 'Receita'));
+      if (promotions.error) console.error('Error fetching promotions:', promotions.error.message || promotions.error); else this.promotions.set(promotions.data || []);
       
-      this.isDataLoaded.set(true);
+      if (promotionRecipes.error) console.error('Error fetching promotion recipes:', promotionRecipes.error.message || promotionRecipes.error); else this.promotionRecipes.set((promotionRecipes.data as PromotionRecipe[]) || []);
+      
+      await this.refreshDashboardAndCashierData();
+
     } catch (error) {
-        console.error('Catastrophic error during initial data load:', error);
-        this.clearAllData();
+        console.error('Error during data refresh:', error);
     }
+  }
+  
+  private async refreshDashboardAndCashierData() {
+      const userId = this.currentUser()?.id;
+      if (!userId) return;
+
+      const { data: latestClosings, error: closingError } = await supabase.from('cashier_closings').select('*').eq('user_id', userId).order('closed_at', { ascending: false });
+      if (closingError) console.error('Error fetching cashier closings:', closingError);
+      this.cashierClosings.set(latestClosings || []);
+
+      const lastClosing = this.lastCashierClosing();
+      const today = new Date();
+      const isoEndDate = today.toISOString();
+      today.setHours(0, 0, 0, 0);
+      const isoStartDate = today.toISOString();
+
+      const cashierStartDate = lastClosing ? new Date(lastClosing.closed_at) : new Date(isoStartDate);
+
+      const [
+          completedOrders, transactions, dashboardTransactions, dashboardCompletedOrders
+      ] = await Promise.all([
+          supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
+          supabase.from('transactions').select('*').gte('date', cashierStartDate.toISOString()).lte('date', isoEndDate).eq('user_id', userId),
+          supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId), // Dashboard is always just for today
+          supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId) // Dashboard is always just for today
+      ]);
+
+      if (completedOrders.error) console.error('Error fetching completed orders:', completedOrders.error); else this.setCompletedOrdersWithPrices(completedOrders.data || []);
+      if (transactions.error) console.error('Error fetching transactions:', transactions.error); else this.transactions.set(transactions.data || []);
+      if (dashboardTransactions.error) console.error('Error fetching dashboard transactions:', dashboardTransactions.error); else this.dashboardTransactions.set(dashboardTransactions.data || []);
+      if (dashboardCompletedOrders.error) console.error('Error fetching dashboard completed orders:', dashboardCompletedOrders.error); else this.setDashboardCompletedOrdersWithPrices(dashboardCompletedOrders.data || []);
   }
 
   private async fetchRecipes(userId: string) {
@@ -199,7 +358,7 @@ export class SupabaseService {
       if (error) {
         console.error('CRITICAL: Error fetching recipes, app may not function correctly.', error);
         this.recipes.set([]);
-        throw new Error('Failed to fetch recipes'); // Throw to be caught by caller
+        throw new Error('Failed to fetch recipes');
       }
       if (data) this.recipes.set(data);
     } catch(error) {
@@ -208,190 +367,68 @@ export class SupabaseService {
     }
   }
 
+  private processOrdersWithPrices(orders: any[]): Order[] {
+    const recipesMap = this.recipesById();
+    return orders.map(o => ({
+        ...o,
+        order_items: (o.order_items || []).map((item: any) => ({
+            ...item,
+            price: item.price ?? this.pricingService.getEffectivePrice(recipesMap.get(item.recipe_id)!) ?? 0
+        }))
+    }));
+  }
+
+  private processCompletedOrdersWithPrices(orders: any[]): Order[] {
+    const recipesMap = this.recipesById();
+    return orders.map(o => ({
+        ...o,
+        order_items: (o.order_items || []).map((item: any) => ({
+            ...item,
+            price: item.price ?? recipesMap.get(item.recipe_id)?.price ?? 0
+        }))
+    }));
+  }
+
   private setOrdersWithPrices(orders: any[]) {
-      const recipesMap = this.recipesById();
-      const ordersWithPrices: Order[] = orders.map(o => ({
-          ...o,
-          order_items: o.order_items.map((item: any) => ({
-              ...item,
-              price: item.price ?? recipesMap.get(item.recipe_id)?.price ?? 0
-          }))
-      }));
-      this.orders.set(ordersWithPrices);
+      this.orders.set(this.processOrdersWithPrices(orders));
   }
 
   private setCompletedOrdersWithPrices(orders: any[]) {
-    const recipesMap = this.recipesById();
-    const ordersWithPrices: Order[] = orders.map(o => ({
-        ...o,
-        order_items: o.order_items.map((item: any) => ({
-            ...item,
-            price: item.price ?? recipesMap.get(item.recipe_id)?.price ?? 0
-        }))
-    }));
-    this.completedOrders.set(ordersWithPrices);
+    this.completedOrders.set(this.processCompletedOrdersWithPrices(orders));
   }
+
    private setDashboardCompletedOrdersWithPrices(orders: any[]) {
-    const recipesMap = this.recipesById();
-    const ordersWithPrices: Order[] = orders.map(o => ({
-        ...o,
-        order_items: o.order_items.map((item: any) => ({
-            ...item,
-            price: item.price ?? recipesMap.get(item.recipe_id)?.price ?? 0
-        }))
-    }));
-    this.dashboardCompletedOrders.set(ordersWithPrices);
+    this.dashboardCompletedOrders.set(this.processCompletedOrdersWithPrices(orders));
   }
   
-  private listenForChanges(userId: string) {
-    // A single, managed channel for all user-specific database changes.
-    this.userChannel = supabase.channel(`user-db-changes-${userId}`);
-
-    this.userChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.halls, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.tables, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.stations, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.categories, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.recipes, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${userId}` }, (payload) => this.handleIngredientChange(payload))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.ingredientCategories, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.suppliers, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_ingredients', filter: `user_id=eq.${userId}` }, (p) => this.handleRecipeIngredientChange(p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_preparations', filter: `user_id=eq.${userId}` }, (p) => this.handleGenericChange(this.recipePreparations, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderChange(p as any))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderItemChange(p as any))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, () => {
-          this.fetchDashboardData();
-          const lastClosing = this.lastCashierClosing()?.closed_at;
-          const startDate = lastClosing ? new Date(lastClosing) : new Date();
-          if (!lastClosing) startDate.setHours(0,0,0,0);
-          this.fetchSalesDataForPeriod(startDate, new Date());
-      }).subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Successfully subscribed to realtime channel for user ${userId}`);
-        } else {
-          const errorDetails = err ? JSON.stringify(err) : 'No error object provided.';
-          console.error(`Realtime channel for user ${userId} encountered an issue. Status: ${status}`, errorDetails);
-          if (status === 'CHANNEL_ERROR') {
-            console.warn('CHANNEL_ERROR often indicates a problem with Row Level Security (RLS) policies or database permissions for the subscribed table(s). Ensure the authenticated user has SELECT permissions.');
-          }
-        }
-      });
-  }
-
-  private handleGenericChange<T extends { id: string }>(dataSignal: WritableSignal<T[]>, payload: any) {
-    if (payload.eventType === 'INSERT') {
-      dataSignal.update(items => [...items, payload.new]);
-    } else if (payload.eventType === 'UPDATE') {
-      dataSignal.update(items => items.map(i => i.id === payload.new.id ? payload.new : i));
-    } else if (payload.eventType === 'DELETE') {
-      dataSignal.update(items => items.filter(i => i.id !== payload.old.id));
-    }
-  }
-
-  private async handleIngredientChange(payload: any) {
-    const userId = this.currentUser()?.id;
-    if (!userId) return;
-
-    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-      const { data } = await supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('id', payload.new.id).eq('user_id', userId).single();
-      if (data) {
-        if (payload.eventType === 'INSERT') this.ingredients.update(i => [...i, data as Ingredient]);
-        else this.ingredients.update(i => i.map(item => item.id === data.id ? data as Ingredient : item));
-      }
-    } else if (payload.eventType === 'DELETE') {
-      this.ingredients.update(i => i.filter(item => item.id !== payload.old.id));
-    }
-  }
-  
-  private async handleRecipeIngredientChange(payload: any) {
-    const userId = this.currentUser()?.id;
-    if (!userId) return;
-    
-    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-      const { data } = await supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('recipe_id', payload.new.recipe_id).eq('ingredient_id', payload.new.ingredient_id).eq('user_id', userId).single();
-      if (data) {
-        if (payload.eventType === 'INSERT') {
-          this.recipeIngredients.update(ri => [...ri, data as RecipeIngredient]);
-        } else {
-           this.recipeIngredients.update(ri => ri.map(item => (item.recipe_id === data.recipe_id && item.ingredient_id === data.recipe_id) ? data as RecipeIngredient : item));
-        }
-      }
-    } else if (payload.eventType === 'DELETE') {
-        const old = payload.old;
-        this.recipeIngredients.update(ri => ri.filter(item => !(item.recipe_id === old.recipe_id && item.ingredient_id === old.ingredient_id)));
-    }
-  }
-  
-  private handleOrderChange(payload: { eventType: string, new: Order, old: { id: string } }) {
-     if (payload.eventType === 'INSERT') {
-       const newOrder = { ...payload.new, order_items: [] };
-       this.orders.update(orders => [...orders, newOrder]);
-     } else if (payload.eventType === 'UPDATE') {
-       if (payload.new.is_completed) {
-         this.orders.update(orders => orders.filter(o => o.id !== payload.new.id));
-       } else {
-         this.orders.update(orders => orders.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
-       }
-     } else if (payload.eventType === 'DELETE') {
-       this.orders.update(orders => orders.filter(o => o.id !== payload.old.id));
-     }
-  }
-
-  private handleOrderItemChange(payload: { eventType: string, new: OrderItem, old: { id: string, order_id?: string } }) {
-      if (payload.eventType === 'INSERT') {
-          const newItem = payload.new;
-          this.orders.update(orders => orders.map(o => 
-              o.id === newItem.order_id 
-              ? { ...o, order_items: [...o.order_items, newItem] } 
-              : o
-          ));
-          // Auto-print logic
-          const station = this.stations().find(s => s.id === newItem.station_id);
-          if (station?.auto_print_orders) {
-              const order = this.openOrders().find(o => o.id === newItem.order_id);
-              if(order) {
-                  this.printingService.queueForAutoPrinting(order, newItem, station);
-              }
-          }
-      } else if (payload.eventType === 'UPDATE') {
-          const updatedItem = payload.new;
-          this.orders.update(orders => orders.map(o => 
-              o.id === updatedItem.order_id 
-              ? { ...o, order_items: o.order_items.map(i => i.id === updatedItem.id ? updatedItem : i) } 
-              : o
-          ));
-      } else if (payload.eventType === 'DELETE') {
-          this.orders.update(orders => {
-            return orders.map(o => ({
-                ...o,
-                order_items: o.order_items.filter(i => i.id !== payload.old.id)
-            }));
-          });
-      }
-  }
-
   getOrderByTableNumber(tableNumber: number): Order | undefined {
     return this.openOrders().find(o => o.table_number === tableNumber);
   }
 
-  async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
+  async createOrderForTable(table: Table, employeeId: string): Promise<{ success: boolean; error: any; data?: Order }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { data: newOrderData, error: orderError } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select().single();
     if (orderError || !newOrderData) { return { success: false, error: { ...orderError, message: `Falha ao criar pedido na tabela 'orders'. ${orderError?.message ?? ''}` } }; }
-    const { error: tableError } = await supabase.from('tables').update({ status: 'OCUPADA' }).eq('id', table.id).eq('user_id', userId);
+    const { error: tableError } = await supabase.from('tables').update({ status: 'OCUPADA', employee_id: employeeId }).eq('id', table.id).eq('user_id', userId);
     if (tableError) {
       await supabase.from('orders').delete().eq('id', newOrderData.id);
       return { success: false, error: { ...tableError, message: `Falha ao atualizar status na tabela 'tables'. ${tableError.message}` } };
     }
+    // Realtime will handle state updates.
     return { success: true, error: null, data: { ...newOrderData, order_items: [] } };
   }
 
   async addItemsToOrder(orderId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const stations = this.stations();
+    if (stations.length === 0) {
+        return { success: false, error: { message: 'Nenhuma estação de produção foi configurada. Por favor, adicione uma estação em Configurações antes de enviar um pedido.' } };
+    }
+    const fallbackStationId = stations[0].id;
 
     const allItemsToInsert: Omit<OrderItem, 'id' | 'created_at'>[] = [];
     const recipeIds = items.map(item => item.recipe.id);
@@ -405,11 +442,12 @@ export class SupabaseService {
     }
     
     for (const item of items) {
+        const effectivePrice = this.pricingService.getEffectivePrice(item.recipe);
         const recipePreps = prepsByRecipeId.get(item.recipe.id);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
-            recipePreps.forEach((prep, index) => {
+            recipePreps.forEach((prep) => {
                 allItemsToInsert.push({
                     order_id: orderId,
                     recipe_id: item.recipe.id,
@@ -418,84 +456,87 @@ export class SupabaseService {
                     notes: item.notes,
                     status: 'PENDENTE',
                     station_id: prep.station_id,
-                    price: index === 0 ? item.recipe.price : 0,
-                    group_id: groupId,
                     status_timestamps,
+                    price: effectivePrice / recipePreps.length,
+                    group_id: groupId,
                     user_id: userId
                 });
             });
         } else {
-            const fallbackStationId = this.stations()[0]?.id;
-            if (fallbackStationId) {
-                 allItemsToInsert.push({
-                    order_id: orderId,
-                    recipe_id: item.recipe.id,
-                    name: item.recipe.name,
-                    quantity: item.quantity,
-                    notes: item.notes,
-                    status: 'PENDENTE',
-                    station_id: fallbackStationId,
-                    price: item.recipe.price,
-                    group_id: null,
-                    status_timestamps,
-                    user_id: userId
-                });
-            }
+            allItemsToInsert.push({
+                order_id: orderId,
+                recipe_id: item.recipe.id,
+                name: item.recipe.name,
+                quantity: item.quantity,
+                notes: item.notes,
+                status: 'PENDENTE',
+                station_id: fallbackStationId,
+                status_timestamps,
+                price: effectivePrice,
+                group_id: null,
+                user_id: userId
+            });
         }
     }
-    if (allItemsToInsert.length === 0) return { success: true, error: null };
-    const { error } = await supabase.from('order_items').insert(allItemsToInsert);
+
+    if (allItemsToInsert.length > 0) {
+        const { data: insertedItems, error } = await supabase.from('order_items').insert(allItemsToInsert).select();
+        
+        if (error) return { success: false, error };
+
+        // Auto-print if necessary
+        const stationsForPrinting = new Map<string, { station: Station, items: OrderItem[] }>();
+        const stationsMap = new Map(this.stations().map(s => [s.id, s]));
+
+        if(insertedItems) {
+            insertedItems.forEach(item => {
+                const station = stationsMap.get(item.station_id);
+                if (station && station.auto_print_orders) {
+                    if (!stationsForPrinting.has(station.id)) {
+                        stationsForPrinting.set(station.id, { station, items: [] });
+                    }
+                    stationsForPrinting.get(station.id)!.items.push(item as OrderItem);
+                }
+            });
+        }
+        
+        const order = this.orders().find(o => o.id === orderId);
+        if(order) {
+            stationsForPrinting.forEach(({ station, items }) => {
+                items.forEach(item => {
+                    this.printingService.queueForAutoPrinting(order, item, station);
+                });
+            });
+        }
+    }
+    return { success: true, error: null };
+  }
+
+  // --- POS Component Methods ---
+  async updateHall(id: string, name: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('halls').update({ name }).eq('id', id);
     return { success: !error, error };
   }
-  
-  async updateOrderItemStatus(itemId: string, newStatus: OrderItemStatus) {
-    const userId = this.currentUser()?.id;
-    if (!userId) return;
 
-    const { data: currentItem, error: fetchError } = await supabase
-      .from('order_items')
-      .select('status_timestamps')
-      .eq('id', itemId).eq('user_id', userId)
-      .single();
-    
-    if (fetchError) {
-      console.error("KDS: Falha ao buscar item do pedido para atualizar status.", fetchError);
-      await supabase.from('order_items').update({ status: newStatus }).eq('id', itemId).eq('user_id', userId);
-      return;
-    }
-
-    const newTimestamps = { ...(currentItem.status_timestamps || {}), [newStatus]: new Date().toISOString() };
-
-    await supabase
-      .from('order_items')
-      .update({ status: newStatus, status_timestamps: newTimestamps })
-      .eq('id', itemId).eq('user_id', userId);
-  }
-
-  async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean; error: any }> {
+  async addHall(name: string): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { error } = await supabase.from('halls').insert({ name, user_id: userId }).select().single();
+    return { success: !error, error };
+  }
 
-    const { data: currentItem, error: fetchError } = await supabase
-      .from('order_items')
-      .select('status_timestamps')
-      .eq('id', itemId)
-      .eq('user_id', userId)
-      .single();
+  async deleteTablesByHallId(hallId: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').delete().eq('hall_id', hallId);
+    return { success: !error, error };
+  }
 
-    if (fetchError) {
-      console.error("KDS: Falha ao buscar item do pedido para confirmar atenção.", fetchError);
-      return { success: false, error: fetchError };
-    }
+  async deleteHall(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('halls').delete().eq('id', id);
+    return { success: !error, error };
+  }
 
-    const newTimestamps = { ...(currentItem.status_timestamps || {}), 'ATTENTION_ACKNOWLEDGED': new Date().toISOString() };
-
-    const { error } = await supabase
-      .from('order_items')
-      .update({ status_timestamps: newTimestamps })
-      .eq('id', itemId)
-      .eq('user_id', userId);
-      
+  async deleteTable(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').delete().eq('id', id);
     return { success: !error, error };
   }
 
@@ -503,512 +544,350 @@ export class SupabaseService {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const tablesWithUser = tables.map(t => ({...t, user_id: userId}));
-    const newTables = tablesWithUser.filter(t => t.id.startsWith('temp-')).map(({ ...t }) => { delete (t as any).id; return t; });
-    const existingTables = tablesWithUser.filter(t => !t.id.startsWith('temp-'));
-
-    if (newTables.length > 0) {
-        const { error } = await supabase.from('tables').insert(newTables);
-        if (error) return { success: false, error };
-    }
-    if (existingTables.length > 0) {
-        const { error } = await supabase.from('tables').upsert(existingTables);
-        if (error) return { success: false, error };
-    }
-    return { success: true, error: null };
-  }
-
-  async deleteTable(tableId: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    if (tableId.startsWith('temp-')) return { success: true, error: null };
-
-    const { error } = await supabase.from('tables').delete().eq('id', tableId).eq('user_id', userId);
-    return { success: !error, error };
-  }
-  
-  async deleteTablesByHallId(hallId: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-
-    const { error } = await supabase.from('tables').delete().eq('hall_id', hallId).eq('user_id', userId);
-    if (!error) this.tables.update(currentTables => currentTables.filter(t => t.hall_id !== hallId));
-    return { success: !error, error };
-  }
-
-  async moveOrderToTable(order: Order, sourceTable: Table, destinationTable: Table) {
-      const userId = this.currentUser()?.id;
-      if (!userId) return;
-      
-      const { error: orderError } = await supabase.from('orders').update({ table_number: destinationTable.number }).eq('id', order.id).eq('user_id', userId);
-      if (orderError) return;
-      await supabase.from('tables').update({ status: 'LIVRE' }).eq('id', sourceTable.id).eq('user_id', userId);
-      await supabase.from('tables').update({ status: 'OCUPADA' }).eq('id', destinationTable.id).eq('user_id', userId);
-  }
-
-  // --- Hall Management ---
-  async addHall(name: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('halls').insert({ name, user_id: userId }); 
-    return { success: !error, error }; 
-  }
-  async updateHall(id: string, name: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('halls').update({ name }).eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  async deleteHall(id: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('halls').delete().eq('id', id).eq('user_id', userId); 
-    if (!error) this.halls.update(h => h.filter(hall => hall.id !== id)); 
-    return { success: !error, error }; 
-  }
-
-  // --- Station Management ---
-  async addStation(name: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').insert({ name, user_id: userId });
-    return { success: !error, error };
-  }
-  async updateStation(id: string, name: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').update({ name }).eq('id', id).eq('user_id', userId);
-    return { success: !error, error };
-  }
-  async updateStationAutoPrint(stationId: string, auto_print: boolean): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').update({ auto_print_orders: auto_print }).eq('id', stationId).eq('user_id', userId);
-    return { success: !error, error };
-  }
-  async updateStationPrinter(stationId: string, printerName: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').update({ printer_name: printerName }).eq('id', stationId).eq('user_id', userId);
-    return { success: !error, error };
-  }
-  async deleteStation(id: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').delete().eq('id', id).eq('user_id', userId);
-    return { success: !error, error };
-  }
-
-  // --- Ingredient & Category Management ---
-  async addIngredient(ingredientData: Omit<Ingredient, 'id' | 'created_at' | 'user_id'>): Promise<{ success: boolean; error: any; data: Ingredient | null }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
-    const { data, error } = await supabase.from('ingredients').insert({...ingredientData, user_id: userId}).select().single(); 
-    return { success: !error, error, data }; 
-  }
-  async updateIngredient(ingredient: Partial<Ingredient> & { id: string }): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { id, ...updateData } = ingredient; 
-    const { error } = await supabase.from('ingredients').update(updateData).eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  async deleteIngredient(id: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('ingredients').delete().eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  async addIngredientCategory(name: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('ingredient_categories').insert({ name, user_id: userId }); 
-    return { success: !error, error }; 
-  }
-  async updateIngredientCategory(id: string, name: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('ingredient_categories').update({ name }).eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  async deleteIngredientCategory(id: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('ingredient_categories').delete().eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  
-  // --- Supplier Management ---
-  async addSupplier(supplierData: Omit<Supplier, 'id' | 'created_at' | 'user_id'>): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('suppliers').insert({...supplierData, user_id: userId}); 
-    return { success: !error, error }; 
-  }
-  async updateSupplier(supplier: Partial<Supplier> & { id: string }): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { id, ...updateData } = supplier; 
-    const { error } = await supabase.from('suppliers').update(updateData).eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-  async deleteSupplier(id: string): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('suppliers').delete().eq('id', id).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
-
-  // --- Inventory Movement ---
-  async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string, expirationDate?: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    
-    // RPCs need to be secured with user_id inside the function definition in Supabase SQL Editor
-    const { error: rpcError } = await supabase.rpc('adjust_stock', {
-        p_ingredient_id: ingredientId,
-        p_quantity_change: quantityChange,
-        p_reason: reason
+    const tablesToUpsert = tables.map(({ id, ...rest }) => {
+      const isTemp = id.toString().startsWith('temp-');
+      return isTemp ? { ...rest, user_id: userId } : { id, ...rest, user_id: userId };
     });
 
-    if (rpcError) {
-        return { success: false, error: rpcError };
-    }
-    
-    // If it's a stock entry and an expiration date is provided, update it.
-    if (quantityChange > 0 && expirationDate) {
-        const { error: updateError } = await supabase.from('ingredients').update({ expiration_date: expirationDate }).eq('id', ingredientId);
-        if (updateError) {
-            console.error(`Stock was adjusted for ${ingredientId}, but failed to update expiration date.`, updateError);
-            // The main operation succeeded, so we don't return an error, but we log it.
-        }
-    }
-
-    return { success: true, error: null };
-  }
-
-  // --- Recipe & Technical Sheet Management ---
-  async addRecipeCategory(name: string): Promise<{ success: boolean; error: any, data: Category | null }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
-    const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
-    return { success: !error, error, data };
-  }
-
-  async addRecipe(recipeData: Partial<Omit<Recipe, 'id' | 'created_at' | 'is_available' | 'price' | 'hasStock' | 'user_id'>>): Promise<{ success: boolean; error: any, data: Recipe | null }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
-
-    const { data, error } = await supabase
-        .from('recipes')
-        .insert({ ...recipeData, price: 0, is_available: false, user_id: userId })
-        .select()
-        .single();
-    return { success: !error, error, data };
-  }
-
-  async deleteRecipe(recipeId: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-
-    // Order matters: ingredients -> preparations -> recipe
-    const { error: ingError } = await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId).eq('user_id', userId);
-    if (ingError) return { success: false, error: { message: `Failed to delete ingredients: ${ingError.message}` } };
-
-    const { error: prepError } = await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId).eq('user_id', userId);
-    if (prepError) return { success: false, error: { message: `Failed to delete preparations: ${prepError.message}` } };
-
-    const { error: recipeError } = await supabase.from('recipes').delete().eq('id', recipeId).eq('user_id', userId);
-    if (recipeError) return { success: false, error: { message: `Failed to delete recipe: ${recipeError.message}` } };
-
-    return { success: true, error: null };
-  }
-
-  async updateRecipeAvailability(recipeId: string, is_available: boolean): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('recipes').update({ is_available }).eq('id', recipeId).eq('user_id', userId);
+    const { error } = await supabase.from('tables').upsert(tablesToUpsert);
     return { success: !error, error };
   }
 
-  // FIX: Allow updating 'description' to support AI-generated content.
-  async updateRecipe(recipeId: string, updates: { description?: string; operational_cost?: number; price?: number, prep_time_in_minutes?: number }): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('recipes').update(updates).eq('id', recipeId).eq('user_id', userId);
+  async updateTableStatus(id: string, status: TableStatus): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').update({ status }).eq('id', id);
     return { success: !error, error };
   }
 
-  async saveTechnicalSheet(
-      recipeId: string,
-      recipeUpdates: { operational_cost?: number; price?: number; prep_time_in_minutes?: number },
-      preparationsFromClient: (Partial<RecipePreparation> & { recipe_ingredients: Partial<RecipeIngredient>[] })[]
-  ): Promise<{ success: boolean; error: any }> {
+  async finalizeOrderPayment(orderId: string, tableId: string, total: number, payments: PaymentInfo[], tip: number): Promise<{ success: boolean, error: any }> {
       const userId = this.currentUser()?.id;
       if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-      const { error: recipeError } = await this.updateRecipe(recipeId, recipeUpdates);
-      if (recipeError) return { success: false, error: recipeError };
+      const transactionsToInsert: Omit<Transaction, 'id' | 'date'>[] = [];
+      const orderIdShort = orderId.slice(0, 8);
 
-      const finalPrepIds: string[] = [];
-      const tempIdToDbIdMap = new Map<string, string>();
-
-      for (const clientPrep of preparationsFromClient) {
-          const prepData = {
-              recipe_id: recipeId,
-              name: clientPrep.name,
-              station_id: clientPrep.station_id,
-              prep_instructions: clientPrep.prep_instructions,
-              display_order: clientPrep.display_order,
+      for (const payment of payments) {
+          transactionsToInsert.push({
+              description: `Receita Pedido #${orderIdShort} (${payment.method})`,
+              type: 'Receita',
+              amount: payment.amount,
               user_id: userId
-          };
-
-          if (clientPrep.id && clientPrep.id.startsWith('temp-')) {
-              const { data: inserted, error } = await supabase.from('recipe_preparations').insert(prepData).select('id').single();
-              if (error) return { success: false, error };
-              finalPrepIds.push(inserted.id);
-              tempIdToDbIdMap.set(clientPrep.id, inserted.id);
-          } else if (clientPrep.id) {
-              const { error } = await supabase.from('recipe_preparations').update(prepData).eq('id', clientPrep.id).eq('user_id', userId);
-              if (error) return { success: false, error };
-              finalPrepIds.push(clientPrep.id);
-          }
+          });
+      }
+      if (tip > 0) {
+          transactionsToInsert.push({
+              description: `Gorjeta Pedido #${orderIdShort}`,
+              type: 'Gorjeta',
+              amount: tip,
+              user_id: userId
+          });
       }
 
-      const { data: currentDbPreps, error: fetchError } = await supabase.from('recipe_preparations').select('id').eq('recipe_id', recipeId).eq('user_id', userId);
-      if (fetchError) return { success: false, error: fetchError };
-
-      const dbPrepIdsToDelete = currentDbPreps.filter(p => !finalPrepIds.includes(p.id)).map(p => p.id);
-      if (dbPrepIdsToDelete.length > 0) {
-          const { error: deleteError } = await supabase.from('recipe_preparations').delete().in('id', dbPrepIdsToDelete).eq('user_id', userId);
-          if (deleteError) return { success: false, error: deleteError };
+      if (transactionsToInsert.length > 0) {
+        const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
+        if (transactionError) return { success: false, error: transactionError };
       }
 
-      const { error: deleteIngredientsError } = await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId).eq('user_id', userId);
-      if (deleteIngredientsError) return { success: false, error: deleteIngredientsError };
+      const { error: orderError } = await supabase.from('orders').update({ is_completed: true, completed_at: new Date().toISOString() }).eq('id', orderId);
+      if (orderError) return { success: false, error: orderError };
 
-      const allIngredientsToInsert = preparationsFromClient.flatMap(clientPrep => {
-          const dbPrepId = clientPrep.id?.startsWith('temp-') ? tempIdToDbIdMap.get(clientPrep.id) : clientPrep.id;
-          if (!dbPrepId) return [];
-
-          return clientPrep.recipe_ingredients
-              .filter(ri => ri.quantity && ri.quantity > 0)
-              .map(ri => ({
-                  recipe_id: recipeId,
-                  preparation_id: dbPrepId,
-                  ingredient_id: ri.ingredient_id,
-                  quantity: ri.quantity,
-                  user_id: userId
-              }));
-      });
-
-      // FIX: Aggregate ingredients that might appear in multiple preparations to avoid duplicate key error.
-      const uniqueIngredients = new Map<string, typeof allIngredientsToInsert[0]>();
-      for (const ingredient of allIngredientsToInsert) {
-          const existing = uniqueIngredients.get(ingredient.ingredient_id);
-          if (existing) {
-              existing.quantity += ingredient.quantity;
-          } else {
-              uniqueIngredients.set(ingredient.ingredient_id, { ...ingredient });
-          }
-      }
-      const finalIngredientsToInsert = Array.from(uniqueIngredients.values());
-
-
-      if (finalIngredientsToInsert.length > 0) {
-          const { error: insertIngredientsError } = await supabase.from('recipe_ingredients').insert(finalIngredientsToInsert);
-          if (insertIngredientsError) return { success: false, error: insertIngredientsError };
-      }
+      const { error: tableError } = await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', tableId);
+      if (tableError) return { success: false, error: tableError };
+      
+      // Optimistically update local state to avoid race conditions with real-time events.
+      // This ensures the UI reflects the change immediately.
+      this.orders.update(current => current.filter(o => o.id !== orderId));
+      
+      // Refreshing this data ensures the cashier/reports views are updated instantly.
+      // The realtime event for transactions will also fire, but this makes the UI feel faster.
+      this.refreshDashboardAndCashierData();
 
       return { success: true, error: null };
   }
 
-  getRecipeIngredients(recipeId: string): RecipeIngredient[] { return this.recipeIngredients().filter(ri => ri.recipe_id === recipeId); }
-  getRecipePreparations(recipeId: string): RecipePreparation[] { return this.recipePreparations().filter(rp => rp.recipe_id === recipeId); }
- 
-  // --- Checkout and Payment ---
-  async updateTableStatus(tableId: string, status: Table['status']): Promise<{ success: boolean; error: any }> { 
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('tables').update({ status }).eq('id', tableId).eq('user_id', userId); 
-    return { success: !error, error }; 
-  }
+    async moveOrderToTable(order: Order, sourceTable: Table, destinationTable: Table): Promise<{ success: boolean, error: any }> {
+        const { error: orderError } = await supabase.from('orders').update({ table_number: destinationTable.number }).eq('id', order.id);
+        if (orderError) return { success: false, error: orderError };
 
-  async fetchDashboardData() {
-    const userId = this.currentUser()?.id;
-    if (!userId) return;
-
-    try {
-        const today = new Date(); today.setHours(0, 0, 0, 0); const isoStartDate = today.toISOString();
-        const [transactions, orders] = await Promise.all([
-            supabase.from('transactions').select('*').eq('type', 'Receita').gte('date', isoStartDate).eq('user_id', userId),
-            supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', isoStartDate).eq('user_id', userId)
-        ]);
+        const { error: sourceTableError } = await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', sourceTable.id);
+        if (sourceTableError) return { success: false, error: sourceTableError };
         
-        if (transactions.error) console.error('Dashboard Error fetching transactions:', transactions.error);
-        this.dashboardTransactions.set(transactions.data || []);
+        const { error: destTableError } = await supabase.from('tables').update({ status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count }).eq('id', destinationTable.id);
+        if (destTableError) return { success: false, error: destTableError };
 
-        if (orders.error) console.error('Dashboard Error fetching orders:', orders.error);
-        this.setDashboardCompletedOrdersWithPrices(orders.data || []);
-
-    } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-        this.dashboardTransactions.set([]);
-        this.dashboardCompletedOrders.set([]);
+        return { success: true, error: null };
     }
+
+  async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean, error: any }> {
+      const { error } = await supabase.rpc('acknowledge_attention', { item_id: itemId });
+      return { success: !error, error };
   }
 
-  async fetchSalesDataForPeriod(startDate: Date, endDate: Date) {
-    const userId = this.currentUser()?.id;
-    if (!userId) return;
-
-    try {
-        const isoStartDate = startDate.toISOString(), isoEndDate = endDate.toISOString();
-        const [orders, transactions] = await Promise.all([
-            supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId),
-            supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId)
-        ]);
-        
-        if (orders.error) console.error('Reports Error fetching orders:', orders.error);
-        this.setCompletedOrdersWithPrices(orders.data || []);
-
-        if (transactions.error) console.error('Reports Error fetching transactions:', transactions.error);
-        this.transactions.set(transactions.data || []);
-
-    } catch(error) {
-        console.error('Failed to fetch sales data for period:', error);
-        this.completedOrders.set([]);
-        this.transactions.set([]);
-    }
+  async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean, error: any }> {
+      const { error } = await supabase.rpc('update_item_status', { item_id: itemId, new_status: status });
+      return { success: !error, error };
   }
 
-  async finalizeOrderPayment(orderId: string, tableId: string, totalAmount: number, payments: PaymentInfo[], tip: number): Promise<{ success: boolean; error: any }> {
+  // FIX: Changed method signature to use Partial<Ingredient> to align with implementation and other service methods.
+  async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-
-    const { error: orderError } = await supabase.from('orders').update({ is_completed: true, completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', userId);
-    if (orderError) return { success: false, error: { ...orderError, message: `Falha ao atualizar pedido. ${orderError.message}` } };
-    
-    const { error: tableError } = await supabase.from('tables').update({ status: 'LIVRE' }).eq('id', tableId).eq('user_id', userId);
-    if (tableError) {
-      await supabase.from('orders').update({ is_completed: false, completed_at: null }).eq('id', orderId).eq('user_id', userId);
-      return { success: false, error: { ...tableError, message: `Falha ao atualizar mesa. ${tableError.message}` } };
-    }
-    
-    const { error: stockError } = await supabase.rpc('decrement_stock_for_order', { p_order_id: orderId });
-    if (stockError) console.error('CRITICAL: Payment processed but failed to decrement stock:', JSON.stringify(stockError, null, 2));
-
-    const transactionsToInsert: { description: string, type: TransactionType, amount: number, date: string, user_id: string }[] = payments.map(p => ({
-      description: `Venda Pedido #${orderId.slice(0, 8)} (${p.method})`,
-      type: 'Receita',
-      amount: p.amount,
-      date: new Date().toISOString(),
-      user_id: userId
-    }));
-
-    if (tip > 0) {
-        transactionsToInsert.push({
-          description: `Gorjeta Pedido #${orderId.slice(0, 8)}`,
-          type: 'Gorjeta',
-          amount: tip,
-          date: new Date().toISOString(),
-          user_id: userId
-        });
-    }
-
-    if (transactionsToInsert.length > 0) {
-      const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
-      if (transactionError) console.error('CRITICAL: Payment processed but failed to create transaction records:', JSON.stringify(transactionError, null, 2));
-    }
-    
-    return { success: true, error: null };
-  }
-
-  async finalizeQuickSalePayment(cart: { recipe: Recipe; quantity: number }[], payments: PaymentInfo[]): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    
-    const { data: order, error: orderError } = await supabase.from('orders').insert({
-        table_number: 0,
-        order_type: 'QuickSale',
-        is_completed: true,
-        completed_at: new Date().toISOString(),
-        user_id: userId
-    }).select().single();
-
-    if (orderError) return { success: false, error: orderError };
-
-    const orderItems = cart.map(item => ({
-        order_id: order.id,
-        recipe_id: item.recipe.id,
-        name: item.recipe.name,
-        quantity: item.quantity,
-        price: item.recipe.price,
-        status: 'PRONTO' as OrderItemStatus,
-        station_id: this.stations()[0]?.id,
-        user_id: userId
-    }));
-    
-    const validOrderItems = orderItems.filter(item => !!item.station_id);
-
-    if (validOrderItems.length > 0) {
-      const { error: itemsError } = await supabase.from('order_items').insert(validOrderItems);
-      if (itemsError) {
-        await supabase.from('orders').delete().eq('id', order.id);
-        return { success: false, error: itemsError };
-      }
-    }
-
-    const { error: stockError } = await supabase.rpc('decrement_stock_for_order', { p_order_id: order.id });
-    if (stockError) console.error('CRITICAL: Quick sale processed but failed to decrement stock:', stockError);
-
-    const transactionsToInsert = payments.map(p => ({
-        description: `Venda Balcão - Pedido #${order.id.slice(0, 8)} (${p.method})`,
-        type: 'Receita' as const,
-        amount: p.amount,
-        date: new Date().toISOString(),
-        user_id: userId
-    }));
-
-    if (transactionsToInsert.length > 0) {
-        const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
-        if (transactionError) console.error('CRITICAL: Quick sale processed but failed to create transactions:', transactionError);
-    }
-    
-    return { success: true, error: null };
+    const { data, error } = await supabase.from('ingredients').insert({ ...ingredient, user_id: userId }).select().single();
+    if (error) return { success: false, error };
+    return { success: true, error: null, data: data };
   }
   
-  async logTransaction(description: string, amount: number, type: TransactionType): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    
-    if (!description || !amount || amount <= 0) {
-        return { success: false, error: { message: 'Descrição e valor são obrigatórios.' } };
-    }
-    const { error } = await supabase.from('transactions').insert({ description, amount, type, date: new Date().toISOString(), user_id: userId });
+  async updateIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean; error: any }> {
+    const { id, ...updateData } = ingredient;
+    const { error } = await supabase.from('ingredients').update(updateData).eq('id', id!).select().single();
     return { success: !error, error };
   }
 
-  async closeCashier(closingData: Omit<CashierClosing, 'id' | 'closed_at' | 'user_id'>): Promise<{ success: boolean; error: any, data: CashierClosing | null }> {
-    const userId = this.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
-
-    const { data, error } = await supabase
-        .from('cashier_closings')
-        .insert({ ...closingData, closed_at: new Date().toISOString(), user_id: userId })
-        .select()
-        .single();
-    
-    if (error) {
-        return { success: false, error, data: null };
-    }
-
-    if (data.counted_cash > 0) {
-        await this.logTransaction('Saldo de Abertura', data.counted_cash, 'Abertura de Caixa');
-    }
-
-    this.cashierClosings.update(closings => [data, ...closings]);
-
-    return { success: true, error: null, data };
+  async deleteIngredient(id: string): Promise<{ success: boolean, error: any }> {
+      const { error } = await supabase.from('ingredients').delete().eq('id', id);
+      return { success: !error, error };
   }
+  
+  async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string, expirationDate: string | null | undefined): Promise<{ success: boolean, error: any }> {
+      const userId = this.currentUser()?.id;
+      if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+      
+      const { error } = await supabase.rpc('adjust_stock', { p_ingredient_id: ingredientId, p_quantity_change: quantityChange, p_reason: reason, p_user_id: userId, p_expiration_date: expirationDate });
+      return { success: !error, error };
+  }
+  
+  async fetchSalesDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean, error: any }> {
+    const userId = this.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const [completedOrders, transactions] = await Promise.all([
+      supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()).eq('user_id', userId),
+      supabase.from('transactions').select('*').gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).eq('user_id', userId)
+    ]);
+    
+    if (completedOrders.error || transactions.error) {
+        console.error('Error fetching sales data:', completedOrders.error || transactions.error);
+        return { success: false, error: completedOrders.error || transactions.error };
+    }
+
+    this.setCompletedOrdersWithPrices(completedOrders.data || []);
+    this.transactions.set(transactions.data || []);
+    return { success: true, error: null };
+  }
+
+  async addStation(name: string): Promise<{ success: boolean, error: any }> {
+    const userId = this.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { error } = await supabase.from('stations').insert({ name, auto_print_orders: false, user_id: userId }).select().single();
+    return { success: !error, error };
+  }
+
+  async updateStation(id: string, name: string): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('stations').update({ name }).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteStation(id: string): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('stations').delete().eq('id', id);
+    return { success: !error, error };
+  }
+
+  async updateStationAutoPrint(id: string, auto_print_orders: boolean): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('stations').update({ auto_print_orders }).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async updateStationPrinter(id: string, printer_name: string | null): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('stations').update({ printer_name }).eq('id', id);
+    return { success: !error, error };
+  }
+  
+    async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const { data, error } = await supabase.from('ingredient_categories').insert({ name, user_id: userId }).select().single();
+        if (error) return { success: false, error };
+        return { success: true, error: null, data: data };
+    }
+
+    async updateIngredientCategory(id: string, name: string): Promise<{ success: boolean, error: any }> {
+        const { error } = await supabase.from('ingredient_categories').update({ name }).eq('id', id);
+        return { success: !error, error };
+    }
+
+    async deleteIngredientCategory(id: string): Promise<{ success: boolean, error: any }> {
+        const { error } = await supabase.from('ingredient_categories').delete().eq('id', id);
+        return { success: !error, error };
+    }
+
+    async addSupplier(supplier: Partial<Supplier>): Promise<{ success: boolean, error: any, data?: Supplier }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const { data, error } = await supabase.from('suppliers').insert({ ...supplier, user_id: userId }).select().single();
+        if (error) return { success: false, error };
+        return { success: true, error: null, data: data };
+    }
+
+    async updateSupplier(supplier: Partial<Supplier>): Promise<{ success: boolean, error: any }> {
+        const { id, ...updateData } = supplier;
+        const { error } = await supabase.from('suppliers').update(updateData).eq('id', id!);
+        return { success: !error, error };
+    }
+
+    async deleteSupplier(id: string): Promise<{ success: boolean, error: any }> {
+        const { error } = await supabase.from('suppliers').delete().eq('id', id);
+        return { success: !error, error };
+    }
+
+    async addEmployee(employee: Partial<Employee>): Promise<{ success: boolean, error: any, data?: Employee }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const { data, error } = await supabase.from('employees').insert({ ...employee, user_id: userId }).select().single();
+        if (error) return { success: false, error };
+        return { success: true, error: null, data: data };
+    }
+
+    async updateEmployee(employee: Partial<Employee>): Promise<{ success: boolean, error: any }> {
+        const { id, ...updateData } = employee;
+        const { error } = await supabase.from('employees').update(updateData).eq('id', id!);
+        return { success: !error, error };
+    }
+
+    async deleteEmployee(id: string): Promise<{ success: boolean, error: any }> {
+        const { error } = await supabase.from('employees').delete().eq('id', id);
+        return { success: !error, error };
+    }
+
+    // --- Technical Sheets Methods ---
+    getRecipePreparations(recipeId: string): RecipePreparation[] {
+        return this.recipePreparations().filter(p => p.recipe_id === recipeId);
+    }
+
+    getRecipeIngredients(recipeId: string): RecipeIngredient[] {
+        return this.recipeIngredients().filter(ri => ri.recipe_id === recipeId);
+    }
+    
+    async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean, error: any, data?: Recipe }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const recipeData = { is_available: true, price: 0, ...recipe, user_id: userId };
+        const { data, error } = await supabase.from('recipes').insert(recipeData).select().single();
+        if (error) return { success: false, error };
+        return { success: true, error: null, data };
+    }
+    
+    async addRecipeCategory(name: string): Promise<{ success: boolean, error: any, data?: Category }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
+        if (error) return { success: false, error };
+        return { success: true, error: null, data };
+    }
+
+    async saveTechnicalSheet(recipeId: string, recipeUpdates: Partial<Recipe>, preparationsToSave: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[]): Promise<{ success: boolean, error: any }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+        const { error: recipeUpdateError } = await supabase.from('recipes').update(recipeUpdates).eq('id', recipeId);
+        if (recipeUpdateError) return { success: false, error: recipeUpdateError };
+
+        await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+        await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId);
+
+        const prepInsertions = preparationsToSave.map(({ id, recipe_ingredients, station_name, ...p }) => ({ ...p, user_id: userId }));
+        if (prepInsertions.length > 0) {
+            const { data: insertedPreps, error: prepError } = await supabase.from('recipe_preparations').insert(prepInsertions).select();
+            if (prepError) return { success: false, error: prepError };
+
+            const tempIdToDbId = new Map<string, string>();
+            preparationsToSave.forEach((p, i) => tempIdToDbId.set(p.id, insertedPreps[i].id));
+
+            const ingredientInsertions = preparationsToSave.flatMap(p => p.recipe_ingredients.map(ri => ({
+                ...ri,
+                user_id: userId,
+                preparation_id: tempIdToDbId.get(p.id) || ri.preparation_id,
+                ingredients: undefined // remove joined data
+            })));
+            
+            if (ingredientInsertions.length > 0) {
+                const { error: ingError } = await supabase.from('recipe_ingredients').insert(ingredientInsertions);
+                if (ingError) return { success: false, error: ingError };
+            }
+        }
+        
+        return { success: true, error: null };
+    }
+
+    async updateRecipeAvailability(id: string, is_available: boolean): Promise<{ success: boolean, error: any }> {
+        const { error } = await supabase.from('recipes').update({ is_available }).eq('id', id);
+        return { success: !error, error };
+    }
+
+    async deleteRecipe(id: string): Promise<{ success: boolean, error: any }> {
+        await supabase.from('recipe_ingredients').delete().eq('recipe_id', id);
+        await supabase.from('recipe_preparations').delete().eq('recipe_id', id);
+        const { error } = await supabase.from('recipes').delete().eq('id', id);
+        return { success: !error, error };
+    }
+    
+    // --- Cashier Component Methods ---
+    async finalizeQuickSalePayment(cart: QuickSaleCartItem[], payments: PaymentInfo[]): Promise<{ success: boolean, error: any }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+        const { data: order, error: orderError } = await supabase.from('orders').insert({
+            table_number: 0,
+            order_type: 'QuickSale',
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+            user_id: userId
+        }).select().single();
+        if (orderError) return { success: false, error: orderError };
+
+        const prices = this.recipesById();
+        const orderItems = cart.map(item => ({
+            order_id: order.id,
+            recipe_id: item.recipe.id,
+            name: item.recipe.name,
+            quantity: item.quantity,
+            price: prices.get(item.recipe.id)?.price ?? 0,
+            status: 'PRONTO' as OrderItemStatus,
+            station_id: this.stations()[0]?.id, // Just assign to the first station, as it's a quick sale
+            user_id: userId,
+        }));
+        
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) return { success: false, error: itemsError };
+
+        const orderIdShort = order.id.slice(0, 8);
+        const transactions = payments.map(p => ({
+            description: `Receita Venda Rápida #${orderIdShort} (${p.method})`,
+            type: 'Receita' as TransactionType,
+            amount: p.amount,
+            user_id: userId
+        }));
+
+        const { error: transError } = await supabase.from('transactions').insert(transactions);
+        if (transError) return { success: false, error: transError };
+        
+        return { success: true, error: null };
+    }
+
+    async logTransaction(description: string, amount: number, type: TransactionType): Promise<{ success: boolean, error: any }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        const { error } = await supabase.from('transactions').insert({ description, amount, type, user_id: userId }).select().single();
+        return { success: !error, error };
+    }
+
+    async closeCashier(closingData: Omit<CashierClosing, 'id' | 'closed_at'>): Promise<{ success: boolean, error: any, data?: CashierClosing }> {
+        const userId = this.currentUser()?.id;
+        if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+        
+        const { data, error } = await supabase.from('cashier_closings').insert({ ...closingData, user_id: userId }).select().single();
+        if (error) return { success: false, error };
+        
+        await this.logTransaction('Abertura de Caixa', closingData.counted_cash, 'Abertura de Caixa');
+        
+        return { success: true, error: null, data: data };
+    }
 }

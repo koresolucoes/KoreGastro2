@@ -1,3 +1,4 @@
+
 <div class="container mx-auto max-w-4xl">
   <div class="text-center mb-12">
     <h1 class="text-4xl font-extrabold text-white tracking-tight sm:text-5xl">Nosso Cardápio</h1>
@@ -34,7 +35,14 @@
                     <p class="text-sm text-gray-400">{{ recipe.description }}</p>
                   }
                 </div>
-                <p class="font-semibold text-white whitespace-nowrap">{{ recipe.price | currency:'BRL' }}</p>
+                <div class="text-right">
+                  @if (recipe.effectivePrice < recipe.price) {
+                    <p class="font-semibold text-green-400 whitespace-nowrap">{{ recipe.effectivePrice | currency:'BRL' }}</p>
+                    <p class="text-xs text-gray-500 line-through">{{ recipe.price | currency:'BRL' }}</p>
+                  } @else {
+                    <p class="font-semibold text-white whitespace-nowrap">{{ recipe.price | currency:'BRL' }}</p>
+                  }
+                </div>
               </div>
             }
           </div>

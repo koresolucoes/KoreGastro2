@@ -4,6 +4,7 @@ export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
 export type OrderItemStatus = 'AGUARDANDO' | 'PENDENTE' | 'EM_PREPARO' | 'PRONTO';
 export type OrderType = 'Dine-in' | 'Takeout' | 'QuickSale';
 export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de Caixa';
+export type DiscountType = 'percentage' | 'fixed_value';
 
 export interface IngredientCategory {
     id: string;
@@ -195,4 +196,25 @@ export interface CashierClosing {
     notes?: string | null;
     closed_by_employee_id?: string | null;
     user_id: string;
+}
+
+export interface Promotion {
+    id: string;
+    name: string;
+    start_time: string; // "HH:mm:ss"
+    end_time: string; // "HH:mm:ss"
+    days_of_week: number[]; // 0=Sunday, 1=Monday, ..., 6=Saturday
+    is_active: boolean;
+    created_at: string;
+    user_id: string;
+}
+
+export interface PromotionRecipe {
+    promotion_id: string;
+    recipe_id: string;
+    discount_type: DiscountType;
+    discount_value: number;
+    user_id: string;
+    // For UI
+    recipes?: Pick<Recipe, 'name'>;
 }

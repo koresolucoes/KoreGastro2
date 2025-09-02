@@ -1,7 +1,8 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService, PaymentInfo } from '../../services/supabase.service';
-import { Hall, Table, Order, Category, OrderItemStatus, OrderItem } from '../../models/db.models';
+import { Hall, Table, Order, Category, OrderItemStatus, OrderItem, Employee } from '../../models/db.models';
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { AuthService } from '../../services/auth.service';
 
@@ -38,6 +39,14 @@ export class PosComponent {
   
   halls = this.dataService.halls;
   tables = this.dataService.tables;
+  employees = this.dataService.employees;
+
+  // Employee Session
+  activeEmployee = signal<Employee | null>(null);
+  isEmployeeLoginModalOpen = signal(true);
+  selectedEmployeeForLogin = signal<Employee | null>(null);
+  enteredPin = signal('');
+  pinError = signal('');
 
   selectedHall: WritableSignal<Hall | null> = signal(null);
   selectedTable: WritableSignal<Table | null> = signal(null);
@@ -103,6 +112,45 @@ export class PosComponent {
         }
     });
   }
+
+  // --- Employee Login Methods ---
+  selectEmployeeForLogin(employee: Employee) {
+    this.selectedEmployeeForLogin.set(employee);
+    this.enteredPin.set('');
+    this.pinError.set('');
+  }
+
+  enterPinDigit(digit: string) {
+    if (this.enteredPin().length < 4) {
+      this.enteredPin.update(pin => pin + digit);
+      if (this.enteredPin().length === 4) {
+        this.checkPin();
+      }
+    }
+  }
+  
+  clearPin() { this.enteredPin.set(''); this.pinError.set(''); }
+  backspacePin() { this.enteredPin.update(pin => pin.slice(0, -1)); this.pinError.set(''); }
+
+  checkPin() {
+    const employee = this.selectedEmployeeForLogin();
+    if (employee && employee.pin === this.enteredPin()) {
+      this.activeEmployee.set(employee);
+      this.isEmployeeLoginModalOpen.set(false);
+      this.selectedEmployeeForLogin.set(null);
+      this.enteredPin.set('');
+      this.pinError.set('');
+    } else {
+      this.pinError.set('PIN incorreto. Tente novamente.');
+      setTimeout(() => this.clearPin(), 1000);
+    }
+  }
+
+  logoutEmployee() {
+    this.activeEmployee.set(null);
+    this.isEmployeeLoginModalOpen.set(true);
+  }
+
 
   isItemCritical(item: OrderItem): boolean {
     const note = item.notes?.toLowerCase() ?? '';
@@ -319,13 +367,13 @@ export class PosComponent {
   }
   
   async selectTable(table: Table) {
-    if (this.isEditMode()) return;
+    if (this.isEditMode() || !this.activeEmployee()) return;
     this.isOrderModalOpen.set(true);
     this.orderError.set(null);
     this.selectedTable.set(table);
     const orderExists = this.dataService.getOrderByTableNumber(table.number);
     if (!orderExists && table.status === 'LIVRE') {
-      const result = await this.dataService.createOrderForTable(table);
+      const result = await this.dataService.createOrderForTable(table, this.activeEmployee()!.id);
       if (!result.success) { 
         this.orderError.set(result.error?.message ?? 'Erro desconhecido.'); 
       }

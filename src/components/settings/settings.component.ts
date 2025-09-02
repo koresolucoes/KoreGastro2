@@ -1,7 +1,8 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
-import { Station, IngredientCategory, Supplier } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Employee } from '../../models/db.models';
 
 @Component({
   selector: 'app-settings',
@@ -17,11 +18,13 @@ export class SettingsComponent {
   stations = this.dataService.stations;
   categories = this.dataService.ingredientCategories;
   suppliers = this.dataService.suppliers;
+  employees = this.dataService.employees;
 
   // Search terms
   stationSearchTerm = signal('');
   categorySearchTerm = signal('');
   supplierSearchTerm = signal('');
+  employeeSearchTerm = signal('');
 
   // Filtered lists
   filteredStations = computed(() => {
@@ -43,6 +46,12 @@ export class SettingsComponent {
       s.name.toLowerCase().includes(term) ||
       s.contact_person?.toLowerCase().includes(term)
     );
+  });
+  
+  filteredEmployees = computed(() => {
+    const term = this.employeeSearchTerm().toLowerCase();
+    if (!term) return this.employees();
+    return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role?.toLowerCase().includes(term));
   });
   
   // --- Station Management ---
@@ -167,5 +176,40 @@ export class SettingsComponent {
     const { success, error } = await this.dataService.deleteSupplier(supplier.id);
     if (!success) { alert(`Falha: ${error?.message}`); }
     this.supplierPendingDeletion.set(null);
+  }
+  
+  // --- Employee Management ---
+  isEmployeeModalOpen = signal(false);
+  editingEmployee = signal<Partial<Employee> | null>(null);
+  employeeForm = signal<Partial<Employee>>({});
+  employeePendingDeletion = signal<Employee | null>(null);
+
+  openAddEmployeeModal() { this.employeeForm.set({ role: 'Garçom', pin: '' }); this.editingEmployee.set(null); this.isEmployeeModalOpen.set(true); }
+  openEditEmployeeModal(e: Employee) { this.editingEmployee.set(e); this.employeeForm.set({ ...e }); this.isEmployeeModalOpen.set(true); }
+  closeEmployeeModal() { this.isEmployeeModalOpen.set(false); }
+  updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at'>, value: string) {
+    if (field === 'pin' && value.length > 4) return;
+    this.employeeForm.update(form => ({ ...form, [field]: value }));
+  }
+  async saveEmployee() {
+    const form = this.employeeForm(); 
+    if (!form.name?.trim()) { alert('O nome do funcionário é obrigatório.'); return; }
+    if (form.pin && form.pin.length !== 4) { alert('O PIN deve ter exatamente 4 dígitos.'); return; }
+    
+    let res;
+    if (this.editingEmployee()) {
+      res = await this.dataService.updateEmployee({ ...form, id: this.editingEmployee()!.id });
+    } else {
+      res = await this.dataService.addEmployee(form as any);
+    }
+    if (res.success) { this.closeEmployeeModal(); } else { alert(`Falha ao salvar funcionário: ${res.error?.message}`); }
+  }
+  requestDeleteEmployee(e: Employee) { this.employeePendingDeletion.set(e); }
+  cancelDeleteEmployee() { this.employeePendingDeletion.set(null); }
+  async confirmDeleteEmployee() {
+    const employee = this.employeePendingDeletion(); if (!employee) return;
+    const { success, error } = await this.dataService.deleteEmployee(employee.id);
+    if (!success) { alert(`Falha ao deletar funcionário: ${error?.message}`); }
+    this.employeePendingDeletion.set(null);
   }
 }

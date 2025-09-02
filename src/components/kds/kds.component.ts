@@ -42,6 +42,9 @@ export class KdsComponent implements OnInit, OnDestroy {
     private timerInterval: any;
     currentTime = signal(Date.now());
     
+    // UI state for async operations
+    updatingItems = signal<Set<string>>(new Set());
+
     // Modal management
     isDetailModalOpen = signal(false);
     selectedTicketForDetail = signal<GroupedTicket | null>(null);
@@ -145,17 +148,49 @@ export class KdsComponent implements OnInit, OnDestroy {
     
     async acknowledgeAttention(item: ProcessedOrderItem, event: MouseEvent) {
         event.stopPropagation();
-        await this.dataService.acknowledgeOrderItemAttention(item.id);
+        if (this.updatingItems().has(item.id)) return;
+
+        this.updatingItems.update(set => new Set(set).add(item.id));
+        const { success, error } = await this.dataService.acknowledgeOrderItemAttention(item.id);
+        
+        if (!success) {
+            console.error('Failed to acknowledge attention:', error);
+            alert(`Erro ao confirmar ciência: ${error?.message}`);
+        }
+        
+        // Realtime will eventually update the UI, we just remove the loading state.
+        this.updatingItems.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(item.id);
+            return newSet;
+        });
     }
     
     async updateStatus(item: OrderItem) {
+        if (this.updatingItems().has(item.id)) return; // Prevent double-clicks
+
         let nextStatus: OrderItemStatus;
         switch (item.status) {
             case 'PENDENTE': nextStatus = 'EM_PREPARO'; break;
             case 'EM_PREPARO': nextStatus = 'PRONTO'; break;
             default: return;
         }
-        await this.dataService.updateOrderItemStatus(item.id, nextStatus);
+        
+        this.updatingItems.update(set => new Set(set).add(item.id));
+        const { success, error } = await this.dataService.updateOrderItemStatus(item.id, nextStatus);
+
+        if (!success) {
+            console.error('Failed to update item status:', error);
+            alert(`Erro ao atualizar o status do item: ${error?.message}`);
+        }
+        
+        // The realtime update will handle the final UI change. We just need to remove the updating state
+        // regardless of success or failure to allow the user to try again.
+        this.updatingItems.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(item.id);
+            return newSet;
+        });
     }
     
     openDetailModal(ticket: GroupedTicket) {
