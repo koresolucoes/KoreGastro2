@@ -1,6 +1,6 @@
 
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -64,6 +64,11 @@ export class OrderPanelComponent {
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
+  // Floating Action Bar State
+  isFooterVisible = signal(true);
+  scrollContainerRef = viewChild.required<ElementRef<HTMLDivElement>>('scrollContainer');
+  footerActionsRef = viewChild.required<ElementRef<HTMLDivElement>>('footerActions');
+
   // Notes Modal Signals
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
@@ -90,8 +95,8 @@ export class OrderPanelComponent {
     }
 
     effect(() => {
-        this.selectedTable();
-        untracked(() => this.shoppingCart.set([]));
+      this.selectedTable();
+      untracked(() => this.shoppingCart.set([]));
     });
 
     effect(() => {
@@ -102,6 +107,28 @@ export class OrderPanelComponent {
       } else {
         this.upsellSuggestions.set([]);
       }
+    });
+
+    // Effect for IntersectionObserver to control floating action bar visibility
+    effect(() => {
+        const scrollEl = this.scrollContainerRef().nativeElement;
+        const footerEl = this.footerActionsRef().nativeElement;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // Use isIntersecting to check if the element is in the viewport of the root
+                this.isFooterVisible.set(entry.isIntersecting);
+            },
+            { 
+              root: scrollEl, // The scrollable container
+              threshold: 0.1  // Trigger when even a small part is visible/hidden
+            }
+        );
+
+        observer.observe(footerEl);
+
+        // Cleanup function is automatically handled by Angular's effect
+        return () => observer.disconnect();
     });
   }
 
