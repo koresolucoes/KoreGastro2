@@ -10,13 +10,12 @@
         </div>
       </div>
 
-      <!-- Main Content Area -->
-      <div class="flex-1 min-h-0 overflow-y-auto p-4">
+      <!-- Main Content Area (Single Scrollable Body) -->
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         @if (currentOrder()) {
-          <div class="flex flex-col md:flex-row gap-4">
-            <!-- Left Side: Menu -->
-            <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col">
-              <!-- Search & Categories (fixed part) -->
+            <!-- Menu Section -->
+            <div class="w-full flex flex-col">
+              <!-- Search & Categories -->
               <div class="flex-shrink-0">
                   <div class="relative mb-2">
                       <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -34,7 +33,6 @@
 
               <!-- Menu content -->
               <div class="mt-4">
-                  <!-- Menu Items Grid -->
                   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 items-start">
                      @for (recipe of filteredRecipes(); track recipe.id) {
                       <div (click)="addToCart(recipe)" class="bg-gray-700 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-600 flex flex-col h-full justify-center">
@@ -43,8 +41,6 @@
                       </div>
                     }
                   </div>
-
-                  <!-- AI Suggestions -->
                   <div class="pt-4 mt-4 border-t border-gray-700">
                     <div class="flex justify-between items-center">
                         <h3 class="font-semibold text-white">Sugestões Inteligentes</h3>
@@ -67,10 +63,9 @@
               </div>
             </div>
 
-            <!-- Right Side: Cart -->
-            <div class="w-full md:w-2/5 lg:w-1/3 bg-gray-900/50 p-4 rounded-lg flex flex-col">
+            <!-- Cart Section -->
+            <div class="w-full bg-gray-900/50 p-4 rounded-lg flex flex-col">
               <h3 class="font-semibold text-white mb-2 flex-shrink-0">Resumo do Pedido</h3>
-              <div class="pr-2">
                 @if (groupedOrderItems().length === 0 && shoppingCart().length === 0) {
                   <div class="flex flex-col items-center justify-center text-center text-gray-500 py-8">
                     <svg class="w-12 h-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
@@ -129,9 +124,7 @@
                     }
                   </ul>
                 }
-              </div>
             </div>
-          </div>
         } @else {
           <div class="w-full p-6 flex flex-col items-center justify-center text-center"><svg class="w-16 h-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg><h3 class="text-xl font-bold text-white">Falha ao Abrir Conta</h3><p class="text-gray-400 mt-2">Não foi possível criar ou carregar o pedido para esta mesa.</p>@if (orderError()) {<div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-left w-full"><p class="text-sm font-semibold text-red-400">Detalhe do Erro:</p><p class="text-xs text-gray-400 font-mono mt-1">{{ orderError() }}</p></div><p class="text-gray-500 text-xs mt-4"><strong>Causa provável:</strong> Uma Política de Segurança (RLS) no banco de dados está bloqueando esta operação. Verifique as permissões da tabela indicada no erro.</p>} @else {<p class="text-gray-500 text-sm mt-4">Causa provável: As Políticas de Segurança (RLS) do banco de dados estão bloqueando a criação de novos pedidos. Verifique as permissões de `INSERT` na tabela `orders`.</p>}</div>
         }
