@@ -1,9 +1,11 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Employee } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Employee, Category } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { RecipeDataService } from '../../services/recipe-data.service';
 
 @Component({
   selector: 'app-settings',
@@ -16,16 +18,19 @@ export class SettingsComponent {
   private stateService = inject(SupabaseStateService);
   private settingsDataService = inject(SettingsDataService);
   private inventoryDataService = inject(InventoryDataService);
+  private recipeDataService = inject(RecipeDataService);
 
   // Data Signals from Service
   stations = this.stateService.stations;
   categories = this.stateService.ingredientCategories;
+  recipeCategories = this.stateService.categories;
   suppliers = this.stateService.suppliers;
   employees = this.stateService.employees;
 
   // Search terms
   stationSearchTerm = signal('');
   categorySearchTerm = signal('');
+  recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
   employeeSearchTerm = signal('');
 
@@ -40,6 +45,12 @@ export class SettingsComponent {
     const term = this.categorySearchTerm().toLowerCase();
     if (!term) return this.categories();
     return this.categories().filter(c => c.name.toLowerCase().includes(term));
+  });
+  
+  filteredRecipeCategories = computed(() => {
+    const term = this.recipeCategorySearchTerm().toLowerCase();
+    if (!term) return this.recipeCategories();
+    return this.recipeCategories().filter(c => c.name.toLowerCase().includes(term));
   });
 
   filteredSuppliers = computed(() => {
@@ -115,6 +126,36 @@ export class SettingsComponent {
     const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
     if (!success) { alert(`Falha: ${error?.message}`); }
     this.categoryPendingDeletion.set(null);
+  }
+
+  // --- Recipe Category Management ---
+  newRecipeCategoryName = signal('');
+  editingRecipeCategory = signal<Category | null>(null);
+  recipeCategoryPendingDeletion = signal<Category | null>(null);
+
+  async handleAddRecipeCategory() {
+    const name = this.newRecipeCategoryName().trim(); if (!name) return;
+    const { success, error } = await this.recipeDataService.addRecipeCategory(name);
+    if (success) { this.newRecipeCategoryName.set(''); } else { alert(`Falha: ${error?.message}`); }
+  }
+  startEditingRecipeCategory(c: Category) { this.editingRecipeCategory.set({ ...c }); this.recipeCategoryPendingDeletion.set(null); }
+  cancelEditingRecipeCategory() { this.editingRecipeCategory.set(null); }
+  updateEditingRecipeCategoryName(event: Event) {
+    const name = (event.target as HTMLInputElement).value;
+    this.editingRecipeCategory.update(c => c ? { ...c, name } : c);
+  }
+  async saveRecipeCategory() {
+    const category = this.editingRecipeCategory(); if (!category?.name.trim()) return;
+    const { success, error } = await this.recipeDataService.updateRecipeCategory(category.id, category.name.trim());
+    if (success) { this.cancelEditingRecipeCategory(); } else { alert(`Falha: ${error?.message}`); }
+  }
+  requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); this.editingRecipeCategory.set(null); }
+  cancelDeleteRecipeCategory() { this.recipeCategoryPendingDeletion.set(null); }
+  async confirmDeleteRecipeCategory() {
+    const category = this.recipeCategoryPendingDeletion(); if (!category) return;
+    const { success, error } = await this.recipeDataService.deleteRecipeCategory(category.id);
+    if (!success) { alert(`Falha ao deletar. Erro: ${error?.message}`); }
+    this.recipeCategoryPendingDeletion.set(null);
   }
 
   // --- Supplier Management ---

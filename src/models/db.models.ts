@@ -39,6 +39,12 @@ export interface Ingredient {
     user_id: string;
     ingredient_categories?: { name: string } | null; // For joined data
     suppliers?: { name: string } | null; // For joined data
+    // New fields for sellable ingredients
+    is_sellable?: boolean;
+    price?: number | null;
+    proxy_recipe_id?: string | null;
+    pos_category_id?: string | null;
+    station_id?: string | null;
 }
 
 export interface InventoryMovement {
@@ -93,6 +99,7 @@ export interface Recipe {
     created_at: string;
     user_id: string;
     hasStock?: boolean;
+    source_ingredient_id?: string | null; // Links a proxy recipe to its source ingredient
 }
 
 export interface RecipeIngredient {

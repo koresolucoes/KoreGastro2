@@ -1,3 +1,4 @@
+
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
@@ -156,7 +157,7 @@
           @for (ingredient of filteredIngredients(); track ingredient.id) {
             <tr class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
               <td class="px-6 py-4 font-medium text-white">
-                <div>{{ ingredient.name }}</div>
+                <div>{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</div>
                 <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
               </td>
               <td class="px-6 py-4">{{ ingredient.stock }} {{ ingredient.unit }}</td>
@@ -206,7 +207,7 @@
           <!-- Top row: Name and Status -->
           <div class="flex justify-between items-start">
               <div>
-                  <p class="font-semibold text-white">{{ ingredient.name }}</p>
+                  <p class="font-semibold text-white">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</p>
                   <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
               </div>
               @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
@@ -282,7 +283,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Categoria</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Categoria de Estoque</label>
               <select (change)="updateFormValue('category_id', $any($event.target).value)" [value]="ingredientForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option [value]="null">Nenhuma</option>
                 @for (cat of categories(); track cat.id) {
@@ -329,6 +330,42 @@
         <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
             <input type="date" [value]="ingredientForm().expiration_date | date:'yyyy-MM-dd'" (input)="updateFormValue('expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Sellable Item Section -->
+        <div class="pt-4 border-t border-gray-700">
+            <div class="flex items-center">
+                <input id="is_sellable" type="checkbox" [checked]="ingredientForm().is_sellable" (change)="updateFormValue('is_sellable', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+                <label for="is_sellable" class="ml-2 block text-sm font-medium text-gray-200">Pode ser vendido diretamente no PDV?</label>
+            </div>
+            @if(ingredientForm().is_sellable) {
+                <div class="mt-4 space-y-4 p-4 bg-gray-700/50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
+                        <input type="number" [value]="ingredientForm().price ?? 0" (input)="updateFormValue('price', $any($event.target).value)" placeholder="Ex: 5.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Categoria no PDV</label>
+                            <select (change)="updateFormValue('pos_category_id', $any($event.target).value)" [value]="ingredientForm().pos_category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option [value]="null">Selecione...</option>
+                                @for(cat of recipeCategories(); track cat.id) {
+                                    <option [value]="cat.id">{{ cat.name }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Estação KDS</label>
+                             <select (change)="updateFormValue('station_id', $any($event.target).value)" [value]="ingredientForm().station_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option [value]="null">Selecione...</option>
+                                @for(station of stations(); track station.id) {
+                                    <option [value]="station.id">{{ station.name }}</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
       </div>
       

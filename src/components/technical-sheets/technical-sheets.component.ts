@@ -75,6 +75,7 @@ export class TechnicalSheetsComponent {
     const categoryId = this.selectedCategoryId();
     return this.recipesWithStockStatus().filter(recipe => 
       !recipe.is_sub_recipe &&
+      !recipe.source_ingredient_id &&
       recipe.name.toLowerCase().includes(term) && 
       (categoryId === 'all' || recipe.category_id === categoryId)
     );

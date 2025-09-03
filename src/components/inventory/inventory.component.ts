@@ -1,6 +1,7 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Ingredient, IngredientUnit, IngredientCategory, Supplier } from '../../models/db.models';
+import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
@@ -15,6 +16,10 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
     category_id: null,
     supplier_id: null,
     expiration_date: null,
+    is_sellable: false,
+    price: null,
+    pos_category_id: null,
+    station_id: null,
 };
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
@@ -45,6 +50,8 @@ export class InventoryComponent {
     ingredients = this.stateService.ingredients;
     categories = this.stateService.ingredientCategories;
     suppliers = this.stateService.suppliers;
+    recipeCategories = this.stateService.categories;
+    stations = this.stateService.stations;
     
     isModalOpen = signal(false);
     editingIngredient = signal<Partial<Ingredient> | null>(null);
@@ -151,14 +158,20 @@ export class InventoryComponent {
         this.editingIngredient.set(null);
     }
 
-    updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'ingredient_categories' | 'suppliers'>, value: string) {
+    updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.ingredientForm.update(form => {
             const newForm = { ...form };
-            if (field === 'category_id' || field === 'supplier_id') newForm[field] = (value === 'null' || value === '') ? null : value;
-            else if (field === 'name' || field === 'unit' || field === 'expiration_date' || field === 'last_movement_at') newForm[field] = value as any;
-            else if (field === 'stock' || field === 'cost' || field === 'min_stock') {
+            if (field === 'is_sellable') {
+                newForm[field] = value as boolean;
+            } else if (['category_id', 'supplier_id', 'pos_category_id', 'station_id', 'expiration_date'].includes(field)) {
+                newForm[field as 'category_id' | 'supplier_id' | 'pos_category_id' | 'station_id' | 'expiration_date'] = (value === 'null' || value === '') ? null : value;
+            } else if (['name', 'unit', 'last_movement_at'].includes(field)) {
+                newForm[field as 'name' | 'unit' | 'last_movement_at'] = value;
+            } else if (['stock', 'cost', 'min_stock', 'price'].includes(field)) {
                 const numValue = parseFloat(value);
-                if (!isNaN(numValue)) newForm[field] = numValue;
+                if (!isNaN(numValue)) {
+                    newForm[field as 'stock' | 'cost' | 'min_stock' | 'price'] = numValue;
+                }
             }
             return newForm;
         });

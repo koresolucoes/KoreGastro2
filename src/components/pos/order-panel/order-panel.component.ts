@@ -61,7 +61,7 @@ export class OrderPanelComponent {
   // Component State
   shoppingCart = signal<CartItem[]>([]);
   categories = this.stateService.categories;
-  recipes = this.stateService.recipes;
+  recipes = this.stateService.recipesWithStockStatus;
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
@@ -141,7 +141,10 @@ export class OrderPanelComponent {
 
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
   
-  addToCart(recipe: Recipe) {
+  addToCart(recipe: Recipe & { hasStock: boolean }) {
+    if (!recipe.is_available || !recipe.hasStock) {
+        return;
+    }
     this.shoppingCart.update(cart => [...cart, { id: uuidv4(), recipe, quantity: 1, notes: '' }]);
   }
 

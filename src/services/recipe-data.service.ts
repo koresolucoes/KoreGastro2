@@ -36,6 +36,16 @@ export class RecipeDataService {
     return { success: !error, error, data };
   }
 
+  async updateRecipeCategory(id: string, name: string): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('categories').update({ name }).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteRecipeCategory(id: string): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    return { success: !error, error };
+  }
+
   async saveTechnicalSheet(
     recipeId: string,
     recipeUpdates: Partial<Recipe>,
@@ -140,10 +150,23 @@ export class RecipeDataService {
   }
 
   async deleteRecipe(id: string): Promise<{ success: boolean, error: any }> {
+    // If this is a proxy recipe, unlink it from the source ingredient first
+    const { data: recipeToDelete } = await supabase.from('recipes').select('source_ingredient_id').eq('id', id).single();
+    if (recipeToDelete?.source_ingredient_id) {
+        await supabase.from('ingredients').update({ 
+            is_sellable: false, 
+            price: null, 
+            proxy_recipe_id: null,
+            pos_category_id: null,
+            station_id: null
+        }).eq('id', recipeToDelete.source_ingredient_id);
+    }
+    
+    // Standard deletion of all related items
     await supabase.from('recipe_ingredients').delete().eq('recipe_id', id);
     await supabase.from('recipe_preparations').delete().eq('recipe_id', id);
     await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', id);
-    await supabase.from('recipe_sub_recipes').delete().eq('child_recipe_id', id); // Also delete if it's used as a sub-recipe
+    await supabase.from('recipe_sub_recipes').delete().eq('child_recipe_id', id);
     const { error } = await supabase.from('recipes').delete().eq('id', id);
     return { success: !error, error };
   }

@@ -49,9 +49,15 @@
                     <div class="mt-4">
                         <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 items-start">
                            @for (recipe of filteredRecipes(); track recipe.id) {
-                            <div (click)="addToCart(recipe)" class="bg-gray-700 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-600 flex flex-col h-full justify-center min-h-[60px]">
+                            <div (click)="addToCart(recipe)" 
+                                class="bg-gray-700 p-2 rounded-lg text-center flex flex-col h-full justify-center min-h-[60px] transition-opacity"
+                                [class.cursor-pointer]="recipe.is_available && recipe.hasStock"
+                                [class.hover:bg-gray-600]="recipe.is_available && recipe.hasStock"
+                                [class.opacity-50]="!recipe.is_available || !recipe.hasStock"
+                                [class.pointer-events-none]="!recipe.is_available || !recipe.hasStock"
+                                [title]="!recipe.is_available ? 'Prato indisponível no cardápio' : (!recipe.hasStock ? 'Ingredientes insuficientes' : '')">
                               <p class="font-semibold text-sm leading-tight">{{ recipe.name }}</p>
-                              <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
+                              <p class="text-xs text-gray-400 mt-1">{{ (recipePrices().get(recipe.id) ?? recipe.price) | currency:'BRL' }}</p>
                             </div>
                           }
                         </div>

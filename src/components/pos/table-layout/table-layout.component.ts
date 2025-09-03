@@ -1,6 +1,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus } from '../../../models/db.models';
@@ -64,18 +65,12 @@ export class TableLayoutComponent {
     const hallIndex = this.hallIndex();
     this.localTables.update(currentTablesInHall => {
         const baseNumber = hallIndex * 100;
+        const existingNumbers = new Set(currentTablesInHall.map(t => t.number));
+        
+        let nextNumber = (hallIndex === 0) ? 1 : baseNumber + 1;
 
-        // Find the highest number in the current hall. If no tables, this will be 0.
-        const maxNumberInHall = currentTablesInHall.reduce((max, table) => Math.max(max, table.number), 0);
-
-        // For hall 0 (index 0), next is max+1. For other halls, it's max of (current max, base number) + 1.
-        let nextNumber = (hallIndex === 0) 
-            ? maxNumberInHall + 1
-            : Math.max(maxNumberInHall, baseNumber) + 1;
-
-        // Check if the proposed number is already taken (e.g., by manual entry) and increment if so.
-        const allNumbersInThisHall = new Set(currentTablesInHall.map(t => t.number));
-        while (allNumbersInThisHall.has(nextNumber)) {
+        // Find the smallest available number starting from the base or 1
+        while (existingNumbers.has(nextNumber)) {
             nextNumber++;
         }
 
