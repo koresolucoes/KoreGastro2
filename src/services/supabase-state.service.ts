@@ -1,4 +1,3 @@
-
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder } from '../models/db.models';
@@ -169,32 +168,30 @@ export class SupabaseStateService {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'tables', '*', this.tables))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'halls', '*', this.halls))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'stations', '*, employees(*)', this.stations))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.categories, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipes, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.employees, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.ingredientCategories, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.suppliers, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_preparations', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipePreparations, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.promotions, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'categories', '*', this.categories))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipes', '*', this.recipes))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'employees', '*', this.employees))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'ingredient_categories', '*', this.ingredientCategories))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'suppliers', '*', this.suppliers))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_preparations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_preparations', '*', this.recipePreparations))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'promotions', '*', this.promotions))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'ingredients', '*, ingredient_categories(name), suppliers(name)', this.ingredients))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeIngredients))
-      // FIX: Add subscription for recipe_sub_recipes.
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_sub_recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_sub_recipes', '*, recipes(name, id)', this.recipeSubRecipes))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'promotion_recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'promotion_recipes', '*, recipes(name)', this.promotionRecipes))
-      // FIX: Add subscriptions for purchase_orders and purchase_order_items.
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_orders', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_order_items', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cashier_closings', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
-      .subscribe();
-  }
-
-  private handleSignalChange<T extends { id: string }>(signal: WritableSignal<T[]>, payload: RealtimePostgresChangesPayload<Partial<T>>) {
-    switch (payload.eventType) {
-      case 'INSERT': signal.update(current => [...current, payload.new as T]); break;
-      case 'UPDATE': signal.update(current => current.map(item => item.id === (payload.new as T).id ? payload.new as T : item)); break;
-      case 'DELETE': if ('id' in payload.old && payload.old.id) signal.update(current => current.filter(item => item.id !== payload.old.id)); break;
-    }
+      .subscribe(status => {
+        console.log(`Supabase realtime subscription status: ${status}`);
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Realtime channel error. Check Supabase RLS policies and network connectivity.');
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn('Realtime subscription timed out.');
+        }
+      });
   }
 
   private async refetchTableOnChanges<T>(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>, tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
