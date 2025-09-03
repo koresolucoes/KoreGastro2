@@ -1,6 +1,7 @@
 
 
 
+
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -126,7 +127,7 @@ export class PosDataService {
   async markOrderAsServed(orderId: string): Promise<{ success: boolean; error: any }> {
     const { data: items, error: fetchError } = await supabase
       .from('order_items')
-      .select('id, status_timestamps')
+      .select('*') // Fetches all columns to ensure all NOT NULL fields are present.
       .eq('order_id', orderId);
 
     if (fetchError) return { success: false, error: fetchError };
@@ -138,10 +139,10 @@ export class PosDataService {
         ...(item.status_timestamps || {}),
         'SERVIDO': now,
       };
+      // Spreads the full item object to preserve all fields, then overwrites status and timestamps.
+      // This prevents 'violates not-null constraint' errors during upsert.
       return {
-        id: item.id,
-        // Including order_id to prevent "not-null constraint" violation if upsert falls back to INSERT.
-        order_id: orderId,
+        ...item,
         status: 'SERVIDO' as OrderItemStatus,
         status_timestamps: newTimestamps,
       };

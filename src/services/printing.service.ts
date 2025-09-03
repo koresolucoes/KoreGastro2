@@ -1,5 +1,3 @@
-
-
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -214,7 +212,7 @@ export class PrintingService {
           </style>
         </head>
         <body>
-          <div class="center header">RestôApp</div>
+          <div class="center header"><span>Chef</span><span style="color: #1e40af;">OS</span></div>
           <div class="center">CONFERÊNCIA DE CONTA</div>
           <div class="divider"></div>
           <div>Data: ${date}</div>
@@ -294,7 +292,7 @@ export class PrintingService {
           </style>
         </head>
         <body>
-          <div class="center header">RestôApp</div>
+          <div class="center header"><span>Chef</span><span style="color: #1e40af;">OS</span></div>
           <div class="center">Cumpom Não Fiscal</div>
           <div class="divider"></div>
           <div>Pedido: #${order.id.slice(0, 8)}</div>
