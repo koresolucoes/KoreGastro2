@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus } from '../../../models/db.models';
@@ -37,9 +38,7 @@ export class TableLayoutComponent {
     effect(() => {
         const hallId = this.hall().id;
         const allTables = this.tables();
-        untracked(() => {
-            this.localTables.set(allTables.filter(t => t.hall_id === hallId));
-        });
+        this.localTables.set(allTables.filter(t => t.hall_id === hallId));
     });
 
     effect(() => {
@@ -60,10 +59,40 @@ export class TableLayoutComponent {
   }
 
   addTable() {
-    const nextNumber = Math.max(0, ...this.localTables().map(t => t.number)) + 1;
-    this.localTables.update(tables => [...tables, {
-        id: `temp-${uuidv4()}`, number: nextNumber, hall_id: this.hall().id, status: 'LIVRE', x: 20, y: 20, width: 80, height: 80, created_at: new Date().toISOString(), user_id: ''
-    }]);
+    const existingNumbers = new Set(this.localTables().map(t => t.number));
+    let nextNumber = 1;
+    while (existingNumbers.has(nextNumber)) {
+        nextNumber++;
+    }
+
+    this.localTables.update(tables => {
+        const columnCount = 8; // Tables per row before wrapping
+        const tableWidth = 80;
+        const tableHeight = 80;
+        const gap = 20;
+
+        // Calculate grid position based on the number of existing tables
+        const col = tables.length % columnCount;
+        const row = Math.floor(tables.length / columnCount);
+
+        const newX = gap + col * (tableWidth + gap);
+        const newY = gap + row * (tableHeight + gap);
+        
+        const newTable: Table = {
+            id: `temp-${uuidv4()}`, 
+            number: nextNumber, 
+            hall_id: this.hall().id, 
+            status: 'LIVRE', 
+            x: newX, 
+            y: newY, 
+            width: tableWidth, 
+            height: tableHeight, 
+            created_at: new Date().toISOString(), 
+            user_id: ''
+        };
+
+        return [...tables, newTable];
+    });
   }
 
   deleteTable(tableId: string, event: MouseEvent) {

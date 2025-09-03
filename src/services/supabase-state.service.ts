@@ -166,8 +166,8 @@ export class SupabaseStateService {
     this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderChange(p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderItemChange(p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.tables, p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.halls, p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'tables', '*', this.tables))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'halls', '*', this.halls))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'stations', '*, employees(*)', this.stations))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.categories, p))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.handleSignalChange(this.recipes, p))
@@ -268,7 +268,7 @@ export class SupabaseStateService {
       // FIX: Fetch purchase_orders.
       supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false })
     ]);
-    this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data || []);
+    this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
     this.employees.set(results[5].data || []); this.ingredients.set(results[6].data as Ingredient[] || []);
     this.ingredientCategories.set(results[7].data || []); this.suppliers.set(results[8].data || []);
