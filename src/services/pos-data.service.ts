@@ -1,5 +1,6 @@
 
 
+
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -132,17 +133,23 @@ export class PosDataService {
     
     const now = new Date().toISOString();
 
-    const updates = items.map(item => {
+    const updates = (items || []).map(item => {
       const newTimestamps = {
-        ...item.status_timestamps,
+        ...(item.status_timestamps || {}),
         'SERVIDO': now,
       };
       return {
         id: item.id,
+        // Including order_id to prevent "not-null constraint" violation if upsert falls back to INSERT.
+        order_id: orderId,
         status: 'SERVIDO' as OrderItemStatus,
         status_timestamps: newTimestamps,
       };
     });
+
+    if (updates.length === 0) {
+      return { success: true, error: null };
+    }
 
     const { error } = await supabase.from('order_items').upsert(updates);
 
