@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Employee } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -12,7 +13,7 @@ export class SettingsDataService {
   async addStation(name: string): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').insert({ name, auto_print_orders: false, user_id: userId });
+    const { error } = await supabase.from('stations').insert({ name, user_id: userId });
     return { success: !error, error };
   }
 
@@ -23,16 +24,6 @@ export class SettingsDataService {
 
   async deleteStation(id: string): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('stations').delete().eq('id', id);
-    return { success: !error, error };
-  }
-
-  async updateStationAutoPrint(id: string, auto_print_orders: boolean): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('stations').update({ auto_print_orders }).eq('id', id);
-    return { success: !error, error };
-  }
-
-  async updateStationPrinter(id: string, printer_name: string | null): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('stations').update({ printer_name }).eq('id', id);
     return { success: !error, error };
   }
   

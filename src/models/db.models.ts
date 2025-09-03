@@ -5,6 +5,7 @@ export type OrderItemStatus = 'AGUARDANDO' | 'PENDENTE' | 'EM_PREPARO' | 'PRONTO
 export type OrderType = 'Dine-in' | 'Takeout' | 'QuickSale';
 export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de Caixa';
 export type DiscountType = 'percentage' | 'fixed_value';
+export type PurchaseOrderStatus = 'Rascunho' | 'Enviada' | 'Recebida';
 
 export interface IngredientCategory {
     id: string;
@@ -60,8 +61,6 @@ export interface Station {
     id: string;
     name: string;
     created_at: string;
-    auto_print_orders: boolean;
-    printer_name?: string | null;
     user_id: string;
     employee_id?: string | null;
     employees?: Employee | null;
@@ -90,6 +89,7 @@ export interface Recipe {
     prep_time_in_minutes?: number;
     operational_cost?: number | null;
     is_available: boolean;
+    is_sub_recipe: boolean; // Flag to identify sub-recipes
     created_at: string;
     user_id: string;
     hasStock?: boolean;
@@ -103,6 +103,15 @@ export interface RecipeIngredient {
     user_id: string;
     // Joined data for UI
     ingredients?: Pick<Ingredient, 'name' | 'unit' | 'cost'>;
+}
+
+export interface RecipeSubRecipe {
+    parent_recipe_id: string;
+    child_recipe_id: string;
+    quantity: number;
+    user_id: string;
+    // Joined data for UI
+    recipes?: Pick<Recipe, 'name' | 'id'> & { cost?: number };
 }
 
 export interface Employee {
@@ -220,4 +229,27 @@ export interface PromotionRecipe {
     user_id: string;
     // For UI
     recipes?: Pick<Recipe, 'name'>;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  supplier_id: string | null;
+  status: PurchaseOrderStatus;
+  notes?: string | null;
+  created_at: string;
+  user_id: string;
+  // For UI
+  suppliers?: { name: string } | null;
+  purchase_order_items?: PurchaseOrderItem[];
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  purchase_order_id: string;
+  ingredient_id: string;
+  quantity: number;
+  cost: number;
+  user_id: string;
+  // For UI
+  ingredients?: { name: string, unit: string } | null;
 }

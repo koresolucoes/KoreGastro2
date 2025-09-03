@@ -38,10 +38,9 @@ export class LoginComponent {
       if (error) {
         throw error;
       }
-      // On successful login, auth service's onAuthStateChange will trigger,
-      // and the auth guard will automatically handle the redirect.
-      // We can also force a redirect here.
-      this.router.navigate(['/dashboard']);
+      // On successful login, auth service's onAuthStateChange will trigger.
+      // We will now redirect to the employee selection screen.
+      this.router.navigate(['/employee-selection']);
     } catch (error: any) {
       this.errorMessage.set('E-mail ou senha inválidos.');
       this.authState.set('error');

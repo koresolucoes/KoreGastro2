@@ -1,0 +1,44 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">Gerenciar Salões</h3>
+      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="p-6 max-h-[70vh] overflow-y-auto">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-300 mb-1">Adicionar Novo Salão</label>
+        <div class="flex gap-2">
+          <input type="text" [value]="newHallName()" (input)="newHallName.set($any($event.target).value)" (keydown.enter)="addHall()" placeholder="Nome do salão" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          <button (click)="addHall()" [disabled]="!newHallName().trim()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600">Adicionar</button>
+        </div>
+      </div>
+      <ul class="space-y-2">
+        @for(hall of halls(); track hall.id) {
+          <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+            @if(editingHall()?.id === hall.id) {
+              <input type="text" [value]="editingHall()!.name" (input)="updateEditingHallName($event)" (keydown.enter)="saveHall()" (keydown.escape)="cancelEditing()" class="flex-1 bg-gray-600 rounded-lg px-2 py-1 text-white">
+              <div class="flex gap-2 ml-2">
+                <button (click)="saveHall()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                <button (click)="cancelEditing()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+              </div>
+            } @else if (hallPendingDeletion()?.id === hall.id) {
+              <span class="text-sm text-red-300">Deletar e todas as suas mesas?</span>
+              <div class="flex gap-2 ml-2">
+                <button (click)="confirmDelete()" class="px-3 py-1 text-xs font-semibold rounded-md bg-red-600 hover:bg-red-500">Sim</button>
+                <button (click)="cancelDelete()" class="px-3 py-1 text-xs rounded-md bg-gray-600 hover:bg-gray-500">Não</button>
+              </div>
+            } @else {
+              <span class="font-medium text-white">{{ hall.name }}</span>
+              <div class="flex gap-2">
+                <button (click)="startEditing(hall)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                <button (click)="requestDelete(hall)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+</div>

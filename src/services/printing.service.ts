@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -12,48 +13,11 @@ export class PrintingService {
   private currencyPipe: CurrencyPipe;
   private decimalPipe: DecimalPipe;
 
-  // New queue structure: Key is station ID
-  private printQueue = new Map<string, { station: Station, itemsByOrder: Map<string, {order: Order, items: OrderItem[]}> }>();
-  private printTimeout: any;
-
   constructor() {
     const locale = inject(LOCALE_ID);
     this.datePipe = new DatePipe(locale);
     this.currencyPipe = new CurrencyPipe(locale);
     this.decimalPipe = new DecimalPipe(locale);
-  }
-
-  /**
-   * Queues an item for printing, batching multiple items for the same order/station
-   * that arrive close together.
-   * @param order The full order object.
-   * @param newItem The new item to be printed.
-   * @param station The station this item belongs to.
-   */
-  queueForAutoPrinting(order: Order, newItem: OrderItem, station: Station) {
-    if (!this.printQueue.has(station.id)) {
-      this.printQueue.set(station.id, { station, itemsByOrder: new Map() });
-    }
-    const stationQueue = this.printQueue.get(station.id)!;
-    
-    if (!stationQueue.itemsByOrder.has(order.id)) {
-        stationQueue.itemsByOrder.set(order.id, { order, items: [] });
-    }
-    stationQueue.itemsByOrder.get(order.id)!.items.push(newItem);
-
-    if (this.printTimeout) {
-      clearTimeout(this.printTimeout);
-    }
-
-    // Wait 500ms to batch items.
-    this.printTimeout = setTimeout(() => {
-      this.printQueue.forEach(({ station, itemsByOrder }) => {
-        itemsByOrder.forEach(({ order, items }) => {
-          this.printOrder(order, items, station);
-        });
-      });
-      this.printQueue.clear();
-    }, 500);
   }
 
   /**
@@ -72,9 +36,7 @@ export class PrintingService {
       return;
     }
     
-    const title = station.printer_name 
-        ? `Imprimir em: ${station.printer_name}` 
-        : `Comanda - Estação: ${station.name}`;
+    const title = `Comanda - Estação: ${station.name}`;
     printWindow.document.title = title;
 
     const ticketHtml = this.generateTicketHtml(order, items, station);
@@ -86,6 +48,23 @@ export class PrintingService {
       printWindow.print();
       printWindow.close();
     }, 250); // Timeout allows content to render
+  }
+
+  printPreBill(order: Order) {
+    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    if (!printWindow) {
+      alert('Por favor, habilite pop-ups para imprimir.');
+      return;
+    }
+    printWindow.document.title = `Pré-conta - Mesa #${order.table_number}`;
+    const receiptHtml = this.generatePreBillHtml(order);
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   }
 
   printCustomerReceipt(order: Order, payments: {method: string, amount: number}[]) {
@@ -147,7 +126,7 @@ export class PrintingService {
     return `
       <html>
         <head>
-          <title>${station.printer_name ? `Imprimir em: ${station.printer_name}` : `Comanda - Estação: ${station.name}`}</title>
+          <title>Comanda - Estação: ${station.name}</title>
           <style>
             body { 
               font-family: 'Courier New', Courier, monospace;
@@ -194,6 +173,80 @@ export class PrintingService {
             <span>${formattedTimestamp}</span>
           </div>
           <div class="items">${itemsHtml}</div>
+        </body>
+      </html>
+    `;
+  }
+
+  private generatePreBillHtml(order: Order): string {
+    const date = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm');
+    const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const serviceFee = subtotal * 0.1;
+    const total = subtotal + serviceFee;
+
+    const itemsHtml = order.order_items
+        .filter(item => item.price > 0)
+        .map(item => `
+        <tr>
+            <td style="vertical-align: top;">${item.quantity}x</td>
+            <td>${item.name}</td>
+            <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, '1.2-2')}</td>
+        </tr>
+    `).join('');
+
+    return `
+      <html>
+        <head>
+          <title>Pré-conta - Mesa #${order.table_number}</title>
+           <style>
+            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; }
+            .center { text-align: center; }
+            .header { font-size: 16px; font-weight: bold; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            td { padding: 2px 0; }
+            .total-row { font-weight: bold; font-size: 14px; }
+            .info-text { font-size: 10px; text-align: center; margin-top: 10px; }
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0.5cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center header">RestôApp</div>
+          <div class="center">CONFERÊNCIA DE CONTA</div>
+          <div class="divider"></div>
+          <div>Data: ${date}</div>
+          <div>Mesa: ${order.table_number}</div>
+          <div class="divider"></div>
+          <table>
+              <thead>
+                  <tr>
+                      <th style="text-align: left;">Qtd</th>
+                      <th style="text-align: left;">Item</th>
+                      <th style="text-align: right;">Total</th>
+                  </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+          </table>
+          <div class="divider"></div>
+          <table>
+            <tr>
+              <td colspan="2">Subtotal</td>
+              <td style="text-align: right;">${this.currencyPipe.transform(subtotal, 'BRL', 'R$', '1.2-2')}</td>
+            </tr>
+             <tr>
+              <td colspan="2">Serviço (10%)</td>
+              <td style="text-align: right;">${this.currencyPipe.transform(serviceFee, 'BRL', 'R$', '1.2-2')}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2">TOTAL</td>
+              <td style="text-align: right;">${this.currencyPipe.transform(total, 'BRL', 'R$', '1.2-2')}</td>
+            </tr>
+          </table>
+          <div class="divider"></div>
+          <div class="info-text">Este não é um documento fiscal. Solicite o cupom fiscal no caixa.</div>
         </body>
       </html>
     `;

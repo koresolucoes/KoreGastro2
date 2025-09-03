@@ -1,5 +1,7 @@
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
@@ -54,6 +56,7 @@ export class OrderPanelComponent {
   checkoutStarted: OutputEmitterRef<void> = output<void>();
   moveOrderClicked: OutputEmitterRef<void> = output<void>();
   releaseTable: OutputEmitterRef<void> = output<void>();
+  customerCountChanged: OutputEmitterRef<number> = output<number>();
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);
@@ -148,6 +151,14 @@ export class OrderPanelComponent {
 
   removeFromCart(itemId: string) {
       this.shoppingCart.update(cart => cart.filter(i => i.id !== itemId));
+  }
+
+  onCustomerCountChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const count = parseInt(input.value, 10);
+    if (!isNaN(count) && count >= 0) {
+        this.customerCountChanged.emit(count);
+    }
   }
 
   openNotesModal(cartItem: CartItem) {

@@ -1,3 +1,4 @@
+
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
@@ -49,6 +50,54 @@
       <p class="text-2xl font-bold text-white">{{ stagnantStockCount() }}</p>
     </div>
   </div>
+  
+  <!-- AI Prediction Section -->
+  <div class="bg-gray-800 rounded-lg p-6 mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-xl font-semibold text-white">Análise e Previsão com IA</h2>
+            <p class="text-gray-400 mt-1 text-sm">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
+        </div>
+        <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+          @if(isAnalyzingStock()) {
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span>Analisando...</span>
+          } @else {
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+            <span>Analisar Estoque</span>
+          }
+        </button>
+    </div>
+    @if(stockPrediction(); as predictions) {
+      <div class="mt-4 pt-4 border-t border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-white">Previsão para a Próxima Semana</h3>
+            <button (click)="generatePurchaseOrder()" [disabled]="!predictions.some(p => p.suggestedPurchase > 0)" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-green-500 transition-colors text-sm disabled:opacity-50">
+                Gerar Ordem de Compra
+            </button>
+        </div>
+        <div class="max-h-60 overflow-y-auto pr-2">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gray-700/50 text-gray-300 uppercase sticky top-0"><tr>
+                <th class="px-4 py-2">Ingrediente</th>
+                <th class="px-4 py-2 text-center">Estoque Atual</th>
+                <th class="px-4 py-2 text-center">Uso Previsto</th>
+                <th class="px-4 py-2 text-center">Sugestão de Compra</th>
+            </tr></thead>
+            <tbody>@for(p of predictions; track p.ingredientId) {
+            <tr class="border-b border-gray-700">
+                <td class="px-4 py-2 font-medium text-white">{{p.ingredientName}}</td>
+                <td class="px-4 py-2 text-center text-gray-300">{{p.currentStock}} {{p.unit}}</td>
+                <td class="px-4 py-2 text-center text-yellow-300 font-medium">{{p.predictedUsage}} {{p.unit}}</td>
+                <td class="px-4 py-2 text-center text-blue-300 font-bold bg-gray-700/50">{{p.suggestedPurchase}} {{p.unit}}</td>
+            </tr>
+            }</tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+
 
   <!-- Search and Category Filters -->
   <div class="mb-4 space-y-4">
@@ -88,8 +137,9 @@
     </div>
   </div>
 
-  <div class="bg-gray-800 rounded-lg overflow-hidden">
-    <div class="overflow-x-auto">
+  <div class="bg-gray-800 rounded-lg">
+    <!-- Desktop Table View -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full text-left min-w-max">
         <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
           <tr>
@@ -149,6 +199,69 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Mobile Card View -->
+    <div class="block md:hidden p-4 space-y-4">
+      @for (ingredient of filteredIngredients(); track ingredient.id) {
+        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+          <!-- Top row: Name and Status -->
+          <div class="flex justify-between items-start">
+              <div>
+                  <p class="font-semibold text-white">{{ ingredient.name }}</p>
+                  <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
+              </div>
+              @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
+              } @else {
+                <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
+              }
+          </div>
+
+          <!-- Middle: Details Grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
+              <div>
+                  <p class="text-gray-400 text-xs">Estoque</p>
+                  <p class="text-white font-medium">{{ ingredient.stock }} {{ ingredient.unit }}</p>
+              </div>
+               <div>
+                  <p class="text-gray-400 text-xs">Custo Total</p>
+                  <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
+              </div>
+              <div>
+                  <p class="text-gray-400 text-xs">Validade</p>
+                  <p class="text-white font-medium">{{ ingredient.expiration_date | date:'dd/MM/yy' }}</p>
+              </div>
+              <div>
+                  <p class="text-gray-400 text-xs">Últ. Mov.</p>
+                  <p class="text-white font-medium">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
+              </div>
+          </div>
+
+          <!-- Bottom: Actions -->
+          <div class="pt-3 border-t border-gray-600/50">
+              @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                  <div class="flex gap-2 justify-end items-center">
+                      <span class="text-sm text-red-300">Certeza?</span>
+                      <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                      <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
+              } @else {
+                  <div class="flex gap-2 justify-end">
+                      <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
+                      <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
+                      <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                  </div>
+              }
+          </div>
+        </div>
+      }
+      @if(filteredIngredients().length === 0) {
+        <div class="text-center text-gray-500 py-16">
+          Nenhum ingrediente encontrado com os filtros atuais.
+        </div>
+      }
+    </div>
+
   </div>
 </div>
 

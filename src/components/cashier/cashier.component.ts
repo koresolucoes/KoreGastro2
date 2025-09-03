@@ -1,13 +1,16 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-import { Category, Order, Recipe, Transaction, CashierClosing } from '../../models/db.models';
+import { Category, Order, Recipe, Transaction, CashierClosing, Table } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
+import { PaymentModalComponent } from '../pos/payment-modal/payment-modal.component';
 
-type CashierView = 'quickSale' | 'cashDrawer' | 'reprint';
+type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
+type CashDrawerView = 'movement' | 'closing';
 
 interface CartItem {
   recipe: Recipe;
@@ -28,7 +31,7 @@ interface PaymentSummary {
 @Component({
   selector: 'app-cashier',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PaymentModalComponent],
   templateUrl: './cashier.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -38,7 +41,7 @@ export class CashierComponent {
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
 
-  view: WritableSignal<CashierView> = signal('quickSale');
+  view: WritableSignal<CashierView> = signal('payingTables');
   isLoading = computed(() => !this.stateService.isDataLoaded());
 
   // --- Quick Sale Signals ---
@@ -47,12 +50,13 @@ export class CashierComponent {
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
   quickSaleCart = signal<CartItem[]>([]);
-  isPaymentModalOpen = signal(false);
+  isQuickSalePaymentModalOpen = signal(false);
   payments = signal<Payment[]>([]);
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
 
   // --- Cash Drawer Signals ---
+  cashDrawerView: WritableSignal<CashDrawerView> = signal('movement');
   isClosingModalOpen = signal(false);
   countedCash = signal<number | null>(null);
   closingNotes = signal('');
@@ -66,6 +70,13 @@ export class CashierComponent {
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<Order | null>(null);
+
+  // --- Paying Tables Signals ---
+  tablesForPayment = computed(() => this.stateService.tables().filter(t => t.status === 'PAGANDO'));
+  openOrders = this.stateService.openOrders;
+  isTablePaymentModalOpen = signal(false);
+  selectedOrderForPayment = signal<Order | null>(null);
+  selectedTableForPayment = signal<Table | null>(null);
 
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
@@ -117,13 +128,13 @@ export class CashierComponent {
     });
   }
 
-  openPaymentModal() {
+  openQuickSalePaymentModal() {
     this.payments.set([]);
     this.paymentAmountInput.set(this.balanceDue() > 0 ? this.balanceDue().toString() : '');
     this.selectedPaymentMethod.set('Dinheiro');
-    this.isPaymentModalOpen.set(true);
+    this.isQuickSalePaymentModalOpen.set(true);
   }
-  closePaymentModal() { this.isPaymentModalOpen.set(false); }
+  closeQuickSalePaymentModal() { this.isQuickSalePaymentModalOpen.set(false); }
 
   addPayment() {
     const method = this.selectedPaymentMethod(), balance = this.balanceDue();
@@ -152,11 +163,36 @@ export class CashierComponent {
     const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cart, this.payments());
     if (success) {
       alert('Venda registrada com sucesso!');
-      this.closePaymentModal();
+      this.closeQuickSalePaymentModal();
       this.quickSaleCart.set([]);
     } else {
       alert(`Falha ao registrar venda. Erro: ${error?.message}`);
     }
+  }
+
+  // --- Table Payment Methods ---
+  openPaymentForTable(table: Table) {
+    const order = this.openOrders().find(o => o.table_number === table.number);
+    if (order) {
+      this.selectedTableForPayment.set(table);
+      this.selectedOrderForPayment.set(order);
+      this.isTablePaymentModalOpen.set(true);
+    } else {
+      alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
+    }
+  }
+
+  handlePaymentFinalized() {
+    this.isTablePaymentModalOpen.set(false);
+    this.selectedTableForPayment.set(null);
+    this.selectedOrderForPayment.set(null);
+  }
+
+  handlePaymentModalClosed(revertStatus: boolean) {
+    this.isTablePaymentModalOpen.set(false);
+    // In cashier, we don't revert status. The payment is either finalized or cancelled.
+    this.selectedTableForPayment.set(null);
+    this.selectedOrderForPayment.set(null);
   }
 
   // --- Cash Drawer Computeds & Methods ---

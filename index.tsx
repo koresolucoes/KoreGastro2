@@ -38,3 +38,5 @@ function bootstrap() {
 
 // Start the application bootstrap process.
 bootstrap();
+
+// AI Studio always uses an `index.tsx` file for all project types.

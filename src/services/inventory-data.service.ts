@@ -1,13 +1,16 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Ingredient, IngredientCategory, Supplier } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { SupabaseStateService } from './supabase-state.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class InventoryDataService {
   private authService = inject(AuthService);
+  private stateService = inject(SupabaseStateService);
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.authService.currentUser()?.id;
@@ -67,5 +70,44 @@ export class InventoryDataService {
   async deleteSupplier(id: string): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('suppliers').delete().eq('id', id);
     return { success: !error, error };
+  }
+
+  async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return new Map();
+
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('user_id', userId)
+      .eq('is_completed', true)
+      .gte('completed_at', startDate.toISOString())
+      .lte('completed_at', endDate.toISOString());
+
+    if (error) {
+      console.error("Error fetching orders for usage calculation", error);
+      return new Map();
+    }
+
+    const totalUsage = new Map<string, number>();
+    const recipeCostMap = this.stateService.recipeCosts();
+
+    const getRawIngredientsForRecipe = (recipeId: string, quantity: number) => {
+      const recipeComposition = recipeCostMap.get(recipeId);
+      if (!recipeComposition) return;
+
+      for (const [ingredientId, amount] of recipeComposition.rawIngredients.entries()) {
+        const totalAmount = amount * quantity;
+        totalUsage.set(ingredientId, (totalUsage.get(ingredientId) || 0) + totalAmount);
+      }
+    };
+    
+    for (const order of orders) {
+      for (const item of order.order_items) {
+        getRawIngredientsForRecipe(item.recipe_id, item.quantity);
+      }
+    }
+    
+    return totalUsage;
   }
 }

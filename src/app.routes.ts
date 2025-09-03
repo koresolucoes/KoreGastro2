@@ -12,19 +12,24 @@ import { CashierComponent } from './components/cashier/cashier.component';
 import { LoginComponent } from './components/auth/login.component';
 import { authGuard } from './guards/auth.guard';
 import { PerformanceComponent } from './components/performance/performance.component';
+import { EmployeeSelectionComponent } from './components/auth/employee-selection.component';
+import { roleGuard } from './guards/role.guard';
+import { PurchasingComponent } from './components/purchasing/purchasing.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'employee-selection', component: EmployeeSelectionComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'pos', component: PosComponent, canActivate: [authGuard] },
-  { path: 'kds', component: KdsComponent, canActivate: [authGuard] },
-  { path: 'cashier', component: CashierComponent, canActivate: [authGuard] },
-  { path: 'inventory', component: InventoryComponent, canActivate: [authGuard] },
-  { path: 'menu', component: MenuComponent, canActivate: [authGuard] },
-  { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [authGuard] },
-  { path: 'performance', component: PerformanceComponent, canActivate: [authGuard] },
-  { path: 'reports', component: ReportsComponent, canActivate: [authGuard] },
-  { path: 'settings', component: SettingsComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [roleGuard] },
+  { path: 'pos', component: PosComponent, canActivate: [roleGuard] },
+  { path: 'kds', component: KdsComponent, canActivate: [roleGuard] },
+  { path: 'cashier', component: CashierComponent, canActivate: [roleGuard] },
+  { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
+  { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
+  { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
+  { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
+  { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
+  { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
+  { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page
 ];

@@ -1,0 +1,62 @@
+
+
+<!-- Mobile Card View (shown only in view mode) -->
+<div class="md:hidden" [class.hidden]="isEditMode()">
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    @for(table of localTables(); track table.id) {
+      <div
+        (click)="tableClicked.emit(table)"
+        (contextmenu)="onRightClick($event, table)"
+        class="flex flex-col items-center justify-center p-4 rounded-lg border-2 aspect-square cursor-pointer"
+        [class]="getStatusClass(table.status)">
+        <span class="text-3xl font-bold">{{ table.number }}</span>
+        <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
+        @if (table.status !== 'LIVRE') {
+          <span class="text-xs text-gray-400 truncate mt-1">{{ getEmployeeName(table) }}</span>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Draggable Layout (shown on desktop in view mode, or on any screen in edit mode) -->
+<div
+  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden hidden md:block"
+  [class.bg-dots]="isEditMode()"
+  [class.block]="isEditMode()">
+  @for(table of localTables(); track table.id) {
+    <div
+      (click)="tableClicked.emit(table)"
+      (contextmenu)="onRightClick($event, table)"
+      (mousedown)="onDragStart($event, table)"
+      class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-150 ease-in-out border-2"
+      [class]="getStatusClass(table.status)"
+      [class.cursor-pointer]="!isEditMode()"
+      [class.cursor-move]="isEditMode()"
+      [class.shadow-lg]="!isEditMode()"
+      [class.shadow-blue-500/50]="isEditMode() && draggingTableId() === table.id"
+      [style.left.px]="table.x"
+      [style.top.px]="table.y"
+      [style.width.px]="table.width"
+      [style.height.px]="table.height">
+
+      <span class="text-2xl font-bold">{{ table.number }}</span>
+      <span class="text-xs uppercase">{{ table.status }}</span>
+      @if (table.status !== 'LIVRE') {
+        <span class="text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
+      }
+
+      @if (isEditMode()) {
+        <button (click)="deleteTable(table.id, $event)" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-500 z-10">
+          &times;
+        </button>
+      }
+    </div>
+  }
+
+  @if (isEditMode()) {
+    <button (click)="addTable()" class="absolute bottom-4 right-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors z-10">
+      Adicionar Mesa
+    </button>
+  }
+</div>

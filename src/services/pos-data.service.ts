@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -69,14 +70,6 @@ export class PosDataService {
 
     await supabase.from('tables').update({ status: 'OCUPADA' as TableStatus, employee_id: employeeId }).eq('id', tableId);
 
-    const order = this.stateService.orders().find(o => o.id === orderId);
-    if (order && inserted) {
-        const stationsMap = new Map(stations.map(s => [s.id, s]));
-        inserted.forEach(item => {
-            const station = stationsMap.get(item.station_id);
-            if (station?.auto_print_orders) this.printingService.queueForAutoPrinting(order, item, station);
-        });
-    }
     return { success: true, error: null };
   }
 
@@ -138,15 +131,34 @@ export class PosDataService {
     return { success: !error, error };
   }
 
+  async updateTableCustomerCount(tableId: string, customer_count: number): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').update({ customer_count }).eq('id', tableId);
+    return { success: !error, error };
+  }
+
   async finalizeOrderPayment(orderId: string, tableId: string, total: number, payments: PaymentInfo[], tip: number): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    // FIX: Explicitly type the array to allow for objects with and without 'employee_id'.
-    const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({ description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`, type: 'Receita', amount: p.amount, user_id: userId }));
+    const table = this.stateService.tables().find(t => t.id === tableId);
+    const employeeId = table?.employee_id || null;
+    
+    const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
+      description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
+      type: 'Receita',
+      amount: p.amount,
+      user_id: userId,
+      employee_id: employeeId
+    }));
+    
     if (tip > 0) {
-        const table = this.stateService.tables().find(t => t.id === tableId);
-        transactionsToInsert.push({ description: `Gorjeta Pedido #${orderId.slice(0, 8)}`, type: 'Gorjeta', amount: tip, user_id: userId, employee_id: table?.employee_id || null });
+        transactionsToInsert.push({
+          description: `Gorjeta Pedido #${orderId.slice(0, 8)}`,
+          type: 'Gorjeta',
+          amount: tip,
+          user_id: userId,
+          employee_id: employeeId
+        });
     }
     
     if (transactionsToInsert.length > 0) {

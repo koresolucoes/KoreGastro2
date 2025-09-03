@@ -1,0 +1,136 @@
+
+<div class="container mx-auto">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestão de Compras</h1>
+      <p class="text-gray-400 mt-1">Crie e gerencie ordens de compra para seus fornecedores.</p>
+    </div>
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors">
+      + Nova Ordem de Compra
+    </button>
+  </div>
+  
+  <div class="bg-gray-800 rounded-lg">
+    @if (purchaseOrders().length === 0) {
+      <div class="text-center py-16">
+        <h3 class="text-lg font-medium text-white">Nenhuma ordem de compra encontrada</h3>
+        <p class="mt-1 text-sm text-gray-500">Crie sua primeira ordem de compra para começar a gerenciar seus pedidos.</p>
+      </div>
+    } @else {
+      <!-- Desktop Table -->
+      <div class="overflow-x-auto hidden md:block">
+        <table class="w-full text-left">
+          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase"><tr>
+            <th class="px-6 py-3">Pedido</th>
+            <th class="px-6 py-3">Fornecedor</th>
+            <th class="px-6 py-3">Data</th>
+            <th class="px-6 py-3 text-center">Status</th>
+            <th class="px-6 py-3 text-center">Ações</th>
+          </tr></thead>
+          <tbody>@for(order of purchaseOrders(); track order.id) {
+            <tr class="border-b border-gray-700 hover:bg-gray-700/30">
+              <td class="px-6 py-4 font-mono text-xs text-white">#{{order.id.slice(0, 8)}}</td>
+              <td class="px-6 py-4 font-medium text-white">{{getSupplierName(order.supplier_id)}}</td>
+              <td class="px-6 py-4">{{order.created_at | date:'dd/MM/yyyy'}}</td>
+              <td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusClass(order.status)">{{order.status}}</span></td>
+              <td class="px-6 py-4 text-center">
+                @if (orderPendingDeletion()?.id === order.id) {
+                    <div class="flex gap-2 justify-center"><span class="text-sm text-red-300">Certeza?</span><button (click)="confirmDeleteOrder()" class="px-3 py-1 font-semibold rounded-md bg-red-600 text-white text-xs">Sim</button><button (click)="cancelDeleteOrder()" class="px-3 py-1 rounded-md bg-gray-600 text-white text-xs">Não</button></div>
+                } @else {
+                  <div class="flex justify-center gap-2">
+                    @if (order.status === 'Enviada') {
+                      <button (click)="markAsReceived(order)" class="text-green-400 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Receber</button>
+                    }
+                    <button (click)="openEditModal(order)" class="text-blue-400 font-medium text-sm">Ver/Editar</button>
+                    @if(order.status === 'Rascunho') {
+                      <button (click)="requestDeleteOrder(order)" class="text-red-400 font-medium text-sm">Deletar</button>
+                    }
+                  </div>
+                }
+              </td>
+            </tr>
+          }</tbody>
+        </table>
+      </div>
+      <!-- Mobile Cards -->
+      <div class="block md:hidden p-4 space-y-3">
+        @for(order of purchaseOrders(); track order.id) {
+          <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-mono text-xs text-gray-400">#{{order.id.slice(0, 8)}}</p>
+                <p class="font-semibold text-white">{{getSupplierName(order.supplier_id)}}</p>
+                <p class="text-sm text-gray-300">{{order.created_at | date:'dd/MM/yyyy'}}</p>
+              </div>
+              <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusClass(order.status)">{{order.status}}</span>
+            </div>
+            <div class="flex gap-2 pt-3 border-t border-gray-600/50">
+              @if (orderPendingDeletion()?.id === order.id) {
+                  <div class="flex gap-2 justify-end items-center w-full"><span class="text-sm text-red-300">Certeza?</span><button (click)="confirmDeleteOrder()" class="px-3 py-1 font-semibold rounded-md bg-red-600 text-white text-xs">Sim</button><button (click)="cancelDeleteOrder()" class="px-3 py-1 rounded-md bg-gray-600 text-white text-xs">Não</button></div>
+              } @else {
+                  @if (order.status === 'Enviada') {
+                    <button (click)="markAsReceived(order)" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-green-600/20 text-green-300">Receber</button>
+                  }
+                  <button (click)="openEditModal(order)" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 text-white">Ver/Editar</button>
+                   @if(order.status === 'Rascunho') {
+                    <button (click)="requestDeleteOrder(order)" class="text-red-400 font-medium text-sm p-2 rounded-lg bg-red-500/10"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                  }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-4">
+        <!-- Order Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm mb-1">Fornecedor</label><select (change)="orderForm.update(f => ({...f, supplier_id: $any($event.target).value || null}))" [value]="orderForm().supplier_id" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"><option [value]="null">Nenhum/Diverso</option>@for(s of suppliers(); track s.id) {<option [value]="s.id">{{s.name}}</option>}</select></div>
+          <div><label class="block text-sm mb-1">Status</label><select (change)="orderForm.update(f => ({...f, status: $any($event.target).value}))" [value]="orderForm().status" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"><option>Rascunho</option><option>Enviada</option><option>Recebida</option></select></div>
+        </div>
+        <!-- Items -->
+        <div class="pt-4 border-t border-gray-700">
+          <h4 class="font-semibold mb-2">Itens do Pedido</h4>
+          <div class="space-y-2">
+            @for(item of orderItems(); track item.id) {
+              <div class="grid grid-cols-12 gap-2 items-center">
+                <span class="col-span-5 font-medium">{{item.name}}</span>
+                <div class="col-span-3"><input type="number" [value]="item.quantity" (change)="updateItemField(item.id, 'quantity', +$any($event.target).value)" class="w-full bg-gray-600 rounded-md px-2 py-1 text-right"></div>
+                <div class="col-span-3"><input type="number" [value]="item.cost" (change)="updateItemField(item.id, 'cost', +$any($event.target).value)" class="w-full bg-gray-600 rounded-md px-2 py-1 text-right"></div>
+                <div class="col-span-1 text-right"><button (click)="removeItem(item.id)" class="p-1 text-red-500 hover:text-red-400" title="Remover"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button></div>
+              </div>
+            }
+          </div>
+          <div class="relative mt-3">
+            <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="+ Adicionar ingrediente..." class="w-full bg-gray-700 rounded-lg p-2">
+             @if(itemSearchTerm()) {
+                <ul class="absolute bottom-full left-0 right-0 bg-gray-600 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto">
+                    @for(ing of filteredIngredients(); track ing.id) {
+                        <li (mousedown)="addItemToOrder(ing)" class="p-2 hover:bg-gray-500 cursor-pointer">{{ ing.name }}</li>
+                    }
+                </ul>
+              }
+          </div>
+        </div>
+         <div><label class="block text-sm mb-1">Observações</label><textarea rows="2" (change)="orderForm.update(f => ({...f, notes: $any($event.target).value}))" [value]="orderForm().notes" class="w-full bg-gray-700 rounded-lg p-2"></textarea></div>
+      </div>
+      <div class="p-4 bg-gray-900/50 flex justify-between items-center">
+        <div><span class="text-lg font-bold">Total do Pedido:</span><span class="text-lg font-bold text-white ml-2">{{ orderTotal() | currency:'BRL' }}</span></div>
+        <div class="flex gap-3">
+          <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+          <button (click)="saveOrder()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

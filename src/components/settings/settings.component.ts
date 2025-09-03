@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, IngredientCategory, Supplier, Employee } from '../../models/db.models';
@@ -88,38 +87,6 @@ export class SettingsComponent {
     this.stationPendingDeletion.set(null);
   }
 
-  // --- Printing Management ---
-  editingPrinterForStation = signal<string | null>(null);
-
-  async toggleAutoPrint(station: Station) {
-    const { success, error } = await this.settingsDataService.updateStationAutoPrint(station.id, !station.auto_print_orders);
-    if (!success) {
-      alert(`Falha ao atualizar a configuração de impressão. Erro: ${error?.message}`);
-    }
-  }
-
-  startEditingPrinter(station: Station) {
-    this.editingPrinterForStation.set(station.id);
-  }
-  
-  cancelEditingPrinter() {
-    this.editingPrinterForStation.set(null);
-  }
-
-  async savePrinterName(station: Station, newName: string | null) {
-    const trimmedName = newName?.trim() || null;
-    if (trimmedName === (station.printer_name || null)) {
-        this.editingPrinterForStation.set(null);
-        return;
-    }
-    const { success, error } = await this.settingsDataService.updateStationPrinter(station.id, trimmedName);
-    if (!success) {
-      alert(`Falha ao salvar o nome da impressora. Erro: ${error?.message}`);
-    }
-    this.editingPrinterForStation.set(null);
-  }
-
-
   // --- Ingredient Category Management ---
   newCategoryName = signal('');
   editingCategory = signal<IngredientCategory | null>(null);
@@ -186,6 +153,7 @@ export class SettingsComponent {
   editingEmployee = signal<Partial<Employee> | null>(null);
   employeeForm = signal<Partial<Employee>>({});
   employeePendingDeletion = signal<Employee | null>(null);
+  availableEmployeeRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
 
   openAddEmployeeModal() { this.employeeForm.set({ role: 'Garçom', pin: '' }); this.editingEmployee.set(null); this.isEmployeeModalOpen.set(true); }
   openEditEmployeeModal(e: Employee) { this.editingEmployee.set(e); this.employeeForm.set({ ...e }); this.isEmployeeModalOpen.set(true); }

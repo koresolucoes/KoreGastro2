@@ -1,10 +1,11 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { AiRecipeService } from '../../services/ai-recipe.service';
+import { Router } from '@angular/router';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -19,6 +20,16 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
 
+interface StockPrediction {
+  ingredientId: string;
+  ingredientName: string;
+  currentStock: number;
+  unit: string;
+  predictedUsage: number;
+  suggestedPurchase: number;
+}
+
+
 @Component({
   selector: 'app-inventory',
   standalone: true,
@@ -29,6 +40,8 @@ type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
 export class InventoryComponent {
     stateService = inject(SupabaseStateService);
     inventoryDataService = inject(InventoryDataService);
+    aiService = inject(AiRecipeService);
+    router = inject(Router);
     
     ingredients = this.stateService.ingredients;
     categories = this.stateService.ingredientCategories;
@@ -52,6 +65,10 @@ export class InventoryComponent {
     activeDashboardFilter = signal<DashboardFilter>('all');
     activeCategoryFilter = signal<string | null>(null);
     searchTerm = signal('');
+
+    // AI Prediction State
+    isAnalyzingStock = signal(false);
+    stockPrediction = signal<StockPrediction[] | null>(null);
 
     availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
     entryReasons = ['Compra de Fornecedor', 'Devolução', 'Correção de Contagem', 'Outro'];
@@ -203,6 +220,68 @@ export class InventoryComponent {
             const result = await this.inventoryDataService.deleteIngredient(ingredient.id);
             if (!result.success) alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             this.ingredientPendingDeletion.set(null);
+        }
+    }
+
+    async predictStockNeeds() {
+        this.isAnalyzingStock.set(true);
+        this.stockPrediction.set(null);
+        try {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 28); // last 4 weeks
+
+            const usageData = await this.inventoryDataService.calculateIngredientUsageForPeriod(startDate, endDate);
+            
+            if (usageData.size === 0) {
+                alert("Não há dados de vendas suficientes no último mês para fazer uma previsão.");
+                return;
+            }
+
+            const ingredientsById = new Map(this.ingredients().map(i => [i.id, i]));
+            const historicalDataString = Array.from(usageData.entries())
+              .map(([id, quantity]) => `${ingredientsById.get(id)?.name}: ${quantity.toFixed(2)} ${ingredientsById.get(id)?.unit} por mês`)
+              .join(', ');
+            
+            const prompt = `Com base no consumo histórico de ingredientes de um restaurante (${historicalDataString}), preveja a necessidade de cada ingrediente para a PRÓXIMA SEMANA. Retorne um JSON array com "ingredientId", "predictedUsage".`;
+
+            const aiResult = await this.aiService.callGeminiForPrediction(prompt);
+
+            const predictions: StockPrediction[] = aiResult.map((p: any) => {
+                const ingredient = ingredientsById.get(p.ingredientId);
+                if (!ingredient) return null;
+                const suggestedPurchase = Math.max(0, p.predictedUsage - ingredient.stock);
+                return {
+                    ingredientId: p.ingredientId,
+                    ingredientName: ingredient.name,
+                    currentStock: ingredient.stock,
+                    unit: ingredient.unit,
+                    predictedUsage: p.predictedUsage,
+                    suggestedPurchase: Math.ceil(suggestedPurchase)
+                };
+            }).filter((p: any) => p !== null);
+            
+            this.stockPrediction.set(predictions);
+
+        } catch (error) {
+            alert(`Erro ao analisar o estoque: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        } finally {
+            this.isAnalyzingStock.set(false);
+        }
+    }
+
+    generatePurchaseOrder() {
+        const itemsToOrder = this.stockPrediction()
+            ?.filter(p => p.suggestedPurchase > 0)
+            .map(p => ({
+                ingredientId: p.ingredientId,
+                quantity: p.suggestedPurchase,
+            }));
+
+        if (itemsToOrder && itemsToOrder.length > 0) {
+            this.router.navigate(['/purchasing'], { state: { newOrderItems: itemsToOrder } });
+        } else {
+            alert("Nenhum item com sugestão de compra.");
         }
     }
 }

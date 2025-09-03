@@ -1,0 +1,39 @@
+
+<div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
+    @if (!selectedEmployee()) {
+      <h2 class="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para operar</h2>
+      @if (employees().length > 0) {
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          @for(employee of employees(); track employee.id) {
+            <button (click)="selectEmployee(employee)" class="flex flex-col items-center p-4 bg-gray-700 rounded-lg hover:bg-blue-600 transition-colors">
+              <div class="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center mb-2">
+                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              </div>
+              <span class="font-semibold text-white text-center">{{ employee.name }}</span>
+               <span class="text-xs text-gray-400 text-center">{{ employee.role }}</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="text-center text-gray-400">Nenhum funcionário cadastrado. Vá para Configurações para adicionar um.</p>
+      }
+    } @else {
+      <div class="w-full max-w-sm mx-auto">
+        <h2 class="text-2xl font-bold text-white text-center mb-2">Bem-vindo, {{ selectedEmployee()?.name }}</h2>
+        <p class="text-center text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
+        <div class="flex justify-center items-center gap-4 h-12 mb-4 text-4xl tracking-[1em]" [class.animate-pulse]="loginError()" [class.text-red-400]="loginError()" [class.text-white]="!loginError()">
+          {{ pinDisplay() }}
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          @for(digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track digit) {
+            <button (click)="handlePinInput(digit)" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600 transition-colors">{{ digit }}</button>
+          }
+          <button (click)="cancelPinLogin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Trocar</button>
+          <button (click)="handlePinInput('0')" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600">0</button>
+          <button (click)="clearPin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Limpar</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

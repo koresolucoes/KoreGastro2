@@ -1,13 +1,18 @@
+
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { AuthService } from './auth.service';
-import { Recipe, RecipePreparation, RecipeIngredient, Ingredient } from '../models/db.models';
+import { Recipe, RecipePreparation, RecipeIngredient, Ingredient, RecipeSubRecipe } from '../models/db.models';
 import { environment } from '../config/environment';
 import { SupabaseStateService } from './supabase-state.service';
 import { SettingsDataService } from './settings-data.service';
 import { RecipeDataService } from './recipe-data.service';
 import { InventoryDataService } from './inventory-data.service';
 import { supabase } from './supabase-client';
+
+type TechSheetItem = 
+    { type: 'ingredient', data: RecipeIngredient } | 
+    { type: 'sub_recipe', data: RecipeSubRecipe };
 
 @Injectable({
   providedIn: 'root',
@@ -42,21 +47,31 @@ export class AiRecipeService {
     }
   }
   
-  async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] }> {
-    let stations = this.stateService.stations();
-    if (stations.length === 0) {
-        await this.settingsDataService.addStation('Cozinha');
-        const { data } = await supabase.from('stations').select('*').eq('user_id', this.authService.currentUser()!.id);
-        stations = data || [];
-        if (stations.length === 0) throw new Error('Não foi possível criar a estação de produção padrão.');
+  async callGeminiForPrediction(prompt: string): Promise<any> {
+    if (!this.ai) throw new Error('Serviço de IA não configurado.');
+    const responseSchema = {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          ingredientId: { type: Type.STRING },
+          predictedUsage: { type: Type.NUMBER },
+        },
+      },
+    };
+    return this.callGemini(prompt, responseSchema);
+  }
+  
+  async generateFullRecipe(dishName: string): Promise<{ recipe: Recipe; items: TechSheetItem[] }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) {
+        throw new Error('Usuário não autenticado para gerar receita.');
     }
-    
     const ingredientsList = this.stateService.ingredients().map(i => `- ${i.name} (unidade: ${i.unit})`).join('\n');
-    const stationsList = stations.map(s => s.name).join(', ');
     const categoriesList = this.stateService.categories().map(c => c.name).join(', ');
 
-    const prompt = `Você é um chef. Crie uma ficha técnica para "${dishName}". Categorias existentes: ${categoriesList}. Ingredientes existentes: ${ingredientsList}. Estações existentes: ${stationsList}. Retorne um JSON com: category_name, description, prep_time_in_minutes, operational_cost, e um array 'preparations' com name, station_name, e um array 'ingredients' com name, quantity, unit.`;
-    const responseSchema = { type: Type.OBJECT, properties: { category_name: { type: Type.STRING }, description: { type: Type.STRING }, prep_time_in_minutes: { type: Type.INTEGER }, operational_cost: { type: Type.NUMBER }, preparations: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, station_name: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, unit: { type: Type.STRING, enum: ['g', 'kg', 'ml', 'l', 'un'] } } } } } } } } };
+    const prompt = `Você é um chef. Crie uma ficha técnica completa para "${dishName}". Primeiro, identifique quaisquer "sub-receitas" (mise en place, como molhos, massas, etc.). Depois, liste os ingredientes para a montagem final. Categorias existentes: ${categoriesList}. Ingredientes existentes: ${ingredientsList}. Retorne um JSON com: category_name, description, price, sub_recipes (array de {name, ingredients: [{name, quantity, unit}]}), e final_assembly_ingredients (array de {name, quantity, unit}). A unidade (unit) DEVE ser uma de 'g', 'kg', 'ml', 'l', 'un'.`;
+    const responseSchema = { type: Type.OBJECT, properties: { category_name: { type: Type.STRING }, description: { type: Type.STRING }, price: { type: Type.NUMBER }, sub_recipes: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, unit: { type: Type.STRING, enum: ['g', 'kg', 'ml', 'l', 'un'] } } } } } } }, final_assembly_ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, unit: { type: Type.STRING, enum: ['g', 'kg', 'ml', 'l', 'un'] } } } } } };
     const aiResponse = await this.callGemini(prompt, responseSchema);
     
     let category = this.stateService.categories().find(c => c.name.toLowerCase() === aiResponse.category_name.toLowerCase());
@@ -66,98 +81,65 @@ export class AiRecipeService {
         category = newCategory;
     }
     
-    const { data: newRecipe } = await this.recipeDataService.addRecipe({ name: dishName, category_id: category.id, description: aiResponse.description, prep_time_in_minutes: aiResponse.prep_time_in_minutes, operational_cost: aiResponse.operational_cost });
-    if (!newRecipe) throw new Error('Falha ao criar o prato.');
+    // 1. Create Sub-Recipes
+    const createdSubRecipes = new Map<string, Recipe>();
+    for (const subRecipeData of aiResponse.sub_recipes) {
+        const { data: newSubRecipe } = await this.recipeDataService.addRecipe({ name: subRecipeData.name, category_id: category.id, is_sub_recipe: true });
+        if (!newSubRecipe) continue;
+        createdSubRecipes.set(subRecipeData.name, newSubRecipe);
+        const ingredients = await this.processAiIngredients(subRecipeData.ingredients);
+        await this.recipeDataService.saveTechnicalSheet(newSubRecipe.id, {}, ingredients, []);
+    }
 
-    const preparationsForState = await this.processAiPreparations(aiResponse.preparations, newRecipe.id);
-    return { recipe: newRecipe, preparations: preparationsForState };
-  }
-
-  async generateTechSheetForRecipe(recipe: Recipe): Promise<{ preparations: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[], operational_cost: number, prep_time_in_minutes: number }> {
-    const stations = this.stateService.stations();
-    if (stations.length === 0) throw new Error('Nenhuma estação de produção encontrada.');
+    // 2. Create Main Recipe
+    const { data: newRecipe } = await this.recipeDataService.addRecipe({ name: dishName, category_id: category.id, description: aiResponse.description, price: aiResponse.price, is_sub_recipe: false });
+    if (!newRecipe) throw new Error('Falha ao criar o prato principal.');
     
-    const ingredientsList = this.stateService.ingredients().map(i => `- ${i.name} (unidade: ${i.unit})`).join('\n');
-    const stationsList = stations.map(s => s.name).join(', ');
+    // 3. Link ingredients and sub-recipes to the main recipe
+    const finalIngredients = await this.processAiIngredients(aiResponse.final_assembly_ingredients);
+    // FIX: Add user_id to created sub-recipes to conform to the RecipeSubRecipe type. Assume quantity of 1.
+    const finalSubRecipes = aiResponse.sub_recipes.map((sr: any) => {
+        const subRecipe = createdSubRecipes.get(sr.name);
+        return subRecipe ? { parent_recipe_id: newRecipe.id, child_recipe_id: subRecipe.id, quantity: 1, user_id: userId } : null;
+    }).filter((r: any): r is RecipeSubRecipe => r !== null);
 
-    const prompt = `Você é um chef. Crie uma ficha técnica para "${recipe.name}". Ingredientes existentes: ${ingredientsList}. Estações existentes: ${stationsList}. Retorne um JSON com: prep_time_in_minutes, operational_cost, e um array 'preparations' com name, station_name, e um array 'ingredients' com name, quantity, unit.`;
-    const responseSchema = { type: Type.OBJECT, properties: { prep_time_in_minutes: { type: Type.INTEGER }, operational_cost: { type: Type.NUMBER }, preparations: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, station_name: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, unit: { type: Type.STRING, enum: ['g', 'kg', 'ml', 'l', 'un'] } } } } } } } } };
-    const aiResponse = await this.callGemini(prompt, responseSchema);
-    const preparationsForState = await this.processAiPreparations(aiResponse.preparations, recipe.id);
-    return { preparations: preparationsForState, operational_cost: aiResponse.operational_cost, prep_time_in_minutes: aiResponse.prep_time_in_minutes };
+    await this.recipeDataService.saveTechnicalSheet(newRecipe.id, {}, finalIngredients, finalSubRecipes);
+
+    // FIX: Explicitly type the mapped items to help TypeScript inference and prevent type errors.
+    const techSheetItems: TechSheetItem[] = [
+      ...finalIngredients.map((i): TechSheetItem => ({ type: 'ingredient', data: i })),
+      ...finalSubRecipes.map((sr): TechSheetItem => ({ type: 'sub_recipe', data: sr }))
+    ];
+
+    return { recipe: newRecipe, items: techSheetItems };
   }
 
-  private async processAiPreparations(aiPreparations: any[], recipeId: string): Promise<(RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[]> {
-    const preparationsForState: (RecipePreparation & { recipe_ingredients: RecipeIngredient[] })[] = [];
-    // Normalize names from DB once: trim and lowercase
+  private async processAiIngredients(aiIngredients: any[]): Promise<RecipeIngredient[]> {
+    const ingredientsForState: RecipeIngredient[] = [];
     const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.name.trim().toLowerCase(), i]));
-    const stationsMap = new Map(this.stateService.stations().map(s => [s.name.trim().toLowerCase(), s]));
     const userId = this.authService.currentUser()!.id;
 
-    for (const [i, prep] of aiPreparations.entries()) {
-        const recipe_ingredients: RecipeIngredient[] = [];
-        for (const ing of prep.ingredients) {
-            if (!ing.name || typeof ing.name !== 'string' || ing.name.trim() === '') {
-                continue; // Safety check for valid ingredient name
-            }
+    for (const ing of aiIngredients) {
+      if (!ing.name || typeof ing.name !== 'string' || ing.name.trim() === '') continue;
+      const normalizedName = ing.name.trim().toLowerCase();
+      let ingredient = ingredientsMap.get(normalizedName);
 
-            const normalizedName = ing.name.trim().toLowerCase();
-            let ingredient: Ingredient | undefined | null = ingredientsMap.get(normalizedName);
-
-            // Simple plural/singular check if no direct match is found
-            if (!ingredient) {
-                if (normalizedName.endsWith('s')) {
-                    const singular = normalizedName.slice(0, -1);
-                    if (ingredientsMap.has(singular)) {
-                        ingredient = ingredientsMap.get(singular);
-                    }
-                } else {
-                    const plural = normalizedName + 's';
-                    if (ingredientsMap.has(plural)) {
-                        ingredient = ingredientsMap.get(plural);
-                    }
-                }
-            }
-            
-            if (!ingredient) {
-                // Ingredient doesn't exist, create it.
-                // Use the original (but trimmed) name from the AI for creation to preserve casing.
-                const newIngredientName = ing.name.trim();
-                const { data: newIngredient, error } = await this.inventoryDataService.addIngredient({ name: newIngredientName, unit: ing.unit, cost: 0, stock: 0, min_stock: 0 });
-                
-                if (error || !newIngredient) {
-                    console.error(`Failed to create new ingredient '${newIngredientName}':`, error);
-                    continue; // Skip this ingredient if creation fails
-                }
-                ingredient = newIngredient;
-                // Add the new ingredient to our map so it can be found by subsequent lookups in the same run
-                ingredientsMap.set(newIngredientName.toLowerCase(), ingredient);
-            }
-            
-            recipe_ingredients.push({
-                recipe_id: recipeId,
-                ingredient_id: ingredient.id,
-                quantity: ing.quantity,
-                preparation_id: `temp-${i}`, // Temporary ID for this prep step
-                user_id: userId,
-                // Include joined data for the UI to display immediately
-                ingredients: { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost }
-            });
-        }
-        
-        // Find station, falling back to the first available station if not found
-        const station = stationsMap.get(prep.station_name.trim().toLowerCase());
-        preparationsForState.push({
-            id: `temp-${i}`, // Temporary ID
-            recipe_id: recipeId,
-            name: prep.name,
-            station_id: station?.id || this.stateService.stations()[0]?.id,
-            display_order: i,
-            created_at: new Date().toISOString(),
-            user_id: userId,
-            recipe_ingredients // Attach the processed ingredients
-        });
+      if (!ingredient) {
+        const { data: newIngredient } = await this.inventoryDataService.addIngredient({ name: ing.name.trim(), unit: ing.unit, cost: 0, stock: 0, min_stock: 0 });
+        if (!newIngredient) continue;
+        ingredient = newIngredient;
+        ingredientsMap.set(normalizedName, ingredient);
+      }
+      
+      ingredientsForState.push({
+        recipe_id: '', // Will be set by the caller
+        ingredient_id: ingredient.id,
+        quantity: ing.quantity,
+        preparation_id: 'default',
+        user_id: userId,
+        ingredients: { name: ingredient.name, unit: ingredient.unit, cost: ingredient.cost }
+      });
     }
-    return preparationsForState;
+    return ingredientsForState;
   }
 }

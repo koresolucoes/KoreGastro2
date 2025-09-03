@@ -1,16 +1,18 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Employee, Transaction } from '../../models/db.models';
+import { Employee } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 
 type ReportPeriod = 'day' | 'week' | 'month';
 
 interface EmployeePerformance {
   employee: Employee;
+  totalSales: number;
   totalTips: number;
-  tipCount: number;
-  averageTip: number;
+  totalOrders: number;
+  averageTicket: number;
+  tipPercentage: number;
 }
 
 @Component({
@@ -26,7 +28,7 @@ export class PerformanceComponent implements OnInit {
     period = signal<ReportPeriod>('day');
     isLoading = signal(true);
     
-    tipTransactions = this.stateService.performanceTipTransactions;
+    performanceTransactions = this.stateService.performanceTransactions;
     employees = this.stateService.employees;
 
     ngOnInit() {
@@ -61,7 +63,7 @@ export class PerformanceComponent implements OnInit {
                 startDate.setHours(0, 0, 0, 0);
                 break;
             case 'week':
-                const dayOfWeek = now.getDay();
+                const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // Monday=0, Sunday=6
                 startDate = new Date(new Date().setDate(now.getDate() - dayOfWeek));
                 startDate.setHours(0, 0, 0, 0);
                 break;
@@ -73,40 +75,84 @@ export class PerformanceComponent implements OnInit {
         return { startDate, endDate };
     }
     
-    totalTips = computed(() => {
-        return this.tipTransactions().reduce((sum, t) => sum + t.amount, 0);
+    totalSales = computed(() => {
+        return this.performanceTransactions()
+            .filter(t => t.type === 'Receita')
+            .reduce((sum, t) => sum + t.amount, 0);
     });
     
-    employeePerformance = computed(() => {
-        const tips = this.tipTransactions();
-        const employeesMap = new Map(this.employees().map(e => [e.id, { ...e, totalTips: 0, tipCount: 0 }]));
+    totalTips = computed(() => {
+        return this.performanceTransactions()
+            .filter(t => t.type === 'Gorjeta')
+            .reduce((sum, t) => sum + t.amount, 0);
+    });
 
-        for (const tip of tips) {
-            if (tip.employee_id && employeesMap.has(tip.employee_id)) {
-                const employeeData = employeesMap.get(tip.employee_id)!;
-                employeeData.totalTips += tip.amount;
-                employeeData.tipCount += 1;
+    totalOrders = computed(() => {
+        const orderIdRegex = /#([a-f0-9-]+)/;
+        const orderIds = new Set<string>();
+        this.performanceTransactions().forEach(t => {
+            const match = t.description.match(orderIdRegex);
+            if (match) {
+                orderIds.add(match[1]);
+            }
+        });
+        return orderIds.size;
+    });
+    
+    employeePerformance = computed((): EmployeePerformance[] => {
+        const employeesMap = new Map(this.employees().map(e => [e.id, { 
+            employee: e,
+            totalSales: 0,
+            totalTips: 0,
+            attendedOrderIds: new Set<string>(),
+        }]));
+
+        const orderIdRegex = /#([a-f0-9-]+)/;
+
+        for (const transaction of this.performanceTransactions()) {
+            if (transaction.employee_id && employeesMap.has(transaction.employee_id)) {
+                const employeeData = employeesMap.get(transaction.employee_id)!;
+                
+                if (transaction.type === 'Receita') {
+                    employeeData.totalSales += transaction.amount;
+                    const match = transaction.description.match(orderIdRegex);
+                    if (match) {
+                        employeeData.attendedOrderIds.add(match[1]);
+                    }
+                } else if (transaction.type === 'Gorjeta') {
+                    employeeData.totalTips += transaction.amount;
+                }
             }
         }
         
         const performanceData: EmployeePerformance[] = [];
-        employeesMap.forEach((data, id) => {
-            if (data.tipCount > 0) {
+        employeesMap.forEach(data => {
+            if (data.totalSales > 0 || data.totalTips > 0) {
                 performanceData.push({
-                    employee: this.employees().find(e => e.id === id)!,
+                    employee: data.employee,
+                    totalSales: data.totalSales,
                     totalTips: data.totalTips,
-                    tipCount: data.tipCount,
-                    averageTip: data.totalTips / data.tipCount,
+                    totalOrders: data.attendedOrderIds.size,
+                    averageTicket: data.attendedOrderIds.size > 0 ? data.totalSales / data.attendedOrderIds.size : 0,
+                    tipPercentage: data.totalSales > 0 ? (data.totalTips / data.totalSales) * 100 : 0,
                 });
             }
         });
         
-        return performanceData.sort((a, b) => b.totalTips - a.totalTips);
+        return performanceData.sort((a, b) => b.totalSales - a.totalSales);
+    });
+
+    topPerformersBySales = computed(() => this.employeePerformance().slice(0, 5));
+    
+    maxSales = computed(() => {
+        const top = this.topPerformersBySales();
+        if (top.length === 0) return 0;
+        return Math.max(...top.map(p => p.totalSales));
     });
 
     stats = computed(() => [
+      { label: 'Vendas Totais', value: this.totalSales(), isCurrency: true },
       { label: 'Total de Gorjetas', value: this.totalTips(), isCurrency: true },
-      { label: 'Gorjetas Distribuídas', value: this.tipTransactions().length, isCurrency: false },
-      { label: 'Funcionários com Gorjeta', value: this.employeePerformance().length, isCurrency: false },
+      { label: 'Pedidos Atendidos', value: this.totalOrders(), isCurrency: false },
     ]);
 }

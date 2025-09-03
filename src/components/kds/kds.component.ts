@@ -7,24 +7,33 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 
-// Define a type for a consolidated ticket grouped by table
-interface GroupedTicket {
+interface BaseTicket {
   tableNumber: number;
-  items: ProcessedOrderItem[];
   ticketElapsedTime: number;
   ticketTimerColor: string;
   isTicketLate: boolean;
   oldestTimestamp: string;
 }
 
-// Define a more specific type for the processed KDS order item
+interface StationTicket extends BaseTicket {
+  items: ProcessedOrderItem[];
+}
+
+interface ExpoTicket extends BaseTicket {
+  items: ProcessedOrderItem[];
+  isReadyForPickup: boolean;
+}
+
 type ProcessedOrderItem = OrderItem & {
   elapsedTimeSeconds: number;
   timerColor: string;
   isLate: boolean;
-  isCritical: boolean; // Flag for items needing special attention
-  prepTime: number; // Prep time in minutes for sorting
+  isCritical: boolean;
+  prepTime: number; // in seconds
   attention_acknowledged: boolean;
+  isHeld: boolean;
+  timeToStart: number; // in seconds
+  stationName?: string;
 };
 
 @Component({
@@ -43,18 +52,17 @@ export class KdsComponent implements OnInit, OnDestroy {
     stations = this.stateService.stations;
     employees = this.stateService.employees;
     recipesById = this.stateService.recipesById;
-    selectedStation = signal<Station | null>(null);
+    stationsById = computed(() => new Map(this.stations().map(s => [s.id, s.name])));
 
-    // Timer for real-time updates
+    selectedStation = signal<Station | null>(null);
+    viewMode = signal<'station' | 'expo'>('station');
+
     private timerInterval: any;
     currentTime = signal(Date.now());
     
-    // UI state for async operations
     updatingItems = signal<Set<string>>(new Set());
-
-    // Modal management
     isDetailModalOpen = signal(false);
-    selectedTicketForDetail = signal<GroupedTicket | null>(null);
+    selectedTicketForDetail = signal<StationTicket | ExpoTicket | null>(null);
     isAssignEmployeeModalOpen = signal(false);
 
     constructor() {
@@ -67,41 +75,32 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.timerInterval = setInterval(() => {
-            this.currentTime.set(Date.now());
-        }, 1000); // Update every second
+        this.timerInterval = setInterval(() => this.currentTime.set(Date.now()), 1000);
     }
 
     ngOnDestroy(): void {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-        }
+        if (this.timerInterval) clearInterval(this.timerInterval);
     }
 
-    groupedKdsTickets = computed<GroupedTicket[]>(() => {
-        const station = this.selectedStation();
+    // Central computed signal to process all KDS items with timing logic
+    private allKdsItemsProcessed = computed<ProcessedOrderItem[]>(() => {
         const now = this.currentTime();
         const recipesMap = this.recipesById();
-        if (!station) return [];
-
+        const stationsMap = this.stationsById();
         const criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
-        // 1. Group items by table number from all open orders
-        const itemsByTable = new Map<number, ProcessedOrderItem[]>();
-        for (const order of this.stateService.openOrders()) {
-            const relevantItems = order.order_items.filter(
-                item => item.station_id === station.id && item.status !== 'AGUARDANDO' && item.status !== 'PRONTO'
-            );
-            
-            if (!itemsByTable.has(order.table_number)) {
-                itemsByTable.set(order.table_number, []);
-            }
-            const tableItems = itemsByTable.get(order.table_number)!;
+        const itemsByOrder = new Map<string, ProcessedOrderItem[]>();
 
-            for (const item of relevantItems) {
+        // 1. Group all relevant items by their order ID and process them
+        for (const order of this.stateService.openOrders()) {
+            if (!itemsByOrder.has(order.id)) itemsByOrder.set(order.id, []);
+            const orderItems = itemsByOrder.get(order.id)!;
+
+            for (const item of order.order_items) {
+                if (item.status === 'AGUARDANDO' || item.status === 'PRONTO') continue;
+
                 const recipe = recipesMap.get(item.recipe_id);
-                const prepTimeMins = recipe?.prep_time_in_minutes ?? 15;
-                const prepTimeSecs = prepTimeMins * 60;
+                const prepTimeSecs = (recipe?.prep_time_in_minutes ?? 15) * 60;
                 const pendingTimestamp = new Date(item.status_timestamps?.['PENDENTE'] ?? item.created_at).getTime();
                 const elapsedTimeSeconds = Math.floor((now - pendingTimestamp) / 1000);
                 const percentage = prepTimeSecs > 0 ? (elapsedTimeSeconds / prepTimeSecs) * 100 : 0;
@@ -110,58 +109,113 @@ export class KdsComponent implements OnInit, OnDestroy {
                 if (percentage > 50) timerColor = 'text-yellow-300';
                 if (percentage > 80) timerColor = 'text-red-300';
                 
-                const isLate = elapsedTimeSeconds > prepTimeSecs;
                 const note = item.notes?.toLowerCase() ?? '';
-                const isCritical = criticalKeywords.some(keyword => note.includes(keyword));
-                const attention_acknowledged = !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'];
-
-                tableItems.push({ ...item, elapsedTimeSeconds, timerColor, isLate, isCritical, prepTime: prepTimeMins, attention_acknowledged });
+                orderItems.push({
+                    ...item,
+                    elapsedTimeSeconds,
+                    timerColor,
+                    isLate: elapsedTimeSeconds > prepTimeSecs,
+                    isCritical: criticalKeywords.some(keyword => note.includes(keyword)),
+                    prepTime: prepTimeSecs,
+                    attention_acknowledged: !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'],
+                    isHeld: false,
+                    timeToStart: 0,
+                    stationName: stationsMap.get(item.station_id)
+                });
             }
         }
 
-        // 2. Process each group into a final GroupedTicket
-        const tickets: GroupedTicket[] = [];
-        for (const [tableNumber, items] of itemsByTable.entries()) {
-            if (items.length === 0) continue;
+        // 2. Apply hold logic based on prep times for each order
+        const finalItems: ProcessedOrderItem[] = [];
+        for (const orderItems of itemsByOrder.values()) {
+            if (orderItems.length === 0) continue;
 
-            // Optimized Flow: Sort items by prep time (longest first)
-            items.sort((a, b) => b.prepTime - a.prepTime);
-
-            const oldestItem = items.reduce((oldest, current) => 
-                (new Date(current.status_timestamps?.['PENDENTE'] ?? current.created_at).getTime() < new Date(oldest.status_timestamps?.['PENDENTE'] ?? oldest.created_at).getTime()) ? current : oldest
-            );
-            const oldestPendingTimestamp = new Date(oldestItem.status_timestamps?.['PENDENTE'] ?? oldestItem.created_at).getTime();
-            const oldestTimestampString = new Date(oldestPendingTimestamp).toISOString();
-            const ticketElapsedTime = Math.floor((now - oldestPendingTimestamp) / 1000);
+            const longestPrepTime = Math.max(...orderItems.map(item => item.prepTime));
             
-            const avgPrepTime = items.reduce((acc, item) => acc + (item.prepTime * 60), 0) / items.length;
-            const ticketPercentage = avgPrepTime > 0 ? (ticketElapsedTime / avgPrepTime) * 100 : 0;
-            
-            let ticketTimerColor = 'bg-green-600';
-            if (ticketPercentage > 50) ticketTimerColor = 'bg-yellow-600';
-            if (ticketPercentage > 80) ticketTimerColor = 'bg-red-600';
-            
-            const isTicketLate = ticketElapsedTime > avgPrepTime;
-
-            tickets.push({ tableNumber, items, ticketElapsedTime, ticketTimerColor, isTicketLate, oldestTimestamp: oldestTimestampString });
+            for (const item of orderItems) {
+                const timeToStart = longestPrepTime - item.prepTime;
+                if (item.elapsedTimeSeconds < timeToStart) {
+                    item.isHeld = true;
+                    item.timeToStart = timeToStart - item.elapsedTimeSeconds;
+                }
+                finalItems.push(item);
+            }
         }
+        return finalItems;
+    });
+    
+    // Computed for Station View
+    groupedKdsTickets = computed<StationTicket[]>(() => {
+        const station = this.selectedStation();
+        if (!station) return [];
 
-        // 3. Sort tickets by which has been waiting the longest
-        return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
+        const itemsForStation = this.allKdsItemsProcessed().filter(item => item.station_id === station.id);
+        return this.groupItemsIntoTickets(itemsForStation);
     });
 
-    selectStation(station: Station) {
-        this.selectedStation.set(station);
+    // Computed for Expo View
+    expoViewTickets = computed<ExpoTicket[]>(() => {
+        const allItems = this.allKdsItemsProcessed();
+        const tickets = this.groupItemsIntoTickets(allItems);
+        
+        return tickets.map(ticket => {
+            const allOrderItems = this.stateService.openOrders().find(o => o.table_number === ticket.tableNumber)?.order_items ?? [];
+            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO');
+            return { ...ticket, isReadyForPickup };
+        });
+    });
+
+    // FIX: Changed return type from BaseTicket[] to StationTicket[] to include the `items` property.
+    private groupItemsIntoTickets(items: ProcessedOrderItem[]): StationTicket[] {
+        const now = this.currentTime();
+        const itemsByTable = new Map<number, ProcessedOrderItem[]>();
+
+        for (const item of items) {
+            const order = this.stateService.openOrders().find(o => o.id === item.order_id);
+            if (order) {
+                if (!itemsByTable.has(order.table_number)) itemsByTable.set(order.table_number, []);
+                itemsByTable.get(order.table_number)!.push(item);
+            }
+        }
+
+        // FIX: Changed tickets array type from BaseTicket[] to StationTicket[] to correctly type the ticket objects.
+        const tickets: StationTicket[] = [];
+        for (const [tableNumber, tableItems] of itemsByTable.entries()) {
+            if (tableItems.length === 0) continue;
+            
+            tableItems.sort((a, b) => b.prepTime - a.prepTime);
+
+            const oldestItem = tableItems.reduce((oldest, current) => 
+                (new Date(current.status_timestamps?.['PENDENTE'] ?? current.created_at) < new Date(oldest.status_timestamps?.['PENDENTE'] ?? oldest.created_at)) ? current : oldest
+            );
+            const oldestTimestamp = new Date(oldestItem.status_timestamps?.['PENDENTE'] ?? oldestItem.created_at).getTime();
+            const ticketElapsedTime = Math.floor((now - oldestTimestamp) / 1000);
+            
+            const avgPrepTime = tableItems.reduce((acc, item) => acc + item.prepTime, 0) / tableItems.length;
+            const percentage = avgPrepTime > 0 ? (ticketElapsedTime / avgPrepTime) * 100 : 0;
+            
+            let ticketTimerColor = 'bg-green-600';
+            if (percentage > 50) ticketTimerColor = 'bg-yellow-600';
+            if (percentage > 80) ticketTimerColor = 'bg-red-600';
+
+            tickets.push({
+                tableNumber, items: tableItems, ticketElapsedTime, ticketTimerColor,
+                isTicketLate: ticketElapsedTime > avgPrepTime,
+                oldestTimestamp: new Date(oldestTimestamp).toISOString(),
+            });
+        }
+        return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
     }
-    
+
+    selectStation(station: Station) { this.selectedStation.set(station); }
+    setViewMode(mode: 'station' | 'expo') { this.viewMode.set(mode); }
+
     async assignEmployeeToStation(employeeId: string | null) {
         const station = this.selectedStation();
         if (!station) return;
         
         const { success, error } = await this.settingsDataService.assignEmployeeToStation(station.id, employeeId);
-        if (!success) {
-            alert(`Falha ao atribuir funcionário: ${error?.message}`);
-        }
+        if (!success) alert(`Falha ao atribuir funcionário: ${error?.message}`);
         this.isAssignEmployeeModalOpen.set(false);
     }
     
@@ -171,21 +225,12 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.acknowledgeOrderItemAttention(item.id);
-        
-        if (!success) {
-            console.error('Failed to acknowledge attention:', error);
-            alert(`Erro ao confirmar ciência: ${error?.message}`);
-        }
-        
-        this.updatingItems.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(item.id);
-            return newSet;
-        });
+        if (!success) alert(`Erro ao confirmar ciência: ${error?.message}`);
+        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
     
     async updateStatus(item: OrderItem) {
-        if (this.updatingItems().has(item.id)) return;
+        if (this.updatingItems().has(item.id) || (item as ProcessedOrderItem).isHeld) return;
 
         let nextStatus: OrderItemStatus;
         switch (item.status) {
@@ -196,20 +241,11 @@ export class KdsComponent implements OnInit, OnDestroy {
         
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
-
-        if (!success) {
-            console.error('Failed to update item status:', error);
-            alert(`Erro ao atualizar o status do item: ${error?.message}`);
-        }
-        
-        this.updatingItems.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(item.id);
-            return newSet;
-        });
+        if (!success) alert(`Erro ao atualizar o status do item: ${error?.message}`);
+        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
     
-    openDetailModal(ticket: GroupedTicket) {
+    openDetailModal(ticket: StationTicket | ExpoTicket) {
         this.selectedTicketForDetail.set(ticket);
         this.isDetailModalOpen.set(true);
     }
@@ -219,14 +255,10 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.selectedTicketForDetail.set(null);
     }
 
-    printTicket(ticket: GroupedTicket) {
+    printTicket(ticket: StationTicket | ExpoTicket) {
         const station = this.selectedStation();
         if (station) {
-            const orderShellForPrinting = {
-                id: ticket.items[0]?.order_id || 'N/A',
-                table_number: ticket.tableNumber,
-                timestamp: ticket.oldestTimestamp,
-            } as Order;
+            const orderShellForPrinting = { id: ticket.items[0]?.order_id || 'N/A', table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
             this.printingService.printOrder(orderShellForPrinting, ticket.items, station);
         } else {
             alert('Erro: Nenhuma estação selecionada.');
@@ -241,9 +273,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     getStatusHistory(timestamps: any): { status: string; time: string }[] {
         if (!timestamps) return [];
-        return Object.entries(timestamps)
-            .map(([status, time]) => ({ status, time: time as string }))
-            .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+        return Object.entries(timestamps).map(([status, time]) => ({ status, time: time as string })).sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     }
 
     getItemStatusClass(status: OrderItemStatus): string {
