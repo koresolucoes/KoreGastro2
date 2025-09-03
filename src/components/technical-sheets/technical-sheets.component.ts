@@ -177,14 +177,21 @@ export class TechnicalSheetsComponent {
   
   updateItemQuantity(itemId: string, event: Event) {
     const quantity = parseFloat((event.target as HTMLInputElement).value);
-    if (!isNaN(quantity) && quantity >= 0) {
-      this.currentItems.update(items => items.map(item => {
-        if ((item.type === 'ingredient' ? item.data.ingredient_id : item.data.child_recipe_id) === itemId) {
-          return { ...item, data: { ...item.data, quantity } };
+    if (isNaN(quantity) || quantity < 0) {
+        return;
+    }
+
+    this.currentItems.update(items =>
+      items.map((item): TechSheetItem => {
+        if (item.type === 'ingredient' && item.data.ingredient_id === itemId) {
+          return { type: 'ingredient', data: { ...item.data, quantity } };
+        }
+        if (item.type === 'sub_recipe' && item.data.child_recipe_id === itemId) {
+          return { type: 'sub_recipe', data: { ...item.data, quantity } };
         }
         return item;
-      }));
-    }
+      })
+    );
   }
 
   async saveTechSheet() {
