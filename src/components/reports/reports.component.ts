@@ -1,9 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseStateService } from '../../services/supabase-state.service';
-import { CashierDataService } from '../../services/cashier-data.service';
+import { CashierDataService, ReportData } from '../../services/cashier-data.service';
 
-type ReportPeriod = 'day' | 'week' | 'month';
+type ReportType = 'sales' | 'items';
 
 @Component({
   selector: 'app-reports',
@@ -13,98 +12,50 @@ type ReportPeriod = 'day' | 'week' | 'month';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReportsComponent implements OnInit {
-    private stateService = inject(SupabaseStateService);
     private cashierDataService = inject(CashierDataService);
 
-    period = signal<ReportPeriod>('day');
-    isLoading = signal(true);
+    // Form inputs
+    startDate = signal('');
+    endDate = signal('');
+    reportType = signal<ReportType>('sales');
+
+    // State
+    isLoading = signal(false);
+    generatedReport = signal<ReportData | null>(null);
     
-    completedOrders = this.stateService.completedOrders;
-    transactions = this.stateService.transactions;
+    reportTitle = computed(() => {
+        switch (this.reportType()) {
+            case 'sales': return 'Relatório de Vendas';
+            case 'items': return 'Relatório de Itens Mais Vendidos';
+            default: return 'Relatório';
+        }
+    });
 
     ngOnInit() {
-        this.loadData();
+        const today = new Date().toISOString().split('T')[0];
+        this.startDate.set(today);
+        this.endDate.set(today);
     }
-    
-    async setPeriod(newPeriod: ReportPeriod) {
-        this.period.set(newPeriod);
-        await this.loadData();
-    }
-    
-    private async loadData() {
+
+    async generateReport() {
+        if (!this.startDate() || !this.endDate()) {
+            alert('Por favor, selecione as datas de início e fim.');
+            return;
+        }
         this.isLoading.set(true);
+        this.generatedReport.set(null);
         try {
-            const { startDate, endDate } = this.getDateRange();
-            await this.stateService.fetchSalesDataForPeriod(startDate, endDate);
+            const data = await this.cashierDataService.generateReportData(this.startDate(), this.endDate(), this.reportType());
+            this.generatedReport.set(data);
         } catch (error) {
-            console.error("Error loading report data", error);
+            console.error("Error generating report", error);
+            alert(`Falha ao gerar o relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             this.isLoading.set(false);
         }
     }
     
-    private getDateRange(): { startDate: Date, endDate: Date } {
-        const now = new Date();
-        const endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999);
-        let startDate = new Date(now);
-        
-        switch (this.period()) {
-            case 'day':
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'week':
-                const dayOfWeek = now.getDay();
-                startDate = new Date(now.setDate(now.getDate() - dayOfWeek));
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                startDate.setHours(0, 0, 0, 0);
-                break;
-        }
-        return { startDate, endDate };
+    printReport() {
+        window.print();
     }
-    
-    grossRevenue = computed(() => {
-        return this.transactions().reduce((sum, t) => sum + t.amount, 0);
-    });
-    
-    totalOrders = computed(() => {
-        return this.completedOrders().length;
-    });
-    
-    averageTicket = computed(() => {
-        const revenue = this.grossRevenue();
-        const orders = this.totalOrders();
-        return orders > 0 ? revenue / orders : 0;
-    });
-    
-    bestSellingItems = computed(() => {
-        const itemCounts = new Map<string, { name: string, quantity: number, revenue: number }>();
-        
-        this.completedOrders().flatMap(o => o.order_items).forEach(item => {
-            const existing = itemCounts.get(item.recipe_id);
-            if (existing) {
-                existing.quantity += item.quantity;
-                existing.revenue += item.price * item.quantity;
-            } else {
-                itemCounts.set(item.recipe_id, {
-                    name: item.name,
-                    quantity: item.quantity,
-                    revenue: item.price * item.quantity
-                });
-            }
-        });
-        
-        return Array.from(itemCounts.values())
-            .sort((a, b) => b.quantity - a.quantity)
-            .slice(0, 10); // Top 10
-    });
-
-    stats = computed(() => [
-      { label: 'Faturamento Bruto', value: this.grossRevenue(), isCurrency: true },
-      { label: 'Total de Pedidos', value: this.totalOrders(), isCurrency: false },
-      { label: 'Ticket Médio', value: this.averageTicket(), isCurrency: true }
-    ]);
 }

@@ -8,6 +8,14 @@ import { supabase } from './supabase-client';
 interface CartItem { recipe: Recipe; quantity: number; }
 interface PaymentInfo { method: string; amount: number; }
 
+export interface ReportData {
+  grossRevenue: number;
+  totalOrders: number;
+  averageTicket: number;
+  paymentSummary: { method: string, total: number }[];
+  bestSellingItems: { name: string, quantity: number, revenue: number }[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -64,5 +72,59 @@ export class CashierDataService {
     await this.logTransaction('Abertura de Caixa', closingData.counted_cash, 'Abertura de Caixa');
     
     return { success: true, error: null, data: data };
+  }
+
+  async generateReportData(startDate: string, endDate: string, reportType: 'sales' | 'items'): Promise<ReportData> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) throw new Error('User not authenticated');
+    
+    // Adjust end date to include the whole day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    const [completedOrdersRes, transactionsRes] = await Promise.all([
+      supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', new Date(startDate).toISOString()).lte('completed_at', endDateObj.toISOString()).eq('user_id', userId),
+      supabase.from('transactions').select('*').gte('date', new Date(startDate).toISOString()).lte('date', endDateObj.toISOString()).eq('user_id', userId).eq('type', 'Receita')
+    ]);
+
+    if (completedOrdersRes.error) throw completedOrdersRes.error;
+    if (transactionsRes.error) throw transactionsRes.error;
+
+    const completedOrders = completedOrdersRes.data || [];
+    const transactions = transactionsRes.data || [];
+    
+    // Process data
+    const grossRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const totalOrders = completedOrders.length;
+    const averageTicket = totalOrders > 0 ? grossRevenue / totalOrders : 0;
+    
+    const paymentSummaryMap = new Map<string, number>();
+    const paymentMethodRegex = /\(([^)]+)\)/;
+    for (const transaction of transactions) {
+        const match = transaction.description.match(paymentMethodRegex);
+        const method = match ? match[1] : 'Outros';
+        paymentSummaryMap.set(method, (paymentSummaryMap.get(method) || 0) + transaction.amount);
+    }
+    const paymentSummary = Array.from(paymentSummaryMap.entries()).map(([method, total]) => ({ method, total })).sort((a,b) => b.total - a.total);
+
+    const itemCounts = new Map<string, { name: string, quantity: number, revenue: number }>();
+    completedOrders.flatMap(o => o.order_items).forEach(item => {
+        const existing = itemCounts.get(item.recipe_id);
+        if (existing) {
+            existing.quantity += item.quantity;
+            existing.revenue += item.price * item.quantity;
+        } else {
+            itemCounts.set(item.recipe_id, { name: item.name, quantity: item.quantity, revenue: item.price * item.quantity });
+        }
+    });
+    const bestSellingItems = Array.from(itemCounts.values()).sort((a, b) => b.quantity - a.quantity);
+    
+    return {
+      grossRevenue,
+      totalOrders,
+      averageTicket,
+      paymentSummary,
+      bestSellingItems
+    };
   }
 }

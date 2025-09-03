@@ -21,6 +21,50 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #6b7280; /* bg-gray-500 */
     }
+    
+    /* Print styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .printable-area, .printable-area * {
+        visibility: visible;
+      }
+      .printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 1.5rem; /* Re-apply some padding for print */
+        color: #000;
+        background-color: #fff;
+      }
+      /* Hide elements not meant for printing */
+      .no-print, .no-print * {
+        display: none !important;
+      }
+      /* Ensure report looks good on paper */
+      .printable-area h2,
+      .printable-area h3 {
+          color: #000 !important;
+      }
+      .printable-area p, .printable-area div, .printable-area span, .printable-area th, .printable-area td {
+          color: #000 !important;
+          background-color: transparent !important;
+      }
+       .printable-area table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      .printable-area th, .printable-area td {
+          border: 1px solid #ddd;
+          padding: 8px;
+      }
+      .printable-area thead {
+          background-color: #f2f2f2 !important;
+      }
+    }
   </style>
 <script type="importmap">
 {
