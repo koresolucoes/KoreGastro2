@@ -1,5 +1,3 @@
-
-
 <!-- Mobile Card View (shown only in view mode) -->
 <div class="md:hidden" [class.hidden]="isEditMode()">
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -21,9 +19,9 @@
 
 <!-- Draggable Layout (shown on desktop in view mode, or on any screen in edit mode) -->
 <div
-  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden hidden md:block"
+  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden md:block"
   [class.bg-dots]="isEditMode()"
-  [class.block]="isEditMode()">
+  [class.hidden]="!isEditMode()">
   @for(table of localTables(); track table.id) {
     <div
       (click)="tableClicked.emit(table)"

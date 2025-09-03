@@ -115,8 +115,8 @@ export class AiRecipeService {
 
     // FIX: Explicitly type the mapped items to help TypeScript inference and prevent type errors.
     const techSheetItems: TechSheetItem[] = [
-      ...finalIngredients.map(i => ({ type: 'ingredient', data: i })),
-      ...finalSubRecipes.map(sr => ({ type: 'sub_recipe', data: sr }))
+      ...finalIngredients.map((i): TechSheetItem => ({ type: 'ingredient', data: i })),
+      ...finalSubRecipes.map((sr): TechSheetItem => ({ type: 'sub_recipe', data: sr }))
     ];
 
     return { recipe: newRecipe, items: techSheetItems };
