@@ -10,46 +10,47 @@
         </div>
       </div>
 
-      <!-- Main Content Area (Single Scrollable Body) -->
-      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
+      <!-- Main Content Area (Splits on medium screens, stacks on small) -->
+      <div class="flex-1 min-h-0 flex flex-col md:flex-row gap-4 p-4">
         @if (currentOrder()) {
-            <!-- Menu Section -->
-            <div class="w-full flex flex-col">
-              <!-- Search & Categories -->
-              <div class="flex-shrink-0">
-                  <div class="relative mb-2">
-                      <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                      </div>
-                  </div>
-                  <div class="flex space-x-2 overflow-x-auto p-2 -mx-2">
-                    <button (click)="selectCategory(null)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory() === null" [class.text-white]="selectedCategory() === null" [class.bg-gray-700]="selectedCategory() !== null">Todas</button>
-                    @for (category of categories(); track category.id) {
-                      <button (click)="selectCategory(category)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory()?.id === category.id" [class.text-white]="selectedCategory()?.id === category.id" [class.bg-gray-700]="selectedCategory()?.id !== category.id">{{ category.name }}</button>
-                    }
-                  </div>
-              </div>
-
-              <!-- Menu content -->
-              <div class="mt-4">
-                  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 items-start">
-                     @for (recipe of filteredRecipes(); track recipe.id) {
-                      <div (click)="addToCart(recipe)" class="bg-gray-700 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-600 flex flex-col h-full justify-center">
-                        <p class="font-semibold text-sm leading-tight">{{ recipe.name }}</p>
-                        <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
-                      </div>
-                    }
-                  </div>
-              </div>
+            <!-- Left Side: Menu -->
+            <div class="w-full md:w-1/2 flex flex-col flex-1 min-h-0">
+                <!-- Search & Categories (Fixed within this column) -->
+                <div class="flex-shrink-0">
+                    <div class="relative mb-2">
+                        <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 overflow-x-auto p-2 -mx-2">
+                      <button (click)="selectCategory(null)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory() === null" [class.text-white]="selectedCategory() === null" [class.bg-gray-700]="selectedCategory() !== null">Todas</button>
+                      @for (category of categories(); track category.id) {
+                        <button (click)="selectCategory(category)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory()?.id === category.id" [class.text-white]="selectedCategory()?.id === category.id" [class.bg-gray-700]="selectedCategory()?.id !== category.id">{{ category.name }}</button>
+                      }
+                    </div>
+                </div>
+                <!-- Menu Items (Scrollable within this column) -->
+                <div class="flex-1 min-h-0 overflow-y-auto mt-4 -mr-2 pr-2">
+                    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 items-start">
+                       @for (recipe of filteredRecipes(); track recipe.id) {
+                        <div (click)="addToCart(recipe)" class="bg-gray-700 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-600 flex flex-col h-full justify-center min-h-[60px]">
+                          <p class="font-semibold text-sm leading-tight">{{ recipe.name }}</p>
+                          <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
+                        </div>
+                      }
+                    </div>
+                </div>
             </div>
 
-            <!-- Cart Section -->
-            <div class="w-full bg-gray-900/50 p-4 rounded-lg flex flex-col">
-              <h3 class="font-semibold text-white mb-2 flex-shrink-0">Resumo do Pedido</h3>
+            <!-- Right Side: Order Summary -->
+            <div class="w-full md:w-1/2 bg-gray-900/50 rounded-lg flex flex-col flex-1 min-h-0">
+              <h3 class="font-semibold text-white mb-2 flex-shrink-0 p-4 pb-0">Resumo do Pedido</h3>
+              <!-- Order Items (Scrollable within this column) -->
+              <div class="flex-1 min-h-0 overflow-y-auto p-4">
                 @if (groupedOrderItems().length === 0 && shoppingCart().length === 0) {
-                  <div class="flex flex-col items-center justify-center text-center text-gray-500 py-8">
-                    <svg class="w-12 h-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0z" /></svg>
+                  <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                    <svg class="w-12 h-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0z"></path></svg>
                     <span class="font-semibold">O pedido está vazio.</span>
                     <span class="text-xs mt-1">Adicione itens do menu para começar.</span>
                   </div>
@@ -63,9 +64,9 @@
                               @if(isItemCritical(displayItem.items[0])) {
                                 <span [title]="isAttentionAcknowledged(displayItem.items[0]) ? 'Atenção especial confirmada pela cozinha' : 'Atenção especial pendente de confirmação'">
                                   @if(isAttentionAcknowledged(displayItem.items[0])) {
-                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                   } @else {
-                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>
                                   }
                                 </span>
                               }
@@ -84,9 +85,9 @@
                               @if(isItemCritical(displayItem.item)) {
                                 <span [title]="isAttentionAcknowledged(displayItem.item) ? 'Atenção especial confirmada pela cozinha' : 'Atenção especial pendente de confirmação'">
                                   @if(isAttentionAcknowledged(displayItem.item)) {
-                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <svg class="w-4 h-4 text-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                   } @else {
-                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                    <svg class="w-4 h-4 text-red-400 shrink-0 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg>
                                   }
                                 </span>
                               }
@@ -101,13 +102,14 @@
                       }
                     }
                     @for(item of shoppingCart(); track item.id) {
-                      <li class="flex flex-col text-sm bg-blue-600/20 p-2 rounded-lg"><div class="flex justify-between items-center"><p class="font-medium">{{ item.recipe.name }}</p><span class="font-medium">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span></div>@if(item.notes) {<p class="text-xs italic text-yellow-300 mt-2 pl-2 border-l-2 border-yellow-400">"{{ item.notes }}"</p>}<div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-500/20"><button (click)="openNotesModal(item)" class="text-xs text-gray-400 hover:text-white flex items-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg><span>{{ item.notes ? 'Editar' : 'Nota' }}</span></button><div class="flex items-center space-x-2"><button (click)="updateCartItemQuantity(item.id, -1)" class="p-1 rounded-full bg-gray-700 hover:bg-gray-600">-</button><span class="w-8 text-center font-semibold">{{ item.quantity }}</span><button (click)="updateCartItemQuantity(item.id, 1)" class="p-1 rounded-full bg-gray-700 hover:bg-gray-600">+</button><button (click)="removeFromCart(item.id)" class="text-red-400 hover:text-red-300 p-1" title="Remover item"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div></li>
+                      <li class="flex flex-col text-sm bg-blue-600/20 p-2 rounded-lg"><div class="flex justify-between items-center"><p class="font-medium">{{ item.recipe.name }}</p><span class="font-medium">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span></div>@if(item.notes) {<p class="text-xs italic text-yellow-300 mt-2 pl-2 border-l-2 border-yellow-400">"{{ item.notes }}"</p>}<div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-500/20"><button (click)="openNotesModal(item)" class="text-xs text-gray-400 hover:text-white flex items-center gap-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path></svg><span>{{ item.notes ? 'Editar' : 'Nota' }}</span></button><div class="flex items-center space-x-2"><button (click)="updateCartItemQuantity(item.id, -1)" class="p-1 rounded-full bg-gray-700 hover:bg-gray-600">-</button><span class="w-8 text-center font-semibold">{{ item.quantity }}</span><button (click)="updateCartItemQuantity(item.id, 1)" class="p-1 rounded-full bg-gray-700 hover:bg-gray-600">+</button><button (click)="removeFromCart(item.id)" class="text-red-400 hover:text-red-300 p-1" title="Remover item"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div></li>
                     }
                   </ul>
                 }
+              </div>
             </div>
         } @else {
-          <div class="w-full p-6 flex flex-col items-center justify-center text-center"><svg class="w-16 h-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg><h3 class="text-xl font-bold text-white">Falha ao Abrir Conta</h3><p class="text-gray-400 mt-2">Não foi possível criar ou carregar o pedido para esta mesa.</p>@if (orderError()) {<div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-left w-full"><p class="text-sm font-semibold text-red-400">Detalhe do Erro:</p><p class="text-xs text-gray-400 font-mono mt-1">{{ orderError() }}</p></div><p class="text-gray-500 text-xs mt-4"><strong>Causa provável:</strong> Uma Política de Segurança (RLS) no banco de dados está bloqueando esta operação. Verifique as permissões da tabela indicada no erro.</p>} @else {<p class="text-gray-500 text-sm mt-4">Causa provável: As Políticas de Segurança (RLS) do banco de dados estão bloqueando a criação de novos pedidos. Verifique as permissões de `INSERT` na tabela `orders`.</p>}</div>
+            <div class="w-full p-6 flex flex-col items-center justify-center text-center"><svg class="w-16 h-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path></svg><h3 class="text-xl font-bold text-white">Falha ao Abrir Conta</h3><p class="text-gray-400 mt-2">Não foi possível criar ou carregar o pedido para esta mesa.</p>@if (orderError()) {<div class="mt-4 p-3 bg-gray-900/50 rounded-lg text-left w-full"><p class="text-sm font-semibold text-red-400">Detalhe do Erro:</p><p class="text-xs text-gray-400 font-mono mt-1">{{ orderError() }}</p></div><p class="text-gray-500 text-xs mt-4"><strong>Causa provável:</strong> Uma Política de Segurança (RLS) no banco de dados está bloqueando esta operação. Verifique as permissões da tabela indicada no erro.</p>} @else {<p class="text-gray-500 text-sm mt-4">Causa provável: As Políticas de Segurança (RLS) do banco de dados estão bloqueando a criação de novos pedidos. Verifique as permissões de `INSERT` na tabela `orders`.</p>}</div>
         }
       </div>
 
