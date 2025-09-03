@@ -113,10 +113,11 @@ export class AiRecipeService {
 
     await this.recipeDataService.saveTechnicalSheet(newRecipe.id, {}, finalIngredients, finalSubRecipes);
 
-    // FIX: Explicitly type the mapped items to help TypeScript inference and prevent type errors.
+    // FIX: By removing the explicit `: TechSheetItem` from the map callbacks, TypeScript can correctly
+    // infer the specific type for each array part before they are combined. This resolves the downstream type error.
     const techSheetItems: TechSheetItem[] = [
-      ...finalIngredients.map((i): TechSheetItem => ({ type: 'ingredient', data: i })),
-      ...finalSubRecipes.map((sr): TechSheetItem => ({ type: 'sub_recipe', data: sr }))
+      ...finalIngredients.map(i => ({ type: 'ingredient' as const, data: i })),
+      ...finalSubRecipes.map(sr => ({ type: 'sub_recipe' as const, data: sr }))
     ];
 
     return { recipe: newRecipe, items: techSheetItems };

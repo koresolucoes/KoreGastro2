@@ -23,10 +23,13 @@ export class TableLayoutComponent {
   tableClicked: OutputEmitterRef<Table> = output<Table>();
   tableRightClicked: OutputEmitterRef<{ event: MouseEvent, table: Table }> = output();
 
-
   // Component state for drag-and-drop
   draggingTableId = signal<string | null>(null);
   dragStartPos = signal({ x: 0, y: 0, tableX: 0, tableY: 0 });
+
+  // Component state for resizing
+  resizingTableId = signal<string | null>(null);
+  resizeStartPos = signal({ x: 0, y: 0, tableW: 0, tableH: 0 });
 
   localTables = signal<Table[]>([]);
 
@@ -105,6 +108,49 @@ export class TableLayoutComponent {
     window.removeEventListener('mousemove', this.onDragMove);
     window.removeEventListener('mouseup', this.onDragEnd);
   };
+
+  // --- Resize Logic ---
+  onResizeStart(event: MouseEvent, table: Table) {
+    if (!this.isEditMode()) return;
+    event.stopPropagation();
+    event.preventDefault();
+    
+    this.resizingTableId.set(table.id);
+    this.resizeStartPos.set({ 
+        x: event.clientX, 
+        y: event.clientY, 
+        tableW: table.width, 
+        tableH: table.height 
+    });
+
+    window.addEventListener('mousemove', this.onResizeMove);
+    window.addEventListener('mouseup', this.onResizeEnd);
+  }
+
+  onResizeMove = (event: MouseEvent) => {
+      const resizingId = this.resizingTableId();
+      if (!resizingId) return;
+
+      const { x, y, tableW, tableH } = this.resizeStartPos();
+      const dx = event.clientX - x;
+      const dy = event.clientY - y;
+
+      this.localTables.update(tables => tables.map(t => {
+          if (t.id === resizingId) {
+              const newWidth = Math.max(50, tableW + dx);
+              const newHeight = Math.max(50, tableH + dy);
+              return { ...t, width: newWidth, height: newHeight };
+          }
+          return t;
+      }));
+  };
+
+  onResizeEnd = () => {
+      this.resizingTableId.set(null);
+      window.removeEventListener('mousemove', this.onResizeMove);
+      window.removeEventListener('mouseup', this.onResizeEnd);
+  };
+
 
   getStatusClass(status: TableStatus): string {
     switch (status) {

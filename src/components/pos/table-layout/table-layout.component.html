@@ -17,11 +17,13 @@
   </div>
 </div>
 
-<!-- Draggable Layout (shown on desktop in view mode, or on any screen in edit mode) -->
+<!-- Draggable Layout (shown on desktop, or on any screen in edit mode) -->
 <div
-  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden md:block"
+  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden"
   [class.bg-dots]="isEditMode()"
-  [class.hidden]="!isEditMode()">
+  [class.hidden]="!isEditMode()"
+  [class.md:block]="!isEditMode()"
+  [class.block]="isEditMode()">
   @for(table of localTables(); track table.id) {
     <div
       (click)="tableClicked.emit(table)"
@@ -48,6 +50,11 @@
         <button (click)="deleteTable(table.id, $event)" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-500 z-10">
           &times;
         </button>
+        <!-- Resize Handle -->
+        <div 
+            (mousedown)="onResizeStart($event, table)"
+            class="resize-handle">
+        </div>
       }
     </div>
   }
