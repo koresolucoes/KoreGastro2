@@ -33,7 +33,13 @@ export class InventoryDataService {
   async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string, expirationDate: string | null | undefined): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.rpc('adjust_stock', { ingredient_id: ingredientId, quantity_change: quantityChange, reason: reason, user_id: userId, expiration_date: expirationDate });
+    const { error } = await supabase.rpc('adjust_stock', { 
+        p_ingredient_id: ingredientId, 
+        p_quantity_change: quantityChange, 
+        p_reason: reason, 
+        p_user_id: userId, 
+        p_expiration_date: expirationDate 
+    });
     return { success: !error, error };
   }
 

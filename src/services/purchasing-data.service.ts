@@ -86,7 +86,7 @@ export class PurchasingDataService {
 
     for (const item of order.purchase_order_items) {
       const reason = `Compra de Fornecedor${supplierName ? ` - ${supplierName}` : ''}`;
-      const result = await this.inventoryDataService.adjustIngredientStock(item.ingredient_id, item.quantity, reason, null);
+      const result = await this.inventoryDataService.adjustIngredientStock(item.ingredient_id, item.quantity, reason, undefined);
       if (!result.success) {
         return { success: false, error: { message: `Falha ao atualizar o estoque para o item ID ${item.ingredient_id}: ${result.error?.message}` } };
       }
