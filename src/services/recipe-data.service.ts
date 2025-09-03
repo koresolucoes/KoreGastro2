@@ -56,30 +56,50 @@ export class RecipeDataService {
       await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
       await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', recipeId);
 
-      // 3. Insert new preparations and get their new IDs
       const tempIdToDbIdMap = new Map<string, string>();
-      const prepsToInsert = preparations.map(({ id, ...rest }) => ({
-        ...rest,
-        id: id.startsWith('temp-') ? uuidv4() : id, // Ensure a real UUID
-        user_id: userId,
-        recipe_id: recipeId
-      }));
+      let finalAssemblyPrepId: string | undefined;
+
+      // FIX: Create an implicit preparation step for items in "Final Assembly".
+      // The component uses 'final-assembly' as a placeholder ID, which is not a valid foreign key.
+      if (ingredients.some(i => i.preparation_id === 'final-assembly')) {
+        finalAssemblyPrepId = uuidv4();
+        const finalAssemblyPrep: RecipePreparation = {
+          id: finalAssemblyPrepId,
+          recipe_id: recipeId,
+          station_id: this.stateService.stations()[0]?.id || '', // Default station
+          name: 'Montagem Final',
+          prep_instructions: 'Ingredientes para a montagem final do prato.',
+          display_order: preparations.length,
+          created_at: new Date().toISOString(),
+          user_id: userId,
+        };
+        preparations.push(finalAssemblyPrep);
+      }
+
+      // 3. Insert new preparations and map temporary IDs
+      const prepsToInsert = preparations.map(({ id, ...rest }) => {
+        const newId = id.startsWith('temp-') ? uuidv4() : id;
+        if (id.startsWith('temp-')) {
+          tempIdToDbIdMap.set(id, newId);
+        }
+        return { ...rest, id: newId, user_id: userId, recipe_id: recipeId };
+      });
       
       if (prepsToInsert.length > 0) {
-        const { data: newPreps, error: prepInsertError } = await supabase.from('recipe_preparations').insert(prepsToInsert).select('id');
+        const { error: prepInsertError } = await supabase.from('recipe_preparations').insert(prepsToInsert);
         if (prepInsertError) throw prepInsertError;
-        
-        preparations.forEach((oldPrep, index) => {
-          if (oldPrep.id.startsWith('temp-') && newPreps?.[index]) {
-            tempIdToDbIdMap.set(oldPrep.id, newPreps[index].id);
-          }
-        });
       }
 
       // 4. Insert new ingredients with correct preparation IDs
       const ingredientsToInsert = ingredients.map(i => {
         const originalPrepId = i.preparation_id;
-        const dbPrepId = tempIdToDbIdMap.get(originalPrepId) || originalPrepId;
+        let dbPrepId = tempIdToDbIdMap.get(originalPrepId) || originalPrepId;
+        
+        // Assign the newly created prep ID for final assembly items.
+        if (originalPrepId === 'final-assembly') {
+          dbPrepId = finalAssemblyPrepId!;
+        }
+
         return {
           recipe_id: recipeId,
           ingredient_id: i.ingredient_id,
