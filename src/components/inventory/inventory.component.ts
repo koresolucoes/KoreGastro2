@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier } from '../../models/db.models';
@@ -69,6 +68,14 @@ export class InventoryComponent {
     // AI Prediction State
     isAnalyzingStock = signal(false);
     stockPrediction = signal<StockPrediction[] | null>(null);
+
+    hasItemsToOrder = computed(() => {
+        const predictions = this.stockPrediction();
+        if (!predictions) {
+            return false;
+        }
+        return predictions.some(p => p.suggestedPurchase > 0);
+    });
 
     availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
     entryReasons = ['Compra de Fornecedor', 'Devolução', 'Correção de Contagem', 'Outro'];

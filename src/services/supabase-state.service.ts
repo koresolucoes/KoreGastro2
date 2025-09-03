@@ -112,12 +112,25 @@ export class SupabaseStateService {
 
   recipesWithStockStatus = computed(() => {
     const ingredientsStockMap = new Map(this.ingredients().map(i => [i.id, i.stock]));
+    const recipeCosts = this.recipeCosts(); // This has the flattened raw ingredients
+
     return this.recipes().map(recipe => {
-      const requiredIngredients = this.recipeIngredients().filter(ri => ri.recipe_id === recipe.id);
-      const hasStock = requiredIngredients.length === 0 || requiredIngredients.every(ri => {
-        const stock = ingredientsStockMap.get(ri.ingredient_id);
-        return stock !== undefined && stock > 0;
-      });
+      const recipeComposition = recipeCosts.get(recipe.id);
+      
+      let hasStock = true;
+      if (recipeComposition && recipeComposition.rawIngredients.size > 0) {
+        // For a recipe to be "in stock", we just check if all its raw ingredients are available (stock > 0)
+        // We don't check if there's enough quantity to make one, as this is for general menu availability.
+        for (const ingredientId of recipeComposition.rawIngredients.keys()) {
+          const availableStock = ingredientsStockMap.get(ingredientId);
+          if (availableStock === undefined || availableStock <= 0) {
+            hasStock = false;
+            break;
+          }
+        }
+      }
+      // If a recipe has no ingredients, it's always considered in stock.
+      
       return { ...recipe, hasStock };
     });
   });
@@ -306,7 +319,7 @@ export class SupabaseStateService {
     const userId = this.currentUser()?.id; if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const [completedOrders, transactions] = await Promise.all([
       supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()).eq('user_id', userId),
-      supabase.from('transactions').select('*').gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).eq('user_id', userId)
+      supabase.from('transactions').select('*').gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).eq('user_id', userId).eq('type', 'Receita')
     ]);
     if (completedOrders.error || transactions.error) return { success: false, error: completedOrders.error || transactions.error };
     this.setCompletedOrdersWithPrices(completedOrders.data || []);

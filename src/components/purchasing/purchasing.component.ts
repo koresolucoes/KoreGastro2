@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -38,6 +37,13 @@ export class PurchasingComponent implements OnInit {
     itemSearchTerm = signal('');
     
     orderPendingDeletion = signal<PurchaseOrder | null>(null);
+
+    updateOrderFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
+        this.orderForm.update(f => ({
+            ...f,
+            [field]: field === 'supplier_id' ? (value === 'null' ? null : value) : value
+        }));
+    }
 
     ngOnInit() {
         const navigationState = this.router.getCurrentNavigation()?.extras.state;

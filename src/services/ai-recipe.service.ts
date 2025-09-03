@@ -98,17 +98,25 @@ export class AiRecipeService {
     // 3. Link ingredients and sub-recipes to the main recipe
     const finalIngredients = await this.processAiIngredients(aiResponse.final_assembly_ingredients);
     // FIX: Add user_id to created sub-recipes to conform to the RecipeSubRecipe type. Assume quantity of 1.
+    // FIX: Populate the 'recipes' property to create a more complete object, matching data from Supabase joins and resolving type inference issues.
     const finalSubRecipes = aiResponse.sub_recipes.map((sr: any) => {
         const subRecipe = createdSubRecipes.get(sr.name);
-        return subRecipe ? { parent_recipe_id: newRecipe.id, child_recipe_id: subRecipe.id, quantity: 1, user_id: userId } : null;
+        if (!subRecipe) return null;
+        return {
+          parent_recipe_id: newRecipe.id,
+          child_recipe_id: subRecipe.id,
+          quantity: 1,
+          user_id: userId,
+          recipes: { id: subRecipe.id, name: subRecipe.name },
+        };
     }).filter((r: any): r is RecipeSubRecipe => r !== null);
 
     await this.recipeDataService.saveTechnicalSheet(newRecipe.id, {}, finalIngredients, finalSubRecipes);
 
     // FIX: Explicitly type the mapped items to help TypeScript inference and prevent type errors.
     const techSheetItems: TechSheetItem[] = [
-      ...finalIngredients.map((i): TechSheetItem => ({ type: 'ingredient', data: i })),
-      ...finalSubRecipes.map((sr): TechSheetItem => ({ type: 'sub_recipe', data: sr }))
+      ...finalIngredients.map(i => ({ type: 'ingredient', data: i })),
+      ...finalSubRecipes.map(sr => ({ type: 'sub_recipe', data: sr }))
     ];
 
     return { recipe: newRecipe, items: techSheetItems };
