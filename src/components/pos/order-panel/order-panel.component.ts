@@ -2,6 +2,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
@@ -9,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
 import { SupabaseStateService } from '../../../services/supabase-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
+import { NotificationService } from '../../../services/notification.service';
 
 interface CartItem {
     id: string;
@@ -45,6 +47,7 @@ export class OrderPanelComponent {
   stateService = inject(SupabaseStateService);
   posDataService = inject(PosDataService);
   pricingService = inject(PricingService);
+  notificationService = inject(NotificationService);
 
   // Inputs & Outputs
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
@@ -189,12 +192,15 @@ export class OrderPanelComponent {
       const itemsToSend = cart.map(c => ({ recipe: c.recipe, quantity: c.quantity, notes: c.notes }));
       const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
       if (result.success) this.shoppingCart.set([]);
-      else alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
+      else await this.notificationService.alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
     }
   }
 
-  startCheckout() {
-    if (this.shoppingCart().length > 0) { alert('Envie os itens no carrinho antes de fechar a conta.'); return; }
+  async startCheckout() {
+    if (this.shoppingCart().length > 0) {
+      await this.notificationService.alert('Envie os itens no carrinho antes de fechar a conta.');
+      return;
+    }
     this.checkoutStarted.emit();
   }
 

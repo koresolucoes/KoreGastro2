@@ -9,6 +9,7 @@ import { AiRecipeService } from '../../services/ai-recipe.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface NewRecipeForm {
   name: string;
@@ -42,6 +43,7 @@ export class TechnicalSheetsComponent {
   private inventoryDataService = inject(InventoryDataService);
   private authService = inject(AuthService);
   private aiRecipeService = inject(AiRecipeService);
+  private notificationService = inject(NotificationService);
 
   recipesWithStockStatus = this.stateService.recipesWithStockStatus;
   ingredients = this.stateService.ingredients;
@@ -255,7 +257,7 @@ export class TechnicalSheetsComponent {
 
     const { success, error } = await this.recipeDataService.saveTechnicalSheet(recipe.id, recipeUpdates, preps, ingredients, subRecipes);
     if (success) this.closeTechSheetModal();
-    else alert(`Falha ao salvar. Erro: ${error?.message}`);
+    else await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
   }
 
   isAddRecipeModalOpen = signal(false);
@@ -273,24 +275,30 @@ export class TechnicalSheetsComponent {
   }
   async saveNewRecipe() {
     const form = this.newRecipeForm();
-    if (!form.name || !form.category_id) { alert('Preencha Nome e Categoria.'); return; }
+    if (!form.name || !form.category_id) {
+      await this.notificationService.alert('Preencha Nome e Categoria.');
+      return;
+    }
     const { success, error, data: newRecipe } = await this.recipeDataService.addRecipe(form);
     if (success && newRecipe) { 
         this.closeAddRecipeModal(); 
         this.openTechSheetModal(newRecipe); 
     } 
-    else alert(`Falha: ${error?.message}`);
+    else await this.notificationService.alert(`Falha: ${error?.message}`);
   }
   
   async generateTechSheetWithAI() {
-    const form = this.newRecipeForm(); if (!form.name.trim()) { alert('Insira o nome do prato.'); return; }
+    const form = this.newRecipeForm(); if (!form.name.trim()) {
+      await this.notificationService.alert('Insira o nome do prato.');
+      return;
+    }
     this.isGeneratingTechSheet.set(true);
     try {
         const { recipe, items } = await this.aiRecipeService.generateFullRecipe(form.name);
         this.closeAddRecipeModal();
         this.openTechSheetModal(recipe);
         this.currentItems.set(items);
-    } catch (e) { alert(`Erro: ${e instanceof Error ? e.message : String(e)}`); } 
+    } catch (e) { await this.notificationService.alert(`Erro: ${e instanceof Error ? e.message : String(e)}`); } 
     finally { this.isGeneratingTechSheet.set(false); }
   }
 
@@ -298,7 +306,7 @@ export class TechnicalSheetsComponent {
   async toggleAvailability(recipe: Recipe) {
     if (!recipe.hasStock) return;
     const { success, error } = await this.recipeDataService.updateRecipeAvailability(recipe.id, !recipe.is_available);
-    if (!success) alert(`Falha: ${error?.message}`);
+    if (!success) await this.notificationService.alert(`Falha: ${error?.message}`);
   }
 
   requestDeleteRecipe(recipe: Recipe) { this.recipePendingDeletion.set(recipe); }
@@ -307,7 +315,7 @@ export class TechnicalSheetsComponent {
     const recipe = this.recipePendingDeletion();
     if (recipe) {
         const { success, error } = await this.recipeDataService.deleteRecipe(recipe.id);
-        if (!success) alert(`Falha: ${error?.message}`);
+        if (!success) await this.notificationService.alert(`Falha: ${error?.message}`);
         this.recipePendingDeletion.set(null);
     }
   }
@@ -366,7 +374,10 @@ export class TechnicalSheetsComponent {
 
   async saveNewIngredient() {
     const form = this.newIngredientForm();
-    if (!form.name.trim()) { alert('Nome do ingrediente é obrigatório.'); return; }
+    if (!form.name.trim()) {
+      await this.notificationService.alert('Nome do ingrediente é obrigatório.');
+      return;
+    }
     
     const { success, error, data: newIngredient } = await this.inventoryDataService.addIngredient({
       name: form.name.trim(),
@@ -380,7 +391,7 @@ export class TechnicalSheetsComponent {
       this.addItemToTechSheet({ type: 'ingredient', id: newIngredient.id, data: newIngredient }, this.quickAddContext()!.prepId);
       this.closeQuickAddIngredientModal();
     } else {
-      alert(`Falha ao criar ingrediente: ${error?.message}`);
+      await this.notificationService.alert(`Falha ao criar ingrediente: ${error?.message}`);
     }
   }
 }

@@ -6,6 +6,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
 import { Router } from '@angular/router';
+import { NotificationService } from '../../services/notification.service';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -46,6 +47,7 @@ export class InventoryComponent {
     inventoryDataService = inject(InventoryDataService);
     aiService = inject(AiRecipeService);
     router = inject(Router);
+    notificationService = inject(NotificationService);
     
     ingredients = this.stateService.ingredients;
     categories = this.stateService.ingredientCategories;
@@ -179,7 +181,10 @@ export class InventoryComponent {
 
     async saveIngredient() {
         const formValue = this.ingredientForm();
-        if (!formValue.name?.trim()) { alert('O nome do ingrediente é obrigatório.'); return; }
+        if (!formValue.name?.trim()) {
+          await this.notificationService.alert('O nome do ingrediente é obrigatório.');
+          return;
+        }
 
         const { ingredient_categories, suppliers, ...dbFormValue } = formValue;
         const result = this.editingIngredient()?.id
@@ -187,7 +192,7 @@ export class InventoryComponent {
             : await this.inventoryDataService.addIngredient(dbFormValue);
 
         if (result.success) this.closeModal();
-        else alert(`Falha ao salvar. Erro: ${result.error?.message}`);
+        else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
     }
 
     openAdjustmentModal(ingredient: Ingredient) {
@@ -214,13 +219,22 @@ export class InventoryComponent {
     async handleAdjustStock() {
         const ingredient = this.adjustmentIngredient();
         const quantity = this.adjustmentQuantity();
-        if (!ingredient || quantity <= 0) { alert('A quantidade deve ser maior que zero.'); return; }
-        if (this.adjustmentType() === 'exit' && quantity > ingredient.stock) { alert('Saída maior que o estoque.'); return; }
+        if (!ingredient || quantity <= 0) {
+          await this.notificationService.alert('A quantidade deve ser maior que zero.');
+          return;
+        }
+        if (this.adjustmentType() === 'exit' && quantity > ingredient.stock) {
+          await this.notificationService.alert('Saída maior que o estoque.');
+          return;
+        }
 
         let finalReason = this.adjustmentReason();
         if (finalReason === 'Outro') {
             finalReason = this.adjustmentCustomReason().trim();
-            if (!finalReason) { alert('Especifique o motivo.'); return; }
+            if (!finalReason) {
+              await this.notificationService.alert('Especifique o motivo.');
+              return;
+            }
         } else if (finalReason === 'Compra de Fornecedor' && this.adjustmentSupplierId()) {
             const supplierName = this.suppliers().find(s => s.id === this.adjustmentSupplierId())?.name;
             if (supplierName) finalReason = `${finalReason} - ${supplierName}`;
@@ -228,7 +242,7 @@ export class InventoryComponent {
         
         const result = await this.inventoryDataService.adjustIngredientStock(ingredient.id, this.adjustmentType() === 'entry' ? quantity : -quantity, finalReason, this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null);
         if (result.success) this.closeAdjustmentModal();
-        else alert(`Falha ao ajustar estoque. Erro: ${result.error?.message}`);
+        else await this.notificationService.alert(`Falha ao ajustar estoque. Erro: ${result.error?.message}`);
     }
 
     requestDeleteIngredient(ingredient: Ingredient) { this.ingredientPendingDeletion.set(ingredient); }
@@ -238,7 +252,7 @@ export class InventoryComponent {
         const ingredient = this.ingredientPendingDeletion();
         if (ingredient) {
             const result = await this.inventoryDataService.deleteIngredient(ingredient.id);
-            if (!result.success) alert(`Falha ao deletar. Erro: ${result.error?.message}`);
+            if (!result.success) await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             this.ingredientPendingDeletion.set(null);
         }
     }
@@ -254,7 +268,7 @@ export class InventoryComponent {
             const usageData = await this.inventoryDataService.calculateIngredientUsageForPeriod(startDate, endDate);
             
             if (usageData.size === 0) {
-                alert("Não há dados de vendas suficientes no último mês para fazer uma previsão.");
+                await this.notificationService.alert("Não há dados de vendas suficientes no último mês para fazer uma previsão.");
                 return;
             }
 
@@ -284,13 +298,13 @@ export class InventoryComponent {
             this.stockPrediction.set(predictions);
 
         } catch (error) {
-            alert(`Erro ao analisar o estoque: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+            await this.notificationService.alert(`Erro ao analisar o estoque: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             this.isAnalyzingStock.set(false);
         }
     }
 
-    generatePurchaseOrder() {
+    async generatePurchaseOrder() {
         const itemsToOrder = this.stockPrediction()
             ?.filter(p => p.suggestedPurchase > 0)
             .map(p => ({
@@ -301,7 +315,7 @@ export class InventoryComponent {
         if (itemsToOrder && itemsToOrder.length > 0) {
             this.router.navigate(['/purchasing'], { state: { newOrderItems: itemsToOrder } });
         } else {
-            alert("Nenhum item com sugestão de compra.");
+            await this.notificationService.alert("Nenhum item com sugestão de compra.");
         }
     }
 }

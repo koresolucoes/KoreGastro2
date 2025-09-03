@@ -8,6 +8,7 @@ import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
 import { PaymentModalComponent } from '../pos/payment-modal/payment-modal.component';
+import { NotificationService } from '../../services/notification.service';
 
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
 type CashDrawerView = 'movement' | 'closing';
@@ -40,6 +41,7 @@ export class CashierComponent {
   cashierDataService = inject(CashierDataService);
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
+  notificationService = inject(NotificationService);
 
   view: WritableSignal<CashierView> = signal('payingTables');
   isLoading = computed(() => !this.stateService.isDataLoaded());
@@ -136,15 +138,24 @@ export class CashierComponent {
   }
   closeQuickSalePaymentModal() { this.isQuickSalePaymentModalOpen.set(false); }
 
-  addPayment() {
+  async addPayment() {
     const method = this.selectedPaymentMethod(), balance = this.balanceDue();
     let amount = parseFloat(this.paymentAmountInput());
-    if (isNaN(amount) || amount <= 0) { alert('Valor inválido.'); return; }
+    if (isNaN(amount) || amount <= 0) {
+      await this.notificationService.alert('Valor inválido.');
+      return;
+    }
     if (method === 'Dinheiro') {
-      if (amount < balance) { alert('Valor em dinheiro é menor que o saldo.'); return; }
+      if (amount < balance) {
+        await this.notificationService.alert('Valor em dinheiro é menor que o saldo.');
+        return;
+      }
       amount = balance;
     } else {
-      if (amount > balance + 0.001) { alert(`Valor para ${method} excede o saldo.`); return; }
+      if (amount > balance + 0.001) {
+        await this.notificationService.alert(`Valor para ${method} excede o saldo.`);
+        return;
+      }
     }
     if (amount > 0) { this.payments.update(p => [...p, { method, amount: parseFloat(amount.toFixed(2)) }]); }
     const newBalance = this.balanceDue();
@@ -162,23 +173,23 @@ export class CashierComponent {
     if (!cart || !this.isPaymentComplete()) return;
     const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cart, this.payments());
     if (success) {
-      alert('Venda registrada com sucesso!');
+      await this.notificationService.alert('Venda registrada com sucesso!', 'Sucesso');
       this.closeQuickSalePaymentModal();
       this.quickSaleCart.set([]);
     } else {
-      alert(`Falha ao registrar venda. Erro: ${error?.message}`);
+      await this.notificationService.alert(`Falha ao registrar venda. Erro: ${error?.message}`);
     }
   }
 
   // --- Table Payment Methods ---
-  openPaymentForTable(table: Table) {
+  async openPaymentForTable(table: Table) {
     const order = this.openOrders().find(o => o.table_number === table.number);
     if (order) {
       this.selectedTableForPayment.set(table);
       this.selectedOrderForPayment.set(order);
       this.isTablePaymentModalOpen.set(true);
     } else {
-      alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
+      await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
     }
   }
 
@@ -236,7 +247,7 @@ export class CashierComponent {
     const description = this.newExpenseDescription().trim();
     const amount = this.newExpenseAmount();
     if (!description || !amount || amount <= 0) {
-        alert('Por favor, preencha a descrição e um valor válido para a despesa.');
+        await this.notificationService.alert('Por favor, preencha a descrição e um valor válido para a despesa.');
         return;
     }
     const { success, error } = await this.cashierDataService.logTransaction(description, amount, 'Despesa');
@@ -244,7 +255,7 @@ export class CashierComponent {
         this.newExpenseDescription.set('');
         this.newExpenseAmount.set(null);
     } else {
-        alert(`Falha ao registrar despesa: ${error?.message}`);
+        await this.notificationService.alert(`Falha ao registrar despesa: ${error?.message}`);
     }
   }
 
@@ -261,7 +272,7 @@ export class CashierComponent {
   async confirmAndCloseCashier() {
     const counted = this.countedCash();
     if (counted === null || counted < 0) {
-        alert('Por favor, insira o valor contado em caixa.');
+        await this.notificationService.alert('Por favor, insira o valor contado em caixa.');
         return;
     }
     
@@ -281,9 +292,9 @@ export class CashierComponent {
     if (success && savedClosing) {
         this.printClosingReport(savedClosing);
         this.closeClosingModal();
-        alert('Caixa fechado com sucesso!');
+        await this.notificationService.alert('Caixa fechado com sucesso!', 'Sucesso');
     } else {
-        alert(`Falha ao fechar o caixa. Erro: ${error?.message}`);
+        await this.notificationService.alert(`Falha ao fechar o caixa. Erro: ${error?.message}`);
     }
   }
   

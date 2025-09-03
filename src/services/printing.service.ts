@@ -2,6 +2,7 @@ import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +11,7 @@ export class PrintingService {
   private datePipe: DatePipe;
   private currencyPipe: CurrencyPipe;
   private decimalPipe: DecimalPipe;
+  private notificationService = inject(NotificationService);
 
   constructor() {
     const locale = inject(LOCALE_ID);
@@ -25,12 +27,12 @@ export class PrintingService {
    * @param items The specific items from the order to print.
    * @param station The destination station for the print job.
    */
-  printOrder(order: Order, items: OrderItem[], station: Station) {
+  async printOrder(order: Order, items: OrderItem[], station: Station) {
     if (!order || items.length === 0) return;
 
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-      alert('Por favor, habilite pop-ups para imprimir.');
+      await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
       return;
     }
     
@@ -48,10 +50,10 @@ export class PrintingService {
     }, 250); // Timeout allows content to render
   }
 
-  printPreBill(order: Order) {
+  async printPreBill(order: Order) {
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-      alert('Por favor, habilite pop-ups para imprimir.');
+      await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
       return;
     }
     printWindow.document.title = `Pré-conta - Mesa #${order.table_number}`;
@@ -65,10 +67,10 @@ export class PrintingService {
     }, 250);
   }
 
-  printCustomerReceipt(order: Order, payments: {method: string, amount: number}[]) {
+  async printCustomerReceipt(order: Order, payments: {method: string, amount: number}[]) {
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-        alert('Por favor, habilite pop-ups para imprimir.');
+        await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
         return;
     }
     printWindow.document.title = `Recibo - Pedido #${order.id.slice(0, 8)}`;
@@ -82,10 +84,10 @@ export class PrintingService {
     }, 250);
   }
 
-  printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) {
+  async printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) {
       const printWindow = window.open('', '_blank', 'width=300,height=500');
       if (!printWindow) {
-          alert('Por favor, habilite pop-ups para imprimir.');
+          await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
           return;
       }
       printWindow.document.title = `Fechamento de Caixa - ${this.datePipe.transform(closingData.closed_at, 'short')}`;

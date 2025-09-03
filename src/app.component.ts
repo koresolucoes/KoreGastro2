@@ -5,13 +5,14 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
 import { SupabaseStateService } from './services/supabase-state.service';
 import { OperationalAuthService } from './services/operational-auth.service';
+import { NotificationModalComponent } from './components/notification-modal/notification-modal.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent]
+  imports: [RouterOutlet, SidebarComponent, NotificationModalComponent]
 })
 export class AppComponent {
   // Inject services here to ensure they are initialized at the root level.

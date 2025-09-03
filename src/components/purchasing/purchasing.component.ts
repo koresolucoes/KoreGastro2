@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { PurchaseOrder, PurchaseOrderStatus, Supplier, Ingredient, PurchaseOrderItem } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PurchasingDataService } from '../../services/purchasing-data.service';
+import { NotificationService } from '../../services/notification.service';
 
 type FormItem = {
     id: string;
@@ -25,6 +26,7 @@ export class PurchasingComponent implements OnInit {
     stateService = inject(SupabaseStateService);
     purchasingDataService = inject(PurchasingDataService);
     router = inject(Router);
+    notificationService = inject(NotificationService);
 
     purchaseOrders = this.stateService.purchaseOrders;
     suppliers = this.stateService.suppliers;
@@ -145,7 +147,7 @@ export class PurchasingComponent implements OnInit {
         const formValue = this.orderForm();
         const items = this.orderItems();
         if (items.length === 0) {
-            alert('Adicione pelo menos um item à ordem de compra.');
+            await this.notificationService.alert('Adicione pelo menos um item à ordem de compra.');
             return;
         }
 
@@ -154,16 +156,17 @@ export class PurchasingComponent implements OnInit {
             : await this.purchasingDataService.createPurchaseOrder(formValue, items);
 
         if (result.success) this.closeModal();
-        else alert(`Falha ao salvar. Erro: ${result.error?.message}`);
+        else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
     }
 
     async markAsReceived(order: PurchaseOrder) {
-        if (!confirm(`Tem certeza que deseja marcar o pedido #${order.id.slice(0, 8)} como recebido? Esta ação atualizará seu estoque.`)) {
+        const confirmed = await this.notificationService.confirm(`Tem certeza que deseja marcar o pedido #${order.id.slice(0, 8)} como recebido? Esta ação atualizará seu estoque.`, 'Confirmar Recebimento');
+        if (!confirmed) {
             return;
         }
         const result = await this.purchasingDataService.receivePurchaseOrder(order);
         if (!result.success) {
-            alert(`Falha ao receber pedido. Erro: ${result.error?.message}`);
+            await this.notificationService.alert(`Falha ao receber pedido. Erro: ${result.error?.message}`);
         }
     }
     
@@ -174,7 +177,7 @@ export class PurchasingComponent implements OnInit {
         const order = this.orderPendingDeletion();
         if (order) {
             const result = await this.purchasingDataService.deletePurchaseOrder(order.id);
-            if (!result.success) alert(`Falha ao deletar. Erro: ${result.error?.message}`);
+            if (!result.success) await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             this.orderPendingDeletion.set(null);
         }
     }

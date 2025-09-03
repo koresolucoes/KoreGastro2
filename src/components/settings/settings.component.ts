@@ -6,6 +6,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-settings',
@@ -19,6 +20,7 @@ export class SettingsComponent {
   private settingsDataService = inject(SettingsDataService);
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
+  private notificationService = inject(NotificationService);
 
   // Data Signals from Service
   stations = this.stateService.stations;
@@ -76,7 +78,7 @@ export class SettingsComponent {
   async handleAddStation() {
     const name = this.newStationName().trim(); if (!name) return;
     const { success, error } = await this.settingsDataService.addStation(name);
-    if (success) { this.newStationName.set(''); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.newStationName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   startEditingStation(s: Station) { this.editingStation.set({ ...s }); this.stationPendingDeletion.set(null); }
   cancelEditingStation() { this.editingStation.set(null); }
@@ -87,14 +89,14 @@ export class SettingsComponent {
   async saveStation() {
     const station = this.editingStation(); if (!station?.name.trim()) return;
     const { success, error } = await this.settingsDataService.updateStation(station.id, station.name.trim());
-    if (success) { this.cancelEditingStation(); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.cancelEditingStation(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   requestDeleteStation(s: Station) { this.stationPendingDeletion.set(s); this.editingStation.set(null); }
   cancelDeleteStation() { this.stationPendingDeletion.set(null); }
   async confirmDeleteStation() {
     const station = this.stationPendingDeletion(); if (!station) return;
     const { success, error } = await this.settingsDataService.deleteStation(station.id);
-    if (!success) { alert(`Falha: ${error?.message}`); }
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
     this.stationPendingDeletion.set(null);
   }
 
@@ -106,7 +108,7 @@ export class SettingsComponent {
   async handleAddCategory() {
     const name = this.newCategoryName().trim(); if (!name) return;
     const { success, error } = await this.inventoryDataService.addIngredientCategory(name);
-    if (success) { this.newCategoryName.set(''); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.newCategoryName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   startEditingCategory(c: IngredientCategory) { this.editingCategory.set({ ...c }); this.categoryPendingDeletion.set(null); }
   cancelEditingCategory() { this.editingCategory.set(null); }
@@ -117,14 +119,14 @@ export class SettingsComponent {
   async saveCategory() {
     const category = this.editingCategory(); if (!category?.name.trim()) return;
     const { success, error } = await this.inventoryDataService.updateIngredientCategory(category.id, category.name.trim());
-    if (success) { this.cancelEditingCategory(); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.cancelEditingCategory(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   requestDeleteCategory(c: IngredientCategory) { this.categoryPendingDeletion.set(c); this.editingCategory.set(null); }
   cancelDeleteCategory() { this.categoryPendingDeletion.set(null); }
   async confirmDeleteCategory() {
     const category = this.categoryPendingDeletion(); if (!category) return;
     const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
-    if (!success) { alert(`Falha: ${error?.message}`); }
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
     this.categoryPendingDeletion.set(null);
   }
 
@@ -136,7 +138,7 @@ export class SettingsComponent {
   async handleAddRecipeCategory() {
     const name = this.newRecipeCategoryName().trim(); if (!name) return;
     const { success, error } = await this.recipeDataService.addRecipeCategory(name);
-    if (success) { this.newRecipeCategoryName.set(''); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.newRecipeCategoryName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   startEditingRecipeCategory(c: Category) { this.editingRecipeCategory.set({ ...c }); this.recipeCategoryPendingDeletion.set(null); }
   cancelEditingRecipeCategory() { this.editingRecipeCategory.set(null); }
@@ -147,14 +149,14 @@ export class SettingsComponent {
   async saveRecipeCategory() {
     const category = this.editingRecipeCategory(); if (!category?.name.trim()) return;
     const { success, error } = await this.recipeDataService.updateRecipeCategory(category.id, category.name.trim());
-    if (success) { this.cancelEditingRecipeCategory(); } else { alert(`Falha: ${error?.message}`); }
+    if (success) { this.cancelEditingRecipeCategory(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
   }
   requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); this.editingRecipeCategory.set(null); }
   cancelDeleteRecipeCategory() { this.recipeCategoryPendingDeletion.set(null); }
   async confirmDeleteRecipeCategory() {
     const category = this.recipeCategoryPendingDeletion(); if (!category) return;
     const { success, error } = await this.recipeDataService.deleteRecipeCategory(category.id);
-    if (!success) { alert(`Falha ao deletar. Erro: ${error?.message}`); }
+    if (!success) { await this.notificationService.alert(`Falha ao deletar. Erro: ${error?.message}`); }
     this.recipeCategoryPendingDeletion.set(null);
   }
 
@@ -171,21 +173,24 @@ export class SettingsComponent {
     this.supplierForm.update(form => ({ ...form, [field]: value }));
   }
   async saveSupplier() {
-    const form = this.supplierForm(); if (!form.name?.trim()) { alert('Nome é obrigatório'); return; }
+    const form = this.supplierForm(); if (!form.name?.trim()) {
+      await this.notificationService.alert('Nome é obrigatório');
+      return;
+    }
     let res;
     if (this.editingSupplier()) {
       res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
     } else {
       res = await this.inventoryDataService.addSupplier(form as any);
     }
-    if (res.success) { this.closeSupplierModal(); } else { alert(`Falha: ${res.error?.message}`); }
+    if (res.success) { this.closeSupplierModal(); } else { await this.notificationService.alert(`Falha: ${res.error?.message}`); }
   }
   requestDeleteSupplier(s: Supplier) { this.supplierPendingDeletion.set(s); }
   cancelDeleteSupplier() { this.supplierPendingDeletion.set(null); }
   async confirmDeleteSupplier() {
     const supplier = this.supplierPendingDeletion(); if (!supplier) return;
     const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
-    if (!success) { alert(`Falha: ${error?.message}`); }
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
     this.supplierPendingDeletion.set(null);
   }
   
@@ -205,8 +210,14 @@ export class SettingsComponent {
   }
   async saveEmployee() {
     const form = this.employeeForm(); 
-    if (!form.name?.trim()) { alert('O nome do funcionário é obrigatório.'); return; }
-    if (form.pin && form.pin.length !== 4) { alert('O PIN deve ter exatamente 4 dígitos.'); return; }
+    if (!form.name?.trim()) {
+      await this.notificationService.alert('O nome do funcionário é obrigatório.');
+      return;
+    }
+    if (form.pin && form.pin.length !== 4) {
+      await this.notificationService.alert('O PIN deve ter exatamente 4 dígitos.');
+      return;
+    }
     
     let res;
     if (this.editingEmployee()) {
@@ -214,14 +225,14 @@ export class SettingsComponent {
     } else {
       res = await this.settingsDataService.addEmployee(form as any);
     }
-    if (res.success) { this.closeEmployeeModal(); } else { alert(`Falha ao salvar funcionário: ${res.error?.message}`); }
+    if (res.success) { this.closeEmployeeModal(); } else { await this.notificationService.alert(`Falha ao salvar funcionário: ${res.error?.message}`); }
   }
   requestDeleteEmployee(e: Employee) { this.employeePendingDeletion.set(e); }
   cancelDeleteEmployee() { this.employeePendingDeletion.set(null); }
   async confirmDeleteEmployee() {
     const employee = this.employeePendingDeletion(); if (!employee) return;
     const { success, error } = await this.settingsDataService.deleteEmployee(employee.id);
-    if (!success) { alert(`Falha ao deletar funcionário: ${error?.message}`); }
+    if (!success) { await this.notificationService.alert(`Falha ao deletar funcionário: ${error?.message}`); }
     this.employeePendingDeletion.set(null);
   }
 }

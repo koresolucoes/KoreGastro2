@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CashierDataService, ReportData } from '../../services/cashier-data.service';
+import { NotificationService } from '../../services/notification.service';
 
 type ReportType = 'sales' | 'items';
 
@@ -13,6 +14,7 @@ type ReportType = 'sales' | 'items';
 })
 export class ReportsComponent implements OnInit {
     private cashierDataService = inject(CashierDataService);
+    private notificationService = inject(NotificationService);
 
     // Form inputs
     startDate = signal('');
@@ -39,7 +41,7 @@ export class ReportsComponent implements OnInit {
 
     async generateReport() {
         if (!this.startDate() || !this.endDate()) {
-            alert('Por favor, selecione as datas de início e fim.');
+            await this.notificationService.alert('Por favor, selecione as datas de início e fim.');
             return;
         }
         this.isLoading.set(true);
@@ -49,7 +51,7 @@ export class ReportsComponent implements OnInit {
             this.generatedReport.set(data);
         } catch (error) {
             console.error("Error generating report", error);
-            alert(`Falha ao gerar o relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+            await this.notificationService.alert(`Falha ao gerar o relatório: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
         } finally {
             this.isLoading.set(false);
         }

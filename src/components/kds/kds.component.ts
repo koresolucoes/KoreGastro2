@@ -7,6 +7,7 @@ import { PrintingService } from '../../services/printing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface BaseTicket {
   tableNumber: number;
@@ -49,6 +50,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     posDataService = inject(PosDataService);
     settingsDataService = inject(SettingsDataService);
     printingService = inject(PrintingService);
+    notificationService = inject(NotificationService);
     
     stations = this.stateService.stations;
     employees = this.stateService.employees;
@@ -220,7 +222,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (!station) return;
         
         const { success, error } = await this.settingsDataService.assignEmployeeToStation(station.id, employeeId);
-        if (!success) alert(`Falha ao atribuir funcionário: ${error?.message}`);
+        if (!success) await this.notificationService.alert(`Falha ao atribuir funcionário: ${error?.message}`);
         this.isAssignEmployeeModalOpen.set(false);
     }
     
@@ -230,7 +232,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.acknowledgeOrderItemAttention(item.id);
-        if (!success) alert(`Erro ao confirmar ciência: ${error?.message}`);
+        if (!success) await this.notificationService.alert(`Erro ao confirmar ciência: ${error?.message}`);
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
     
@@ -246,13 +248,14 @@ export class KdsComponent implements OnInit, OnDestroy {
         
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
-        if (!success) alert(`Erro ao atualizar o status do item: ${error?.message}`);
+        if (!success) await this.notificationService.alert(`Erro ao atualizar o status do item: ${error?.message}`);
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
 
     async startHeldItemNow(item: ProcessedOrderItem, event: MouseEvent) {
         event.stopPropagation();
-        if (confirm(`Tem certeza que deseja iniciar o preparo de "${item.name}" antes do tempo programado?`)) {
+        const confirmed = await this.notificationService.confirm(`Tem certeza que deseja iniciar o preparo de "${item.name}" antes do tempo programado?`, 'Iniciar Preparo?');
+        if (confirmed) {
             await this.updateStatus(item, true);
         }
     }
@@ -262,7 +265,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         
         const order = this.stateService.openOrders().find(o => o.table_number === ticket.tableNumber);
         if (!order) {
-            alert('Erro: Pedido não encontrado.');
+            await this.notificationService.alert('Erro: Pedido não encontrado.');
             return;
         }
     
@@ -270,7 +273,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         try {
             const { success, error } = await this.posDataService.markOrderAsServed(order.id);
             if (!success) {
-                alert(`Erro ao marcar pedido como servido: ${error?.message}`);
+                await this.notificationService.alert(`Erro ao marcar pedido como servido: ${error?.message}`);
                 // Reset loading state on failure
                 this.updatingTickets.update(set => {
                     const newSet = new Set(set);
@@ -280,7 +283,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
             // On success, we rely on the realtime subscription to remove the ticket.
         } catch (e: any) {
-            alert(`Ocorreu um erro inesperado: ${e.message}`);
+            await this.notificationService.alert(`Ocorreu um erro inesperado: ${e.message}`);
              // Reset loading state on unexpected error
             this.updatingTickets.update(set => {
                 const newSet = new Set(set);
@@ -300,13 +303,13 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.selectedTicketForDetail.set(null);
     }
 
-    printTicket(ticket: StationTicket | ExpoTicket) {
+    async printTicket(ticket: StationTicket | ExpoTicket) {
         const station = this.selectedStation();
         if (station) {
             const orderShellForPrinting = { id: ticket.items[0]?.order_id || 'N/A', table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
             this.printingService.printOrder(orderShellForPrinting, ticket.items, station);
         } else {
-            alert('Erro: Nenhuma estação selecionada.');
+            await this.notificationService.alert('Erro: Nenhuma estação selecionada.');
         }
     }
 

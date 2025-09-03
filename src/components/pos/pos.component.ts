@@ -1,6 +1,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee } from '../../models/db.models';
@@ -14,6 +15,7 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { PrintingService } from '../../services/printing.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-pos',
@@ -33,6 +35,7 @@ export class PosComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
   printingService = inject(PrintingService);
+  notificationService = inject(NotificationService);
   
   // Data Signals from State Service
   halls = this.stateService.halls;
@@ -130,9 +133,9 @@ export class PosComponent {
     const { success, error } = await this.posDataService.updateTableStatus(table.id, 'PAGANDO');
     if (success) { 
         this.closeOrderPanel();
-        alert(`Mesa ${table.number} enviada para o Caixa.`);
+        await this.notificationService.alert(`Mesa ${table.number} enviada para o Caixa.`, 'Sucesso');
     } else {
-        alert(`Falha ao iniciar o fechamento da conta. Erro: ${error?.message}`);
+        await this.notificationService.alert(`Falha ao iniciar o fechamento da conta. Erro: ${error?.message}`);
     }
   }
 
@@ -174,7 +177,7 @@ export class PosComponent {
         if (success) {
             this.closeOrderPanel();
         } else {
-            alert(`Falha ao liberar a mesa: ${error?.message}`);
+            await this.notificationService.alert(`Falha ao liberar a mesa: ${error?.message}`);
         }
     }
   }
