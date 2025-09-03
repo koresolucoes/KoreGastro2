@@ -239,6 +239,9 @@ export class SupabaseStateService {
     if (tableName === 'halls') {
       query = query.order('created_at', { ascending: true });
     }
+    if (tableName === 'purchase_orders') {
+      query = query.order('created_at', { ascending: false });
+    }
     const { data, error } = await query;
     if (!error) signal.set(data as T[] || []);
     else console.error(`Error refetching ${tableName}:`, error);
