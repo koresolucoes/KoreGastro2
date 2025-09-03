@@ -1,9 +1,11 @@
+
 import { Injectable, inject } from '@angular/core';
 import { CashierClosing, OrderItem, OrderItemStatus, Recipe, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { PricingService } from './pricing.service';
 import { supabase } from './supabase-client';
+import { InventoryDataService } from './inventory-data.service';
 
 interface CartItem { recipe: Recipe; quantity: number; }
 interface PaymentInfo { method: string; amount: number; }
@@ -23,6 +25,7 @@ export class CashierDataService {
   private authService = inject(AuthService);
   private stateService = inject(SupabaseStateService);
   private pricingService = inject(PricingService);
+  private inventoryDataService = inject(InventoryDataService);
 
   async finalizeQuickSalePayment(cart: CartItem[], payments: PaymentInfo[]): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
@@ -34,14 +37,24 @@ export class CashierDataService {
     }).select().single();
     if (orderError) return { success: false, error: orderError };
 
-    const prices = this.stateService.recipesById();
+    const stations = this.stateService.stations();
+    if (stations.length === 0) {
+      return { success: false, error: { message: 'Nenhuma estação de produção configurada para registrar a venda.' } };
+    }
+    const stationId = stations[0].id;
+    
     const orderItems = cart.map(item => ({
-        order_id: order.id, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity,
-        price: prices.get(item.recipe.id)?.price ?? 0, status: 'PRONTO' as OrderItemStatus,
-        station_id: this.stateService.stations()[0]?.id, user_id: userId,
+        order_id: order.id,
+        recipe_id: item.recipe.id,
+        name: item.recipe.name,
+        quantity: item.quantity,
+        price: this.pricingService.getEffectivePrice(item.recipe),
+        status: 'SERVIDO' as OrderItemStatus,
+        station_id: stationId,
+        user_id: userId,
     }));
     
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+    const { data: insertedItems, error: itemsError } = await supabase.from('order_items').insert(orderItems).select();
     if (itemsError) return { success: false, error: itemsError };
 
     const transactions = payments.map(p => ({
@@ -51,6 +64,14 @@ export class CashierDataService {
 
     const { error: transError } = await supabase.from('transactions').insert(transactions);
     if (transError) return { success: false, error: transError };
+    
+    // Deduct stock after successful payment
+    if (insertedItems) {
+        const { success: deductionSuccess, error: deductionError } = await this.inventoryDataService.deductStockForOrderItems(insertedItems, order.id);
+        if (!deductionSuccess) {
+            console.error('Stock deduction failed for quick sale after payment was processed. Manual adjustment needed.', deductionError);
+        }
+    }
     
     return { success: true, error: null };
   }

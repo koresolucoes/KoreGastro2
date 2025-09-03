@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier } from '../models/db.models';
+import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { SupabaseStateService } from './supabase-state.service';
@@ -220,5 +220,46 @@ export class InventoryDataService {
     }
     
     return totalUsage;
+  }
+
+  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any }> {
+    const recipeCostMap = this.stateService.recipeCosts();
+    const deductions = new Map<string, number>();
+
+    for (const item of orderItems) {
+      const recipeComposition = recipeCostMap.get(item.recipe_id);
+      if (recipeComposition) {
+        for (const [ingredientId, quantityPerRecipe] of recipeComposition.rawIngredients.entries()) {
+          const totalAmountToDeduct = quantityPerRecipe * item.quantity;
+          deductions.set(ingredientId, (deductions.get(ingredientId) || 0) + totalAmountToDeduct);
+        }
+      }
+    }
+
+    if (deductions.size === 0) {
+      return { success: true, error: null };
+    }
+
+    const deductionPromises = Array.from(deductions.entries()).map(([ingredientId, totalQuantity]) =>
+      this.adjustIngredientStock(
+        ingredientId,
+        -totalQuantity,
+        `Venda - Pedido #${orderId.slice(0, 8)}`,
+        null // expiration date is not relevant for deductions
+      )
+    );
+
+    try {
+      const results = await Promise.all(deductionPromises);
+      const firstError = results.find(r => !r.success);
+      if (firstError) {
+        console.error('One or more stock deductions failed', firstError.error);
+        return { success: false, error: firstError.error };
+      }
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('An unexpected error occurred during stock deduction:', error);
+      return { success: false, error };
+    }
   }
 }

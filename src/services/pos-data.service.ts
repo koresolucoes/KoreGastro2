@@ -1,7 +1,4 @@
 
-
-
-
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -10,6 +7,7 @@ import { PrintingService } from './printing.service';
 import { PricingService } from './pricing.service';
 import { supabase } from './supabase-client';
 import { v4 as uuidv4 } from 'uuid';
+import { InventoryDataService } from './inventory-data.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -21,6 +19,7 @@ export class PosDataService {
   private stateService = inject(SupabaseStateService);
   private printingService = inject(PrintingService);
   private pricingService = inject(PricingService);
+  private inventoryDataService = inject(InventoryDataService);
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {
     return this.stateService.openOrders().find(o => o.table_number === tableNumber);
@@ -283,6 +282,18 @@ export class PosDataService {
     if (transactionsToInsert.length > 0) {
       const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
       if (transactionError) return { success: false, error: transactionError };
+    }
+
+    // Deduct stock after successful payment
+    const { data: orderItems, error: itemsError } = await supabase.from('order_items').select('*').eq('order_id', orderId);
+    
+    if (itemsError) {
+        console.error('Could not fetch items for stock deduction, but payment was processed.', itemsError);
+    } else if (orderItems) {
+        const { success: deductionSuccess, error: deductionError } = await this.inventoryDataService.deductStockForOrderItems(orderItems, orderId);
+        if (!deductionSuccess) {
+            console.error('Stock deduction failed after payment was processed. Manual adjustment needed.', deductionError);
+        }
     }
 
     return { success: true, error: null };
