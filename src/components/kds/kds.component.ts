@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
@@ -259,11 +260,27 @@ export class KdsComponent implements OnInit, OnDestroy {
         }
     
         this.updatingTickets.update(set => new Set(set).add(ticket.tableNumber));
-        const { success, error } = await this.posDataService.markOrderAsServed(order.id);
-        if (!success) {
-            alert(`Erro ao marcar pedido como servido: ${error?.message}`);
+        try {
+            const { success, error } = await this.posDataService.markOrderAsServed(order.id);
+            if (!success) {
+                alert(`Erro ao marcar pedido como servido: ${error?.message}`);
+                // Reset loading state on failure
+                this.updatingTickets.update(set => {
+                    const newSet = new Set(set);
+                    newSet.delete(ticket.tableNumber);
+                    return newSet;
+                });
+            }
+            // On success, we rely on the realtime subscription to remove the ticket.
+        } catch (e: any) {
+            alert(`Ocorreu um erro inesperado: ${e.message}`);
+             // Reset loading state on unexpected error
+            this.updatingTickets.update(set => {
+                const newSet = new Set(set);
+                newSet.delete(ticket.tableNumber);
+                return newSet;
+            });
         }
-        // No need to remove from updatingTickets, as the ticket will disappear from the view on data refresh.
     }
     
     openDetailModal(ticket: StationTicket | ExpoTicket) {

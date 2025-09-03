@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -192,14 +193,10 @@ export class PosDataService {
   }
 
   async markOrderAsServed(orderId: string): Promise<{ success: boolean, error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-
-    const { error } = await supabase
-      .from('order_items')
-      .update({ status: 'SERVED' as any })
-      .eq('order_id', orderId)
-      .eq('user_id', userId);
+    // Calling an RPC function is the recommended way to perform complex updates
+    // that may be affected by Row Level Security policies, ensuring the operation
+    // is both atomic and secure. This avoids silent failures.
+    const { error } = await supabase.rpc('mark_order_as_served', { p_order_id: orderId });
     
     return { success: !error, error };
   }

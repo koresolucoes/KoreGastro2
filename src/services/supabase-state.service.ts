@@ -172,7 +172,7 @@ export class SupabaseStateService {
       });
   }
 
-  private handleChanges(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
+  private handleChanges(payload: RealtimePostgresChangesPayload<any>) {
     console.log('Realtime change received:', payload);
     switch (payload.table) {
         case 'orders':
@@ -235,7 +235,11 @@ export class SupabaseStateService {
 
   private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
     const userId = this.currentUser()?.id; if (!userId) return;
-    const { data, error } = await supabase.from(tableName).select(selectQuery).eq('user_id', userId);
+    let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
+    if (tableName === 'halls') {
+      query = query.order('created_at', { ascending: true });
+    }
+    const { data, error } = await query;
     if (!error) signal.set(data as T[] || []);
     else console.error(`Error refetching ${tableName}:`, error);
   }
@@ -267,7 +271,7 @@ export class SupabaseStateService {
   private async refreshData(userId: string) {
     await this.fetchRecipes(userId);
     const results = await Promise.all([
-      supabase.from('halls').select('*').eq('user_id', userId),
+      supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
       supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),

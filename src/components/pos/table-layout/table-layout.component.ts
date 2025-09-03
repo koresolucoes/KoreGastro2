@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus } from '../../../models/db.models';
@@ -21,6 +22,7 @@ export class TableLayoutComponent {
   tables: InputSignal<Table[]> = input.required<Table[]>();
   isEditMode: InputSignal<boolean> = input.required<boolean>();
   employeeNameMap: InputSignal<Map<string, string>> = input.required<Map<string, string>>();
+  hallIndex: InputSignal<number> = input.required<number>();
   tableClicked: OutputEmitterRef<Table> = output<Table>();
   tableRightClicked: OutputEmitterRef<{ event: MouseEvent, table: Table }> = output();
 
@@ -59,21 +61,32 @@ export class TableLayoutComponent {
   }
 
   addTable() {
-    const existingNumbers = new Set(this.localTables().map(t => t.number));
-    let nextNumber = 1;
-    while (existingNumbers.has(nextNumber)) {
-        nextNumber++;
-    }
+    const hallIndex = this.hallIndex();
+    this.localTables.update(currentTablesInHall => {
+        const baseNumber = hallIndex * 100;
 
-    this.localTables.update(tables => {
+        // Find the highest number in the current hall. If no tables, this will be 0.
+        const maxNumberInHall = currentTablesInHall.reduce((max, table) => Math.max(max, table.number), 0);
+
+        // For hall 0 (index 0), next is max+1. For other halls, it's max of (current max, base number) + 1.
+        let nextNumber = (hallIndex === 0) 
+            ? maxNumberInHall + 1
+            : Math.max(maxNumberInHall, baseNumber) + 1;
+
+        // Check if the proposed number is already taken (e.g., by manual entry) and increment if so.
+        const allNumbersInThisHall = new Set(currentTablesInHall.map(t => t.number));
+        while (allNumbersInThisHall.has(nextNumber)) {
+            nextNumber++;
+        }
+
         const columnCount = 8; // Tables per row before wrapping
         const tableWidth = 80;
         const tableHeight = 80;
         const gap = 20;
 
-        // Calculate grid position based on the number of existing tables
-        const col = tables.length % columnCount;
-        const row = Math.floor(tables.length / columnCount);
+        // Calculate grid position based on the number of existing tables in this hall
+        const col = currentTablesInHall.length % columnCount;
+        const row = Math.floor(currentTablesInHall.length / columnCount);
 
         const newX = gap + col * (tableWidth + gap);
         const newY = gap + row * (tableHeight + gap);
@@ -91,7 +104,7 @@ export class TableLayoutComponent {
             user_id: ''
         };
 
-        return [...tables, newTable];
+        return [...currentTablesInHall, newTable];
     });
   }
 

@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee } from '../../models/db.models';
@@ -69,6 +70,12 @@ export class PosComponent {
     const hallId = this.selectedHall()?.id;
     const currentTableId = this.selectedTable()?.id;
     return this.tables().filter(t => t.hall_id === hallId && t.status === 'LIVRE' && t.id !== currentTableId);
+  });
+
+  selectedHallIndex = computed(() => {
+    const hall = this.selectedHall();
+    if (!hall) return -1;
+    return this.halls().findIndex(h => h.id === hall.id);
   });
 
   constructor() {
