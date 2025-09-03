@@ -1,7 +1,7 @@
 
 
 import { Injectable, inject } from '@angular/core';
-import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction } from '../models/db.models';
+import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { PrintingService } from './printing.service';
@@ -73,14 +73,107 @@ export class PosDataService {
 
     return { success: true, error: null };
   }
+  
+  async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean; error: any }> {
+    const { data: currentItem, error: fetchError } = await supabase
+      .from('order_items')
+      .select('status_timestamps')
+      .eq('id', itemId)
+      .single();
 
+    if (fetchError) {
+      return { success: false, error: fetchError };
+    }
+
+    const newTimestamps = {
+      ...currentItem.status_timestamps,
+      [status.toUpperCase()]: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status, status_timestamps: newTimestamps })
+      .eq('id', itemId);
+
+    return { success: !error, error };
+  }
+
+  async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean; error: any }> {
+    const { data: currentItem, error: fetchError } = await supabase
+      .from('order_items')
+      .select('status_timestamps')
+      .eq('id', itemId)
+      .single();
+
+    if (fetchError) {
+      return { success: false, error: fetchError };
+    }
+
+    const newTimestamps = {
+      ...currentItem.status_timestamps,
+      'ATTENTION_ACKNOWLEDGED': new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status_timestamps: newTimestamps })
+      .eq('id', itemId);
+
+    return { success: !error, error };
+  }
+  
+  async markOrderAsServed(orderId: string): Promise<{ success: boolean; error: any }> {
+    const { data: items, error: fetchError } = await supabase
+      .from('order_items')
+      .select('id, status_timestamps')
+      .eq('order_id', orderId);
+
+    if (fetchError) return { success: false, error: fetchError };
+    
+    const now = new Date().toISOString();
+
+    const updates = items.map(item => {
+      const newTimestamps = {
+        ...item.status_timestamps,
+        'SERVIDO': now,
+      };
+      return {
+        id: item.id,
+        status: 'SERVIDO' as OrderItemStatus,
+        status_timestamps: newTimestamps,
+      };
+    });
+
+    const { error } = await supabase.from('order_items').upsert(updates);
+
+    return { success: !error, error };
+  }
+
+  async moveOrderToTable(order: Order, sourceTable: Table, destinationTable: Table): Promise<{ success: boolean; error: any }> {
+    const { error: orderUpdateError } = await supabase
+      .from('orders')
+      .update({ table_number: destinationTable.number })
+      .eq('id', order.id);
+
+    if (orderUpdateError) return { success: false, error: orderUpdateError };
+
+    const { error: tablesUpdateError } = await supabase
+      .from('tables')
+      .upsert([
+        { ...sourceTable, status: 'LIVRE', employee_id: null, customer_count: 0 },
+        { ...destinationTable, status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count }
+      ]);
+    
+    return { success: !tablesUpdateError, error: tablesUpdateError };
+  }
+  
   async deleteEmptyOrder(orderId: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('orders').delete().eq('id', orderId);
     return { success: !error, error };
   }
 
   async releaseTable(tableId: string, orderId: string): Promise<{ success: boolean; error: any }> {
-    await supabase.from('tables').update({ status: 'LIVRE', employee_id: null }).eq('id', tableId);
+    await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', tableId);
     await supabase.from('orders').delete().eq('id', orderId);
     return { success: true, error: null };
   }
@@ -137,67 +230,53 @@ export class PosDataService {
     return { success: !error, error };
   }
 
-  async finalizeOrderPayment(orderId: string, tableId: string, total: number, payments: PaymentInfo[], tip: number): Promise<{ success: boolean, error: any }> {
+  async finalizeOrderPayment(
+    orderId: string, 
+    tableId: string,
+    total: number, 
+    payments: PaymentInfo[], 
+    tipAmount: number
+  ): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    const table = this.stateService.tables().find(t => t.id === tableId);
-    const employeeId = table?.employee_id || null;
-    
+    const { error: orderError } = await supabase
+      .from('orders')
+      .update({ is_completed: true, completed_at: new Date().toISOString() })
+      .eq('id', orderId);
+    if (orderError) return { success: false, error: orderError };
+
+    const { error: tableError } = await supabase
+      .from('tables')
+      .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
+      .eq('id', tableId);
+    if (tableError) return { success: false, error: tableError };
+
+    const tableEmployeeId = this.stateService.tables().find(t => t.id === tableId)?.employee_id;
+
     const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
       description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
-      type: 'Receita',
+      type: 'Receita' as TransactionType,
       amount: p.amount,
       user_id: userId,
-      employee_id: employeeId
+      employee_id: tableEmployeeId
     }));
-    
-    if (tip > 0) {
-        transactionsToInsert.push({
-          description: `Gorjeta Pedido #${orderId.slice(0, 8)}`,
-          type: 'Gorjeta',
-          amount: tip,
-          user_id: userId,
-          employee_id: employeeId
-        });
+
+    if (tipAmount > 0) {
+      transactionsToInsert.push({
+        description: `Gorjeta Pedido #${orderId.slice(0, 8)}`,
+        type: 'Gorjeta' as TransactionType,
+        amount: tipAmount,
+        user_id: userId,
+        employee_id: tableEmployeeId
+      });
     }
-    
+
     if (transactionsToInsert.length > 0) {
-      const { error } = await supabase.from('transactions').insert(transactionsToInsert as any);
-      if (error) return { success: false, error };
+      const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
+      if (transactionError) return { success: false, error: transactionError };
     }
-    
-    await supabase.from('orders').update({ is_completed: true, completed_at: new Date().toISOString() }).eq('id', orderId);
-    await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', tableId);
-    
-    this.stateService.orders.update(current => current.filter(o => o.id !== orderId));
-    await this.stateService.refreshDashboardAndCashierData();
+
     return { success: true, error: null };
-  }
-
-  async moveOrderToTable(order: Order, sourceTable: Table, destinationTable: Table): Promise<{ success: boolean, error: any }> {
-    await supabase.from('orders').update({ table_number: destinationTable.number }).eq('id', order.id);
-    await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', sourceTable.id);
-    await supabase.from('tables').update({ status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count }).eq('id', destinationTable.id);
-    return { success: true, error: null };
-  }
-
-  async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.rpc('acknowledge_attention', { item_id: itemId });
-    return { success: !error, error };
-  }
-
-  async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.rpc('update_item_status', { item_id: itemId, new_status: status });
-    return { success: !error, error };
-  }
-
-  async markOrderAsServed(orderId: string): Promise<{ success: boolean, error: any }> {
-    // Calling an RPC function is the recommended way to perform complex updates
-    // that may be affected by Row Level Security policies, ensuring the operation
-    // is both atomic and secure. This avoids silent failures.
-    const { error } = await supabase.rpc('mark_order_as_served', { p_order_id: orderId });
-    
-    return { success: !error, error };
   }
 }
