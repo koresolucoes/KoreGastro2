@@ -1,6 +1,4 @@
 
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
@@ -81,7 +79,7 @@ export class CashierComponent {
   filteredRecipes = computed(() => {
     const category = this.selectedCategory();
     const term = this.recipeSearchTerm().toLowerCase();
-    let recipesToShow = this.recipes().filter(r => r.is_available && r.hasStock);
+    let recipesToShow = this.recipes().filter(r => r.is_available);
     if (category) {
       recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
     }

@@ -1,5 +1,4 @@
 
-
 <div class="h-full flex flex-col">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <h1 class="text-3xl font-bold text-white">Caixa</h1>
@@ -33,9 +32,15 @@
               </div>
               <div class="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-2 overflow-y-auto pr-2 items-start">
                  @for (recipe of filteredRecipes(); track recipe.id) {
-                  <div (click)="addToCart(recipe)" class="bg-gray-700 p-3 rounded-lg text-center cursor-pointer hover:bg-gray-600 flex flex-col">
+                  <div (click)="addToCart(recipe)" 
+                       class="bg-gray-700 p-3 rounded-lg text-center flex flex-col transition-opacity"
+                       [class.cursor-pointer]="recipe.hasStock"
+                       [class.hover:bg-gray-600]="recipe.hasStock"
+                       [class.opacity-50]="!recipe.hasStock"
+                       [class.pointer-events-none]="!recipe.hasStock"
+                       [title]="!recipe.hasStock ? 'Sem estoque' : ''">
                     <p class="font-semibold text-sm">{{ recipe.name }}</p>
-                    <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}</p>
                   </div>
                 }
               </div>

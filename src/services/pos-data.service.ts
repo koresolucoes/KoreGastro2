@@ -121,7 +121,14 @@ export class PosDataService {
   async upsertTables(tables: Table[]): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const tablesToUpsert = tables.map(({ id, ...rest }) => (id.toString().startsWith('temp-') ? { ...rest, user_id: userId } : { id, ...rest, user_id: userId }));
+    const tablesToUpsert = tables.map(({ id, ...rest }) => {
+      if (id.toString().startsWith('temp-')) {
+        // This is a new table. Generate a UUID for it.
+        return { ...rest, id: uuidv4(), user_id: userId };
+      }
+      // This is an existing table.
+      return { id, ...rest, user_id: userId };
+    });
     const { error } = await supabase.from('tables').upsert(tablesToUpsert);
     return { success: !error, error };
   }
