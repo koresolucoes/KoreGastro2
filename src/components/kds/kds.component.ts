@@ -234,8 +234,8 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
     
-    async updateStatus(item: OrderItem) {
-        if (this.updatingItems().has(item.id) || (item as ProcessedOrderItem).isHeld) return;
+    async updateStatus(item: OrderItem, forceStart = false) {
+        if (this.updatingItems().has(item.id) || ((item as ProcessedOrderItem).isHeld && !forceStart)) return;
 
         let nextStatus: OrderItemStatus;
         switch (item.status) {
@@ -248,6 +248,13 @@ export class KdsComponent implements OnInit, OnDestroy {
         const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
         if (!success) alert(`Erro ao atualizar o status do item: ${error?.message}`);
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
+    }
+
+    async startHeldItemNow(item: ProcessedOrderItem, event: MouseEvent) {
+        event.stopPropagation();
+        if (confirm(`Tem certeza que deseja iniciar o preparo de "${item.name}" antes do tempo programado?`)) {
+            await this.updateStatus(item, true);
+        }
     }
 
     async markOrderAsServed(ticket: ExpoTicket) {

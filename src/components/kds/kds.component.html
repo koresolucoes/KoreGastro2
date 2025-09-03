@@ -1,4 +1,5 @@
 
+
 <div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -59,9 +60,12 @@
                   <li (click)="$event.stopPropagation(); updateStatus(item)" class="border-l-4 p-3 rounded-r-md transition-all relative" [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" [class.pointer-events-none]="updatingItems().has(item.id)" [ngClass]="item.isHeld ? 'bg-gray-700/50 border-gray-500' : (item.status === 'EM_PREPARO' ? 'bg-blue-500/10' : 'bg-yellow-500/10') + ' ' + (item.isCritical ? 'border-red-500 border-l-8 bg-red-900/40' : getItemStatusClass(item.status))">
                     
                     @if(item.isHeld) {
-                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/80 rounded-r-md">
+                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/80 rounded-r-md p-2 text-center">
                         <p class="text-white font-bold text-sm">Inicia em:</p>
                         <p class="font-mono text-2xl text-yellow-300">{{ formatTime(item.timeToStart) }}</p>
+                        <button (click)="startHeldItemNow(item, $event)" class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors">
+                          Preparar Agora
+                        </button>
                       </div>
                     }
 
