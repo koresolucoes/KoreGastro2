@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { AuthService } from './auth.service';
@@ -88,7 +89,8 @@ export class AiRecipeService {
         if (!newSubRecipe) continue;
         createdSubRecipes.set(subRecipeData.name, newSubRecipe);
         const ingredients = await this.processAiIngredients(subRecipeData.ingredients);
-        await this.recipeDataService.saveTechnicalSheet(newSubRecipe.id, {}, ingredients, []);
+        // FIX: Added empty array for 'preparations' argument.
+        await this.recipeDataService.saveTechnicalSheet(newSubRecipe.id, {}, [], ingredients, []);
     }
 
     // 2. Create Main Recipe
@@ -111,7 +113,8 @@ export class AiRecipeService {
         };
     }).filter((r: any): r is RecipeSubRecipe => r !== null);
 
-    await this.recipeDataService.saveTechnicalSheet(newRecipe.id, {}, finalIngredients, finalSubRecipes);
+    // FIX: Added empty array for 'preparations' argument.
+    await this.recipeDataService.saveTechnicalSheet(newRecipe.id, {}, [], finalIngredients, finalSubRecipes);
 
     // FIX: By removing the explicit `: TechSheetItem` from the map callbacks, TypeScript can correctly
     // infer the specific type for each array part before they are combined. This resolves the downstream type error.

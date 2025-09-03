@@ -190,4 +190,17 @@ export class PosDataService {
     const { error } = await supabase.rpc('update_item_status', { item_id: itemId, new_status: status });
     return { success: !error, error };
   }
+
+  async markOrderAsServed(orderId: string): Promise<{ success: boolean, error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status: 'SERVED' as any })
+      .eq('order_id', orderId)
+      .eq('user_id', userId);
+    
+    return { success: !error, error };
+  }
 }

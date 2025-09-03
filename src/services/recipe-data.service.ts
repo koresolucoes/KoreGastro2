@@ -4,6 +4,7 @@ import { Recipe, RecipeIngredient, Category, RecipePreparation, RecipeSubRecipe 
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { supabase } from './supabase-client';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
   providedIn: 'root',
@@ -38,6 +39,7 @@ export class RecipeDataService {
   async saveTechnicalSheet(
     recipeId: string,
     recipeUpdates: Partial<Recipe>,
+    preparations: RecipePreparation[],
     ingredients: RecipeIngredient[],
     subRecipes: RecipeSubRecipe[]
   ): Promise<{ success: boolean; error: any }> {
@@ -45,26 +47,54 @@ export class RecipeDataService {
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     try {
+      // 1. Update recipe details
       const { error: recipeUpdateError } = await supabase.from('recipes').update(recipeUpdates).eq('id', recipeId);
       if (recipeUpdateError) throw recipeUpdateError;
 
-      // Clean slate for associations
+      // 2. Clear all existing associations
+      await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId);
       await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
       await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', recipeId);
 
-      const ingredientsToInsert = ingredients.map(i => ({
-        recipe_id: recipeId,
-        ingredient_id: i.ingredient_id,
-        quantity: i.quantity,
-        preparation_id: 'default', // Simplified for now
+      // 3. Insert new preparations and get their new IDs
+      const tempIdToDbIdMap = new Map<string, string>();
+      const prepsToInsert = preparations.map(({ id, ...rest }) => ({
+        ...rest,
+        id: id.startsWith('temp-') ? uuidv4() : id, // Ensure a real UUID
         user_id: userId,
+        recipe_id: recipeId
       }));
+      
+      if (prepsToInsert.length > 0) {
+        const { data: newPreps, error: prepInsertError } = await supabase.from('recipe_preparations').insert(prepsToInsert).select('id');
+        if (prepInsertError) throw prepInsertError;
+        
+        preparations.forEach((oldPrep, index) => {
+          if (oldPrep.id.startsWith('temp-') && newPreps?.[index]) {
+            tempIdToDbIdMap.set(oldPrep.id, newPreps[index].id);
+          }
+        });
+      }
+
+      // 4. Insert new ingredients with correct preparation IDs
+      const ingredientsToInsert = ingredients.map(i => {
+        const originalPrepId = i.preparation_id;
+        const dbPrepId = tempIdToDbIdMap.get(originalPrepId) || originalPrepId;
+        return {
+          recipe_id: recipeId,
+          ingredient_id: i.ingredient_id,
+          quantity: i.quantity,
+          preparation_id: dbPrepId,
+          user_id: userId,
+        };
+      });
 
       if (ingredientsToInsert.length > 0) {
         const { error: ingredientsError } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
         if (ingredientsError) throw ingredientsError;
       }
 
+      // 5. Insert new sub-recipes
       const subRecipesToInsert = subRecipes.map(sr => ({
         parent_recipe_id: recipeId,
         child_recipe_id: sr.child_recipe_id,
@@ -93,6 +123,7 @@ export class RecipeDataService {
     await supabase.from('recipe_ingredients').delete().eq('recipe_id', id);
     await supabase.from('recipe_preparations').delete().eq('recipe_id', id);
     await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', id);
+    await supabase.from('recipe_sub_recipes').delete().eq('child_recipe_id', id); // Also delete if it's used as a sub-recipe
     const { error } = await supabase.from('recipes').delete().eq('id', id);
     return { success: !error, error };
   }

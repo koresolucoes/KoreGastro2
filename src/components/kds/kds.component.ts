@@ -61,6 +61,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     currentTime = signal(Date.now());
     
     updatingItems = signal<Set<string>>(new Set());
+    updatingTickets = signal<Set<number>>(new Set());
     isDetailModalOpen = signal(false);
     selectedTicketForDetail = signal<StationTicket | ExpoTicket | null>(null);
     isAssignEmployeeModalOpen = signal(false);
@@ -97,8 +98,6 @@ export class KdsComponent implements OnInit, OnDestroy {
             const orderItems = itemsByOrder.get(order.id)!;
 
             for (const item of order.order_items) {
-                if (item.status === 'AGUARDANDO' || item.status === 'PRONTO') continue;
-
                 const recipe = recipesMap.get(item.recipe_id);
                 const prepTimeSecs = (recipe?.prep_time_in_minutes ?? 15) * 60;
                 const pendingTimestamp = new Date(item.status_timestamps?.['PENDENTE'] ?? item.created_at).getTime();
@@ -134,7 +133,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             
             for (const item of orderItems) {
                 const timeToStart = longestPrepTime - item.prepTime;
-                if (item.elapsedTimeSeconds < timeToStart) {
+                if (item.status === 'PENDENTE' && item.elapsedTimeSeconds < timeToStart) {
                     item.isHeld = true;
                     item.timeToStart = timeToStart - item.elapsedTimeSeconds;
                 }
@@ -149,13 +148,18 @@ export class KdsComponent implements OnInit, OnDestroy {
         const station = this.selectedStation();
         if (!station) return [];
 
-        const itemsForStation = this.allKdsItemsProcessed().filter(item => item.station_id === station.id);
+        const itemsForStation = this.allKdsItemsProcessed().filter(item => 
+          item.station_id === station.id &&
+          (item.status === 'PENDENTE' || item.status === 'EM_PREPARO')
+        );
         return this.groupItemsIntoTickets(itemsForStation);
     });
 
     // Computed for Expo View
     expoViewTickets = computed<ExpoTicket[]>(() => {
-        const allItems = this.allKdsItemsProcessed();
+        const allItems = this.allKdsItemsProcessed().filter(item => 
+          item.status === 'PENDENTE' || item.status === 'EM_PREPARO' || item.status === 'PRONTO'
+        );
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
@@ -244,6 +248,23 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (!success) alert(`Erro ao atualizar o status do item: ${error?.message}`);
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
+
+    async markOrderAsServed(ticket: ExpoTicket) {
+        if (this.updatingTickets().has(ticket.tableNumber)) return;
+        
+        const order = this.stateService.openOrders().find(o => o.table_number === ticket.tableNumber);
+        if (!order) {
+            alert('Erro: Pedido não encontrado.');
+            return;
+        }
+    
+        this.updatingTickets.update(set => new Set(set).add(ticket.tableNumber));
+        const { success, error } = await this.posDataService.markOrderAsServed(order.id);
+        if (!success) {
+            alert(`Erro ao marcar pedido como servido: ${error?.message}`);
+        }
+        // No need to remove from updatingTickets, as the ticket will disappear from the view on data refresh.
+    }
     
     openDetailModal(ticket: StationTicket | ExpoTicket) {
         this.selectedTicketForDetail.set(ticket);
@@ -280,6 +301,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         switch (status) {
             case 'PENDENTE': return 'border-yellow-500';
             case 'EM_PREPARO': return 'border-blue-500';
+            case 'PRONTO': return 'border-green-500';
             default: return 'border-gray-500';
         }
     }
