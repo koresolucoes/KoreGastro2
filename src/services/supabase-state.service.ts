@@ -30,13 +30,11 @@ export class SupabaseStateService {
   suppliers = signal<Supplier[]>([]);
   recipeIngredients = signal<RecipeIngredient[]>([]);
   recipePreparations = signal<RecipePreparation[]>([]);
-  // FIX: Added recipeSubRecipes signal.
   recipeSubRecipes = signal<RecipeSubRecipe[]>([]);
 
   promotions = signal<Promotion[]>([]);
   promotionRecipes = signal<PromotionRecipe[]>([]);
 
-  // FIX: Added purchaseOrders signal.
   purchaseOrders = signal<PurchaseOrder[]>([]);
 
   completedOrders = signal<Order[]>([]);
@@ -51,7 +49,6 @@ export class SupabaseStateService {
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
   openOrders = computed(() => this.orders().filter(o => !o.is_completed));
   
-  // FIX: Added a computed property to recursively calculate the cost of each recipe, including sub-recipes.
   recipeCosts = computed(() => {
     const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
     const recipeIngredients = this.recipeIngredients();
@@ -118,8 +115,6 @@ export class SupabaseStateService {
       
       let hasStock = true;
       if (recipeComposition && recipeComposition.rawIngredients.size > 0) {
-        // For a recipe to be "in stock", we just check if all its raw ingredients are available (stock > 0)
-        // We don't check if there's enough quantity to make one, as this is for general menu availability.
         for (const ingredientId of recipeComposition.rawIngredients.keys()) {
           const availableStock = ingredientsStockMap.get(ingredientId);
           if (availableStock === undefined || availableStock <= 0) {
@@ -128,8 +123,6 @@ export class SupabaseStateService {
           }
         }
       }
-      // If a recipe has no ingredients, it's always considered in stock.
-      
       return { ...recipe, hasStock };
     });
   });
@@ -163,26 +156,11 @@ export class SupabaseStateService {
     this.unsubscribeFromChanges();
     
     this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderChange(p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `user_id=eq.${userId}` }, (p) => this.handleOrderItemChange(p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'tables', '*', this.tables))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'halls', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'halls', '*', this.halls))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'stations', '*, employees(*)', this.stations))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'categories', '*', this.categories))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipes', '*', this.recipes))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'employees', '*', this.employees))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredient_categories', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'ingredient_categories', '*', this.ingredientCategories))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'suppliers', '*', this.suppliers))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_preparations', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_preparations', '*', this.recipePreparations))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotions', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'promotions', '*', this.promotions))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'ingredients', '*, ingredient_categories(name), suppliers(name)', this.ingredients))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_ingredients', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeIngredients))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recipe_sub_recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'recipe_sub_recipes', '*, recipes(name, id)', this.recipeSubRecipes))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'promotion_recipes', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'promotion_recipes', '*, recipes(name)', this.promotionRecipes))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_orders', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_order_items', filter: `user_id=eq.${userId}` }, (p) => this.refetchTableOnChanges(p, 'purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cashier_closings', filter: `user_id=eq.${userId}` }, (p) => this.handleDashboardDataChange(p))
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public' }, 
+        (payload) => this.handleChanges(payload)
+      )
       .subscribe(status => {
         console.log(`Supabase realtime subscription status: ${status}`);
         if (status === 'CHANNEL_ERROR') {
@@ -194,37 +172,79 @@ export class SupabaseStateService {
       });
   }
 
-  private async refetchTableOnChanges<T>(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>, tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
+  private handleChanges(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
+    console.log('Realtime change received:', payload);
+    switch (payload.table) {
+        case 'orders':
+        case 'order_items':
+            this.refetchOrders();
+            break;
+        case 'tables':
+            this.refetchSimpleTable('tables', '*', this.tables);
+            break;
+        case 'halls':
+            this.refetchSimpleTable('halls', '*', this.halls);
+            break;
+        case 'stations':
+            this.refetchSimpleTable('stations', '*, employees(*)', this.stations);
+            break;
+        case 'categories':
+            this.refetchSimpleTable('categories', '*', this.categories);
+            break;
+        case 'recipes':
+            this.refetchSimpleTable('recipes', '*', this.recipes);
+            break;
+        case 'employees':
+            this.refetchSimpleTable('employees', '*', this.employees);
+            break;
+        case 'ingredient_categories':
+            this.refetchSimpleTable('ingredient_categories', '*', this.ingredientCategories);
+            break;
+        case 'suppliers':
+            this.refetchSimpleTable('suppliers', '*', this.suppliers);
+            break;
+        case 'ingredients':
+        case 'inventory_movements':
+             this.refetchSimpleTable('ingredients', '*, ingredient_categories(name), suppliers(name)', this.ingredients);
+            break;
+        case 'recipe_ingredients':
+            this.refetchSimpleTable('recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeIngredients);
+            break;
+        case 'recipe_sub_recipes':
+            this.refetchSimpleTable('recipe_sub_recipes', '*, recipes(name, id)', this.recipeSubRecipes);
+            break;
+        case 'recipe_preparations':
+            this.refetchSimpleTable('recipe_preparations', '*', this.recipePreparations);
+            break;
+        case 'promotions':
+            this.refetchSimpleTable('promotions', '*', this.promotions);
+            break;
+        case 'promotion_recipes':
+            this.refetchSimpleTable('promotion_recipes', '*, recipes(name)', this.promotionRecipes);
+            break;
+        case 'purchase_orders':
+        case 'purchase_order_items':
+             this.refetchSimpleTable('purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders);
+            break;
+        case 'transactions':
+        case 'cashier_closings':
+            this.refreshDashboardAndCashierData();
+            break;
+    }
+  }
+
+  private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
     const userId = this.currentUser()?.id; if (!userId) return;
     const { data, error } = await supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     if (!error) signal.set(data as T[] || []);
-  }
-  
-  private async handleDashboardDataChange(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) {
-    await this.refreshDashboardAndCashierData();
+    else console.error(`Error refetching ${tableName}:`, error);
   }
 
-  private async refetchAndProcessOrder(orderId: string) {
-    const { data: order } = await supabase.from('orders').select('*, order_items(*)').eq('id', orderId).single();
-    if (!order || order.is_completed) {
-      this.orders.update(current => current.filter(o => o.id !== orderId));
-      if (order?.is_completed) this.refreshDashboardAndCashierData();
-      return;
-    }
-    const [processedOrder] = this.processOrdersWithPrices([order]);
-    const orderExists = this.orders().some(o => o.id === orderId);
-    if (orderExists) this.orders.update(current => current.map(o => o.id === orderId ? processedOrder : o));
-    else this.orders.update(current => [...current, processedOrder]);
-  }
-
-  private async handleOrderChange(payload: RealtimePostgresChangesPayload<Partial<Order>>) {
-    const orderId = ('id' in payload.new ? payload.new.id : undefined) ?? ('id' in payload.old ? payload.old.id : undefined);
-    if (orderId) await this.refetchAndProcessOrder(orderId);
-  }
-
-  private async handleOrderItemChange(payload: RealtimePostgresChangesPayload<Partial<OrderItem>>) {
-    const orderId = ('order_id' in payload.new ? payload.new.order_id : undefined) ?? ('order_id' in payload.old ? payload.old.order_id : undefined);
-    if (orderId) await this.refetchAndProcessOrder(orderId);
+  private async refetchOrders() {
+    const userId = this.currentUser()?.id; if (!userId) return;
+    const { data, error } = await supabase.from('orders').select('*, order_items(*)').eq('is_completed', false).eq('user_id', userId);
+    if (!error) this.setOrdersWithPrices(data || []);
+    else console.error('Error refetching orders:', error);
   }
 
   private clearAllData() {
@@ -260,9 +280,7 @@ export class SupabaseStateService {
       supabase.from('recipe_preparations').select('*').eq('user_id', userId),
       supabase.from('promotions').select('*').eq('user_id', userId),
       supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
-      // FIX: Fetch recipe_sub_recipes.
       supabase.from('recipe_sub_recipes').select('*, recipes(name, id)').eq('user_id', userId),
-      // FIX: Fetch purchase_orders.
       supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false })
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
@@ -271,7 +289,6 @@ export class SupabaseStateService {
     this.ingredientCategories.set(results[7].data || []); this.suppliers.set(results[8].data || []);
     this.recipeIngredients.set(results[9].data as RecipeIngredient[] || []); this.recipePreparations.set(results[10].data || []);
     this.promotions.set(results[11].data || []); this.promotionRecipes.set(results[12].data as PromotionRecipe[] || []);
-    // FIX: Set new signals with fetched data.
     this.recipeSubRecipes.set(results[13].data as RecipeSubRecipe[] || []);
     this.purchaseOrders.set(results[14].data as PurchaseOrder[] || []);
     await this.refreshDashboardAndCashierData();
