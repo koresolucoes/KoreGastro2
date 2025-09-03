@@ -1,6 +1,11 @@
-<!-- Mobile Card View (shown only in view mode) -->
-<div class="md:hidden" [class.hidden]="isEditMode()">
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+
+@if (!isEditMode()) {
+  <!-- ======================= -->
+  <!--      DISPLAY MODE       -->
+  <!-- ======================= -->
+
+  <!-- Mobile Card View -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:hidden">
     @for(table of localTables(); track table.id) {
       <div
         (click)="tableClicked.emit(table)"
@@ -15,53 +20,96 @@
       </div>
     }
   </div>
-</div>
 
-<!-- Draggable Layout (shown on desktop, or on any screen in edit mode) -->
-<div
-  class="relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden"
-  [class.bg-dots]="isEditMode()"
-  [class.hidden]="!isEditMode()"
-  [class.md:block]="!isEditMode()"
-  [class.block]="isEditMode()">
-  @for(table of localTables(); track table.id) {
-    <div
-      (click)="tableClicked.emit(table)"
-      (contextmenu)="onRightClick($event, table)"
-      (mousedown)="onDragStart($event, table)"
-      class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-150 ease-in-out border-2"
-      [class]="getStatusClass(table.status)"
-      [class.cursor-pointer]="!isEditMode()"
-      [class.cursor-move]="isEditMode()"
-      [class.shadow-lg]="!isEditMode()"
-      [class.shadow-blue-500/50]="isEditMode() && draggingTableId() === table.id"
-      [style.left.px]="table.x"
-      [style.top.px]="table.y"
-      [style.width.px]="table.width"
-      [style.height.px]="table.height">
+  <!-- Desktop Positioned View (Read-Only) -->
+  <div class="hidden md:block relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden">
+    @for(table of localTables(); track table.id) {
+      <div
+        (click)="tableClicked.emit(table)"
+        (contextmenu)="onRightClick($event, table)"
+        class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-colors duration-150 ease-in-out border-2 cursor-pointer"
+        [class]="getStatusClass(table.status)"
+        [style.left.px]="table.x"
+        [style.top.px]="table.y"
+        [style.width.px]="table.width"
+        [style.height.px]="table.height">
+        <span class="text-2xl font-bold">{{ table.number }}</span>
+        <span class="text-xs uppercase">{{ table.status }}</span>
+        @if (table.status !== 'LIVRE') {
+          <span class="text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
+        }
+      </div>
+    }
+  </div>
 
-      <span class="text-2xl font-bold">{{ table.number }}</span>
-      <span class="text-xs uppercase">{{ table.status }}</span>
-      @if (table.status !== 'LIVRE') {
-        <span class="text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
-      }
+} @else {
+  <!-- ======================= -->
+  <!--       EDIT MODE         -->
+  <!-- ======================= -->
 
-      @if (isEditMode()) {
+  <!-- Mobile List Edit View -->
+  <div class="space-y-4 md:hidden">
+    <div class="flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-white">Editar Mesas</h3>
+      <button (click)="addTable()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 text-sm">
+        Adicionar Mesa
+      </button>
+    </div>
+    @if (localTables().length > 0) {
+      <ul class="space-y-2">
+        @for(table of localTables(); track table.id) {
+          <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg">
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-medium text-gray-300">Nº:</label>
+              <input 
+                type="number" 
+                [value]="table.number" 
+                (change)="updateTableNumber(table.id, $event)" 
+                class="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white w-20 text-center">
+            </div>
+            <button (click)="deleteTable(table.id, $event)" class="p-2 text-red-400 hover:text-red-300" title="Deletar Mesa">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="text-center text-gray-500 py-8">Nenhuma mesa neste salão.</p>
+    }
+  </div>
+
+  <!-- Desktop Draggable/Resizable Edit View -->
+  <div class="hidden md:block relative w-full h-full min-h-[60vh] bg-dots rounded-lg overflow-hidden">
+    @for(table of localTables(); track table.id) {
+      <div
+        (mousedown)="onDragStart($event, table)"
+        class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-150 ease-in-out border-2"
+        [class]="getStatusClass(table.status)"
+        [class.cursor-move]="isEditMode()"
+        [class.shadow-lg]="!isEditMode()"
+        [class.shadow-blue-500/50]="isEditMode() && draggingTableId() === table.id"
+        [style.left.px]="table.x"
+        [style.top.px]="table.y"
+        [style.width.px]="table.width"
+        [style.height.px]="table.height">
+
+        <span class="text-2xl font-bold">{{ table.number }}</span>
+        <span class="text-xs uppercase">{{ table.status }}</span>
+        @if (table.status !== 'LIVRE') {
+          <span class="text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
+        }
+
         <button (click)="deleteTable(table.id, $event)" class="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-500 z-10">
           &times;
         </button>
-        <!-- Resize Handle -->
         <div 
             (mousedown)="onResizeStart($event, table)"
             class="resize-handle">
         </div>
-      }
-    </div>
-  }
-
-  @if (isEditMode()) {
+      </div>
+    }
     <button (click)="addTable()" class="absolute bottom-4 right-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors z-10">
       Adicionar Mesa
     </button>
-  }
-</div>
+  </div>
+}

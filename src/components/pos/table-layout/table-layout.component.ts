@@ -1,5 +1,5 @@
-// FIX: Add 'inject' to the import from '@angular/core' to resolve the 'Cannot find name inject' error.
-import { Component, ChangeDetectionStrategy, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus } from '../../../models/db.models';
 import { PosDataService } from '../../../services/pos-data.service';
@@ -69,6 +69,19 @@ export class TableLayoutComponent {
   deleteTable(tableId: string, event: MouseEvent) {
     event.stopPropagation();
     this.localTables.update(tables => tables.filter(t => t.id !== tableId));
+  }
+  
+  updateTableNumber(tableId: string, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const newNumber = parseInt(input.value, 10);
+    if (!isNaN(newNumber) && newNumber > 0) {
+        this.localTables.update(tables => tables.map(t =>
+            t.id === tableId ? { ...t, number: newNumber } : t
+        ));
+    } else {
+        const oldValue = this.localTables().find(t => t.id === tableId)?.number;
+        input.value = oldValue ? String(oldValue) : '';
+    }
   }
 
   async saveLayout() {
