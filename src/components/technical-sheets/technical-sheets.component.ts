@@ -34,7 +34,8 @@ export class TechnicalSheetsComponent {
   searchTerm = signal('');
   isModalOpen = signal(false);
   activeTab = signal<TechnicalSheetTab>('details');
-  editingRecipe = signal<Recipe | null>(null);
+  activeRecipe = signal<Recipe | null>(null);
+  isEditing = signal(false); // New signal for view/edit mode
 
   // Form State Signals
   recipeForm = signal<Partial<Recipe>>({});
@@ -76,13 +77,13 @@ export class TechnicalSheetsComponent {
 
   filteredSubRecipes = computed(() => {
     const term = this.subRecipeSearchTerm().toLowerCase();
-    const editingId = this.editingRecipe()?.id;
-    if (!term || !editingId) return [];
+    const activeRecipeId = this.activeRecipe()?.id;
+    if (!term || !activeRecipeId) return [];
     const currentSubRecipeIds = new Set(this.subRecipes().map(sr => sr.child_recipe_id));
     return this.allRecipes()
       .filter(r => 
         r.is_sub_recipe && 
-        r.id !== editingId && 
+        r.id !== activeRecipeId && 
         !currentSubRecipeIds.has(r.id) &&
         r.name.toLowerCase().includes(term)
       )
@@ -90,21 +91,38 @@ export class TechnicalSheetsComponent {
   });
 
   currentRecipeCost = computed(() => {
-    const recipeId = this.editingRecipe()?.id;
-    if (!recipeId) return { totalCost: 0, operationalCost: 0, finalCost: 0, margin: 0 };
+    const recipeId = this.activeRecipe()?.id;
+    const recipeForm = this.recipeForm();
+    if (!recipeId && !this.isEditing()) return { totalCost: 0, operationalCost: 0, finalCost: 0, margin: 0 };
     
-    const baseCost = this.recipeCosts().get(recipeId)?.totalCost ?? 0;
-    const opCost = this.recipeForm().operational_cost ?? 0;
+    // Use recipe ID for existing recipes, but allow calculation for new recipes in the editor
+    const baseCost = recipeId ? (this.recipeCosts().get(recipeId)?.totalCost ?? 0) : this.calculateNewRecipeCost();
+    const opCost = recipeForm.operational_cost ?? 0;
     const finalCost = baseCost + opCost;
-    const price = this.recipeForm().price ?? 0;
+    const price = recipeForm.price ?? 0;
     const margin = price > 0 ? ((price - finalCost) / price) * 100 : 0;
 
     return { totalCost: baseCost, operationalCost: opCost, finalCost, margin };
   });
 
+  private calculateNewRecipeCost(): number {
+    const ingredientsMap = new Map(this.allIngredients().map(i => [i.id, i]));
+    const directCost = this.ingredients().reduce((sum, ing) => {
+        const cost = ingredientsMap.get(ing.ingredient_id)?.cost ?? 0;
+        return sum + (cost * ing.quantity);
+    }, 0);
+
+    const subRecipeCost = this.subRecipes().reduce((sum, sr) => {
+        const cost = this.recipeCosts().get(sr.child_recipe_id)?.totalCost ?? 0;
+        return sum + (cost * sr.quantity);
+    }, 0);
+
+    return directCost + subRecipeCost;
+  }
+
   // Methods
   openAddModal() {
-    this.editingRecipe.set(null);
+    this.activeRecipe.set(null);
     this.recipeForm.set({
       name: '',
       description: '',
@@ -121,11 +139,12 @@ export class TechnicalSheetsComponent {
     this.activeTab.set('details');
     this.aiSuggestions.set(null);
     this.isAiAssistantLoading.set(false);
+    this.isEditing.set(true);
     this.isModalOpen.set(true);
   }
 
-  openEditModal(recipe: Recipe) {
-    this.editingRecipe.set(recipe);
+  openViewModal(recipe: Recipe) {
+    this.activeRecipe.set(recipe);
     this.recipeForm.set({ ...recipe });
     this.preparations.set(this.recipeDataService.getRecipePreparations(recipe.id));
     this.ingredients.set(this.recipeDataService.getRecipeIngredients(recipe.id));
@@ -133,11 +152,19 @@ export class TechnicalSheetsComponent {
     this.activeTab.set('details');
     this.aiSuggestions.set(null);
     this.isAiAssistantLoading.set(false);
+    this.isEditing.set(false);
     this.isModalOpen.set(true);
+  }
+  
+  switchToEditMode() {
+    this.isEditing.set(true);
+    this.aiSuggestions.set(null);
   }
 
   closeModal() {
     this.isModalOpen.set(false);
+    this.isEditing.set(false);
+    this.activeRecipe.set(null);
   }
 
   updateFormValue(field: keyof Omit<Recipe, 'id' | 'created_at' | 'user_id' | 'hasStock'>, value: any) {
@@ -162,7 +189,7 @@ export class TechnicalSheetsComponent {
       ...preps,
       {
         id: `temp-${uuidv4()}`,
-        recipe_id: this.editingRecipe()?.id || '',
+        recipe_id: this.activeRecipe()?.id || '',
         station_id: this.stations()[0]?.id || '',
         name: `Preparo ${preps.length + 1}`,
         display_order: preps.length,
@@ -187,7 +214,7 @@ export class TechnicalSheetsComponent {
     this.ingredients.update(ings => [
       ...ings,
       {
-        recipe_id: this.editingRecipe()?.id || '',
+        recipe_id: this.activeRecipe()?.id || '',
         ingredient_id: ingredient.id,
         quantity: 0,
         preparation_id: prepId,
@@ -199,11 +226,11 @@ export class TechnicalSheetsComponent {
   }
   
   addSubRecipe(subRecipe: Recipe) {
-      if (!this.editingRecipe()) return;
+      if (!this.activeRecipe() && !this.isEditing()) return;
       this.subRecipes.update(subs => [
           ...subs,
           {
-              parent_recipe_id: this.editingRecipe()!.id,
+              parent_recipe_id: this.activeRecipe()?.id || '',
               child_recipe_id: subRecipe.id,
               quantity: 1,
               user_id: '',
@@ -245,8 +272,8 @@ export class TechnicalSheetsComponent {
     }
     
     let result;
-    if (this.editingRecipe()) {
-      const recipeId = this.editingRecipe()!.id;
+    if (this.activeRecipe()) {
+      const recipeId = this.activeRecipe()!.id;
       result = await this.recipeDataService.saveTechnicalSheet(recipeId, form, this.preparations(), this.ingredients(), this.subRecipes());
     } else {
       const { data: newRecipe, error } = await this.recipeDataService.addRecipe(form);
@@ -353,5 +380,9 @@ export class TechnicalSheetsComponent {
 
   getIngredientsForPrep(prepId: string): RecipeIngredient[] {
     return this.ingredients().filter(i => i.preparation_id === prepId);
+  }
+
+  getStationName(stationId: string): string {
+    return this.stations().find(s => s.id === stationId)?.name || 'N/A';
   }
 }
