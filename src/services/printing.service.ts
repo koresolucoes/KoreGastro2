@@ -1,8 +1,15 @@
+
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
 import { NotificationService } from './notification.service';
+
+interface PreBillOptions {
+  includeServiceFee: boolean;
+  splitBy: number;
+  total: number;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -50,14 +57,14 @@ export class PrintingService {
     }, 250); // Timeout allows content to render
   }
 
-  async printPreBill(order: Order) {
+  async printPreBill(order: Order, options: PreBillOptions) {
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
       await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
       return;
     }
     printWindow.document.title = `Pré-conta - Mesa #${order.table_number}`;
-    const receiptHtml = this.generatePreBillHtml(order);
+    const receiptHtml = this.generatePreBillHtml(order, options);
     printWindow.document.write(receiptHtml);
     printWindow.document.close();
     printWindow.focus();
@@ -178,10 +185,10 @@ export class PrintingService {
     `;
   }
 
-  private generatePreBillHtml(order: Order): string {
+  private generatePreBillHtml(order: Order, options: PreBillOptions): string {
     const date = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm');
     const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const serviceFee = subtotal * 0.1;
+    const serviceFee = options.includeServiceFee ? subtotal * 0.1 : 0;
     const total = subtotal + serviceFee;
 
     const itemsHtml = order.order_items
@@ -193,6 +200,20 @@ export class PrintingService {
             <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, '1.2-2')}</td>
         </tr>
     `).join('');
+
+    let splitHtml = '';
+    if (options.splitBy > 1) {
+        splitHtml = `
+            <div class="divider"></div>
+            <div style="text-align: center; font-weight: bold; margin: 5px 0;">
+                Valor por Pessoa (${options.splitBy})
+            </div>
+            <div class="total-row" style="display: flex; justify-content: space-between;">
+                <span>TOTAL POR PESSOA</span>
+                <span>${this.currencyPipe.transform(total / options.splitBy, 'BRL', 'R$')}</span>
+            </div>
+        `;
+    }
 
     return `
       <html>
@@ -238,13 +259,14 @@ export class PrintingService {
             </tr>
              <tr>
               <td colspan="2">Serviço (10%)</td>
-              <td style="text-align: right;">${this.currencyPipe.transform(serviceFee, 'BRL', 'R$', '1.2-2')}</td>
+              <td style="text-align: right;">${options.includeServiceFee ? this.currencyPipe.transform(serviceFee, 'BRL', 'R$', '1.2-2') : 'Opcional'}</td>
             </tr>
             <tr class="total-row">
               <td colspan="2">TOTAL</td>
               <td style="text-align: right;">${this.currencyPipe.transform(total, 'BRL', 'R$', '1.2-2')}</td>
             </tr>
           </table>
+          ${splitHtml}
           <div class="divider"></div>
           <div class="info-text">Este não é um documento fiscal. Solicite o cupom fiscal no caixa.</div>
         </body>
@@ -393,3 +415,4 @@ export class PrintingService {
     `;
   }
 }
+      

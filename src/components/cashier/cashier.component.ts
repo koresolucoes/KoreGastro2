@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
@@ -8,6 +7,7 @@ import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
 import { PaymentModalComponent } from '../pos/payment-modal/payment-modal.component';
+import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { NotificationService } from '../../services/notification.service';
 
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
@@ -32,7 +32,7 @@ interface PaymentSummary {
 @Component({
   selector: 'app-cashier',
   standalone: true,
-  imports: [CommonModule, PaymentModalComponent],
+  imports: [CommonModule, PaymentModalComponent, PreBillModalComponent],
   templateUrl: './cashier.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -79,6 +79,11 @@ export class CashierComponent {
   isTablePaymentModalOpen = signal(false);
   selectedOrderForPayment = signal<Order | null>(null);
   selectedTableForPayment = signal<Table | null>(null);
+
+  // --- Pre-bill Modal Signals ---
+  isPreBillModalOpen = signal(false);
+  selectedOrderForPreBill = signal<Order | null>(null);
+  selectedTableForPreBill = signal<Table | null>(null);
 
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
@@ -188,6 +193,17 @@ export class CashierComponent {
       this.selectedTableForPayment.set(table);
       this.selectedOrderForPayment.set(order);
       this.isTablePaymentModalOpen.set(true);
+    } else {
+      await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
+    }
+  }
+
+  async openPreBillForTable(table: Table) {
+    const order = this.openOrders().find(o => o.table_number === table.number);
+    if (order) {
+      this.selectedTableForPreBill.set(table);
+      this.selectedOrderForPreBill.set(order);
+      this.isPreBillModalOpen.set(true);
     } else {
       await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
     }
@@ -342,3 +358,4 @@ export class CashierComponent {
     return `Mesa ${order.table_number}`;
   }
 }
+      

@@ -1,7 +1,4 @@
 
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee } from '../../models/db.models';
@@ -9,6 +6,7 @@ import { Hall, Table, Order, Employee } from '../../models/db.models';
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { HallManagerModalComponent } from './hall-manager-modal/hall-manager-modal.component';
 import { TableLayoutComponent } from './table-layout/table-layout.component';
+import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -25,6 +23,7 @@ import { NotificationService } from '../../services/notification.service';
     OrderPanelComponent,
     HallManagerModalComponent,
     TableLayoutComponent,
+    PreBillModalComponent,
   ],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +52,7 @@ export class PosComponent {
   isEditMode = signal(false);
   isMoveModalOpen = signal(false);
   isHallManagerOpen = signal(false);
+  isPreBillModalOpen = signal(false);
 
   // Context Menu State
   isContextMenuOpen = signal(false);
@@ -194,10 +194,10 @@ export class PosComponent {
   closeContextMenu() { this.isContextMenuOpen.set(false); this.contextMenuTable.set(null); }
 
   handlePrintPreBill() {
-    const order = this.currentOrder();
-    if (order) {
-        this.printingService.printPreBill(order);
+    if (this.contextMenuTable()) {
+        this.isPreBillModalOpen.set(true);
     }
     this.closeContextMenu();
   }
 }
+      

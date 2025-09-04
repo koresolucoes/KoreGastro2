@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -36,6 +36,7 @@ export class SupabaseStateService {
   promotionRecipes = signal<PromotionRecipe[]>([]);
 
   purchaseOrders = signal<PurchaseOrder[]>([]);
+  productionPlans = signal<ProductionPlan[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -226,6 +227,10 @@ export class SupabaseStateService {
         case 'purchase_order_items':
              this.refetchSimpleTable('purchase_orders', '*, suppliers(name), purchase_order_items(*, ingredients(name, unit))', this.purchaseOrders);
             break;
+        case 'production_plans':
+        case 'production_tasks':
+            this.refetchSimpleTable('production_plans', '*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))', this.productionPlans);
+            break;
         case 'transactions':
         case 'cashier_closings':
             this.refreshDashboardAndCashierData();
@@ -241,6 +246,9 @@ export class SupabaseStateService {
     }
     if (tableName === 'purchase_orders') {
       query = query.order('created_at', { ascending: false });
+    }
+    if (tableName === 'production_plans') {
+      query = query.order('plan_date', { ascending: false });
     }
     const { data, error } = await query;
     if (!error) signal.set(data as T[] || []);
@@ -259,7 +267,7 @@ export class SupabaseStateService {
     this.orders.set([]); this.employees.set([]); this.ingredients.set([]); this.ingredientCategories.set([]);
     this.suppliers.set([]); this.recipeIngredients.set([]); this.recipePreparations.set([]); this.promotions.set([]);
     this.promotionRecipes.set([]); this.completedOrders.set([]); this.transactions.set([]); this.cashierClosings.set([]);
-    this.recipeSubRecipes.set([]); this.purchaseOrders.set([]);
+    this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.isDataLoaded.set(false);
   }
@@ -288,7 +296,8 @@ export class SupabaseStateService {
       supabase.from('promotions').select('*').eq('user_id', userId),
       supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
       supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
-      supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false })
+      supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false })
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -298,6 +307,7 @@ export class SupabaseStateService {
     this.promotions.set(results[11].data || []); this.promotionRecipes.set(results[12].data as PromotionRecipe[] || []);
     this.recipeSubRecipes.set(results[13].data as RecipeSubRecipe[] || []);
     this.purchaseOrders.set(results[14].data as PurchaseOrder[] || []);
+    this.productionPlans.set(results[15].data as ProductionPlan[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

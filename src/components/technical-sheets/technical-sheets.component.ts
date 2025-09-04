@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Recipe, Category, Ingredient, Station, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit } from '../../models/db.models';
@@ -9,6 +10,8 @@ import { AiRecipeService } from '../../services/ai-recipe.service';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 const EMPTY_RECIPE_FORM: RecipeForm = {
   recipe: {
@@ -40,13 +43,15 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
   templateUrl: './technical-sheets.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TechnicalSheetsComponent {
+export class TechnicalSheetsComponent implements OnInit, OnDestroy {
   private stateService = inject(SupabaseStateService);
   private recipeDataService = inject(RecipeDataService);
   private settingsDataService = inject(SettingsDataService);
   private inventoryDataService = inject(InventoryDataService);
   private aiService = inject(AiRecipeService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
+  private routeSub: Subscription | undefined;
 
   // Data from state
   allRecipes = this.stateService.recipes;
@@ -85,6 +90,25 @@ export class TechnicalSheetsComponent {
   isAddingIngredient = signal(false);
   newIngredientForm = signal<Partial<Ingredient>>(EMPTY_INGREDIENT);
   availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
+
+  ngOnInit() {
+    this.routeSub = this.route.queryParamMap.subscribe(params => {
+      const recipeId = params.get('recipeId');
+      if (recipeId) {
+        // Wait for data to be loaded before trying to open the recipe
+        if (this.stateService.isDataLoaded()) {
+            const recipeToOpen = this.allRecipes().find(r => r.id === recipeId);
+            if (recipeToOpen) {
+              this.openEditModal(recipeToOpen);
+            }
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+  }
 
   filteredRecipes = computed(() => {
     const term = this.searchTerm().toLowerCase();

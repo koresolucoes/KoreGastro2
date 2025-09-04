@@ -15,6 +15,7 @@ import { PerformanceComponent } from './components/performance/performance.compo
 import { EmployeeSelectionComponent } from './components/auth/employee-selection.component';
 import { roleGuard } from './guards/role.guard';
 import { PurchasingComponent } from './components/purchasing/purchasing.component';
+import { MiseEnPlaceComponent } from './components/mise-en-place/mise-en-place.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -29,6 +30,7 @@ export const APP_ROUTES: Routes = [
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
+  { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha'] } },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },

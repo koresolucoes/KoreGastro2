@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -166,11 +167,14 @@ export class InventoryComponent {
             const newForm = { ...form };
             if (field === 'is_sellable') {
                 newForm[field] = value as boolean;
-            } else if (['category_id', 'supplier_id', 'pos_category_id', 'station_id', 'expiration_date'].includes(field)) {
+// FIX: Cast `field` to string for `includes` method check.
+            } else if (['category_id', 'supplier_id', 'pos_category_id', 'station_id', 'expiration_date'].includes(field as string)) {
                 newForm[field as 'category_id' | 'supplier_id' | 'pos_category_id' | 'station_id' | 'expiration_date'] = (value === 'null' || value === '') ? null : value;
-            } else if (['name', 'unit', 'last_movement_at'].includes(field)) {
+// FIX: Cast `field` to string for `includes` method check.
+            } else if (['name', 'unit', 'last_movement_at'].includes(field as string)) {
                 newForm[field as 'name' | 'unit' | 'last_movement_at'] = value;
-            } else if (['stock', 'cost', 'min_stock', 'price'].includes(field)) {
+// FIX: Cast `field` to string for `includes` method check.
+            } else if (['stock', 'cost', 'min_stock', 'price'].includes(field as string)) {
                 const numValue = parseFloat(value);
                 if (!isNaN(numValue)) {
                     newForm[field as 'stock' | 'cost' | 'min_stock' | 'price'] = numValue;

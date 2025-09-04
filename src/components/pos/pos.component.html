@@ -1,3 +1,4 @@
+
 <div class="h-full flex flex-col" (click)="closeContextMenu()">
   <!-- Header -->
   <header class="flex-shrink-0 bg-gray-800 p-4 rounded-t-lg shadow-md z-10">
@@ -100,6 +101,14 @@
   <app-hall-manager-modal (closeModal)="isHallManagerOpen.set(false)"></app-hall-manager-modal>
 }
 
+@if (isPreBillModalOpen()) {
+  <app-pre-bill-modal
+    [order]="currentOrder()"
+    [table]="contextMenuTable()"
+    (closeModal)="isPreBillModalOpen.set(false)">
+  </app-pre-bill-modal>
+}
+
 @if (isMoveModalOpen()) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeMoveModal()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
@@ -153,3 +162,4 @@
       </ul>
   </div>
 }
+      
