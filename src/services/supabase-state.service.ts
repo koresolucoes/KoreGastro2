@@ -211,7 +211,7 @@ export class SupabaseStateService {
             this.refetchSimpleTable('recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeIngredients);
             break;
         case 'recipe_sub_recipes':
-            this.refetchSimpleTable('recipe_sub_recipes', '*, recipes(name, id)', this.recipeSubRecipes);
+            this.refetchSimpleTable('recipe_sub_recipes', '*, recipes:recipes!child_recipe_id(name, id)', this.recipeSubRecipes);
             break;
         case 'recipe_preparations':
             this.refetchSimpleTable('recipe_preparations', '*', this.recipePreparations);
@@ -287,7 +287,7 @@ export class SupabaseStateService {
       supabase.from('recipe_preparations').select('*').eq('user_id', userId),
       supabase.from('promotions').select('*').eq('user_id', userId),
       supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
-      supabase.from('recipe_sub_recipes').select('*, recipes(name, id)').eq('user_id', userId),
+      supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
       supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false })
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);

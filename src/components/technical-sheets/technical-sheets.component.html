@@ -1,100 +1,77 @@
 <div class="container mx-auto">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
-        <h1 class="text-3xl font-bold text-white mb-2">Gerenciador de Fichas Técnicas</h1>
-        <p class="text-gray-400">Associe ingredientes aos pratos do seu cardápio para automatizar a baixa de estoque e controlar custos.</p>
+      <h1 class="text-3xl font-bold text-white">Fichas Técnicas</h1>
+      <p class="text-gray-400 mt-1">Crie e gerencie as receitas e o custo dos seus pratos.</p>
     </div>
-    <button (click)="openAddRecipeModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors whitespace-nowrap">
-        + Adicionar Prato
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors">
+      Adicionar Prato
     </button>
   </div>
 
-
-  <!-- Filters -->
-  <div class="flex flex-col md:flex-row gap-4 mb-6">
-    <div class="relative flex-1">
-      <input 
-        type="text" 
-        [value]="searchTerm()" 
-        (input)="searchTerm.set($any($event.target).value)"
-        placeholder="Buscar prato pelo nome..." 
-        class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
-    </div>
-    <div class="flex items-center gap-2 bg-gray-800 p-1 rounded-lg overflow-x-auto">
-      <button (click)="selectedCategoryId.set('all')" 
-              class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap"
-              [class.bg-blue-600]="selectedCategoryId() === 'all'"
-              [class.text-white]="selectedCategoryId() === 'all'">
-        Todas Categorias
-      </button>
-      @for(category of recipeCategories(); track category.id) {
-        <button (click)="selectedCategoryId.set(category.id)" 
-                class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap"
-                [class.bg-blue-600]="selectedCategoryId() === category.id"
-                [class.text-white]="selectedCategoryId() === category.id">
-          {{ category.name }}
-        </button>
-      }
+  <div class="mb-6">
+    <div class="relative">
+        <input 
+          type="text" 
+          [value]="searchTerm()" 
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Buscar pelo nome do prato..." 
+          class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
     </div>
   </div>
 
-  <!-- Recipe List -->
-  @if (filteredRecipes().length > 0) {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      @for(recipe of filteredRecipes(); track recipe.id) {
-        @let status = recipeTechSheetStatus().get(recipe.id);
-        <div 
-             class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-blue-500 hover:bg-gray-700/50 transition-all duration-200 flex flex-col justify-between">
-          <div (click)="openTechSheetModal(recipe)" class="cursor-pointer">
-            <div class="flex justify-between items-start gap-2">
-              <h3 class="font-semibold text-white pr-2">{{ recipe.name }}</h3>
-                @if (!recipe.hasStock) {
-                    <span class="text-xs font-bold bg-red-500/20 text-red-300 px-2 py-1 rounded-full whitespace-nowrap">Sem Estoque</span>
-                } @else if (status && status.count > 0) {
-                    <span class="text-xs font-bold bg-green-500/20 text-green-300 px-2 py-1 rounded-full whitespace-nowrap">Completa</span>
-                } @else {
-                    <span class="text-xs font-medium bg-gray-600 text-gray-300 px-2 py-1 rounded-full whitespace-nowrap">Incompleta</span>
-                }
-            </div>
-            <p class="text-sm text-gray-400 mt-1">{{ recipeCategoryMap().get(recipe.category_id) }}</p>
+  @if(filteredRecipes().length > 0) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      @for (recipe of filteredRecipes(); track recipe.id) {
+        <div class="bg-gray-800 rounded-lg shadow-lg flex flex-col border border-gray-700/50">
+          <!-- Card Header -->
+          <div class="p-4 border-b border-gray-700">
+            <h3 class="text-lg font-bold text-white truncate" [title]="recipe.name">{{ recipe.name }}</h3>
+            @if(recipe.is_sub_recipe) {
+              <span class="mt-1 inline-block text-xs font-semibold text-yellow-300 bg-yellow-900/50 px-2 py-0.5 rounded-full">Sub-receita</span>
+            }
           </div>
-          <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center text-sm">
-            @if(recipePendingDeletion()?.id === recipe.id) {
-                <div class="flex gap-2 justify-center items-center w-full">
-                    <span class="text-sm text-red-300 font-semibold">Tem certeza?</span>
-                    <button (click)="confirmDeleteRecipe()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim, Deletar</button>
-                    <button (click)="cancelDeleteRecipe()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+          
+          <!-- Card Body -->
+          <div class="p-4 space-y-3 flex-1">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Categoria:</span>
+              <span class="font-medium text-white">{{ getCategoryName(recipe.category_id) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Custo (CMV):</span>
+              <span class="font-medium text-white">{{ (recipeCosts().get(recipe.id)?.totalCost || 0) | currency:'BRL' }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Preço Venda:</span>
+              <span class="font-semibold text-green-400">{{ recipe.price | currency:'BRL' }}</span>
+            </div>
+          </div>
+          
+          <!-- Card Footer -->
+          <div class="p-4 bg-gray-900/50 rounded-b-lg space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-medium text-gray-300">Disponível</span>
+              <button (click)="toggleAvailability(recipe, $event)" [class.bg-green-600]="recipe.is_available" [class.bg-gray-600]="!recipe.is_available" class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
+                <span [class.translate-x-5]="recipe.is_available" [class.translate-x-0]="!recipe.is_available" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"></span>
+              </button>
+            </div>
+            
+            @if (recipePendingDeletion()?.id === recipe.id) {
+                <div class="flex gap-2 justify-end items-center pt-2 border-t border-gray-700/50">
+                    <span class="text-sm text-red-300">Certeza?</span>
+                    <button (click)="confirmDeleteRecipe()" class="px-3 py-1 font-semibold rounded-md bg-red-600 text-white text-xs">Sim</button>
+                    <button (click)="cancelDeleteRecipe()" class="px-3 py-1 rounded-md bg-gray-600 text-white text-xs">Não</button>
                 </div>
             } @else {
-                <div class="text-gray-300">
-                    <span class="font-medium">{{ status?.count || 0 }}</span> Itens
-                    <span class="text-gray-400 mx-2">|</span>
-                    <span class="font-semibold" [class.text-yellow-400]="!recipe.price || recipe.price === 0">
-                        {{ recipe.price > 0 ? (recipe.price | currency:'BRL') : 'A definir' }}
-                    </span>
-                </div>
-                 <div class="flex items-center space-x-2" (click)="$event.stopPropagation()">
-                    <button (click)="requestDeleteRecipe(recipe)" class="text-gray-500 hover:text-red-400" title="Deletar Prato">
-                      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.02-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                    </button>
-                    <button 
-                        (click)="toggleAvailability(recipe)" 
-                        [disabled]="!recipe.hasStock"
-                        [class.bg-green-600]="recipe.is_available" 
-                        [class.bg-gray-600]="!recipe.is_available"
-                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                        [title]="!recipe.hasStock ? 'Prato sem estoque, não pode ser ativado' : (recipe.is_available ? 'Marcar como indisponível' : 'Marcar como disponível')">
-                        <span 
-                            [class.translate-x-5]="recipe.is_available" 
-                            [class.translate-x-0]="!recipe.is_available"
-                            class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200">
-                        </span>
-                    </button>
+                <div class="flex gap-2 justify-end pt-2 border-t border-gray-700/50">
+                    <button (click)="openEditModal(recipe)" class="text-blue-400 hover:text-blue-300 font-medium text-sm bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded-md transition-colors">Editar</button>
+                    <button (click)="requestDeleteRecipe(recipe)" class="text-red-400 hover:text-red-300 font-medium text-sm bg-red-500/10 hover:bg-red-500/20 px-3 py-1 rounded-md transition-colors">Deletar</button>
                 </div>
             }
           </div>
@@ -102,119 +79,107 @@
       }
     </div>
   } @else {
-    <div class="text-center py-16 bg-gray-800 rounded-lg">
-      <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2-2H5a2 2 0 01-2-2z" />
-      </svg>
-      <h3 class="mt-2 text-sm font-medium text-white">Nenhum prato encontrado</h3>
-      <p class="mt-1 text-sm text-gray-500">Tente ajustar seus filtros de busca ou adicione um novo prato.</p>
+    <div class="bg-gray-800 rounded-lg">
+        <div class="text-center text-gray-500 py-24">
+            <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <h3 class="mt-2 text-lg font-medium text-white">Nenhuma ficha técnica encontrada</h3>
+            <p class="mt-1 text-sm text-gray-500">Crie a sua primeira ficha para começar a gerenciar os custos.</p>
+        </div>
     </div>
   }
-
 </div>
 
-<!-- Tech Sheet Modal -->
-@if(isTechSheetModalOpen() && selectedRecipeForTechSheet(); as recipe) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeTechSheetModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <!-- Header -->
-      <div class="flex-shrink-0 p-4 border-b border-gray-700">
-        <div class="flex justify-between items-center">
-            <div class="flex-1"><h3 class="text-xl font-bold text-white">Ficha Técnica: {{ recipe.name }}</h3></div>
-            <button (click)="closeTechSheetModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
+<!-- Add/Edit Modal (unchanged from table view) -->
+@if (isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+        <h3 class="text-xl font-bold text-white">{{ editingRecipe() ? 'Editar Ficha Técnica' : 'Nova Ficha Técnica' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       
-      <!-- Body -->
-      <div class="flex-1 p-6 space-y-6 overflow-y-auto">
-        <!-- Details & Pricing -->
-        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label><input type="number" [value]="techSheetSellingPrice()" (input)="techSheetSellingPrice.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
-                <div class="flex items-center justify-start pt-5"><input type="checkbox" id="is-sub-recipe" [checked]="isSubRecipe()" (change)="isSubRecipe.set($any($event.target).checked)" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"><label for="is-sub-recipe" class="ml-2 block text-sm text-gray-300">Usar como sub-receita (mise en place)</label></div>
-            </div>
-        </div>
-        
-        <!-- Preparation Steps -->
-        <div>
-          <div class="flex justify-between items-center mb-3"><h4 class="text-lg font-semibold text-white">Etapas de Preparo (Mise en Place)</h4><button (click)="addPreparation()" class="bg-indigo-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-indigo-500 text-sm">+ Nova Etapa</button></div>
-          <div class="space-y-4">
-            @for (prep of currentPreparations(); track prep.id) {
-              <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                <div class="flex items-center gap-4 mb-3">
-                    <input type="text" [value]="prep.name" (change)="updatePreparationField(prep.id, 'name', $any($event.target).value)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white font-semibold">
-                    <select [value]="prep.station_id" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white"><option value="">Estação</option>@for(s of stations(); track s.id){<option [value]="s.id">{{s.name}}</option>}</select>
-                    <button (click)="removePreparation(prep.id)" class="p-1 text-red-500 hover:text-red-400" title="Remover Etapa"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+      <div class="flex-1 flex flex-col md:flex-row min-h-0">
+        <!-- Left Panel: Form -->
+        <div class="w-full md:w-2/3 p-6 overflow-y-auto">
+          <!-- Tabs -->
+          <div class="flex border-b border-gray-700 mb-6">
+            <button (click)="activeTab.set('details')" class="px-4 py-2 text-sm font-medium" [class.text-blue-400]="activeTab() === 'details'" [class.border-b-2]="activeTab() === 'details'" [class.border-blue-400]="activeTab() === 'details'" [class.text-gray-400]="activeTab() !== 'details'">Detalhes</button>
+            <button (click)="activeTab.set('ingredients')" class="px-4 py-2 text-sm font-medium" [class.text-blue-400]="activeTab() === 'ingredients'" [class.border-b-2]="activeTab() === 'ingredients'" [class.border-blue-400]="activeTab() === 'ingredients'" [class.text-gray-400]="activeTab() !== 'ingredients'">Preparo e Ingredientes</button>
+            <button (click)="activeTab.set('cost')" class="px-4 py-2 text-sm font-medium" [class.text-blue-400]="activeTab() === 'cost'" [class.border-b-2]="activeTab() === 'cost'" [class.border-blue-400]="activeTab() === 'cost'" [class.text-gray-400]="activeTab() !== 'cost'">Custos</button>
+          </div>
+
+          <!-- Tab Content -->
+          @switch (activeTab()) {
+            @case ('details') {
+              <div class="space-y-4 max-w-2xl">
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Nome do Prato</label><input type="text" [value]="recipeForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" class="w-full bg-gray-700 p-2 rounded"></div>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Categoria</label><select [value]="recipeForm().category_id || ''" (change)="updateFormValue('category_id', $any($event.target).value)" class="w-full bg-gray-700 p-2 rounded"><option value="">Selecione uma categoria</option>@for(c of categories(); track c.id){<option [value]="c.id">{{c.name}}</option>}</select></div>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label><textarea [value]="recipeForm().description || ''" (input)="updateFormValue('description', $any($event.target).value)" rows="3" class="w-full bg-gray-700 p-2 rounded"></textarea></div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div><label class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (min)</label><input type="number" [value]="recipeForm().prep_time_in_minutes || 0" (input)="updateFormValue('prep_time_in_minutes', $any($event.target).value)" class="w-full bg-gray-700 p-2 rounded"></div>
+                  <div><label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label><input type="number" [value]="recipeForm().price || 0" (input)="updateFormValue('price', $any($event.target).value)" class="w-full bg-gray-700 p-2 rounded"></div>
                 </div>
-                <h5 class="text-sm font-medium text-gray-300 mb-1">Ingredientes da Etapa:</h5>
-                <ul class="space-y-2 mb-3">
-                  @for (item of currentItems(); track item.type + (item.type === 'ingredient' ? item.data.ingredient_id : item.data.child_recipe_id)) {
-                    @if (item.type === 'ingredient' && item.data.preparation_id === prep.id) {
-                      @let ingredient = getIngredientDetails(item.data.ingredient_id);
-                      <li class="flex items-center gap-4 bg-gray-700/50 p-2 rounded-lg"><div class="flex-1"><p class="font-medium text-white">{{ ingredient?.name }}</p></div><div class="flex items-center gap-2"><input type="number" [value]="item.data.quantity" (change)="updateItemQuantity(item.data.ingredient_id, $event)" min="0" step="any" class="w-24 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white text-right"><span class="w-8 text-gray-400 uppercase text-sm font-semibold">{{ ingredient?.unit }}</span></div><button (click)="removeItemFromTechSheet(item.data.ingredient_id)" class="p-1 text-red-500 hover:text-red-400" title="Remover"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button></li>
-                    }
-                  }
-                </ul>
-                <div class="relative"><input type="text" [value]="prepItemSearchTerm()[prep.id] || ''" (input)="updatePrepSearchTerm(prep.id, $event)" placeholder="+ Adicionar ingrediente..." class="w-full bg-gray-700 border-2 border-dashed border-gray-600 rounded-lg px-3 py-2 text-white">@if(prepItemSearchTerm()[prep.id]) {<ul class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto">@for(item of filteredPrepSearchItems(prep.id); track item.id){<li (mousedown)="addItemToTechSheet(item, prep.id)" class="p-3 hover:bg-gray-500 cursor-pointer flex justify-between items-center"><span>{{ item.name }}</span>@if(item.type !== 'action'){<span class="text-xs font-bold px-2 py-1 rounded-full text-teal-300 bg-teal-900/50">Insumo</span>}</li>}</ul>}</div>
-                <textarea [value]="prep.prep_instructions || ''" (change)="updatePreparationField(prep.id, 'prep_instructions', $any($event.target).value)" rows="2" placeholder="Instruções de preparo para esta etapa..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 mt-3 text-white text-sm"></textarea>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Custo Operacional Adicional (R$)</label><input type="number" [value]="recipeForm().operational_cost || 0" (input)="updateFormValue('operational_cost', $any($event.target).value)" class="w-full bg-gray-700 p-2 rounded"></div>
+                <div class="flex items-center gap-6 pt-2">
+                  <label class="flex items-center"><input type="checkbox" [checked]="recipeForm().is_available" (change)="updateFormValue('is_available', $any($event.target).checked)" class="h-4 w-4 rounded"> <span class="ml-2">Disponível para venda</span></label>
+                  <label class="flex items-center"><input type="checkbox" [checked]="recipeForm().is_sub_recipe" (change)="updateFormValue('is_sub_recipe', $any($event.target).checked)" class="h-4 w-4 rounded"> <span class="ml-2">É uma sub-receita?</span></label>
+                </div>
               </div>
+            }
+            @case ('ingredients') {
+              <div class="space-y-6">
+                <!-- Preparations -->
+                <div>
+                  <div class="flex justify-between items-center mb-2"><h4 class="font-semibold text-white">Etapas de Preparo</h4><button (click)="addPreparation()" class="text-sm text-blue-400 font-semibold hover:text-blue-300">+ Adicionar Etapa</button></div>
+                  <div class="space-y-3">@for(prep of preparations(); track prep.id){<div class="bg-gray-700/50 p-3 rounded-lg"><div class="flex items-center gap-2 mb-2"><input type="text" [value]="prep.name" (change)="updatePreparationField(prep.id, 'name', $any($event.target).value)" class="flex-1 bg-gray-600 p-1 rounded font-semibold text-white"><select [value]="prep.station_id" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-gray-600 p-1 rounded text-white">@for(s of stations(); track s.id){<option [value]="s.id">{{s.name}}</option>}</select><button (click)="removePreparation(prep.id)" class="text-red-400 hover:text-red-300 p-1 rounded-full"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button></div><textarea (change)="updatePreparationField(prep.id, 'prep_instructions', $any($event.target).value)" [value]="prep.prep_instructions || ''" placeholder="Instruções de preparo..." rows="2" class="w-full bg-gray-600 p-1 rounded text-white text-sm mb-2"></textarea><ul class="space-y-1">@for(ing of getIngredientsForPrep(prep.id); track ing.ingredient_id){<li class="flex items-center gap-2 text-sm"><span class="flex-1 text-gray-200">{{ing.ingredients?.name}}</span><input type="number" [value]="ing.quantity" (change)="updateIngredientQuantity(ing.ingredient_id, prep.id, +$any($event.target).value)" class="w-20 bg-gray-600 p-1 rounded text-center text-white"><span>{{ing.ingredients?.unit}}</span><button (click)="removeIngredient(ing.ingredient_id, prep.id)" class="text-red-400 font-bold">x</button></li>}</ul><div class="relative mt-2"><input type="text" placeholder="+ Adicionar ingrediente a esta etapa..." (input)="ingredientSearchTerm.set($any($event.target).value)" class="w-full bg-gray-600 p-1 rounded text-white">@if(filteredIngredients().length>0){<ul class="absolute z-10 w-full bg-gray-500 rounded-b shadow-lg">@for(i of filteredIngredients(); track i.id){<li (click)="addIngredientToPrep(i, prep.id)" class="p-2 cursor-pointer hover:bg-gray-400 text-white">{{i.name}}</li>}</ul>}</div></div>}</div>
+                </div>
+                <!-- Sub-recipes -->
+                <div>
+                  <h4 class="font-semibold text-white mb-2">Sub-Receitas (Componentes)</h4>
+                  <div class="bg-gray-700/50 p-3 rounded-lg"><ul class="space-y-1">@for(sr of subRecipes(); track sr.child_recipe_id){<li class="flex items-center gap-2 text-sm"><span class="flex-1 text-gray-200">{{sr.recipes?.name}}</span><input type="number" [value]="sr.quantity" (change)="updateSubRecipeQuantity(sr.child_recipe_id, +$any($event.target).value)" class="w-20 bg-gray-600 p-1 rounded text-center text-white"><span>un</span><button (click)="removeSubRecipe(sr.child_recipe_id)" class="text-red-400 font-bold">x</button></li>}</ul><div class="relative mt-2"><input type="text" placeholder="+ Adicionar sub-receita..." (input)="subRecipeSearchTerm.set($any($event.target).value)" class="w-full bg-gray-600 p-1 rounded text-white">@if(filteredSubRecipes().length>0){<ul class="absolute z-10 w-full bg-gray-500 rounded-b shadow-lg">@for(r of filteredSubRecipes(); track r.id){<li (click)="addSubRecipe(r)" class="p-2 cursor-pointer hover:bg-gray-400 text-white">{{r.name}}</li>}</ul>}</div></div>
+                </div>
+              </div>
+            }
+            @case ('cost') {
+              <div class="space-y-4 text-lg max-w-2xl">
+                <div class="flex justify-between p-3 bg-gray-700/50 rounded-lg"><span class="text-gray-300">Custo de Insumos (CMV):</span><span class="font-bold text-white">{{currentRecipeCost().totalCost | currency:'BRL'}}</span></div>
+                <div class="flex justify-between p-3 bg-gray-700/50 rounded-lg"><span class="text-gray-300">Custo Operacional Adicional:</span><span class="font-bold text-white">{{currentRecipeCost().operationalCost | currency:'BRL'}}</span></div>
+                <div class="flex justify-between p-3 bg-gray-900/50 rounded-lg text-white"><strong>Custo Final do Prato:</strong><strong>{{currentRecipeCost().finalCost | currency:'BRL'}}</strong></div>
+                <div class="flex justify-between p-3 bg-gray-700/50 rounded-lg"><span class="text-gray-300">Preço de Venda:</span><span class="font-bold text-green-400">{{recipeForm().price | currency:'BRL'}}</span></div>
+                <div class="flex justify-between p-3 rounded-lg" [class.bg-green-900/50]="currentRecipeCost().margin > 0" [class.bg-red-900/50]="currentRecipeCost().margin <= 0"><strong>Margem de Lucro:</strong><strong [class.text-green-300]="currentRecipeCost().margin > 0" [class.text-red-300]="currentRecipeCost().margin <= 0">{{currentRecipeCost().margin | number:'1.2-2'}}%</strong></div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Right Panel: AI Assistant -->
+        <div class="w-full md:w-1/3 p-6 bg-gray-900/50 border-t md:border-t-0 md:border-l border-gray-700 flex flex-col">
+          <h3 class="text-lg font-bold text-white mb-4">Assistente de Chef IA</h3>
+          <p class="text-sm text-gray-400 mb-4">Preencha os dados da receita e peça sugestões para otimizar sua produção.</p>
+          <button (click)="getAiSuggestions()" [disabled]="isAiAssistantLoading()" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+            @if(isAiAssistantLoading()) {
+              <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>Analisando...</span>
+            } @else {
+              <span>Analisar e Sugerir</span>
+            }
+          </button>
+          <div class="mt-4 flex-1 overflow-y-auto bg-gray-800 rounded-lg p-3">
+            @if (aiSuggestions(); as suggestions) {
+              <div class="prose prose-sm prose-invert" [innerHTML]="formattedAiSuggestions()"></div>
+            } @else {
+              <p class="text-sm text-gray-500 text-center pt-8">As sugestões da IA aparecerão aqui.</p>
             }
           </div>
         </div>
-        
-        <!-- Final Assembly -->
-        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-            <h4 class="text-lg font-semibold text-white mb-3">Montagem Final</h4>
-            <ul class="space-y-2 mb-4">
-                @for(item of finalAssemblyItems(); track item.type + (item.type === 'ingredient' ? item.data.ingredient_id : item.data.child_recipe_id)) {
-                    @if(item.type === 'ingredient') {
-                        @let ingredient = getIngredientDetails(item.data.ingredient_id);
-                        <li class="flex items-center gap-4 bg-gray-700/50 p-2 rounded-lg"><span class="text-xs font-bold text-teal-300 bg-teal-900/50 px-2 py-1 rounded-full">INSUMO</span><div class="flex-1"><p class="font-medium text-white">{{ ingredient?.name }}</p></div><div class="flex items-center gap-2"><input type="number" [value]="item.data.quantity" (change)="updateItemQuantity(item.data.ingredient_id, $event)" min="0" step="any" class="w-24 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white text-right"><span class="w-8 text-gray-400 uppercase text-sm font-semibold">{{ ingredient?.unit }}</span></div><button (click)="removeItemFromTechSheet(item.data.ingredient_id)" class="p-1 text-red-500 hover:text-red-400" title="Remover"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button></li>
-                    } @else {
-                        @let subRecipe = getSubRecipeDetails(item.data.child_recipe_id);
-                        <li class="flex items-center gap-4 bg-gray-700/50 p-2 rounded-lg"><span class="text-xs font-bold text-indigo-300 bg-indigo-900/50 px-2 py-1 rounded-full">SUB-RECEITA</span><div class="flex-1"><p class="font-medium text-white">{{ subRecipe?.name }}</p></div><div class="flex items-center gap-2"><input type="number" [value]="item.data.quantity" (change)="updateItemQuantity(item.data.child_recipe_id, $event)" min="0" step="any" class="w-24 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white text-right"><span class="w-8 text-gray-400 uppercase text-sm font-semibold">un</span></div><button (click)="removeItemFromTechSheet(item.data.child_recipe_id)" class="p-1 text-red-500 hover:text-red-400" title="Remover"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button></li>
-                    }
-                }
-            </ul>
-            <div class="relative"><input type="text" [value]="finalAssemblySearchTerm()" (input)="finalAssemblySearchTerm.set($any($event.target).value)" placeholder="+ Adicionar insumo ou sub-receita..." class="w-full bg-gray-700 border-2 border-dashed border-gray-600 rounded-lg px-3 py-2 text-white">@if(finalAssemblySearchTerm()) {<ul class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto">@for(item of filteredFinalAssemblySearchItems(); track item.id){<li (mousedown)="addItemToTechSheet(item)" class="p-3 hover:bg-gray-500 cursor-pointer flex justify-between items-center"><span>{{ item.name }}</span>@if(item.type !== 'action'){<span class="text-xs font-bold px-2 py-1 rounded-full" [class.text-teal-300]="item.type === 'ingredient'" [class.bg-teal-900/50]="item.type === 'ingredient'" [class.text-indigo-300]="item.type === 'sub_recipe'" [class.bg-indigo-900/50]="item.type === 'sub_recipe'">{{ item.type === 'ingredient' ? 'Insumo' : 'Sub-receita' }}</span>}</li>}</ul>}</div>
-        </div>
       </div>
 
-      <!-- Footer -->
-      <div class="flex-shrink-0 p-4 bg-gray-900/50 flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-4 border-t border-gray-700">
-         <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-6"><div class="text-center"><label class="block text-xs text-gray-400">Custo Total</label><p class="font-bold text-lg text-white">{{ techSheetTotalCost() | currency:'BRL' }}</p></div><div class="text-center"><label class="block text-xs text-gray-400">CMV</label><p class="font-bold text-lg text-white">{{ techSheetCMV() | number:'1.1-2' }}%</p></div><div class="text-center"><label class="block text-xs text-gray-400">Margem</label><p class="font-bold text-lg" [class.text-green-400]="techSheetProfitMargin() >= 0" [class.text-red-400]="techSheetProfitMargin() < 0">{{ techSheetProfitMargin() | number:'1.1-2' }}%</p></div></div>
-         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto"><button (click)="closeTechSheetModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button><button (click)="saveTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Ficha Técnica</button></div>
+      <div class="p-4 bg-gray-900/50 flex justify-end gap-3 border-t border-gray-700 flex-shrink-0">
+        <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveTechnicalSheet()" class="px-4 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Ficha Técnica</button>
       </div>
-    </div>
-  </div>
-}
-
-<!-- Quick Add Ingredient Modal -->
-@if (isQuickAddIngredientModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="closeQuickAddIngredientModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Adicionar Novo Ingrediente</h3></div>
-      <div class="p-6 space-y-4">
-        <div><label class="block text-sm mb-1">Nome</label><input type="text" [value]="newIngredientForm().name" (input)="updateNewIngredientFormField('name', $any($event.target).value)" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"></div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="block text-sm mb-1">Unidade</label><select (change)="updateNewIngredientFormField('unit', $any($event.target).value)" [value]="newIngredientForm().unit" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="l">l</option><option value="un">un</option></select></div>
-          <div><label class="block text-sm mb-1">Custo Unit.</label><input type="number" [value]="newIngredientForm().cost" (input)="updateNewIngredientFormField('cost', $any($event.target).value)" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white"></div>
-        </div>
-      </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3"><button (click)="closeQuickAddIngredientModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 text-white">Cancelar</button><button (click)="saveNewIngredient()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 text-white">Criar e Adicionar</button></div>
-    </div>
-  </div>
-}
-
-<!-- Add Recipe Modal -->
-@if(isAddRecipeModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAddRecipeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Adicionar Novo Prato ao Cardápio</h3><button (click)="closeAddRecipeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <fieldset [disabled]="isGeneratingTechSheet()"><label class="block text-sm font-medium text-gray-300 mb-1">Nome do Prato *</label><input type="text" [value]="newRecipeForm().name" (input)="updateNewRecipeFormField('name', $event)" placeholder="Ex: Filé Mignon com Fritas" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"><label class="block text-sm font-medium text-gray-300 mb-1">Descrição (opcional)</label><textarea rows="3" [value]="newRecipeForm().description" (input)="updateNewRecipeFormField('description', $event)" placeholder="Breve descrição do prato para o cardápio" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-300 mb-1">Categoria *</label><select (change)="updateNewRecipeFormField('category_id', $event)" [value]="newRecipeForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">@for (cat of recipeCategories(); track cat.id) {<option [value]="cat.id">{{ cat.name }}</option>}</select></div><div><label class="block text-sm font-medium text-gray-300 mb-1">Tempo de Preparo (minutos) *</label><input type="number" [value]="newRecipeForm().prep_time_in_minutes" (input)="updateNewRecipeFormField('prep_time_in_minutes', $event)" placeholder="15" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></div></div></fieldset>
-      </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3"><button (click)="closeAddRecipeModal()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50">Cancelar</button><button (click)="saveNewRecipe()" [disabled]="isGeneratingTechSheet()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50">Criar Manualmente</button><button (click)="generateTechSheetWithAI()" [disabled]="isGeneratingTechSheet() || !newRecipeForm().name.trim()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">@if(isGeneratingTechSheet()){<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Gerando...</span>} @else {<span>Gerar com IA</span>}</button></div>
     </div>
   </div>
 }
