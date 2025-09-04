@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -261,6 +262,21 @@ export class InventoryComponent {
         this.isAnalyzingStock.set(true);
         this.stockPrediction.set(null);
         try {
+            const ingredientsById = new Map(this.ingredients().map(i => [i.id, i]));
+            
+            // Step 1: Initialize predictions for ALL ingredients
+            const predictionsMap = new Map<string, StockPrediction>();
+            this.ingredients().forEach(ingredient => {
+                predictionsMap.set(ingredient.id, {
+                    ingredientId: ingredient.id,
+                    ingredientName: ingredient.name,
+                    currentStock: ingredient.stock,
+                    unit: ingredient.unit,
+                    predictedUsage: 0,
+                    suggestedPurchase: 0 // Will be calculated later
+                });
+            });
+
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - 28); // last 4 weeks
@@ -268,34 +284,44 @@ export class InventoryComponent {
             const usageData = await this.inventoryDataService.calculateIngredientUsageForPeriod(startDate, endDate);
             
             if (usageData.size === 0) {
-                await this.notificationService.alert("Não há dados de vendas suficientes no último mês para fazer uma previsão.");
-                return;
+                // Step 3a: No sales data, use min_stock
+                await this.notificationService.alert(
+                    "Não há dados de vendas recentes para fazer uma previsão com IA. A sugestão de compra será baseada no seu estoque mínimo.",
+                    "Análise de Estoque"
+                );
+                
+                predictionsMap.forEach((prediction, ingredientId) => {
+                    const ingredient = ingredientsById.get(ingredientId)!;
+                    const suggestedPurchase = Math.max(0, ingredient.min_stock - ingredient.stock);
+                    prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                });
+
+            } else {
+                // Step 2: Sales data exists, call AI
+                const historicalDataString = Array.from(usageData.entries())
+                  .map(([id, quantity]) => `${ingredientsById.get(id)?.name}: ${quantity.toFixed(2)} ${ingredientsById.get(id)?.unit} por mês`)
+                  .join(', ');
+                
+                const prompt = `Com base no consumo histórico de ingredientes de um restaurante (${historicalDataString}), preveja a necessidade de cada ingrediente para a PRÓXIMA SEMANA. Retorne um JSON array com "ingredientId", "predictedUsage".`;
+
+                const aiResult = await this.aiService.callGeminiForPrediction(prompt);
+
+                // Step 2b: Update map with AI predictions
+                aiResult.forEach((p: any) => {
+                    const prediction = predictionsMap.get(p.ingredientId);
+                    if (prediction) {
+                        const suggestedPurchase = Math.max(0, p.predictedUsage - prediction.currentStock);
+                        prediction.predictedUsage = p.predictedUsage;
+                        prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                    }
+                });
             }
 
-            const ingredientsById = new Map(this.ingredients().map(i => [i.id, i]));
-            const historicalDataString = Array.from(usageData.entries())
-              .map(([id, quantity]) => `${ingredientsById.get(id)?.name}: ${quantity.toFixed(2)} ${ingredientsById.get(id)?.unit} por mês`)
-              .join(', ');
+            // Step 4: Finalize and set state
+            const finalPredictions = Array.from(predictionsMap.values())
+                .sort((a, b) => b.suggestedPurchase - a.suggestedPurchase || b.predictedUsage - a.predictedUsage);
             
-            const prompt = `Com base no consumo histórico de ingredientes de um restaurante (${historicalDataString}), preveja a necessidade de cada ingrediente para a PRÓXIMA SEMANA. Retorne um JSON array com "ingredientId", "predictedUsage".`;
-
-            const aiResult = await this.aiService.callGeminiForPrediction(prompt);
-
-            const predictions: StockPrediction[] = aiResult.map((p: any) => {
-                const ingredient = ingredientsById.get(p.ingredientId);
-                if (!ingredient) return null;
-                const suggestedPurchase = Math.max(0, p.predictedUsage - ingredient.stock);
-                return {
-                    ingredientId: p.ingredientId,
-                    ingredientName: ingredient.name,
-                    currentStock: ingredient.stock,
-                    unit: ingredient.unit,
-                    predictedUsage: p.predictedUsage,
-                    suggestedPurchase: Math.ceil(suggestedPurchase)
-                };
-            }).filter((p: any) => p !== null);
-            
-            this.stockPrediction.set(predictions);
+            this.stockPrediction.set(finalPredictions);
 
         } catch (error) {
             await this.notificationService.alert(`Erro ao analisar o estoque: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
