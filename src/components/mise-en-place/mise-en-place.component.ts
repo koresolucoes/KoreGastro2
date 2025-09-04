@@ -25,7 +25,7 @@ export class MiseEnPlaceComponent {
   // Data Signals
   subRecipes = computed(() => this.stateService.recipes().filter(r => r.is_sub_recipe));
   stations = this.stateService.stations;
-  employees = computed(() => this.stateService.employees().filter(e => e.role === 'Cozinha' || e.role === 'Gerente'));
+  employees = computed(() => this.stateService.employees().filter(e => ['Gerente', 'Cozinha', 'Garçom', 'Caixa'].includes(e.role)));
   activeEmployee = this.operationalAuthService.activeEmployee;
 
   // View State
@@ -37,6 +37,8 @@ export class MiseEnPlaceComponent {
   isModalOpen = signal(false);
   editingTask = signal<ProductionTask | null>(null);
   taskForm = signal<TaskForm>({ task_type: 'recipe' });
+
+  isManager = computed(() => this.activeEmployee()?.role === 'Gerente');
 
   constructor() {
     effect(() => {

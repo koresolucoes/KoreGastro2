@@ -8,8 +8,8 @@ const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
 const PERMISSIONS: Record<string, string[]> = {
   'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings'],
-  'Caixa': ['/pos', '/cashier', '/menu'],
-  'Garçom': ['/pos', '/menu'],
+  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place'],
+  'Garçom': ['/pos', '/menu', '/mise-en-place'],
   'Cozinha': ['/kds', '/mise-en-place'],
 };
 

@@ -1,4 +1,3 @@
-
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -30,7 +29,7 @@ export const APP_ROUTES: Routes = [
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
-  { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha'] } },
+  { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] } },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
