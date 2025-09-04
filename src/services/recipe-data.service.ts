@@ -49,9 +49,13 @@ export class RecipeDataService {
   async saveTechnicalSheet(
     recipeId: string,
     recipeUpdates: Partial<Recipe>,
-    preparations: RecipePreparation[],
-    ingredients: RecipeIngredient[],
-    subRecipes: RecipeSubRecipe[]
+    // FIX: Changed parameter type to be compatible with form data from the component.
+    preparations: (Partial<RecipePreparation> & { id: string })[],
+    // FIX: The `ingredients` parameter now correctly reflects the shape of the form data
+    // coming from the component, which omits `user_id` and `recipe_id`.
+    ingredients: Omit<RecipeIngredient, 'user_id' | 'recipe_id'>[],
+    // FIX: Changed subRecipes parameter type to match the form data shape.
+    subRecipes: Omit<RecipeSubRecipe, 'user_id' | 'parent_recipe_id'>[]
   ): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
@@ -96,7 +100,7 @@ export class RecipeDataService {
       });
       
       if (prepsToInsert.length > 0) {
-        const { error: prepInsertError } = await supabase.from('recipe_preparations').insert(prepsToInsert);
+        const { error: prepInsertError } = await supabase.from('recipe_preparations').insert(prepsToInsert as RecipePreparation[]);
         if (prepInsertError) throw prepInsertError;
       }
 

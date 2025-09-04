@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Employee } from '../models/db.models';
+import { Employee, Station } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 
@@ -10,11 +10,12 @@ import { supabase } from './supabase-client';
 export class SettingsDataService {
   private authService = inject(AuthService);
 
-  async addStation(name: string): Promise<{ success: boolean, error: any }> {
+  // FIX: Updated method to return the created station object.
+  async addStation(name: string): Promise<{ success: boolean; error: any; data?: Station }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('stations').insert({ name, user_id: userId });
-    return { success: !error, error };
+    const { data, error } = await supabase.from('stations').insert({ name, user_id: userId }).select().single();
+    return { success: !error, error, data };
   }
 
   async updateStation(id: string, name: string): Promise<{ success: boolean, error: any }> {
