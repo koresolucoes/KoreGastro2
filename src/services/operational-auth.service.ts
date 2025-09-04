@@ -10,7 +10,7 @@ const PERMISSIONS: Record<string, string[]> = {
   'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings'],
   'Caixa': ['/pos', '/cashier', '/menu'],
   'Garçom': ['/pos', '/menu'],
-  'Cozinha': ['/kds'],
+  'Cozinha': ['/kds', '/mise-en-place'],
 };
 
 const DEFAULT_ROUTES: Record<string, string> = {
