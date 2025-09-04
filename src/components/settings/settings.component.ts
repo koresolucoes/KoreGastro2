@@ -7,6 +7,7 @@ import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -21,6 +22,7 @@ export class SettingsComponent {
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   // Data Signals from Service
   stations = this.stateService.stations;
@@ -35,6 +37,14 @@ export class SettingsComponent {
   recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
   employeeSearchTerm = signal('');
+
+  qrCodeUrl = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return '';
+    // Construct the full URL including the hash for the router
+    const menuUrl = `${window.location.origin}${window.location.pathname}#/menu/${userId}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
+  });
 
   // Filtered lists
   filteredStations = computed(() => {

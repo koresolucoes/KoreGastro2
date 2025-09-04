@@ -25,18 +25,22 @@
         @if (filteredStations().length > 0) {
           <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
             @for(item of filteredStations(); track item.id) {
-              <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+              <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
                 @if (editingStation()?.id === item.id) {
                   <input type="text" [value]="editingStation()!.name" (input)="updateEditingStationName($event)" (keydown.enter)="saveStation()" (keydown.escape)="cancelEditingStation()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <button (click)="saveStation()" class="p-2 text-green-400 hover:text-green-300 ml-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
-                  <button (click)="cancelEditingStation()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="saveStation()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                    <button (click)="cancelEditingStation()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  </div>
                 } @else if (stationPendingDeletion()?.id === item.id) {
                   <span class="text-sm text-red-300">Certeza?</span>
-                  <button (click)="confirmDeleteStation()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
-                  <button (click)="cancelDeleteStation()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="confirmDeleteStation()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                    <button (click)="cancelDeleteStation()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
                 } @else {
-                  <span class="text-white">{{ item.name }}</span>
-                  <div class="flex items-center gap-2">
+                  <span class="flex-1 text-white truncate min-w-0" [title]="item.name">{{ item.name }}</span>
+                  <div class="flex items-center gap-2 flex-shrink-0">
                     <button (click)="startEditingStation(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
                     <button (click)="requestDeleteStation(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                   </div>
@@ -63,17 +67,19 @@
          @if (filteredEmployees().length > 0) {
           <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
             @for(item of filteredEmployees(); track item.id) {
-                <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+                <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
                     @if (employeePendingDeletion()?.id === item.id) {
                         <span class="text-sm text-red-300">Certeza?</span>
-                        <button (click)="confirmDeleteEmployee()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
-                        <button (click)="cancelDeleteEmployee()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          <button (click)="confirmDeleteEmployee()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                          <button (click)="cancelDeleteEmployee()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                        </div>
                     } @else {
-                        <div class="flex-1">
-                            <p class="text-white font-semibold">{{ item.name }}</p>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-white font-semibold truncate" [title]="item.name">{{ item.name }}</p>
                             <p class="text-xs text-gray-400">{{ item.role || 'Sem cargo' }}</p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-shrink-0">
                             <button (click)="openEditEmployeeModal(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
                             <button (click)="requestDeleteEmployee(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
@@ -105,18 +111,22 @@
         @if (filteredCategories().length > 0) {
           <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
              @for(item of filteredCategories(); track item.id) {
-              <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+              <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
                 @if (editingCategory()?.id === item.id) {
                   <input type="text" [value]="editingCategory()!.name" (input)="updateEditingCategoryName($event)" (keydown.enter)="saveCategory()" (keydown.escape)="cancelEditingCategory()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <button (click)="saveCategory()" class="p-2 text-green-400 hover:text-green-300 ml-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
-                  <button (click)="cancelEditingCategory()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="saveCategory()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                    <button (click)="cancelEditingCategory()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  </div>
                 } @else if (categoryPendingDeletion()?.id === item.id) {
                   <span class="text-sm text-red-300">Certeza?</span>
-                  <button (click)="confirmDeleteCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
-                  <button (click)="cancelDeleteCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                   <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="confirmDeleteCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                    <button (click)="cancelDeleteCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
                 } @else {
-                  <span class="text-white">{{ item.name }}</span>
-                  <div class="flex items-center gap-2">
+                  <span class="flex-1 text-white truncate min-w-0" [title]="item.name">{{ item.name }}</span>
+                  <div class="flex items-center gap-2 flex-shrink-0">
                     <button (click)="startEditingCategory(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
                     <button (click)="requestDeleteCategory(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                   </div>
@@ -149,18 +159,22 @@
         @if (filteredRecipeCategories().length > 0) {
           <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
              @for(item of filteredRecipeCategories(); track item.id) {
-              <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+              <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
                 @if (editingRecipeCategory()?.id === item.id) {
                   <input type="text" [value]="editingRecipeCategory()!.name" (input)="updateEditingRecipeCategoryName($event)" (keydown.enter)="saveRecipeCategory()" (keydown.escape)="cancelEditingRecipeCategory()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <button (click)="saveRecipeCategory()" class="p-2 text-green-400 hover:text-green-300 ml-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
-                  <button (click)="cancelEditingRecipeCategory()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="saveRecipeCategory()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                    <button (click)="cancelEditingRecipeCategory()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                  </div>
                 } @else if (recipeCategoryPendingDeletion()?.id === item.id) {
                   <span class="text-sm text-red-300">Certeza?</span>
-                  <button (click)="confirmDeleteRecipeCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
-                  <button (click)="cancelDeleteRecipeCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button (click)="confirmDeleteRecipeCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                    <button (click)="cancelDeleteRecipeCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
                 } @else {
-                  <span class="text-white">{{ item.name }}</span>
-                  <div class="flex items-center gap-2">
+                  <span class="flex-1 text-white truncate min-w-0" [title]="item.name">{{ item.name }}</span>
+                  <div class="flex items-center gap-2 flex-shrink-0">
                     <button (click)="startEditingRecipeCategory(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
                     <button (click)="requestDeleteRecipeCategory(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                   </div>
@@ -187,17 +201,19 @@
          @if (filteredSuppliers().length > 0) {
           <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
             @for(item of filteredSuppliers(); track item.id) {
-                <li class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+                <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
                     @if (supplierPendingDeletion()?.id === item.id) {
                         <span class="text-sm text-red-300">Certeza?</span>
-                        <button (click)="confirmDeleteSupplier()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs ml-2">Sim</button>
-                        <button (click)="cancelDeleteSupplier()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
-                    } @else {
-                        <div class="flex-1">
-                            <p class="text-white font-semibold">{{ item.name }}</p>
-                            <p class="text-xs text-gray-400">{{ item.contact_person || 'Sem contato' }}</p>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          <button (click)="confirmDeleteSupplier()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                          <button (click)="cancelDeleteSupplier()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
                         </div>
-                        <div class="flex items-center gap-2">
+                    } @else {
+                        <div class="flex-1 min-w-0">
+                            <p class="text-white font-semibold truncate" [title]="item.name">{{ item.name }}</p>
+                            <p class="text-xs text-gray-400 truncate" [title]="item.contact_person || 'Sem contato'">{{ item.contact_person || 'Sem contato' }}</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
                             <button (click)="openEditSupplierModal(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
                             <button (click)="requestDeleteSupplier(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
@@ -206,6 +222,22 @@
             }
           </ul>
         } @else { <p class="text-center text-gray-500 py-4">Nenhum fornecedor encontrado.</p> }
+    </div>
+
+    <!-- Panel: QR Code -->
+    <div class="bg-gray-800 rounded-lg p-6">
+      <h2 class="text-xl font-semibold text-white mb-4">QR Code do Cardápio Online</h2>
+      <p class="text-gray-400 mb-4 text-sm">Imprima este QR Code e coloque nas mesas para que seus clientes possam acessar o cardápio digital.</p>
+      @if(qrCodeUrl()) {
+        <div class="flex flex-col items-center bg-gray-700/50 p-4 rounded-lg">
+          <img [src]="qrCodeUrl()" alt="QR Code do Cardápio" width="256" height="256" class="rounded-lg border-4 border-white">
+          <a [href]="qrCodeUrl()" download="qrcode-cardapio.png" class="mt-4 w-full text-center bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors">
+            Baixar QR Code
+          </a>
+        </div>
+      } @else {
+        <p class="text-center text-gray-500 py-8">Não foi possível gerar o QR Code. Tente recarregar a página.</p>
+      }
     </div>
   </div>
 </div>

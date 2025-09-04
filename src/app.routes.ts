@@ -27,6 +27,7 @@ export const APP_ROUTES: Routes = [
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
+  { path: 'menu/:userId', component: MenuComponent }, // Public menu route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
