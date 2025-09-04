@@ -1,7 +1,5 @@
 # ChefOS - Sistema de Gestão de Restaurantes
 
-![ChefOS Banner](https://i.imgur.com/your-banner-image.png) <!-- Placeholder for a banner image -->
-
 **ChefOS** é um sistema de gestão para restaurantes completo, moderno e integrado. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque e análise de desempenho, tudo sincronizado em tempo real.
 
 O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando inteligência artificial para auxiliar em tarefas complexas como a criação de fichas técnicas e a previsão de compras.
