@@ -1,12 +1,14 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
-import { Recipe, Category, Ingredient, Station, RecipePreparation, RecipeIngredient, RecipeSubRecipe } from '../../models/db.models';
+import { Recipe, Category, Ingredient, Station, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit } from '../../models/db.models';
 import { RecipeForm } from '../../models/app.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
 import { NotificationService } from '../../services/notification.service';
+import { SettingsDataService } from '../../services/settings-data.service';
+import { InventoryDataService } from '../../services/inventory-data.service';
 
 const EMPTY_RECIPE_FORM: RecipeForm = {
   recipe: {
@@ -23,6 +25,14 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
   subRecipes: [],
 };
 
+const EMPTY_INGREDIENT: Partial<Ingredient> = {
+    name: '',
+    unit: 'un',
+    cost: 0,
+    stock: 0,
+    min_stock: 0,
+};
+
 @Component({
   selector: 'app-technical-sheets',
   standalone: true,
@@ -33,6 +43,8 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
 export class TechnicalSheetsComponent {
   private stateService = inject(SupabaseStateService);
   private recipeDataService = inject(RecipeDataService);
+  private settingsDataService = inject(SettingsDataService);
+  private inventoryDataService = inject(InventoryDataService);
   private aiService = inject(AiRecipeService);
   private notificationService = inject(NotificationService);
 
@@ -45,6 +57,8 @@ export class TechnicalSheetsComponent {
   recipeIngredients = this.stateService.recipeIngredients;
   recipePreparations = this.stateService.recipePreparations;
   recipeSubRecipes = this.stateService.recipeSubRecipes;
+  ingredientCategories = this.stateService.ingredientCategories;
+  suppliers = this.stateService.suppliers;
 
   // Component state
   viewMode = signal<'list' | 'edit'>('list');
@@ -61,6 +75,16 @@ export class TechnicalSheetsComponent {
   // Popover state for adding items
   addingToPreparationId = signal<string | null>(null);
   itemSearchTerm = signal('');
+
+  // "Add on the fly" modal states
+  isAddingCategory = signal(false);
+  newCategoryName = signal('');
+  isAddingStation = signal(false);
+  newStationName = signal('');
+  editingPrepForStationId = signal<string | null>(null); // To know which prep to update
+  isAddingIngredient = signal(false);
+  newIngredientForm = signal<Partial<Ingredient>>(EMPTY_INGREDIENT);
+  availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
 
   filteredRecipes = computed(() => {
     const term = this.searchTerm().toLowerCase();
@@ -238,15 +262,74 @@ export class TechnicalSheetsComponent {
   getIngredientUnit(id: string): string { return this.ingredients().find(i => i.id === id)?.unit ?? '?'; }
   getSubRecipeName(id: string): string { return this.allRecipes().find(r => r.id === id)?.name ?? '?'; }
 
+  // --- Add on the fly methods ---
+  openAddCategoryModal() { this.isAddingCategory.set(true); this.newCategoryName.set(''); }
+  closeAddCategoryModal() { this.isAddingCategory.set(false); }
+  async saveNewCategory() {
+    const name = this.newCategoryName().trim();
+    if (!name) return;
+    const { success, error, data: newCategory } = await this.recipeDataService.addRecipeCategory(name);
+    if (success && newCategory) {
+      this.updateRecipeField('category_id', newCategory.id);
+      this.closeAddCategoryModal();
+    } else {
+      await this.notificationService.alert(`Erro: ${error?.message}`);
+    }
+  }
+
+  openAddStationModal(prepId: string) {
+    this.editingPrepForStationId.set(prepId);
+    this.newStationName.set('');
+    this.isAddingStation.set(true);
+  }
+  closeAddStationModal() { this.isAddingStation.set(false); this.editingPrepForStationId.set(null); }
+  async saveNewStation() {
+    const name = this.newStationName().trim();
+    const prepId = this.editingPrepForStationId();
+    if (!name || !prepId) return;
+    const { success, error, data: newStation } = await this.settingsDataService.addStation(name);
+    if (success && newStation) {
+      this.updatePreparationField(prepId, 'station_id', newStation.id);
+      this.closeAddStationModal();
+    } else {
+      await this.notificationService.alert(`Erro: ${error?.message}`);
+    }
+  }
+  
+  openAddIngredientModal() {
+    this.stopAddingItem(); // Close the search popover first
+    this.newIngredientForm.set({ ...EMPTY_INGREDIENT });
+    this.isAddingIngredient.set(true);
+  }
+  closeAddIngredientModal() { this.isAddingIngredient.set(false); }
+  updateNewIngredientField(field: keyof Ingredient, value: any) {
+    this.newIngredientForm.update(form => ({ ...form, [field]: value }));
+  }
+  async saveNewIngredient() {
+    const form = this.newIngredientForm();
+    if (!form.name?.trim()) {
+      await this.notificationService.alert('O nome do ingrediente é obrigatório.');
+      return;
+    }
+    const { success, error, data: newIngredient } = await this.inventoryDataService.addIngredient(form);
+    if (success && newIngredient) {
+      // Re-open the add popover and add the new item automatically
+      const prepId = this.addingToPreparationId();
+      if (prepId) {
+        this.addIngredientToPrep(newIngredient);
+      }
+      this.closeAddIngredientModal();
+    } else {
+      await this.notificationService.alert(`Erro: ${error?.message}`);
+    }
+  }
+
   // --- API Calls ---
   async saveTechnicalSheet() {
     const form = this.recipeForm();
     if (!form.recipe.name) { await this.notificationService.alert('O nome da receita é obrigatório.'); return; }
     if (!form.recipe.category_id) { await this.notificationService.alert('A categoria da receita é obrigatória.'); return; }
     
-    // FIX: The 'cost' property is added to recipe objects for display purposes in 'filteredRecipes',
-    // but it's not part of the `Recipe` type, causing a type error here. Casting to `any` allows
-    // us to destructure it out along with `hasStock` before saving the recipe data.
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
@@ -261,6 +344,15 @@ export class TechnicalSheetsComponent {
         if (tsSuccess) { await this.notificationService.alert('Receita criada com sucesso!', 'Sucesso'); this.closeModal(); } 
         else { await this.recipeDataService.deleteRecipe(newRecipe.id); await this.notificationService.alert(`Erro ao salvar ficha técnica: ${tsError?.message}`); }
       } else { await this.notificationService.alert(`Erro ao criar receita: ${error?.message}`); }
+    }
+  }
+
+  async toggleAvailability(recipe: Recipe) {
+    const newAvailability = !recipe.is_available;
+    const { success, error } = await this.recipeDataService.updateRecipeAvailability(recipe.id, newAvailability);
+
+    if (!success) {
+      await this.notificationService.alert(`Erro ao atualizar disponibilidade: ${error?.message}`);
     }
   }
 

@@ -57,6 +57,15 @@ export class RecipeDataService {
     return { success: true, error: null };
   }
 
+  async updateRecipeAvailability(recipeId: string, isAvailable: boolean): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase
+      .from('recipes')
+      .update({ is_available: isAvailable })
+      .eq('id', recipeId);
+      
+    return { success: !error, error };
+  }
+
   async deleteRecipe(recipeId: string): Promise<{ success: boolean; error: any }> {
     // Must delete in order to respect foreign key constraints
     await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
