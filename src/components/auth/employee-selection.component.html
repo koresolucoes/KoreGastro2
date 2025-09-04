@@ -1,9 +1,10 @@
 
+
 <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
   <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
-    @if (!selectedEmployee()) {
-      <h2 class="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para operar</h2>
-      @if (employees().length > 0) {
+    @if (employees().length > 0) {
+      @if (!selectedEmployee()) {
+        <h2 class="text-2xl font-bold text-white text-center mb-6">Selecione seu usuário para operar</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           @for(employee of employees(); track employee.id) {
             <button (click)="selectEmployee(employee)" class="flex flex-col items-center p-4 bg-gray-700 rounded-lg hover:bg-blue-600 transition-colors">
@@ -16,23 +17,70 @@
           }
         </div>
       } @else {
-        <p class="text-center text-gray-400">Nenhum funcionário cadastrado. Vá para Configurações para adicionar um.</p>
+        <div class="w-full max-w-sm mx-auto">
+          <h2 class="text-2xl font-bold text-white text-center mb-2">Bem-vindo, {{ selectedEmployee()?.name }}</h2>
+          <p class="text-center text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
+          <div class="flex justify-center items-center gap-4 h-12 mb-4 text-4xl tracking-[1em]" [class.animate-pulse]="loginError()" [class.text-red-400]="loginError()" [class.text-white]="!loginError()">
+            {{ pinDisplay() }}
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            @for(digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track digit) {
+              <button (click)="handlePinInput(digit)" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600 transition-colors">{{ digit }}</button>
+            }
+            <button (click)="cancelPinLogin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Trocar</button>
+            <button (click)="handlePinInput('0')" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600">0</button>
+            <button (click)="clearPin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Limpar</button>
+          </div>
+        </div>
       }
     } @else {
-      <div class="w-full max-w-sm mx-auto">
-        <h2 class="text-2xl font-bold text-white text-center mb-2">Bem-vindo, {{ selectedEmployee()?.name }}</h2>
-        <p class="text-center text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
-        <div class="flex justify-center items-center gap-4 h-12 mb-4 text-4xl tracking-[1em]" [class.animate-pulse]="loginError()" [class.text-red-400]="loginError()" [class.text-white]="!loginError()">
-          {{ pinDisplay() }}
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          @for(digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track digit) {
-            <button (click)="handlePinInput(digit)" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600 transition-colors">{{ digit }}</button>
-          }
-          <button (click)="cancelPinLogin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Trocar</button>
-          <button (click)="handlePinInput('0')" class="p-4 bg-gray-700 rounded-lg text-2xl font-bold hover:bg-gray-600">0</button>
-          <button (click)="clearPin()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-gray-400 hover:bg-gray-600">Limpar</button>
-        </div>
+      <!-- Onboarding for new users -->
+      <div class="w-full max-w-md mx-auto">
+        <h2 class="text-2xl font-bold text-white text-center mb-2">Bem-vindo ao ChefOS!</h2>
+        <p class="text-center text-gray-400 mb-6">Para começar, vamos criar seu usuário principal de Gerente.</p>
+        
+        <form (ngSubmit)="createFirstManager()" class="space-y-4">
+          <div>
+            <label for="manager-name" class="block text-sm font-medium text-gray-300 mb-1">Seu Nome</label>
+            <input 
+              id="manager-name" 
+              name="managerName" 
+              type="text" 
+              required
+              [(ngModel)]="newManagerName"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: João Silva">
+          </div>
+          <div>
+            <label for="manager-pin" class="block text-sm font-medium text-gray-300 mb-1">Crie um PIN de 4 números</label>
+            <input 
+              id="manager-pin" 
+              name="managerPin" 
+              type="password" 
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="4"
+              required
+              [(ngModel)]="newManagerPin"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-center text-lg tracking-[0.5em] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="••••">
+              <p class="text-xs text-gray-500 mt-1">Este PIN será usado para acessar funções importantes no sistema.</p>
+          </div>
+          <button 
+            type="submit" 
+            [disabled]="isCreatingManager()"
+            class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center disabled:bg-gray-500 disabled:cursor-wait">
+              @if(isCreatingManager()) {
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Criando...</span>
+              } @else {
+                <span>Criar Usuário e Começar</span>
+              }
+          </button>
+        </form>
       </div>
     }
   </div>
