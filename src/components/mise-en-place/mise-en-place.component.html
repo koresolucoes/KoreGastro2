@@ -26,11 +26,16 @@
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
     </div>
   } @else if (groupedTasksByStation().length > 0) {
-    <div class="flex-1 overflow-x-auto pb-4">
-        <div class="flex gap-4 h-full min-w-max">
+    <!-- Scroll hint for mobile -->
+    <div class="md:hidden text-center text-xs text-gray-500 pb-2">
+      <p>Arraste para ver mais estações &rarr;</p>
+    </div>
+    <!-- Responsive Board with Scroll Snap -->
+    <div class="flex-1 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none">
+        <div class="flex gap-4 h-full">
             @for (station of groupedTasksByStation(); track station.id) {
-                <div class="w-80 bg-gray-800 rounded-lg flex flex-col flex-shrink-0">
-                    <h2 class="text-lg font-bold text-white p-3 border-b border-gray-700 sticky top-0 bg-gray-800">{{ station.name }}</h2>
+                <div class="w-full md:w-80 bg-gray-800 rounded-lg flex flex-col flex-shrink-0 snap-center">
+                    <h2 class="text-lg font-bold text-white p-3 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">{{ station.name }}</h2>
                     <div class="p-2 space-y-2 overflow-y-auto flex-1">
                         @if(station.tasks.length > 0) {
                           @for (task of station.tasks; track task.id) {
