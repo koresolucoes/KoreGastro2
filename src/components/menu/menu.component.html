@@ -23,7 +23,7 @@
           <div class="container mx-auto px-4 overflow-x-auto">
             <ul class="flex items-center whitespace-nowrap space-x-4 h-12">
               @for(group of onlineMenu(); track group.categoryName) {
-                <li><a [href]="'#' + createSlug(group.categoryName)" class="block py-2 text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">{{ group.categoryName }}</a></li>
+                <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block py-2 text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">{{ group.categoryName }}</a></li>
               }
             </ul>
           </div>
@@ -49,7 +49,7 @@
                 <h3 class="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-4">Categorias</h3>
                 <ul class="space-y-2">
                   @for(group of onlineMenu(); track group.categoryName) {
-                    <li><a [href]="'#' + createSlug(group.categoryName)" class="block text-gray-600 hover:text-blue-600 font-medium transition-colors">{{ group.categoryName }}</a></li>
+                    <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block text-gray-600 hover:text-blue-600 font-medium transition-colors">{{ group.categoryName }}</a></li>
                   }
                 </ul>
               </nav>

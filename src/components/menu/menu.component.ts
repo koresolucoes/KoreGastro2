@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
 import { Subscription } from 'rxjs';
 
@@ -24,6 +24,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private stateService = inject(SupabaseStateService);
   private pricingService = inject(PricingService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private publicDataService = inject(PublicDataService);
   private routeSub: Subscription | undefined;
 
@@ -126,5 +127,13 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   createSlug(text: string): string {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  }
+
+  scrollToCategory(slug: string) {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      fragment: slug,
+      queryParamsHandling: 'preserve',
+    });
   }
 }
