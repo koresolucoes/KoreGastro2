@@ -30,7 +30,11 @@ export class MiseEnPlaceComponent {
 
   // View State
   selectedDate = signal(new Date().toISOString().split('T')[0]);
-  activePlan = signal<ProductionPlan | null>(null);
+  activePlan = computed(() => {
+    const plans = this.stateService.productionPlans();
+    const date = this.selectedDate();
+    return plans.find(p => p.plan_date === date) ?? null;
+  });
   isLoading = signal(true);
   updatingStockTasks = signal<Set<string>>(new Set());
   
@@ -43,20 +47,32 @@ export class MiseEnPlaceComponent {
 
   constructor() {
     effect(() => {
-      this.loadPlanForDate(this.selectedDate());
-    }, { allowSignalWrites: true });
-  }
+      const date = this.selectedDate();
+      const isDataLoaded = this.stateService.isDataLoaded();
 
-  async loadPlanForDate(date: string) {
-    this.isLoading.set(true);
-    const { data, error } = await this.dataService.getOrCreatePlanForDate(date);
-    if (error) {
-        await this.notificationService.alert(`Erro ao carregar plano: ${error.message}`);
-        this.activePlan.set(null);
-    } else {
-        this.activePlan.set(data);
-    }
-    this.isLoading.set(false);
+      if (!isDataLoaded) {
+        this.isLoading.set(true);
+        return; // Wait for initial data load
+      }
+
+      // Check if a plan for this date is already loaded in the global state.
+      const planExists = this.stateService.productionPlans().some(p => p.plan_date === date);
+
+      if (planExists) {
+          this.isLoading.set(false);
+      } else {
+        // Data is loaded, but no plan for this date. Let's create it.
+        this.isLoading.set(true);
+        this.dataService.getOrCreatePlanForDate(date).then(({ error }) => {
+          if (error) {
+            this.notificationService.alert(`Erro ao carregar ou criar plano: ${error.message}`);
+          }
+          // The creation will trigger a realtime event which updates the stateService.productionPlans signal.
+          // Our `activePlan` computed will then pick it up. We just need to stop loading.
+          this.isLoading.set(false);
+        });
+      }
+    }, { allowSignalWrites: true });
   }
 
   filteredTasks = computed(() => {
@@ -167,7 +183,6 @@ export class MiseEnPlaceComponent {
     }
 
     if (result.success) {
-      this.loadPlanForDate(this.selectedDate()); // Reload plan to show new task
       this.closeModal();
     } else {
       await this.notificationService.alert(`Erro ao salvar tarefa: ${result.error?.message}`);
@@ -205,7 +220,6 @@ export class MiseEnPlaceComponent {
     if (confirmed) {
         const { success, error } = await this.dataService.deleteTask(taskId);
         if (!success) await this.notificationService.alert(`Erro ao remover tarefa: ${error?.message}`);
-        else this.loadPlanForDate(this.selectedDate());
     }
   }
   
