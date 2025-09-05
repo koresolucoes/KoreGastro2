@@ -22,17 +22,20 @@
               <h2 class="text-xl font-semibold text-white">Mesas Aguardando Pagamento</h2>
             </div>
             @if(tablesForPayment().length > 0) {
-              <div class="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto">
+              <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto">
                 @for(table of tablesForPayment(); track table.id) {
-                  <div class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-blue-500 bg-blue-500/10 text-blue-300">
-                    <div class="flex-1 flex flex-col items-center justify-center">
+                  <div 
+                    (click)="openTableOptionsModal(table)" 
+                    class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-blue-500 bg-blue-500/10 text-blue-300 md:cursor-default cursor-pointer hover:bg-blue-500/20">
+                    <div class="flex-1 flex flex-col items-center justify-center pointer-events-none">
                         <span class="text-4xl font-bold">{{ table.number }}</span>
                         <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
                     </div>
-                    <div class="flex gap-2 mt-2">
-                        <button (click)="reopenTable(table)" class="flex-1 text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
-                        <button (click)="openPreBillForTable(table)" class="flex-1 text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
-                        <button (click)="openPaymentForTable(table)" class="flex-1 text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Pagar</button>
+                    <!-- Buttons visible only on medium screens and up -->
+                    <div class="hidden md:flex gap-2 mt-2">
+                        <button (click)="$event.stopPropagation(); reopenTable(table)" class="flex-1 text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
+                        <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="flex-1 text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
+                        <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="flex-1 text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Pagar</button>
                     </div>
                   </div>
                 }
@@ -422,6 +425,31 @@
       <div class="p-4 bg-gray-700/50 flex justify-between items-center text-xl font-bold">
          <span class="text-white">Total Pago</span>
          <span class="text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</span>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Table Options Modal for Mobile -->
+@if(isTableOptionsModalOpen() && selectedTableForOptions(); as table) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isTableOptionsModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">Opções - Mesa {{ table.number }}</h3>
+        <button (click)="isTableOptionsModalOpen.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-4 space-y-3">
+        <button (click)="openPaymentForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-3 transition-colors">
+          Pagar Conta
+        </button>
+        <button (click)="openPreBillForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-blue-600 text-white hover:bg-blue-500 rounded-md py-3 transition-colors">
+          Gerar Pré-conta
+        </button>
+        <button (click)="reopenTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-3 transition-colors">
+          Reabrir Mesa
+        </button>
       </div>
     </div>
   </div>

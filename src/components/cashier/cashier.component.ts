@@ -81,6 +81,8 @@ export class CashierComponent {
   isTablePaymentModalOpen = signal(false);
   selectedOrderForPayment = signal<Order | null>(null);
   selectedTableForPayment = signal<Table | null>(null);
+  isTableOptionsModalOpen = signal(false);
+  selectedTableForOptions = signal<Table | null>(null);
 
   // --- Pre-bill Modal Signals ---
   isPreBillModalOpen = signal(false);
@@ -189,6 +191,16 @@ export class CashierComponent {
   }
 
   // --- Table Payment Methods ---
+  openTableOptionsModal(table: Table) {
+    // Tailwind's `md` breakpoint is 768px.
+    // Only open the options modal on smaller screens.
+    if (window.innerWidth < 768) {
+        this.selectedTableForOptions.set(table);
+        this.isTableOptionsModalOpen.set(true);
+    }
+    // On larger screens, the buttons are visible directly on the card.
+  }
+  
   async openPaymentForTable(table: Table) {
     const order = this.openOrders().find(o => o.table_number === table.number);
     if (order) {
