@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -295,6 +294,9 @@ export class PosDataService {
             console.error('Stock deduction failed after payment was processed. Manual adjustment needed.', deductionError);
         }
     }
+    
+    // Manually trigger a refresh for cashier data after successful payment.
+    await this.stateService.refreshDashboardAndCashierData();
 
     return { success: true, error: null };
   }

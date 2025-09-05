@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { CashierClosing, OrderItem, OrderItemStatus, Recipe, TransactionType } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -80,6 +79,12 @@ export class CashierDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const { error } = await supabase.from('transactions').insert({ description, amount, type, user_id: userId });
+    
+    if (!error) {
+      // Manually trigger a refresh to ensure UI updates immediately.
+      await this.stateService.refreshDashboardAndCashierData();
+    }
+
     return { success: !error, error };
   }
 
