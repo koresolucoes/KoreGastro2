@@ -1,0 +1,50 @@
+@if (tutorial(); as t) {
+  <div class="container mx-auto max-w-4xl">
+    <a routerLink="/tutorials" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+      <span>Voltar para todos os tutoriais</span>
+    </a>
+
+    <header class="text-center mb-10">
+      <h1 class="text-4xl font-extrabold text-white">{{ t.title }}</h1>
+      <p class="mt-3 text-lg text-gray-400">{{ t.description }}</p>
+    </header>
+
+    <div class="space-y-12">
+      @for (step of t.steps; track step.title; let i = $index) {
+        <section class="flex flex-col md:flex-row items-center gap-8">
+          <!-- Text Content -->
+          <div class="md:w-1/2">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-lg">
+                {{ i + 1 }}
+              </div>
+              <h2 class="text-2xl font-bold text-white">{{ step.title }}</h2>
+            </div>
+            <p class="text-gray-300 leading-relaxed">{{ step.content }}</p>
+          </div>
+          <!-- Image Content -->
+          <div class="md:w-1/2">
+            <img [src]="step.imageUrl" alt="Ilustração para o passo: {{ step.title }}" width="800" height="400" class="rounded-lg shadow-lg border-2 border-gray-700">
+            <p class="text-center text-xs text-gray-500 mt-2">Imagem ilustrativa</p>
+          </div>
+        </section>
+      }
+    </div>
+
+    <footer class="text-center mt-16 py-8 border-t border-gray-700">
+        <h3 class="text-xl font-bold text-white">Tutorial Concluído!</h3>
+        <p class="text-gray-400 mt-2">Explore outras funcionalidades ou volte para a lista de tutoriais.</p>
+        <a routerLink="/tutorials" class="mt-4 inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors">
+            Ver outros Tutoriais
+        </a>
+    </footer>
+
+  </div>
+} @else {
+  <div class="text-center py-20">
+    <h2 class="text-2xl font-bold text-white">Tutorial não encontrado</h2>
+    <p class="text-gray-400 mt-2">O guia que você está procurando não existe ou foi movido.</p>
+    <a routerLink="/tutorials" class="mt-4 inline-block text-blue-400 hover:underline">Voltar para a lista de tutoriais</a>
+  </div>
+}

@@ -15,6 +15,8 @@ import { EmployeeSelectionComponent } from './components/auth/employee-selection
 import { roleGuard } from './guards/role.guard';
 import { PurchasingComponent } from './components/purchasing/purchasing.component';
 import { MiseEnPlaceComponent } from './components/mise-en-place/mise-en-place.component';
+import { TutorialsListComponent } from './components/tutorials/tutorials-list.component';
+import { TutorialDetailComponent } from './components/tutorials/tutorial-detail.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -33,5 +35,7 @@ export const APP_ROUTES: Routes = [
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
+  { path: 'tutorials', component: TutorialsListComponent, canActivate: [roleGuard] },
+  { path: 'tutorials/:id', component: TutorialDetailComponent, canActivate: [roleGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page
 ];
