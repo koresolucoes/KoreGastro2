@@ -32,6 +32,7 @@ export class MiseEnPlaceComponent {
   selectedDate = signal(new Date().toISOString().split('T')[0]);
   activePlan = signal<ProductionPlan | null>(null);
   isLoading = signal(true);
+  updatingStockTasks = signal<Set<string>>(new Set());
   
   // Modal State
   isModalOpen = signal(false);
@@ -174,16 +175,29 @@ export class MiseEnPlaceComponent {
   }
   
   async handleTaskClick(task: ProductionTask) {
+    if (task.status === 'Concluído' || this.updatingStockTasks().has(task.id)) return;
+
     let nextStatus: ProductionTaskStatus;
     switch (task.status) {
         case 'A Fazer': nextStatus = 'Em Preparo'; break;
         case 'Em Preparo': nextStatus = 'Concluído'; break;
-        case 'Concluído': return;
         default: return;
     }
-    const { success, error } = await this.dataService.updateTaskStatus(task.id, nextStatus);
-    if (!success) await this.notificationService.alert(`Erro ao atualizar status: ${error?.message}`);
-    else this.loadPlanForDate(this.selectedDate());
+
+    this.updatingStockTasks.update(set => new Set(set).add(task.id));
+    
+    const { success, error } = await this.dataService.updateTaskStatusAndStock(task.id, nextStatus);
+    
+    if (!success) {
+        await this.notificationService.alert(`Erro ao atualizar status: ${error?.message}`);
+    }
+    
+    // The realtime subscription will refresh the data, so we just remove the loading state.
+    this.updatingStockTasks.update(set => {
+        const newSet = new Set(set);
+        newSet.delete(task.id);
+        return newSet;
+    });
   }
 
   async deleteTask(taskId: string) {

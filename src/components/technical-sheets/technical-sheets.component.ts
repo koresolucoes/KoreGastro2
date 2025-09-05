@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,6 +21,7 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
     prep_time_in_minutes: 0,
     is_available: true,
     is_sub_recipe: false,
+    source_ingredient_id: null,
   },
   preparations: [],
   ingredients: [],
@@ -124,6 +124,12 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
       const id = this.selectedRecipeId();
       if (!id) return null;
       return this.allRecipes().find(r => r.id === id);
+  });
+
+  linkedIngredient = computed(() => {
+    const sourceId = this.recipeForm().recipe.source_ingredient_id;
+    if (!sourceId) return null;
+    return this.ingredients().find(i => i.id === sourceId);
   });
 
   formTotalCost = computed(() => {
@@ -346,6 +352,33 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
     } else {
       await this.notificationService.alert(`Erro: ${error?.message}`);
     }
+  }
+
+  async linkOrCreateStockItem() {
+    const recipe = this.recipeForm().recipe;
+    if (!recipe.name) {
+      await this.notificationService.alert("Dê um nome à sub-receita antes de criar um item de estoque.");
+      return;
+    }
+
+    const { success, error, data: newIngredient } = await this.inventoryDataService.addIngredient({
+      name: recipe.name,
+      unit: 'un', // Default unit, can be changed later
+      cost: this.formTotalCost(),
+      stock: 0,
+      min_stock: 0,
+    });
+
+    if (success && newIngredient) {
+      this.updateRecipeField('source_ingredient_id', newIngredient.id);
+      await this.notificationService.alert(`Item "${newIngredient.name}" criado no estoque!`, 'Sucesso');
+    } else {
+      await this.notificationService.alert(`Erro ao criar item de estoque: ${error?.message}`);
+    }
+  }
+
+  unlinkStockItem() {
+    this.updateRecipeField('source_ingredient_id', null);
   }
 
   // --- API Calls ---

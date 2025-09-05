@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -261,5 +260,34 @@ export class InventoryDataService {
       console.error('An unexpected error occurred during stock deduction:', error);
       return { success: false, error };
     }
+  }
+
+  async adjustStockForProduction(subRecipeId: string, producedIngredientId: string, quantityProduced: number): Promise<{ success: boolean, error: any }> {
+    const recipeCost = this.stateService.recipeCosts().get(subRecipeId);
+    const subRecipeName = this.stateService.recipesById().get(subRecipeId)?.name || 'sub-receita';
+
+    if (!recipeCost) {
+      return { success: false, error: { message: `Ficha técnica para a sub-receita ID ${subRecipeId} não encontrada.` } };
+    }
+
+    // 1. Consume raw ingredients
+    const consumptionReason = `Produção: ${quantityProduced}x ${subRecipeName}`;
+    for (const [rawIngredientId, quantityPerUnit] of recipeCost.rawIngredients.entries()) {
+      const totalToConsume = quantityPerUnit * quantityProduced;
+      const { success, error } = await this.adjustIngredientStock(rawIngredientId, -totalToConsume, consumptionReason, null);
+      if (!success) {
+        return { success: false, error: { message: `Falha ao consumir o ingrediente ID ${rawIngredientId}: ${error.message}` } };
+      }
+    }
+
+    // 2. Add produced sub-recipe to stock
+    const productionReason = `Produzido: ${quantityProduced}x ${subRecipeName}`;
+    const { success, error } = await this.adjustIngredientStock(producedIngredientId, quantityProduced, productionReason, null);
+    if (!success) {
+      // Note: At this point, raw ingredients have been consumed. This would ideally be a transaction.
+      return { success: false, error: { message: `Falha ao adicionar o produto final ao estoque: ${error.message}` } };
+    }
+
+    return { success: true, error: null };
   }
 }

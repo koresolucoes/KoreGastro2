@@ -130,6 +130,29 @@
               </div>
             </div>
           </div>
+
+          <!-- Sub-recipe Stock Control -->
+          @if (recipeForm().recipe.is_sub_recipe) {
+            <div class="bg-gray-900/50 p-4 rounded-lg">
+              <h3 class="font-semibold text-white text-md mb-2">Controle de Estoque da Sub-receita</h3>
+              <p class="text-sm text-gray-400 mb-3">Vincule esta sub-receita a um item de estoque para controlar a produção e o consumo.</p>
+              @if (linkedIngredient(); as ingredient) {
+                <div class="bg-gray-700 p-3 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                    <span class="text-white font-medium">Vinculado ao item: <span class="text-green-300 font-bold">"{{ ingredient.name }}"</span></span>
+                  </div>
+                  <button (click)="unlinkStockItem()" class="text-xs text-red-400 hover:underline">Desvincular</button>
+                </div>
+              } @else {
+                <button (click)="linkOrCreateStockItem()" class="w-full bg-blue-600/80 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+                  <span>Vincular / Criar Item de Estoque</span>
+                </button>
+              }
+            </div>
+          }
+
           <!-- Preparations -->
           <div class="space-y-4">
             @for(prep of recipeForm().preparations; track prep.id) {

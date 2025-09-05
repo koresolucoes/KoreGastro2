@@ -2,12 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { InventoryDataService } from './inventory-data.service';
+import { SupabaseStateService } from './supabase-state.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MiseEnPlaceDataService {
   private authService = inject(AuthService);
+  private inventoryDataService = inject(InventoryDataService);
+  private stateService = inject(SupabaseStateService);
 
   async getOrCreatePlanForDate(date: string): Promise<{ success: boolean, error: any, data: ProductionPlan | null }> {
     const userId = this.authService.currentUser()?.id;
@@ -16,7 +20,7 @@ export class MiseEnPlaceDataService {
     // First, try to find an existing plan
     let { data: existingPlan, error: findError } = await supabase
       .from('production_plans')
-      .select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))')
+      .select('*, production_tasks(*, recipes!sub_recipe_id(name, source_ingredient_id), stations(name), employees(name))')
       .eq('user_id', userId)
       .eq('plan_date', date)
       .single();
@@ -64,7 +68,24 @@ export class MiseEnPlaceDataService {
     return { success: !error, error };
   }
   
-  async updateTaskStatus(taskId: string, status: ProductionTaskStatus): Promise<{ success: boolean; error: any }> {
+  async updateTaskStatusAndStock(taskId: string, status: ProductionTaskStatus): Promise<{ success: boolean; error: any }> {
+    // If task is being marked as complete, handle stock adjustment
+    if (status === 'Concluído') {
+      const { data: task } = await supabase.from('production_tasks').select('*, recipes!inner(id, source_ingredient_id)').eq('id', taskId).single();
+      
+      if (task && task.sub_recipe_id && task.recipes?.source_ingredient_id) {
+        const { success, error } = await this.inventoryDataService.adjustStockForProduction(
+          task.sub_recipe_id, 
+          task.recipes.source_ingredient_id, 
+          task.quantity_to_produce
+        );
+        if (!success) {
+          // If stock adjustment fails, don't update the status and return the error.
+          return { success: false, error };
+        }
+      }
+    }
+
     const { error } = await supabase.from('production_tasks').update({ status }).eq('id', taskId);
     return { success: !error, error };
   }

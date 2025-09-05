@@ -41,9 +41,16 @@
                           @for (task of station.tasks; track task.id) {
                               <div 
                                   (click)="handleTaskClick(task)"
-                                  class="p-3 rounded-lg border-l-4 transition-all"
+                                  class="p-3 rounded-lg border-l-4 transition-all relative"
                                   [class]="getStatusClass(task.status)"
                                   [class.cursor-pointer]="task.status !== 'Concluída'">
+
+                                  @if(updatingStockTasks().has(task.id)) {
+                                    <div class="absolute inset-0 bg-gray-900/60 flex items-center justify-center rounded-lg z-20">
+                                      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                    </div>
+                                  }
+
                                   <div class="flex justify-between items-start">
                                       <div class="flex-1">
                                         <p class="font-bold text-white text-lg">{{ task.quantity_to_produce }}x {{ task.recipes?.name || task.custom_task_name }}</p>

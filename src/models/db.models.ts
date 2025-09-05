@@ -259,7 +259,7 @@ export interface ProductionTask {
   status: ProductionTaskStatus;
   created_at: string;
   user_id: string;
-  recipes?: { name: string }; // Relation
+  recipes?: { name: string, source_ingredient_id: string | null }; // Relation
   stations?: { name: string }; // Relation
   employees?: { name: string }; // Relation
 }
