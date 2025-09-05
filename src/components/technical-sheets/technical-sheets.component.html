@@ -233,10 +233,8 @@
 
 <!-- Add Item Search Popover -->
 @if(addingToPreparationId(); as prepId) {
-    <div class="fixed inset-0 z-[60]" (click)="stopAddingItem()">
-      <!-- This is a dynamic popover, so its position would ideally be calculated based on the button that opened it.
-           For simplicity in this static example, we'll use a fixed position. -->
-      <div class="absolute bg-gray-800 border border-gray-600 rounded-lg shadow-lg w-full max-w-sm" [style.left.px]="600" [style.top.px]="300" (click)="$event.stopPropagation()">
+    <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="stopAddingItem()">
+      <div class="bg-gray-800 border border-gray-600 rounded-lg shadow-lg w-full max-w-sm" (click)="$event.stopPropagation()">
         <div class="p-4">
           <h4 class="font-semibold text-white mb-2">Adicionar a {{ getAddingToPreparationName(addingToPreparationId()) }}</h4>
           <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Buscar..." class="w-full bg-gray-700 rounded-lg p-2 mb-2 text-white">
