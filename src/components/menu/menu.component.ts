@@ -89,7 +89,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       categoriesSource = this.publicCategories();
     } else {
       recipesSource = this.stateService.recipesWithStockStatus()
-        .filter(recipe => recipe.is_available && recipe.hasStock && !recipe.is_sub_recipe && !recipe.source_ingredient_id);
+        .filter(recipe => recipe.is_available && recipe.hasStock && !recipe.is_sub_recipe);
       categoriesSource = this.stateService.categories();
     }
 
@@ -123,4 +123,8 @@ export class MenuComponent implements OnInit, OnDestroy {
       }))
       .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
   });
+
+  createSlug(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  }
 }

@@ -13,8 +13,7 @@ export class PublicDataService {
       .select('*')
       .eq('user_id', userId)
       .eq('is_available', true)
-      .eq('is_sub_recipe', false)
-      .is('source_ingredient_id', null);
+      .eq('is_sub_recipe', false);
     if (error) {
       console.error('Error fetching public recipes:', error);
       return [];
