@@ -46,6 +46,8 @@ export class SupabaseStateService {
   dashboardCompletedOrders = signal<Order[]>([]);
 
   performanceTransactions = signal<Transaction[]>([]);
+  performanceProductionPlans = signal<ProductionPlan[]>([]);
+  performanceCompletedOrders = signal<Order[]>([]);
 
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
   openOrders = computed(() => this.orders().filter(o => !o.is_completed));
@@ -269,6 +271,8 @@ export class SupabaseStateService {
     this.promotionRecipes.set([]); this.completedOrders.set([]); this.transactions.set([]); this.cashierClosings.set([]);
     this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
+    this.performanceProductionPlans.set([]);
+    this.performanceCompletedOrders.set([]);
     this.isDataLoaded.set(false);
   }
 
@@ -358,20 +362,41 @@ export class SupabaseStateService {
     return { success: true, error: null };
   }
   
-  async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean, error: any }> {
+  async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean; error: any }> {
     const userId = this.currentUser()?.id; if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { data, error } = await supabase.from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .in('type', ['Gorjeta', 'Receita'])
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString());
+    
+    const [transactionsRes, productionPlansRes, completedOrdersRes] = await Promise.all([
+      supabase.from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .in('type', ['Gorjeta', 'Receita'])
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString()),
+      supabase.from('production_plans')
+        .select('*, production_tasks!inner(*, employees(name))')
+        .eq('user_id', userId)
+        .gte('plan_date', startDate.toISOString().split('T')[0])
+        .lte('plan_date', endDate.toISOString().split('T')[0]),
+      supabase.from('orders')
+        .select('*, order_items(*)')
+        .eq('user_id', userId)
+        .eq('is_completed', true)
+        .gte('completed_at', startDate.toISOString())
+        .lte('completed_at', endDate.toISOString())
+    ]);
       
-    if (error) { 
+    if (transactionsRes.error || productionPlansRes.error || completedOrdersRes.error) { 
       this.performanceTransactions.set([]);
-      return { success: false, error };
+      this.performanceProductionPlans.set([]);
+      this.performanceCompletedOrders.set([]);
+      return { success: false, error: transactionsRes.error || productionPlansRes.error || completedOrdersRes.error };
     }
-    this.performanceTransactions.set(data || []);
+    
+    this.performanceTransactions.set(transactionsRes.data || []);
+    this.performanceProductionPlans.set(productionPlansRes.data as ProductionPlan[] || []);
+    this.setPerformanceCompletedOrdersWithPrices(completedOrdersRes.data || []);
     return { success: true, error: null };
   }
+
+  private setPerformanceCompletedOrdersWithPrices(orders: any[]) { this.performanceCompletedOrders.set(this.processCompletedOrdersWithPrices(orders)); }
 }

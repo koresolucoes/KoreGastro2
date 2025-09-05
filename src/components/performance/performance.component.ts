@@ -1,10 +1,11 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Employee } from '../../models/db.models';
+import { Employee, Order, ProductionPlan } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 
 type ReportPeriod = 'day' | 'week' | 'month';
+type PerformanceView = 'sales' | 'kitchen';
 
 interface EmployeePerformance {
   employee: Employee;
@@ -26,10 +27,13 @@ export class PerformanceComponent implements OnInit {
     private stateService = inject(SupabaseStateService);
 
     period = signal<ReportPeriod>('day');
+    performanceView = signal<PerformanceView>('sales');
     isLoading = signal(true);
     
     performanceTransactions = this.stateService.performanceTransactions;
     employees = this.stateService.employees;
+    performanceProductionPlans = this.stateService.performanceProductionPlans;
+    performanceCompletedOrders = this.stateService.performanceCompletedOrders;
 
     ngOnInit() {
         this.loadData();
@@ -75,6 +79,13 @@ export class PerformanceComponent implements OnInit {
         return { startDate, endDate };
     }
     
+    formatTime(seconds: number): string {
+      if (isNaN(seconds) || seconds < 0) return '00:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
     totalSales = computed(() => {
         return this.performanceTransactions()
             .filter(t => t.type === 'Receita')
@@ -155,4 +166,86 @@ export class PerformanceComponent implements OnInit {
       { label: 'Total de Gorjetas', value: this.totalTips(), isCurrency: true },
       { label: 'Pedidos Atendidos', value: this.totalOrders(), isCurrency: false },
     ]);
+    
+    // --- Kitchen Performance Computeds ---
+    kitchenStats = computed(() => [
+        { label: 'Tarefas de Mise en Place Concluídas', value: this.totalMiseEnPlaceTasksCompleted() },
+        { label: 'Tempo Médio de Preparo', value: this.formatTime(this.averagePrepTime()) },
+        { label: 'Itens Preparados no Período', value: this.performanceCompletedOrders().flatMap(o => o.order_items).length },
+    ]);
+
+    miseEnPlacePerformance = computed((): { employee: Employee, completedTasks: number }[] => {
+      const employeesMap = new Map(this.employees().map(e => [e.id, { employee: e, completedTasks: 0 }]));
+      const tasks = this.performanceProductionPlans().flatMap(plan => plan.production_tasks || []);
+      for (const task of tasks) {
+        if (task.status === 'Concluído' && task.employee_id && employeesMap.has(task.employee_id)) {
+          employeesMap.get(task.employee_id)!.completedTasks++;
+        }
+      }
+      return Array.from(employeesMap.values())
+        .filter(data => data.completedTasks > 0)
+        .sort((a, b) => b.completedTasks - a.completedTasks);
+    });
+
+    totalMiseEnPlaceTasksCompleted = computed(() => {
+      return this.performanceProductionPlans()
+        .flatMap(p => p.production_tasks || [])
+        .filter(t => t.status === 'Concluído').length;
+    });
+
+    maxTasksCompleted = computed(() => {
+      const performers = this.miseEnPlacePerformance();
+      if (performers.length === 0) return 0;
+      return Math.max(...performers.map(p => p.completedTasks));
+    });
+
+    stationPerformance = computed(() => {
+      const stationsMap = new Map<string, { name: string, totalPrepTime: number, itemCount: number }>();
+      const allStations = this.stateService.stations();
+      allStations.forEach(s => stationsMap.set(s.id, { name: s.name, totalPrepTime: 0, itemCount: 0 }));
+
+      const items = this.performanceCompletedOrders().flatMap(o => o.order_items || []);
+
+      for (const item of items) {
+        const timestamps = item.status_timestamps;
+        if (timestamps && (timestamps['PRONTO']) && (timestamps['EM_PREPARO'] || timestamps['PENDENTE'])) {
+          const start = new Date(timestamps['EM_PREPARO'] || timestamps['PENDENTE']).getTime();
+          const end = new Date(timestamps['PRONTO']).getTime();
+          const prepTime = (end - start) / 1000; // in seconds
+
+          if (prepTime > 0 && item.station_id && stationsMap.has(item.station_id)) {
+            const stationData = stationsMap.get(item.station_id)!;
+            stationData.totalPrepTime += prepTime;
+            stationData.itemCount++;
+          }
+        }
+      }
+
+      return Array.from(stationsMap.values())
+        .filter(s => s.itemCount > 0)
+        .map(s => ({
+          ...s,
+          averagePrepTime: s.totalPrepTime / s.itemCount
+        }))
+        .sort((a, b) => a.averagePrepTime - b.averagePrepTime);
+    });
+
+    averagePrepTime = computed(() => {
+      const items = this.performanceCompletedOrders().flatMap(o => o.order_items || []);
+      let totalTime = 0;
+      let count = 0;
+      for (const item of items) {
+        const timestamps = item.status_timestamps;
+        if (timestamps && (timestamps['PRONTO']) && (timestamps['EM_PREPARO'] || timestamps['PENDENTE'])) {
+          const start = new Date(timestamps['EM_PREPARO'] || timestamps['PENDENTE']).getTime();
+          const end = new Date(timestamps['PRONTO']).getTime();
+          const prepTime = (end - start) / 1000;
+          if (prepTime > 0) {
+            totalTime += prepTime;
+            count++;
+          }
+        }
+      }
+      return count > 0 ? totalTime / count : 0;
+    });
 }
