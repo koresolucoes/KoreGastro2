@@ -9,6 +9,7 @@ import { CashierDataService } from '../../services/cashier-data.service';
 import { PaymentModalComponent } from '../pos/payment-modal/payment-modal.component';
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { NotificationService } from '../../services/notification.service';
+import { PosDataService } from '../../services/pos-data.service';
 
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
 type CashDrawerView = 'movement' | 'closing';
@@ -39,6 +40,7 @@ interface PaymentSummary {
 export class CashierComponent {
   stateService = inject(SupabaseStateService);
   cashierDataService = inject(CashierDataService);
+  posDataService = inject(PosDataService);
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
@@ -195,6 +197,21 @@ export class CashierComponent {
       this.isTablePaymentModalOpen.set(true);
     } else {
       await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
+    }
+  }
+
+  async reopenTable(table: Table) {
+    const confirmed = await this.notificationService.confirm(
+      `Deseja reabrir a Mesa ${table.number}? Ela voltará para a tela do PDV e sairá da fila de pagamentos.`,
+      'Confirmar Reabertura'
+    );
+    if (confirmed) {
+      const { success, error } = await this.posDataService.updateTableStatus(table.id, 'OCUPADA');
+      if (success) {
+        await this.notificationService.alert(`Mesa ${table.number} reaberta com sucesso.`, 'Sucesso');
+      } else {
+        await this.notificationService.alert(`Falha ao reabrir a mesa. Erro: ${error?.message}`);
+      }
     }
   }
 
@@ -358,4 +375,3 @@ export class CashierComponent {
     return `Mesa ${order.table_number}`;
   }
 }
-      

@@ -1,9 +1,11 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Order, Table } from '../../../models/db.models';
 import { PosDataService, PaymentInfo } from '../../../services/pos-data.service';
 import { PrintingService } from '../../../services/printing.service';
+import { NotificationService } from '../../../services/notification.service';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -17,6 +19,7 @@ type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' |
 export class PaymentModalComponent {
   posDataService = inject(PosDataService);
   printingService = inject(PrintingService);
+  notificationService = inject(NotificationService);
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -52,16 +55,30 @@ export class PaymentModalComponent {
     });
   }
 
-  addPayment() {
-    const method = this.selectedPaymentMethod(), balance = this.balanceDue();
+  async addPayment() {
+    const method = this.selectedPaymentMethod();
+    const balance = this.balanceDue();
     let amount = parseFloat(this.paymentAmountInput());
-    if (isNaN(amount) || amount <= 0) { alert('Valor inválido.'); return; }
-    if (method !== 'Dinheiro' && amount > balance + 0.001) { amount = balance; }
-    if (amount > 0) this.payments.update(p => [...p, { method, amount: parseFloat(amount.toFixed(2)) }]);
+
+    if (isNaN(amount) || amount <= 0) {
+      await this.notificationService.alert('O valor inserido é inválido.');
+      return;
+    }
+
+    if (method !== 'Dinheiro' && amount > balance + 0.001) {
+      await this.notificationService.alert(`O valor para ${method} não pode ser maior que o saldo restante de ${balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`);
+      return;
+    }
+    
+    if (amount > 0) {
+      this.payments.update(p => [...p, { method, amount: parseFloat(amount.toFixed(2)) }]);
+    }
     
     const newBalance = this.balanceDue();
     this.paymentAmountInput.set(newBalance > 0 ? newBalance.toFixed(2) : '');
-    if (newBalance > 0) this.selectedPaymentMethod.set('Dinheiro');
+    if (newBalance > 0) {
+      this.selectedPaymentMethod.set('Dinheiro');
+    }
   }
 
   removePayment(index: number) {
@@ -74,6 +91,14 @@ export class PaymentModalComponent {
     const order = this.order();
     const table = this.table();
     if (!order || !table || !this.isPaymentComplete()) return;
+
+    const confirmed = await this.notificationService.confirm(
+      `Confirmar o pagamento de ${this.orderTotal().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para a Mesa ${table.number}? Esta ação é irreversível.`,
+      'Confirmar Pagamento'
+    );
+    if (!confirmed) {
+      return;
+    }
     
     const { success, error } = await this.posDataService.finalizeOrderPayment(
       order.id, table.id, this.orderTotal(), this.payments(), this.tipAmount()
@@ -82,7 +107,7 @@ export class PaymentModalComponent {
     if (success) {
       this.paymentSuccess.set(true);
     } else {
-      alert(`Falha ao registrar pagamento. Erro: ${error?.message}`);
+      await this.notificationService.alert(`Falha ao registrar pagamento. Erro: ${error?.message}`);
     }
   }
 

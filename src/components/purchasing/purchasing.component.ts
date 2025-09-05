@@ -40,6 +40,14 @@ export class PurchasingComponent implements OnInit {
     
     orderPendingDeletion = signal<PurchaseOrder | null>(null);
 
+    purchaseOrdersWithDetails = computed(() => {
+        return this.stateService.purchaseOrders().map(order => ({
+            ...order,
+            total: order.purchase_order_items?.reduce((sum, item) => sum + (item.quantity * item.cost), 0) ?? 0,
+            itemCount: order.purchase_order_items?.length ?? 0
+        }));
+    });
+
     updateOrderFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
         this.orderForm.update(f => ({
             ...f,

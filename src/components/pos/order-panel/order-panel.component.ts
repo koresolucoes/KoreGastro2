@@ -3,6 +3,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
@@ -201,7 +202,13 @@ export class OrderPanelComponent {
       await this.notificationService.alert('Envie os itens no carrinho antes de fechar a conta.');
       return;
     }
-    this.checkoutStarted.emit();
+    const confirmed = await this.notificationService.confirm(
+      `Tem certeza que deseja enviar a conta da Mesa ${this.selectedTable()?.number} para o caixa? A mesa ficará bloqueada para novos lançamentos.`, 
+      'Enviar para o Caixa?'
+    );
+    if (confirmed) {
+        this.checkoutStarted.emit();
+    }
   }
 
   getOrderItemStatusClass(status: OrderItemStatus): string {
