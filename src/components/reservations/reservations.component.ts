@@ -62,13 +62,30 @@ export class ReservationsComponent {
     this.isModalOpen.set(true);
   }
 
+  openEditModal(reservation: Reservation) {
+    this.reservationForModal.set({ ...reservation });
+    this.isModalOpen.set(true);
+  }
+
   async handleSave(reservation: Partial<Reservation>) {
-    const { success, error } = await this.reservationDataService.createManualReservation(reservation);
-    if (success) {
-      await this.notificationService.alert('Reserva criada com sucesso!', 'Sucesso');
-      this.isModalOpen.set(false);
+    if (reservation.id) {
+      // Update existing reservation
+      const { success, error } = await this.reservationDataService.updateReservation(reservation.id, reservation);
+      if (success) {
+        await this.notificationService.alert('Reserva atualizada com sucesso!', 'Sucesso');
+        this.isModalOpen.set(false);
+      } else {
+        await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
+      }
     } else {
-      await this.notificationService.alert(`Erro ao salvar reserva: ${error?.message}`);
+      // Create new reservation
+      const { success, error } = await this.reservationDataService.createManualReservation(reservation);
+      if (success) {
+        await this.notificationService.alert('Reserva criada com sucesso!', 'Sucesso');
+        this.isModalOpen.set(false);
+      } else {
+        await this.notificationService.alert(`Erro ao salvar reserva: ${error?.message}`);
+      }
     }
   }
 

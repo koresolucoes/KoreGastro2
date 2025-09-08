@@ -28,7 +28,7 @@
       <h2 class="text-xl font-semibold text-yellow-400 mb-4 border-b-2 border-yellow-500 pb-2">Pendentes ({{ pendingReservations().length }})</h2>
       <div class="space-y-4 overflow-y-auto flex-1 pr-2">
         @for (reservation of pendingReservations(); track reservation.id) {
-          <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+          <div (click)="openEditModal(reservation)" class="bg-gray-800 p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-700/50 transition-colors" [class]="getStatusClass(reservation.status)">
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
@@ -56,8 +56,8 @@
               <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p>
             }
             <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
-              <button (click)="updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Confirmar</button>
-              <button (click)="updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+              <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Confirmar</button>
+              <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
             </div>
           </div>
         } @empty {
@@ -71,7 +71,7 @@
       <h2 class="text-xl font-semibold text-blue-400 mb-4 border-b-2 border-blue-500 pb-2">Confirmadas ({{ confirmedReservations().length }})</h2>
        <div class="space-y-4 overflow-y-auto flex-1 pr-2">
         @for (reservation of confirmedReservations(); track reservation.id) {
-          <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+          <div (click)="openEditModal(reservation)" class="bg-gray-800 p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-700/50 transition-colors" [class]="getStatusClass(reservation.status)">
              <div class="flex justify-between items-start">
               <div>
                 <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
@@ -87,8 +87,8 @@
             </div>
             @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
             <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
-              <button (click)="updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Finalizar</button>
-              <button (click)="updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+              <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Finalizar</button>
+              <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
             </div>
           </div>
         } @empty {

@@ -40,6 +40,12 @@ export class ReservationDataService {
     return { success: !error, error };
   }
 
+  async updateReservation(reservationId: string, reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
+    const { id, created_at, user_id, ...updateData } = reservationData;
+    const { error } = await supabase.from('reservations').update(updateData).eq('id', reservationId);
+    return { success: !error, error };
+  }
+
   async createManualReservation(reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };

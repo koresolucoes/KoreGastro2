@@ -22,6 +22,8 @@ export class ReservationModalComponent {
   formDate = signal('');
   formTime = signal('');
 
+  isEditing = computed(() => !!this.initialData()?.id);
+
   constructor() {
     effect(() => {
       const data = this.initialData();
