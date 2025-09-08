@@ -40,6 +40,19 @@ export class ReservationModalComponent {
     });
   }
 
+  updateFormField(field: keyof Omit<Reservation, 'id' | 'created_at' | 'user_id' | 'status' | 'reservation_time'>, value: any) {
+    this.reservationForm.update(form => {
+      const newForm = { ...form };
+      if (field === 'party_size') {
+        const num = Number(value);
+        (newForm as any)[field] = isNaN(num) ? undefined : num;
+      } else {
+        (newForm as any)[field] = value;
+      }
+      return newForm;
+    });
+  }
+
   isFormValid = computed(() => {
     const form = this.reservationForm();
     return form.customer_name && form.party_size && form.party_size > 0 && this.formDate() && this.formTime();

@@ -1,4 +1,4 @@
-<div class="bg-gray-100 min-h-screen font-sans flex flex-col items-center justify-center p-4">
+<div class="bg-gray-100 text-gray-900 min-h-screen font-sans flex flex-col items-center justify-center p-4">
     <div class="w-full max-w-lg">
         <header class="text-center mb-6">
             <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
@@ -51,10 +51,10 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-800 mb-3">3. Seus Dados</h3>
                                 <div class="space-y-4">
-                                    <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações? (Ex: Alergias, cadeira de bebê)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                                    <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
+                                    <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
+                                    <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
+                                    <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações? (Ex: Alergias, cadeira de bebê)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500"></textarea>
                                 </div>
                             </div>
                             <!-- Submit -->

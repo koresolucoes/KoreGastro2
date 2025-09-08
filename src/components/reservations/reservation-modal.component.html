@@ -11,17 +11,17 @@
       <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
         <div>
           <label for="customerName" class="block text-sm font-medium text-gray-300 mb-1">Nome do Cliente *</label>
-          <input type="text" id="customerName" [(ngModel)]="reservationForm().customer_name" name="customerName" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" id="customerName" [ngModel]="reservationForm().customer_name" (ngModelChange)="updateFormField('customer_name', $event)" name="customerName" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label for="customerPhone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-            <input type="tel" id="customerPhone" [(ngModel)]="reservationForm().customer_phone" name="customerPhone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="tel" id="customerPhone" [ngModel]="reservationForm().customer_phone" (ngModelChange)="updateFormField('customer_phone', $event)" name="customerPhone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
             <label for="partySize" class="block text-sm font-medium text-gray-300 mb-1">Nº de Pessoas *</label>
-            <input type="number" id="partySize" [(ngModel)]="reservationForm().party_size" name="partySize" min="1" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="number" id="partySize" [ngModel]="reservationForm().party_size" (ngModelChange)="updateFormField('party_size', $event)" name="partySize" min="1" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
@@ -38,7 +38,7 @@
         
         <div>
           <label for="notes" class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-          <textarea id="notes" [(ngModel)]="reservationForm().notes" name="notes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <textarea id="notes" [ngModel]="reservationForm().notes" (ngModelChange)="updateFormField('notes', $event)" name="notes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
         </div>
       </div>
       

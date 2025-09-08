@@ -80,6 +80,9 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
 
     this.settings.set(settings);
     
+    // Clamp the initial party size to be within the allowed range
+    this.partySize.set(Math.max(settings.min_party_size, Math.min(this.partySize(), settings.max_party_size)));
+
     const today = new Date();
     const maxDate = new Date();
     maxDate.setDate(today.getDate() + settings.booking_notice_days);
@@ -133,6 +136,18 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   }
 
   async submitReservation() {
+    const settings = this.settings();
+    if (!settings) {
+      this.viewState.set('error');
+      this.errorMessage.set('Configurações de reserva não encontradas.');
+      return;
+    }
+
+    if (this.partySize() < settings.min_party_size || this.partySize() > settings.max_party_size) {
+        alert(`O número de pessoas deve ser entre ${settings.min_party_size} e ${settings.max_party_size}.`);
+        return;
+    }
+
     if (!this.customerName() || !this.customerPhone() || !this.selectedTime()) {
         alert('Por favor, preencha seu nome, telefone e selecione um horário.');
         return;
