@@ -58,31 +58,30 @@ export class TimeClockComponent {
     filteredEntries = computed(() => {
         const employeeId = this.filterEmployeeId();
         const startDateStr = this.filterStartDate(); // e.g., '2025-09-01'
-        const endDateStr = this.filterEndDate(); // e.g., '2025-09-30'
+        const endDateStr = this.filterEndDate();   // e.g., '2025-09-30'
         
-        // Create full ISO strings for the boundaries.
-        // This ensures we are comparing UTC times correctly.
-        const startISO = startDateStr ? `${startDateStr}T00:00:00.000Z` : null;
-        const endISO = endDateStr ? `${endDateStr}T23:59:59.999Z` : null;
+        if (!startDateStr || !endDateStr) {
+            return this.allEntries();
+        }
 
-        return this.allEntries()
-            .filter(entry => {
-                if (employeeId !== 'all' && entry.employee_id !== employeeId) {
-                    return false;
-                }
-                
-                // clock_in_time from Supabase is a full ISO 8601 string,
-                // which allows for safe lexicographical (string) comparison.
-                const entryDateStr = entry.clock_in_time; 
-                
-                if (startISO && entryDateStr < startISO) {
-                    return false;
-                }
-                if (endISO && entryDateStr > endISO) {
-                    return false;
-                }
-                return true;
-            });
+        return this.allEntries().filter(entry => {
+            if (employeeId !== 'all' && entry.employee_id !== employeeId) {
+                return false;
+            }
+            
+            // Create a Date object from the UTC timestamp string from the database.
+            const entryDate = new Date(entry.clock_in_time);
+            
+            // getFullYear(), getMonth(), and getDate() return values based on the host's local timezone.
+            // This correctly converts the UTC time to a local date string for comparison.
+            const year = entryDate.getFullYear();
+            const month = String(entryDate.getMonth() + 1).padStart(2, '0');
+            const day = String(entryDate.getDate()).padStart(2, '0');
+            const entryDateStr = `${year}-${month}-${day}`;
+            
+            // Compare the local date string of the entry with the filter's date strings.
+            return entryDateStr >= startDateStr && entryDateStr <= endDateStr;
+        });
     });
 
     totalHours = computed(() => {
