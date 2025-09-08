@@ -1,13 +1,13 @@
-
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Employee, Category } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Employee, Category, ReservationSettings } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
+import { ReservationDataService } from '../../services/reservation-data.service';
 
 @Component({
   selector: 'app-settings',
@@ -23,6 +23,7 @@ export class SettingsComponent {
   private recipeDataService = inject(RecipeDataService);
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
+  private reservationDataService = inject(ReservationDataService);
 
   // Data Signals from Service
   stations = this.stateService.stations;
@@ -30,6 +31,10 @@ export class SettingsComponent {
   recipeCategories = this.stateService.categories;
   suppliers = this.stateService.suppliers;
   employees = this.stateService.employees;
+  reservationSettings = this.stateService.reservationSettings;
+
+  // Reservation Form
+  reservationForm = signal<Partial<ReservationSettings>>({});
 
   // Search terms
   stationSearchTerm = signal('');
@@ -45,6 +50,32 @@ export class SettingsComponent {
     const menuUrl = `${window.location.origin}${window.location.pathname}#/menu/${userId}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
+
+  publicBookingUrl = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `${window.location.origin}${window.location.pathname}#/book/${userId}`;
+  });
+
+  constructor() {
+    effect(() => {
+        const settings = this.reservationSettings();
+        if (settings) {
+            this.reservationForm.set({ ...settings });
+        } else {
+            // Set default values if no settings exist
+            this.reservationForm.set({
+                is_enabled: false,
+                opening_time: '18:00',
+                closing_time: '23:00',
+                booking_duration_minutes: 90,
+                max_party_size: 8,
+                min_party_size: 1,
+                booking_notice_days: 30,
+            });
+        }
+    });
+  }
 
   // Filtered lists
   filteredStations = computed(() => {
@@ -244,5 +275,33 @@ export class SettingsComponent {
     const { success, error } = await this.settingsDataService.deleteEmployee(employee.id);
     if (!success) { await this.notificationService.alert(`Falha ao deletar funcionário: ${error?.message}`); }
     this.employeePendingDeletion.set(null);
+  }
+
+  // --- Reservation Settings ---
+  updateReservationFormField(field: keyof Omit<ReservationSettings, 'id' | 'created_at' | 'user_id'>, value: any) {
+    if (field === 'is_enabled') {
+        this.reservationForm.update(form => ({ ...form, [field]: !!value }));
+    } else {
+        this.reservationForm.update(form => ({ ...form, [field]: value }));
+    }
+  }
+
+  async saveReservationSettings() {
+    const form = this.reservationForm();
+    const { success, error } = await this.reservationDataService.updateReservationSettings(form);
+    if (success) {
+      await this.notificationService.alert('Configurações de reserva salvas!', 'Sucesso');
+    } else {
+      await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+    }
+  }
+
+  async copyToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      await this.notificationService.alert('Link copiado para a área de transferência!');
+    } catch (err) {
+      await this.notificationService.alert('Falha ao copiar o link.');
+    }
   }
 }

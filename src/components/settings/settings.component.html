@@ -3,6 +3,47 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
     
+    <!-- Panel: Reservation Settings -->
+    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-2 xl:col-span-1">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-white">Configurações de Reserva</h2>
+            <button
+                type="button" role="switch" [attr.aria-checked]="reservationForm().is_enabled"
+                (click)="updateReservationFormField('is_enabled', !reservationForm().is_enabled)"
+                [class.bg-green-600]="reservationForm().is_enabled"
+                [class.bg-gray-600]="!reservationForm().is_enabled"
+                class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
+                <span [class.translate-x-5]="reservationForm().is_enabled" [class.translate-x-0]="!reservationForm().is_enabled" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"></span>
+            </button>
+        </div>
+        <div class="space-y-4" [class.opacity-50]="!reservationForm().is_enabled" [class.pointer-events-none]="!reservationForm().is_enabled">
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Abre às</label><input type="time" [value]="reservationForm().opening_time" (input)="updateReservationFormField('opening_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Fecha às</label><input type="time" [value]="reservationForm().closing_time" (input)="updateReservationFormField('closing_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+            </div>
+             <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Duração (min)</label><input type="number" [value]="reservationForm().booking_duration_minutes" (input)="updateReservationFormField('booking_duration_minutes', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Antecedência (dias)</label><input type="number" [value]="reservationForm().booking_notice_days" (input)="updateReservationFormField('booking_notice_days', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+            </div>
+             <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Mín. Pessoas</label><input type="number" [value]="reservationForm().min_party_size" (input)="updateReservationFormField('min_party_size', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+                <div><label class="block text-sm font-medium text-gray-300 mb-1">Máx. Pessoas</label><input type="number" [value]="reservationForm().max_party_size" (input)="updateReservationFormField('max_party_size', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+            </div>
+            <div class="pt-4 border-t border-gray-700">
+              <label class="block text-sm font-medium text-gray-300 mb-1">Link Público para Reservas</label>
+              <div class="flex gap-2">
+                <input type="text" readonly [value]="publicBookingUrl()" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm">
+                <button (click)="copyToClipboard(publicBookingUrl())" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white" title="Copiar link">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6" /></svg>
+                </button>
+              </div>
+            </div>
+        </div>
+        <div class="mt-6">
+            <button (click)="saveReservationSettings()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Configurações</button>
+        </div>
+    </div>
+
     <!-- Panel: Station Management -->
     <div class="bg-gray-800 rounded-lg p-6">
       <h2 class="text-xl font-semibold text-white mb-4">Estações de Produção (KDS)</h2>

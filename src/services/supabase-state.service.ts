@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -37,6 +37,9 @@ export class SupabaseStateService {
 
   purchaseOrders = signal<PurchaseOrder[]>([]);
   productionPlans = signal<ProductionPlan[]>([]);
+
+  reservations = signal<Reservation[]>([]);
+  reservationSettings = signal<ReservationSettings | null>(null);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -233,6 +236,12 @@ export class SupabaseStateService {
         case 'production_tasks':
             this.refetchSimpleTable('production_plans', '*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))', this.productionPlans);
             break;
+        case 'reservations':
+            this.refetchSimpleTable('reservations', '*', this.reservations);
+            break;
+        case 'reservation_settings':
+            this.refetchSingleRow('reservation_settings', '*', this.reservationSettings);
+            break;
         case 'transactions':
         case 'cashier_closings':
             this.refreshDashboardAndCashierData();
@@ -243,7 +252,7 @@ export class SupabaseStateService {
   private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
     const userId = this.currentUser()?.id; if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
-    if (tableName === 'halls') {
+    if (tableName === 'halls' || tableName === 'reservations') {
       query = query.order('created_at', { ascending: true });
     }
     if (tableName === 'purchase_orders') {
@@ -255,6 +264,13 @@ export class SupabaseStateService {
     const { data, error } = await query;
     if (!error) signal.set(data as T[] || []);
     else console.error(`Error refetching ${tableName}:`, error);
+  }
+
+  private async refetchSingleRow<T>(tableName: string, selectQuery: string, signal: WritableSignal<T | null>) {
+    const userId = this.currentUser()?.id; if (!userId) return;
+    const { data, error } = await supabase.from(tableName).select(selectQuery).eq('user_id', userId).maybeSingle();
+    if (!error) signal.set(data as T || null);
+    else console.error(`Error refetching single row from ${tableName}:`, error);
   }
 
   private async refetchOrders() {
@@ -270,6 +286,7 @@ export class SupabaseStateService {
     this.suppliers.set([]); this.recipeIngredients.set([]); this.recipePreparations.set([]); this.promotions.set([]);
     this.promotionRecipes.set([]); this.completedOrders.set([]); this.transactions.set([]); this.cashierClosings.set([]);
     this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
+    this.reservations.set([]); this.reservationSettings.set(null);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -301,7 +318,9 @@ export class SupabaseStateService {
       supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
       supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
       supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false })
+      supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }),
+      supabase.from('reservations').select('*').eq('user_id', userId).order('reservation_time', { ascending: true }),
+      supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -312,6 +331,8 @@ export class SupabaseStateService {
     this.recipeSubRecipes.set(results[13].data as RecipeSubRecipe[] || []);
     this.purchaseOrders.set(results[14].data as PurchaseOrder[] || []);
     this.productionPlans.set(results[15].data as ProductionPlan[] || []);
+    this.reservations.set(results[16].data || []);
+    this.reservationSettings.set(results[17].data || null);
     await this.refreshDashboardAndCashierData();
   }
   

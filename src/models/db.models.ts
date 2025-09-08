@@ -7,6 +7,7 @@ export type DiscountType = 'percentage' | 'fixed_value';
 export type PurchaseOrderStatus = 'Rascunho' | 'Enviada' | 'Recebida';
 export type ProductionTaskStatus = 'A Fazer' | 'Em Preparo' | 'Concluído' | 'Rascunho';
 export type PlanStatus = 'Planejado' | 'Em Andamento' | 'Concluído';
+export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 // --- Main Entities ---
 
@@ -262,4 +263,30 @@ export interface ProductionTask {
   recipes?: { name: string, source_ingredient_id: string | null }; // Relation
   stations?: { name: string }; // Relation
   employees?: { name: string }; // Relation
+}
+
+export interface ReservationSettings {
+  id: string;
+  user_id: string;
+  is_enabled: boolean;
+  opening_time: string; // "HH:mm:ss"
+  closing_time: string; // "HH:mm:ss"
+  booking_duration_minutes: number;
+  max_party_size: number;
+  min_party_size: number;
+  booking_notice_days: number;
+  created_at: string;
+}
+
+export interface Reservation {
+  id: string;
+  user_id: string;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string | null;
+  party_size: number;
+  reservation_time: string; // ISO string
+  notes: string | null;
+  status: ReservationStatus;
+  created_at: string;
 }

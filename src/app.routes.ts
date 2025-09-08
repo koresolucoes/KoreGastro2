@@ -17,6 +17,8 @@ import { PurchasingComponent } from './components/purchasing/purchasing.componen
 import { MiseEnPlaceComponent } from './components/mise-en-place/mise-en-place.component';
 import { TutorialsListComponent } from './components/tutorials/tutorials-list.component';
 import { TutorialDetailComponent } from './components/tutorials/tutorial-detail.component';
+import { ReservationsComponent } from './components/reservations/reservations.component';
+import { PublicBookingComponent } from './components/public-booking/public-booking.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -30,11 +32,13 @@ export const APP_ROUTES: Routes = [
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
+  { path: 'book/:userId', component: PublicBookingComponent }, // Public booking route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
   { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] } },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
+  { path: 'reservations', component: ReservationsComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Caixa', 'Garçom'] } },
   { path: 'tutorials', component: TutorialsListComponent, canActivate: [roleGuard] },
   { path: 'tutorials/:id', component: TutorialDetailComponent, canActivate: [roleGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page

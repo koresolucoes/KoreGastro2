@@ -1,0 +1,88 @@
+<div class="container mx-auto h-full flex flex-col">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestão de Reservas</h1>
+      <p class="text-gray-400 mt-1">Visualize e gerencie as reservas do dia.</p>
+    </div>
+    <input 
+        type="date" 
+        [value]="selectedDate()" 
+        (change)="handleDateChange($event)" 
+        class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+  </div>
+
+  @if (reservationsForDay().length === 0) {
+    <div class="flex-1 flex items-center justify-center bg-gray-800 rounded-lg">
+        <div class="text-center text-gray-500">
+            <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 12.75h.008v.008H12v-.008z" /></svg>
+            <h3 class="mt-2 text-lg font-medium text-white">Nenhuma reserva encontrada</h3>
+            <p class="mt-1 text-sm">Não há reservas para a data selecionada.</p>
+        </div>
+    </div>
+  } @else {
+    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden">
+      <!-- Coluna Pendentes -->
+      <div class="bg-gray-800 rounded-lg flex flex-col">
+        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-yellow-300">Pendentes ({{ pendingReservations().length }})</h2>
+        <div class="p-4 space-y-3 overflow-y-auto">
+          @for(res of pendingReservations(); track res.id) {
+            <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-bold text-white">{{ res.customer_name }}</p>
+                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+                </div>
+                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
+              </div>
+              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
+              <div class="flex gap-2 mt-3 pt-2 border-t border-gray-600">
+                <button (click)="updateStatus(res, 'CONFIRMED')" class="flex-1 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md">Confirmar</button>
+                <button (click)="updateStatus(res, 'CANCELLED')" class="flex-1 text-sm font-semibold bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md">Cancelar</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+      <!-- Coluna Confirmadas -->
+      <div class="bg-gray-800 rounded-lg flex flex-col">
+        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-blue-300">Confirmadas ({{ confirmedReservations().length }})</h2>
+        <div class="p-4 space-y-3 overflow-y-auto">
+          @for(res of confirmedReservations(); track res.id) {
+             <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-bold text-white">{{ res.customer_name }}</p>
+                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+                </div>
+                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
+              </div>
+              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
+              <div class="flex gap-2 mt-3 pt-2 border-t border-gray-600">
+                <button (click)="updateStatus(res, 'COMPLETED')" class="flex-1 text-sm font-semibold bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-md">Concluída</button>
+                 <button (click)="updateStatus(res, 'CANCELLED')" class="text-sm font-semibold bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded-md">Cancelar</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+      <!-- Coluna Finalizadas -->
+      <div class="bg-gray-800 rounded-lg flex flex-col">
+        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-gray-400">Finalizadas/Canceladas ({{ completedOrCancelledReservations().length }})</h2>
+        <div class="p-4 space-y-3 overflow-y-auto">
+          @for(res of completedOrCancelledReservations(); track res.id) {
+             <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="font-bold text-white">{{ res.customer_name }}</p>
+                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+                </div>
+                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
+              </div>
+              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
