@@ -18,6 +18,7 @@ export interface Employee {
   role: 'Gerente' | 'Caixa' | 'Garçom' | 'Cozinha' | string;
   created_at: string;
   user_id: string;
+  current_clock_in_id: string | null;
 }
 
 export interface Station {
@@ -289,4 +290,15 @@ export interface Reservation {
   notes: string | null;
   status: ReservationStatus;
   created_at: string;
+}
+
+export interface TimeClockEntry {
+  id: string;
+  user_id: string;
+  employee_id: string;
+  clock_in_time: string;
+  clock_out_time: string | null;
+  notes: string | null;
+  created_at: string;
+  employees?: { name: string }; // Relation
 }

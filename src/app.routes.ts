@@ -19,6 +19,7 @@ import { TutorialsListComponent } from './components/tutorials/tutorials-list.co
 import { TutorialDetailComponent } from './components/tutorials/tutorial-detail.component';
 import { ReservationsComponent } from './components/reservations/reservations.component';
 import { PublicBookingComponent } from './components/public-booking/public-booking.component';
+import { TimeClockComponent } from './components/time-clock/time-clock.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -39,6 +40,7 @@ export const APP_ROUTES: Routes = [
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
   { path: 'reservations', component: ReservationsComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Caixa', 'Garçom'] } },
+  { path: 'time-clock', component: TimeClockComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'tutorials', component: TutorialsListComponent, canActivate: [roleGuard] },
   { path: 'tutorials/:id', component: TutorialDetailComponent, canActivate: [roleGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page

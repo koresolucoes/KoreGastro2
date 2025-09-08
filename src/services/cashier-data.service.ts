@@ -1,21 +1,25 @@
 import { Injectable, inject } from '@angular/core';
-import { CashierClosing, OrderItem, OrderItemStatus, Recipe, TransactionType } from '../models/db.models';
+import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
-import { PricingService } from './pricing.service';
-import { supabase } from './supabase-client';
 import { InventoryDataService } from './inventory-data.service';
+import { PricingService } from './pricing.service';
+import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus } from '../models/db.models';
+import { Payment } from '../components/cashier/cashier.component';
 
-interface CartItem { recipe: Recipe; quantity: number; }
-interface PaymentInfo { method: string; amount: number; }
+interface CartItem {
+  recipe: Recipe;
+  quantity: number;
+}
 
 export interface ReportData {
-  grossRevenue: number;
-  totalOrders: number;
-  averageTicket: number;
-  paymentSummary: { method: string, total: number }[];
-  bestSellingItems: { name: string, quantity: number, revenue: number }[];
+  grossRevenue?: number;
+  totalOrders?: number;
+  averageTicket?: number;
+  paymentSummary?: { method: string; total: number; count: number }[];
+  bestSellingItems?: { name: string; quantity: number; revenue: number }[];
 }
+
 
 @Injectable({
   providedIn: 'root',
@@ -23,134 +27,185 @@ export interface ReportData {
 export class CashierDataService {
   private authService = inject(AuthService);
   private stateService = inject(SupabaseStateService);
-  private pricingService = inject(PricingService);
   private inventoryDataService = inject(InventoryDataService);
+  private pricingService = inject(PricingService);
 
-  async finalizeQuickSalePayment(cart: CartItem[], payments: PaymentInfo[]): Promise<{ success: boolean, error: any }> {
+  async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items'): Promise<ReportData> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) throw new Error('User not authenticated');
+
+    const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+
+    const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
+    
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('user_id', userId)
+      .eq('is_completed', true)
+      .gte('completed_at', startDate.toISOString())
+      .lte('completed_at', endDate.toISOString());
+
+    if (error) throw error;
+    if (!orders) return reportType === 'sales' ? { grossRevenue: 0, totalOrders: 0, averageTicket: 0, paymentSummary: [] } : { bestSellingItems: [] };
+
+    if (reportType === 'sales') {
+        const { data: transactions, error: tError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('type', 'Receita')
+            .gte('date', startDate.toISOString())
+            .lte('date', endDate.toISOString());
+        
+        if (tError) throw tError;
+
+        const grossRevenue = (transactions || []).reduce((sum, t) => sum + t.amount, 0);
+        const totalOrders = orders.length;
+        const averageTicket = totalOrders > 0 ? grossRevenue / totalOrders : 0;
+        
+        const paymentSummaryMap = new Map<string, { total: number; count: number }>();
+        const paymentMethodRegex = /\(([^)]+)\)/;
+
+        for (const t of (transactions || [])) {
+            const match = t.description.match(paymentMethodRegex);
+            const method = match ? match[1] : 'Outros';
+            const current = paymentSummaryMap.get(method) || { total: 0, count: 0 };
+            current.total += t.amount;
+            current.count++;
+            paymentSummaryMap.set(method, current);
+        }
+
+        return {
+            grossRevenue,
+            totalOrders,
+            averageTicket,
+            paymentSummary: Array.from(paymentSummaryMap.entries()).map(([method, data]) => ({ method, ...data })),
+        };
+    } else { // items report
+        const itemMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+        
+        for (const order of orders) {
+            for (const item of order.order_items) {
+                const existing = itemMap.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0 };
+                existing.quantity += item.quantity;
+                existing.revenue += item.price * item.quantity;
+                itemMap.set(item.recipe_id, existing);
+            }
+        }
+        
+        const bestSellingItems = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
+        return { bestSellingItems };
+    }
+  }
+  
+  async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[]): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { data: order, error: orderError } = await supabase.from('orders').insert({
-        table_number: 0, order_type: 'QuickSale', is_completed: true,
-        completed_at: new Date().toISOString(), user_id: userId
-    }).select().single();
+    const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({ table_number: 0, order_type: 'QuickSale', is_completed: true, completed_at: new Date().toISOString(), user_id: userId })
+        .select()
+        .single();
+    
     if (orderError) return { success: false, error: orderError };
 
-    const stations = this.stateService.stations();
-    if (stations.length === 0) {
-      return { success: false, error: { message: 'Nenhuma estação de produção configurada para registrar a venda.' } };
-    }
-    const stationId = stations[0].id;
-    
-    const orderItems = cart.map(item => ({
+    const recipePrices = new Map<string, number>();
+    cart.forEach(item => {
+        recipePrices.set(item.recipe.id, this.pricingService.getEffectivePrice(item.recipe));
+    });
+
+    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => ({
         order_id: order.id,
         recipe_id: item.recipe.id,
         name: item.recipe.name,
         quantity: item.quantity,
-        price: this.pricingService.getEffectivePrice(item.recipe),
+        price: recipePrices.get(item.recipe.id) ?? item.recipe.price,
+        notes: null,
         status: 'SERVIDO' as OrderItemStatus,
-        station_id: stationId,
-        user_id: userId,
-    }));
-    
-    const { data: insertedItems, error: itemsError } = await supabase.from('order_items').insert(orderItems).select();
-    if (itemsError) return { success: false, error: itemsError };
-
-    const transactions = payments.map(p => ({
-        description: `Receita Venda Rápida #${order.id.slice(0, 8)} (${p.method})`,
-        type: 'Receita' as TransactionType, amount: p.amount, user_id: userId
+        station_id: 'none', // Not relevant for quick sale
+        group_id: null,
+        status_timestamps: { 'SERVIDO': new Date().toISOString() },
     }));
 
-    const { error: transError } = await supabase.from('transactions').insert(transactions);
-    if (transError) return { success: false, error: transError };
-    
-    // Deduct stock after successful payment
-    if (insertedItems) {
-        const { success: deductionSuccess, error: deductionError } = await this.inventoryDataService.deductStockForOrderItems(insertedItems, order.id);
-        if (!deductionSuccess) {
-            console.error('Stock deduction failed for quick sale after payment was processed. Manual adjustment needed.', deductionError);
-        }
+    const orderItemsWithUserId = orderItems.map(item => ({...item, user_id: userId}));
+
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsWithUserId);
+    if (itemsError) {
+        await supabase.from('orders').delete().eq('id', order.id);
+        return { success: false, error: itemsError };
     }
+
+    const cashierEmployeeId = this.stateService.employees().find(e => e.role === 'Caixa')?.id ?? null;
+
+    const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
+      description: `Receita Pedido #${order.id.slice(0, 8)} (${p.method})`,
+      type: 'Receita' as TransactionType,
+      amount: p.amount,
+      user_id: userId,
+      employee_id: cashierEmployeeId,
+    }));
+    
+    if (transactionsToInsert.length > 0) {
+      const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
+      if (transactionError) {
+          // don't roll back, payment was made
+          return { success: false, error: transactionError };
+      }
+    }
+
+    const { success, error } = await this.inventoryDataService.deductStockForOrderItems(orderItemsWithUserId as OrderItem[], order.id);
+    if (!success) {
+        console.error('Stock deduction failed for quick sale', error);
+    }
+    
+    await this.stateService.refreshDashboardAndCashierData();
     
     return { success: true, error: null };
   }
 
-  async logTransaction(description: string, amount: number, type: TransactionType): Promise<{ success: boolean, error: any }> {
+  async logTransaction(description: string, amount: number, type: 'Despesa'): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.from('transactions').insert({ description, amount, type, user_id: userId });
-    
-    if (!error) {
-      // Manually trigger a refresh to ensure UI updates immediately.
-      await this.stateService.refreshDashboardAndCashierData();
-    }
 
+    const cashierEmployeeId = this.stateService.employees().find(e => e.role === 'Caixa')?.id ?? null;
+
+    const { error } = await supabase.from('transactions').insert({
+        description,
+        amount,
+        type,
+        user_id: userId,
+        employee_id: cashierEmployeeId
+    });
+    
     return { success: !error, error };
   }
-
-  async closeCashier(closingData: Omit<CashierClosing, 'id' | 'closed_at'>): Promise<{ success: boolean, error: any, data?: CashierClosing }> {
+  
+  async closeCashier(closingData: Omit<CashierClosing, 'id' | 'closed_at' | 'user_id'>): Promise<{ success: boolean; error: any, data: CashierClosing | null }> {
     const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
     
-    const { data, error } = await supabase.from('cashier_closings').insert({ ...closingData, user_id: userId }).select().single();
-    if (error) return { success: false, error };
+    const { data, error } = await supabase
+        .from('cashier_closings')
+        .insert({ ...closingData, user_id: userId })
+        .select()
+        .single();
     
-    await this.logTransaction('Abertura de Caixa', closingData.counted_cash, 'Abertura de Caixa');
-    
-    return { success: true, error: null, data: data };
-  }
+    if (error) return { success: false, error, data: null };
 
-  async generateReportData(startDate: string, endDate: string, reportType: 'sales' | 'items'): Promise<ReportData> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) throw new Error('User not authenticated');
-    
-    // Adjust end date to include the whole day
-    const endDateObj = new Date(endDate);
-    endDateObj.setHours(23, 59, 59, 999);
-
-    const [completedOrdersRes, transactionsRes] = await Promise.all([
-      supabase.from('orders').select('*, order_items(*)').eq('is_completed', true).gte('completed_at', new Date(startDate).toISOString()).lte('completed_at', endDateObj.toISOString()).eq('user_id', userId),
-      supabase.from('transactions').select('*').gte('date', new Date(startDate).toISOString()).lte('date', endDateObj.toISOString()).eq('user_id', userId).eq('type', 'Receita')
-    ]);
-
-    if (completedOrdersRes.error) throw completedOrdersRes.error;
-    if (transactionsRes.error) throw transactionsRes.error;
-
-    const completedOrders = completedOrdersRes.data || [];
-    const transactions = transactionsRes.data || [];
-    
-    // Process data
-    const grossRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
-    const totalOrders = completedOrders.length;
-    const averageTicket = totalOrders > 0 ? grossRevenue / totalOrders : 0;
-    
-    const paymentSummaryMap = new Map<string, number>();
-    const paymentMethodRegex = /\(([^)]+)\)/;
-    for (const transaction of transactions) {
-        const match = transaction.description.match(paymentMethodRegex);
-        const method = match ? match[1] : 'Outros';
-        paymentSummaryMap.set(method, (paymentSummaryMap.get(method) || 0) + transaction.amount);
-    }
-    const paymentSummary = Array.from(paymentSummaryMap.entries()).map(([method, total]) => ({ method, total })).sort((a,b) => b.total - a.total);
-
-    const itemCounts = new Map<string, { name: string, quantity: number, revenue: number }>();
-    completedOrders.flatMap(o => o.order_items).forEach(item => {
-        const existing = itemCounts.get(item.recipe_id);
-        if (existing) {
-            existing.quantity += item.quantity;
-            existing.revenue += item.price * item.quantity;
-        } else {
-            itemCounts.set(item.recipe_id, { name: item.name, quantity: item.quantity, revenue: item.price * item.quantity });
-        }
+    // After closing, log the opening balance for the next session
+    const { error: openError } = await supabase.from('transactions').insert({
+        description: 'Abertura de Caixa',
+        type: 'Abertura de Caixa',
+        amount: closingData.counted_cash,
+        user_id: userId,
     });
-    const bestSellingItems = Array.from(itemCounts.values()).sort((a, b) => b.quantity - a.quantity);
     
-    return {
-      grossRevenue,
-      totalOrders,
-      averageTicket,
-      paymentSummary,
-      bestSellingItems
-    };
+    if (openError) console.error("Failed to log opening balance for next session", openError);
+    
+    return { success: true, error: null, data };
   }
 }

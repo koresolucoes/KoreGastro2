@@ -1,0 +1,170 @@
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Controle de Ponto</h1>
+      <p class="text-gray-400 mt-1">Gerencie os registros de entrada e saída dos funcionários.</p>
+    </div>
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+      <span>Adicionar Registro</span>
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-gray-800 rounded-lg p-4 mb-6 flex flex-col md:flex-row gap-4 items-end">
+    <div class="w-full md:w-1/3">
+      <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário</label>
+      <select [value]="filterEmployeeId()" (change)="filterEmployeeId.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        <option value="all">Todos os Funcionários</option>
+        @for (emp of employees(); track emp.id) {
+          <option [value]="emp.id">{{ emp.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="w-full md:w-1/3">
+      <label class="block text-sm font-medium text-gray-300 mb-1">De</label>
+      <input type="date" [value]="filterStartDate()" (change)="filterStartDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+    </div>
+    <div class="w-full md:w-1/3">
+      <label class="block text-sm font-medium text-gray-300 mb-1">Até</label>
+      <input type="date" [value]="filterEndDate()" (change)="filterEndDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="bg-gray-800 rounded-lg p-4 mb-6">
+    <h2 class="text-lg font-semibold text-white">Resumo do Período</h2>
+    <p class="text-3xl font-bold text-blue-400">{{ totalHours() | number:'1.2-2' }} <span class="text-lg font-normal text-gray-400">horas trabalhadas</span></p>
+  </div>
+
+  <!-- Entries Table/List -->
+  <div class="bg-gray-800 rounded-lg">
+    @if (isLoading()) {
+      <div class="text-center py-16 text-gray-500">Carregando registros...</div>
+    } @else if (filteredEntries().length === 0) {
+      <div class="text-center py-16 text-gray-500">Nenhum registro encontrado para os filtros selecionados.</div>
+    } @else {
+      <!-- Desktop Table -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+            <tr>
+              <th class="px-6 py-3">Funcionário</th>
+              <th class="px-6 py-3">Data</th>
+              <th class="px-6 py-3">Entrada</th>
+              <th class="px-6 py-3">Saída</th>
+              <th class="px-6 py-3">Duração</th>
+              <th class="px-6 py-3">Observações</th>
+              <th class="px-6 py-3 text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of filteredEntries(); track entry.id) {
+              <tr class="border-b border-gray-700 hover:bg-gray-700/40">
+                <td class="px-6 py-4 font-medium text-white">{{ entry.employees?.name }}</td>
+                <td class="px-6 py-4">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</td>
+                <td class="px-6 py-4 font-mono text-green-400">{{ entry.clock_in_time | date:'HH:mm' }}</td>
+                <td class="px-6 py-4 font-mono text-red-400">
+                  @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm' }} }
+                  @else { <span class="text-yellow-400">--:--</span> }
+                </td>
+                <td class="px-6 py-4 font-mono">{{ calculateDuration(entry) }}</td>
+                <td class="px-6 py-4 text-sm text-gray-400 truncate max-w-xs" [title]="entry.notes">{{ entry.notes || '---' }}</td>
+                <td class="px-6 py-4 text-center">
+                  @if (entryPendingDeletion()?.id === entry.id) {
+                    <div class="flex justify-center gap-2"><span class="text-sm text-red-300">Certeza?</span><button (click)="confirmDeleteEntry()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button><button (click)="cancelDeleteEntry()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button></div>
+                  } @else {
+                    <div class="flex justify-center gap-2"><button (click)="openEditModal(entry)" class="text-blue-400 hover:underline text-sm">Editar</button><button (click)="requestDeleteEntry(entry)" class="text-red-400 hover:underline text-sm">Excluir</button></div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="md:hidden p-4 space-y-4">
+        @for (entry of filteredEntries(); track entry.id) {
+          <div class="bg-gray-700/50 p-4 rounded-lg">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <p class="font-bold text-white">{{ entry.employees?.name }}</p>
+                <p class="text-sm text-gray-400">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
+              </div>
+              <span class="font-mono text-sm px-2 py-1 rounded-md bg-gray-900/50">{{ calculateDuration(entry) }}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+              <div class="text-center bg-gray-900/50 p-2 rounded">
+                <p class="text-xs text-gray-400">Entrada</p>
+                <p class="font-mono text-green-400 font-semibold">{{ entry.clock_in_time | date:'HH:mm:ss' }}</p>
+              </div>
+              <div class="text-center bg-gray-900/50 p-2 rounded">
+                <p class="text-xs text-gray-400">Saída</p>
+                <p class="font-mono text-red-400 font-semibold">
+                  @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm:ss' }} }
+                  @else { <span class="text-yellow-400">Em andamento</span> }
+                </p>
+              </div>
+            </div>
+            @if (entry.notes) {
+              <p class="text-xs italic text-gray-300 bg-gray-900/50 p-2 rounded-md">"{{ entry.notes }}"</p>
+            }
+            <div class="flex justify-end gap-2 pt-3 border-t border-gray-600/50">
+                @if (entryPendingDeletion()?.id === entry.id) {
+                  <span class="text-sm text-red-300">Certeza?</span>
+                  <button (click)="confirmDeleteEntry()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button>
+                  <button (click)="cancelDeleteEntry()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button>
+                } @else {
+                  <button (click)="openEditModal(entry)" class="text-blue-400 hover:underline text-sm">Editar</button>
+                  <button (click)="requestDeleteEntry(entry)" class="text-red-400 hover:underline text-sm">Excluir</button>
+                }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">{{ editingEntry() ? 'Editar Registro' : 'Adicionar Registro Manual' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+          <select [value]="entryForm().employee_id" (change)="updateEntryFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <option [value]="null">Selecione...</option>
+            @for (emp of employees(); track emp.id) {
+              <option [value]="emp.id">{{ emp.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Entrada *</label>
+            <input type="datetime-local" [value]="formatForInput(entryForm().clock_in_time)" (input)="updateEntryFormDateTime('clock_in_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Saída</label>
+            <input type="datetime-local" [value]="formatForInput(entryForm().clock_out_time)" (input)="updateEntryFormDateTime('clock_out_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+          <textarea [value]="entryForm().notes || ''" (input)="updateEntryFormField('notes', $any($event.target).value)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveEntry()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Registro</button>
+      </div>
+    </div>
+  </div>
+}

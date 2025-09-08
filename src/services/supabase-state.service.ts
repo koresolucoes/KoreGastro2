@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -40,6 +40,8 @@ export class SupabaseStateService {
 
   reservations = signal<Reservation[]>([]);
   reservationSettings = signal<ReservationSettings | null>(null);
+
+  timeClockEntries = signal<TimeClockEntry[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -242,6 +244,10 @@ export class SupabaseStateService {
         case 'reservation_settings':
             this.refetchSingleRow('reservation_settings', '*', this.reservationSettings);
             break;
+        case 'time_clock_entries':
+            this.refetchSimpleTable('time_clock_entries', '*, employees(name)', this.timeClockEntries);
+            this.refetchSimpleTable('employees', '*', this.employees); // Also refetch employees for status
+            break;
         case 'transactions':
         case 'cashier_closings':
             this.refreshDashboardAndCashierData();
@@ -254,6 +260,9 @@ export class SupabaseStateService {
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     if (tableName === 'halls' || tableName === 'reservations') {
       query = query.order('created_at', { ascending: true });
+    }
+    if (tableName === 'time_clock_entries') {
+      query = query.order('clock_in_time', { ascending: false });
     }
     if (tableName === 'purchase_orders') {
       query = query.order('created_at', { ascending: false });
@@ -286,7 +295,7 @@ export class SupabaseStateService {
     this.suppliers.set([]); this.recipeIngredients.set([]); this.recipePreparations.set([]); this.promotions.set([]);
     this.promotionRecipes.set([]); this.completedOrders.set([]); this.transactions.set([]); this.cashierClosings.set([]);
     this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
-    this.reservations.set([]); this.reservationSettings.set(null);
+    this.reservations.set([]); this.reservationSettings.set(null); this.timeClockEntries.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -321,6 +330,7 @@ export class SupabaseStateService {
       supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }),
       supabase.from('reservations').select('*').eq('user_id', userId).order('reservation_time', { ascending: true }),
       supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('time_clock_entries').select('*, employees(name)').eq('user_id', userId).order('clock_in_time', { ascending: false }),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -333,6 +343,7 @@ export class SupabaseStateService {
     this.productionPlans.set(results[15].data as ProductionPlan[] || []);
     this.reservations.set(results[16].data || []);
     this.reservationSettings.set(results[17].data || null);
+    this.timeClockEntries.set(results[18].data as TimeClockEntry[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

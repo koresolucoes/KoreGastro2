@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,8 +27,10 @@ export class EmployeeSelectionComponent {
 
   employees = this.stateService.employees;
   
-  // Existing state for PIN login
-  selectedEmployee = signal<Employee | null>(null);
+  // States for different stages
+  selectedEmployee = signal<Employee | null>(null); // For PIN entry
+  confirmationEmployee = signal<Employee | null>(null); // For clock-in confirmation
+
   pinInput = signal('');
   loginError = signal(false);
   pinDisplay = computed(() => '●'.repeat(this.pinInput().length));
@@ -39,11 +42,18 @@ export class EmployeeSelectionComponent {
 
   selectEmployee(employee: Employee) {
     if (employee.pin) {
+      // PIN required, show PIN modal
       this.selectedEmployee.set(employee);
       this.pinInput.set('');
       this.loginError.set(false);
-    } else {
-      this.handleSuccessfulLogin(employee);
+    } else { // No PIN required
+      if (!employee.current_clock_in_id) {
+        // No PIN, not clocked in -> show clock-in confirmation
+        this.confirmationEmployee.set(employee);
+      } else {
+        // No PIN, already clocked in -> just log in
+        this.handleSuccessfulLogin(employee);
+      }
     }
   }
   
@@ -74,15 +84,43 @@ export class EmployeeSelectionComponent {
   }
 
   attemptLogin() {
-    if (this.pinInput() === this.selectedEmployee()?.pin) {
-      this.handleSuccessfulLogin(this.selectedEmployee()!);
+    const employee = this.selectedEmployee();
+    if (this.pinInput() === employee?.pin) {
+        this.selectedEmployee.set(null); // Close PIN modal
+        if (!employee.current_clock_in_id) {
+            // Correct PIN, not clocked in -> show clock-in confirmation
+            this.confirmationEmployee.set(employee);
+        } else {
+            // Correct PIN, already clocked in -> just log in
+            this.handleSuccessfulLogin(employee);
+        }
     } else {
-      this.loginError.set(true);
-      setTimeout(() => this.clearPin(), 800);
+        this.loginError.set(true);
+        setTimeout(() => this.clearPin(), 800);
     }
   }
   
-  // New method for creating the first manager
+  // --- Clock-in Confirmation ---
+  async confirmClockIn() {
+    const employee = this.confirmationEmployee();
+    if (!employee) return;
+    
+    const { success, error } = await this.operationalAuth.clockIn(employee);
+    if (success) {
+        // The service now handles login and state update
+        const defaultRoute = this.operationalAuth.getDefaultRoute();
+        this.router.navigate([defaultRoute]);
+    } else {
+        await this.notificationService.alert(`Erro ao iniciar turno: ${error?.message}`);
+    }
+    this.confirmationEmployee.set(null);
+  }
+
+  cancelClockInConfirmation() {
+    this.confirmationEmployee.set(null);
+  }
+
+  // --- Onboarding ---
   async createFirstManager() {
     const name = this.newManagerName().trim();
     const pin = this.newManagerPin().trim();
@@ -105,7 +143,6 @@ export class EmployeeSelectionComponent {
 
     if (success) {
       await this.notificationService.alert('Usuário Gerente criado com sucesso! Agora você pode selecioná-lo para começar.');
-      // The component will automatically update via realtime subscription.
     } else {
       await this.notificationService.alert(`Erro ao criar usuário: ${error?.message}`);
     }
