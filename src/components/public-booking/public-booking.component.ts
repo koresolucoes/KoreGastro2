@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -5,6 +6,7 @@ import { ReservationDataService } from '../../services/reservation-data.service'
 import { Reservation, ReservationSettings } from '../../models/db.models';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { NotificationService } from '../../services/notification.service';
 
 interface TimeSlot {
   time: string; // "HH:mm"
@@ -22,6 +24,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   route = inject(ActivatedRoute);
   router = inject(Router);
   reservationDataService = inject(ReservationDataService);
+  notificationService = inject(NotificationService);
   private routeSub: Subscription | undefined;
 
   // View state
@@ -144,12 +147,12 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
     }
 
     if (this.partySize() < settings.min_party_size || this.partySize() > settings.max_party_size) {
-        alert(`O número de pessoas deve ser entre ${settings.min_party_size} e ${settings.max_party_size}.`);
+        await this.notificationService.alert(`O número de pessoas deve ser entre ${settings.min_party_size} e ${settings.max_party_size}.`);
         return;
     }
 
     if (!this.customerName() || !this.customerPhone() || !this.selectedTime()) {
-        alert('Por favor, preencha seu nome, telefone e selecione um horário.');
+        await this.notificationService.alert('Por favor, preencha seu nome, telefone e selecione um horário.');
         return;
     }
     this.viewState.set('loading');
