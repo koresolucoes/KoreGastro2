@@ -1,14 +1,16 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { Reservation, ReservationStatus } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
+import { OperationalAuthService } from '../../services/operational-auth.service';
+import { ReservationModalComponent } from './reservation-modal.component';
 
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReservationModalComponent, DatePipe],
   templateUrl: './reservations.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -16,8 +18,18 @@ export class ReservationsComponent {
   stateService = inject(SupabaseStateService);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
+  operationalAuthService = inject(OperationalAuthService);
 
   selectedDate = signal(new Date().toISOString().split('T')[0]);
+
+  // Modal State
+  isModalOpen = signal(false);
+  reservationForModal = signal<Partial<Reservation> | null>(null);
+
+  canAddReservation = computed(() => {
+    const role = this.operationalAuthService.activeEmployee()?.role;
+    return role === 'Gerente' || role === 'Garçom';
+  });
 
   reservationsForDay = computed(() => {
     const allReservations = this.stateService.reservations();
@@ -40,6 +52,24 @@ export class ReservationsComponent {
   handleDateChange(event: Event) {
     const newDate = (event.target as HTMLInputElement).value;
     this.selectedDate.set(newDate);
+  }
+
+  openAddModal() {
+    this.reservationForModal.set({
+      reservation_time: new Date(`${this.selectedDate()}T19:00:00`).toISOString(), // Default to 7 PM
+      party_size: 2,
+    });
+    this.isModalOpen.set(true);
+  }
+
+  async handleSave(reservation: Partial<Reservation>) {
+    const { success, error } = await this.reservationDataService.createManualReservation(reservation);
+    if (success) {
+      await this.notificationService.alert('Reserva criada com sucesso!', 'Sucesso');
+      this.isModalOpen.set(false);
+    } else {
+      await this.notificationService.alert(`Erro ao salvar reserva: ${error?.message}`);
+    }
   }
 
   async updateStatus(reservation: Reservation, status: ReservationStatus) {

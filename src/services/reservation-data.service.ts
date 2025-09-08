@@ -40,6 +40,19 @@ export class ReservationDataService {
     return { success: !error, error };
   }
 
+  async createManualReservation(reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const { error } = await supabase.from('reservations').insert({
+      ...reservationData,
+      user_id: userId,
+      status: 'CONFIRMED', // Staff-added reservations are confirmed by default
+    });
+
+    return { success: !error, error };
+  }
+
   // --- Public Booking Methods ---
   async getPublicReservationSettings(userId: string): Promise<ReservationSettings | null> {
     const { data, error } = await supabase

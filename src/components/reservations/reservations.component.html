@@ -1,88 +1,135 @@
-<div class="container mx-auto h-full flex flex-col">
+<div class="container mx-auto">
+  <!-- Header -->
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
       <h1 class="text-3xl font-bold text-white">Gestão de Reservas</h1>
-      <p class="text-gray-400 mt-1">Visualize e gerencie as reservas do dia.</p>
+      <p class="text-gray-400 mt-1">Veja e gerencie as reservas para o dia selecionado.</p>
     </div>
-    <input 
+    <div class="flex items-center gap-4">
+      <input 
         type="date" 
         [value]="selectedDate()" 
         (change)="handleDateChange($event)" 
         class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+      
+      @if (canAddReservation()) {
+        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+          <span>Adicionar Reserva</span>
+        </button>
+      }
+    </div>
   </div>
 
-  @if (reservationsForDay().length === 0) {
-    <div class="flex-1 flex items-center justify-center bg-gray-800 rounded-lg">
-        <div class="text-center text-gray-500">
-            <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 12.75h.008v.008H12v-.008z" /></svg>
-            <h3 class="mt-2 text-lg font-medium text-white">Nenhuma reserva encontrada</h3>
-            <p class="mt-1 text-sm">Não há reservas para a data selecionada.</p>
-        </div>
-    </div>
-  } @else {
-    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-hidden">
-      <!-- Coluna Pendentes -->
-      <div class="bg-gray-800 rounded-lg flex flex-col">
-        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-yellow-300">Pendentes ({{ pendingReservations().length }})</h2>
-        <div class="p-4 space-y-3 overflow-y-auto">
-          @for(res of pendingReservations(); track res.id) {
-            <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="font-bold text-white">{{ res.customer_name }}</p>
-                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+  <!-- Reservation Columns -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Pending Column -->
+    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
+      <h2 class="text-xl font-semibold text-yellow-400 mb-4 border-b-2 border-yellow-500 pb-2">Pendentes ({{ pendingReservations().length }})</h2>
+      <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+        @for (reservation of pendingReservations(); track reservation.id) {
+          <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
+                <div class="flex items-center gap-4 mt-1 text-sm text-gray-300">
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
                 </div>
-                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
-              </div>
-              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
-              <div class="flex gap-2 mt-3 pt-2 border-t border-gray-600">
-                <button (click)="updateStatus(res, 'CONFIRMED')" class="flex-1 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md">Confirmar</button>
-                <button (click)="updateStatus(res, 'CANCELLED')" class="flex-1 text-sm font-semibold bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-md">Cancelar</button>
               </div>
             </div>
-          }
-        </div>
-      </div>
-      <!-- Coluna Confirmadas -->
-      <div class="bg-gray-800 rounded-lg flex flex-col">
-        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-blue-300">Confirmadas ({{ confirmedReservations().length }})</h2>
-        <div class="p-4 space-y-3 overflow-y-auto">
-          @for(res of confirmedReservations(); track res.id) {
-             <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="font-bold text-white">{{ res.customer_name }}</p>
-                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+            <div class="mt-2 text-sm space-y-1">
+              @if(reservation.customer_phone) {
+                <div class="flex items-center gap-2 text-gray-400">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                  <span>{{ reservation.customer_phone }}</span>
                 </div>
-                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
-              </div>
-              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
-              <div class="flex gap-2 mt-3 pt-2 border-t border-gray-600">
-                <button (click)="updateStatus(res, 'COMPLETED')" class="flex-1 text-sm font-semibold bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-md">Concluída</button>
-                 <button (click)="updateStatus(res, 'CANCELLED')" class="text-sm font-semibold bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded-md">Cancelar</button>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-      <!-- Coluna Finalizadas -->
-      <div class="bg-gray-800 rounded-lg flex flex-col">
-        <h2 class="text-lg font-bold p-4 border-b border-gray-700 text-gray-400">Finalizadas/Canceladas ({{ completedOrCancelledReservations().length }})</h2>
-        <div class="p-4 space-y-3 overflow-y-auto">
-          @for(res of completedOrCancelledReservations(); track res.id) {
-             <div class="bg-gray-700/50 p-3 rounded-lg border-l-4" [class]="getStatusClass(res.status)">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="font-bold text-white">{{ res.customer_name }}</p>
-                  <p class="text-sm text-gray-300">{{ res.party_size }} pessoa(s) às {{ res.reservation_time | date:'HH:mm' }}</p>
+              }
+              @if(reservation.customer_email) {
+                <div class="flex items-center gap-2 text-gray-400">
+                   <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                  <span>{{ reservation.customer_email }}</span>
                 </div>
-                <span class="text-sm font-semibold" [class]="getStatusTextClass(res.status)">{{ res.status }}</span>
-              </div>
-              @if(res.notes) { <p class="text-xs italic text-yellow-200 mt-2 pt-2 border-t border-gray-600">"{{ res.notes }}"</p> }
+              }
             </div>
-          }
-        </div>
+            @if(reservation.notes) {
+              <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p>
+            }
+            <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
+              <button (click)="updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Confirmar</button>
+              <button (click)="updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="text-center text-gray-500 py-8">Nenhuma reserva pendente.</p>
+        }
       </div>
     </div>
-  }
+    
+    <!-- Confirmed Column -->
+    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
+      <h2 class="text-xl font-semibold text-blue-400 mb-4 border-b-2 border-blue-500 pb-2">Confirmadas ({{ confirmedReservations().length }})</h2>
+       <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+        @for (reservation of confirmedReservations(); track reservation.id) {
+          <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+             <div class="flex justify-between items-start">
+              <div>
+                <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
+                <div class="flex items-center gap-4 mt-1 text-sm text-gray-300">
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-2 text-sm space-y-1">
+              @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg><span>{{ reservation.customer_phone }}</span></div> }
+              @if(reservation.customer_email) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg><span>{{ reservation.customer_email }}</span></div> }
+            </div>
+            @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
+            <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
+              <button (click)="updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Finalizar</button>
+              <button (click)="updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="text-center text-gray-500 py-8">Nenhuma reserva confirmada.</p>
+        }
+      </div>
+    </div>
+    
+    <!-- Completed/Cancelled Column -->
+    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
+      <h2 class="text-xl font-semibold text-gray-400 mb-4 border-b-2 border-gray-500 pb-2">Finalizadas / Canceladas ({{ completedOrCancelledReservations().length }})</h2>
+       <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+        @for (reservation of completedOrCancelledReservations(); track reservation.id) {
+          <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+             <div class="flex justify-between items-start">
+              <div>
+                <p class="font-bold text-lg" [class]="getStatusTextClass(reservation.status)">{{ reservation.customer_name }}</p>
+                <div class="flex items-center gap-4 mt-1 text-sm text-gray-400">
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                  <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                </div>
+              </div>
+            </div>
+             <div class="mt-2 text-sm space-y-1">
+              @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg><span>{{ reservation.customer_phone }}</span></div> }
+              @if(reservation.customer_email) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg><span>{{ reservation.customer_email }}</span></div> }
+            </div>
+            @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
+          </div>
+        } @empty {
+          <p class="text-center text-gray-500 py-8">Nenhuma reserva neste estado.</p>
+        }
+      </div>
+    </div>
+  </div>
 </div>
+
+@if(isModalOpen()) {
+  <app-reservation-modal 
+    [initialData]="reservationForModal()"
+    (save)="handleSave($event)"
+    (close)="isModalOpen.set(false)">
+  </app-reservation-modal>
+}

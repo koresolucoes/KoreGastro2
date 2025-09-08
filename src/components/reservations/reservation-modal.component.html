@@ -1,0 +1,51 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center p-4 border-b border-gray-700">
+      <h3 class="text-xl font-bold text-white">Adicionar Nova Reserva</h3>
+      <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <form (ngSubmit)="onSave()">
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div>
+          <label for="customerName" class="block text-sm font-medium text-gray-300 mb-1">Nome do Cliente *</label>
+          <input type="text" id="customerName" [(ngModel)]="reservationForm().customer_name" name="customerName" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="customerPhone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+            <input type="tel" id="customerPhone" [(ngModel)]="reservationForm().customer_phone" name="customerPhone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="partySize" class="block text-sm font-medium text-gray-300 mb-1">Nº de Pessoas *</label>
+            <input type="number" id="partySize" [(ngModel)]="reservationForm().party_size" name="partySize" min="1" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="reservationDate" class="block text-sm font-medium text-gray-300 mb-1">Data *</label>
+            <input type="date" id="reservationDate" [(ngModel)]="formDate" name="reservationDate" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="reservationTime" class="block text-sm font-medium text-gray-300 mb-1">Hora *</label>
+            <input type="time" id="reservationTime" [(ngModel)]="formTime" name="reservationTime" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+        
+        <div>
+          <label for="notes" class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+          <textarea id="notes" [(ngModel)]="reservationForm().notes" name="notes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button type="button" (click)="close.emit()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+        <button type="submit" [disabled]="!isFormValid()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">Salvar Reserva</button>
+      </div>
+    </form>
+  </div>
+</div>
