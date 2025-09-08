@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { Employee } from '../models/db.models';
 import { Router } from '@angular/router';
-import { toObservable } from '@angular/core/rxjs/interop';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { filter, take } from 'rxjs';
 import { supabase } from './supabase-client';
 import { SupabaseStateService } from './supabase-state.service';
