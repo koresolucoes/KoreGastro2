@@ -1,18 +1,17 @@
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Order, Table, OrderItem, DiscountType } from '../../../models/db.models';
+import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models/db.models';
 import { PosDataService, PaymentInfo } from '../../../services/pos-data.service';
 import { PrintingService } from '../../../services/printing.service';
 import { NotificationService } from '../../../services/notification.service';
+import { RedeemRewardModalComponent } from '../../shared/redeem-reward-modal/redeem-reward-modal.component';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
 @Component({
   selector: 'app-payment-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RedeemRewardModalComponent],
   templateUrl: './payment-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,6 +30,7 @@ export class PaymentModalComponent {
   payments = signal<PaymentInfo[]>([]);
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
+  isRedeemModalOpen = signal(false);
 
   // Discount Modal State
   isDiscountModalOpen = signal(false);
@@ -38,6 +38,7 @@ export class PaymentModalComponent {
   discountType = signal<DiscountType>('percentage');
   discountValue = signal<number | null>(null);
 
+  customer = computed(() => this.order()?.customers);
 
   orderSubtotal = computed(() => this.order()?.order_items.reduce((sum, item) => sum + item.price, 0) ?? 0);
   tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);

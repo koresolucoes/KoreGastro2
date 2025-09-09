@@ -8,6 +8,7 @@ import { TableLayoutComponent } from './table-layout/table-layout.component';
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.component';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
+import { RedeemRewardModalComponent } from '../shared/redeem-reward-modal/redeem-reward-modal.component';
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -27,6 +28,7 @@ import { NotificationService } from '../../services/notification.service';
     PreBillModalComponent,
     MoveOrderModalComponent,
     CustomerSelectModalComponent,
+    RedeemRewardModalComponent,
   ],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,6 +59,7 @@ export class PosComponent {
   isHallManagerOpen = signal(false);
   isPreBillModalOpen = signal(false);
   isCustomerSelectModalOpen = signal(false);
+  isRedeemModalOpen = signal(false);
 
   // Context Menu State
   isContextMenuOpen = signal(false);
@@ -71,6 +74,9 @@ export class PosComponent {
     if (!table) return null;
     return this.posDataService.getOrderByTableNumber(table.number) ?? null;
   });
+
+  customerForModals = computed(() => this.currentOrder()?.customers);
+  orderIdForModals = computed(() => this.currentOrder()?.id);
 
   employeeNameMap = computed(() => {
     return new Map(this.employees().map(e => [e.id, e.name]));

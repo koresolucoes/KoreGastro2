@@ -75,7 +75,8 @@
           (releaseTable)="handleReleaseTable()"
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
-          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()">
+          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()"
+          (redeemRewardClicked)="isRedeemModalOpen.set(true)">
         </app-order-panel>
       </div>
 
@@ -92,7 +93,8 @@
           (releaseTable)="handleReleaseTable()"
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
-          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()">
+          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()"
+          (redeemRewardClicked)="isRedeemModalOpen.set(true)">
         </app-order-panel>
       </div>
     }
@@ -127,6 +129,15 @@
     (customerSelected)="handleCustomerSelected($event)">
   </app-customer-select-modal>
 }
+
+@if (isRedeemModalOpen()) {
+  <app-redeem-reward-modal
+    [customer]="customerForModals()"
+    [orderId]="orderIdForModals()"
+    (closeModal)="isRedeemModalOpen.set(false)">
+  </app-redeem-reward-modal>
+}
+
 
 <!-- Context Menu for Tables -->
 @if(isContextMenuOpen()) {

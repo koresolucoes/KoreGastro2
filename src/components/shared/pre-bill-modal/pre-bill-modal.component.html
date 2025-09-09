@@ -1,4 +1,3 @@
-
 @if (order(); as currentOrder) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
@@ -16,15 +15,15 @@
             <h4 class="font-semibold text-white mb-2">Itens Consumidos</h4>
             <ul class="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
                 @for(item of currentOrder.order_items; track item.id) {
-                    @if(item.price > 0) {
-                        <li class="flex justify-between items-start p-2 bg-gray-700/50 rounded-md">
-                            <div>
-                                <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
-                                <p class="text-xs text-gray-400">{{ item.price | currency:'BRL' }} cada</p>
-                            </div>
-                            <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                        </li>
-                    }
+                    <li class="flex justify-between items-start p-2 bg-gray-700/50 rounded-md">
+                        <div>
+                            <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
+                            @if(item.price > 0) {
+                              <p class="text-xs text-gray-400">{{ item.price | currency:'BRL' }} cada</p>
+                            }
+                        </div>
+                        <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                    </li>
                 }
             </ul>
         </div>
@@ -78,4 +77,3 @@
     </div>
   </div>
 }
-      

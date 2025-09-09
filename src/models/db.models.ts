@@ -176,7 +176,7 @@ export interface Order {
 export interface OrderItem {
   id: string;
   order_id: string;
-  recipe_id: string;
+  recipe_id: string | null;
   name: string;
   quantity: number;
   price: number;
@@ -188,6 +188,7 @@ export interface OrderItem {
   station_id: string;
   group_id: string | null;
   status_timestamps: any;
+  redeemed_reward_id?: string | null;
   created_at: string;
   user_id: string;
 }

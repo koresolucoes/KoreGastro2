@@ -1,0 +1,49 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">Resgatar Prêmio de Fidelidade</h3>
+      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    @if(customer(); as cust) {
+        <div class="p-4 bg-gray-900/50">
+            <p class="text-white font-semibold">{{ cust.name }}</p>
+            <p class="text-lg text-blue-400 font-bold">{{ cust.loyalty_points | number }} Pontos</p>
+        </div>
+        <div class="flex-1 p-4 overflow-y-auto">
+            @if(redeemableRewards().length > 0) {
+                <ul class="space-y-3">
+                    @for(reward of redeemableRewards(); track reward.id) {
+                        <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white">{{reward.name}} - <span class="text-blue-300">{{reward.points_cost}} pts</span></p>
+                                <p class="text-xs text-gray-400">{{ getRewardValueLabel(reward) }}</p>
+                            </div>
+                            <button 
+                                (click)="redeemReward(reward.id)" 
+                                [disabled]="!reward.canRedeem || isRedeeming()"
+                                class="px-4 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed w-32 text-center">
+                                @if(isRedeeming() === reward.id) {
+                                    <svg class="animate-spin h-5 w-5 text-white mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                } @else {
+                                    <span>Resgatar</span>
+                                }
+                            </button>
+                        </li>
+                    }
+                </ul>
+            } @else {
+                <p class="text-center text-gray-500 py-8">Nenhum prêmio de fidelidade configurado ou ativo no momento.</p>
+            }
+        </div>
+    } @else {
+        <div class="flex-1 p-4 flex items-center justify-center">
+             <p class="text-center text-gray-500 py-8">Nenhum cliente associado a este pedido.</p>
+        </div>
+    }
+
+  </div>
+</div>

@@ -24,15 +24,21 @@
         <!-- Customer Section -->
         <div>
           @if(currentOrder()?.customers; as customer) {
-            <div class="bg-gray-700/50 p-2 rounded-lg flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                    <span class="font-semibold text-white">{{ customer.name }}</span>
+            <div class="bg-gray-700/50 p-2 rounded-lg flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                        <span class="font-semibold text-white">{{ customer.name }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <button (click)="associateCustomerClicked.emit()" class="text-xs text-gray-400 hover:text-white p-1 rounded-md">Trocar</button>
+                      <button (click)="removeCustomerAssociationClicked.emit()" class="text-xs text-red-400 hover:text-white p-1 rounded-md">X</button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1">
-                  <button (click)="associateCustomerClicked.emit()" class="text-xs text-gray-400 hover:text-white p-1 rounded-md">Trocar</button>
-                  <button (click)="removeCustomerAssociationClicked.emit()" class="text-xs text-red-400 hover:text-white p-1 rounded-md">X</button>
-                </div>
+                <button (click)="redeemRewardClicked.emit()" [disabled]="!hasCustomer()" class="w-full text-center py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
+                    Resgatar Prêmio
+                </button>
             </div>
           } @else {
             <button (click)="associateCustomerClicked.emit()" class="w-full text-center py-2 px-3 bg-gray-700/50 hover:bg-gray-700 text-blue-400 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2">
@@ -126,7 +132,7 @@
                               }
                               <ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">@for(subItem of displayItem.items; track subItem.id) {<li class="flex justify-between items-center text-xs"><p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p><p [class]="getOrderItemStatusClass(subItem.status)">{{ subItem.status.replace('_', ' ') }}</p></li>}</ul></li>
                           } @else {
-                            <li class="flex flex-col text-sm bg-gray-700/50 p-2 rounded">
+                            <li class="flex flex-col text-sm bg-gray-700/50 p-2 rounded" [class.bg-indigo-900/40]="displayItem.item.redeemed_reward_id">
                               <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-2">
                                   @if(isItemCritical(displayItem.item)) {
@@ -146,7 +152,7 @@
                                 <div class="flex items-center gap-2">
                                   @if (displayItem.hasDiscount) { <span class="text-xs line-through text-gray-500">{{ displayItem.originalTotalPrice | currency:'BRL' }}</span> }
                                   <span class="font-medium ml-2">{{ (displayItem.item.price * displayItem.item.quantity) | currency:'BRL' }}</span>
-                                  <button (click)="$event.stopPropagation(); openDiscountModal(displayItem)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
+                                  <button (click)="$event.stopPropagation(); openDiscountModal(displayItem)" [disabled]="!!displayItem.item.redeemed_reward_id" class="text-gray-400 hover:text-white p-1 disabled:opacity-30 disabled:cursor-not-allowed" title="Aplicar desconto">
                                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
                                   </button>
                                 </div>

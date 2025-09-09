@@ -379,4 +379,19 @@ export class PosDataService {
       
     return { success: !error, error };
   }
+
+  async redeemReward(customerId: string, rewardId: string, orderId: string): Promise<{ success: boolean; error: any; message?: string }> {
+    const { data, error } = await supabase.rpc('redeem_reward', {
+      p_customer_id: customerId,
+      p_reward_id: rewardId,
+      p_order_id: orderId,
+    });
+
+    if (error) {
+      return { success: false, error };
+    }
+    
+    const response = data as { success: boolean, message: string };
+    return { success: response.success, error: response.success ? null : { message: response.message }, message: response.message };
+  }
 }

@@ -61,6 +61,7 @@ export class OrderPanelComponent {
   customerCountChanged: OutputEmitterRef<number> = output<number>();
   associateCustomerClicked: OutputEmitterRef<void> = output<void>();
   removeCustomerAssociationClicked: OutputEmitterRef<void> = output<void>();
+  redeemRewardClicked: OutputEmitterRef<void> = output<void>();
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);
@@ -81,6 +82,8 @@ export class OrderPanelComponent {
   discountValue = signal<number | null>(null);
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
+
+  hasCustomer = computed(() => !!this.currentOrder()?.customers);
 
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
@@ -128,10 +131,10 @@ export class OrderPanelComponent {
     for (const item of items) {
       if (item.group_id) {
         if (!grouped.has(item.group_id)) {
-          const recipe = recipesMap.get(item.recipe_id);
+          const recipe = recipesMap.get(item.recipe_id!);
           grouped.set(item.group_id, {
             isGroup: true, groupId: item.group_id, recipeName: recipe?.name ?? 'Prato Desconhecido',
-            recipeId: item.recipe_id, quantity: item.quantity, 
+            recipeId: item.recipe_id!, quantity: item.quantity, 
             totalPrice: 0, // Calculated below
             originalTotalPrice: 0, // Calculated below
             items: [],
