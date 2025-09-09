@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Category, ReservationSettings } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
@@ -31,9 +31,13 @@ export class SettingsComponent {
   recipeCategories = this.stateService.categories;
   suppliers = this.stateService.suppliers;
   reservationSettings = this.stateService.reservationSettings;
+  companyProfile = this.stateService.companyProfile;
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
+  
+  // Company Profile Form
+  companyProfileForm = signal<Partial<CompanyProfile>>({});
 
   // Search terms
   stationSearchTerm = signal('');
@@ -71,6 +75,15 @@ export class SettingsComponent {
                 min_party_size: 1,
                 booking_notice_days: 30,
             });
+        }
+    });
+    
+    effect(() => {
+        const profile = this.companyProfile();
+        if (profile) {
+            this.companyProfileForm.set({ ...profile });
+        } else {
+            this.companyProfileForm.set({ company_name: '', cnpj: '', address: ''});
         }
     });
   }
@@ -244,6 +257,25 @@ export class SettingsComponent {
     } else {
       await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
     }
+  }
+
+  // --- Company Profile ---
+  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at'>, value: string) {
+      this.companyProfileForm.update(form => ({ ...form, [field]: value }));
+  }
+  
+  async saveCompanyProfile() {
+      const form = this.companyProfileForm();
+      if (!form.company_name || !form.cnpj) {
+          await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
+          return;
+      }
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(form);
+      if (success) {
+          await this.notificationService.alert('Dados da empresa salvos!', 'Sucesso');
+      } else {
+          await this.notificationService.alert(`Erro ao salvar dados da empresa: ${error?.message}`);
+      }
   }
 
   async copyToClipboard(text: string) {

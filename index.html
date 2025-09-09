@@ -36,42 +36,53 @@
       body * {
         visibility: hidden;
       }
-      .printable-area, .printable-area * {
+      .printable-area, .printable-area *,
+      .payslip-printable-area, .payslip-printable-area * {
         visibility: visible;
       }
-      .printable-area {
+      .printable-area, .payslip-printable-area {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
         margin: 0;
-        padding: 1.5rem; /* Re-apply some padding for print */
-        color: #000;
-        background-color: #fff;
+        padding: 1rem;
+        background-color: #fff !important;
       }
       /* Hide elements not meant for printing */
       .no-print, .no-print * {
         display: none !important;
       }
-      /* Ensure report looks good on paper */
-      .printable-area h2,
-      .printable-area h3 {
-          color: #000 !important;
+      
+      /* Force black text and visible borders on all elements within the printable area */
+      .printable-area *,
+      .payslip-printable-area * {
+        color: #000 !important;
+        background-color: transparent !important;
+        border-color: #ccc !important;
+        box-shadow: none !important;
       }
-      .printable-area p, .printable-area div, .printable-area span, .printable-area th, .printable-area td {
-          color: #000 !important;
-          background-color: transparent !important;
-      }
-       .printable-area table {
+
+      /* Ensure tables look good on paper */
+       .printable-area table, .payslip-printable-area table {
           width: 100%;
           border-collapse: collapse;
       }
-      .printable-area th, .printable-area td {
-          border: 1px solid #ddd;
-          padding: 8px;
+      .printable-area th, .printable-area td,
+      .payslip-printable-area th, .payslip-printable-area td {
+          border: 1px solid #ccc !important;
+          padding: 6px;
       }
-      .printable-area thead {
+      .printable-area thead, .payslip-printable-area thead {
           background-color: #f2f2f2 !important;
+      }
+      
+      /* Specific for payslip */
+      .payslip-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        page-break-inside: avoid; /* Avoid breaking a single payslip across pages */
       }
     }
   </style>

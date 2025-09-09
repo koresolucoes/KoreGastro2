@@ -1,7 +1,5 @@
-
-
 import { Injectable, inject } from '@angular/core';
-import { Employee, Station } from '../models/db.models';
+import { Employee, Station, CompanyProfile } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 
@@ -49,6 +47,15 @@ export class SettingsDataService {
 
   async deleteEmployee(id: string): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('employees').delete().eq('id', id);
+    return { success: !error, error };
+  }
+  
+  async updateCompanyProfile(profile: Partial<CompanyProfile>): Promise<{ success: boolean, error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { error } = await supabase
+      .from('company_profile')
+      .upsert({ ...profile, user_id: userId }, { onConflict: 'user_id' });
     return { success: !error, error };
   }
 }

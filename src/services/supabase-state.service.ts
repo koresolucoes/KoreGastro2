@@ -1,7 +1,6 @@
-
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -44,6 +43,8 @@ export class SupabaseStateService {
 
   schedules = signal<Schedule[]>([]);
   leaveRequests = signal<LeaveRequest[]>([]);
+  
+  companyProfile = signal<CompanyProfile | null>(null);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -253,6 +254,9 @@ export class SupabaseStateService {
         case 'reservation_settings':
             this.refetchSingleRow('reservation_settings', '*', this.reservationSettings);
             break;
+        case 'company_profile':
+            this.refetchSingleRow('company_profile', '*', this.companyProfile);
+            break;
         case 'time_clock_entries':
             // Refetch employees to update their clock-in status bubble
             this.refetchSimpleTable('employees', '*', this.employees);
@@ -310,6 +314,7 @@ export class SupabaseStateService {
     this.reservations.set([]); this.reservationSettings.set(null);
     this.schedules.set([]);
     this.leaveRequests.set([]);
+    this.companyProfile.set(null);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -346,6 +351,7 @@ export class SupabaseStateService {
       supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }),
       supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }),
+      supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -360,6 +366,7 @@ export class SupabaseStateService {
     this.reservationSettings.set(results[17].data || null);
     this.schedules.set(results[18].data as Schedule[] || []);
     this.leaveRequests.set(results[19].data as LeaveRequest[] || []);
+    this.companyProfile.set(results[20].data || null);
     await this.refreshDashboardAndCashierData();
   }
   

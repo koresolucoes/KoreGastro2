@@ -363,3 +363,11 @@ export interface LeaveRequest {
   updated_at: string;
   employees?: { name: string, role: string }; // Relation
 }
+
+export interface CompanyProfile {
+  user_id: string;
+  company_name: string;
+  cnpj: string;
+  address: string | null;
+  created_at: string;
+}

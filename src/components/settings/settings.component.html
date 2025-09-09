@@ -3,8 +3,30 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
     
+    <!-- Panel: Company Profile -->
+    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-1">
+      <h2 class="text-xl font-semibold text-white mb-4">Dados da Empresa</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Empresa</label>
+          <input type="text" [value]="companyProfileForm().company_name || ''" (input)="updateCompanyProfileField('company_name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
+          <input type="text" [value]="companyProfileForm().cnpj || ''" (input)="updateCompanyProfileField('cnpj', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
+          <input type="text" [value]="companyProfileForm().address || ''" (input)="updateCompanyProfileField('address', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+      </div>
+      <div class="mt-6">
+        <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Dados da Empresa</button>
+      </div>
+    </div>
+    
     <!-- Panel: Reservation Settings -->
-    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-2 xl:col-span-1">
+    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-1">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold text-white">Configurações de Reserva</h2>
             <button

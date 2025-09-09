@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { Employee, Schedule, Shift, TimeClockEntry } from '../../models/db.models';
+import { Employee, Schedule, Shift, TimeClockEntry, CompanyProfile } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { TimeClockService } from '../../services/time-clock.service';
@@ -36,7 +36,11 @@ export class PayrollComponent {
   // Data state
   timeEntriesForPeriod = signal<TimeClockEntry[]>([]);
   schedulesForPeriod = signal<Schedule[]>([]);
+  companyProfile = this.stateService.companyProfile;
   
+  // Payslip Modal State
+  employeeForPayslip = signal<PayrollData | null>(null);
+
   availableYears = computed(() => {
     const currentYear = new Date().getFullYear();
     return [currentYear, currentYear - 1, currentYear - 2];
@@ -152,6 +156,40 @@ export class PayrollComponent {
   totalBasePay = computed(() => this.payrollData().reduce((acc, p) => acc + p.basePay, 0));
   totalOvertimePay = computed(() => this.payrollData().reduce((acc, p) => acc + p.overtimePay, 0));
   grandTotalPay = computed(() => this.payrollData().reduce((acc, p) => acc + p.totalPay, 0));
+  
+  // --- Payslip Computeds (Simulated values) ---
+  
+  payslipReferenceMonth = computed(() => {
+    const monthName = this.months[this.selectedMonth()].name;
+    const year = this.selectedYear();
+    return `${monthName}/${year}`;
+  });
+  
+  payslipNormalHoursWorked = computed(() => {
+    const data = this.employeeForPayslip();
+    if (!data) return 0;
+    return data.workedHours - data.overtimeHours;
+  });
+
+  payslipINSS = computed(() => (this.employeeForPayslip()?.basePay ?? 0) * 0.09); // Simplified 9%
+  payslipVT = computed(() => (this.employeeForPayslip()?.basePay ?? 0) * 0.06); // Simplified 6%
+  payslipTotalProventos = computed(() => (this.employeeForPayslip()?.totalPay ?? 0));
+  payslipTotalDescontos = computed(() => this.payslipINSS() + this.payslipVT());
+  payslipLiquido = computed(() => this.payslipTotalProventos() - this.payslipTotalDescontos());
+  payslipBaseFGTS = computed(() => this.payslipTotalProventos());
+  payslipFGTSMes = computed(() => this.payslipBaseFGTS() * 0.08);
+
+  openPayslip(data: PayrollData) {
+    this.employeeForPayslip.set(data);
+  }
+  
+  closePayslip() {
+    this.employeeForPayslip.set(null);
+  }
+
+  printPayslip() {
+    window.print();
+  }
 
   printReport() {
     window.print();
