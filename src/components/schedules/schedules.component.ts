@@ -73,7 +73,13 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
   });
 
   shiftsByDay = computed(() => {
-    const shifts = this.activeSchedule()?.shifts ?? [];
+    const allShifts = this.activeSchedule()?.shifts ?? [];
+    const employee = this.operationalAuthService.activeEmployee();
+
+    const shiftsToDisplay = (employee && !this.isManager())
+      ? allShifts.filter(shift => shift.employee_id === employee.id)
+      : allShifts;
+
     const days = this.weekDays();
     const map = new Map<string, Shift[]>();
 
@@ -81,7 +87,7 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
         map.set(day.toISOString().split('T')[0], []);
     });
 
-    shifts.forEach(shift => {
+    shiftsToDisplay.forEach(shift => {
         const shiftDate = new Date(shift.start_time).toISOString().split('T')[0];
         if(map.has(shiftDate)) {
             map.get(shiftDate)!.push(shift);
