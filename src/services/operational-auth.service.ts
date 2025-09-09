@@ -9,10 +9,10 @@ import { SupabaseStateService } from './supabase-state.service';
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
 const PERMISSIONS: Record<string, string[]> = {
-  'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings', '/reservations', '/time-clock', '/tutorials', '/purchasing', '/mise-en-place'],
-  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules'],
-  'Garçom': ['/pos', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules'],
-  'Cozinha': ['/kds', '/mise-en-place', '/tutorials', '/schedules'],
+  'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings', '/reservations', '/time-clock', '/tutorials', '/purchasing', '/mise-en-place', '/leave-management', '/my-leave', '/schedules'],
+  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules', '/my-leave'],
+  'Garçom': ['/pos', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules', '/my-leave'],
+  'Cozinha': ['/kds', '/mise-en-place', '/tutorials', '/schedules', '/my-leave'],
 };
 
 const DEFAULT_ROUTES: Record<string, string> = {

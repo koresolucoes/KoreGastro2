@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, AfterViewInit, OnDestroy, QueryList, ViewChildren, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee, LeaveRequest, Schedule, Shift } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -27,12 +27,11 @@ function parseInputToISO(inputString: string | null | undefined): string | null 
   templateUrl: './schedules.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SchedulesComponent implements AfterViewInit, OnDestroy {
+export class SchedulesComponent {
   private stateService = inject(SupabaseStateService);
   private scheduleDataService = inject(ScheduleDataService);
   private notificationService = inject(NotificationService);
   private operationalAuthService = inject(OperationalAuthService);
-  private elementRef = inject(ElementRef);
 
   // Data
   allEmployees = this.stateService.employees;
@@ -47,11 +46,6 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
   editingShift = signal<Shift | null>(null);
   shiftForm = signal<Partial<Shift>>({});
   
-  // Mobile view state
-  @ViewChildren('dayColumn') dayColumns!: QueryList<ElementRef>;
-  private observer?: IntersectionObserver;
-  mobileVisibleDayIndex = signal(0);
-
   isManager = computed(() => this.operationalAuthService.activeEmployee()?.role === 'Gerente');
 
   employeesToDisplay = computed(() => {
@@ -159,48 +153,6 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
     }, { allowSignalWrites: true });
   }
 
-  ngAfterViewInit() {
-    this.dayColumns.changes.subscribe(() => this.setupIntersectionObserver());
-    this.setupIntersectionObserver();
-  }
-
-  ngOnDestroy() {
-    this.observer?.disconnect();
-  }
-
-  private setupIntersectionObserver() {
-    this.observer?.disconnect();
-    
-    Promise.resolve().then(() => {
-        const scrollContainer = this.elementRef.nativeElement.querySelector('.schedule-scroll-container');
-        if (!scrollContainer || this.dayColumns.length === 0) return;
-
-        const options = {
-            root: scrollContainer,
-            threshold: 0.5,
-        };
-
-        this.observer = new IntersectionObserver((entries) => {
-            for (const entry of entries) {
-                if (entry.isIntersecting) {
-                    const index = Number(entry.target.getAttribute('data-index'));
-                    this.mobileVisibleDayIndex.set(index);
-                    return;
-                }
-            }
-        }, options);
-
-        this.dayColumns.forEach(col => this.observer!.observe(col.nativeElement));
-    });
-  }
-
-  scrollToDay(index: number) {
-    const column = this.dayColumns?.toArray()[index];
-    if (column) {
-      column.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }
-
   private getStartOfWeek(date: Date): string {
     const d = new Date(date);
     const day = d.getDay();
@@ -254,7 +206,7 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
     this.isModalOpen.set(false);
   }
 
-  updateShiftFormField(field: keyof Omit<Shift, 'id' | 'created_at' | 'user_id' | 'schedule_id' | 'start_time' | 'end_time' | 'is_day_off'>, value: string) {
+  updateShiftFormField(field: keyof Omit<Shift, 'id' | 'created_at' | 'user_id' | 'schedule_id' | 'start_time' | 'end_time' | 'is_day_off'>, value: string | boolean) {
       this.shiftForm.update(form => ({ ...form, [field]: value }));
   }
 
