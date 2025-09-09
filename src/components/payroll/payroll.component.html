@@ -18,7 +18,7 @@
           }
         </select>
         <button (click)="printReport()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03-.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
+          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
           Imprimir Resumo
         </button>
       </div>
@@ -161,7 +161,13 @@
                             <!-- Proventos -->
                             <tr>
                                 <td class="p-1 border border-gray-400">Salário Base</td>
-                                <td class="p-1 border border-gray-400 text-right">{{ payslip.employee.salary_type === 'mensal' ? '30d' : (payslipNormalHoursWorked() | number:'1.2-2') + 'h' }}</td>
+                                <td class="p-1 border border-gray-400 text-right">
+                                  @if (payslip.employee.salary_type === 'mensal') {
+                                    <span>30d / {{ payslipNormalHoursWorked() | number:'1.2-2' }}h</span>
+                                  } @else {
+                                    <span>{{ payslipNormalHoursWorked() | number:'1.2-2' }}h</span>
+                                  }
+                                </td>
                                 <td class="p-1 border border-gray-400 text-right">{{ payslip.basePay | currency:'BRL' }}</td>
                                 <td class="p-1 border border-gray-400"></td>
                             </tr>
