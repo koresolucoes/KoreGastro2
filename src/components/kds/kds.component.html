@@ -51,13 +51,25 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of groupedKdsTickets(); track ticket.tableNumber) {
             <div (click)="openDetailModal(ticket)" class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col cursor-pointer hover:border-blue-500 transition-colors">
-              <div class="p-3 text-white font-bold flex justify-between items-center" [ngClass]="ticket.ticketTimerColor">
+              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
                 <span>Mesa {{ ticket.tableNumber }}</span>
                 <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
                 @for (item of ticket.items; track item.id) {
-                  <li (click)="$event.stopPropagation(); updateStatus(item)" class="border-l-4 p-3 rounded-r-md transition-all relative" [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" [class.pointer-events-none]="updatingItems().has(item.id)" [ngClass]="item.isHeld ? 'bg-gray-700/50 border-gray-500' : (item.status === 'EM_PREPARO' ? 'bg-blue-500/10' : 'bg-yellow-500/10') + ' ' + (item.isCritical ? 'border-red-500 border-l-8 bg-red-900/40' : getItemStatusClass(item.status))">
+                  <li (click)="$event.stopPropagation(); updateStatus(item)" 
+                      class="p-3 rounded-r-md transition-all relative"
+                      [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" 
+                      [class.pointer-events-none]="updatingItems().has(item.id)"
+                      [class.border-l-4]="!item.isCritical"
+                      [class.border-l-8]="item.isCritical"
+                      [class.bg-gray-700/50]="item.isHeld"
+                      [class.border-gray-500]="item.isHeld"
+                      [class.bg-red-900/40]="!item.isHeld && item.isCritical"
+                      [class.border-red-500]="!item.isHeld && item.isCritical"
+                      [class.bg-blue-500/10]="!item.isHeld && !item.isCritical && item.status === 'EM_PREPARO'"
+                      [class.bg-yellow-500/10]="!item.isHeld && !item.isCritical && item.status === 'PENDENTE'"
+                      [class]="!item.isHeld && !item.isCritical ? getItemStatusClass(item.status) : ''">
                     
                     @if(item.isHeld) {
                       <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/80 rounded-r-md p-2 text-center">
@@ -105,18 +117,25 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of expoViewTickets(); track ticket.tableNumber) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup" [class.border-gray-700]="!ticket.isReadyForPickup">
-              <div class="p-3 text-white font-bold flex justify-between items-center" [ngClass]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
+              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
                 <span>Mesa {{ ticket.tableNumber }}</span>
                 <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
                 @for (item of ticket.items; track item.id) {
-                  <li class="p-2 rounded-md flex justify-between items-center gap-2" [ngClass]="item.status === 'EM_PREPARO' ? 'bg-blue-900/50' : (item.status === 'PENDENTE' ? 'bg-yellow-900/50' : (item.status === 'PRONTO' ? 'bg-green-900/50' : 'bg-gray-700/50'))">
+                  <li class="p-2 rounded-md flex justify-between items-center gap-2" 
+                      [class.bg-blue-900/50]="item.status === 'EM_PREPARO'" 
+                      [class.bg-yellow-900/50]="item.status === 'PENDENTE'" 
+                      [class.bg-green-900/50]="item.status === 'PRONTO'"
+                      [class.bg-gray-700/50]="item.status !== 'EM_PREPARO' && item.status !== 'PENDENTE' && item.status !== 'PRONTO'">
                     <div class="flex-1">
                       <p class="font-semibold text-white">{{ item.quantity }}x {{ item.name }}</p>
                       <p class="text-xs text-gray-400 font-medium">{{ item.stationName }}</p>
                     </div>
-                    <span class="text-xs font-mono px-2 py-1 rounded" [ngClass]="item.status === 'EM_PREPARO' ? 'bg-blue-500/20 text-blue-300' : (item.status === 'PENDENTE' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300')">
+                    <span class="text-xs font-mono px-2 py-1 rounded" 
+                          [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" 
+                          [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" 
+                          [class.bg-green-500/20]="item.status === 'PRONTO'" [class.text-green-300]="item.status === 'PRONTO'">
                       {{ item.status.replace('_', ' ') }}
                     </span>
                   </li>

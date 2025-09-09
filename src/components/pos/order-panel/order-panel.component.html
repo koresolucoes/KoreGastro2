@@ -98,7 +98,7 @@
                               @if(displayItem.items[0].notes) {
                                <p class="text-xs italic text-yellow-300 mt-1 pt-1 border-t border-gray-600/50">"{{ displayItem.items[0].notes }}"</p>
                               }
-                              <ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">@for(subItem of displayItem.items; track subItem.id) {<li class="flex justify-between items-center text-xs"><p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p><p [ngClass]="getOrderItemStatusClass(subItem.status)">{{ subItem.status.replace('_', ' ') }}</p></li>}</ul></li>
+                              <ul class="mt-1 pl-4 border-l-2 border-gray-600 space-y-1">@for(subItem of displayItem.items; track subItem.id) {<li class="flex justify-between items-center text-xs"><p class="text-gray-300">{{ subItem.name.split('(')[1].replace(')', '') }}</p><p [class]="getOrderItemStatusClass(subItem.status)">{{ subItem.status.replace('_', ' ') }}</p></li>}</ul></li>
                           } @else {
                             <li class="flex flex-col text-sm bg-gray-700/50 p-2 rounded">
                               <div class="flex justify-between items-center">
@@ -114,7 +114,7 @@
                                   }
                                   <div>
                                     <p>{{ displayItem.item.name }} <span class="text-gray-400">x{{ displayItem.item.quantity }}</span></p>
-                                    <p class="text-xs" [ngClass]="getOrderItemStatusClass(displayItem.item.status)">{{ displayItem.item.status.replace('_', ' ') }}</p>
+                                    <p class="text-xs" [class]="getOrderItemStatusClass(displayItem.item.status)">{{ displayItem.item.status.replace('_', ' ') }}</p>
                                   </div>
                                 </div>
                                 <span class="font-medium ml-2">{{ (displayItem.item.price * displayItem.item.quantity) | currency:'BRL' }}</span>
