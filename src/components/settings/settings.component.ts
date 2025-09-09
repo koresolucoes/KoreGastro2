@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
@@ -30,11 +30,14 @@ export class SettingsComponent {
   stations = this.stateService.stations;
   categories = this.stateService.ingredientCategories;
   recipeCategories = this.stateService.categories;
+  recipes = this.stateService.recipes;
   suppliers = this.stateService.suppliers;
   reservationSettings = this.stateService.reservationSettings;
   companyProfile = this.stateService.companyProfile;
   roles = this.stateService.roles;
   rolePermissions = this.stateService.rolePermissions;
+  loyaltySettings = this.stateService.loyaltySettings;
+  loyaltyRewards = this.stateService.loyaltyRewards;
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
@@ -106,6 +109,15 @@ export class SettingsComponent {
   newRoleName = signal('');
   rolePendingDeletion = signal<Role | null>(null);
 
+  // Loyalty Program State
+  loyaltySettingsForm = signal<Partial<LoyaltySettings>>({});
+  isRewardModalOpen = signal(false);
+  editingReward = signal<Partial<LoyaltyReward> | null>(null);
+  rewardForm = signal<Partial<LoyaltyReward>>({});
+  rewardPendingDeletion = signal<LoyaltyReward | null>(null);
+  availableRewardTypes: LoyaltyRewardType[] = ['discount_fixed', 'discount_percentage', 'free_item'];
+  sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
+
   qrCodeUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
@@ -145,6 +157,15 @@ export class SettingsComponent {
             this.companyProfileForm.set({ ...profile });
         } else {
             this.companyProfileForm.set({ company_name: '', cnpj: '', address: ''});
+        }
+    });
+
+    effect(() => {
+        const settings = this.loyaltySettings();
+        if (settings) {
+            this.loyaltySettingsForm.set({ ...settings });
+        } else {
+            this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
         }
     });
   }
@@ -422,5 +443,105 @@ export class SettingsComponent {
       await this.notificationService.alert(`Falha ao deletar: ${error?.message}`);
     }
     this.rolePendingDeletion.set(null);
+  }
+
+  // --- Loyalty Methods ---
+  updateLoyaltySettingsField(field: keyof LoyaltySettings, value: any) {
+    this.loyaltySettingsForm.update(form => ({ ...form, [field]: value }));
+  }
+
+  async saveLoyaltySettings() {
+    const form = this.loyaltySettingsForm();
+    const { success, error } = await this.settingsDataService.upsertLoyaltySettings(form);
+    if (success) {
+      this.notificationService.show('Configurações de fidelidade salvas!', 'success');
+    } else {
+      await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+    }
+  }
+
+  openAddRewardModal() {
+    this.editingReward.set(null);
+    this.rewardForm.set({
+      name: '',
+      description: '',
+      points_cost: 100,
+      reward_type: 'discount_fixed',
+      reward_value: '10', // Default value
+      is_active: true
+    });
+    this.isRewardModalOpen.set(true);
+  }
+
+  openEditRewardModal(reward: LoyaltyReward) {
+    this.editingReward.set(reward);
+    this.rewardForm.set({ ...reward });
+    this.isRewardModalOpen.set(true);
+  }
+
+  closeRewardModal() {
+    this.isRewardModalOpen.set(false);
+  }
+  
+  updateRewardFormField(field: keyof Omit<LoyaltyReward, 'id' | 'created_at' | 'user_id'>, value: string | boolean | number) {
+    this.rewardForm.update(form => {
+        const newForm = { ...form, [field]: value };
+        if (field === 'reward_type') {
+            newForm.reward_value = ''; // Reset value when type changes
+        }
+        return newForm;
+    });
+  }
+
+  async saveReward() {
+    const form = this.rewardForm();
+    if (!form.name || !form.points_cost || !form.reward_type || !form.reward_value) {
+        await this.notificationService.alert('Preencha todos os campos do prêmio.');
+        return;
+    }
+
+    let result;
+    if (this.editingReward()?.id) {
+        result = await this.settingsDataService.updateLoyaltyReward({ ...form, id: this.editingReward()!.id });
+    } else {
+        result = await this.settingsDataService.addLoyaltyReward(form);
+    }
+    if (result.success) {
+        this.closeRewardModal();
+    } else {
+        await this.notificationService.alert(`Erro ao salvar prêmio: ${result.error?.message}`);
+    }
+  }
+  
+  requestDeleteReward(reward: LoyaltyReward) { this.rewardPendingDeletion.set(reward); }
+  cancelDeleteReward() { this.rewardPendingDeletion.set(null); }
+  
+  async confirmDeleteReward() {
+    const reward = this.rewardPendingDeletion();
+    if (!reward) return;
+    const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
+    if (!success) {
+      await this.notificationService.alert(`Erro ao excluir prêmio: ${error?.message}`);
+    }
+    this.rewardPendingDeletion.set(null);
+  }
+
+  getRewardTypeLabel(type: LoyaltyRewardType): string {
+    switch(type) {
+      case 'discount_fixed': return 'Desconto (R$)';
+      case 'discount_percentage': return 'Desconto (%)';
+      case 'free_item': return 'Item Grátis';
+      default: return 'Desconhecido';
+    }
+  }
+
+  getRewardValueLabel(reward: LoyaltyReward): string {
+    if (reward.reward_type === 'free_item') {
+      return this.sellableRecipes().find(r => r.id === reward.reward_value)?.name || 'Item não encontrado';
+    }
+    if (reward.reward_type === 'discount_percentage') {
+        return `${reward.reward_value}%`;
+    }
+    return `R$ ${reward.reward_value}`;
   }
 }
