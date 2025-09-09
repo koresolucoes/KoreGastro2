@@ -1,0 +1,24 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="onClose()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center p-4 border-b border-gray-700">
+      <h3 class="text-xl font-bold text-white">Mover Pedido da Mesa {{ sourceTable()?.number }}</h3>
+      <button (click)="onClose()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-300 mb-4">Selecione a mesa de destino:</p>
+      @if(availableTables().length > 0) {
+          <div class="grid grid-cols-4 gap-4">
+              @for(table of availableTables(); track table.id) {
+                  <button (click)="onMoveOrder(table)" class="bg-green-600/20 text-green-300 font-bold p-4 rounded-lg border-2 border-green-700 hover:bg-green-600 hover:text-white transition-colors">
+                      {{ table.number }}
+                  </button>
+              }
+          </div>
+      } @else {
+          <p class="text-center text-gray-500 py-8">Nenhuma mesa livre disponível neste salão.</p>
+      }
+    </div>
+  </div>
+</div>

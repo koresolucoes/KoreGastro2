@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -161,18 +162,25 @@ export class CashierDataService {
         recipePrices.set(item.recipe.id, this.pricingService.getEffectivePrice(item.recipe));
     });
 
-    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => ({
-        order_id: order.id,
-        recipe_id: item.recipe.id,
-        name: item.recipe.name,
-        quantity: item.quantity,
-        price: recipePrices.get(item.recipe.id) ?? item.recipe.price,
-        notes: null,
-        status: 'SERVIDO' as OrderItemStatus,
-        station_id: 'none', // Not relevant for quick sale
-        group_id: null,
-        status_timestamps: { 'SERVIDO': new Date().toISOString() },
-    }));
+    // FIX: Add missing properties (original_price, discount_type, discount_value) to the created OrderItem object to match the expected type.
+    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => {
+        const price = recipePrices.get(item.recipe.id) ?? item.recipe.price;
+        return {
+            order_id: order.id,
+            recipe_id: item.recipe.id,
+            name: item.recipe.name,
+            quantity: item.quantity,
+            price: price,
+            original_price: price,
+            discount_type: null,
+            discount_value: null,
+            notes: null,
+            status: 'SERVIDO' as OrderItemStatus,
+            station_id: 'none', // Not relevant for quick sale
+            group_id: null,
+            status_timestamps: { 'SERVIDO': new Date().toISOString() },
+        };
+    });
 
     const orderItemsWithUserId = orderItems.map(item => ({...item, user_id: userId}));
 

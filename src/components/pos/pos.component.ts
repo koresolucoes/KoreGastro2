@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee } from '../../models/db.models';
@@ -7,6 +6,7 @@ import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { HallManagerModalComponent } from './hall-manager-modal/hall-manager-modal.component';
 import { TableLayoutComponent } from './table-layout/table-layout.component';
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
+import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.component';
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -24,6 +24,7 @@ import { NotificationService } from '../../services/notification.service';
     HallManagerModalComponent,
     TableLayoutComponent,
     PreBillModalComponent,
+    MoveOrderModalComponent,
   ],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,8 +60,11 @@ export class PosComponent {
   contextMenuPosition = signal({ x: 0, y: 0 });
   contextMenuTable = signal<Table | null>(null);
   
+  // Combined source table for modals
+  sourceTableForModals = computed(() => this.selectedTable() ?? this.contextMenuTable());
+  
   currentOrder = computed(() => {
-    const table = this.selectedTable() ?? this.contextMenuTable();
+    const table = this.sourceTableForModals();
     if (!table) return null;
     return this.posDataService.getOrderByTableNumber(table.number) ?? null;
   });
@@ -70,9 +74,11 @@ export class PosComponent {
   });
   
   availableTablesForMove = computed(() => {
-    const hallId = this.selectedHall()?.id;
-    const currentTableId = this.selectedTable()?.id;
-    return this.tables().filter(t => t.hall_id === hallId && t.status === 'LIVRE' && t.id !== currentTableId);
+    const sourceTable = this.sourceTableForModals();
+    if (!sourceTable) return [];
+    
+    const hallId = sourceTable.hall_id;
+    return this.tables().filter(t => t.hall_id === hallId && t.status === 'LIVRE' && t.id !== sourceTable.id);
   });
 
   selectedHallIndex = computed(() => {
@@ -147,11 +153,13 @@ export class PosComponent {
   }
   
   async moveOrder(destinationTable: Table) {
-    const order = this.currentOrder(), sourceTable = this.selectedTable();
+    const order = this.currentOrder();
+    const sourceTable = this.sourceTableForModals(); // Bug fix: use combined source
     if (order && sourceTable && destinationTable) {
         await this.posDataService.moveOrderToTable(order, sourceTable, destinationTable);
         this.closeMoveModal();
         this.closeOrderPanel();
+        this.closeContextMenu(); // Ensure context menu is also closed
     }
   }
   
@@ -189,7 +197,11 @@ export class PosComponent {
     this.isContextMenuOpen.set(false);
   }
   
-  openMoveModal() { this.isMoveModalOpen.set(true); this.isContextMenuOpen.set(false); }
+  openMoveModal() { 
+    // Logic from order panel or context menu ensures correct table is set before this is called
+    this.isMoveModalOpen.set(true); 
+    this.isContextMenuOpen.set(false); 
+  }
   closeMoveModal() { this.isMoveModalOpen.set(false); }
   closeContextMenu() { this.isContextMenuOpen.set(false); this.contextMenuTable.set(null); }
 
@@ -200,4 +212,3 @@ export class PosComponent {
     this.closeContextMenu();
   }
 }
-      

@@ -138,6 +138,9 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  original_price: number;
+  discount_type: DiscountType | null;
+  discount_value: number | null;
   notes: string | null;
   status: OrderItemStatus;
   station_id: string;

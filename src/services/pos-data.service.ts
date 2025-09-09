@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType } from '../models/db.models';
+import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { PrintingService } from './printing.service';
@@ -55,12 +55,20 @@ export class PosDataService {
             const groupId = uuidv4();
             return recipePreps.map((prep: any) => ({
                 order_id: orderId, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: item.notes,
-                status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, price: effectivePrice / recipePreps.length, group_id: groupId, user_id: userId
+                status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
+                price: effectivePrice / recipePreps.length, 
+                original_price: effectivePrice / recipePreps.length,
+                group_id: groupId, user_id: userId,
+                discount_type: null, discount_value: null
             }));
         }
         return [{
             order_id: orderId, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,
-            status: 'PENDENTE' as OrderItemStatus, station_id: fallbackStationId, status_timestamps, price: effectivePrice, group_id: null, user_id: userId
+            status: 'PENDENTE' as OrderItemStatus, station_id: fallbackStationId, status_timestamps,
+            price: effectivePrice, 
+            original_price: effectivePrice,
+            group_id: null, user_id: userId,
+            discount_type: null, discount_value: null
         }];
     });
 
@@ -233,6 +241,68 @@ export class PosDataService {
 
   async updateTableCustomerCount(tableId: string, customer_count: number): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('tables').update({ customer_count }).eq('id', tableId);
+    return { success: !error, error };
+  }
+
+  async applyDiscountToOrderItems(
+    itemIds: string[],
+    discountType: DiscountType | null,
+    discountValue: number | null
+  ): Promise<{ success: boolean; error: any }> {
+    if (itemIds.length === 0) return { success: true, error: null };
+    
+    const { data: items, error: fetchError } = await supabase
+      .from('order_items')
+      .select('id, original_price')
+      .in('id', itemIds);
+
+    if (fetchError) return { success: false, error: fetchError };
+    if (!items) return { success: false, error: { message: 'Items not found' } };
+
+    let updates;
+
+    // Handle discount removal
+    if (discountType === null || discountValue === null || discountValue < 0) {
+      updates = items.map(item => ({
+        id: item.id,
+        price: item.original_price,
+        discount_type: null,
+        discount_value: null,
+      }));
+    } else if (discountType === 'percentage') {
+      updates = items.map(item => ({
+        id: item.id,
+        price: item.original_price * (1 - discountValue / 100),
+        discount_type: discountType,
+        discount_value: discountValue,
+      }));
+    } else { // fixed_value
+      // For fixed_value on a group, distribute the discount proportionally.
+      const totalOriginalPrice = items.reduce((sum, i) => sum + i.original_price, 0);
+
+      if (totalOriginalPrice > 0) {
+        updates = items.map(item => {
+          const proportion = item.original_price / totalOriginalPrice;
+          const itemDiscount = discountValue * proportion;
+          return {
+            id: item.id,
+            price: Math.max(0, item.original_price - itemDiscount),
+            discount_type: discountType,
+            discount_value: discountValue, // Store the total discount value on all items for consistency
+          };
+        });
+      } else {
+        // Cannot apply proportional discount. Just set price to 0.
+        updates = items.map(item => ({
+          id: item.id,
+          price: 0,
+          discount_type: discountType,
+          discount_value: discountValue,
+        }));
+      }
+    }
+
+    const { error } = await supabase.from('order_items').upsert(updates);
     return { success: !error, error };
   }
 

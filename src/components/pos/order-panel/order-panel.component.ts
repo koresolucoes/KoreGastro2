@@ -1,12 +1,6 @@
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee } from '../../../models/db.models';
+import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType } from '../../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
 import { SupabaseStateService } from '../../../services/supabase-state.service';
@@ -28,11 +22,15 @@ interface GroupedOrderItem {
   quantity: number;
   totalPrice: number;
   items: OrderItem[];
+  hasDiscount: boolean;
+  originalTotalPrice: number;
 }
 
 interface SingleOrderItem {
   isGroup: false;
   item: OrderItem;
+  hasDiscount: boolean;
+  originalTotalPrice: number;
 }
 
 type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
@@ -73,6 +71,12 @@ export class OrderPanelComponent {
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
   noteInput = signal('');
+  
+  // Discount Modal Signals
+  isDiscountModalOpen = signal(false);
+  editingDiscountItem = signal<DisplayOrderItem | null>(null);
+  discountType = signal<DiscountType>('percentage');
+  discountValue = signal<number | null>(null);
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
@@ -110,7 +114,7 @@ export class OrderPanelComponent {
       return recipesToShow;
   });
   
-  groupedOrderItems = computed(() => {
+  groupedOrderItems = computed<DisplayOrderItem[]>(() => {
     const order = this.currentOrder();
     if (!order) return [];
 
@@ -125,20 +129,38 @@ export class OrderPanelComponent {
           const recipe = recipesMap.get(item.recipe_id);
           grouped.set(item.group_id, {
             isGroup: true, groupId: item.group_id, recipeName: recipe?.name ?? 'Prato Desconhecido',
-            recipeId: item.recipe_id, quantity: item.quantity, totalPrice: item.price, items: [],
+            recipeId: item.recipe_id, quantity: item.quantity, 
+            totalPrice: 0, // Calculated below
+            originalTotalPrice: 0, // Calculated below
+            items: [],
+            hasDiscount: false, // Calculated below
           });
         }
         grouped.get(item.group_id)!.items.push(item);
       } else {
-        singles.push({ isGroup: false, item });
+        const hasDiscount = !!item.discount_type;
+        singles.push({ 
+            isGroup: false, 
+            item,
+            hasDiscount,
+            originalTotalPrice: (hasDiscount ? item.original_price : item.price) * item.quantity
+        });
       }
     }
+
+    // Post-process grouped items
+    for (const group of grouped.values()) {
+        group.totalPrice = group.items.reduce((sum, item) => sum + item.price, 0);
+        group.originalTotalPrice = group.items.reduce((sum, item) => sum + item.original_price, 0);
+        group.hasDiscount = group.items.some(i => i.discount_type);
+    }
+    
     return [...Array.from(grouped.values()), ...singles];
   });
   
   orderTotal = computed(() => {
     const prices = this.recipePrices();
-    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + item.price, 0) ?? 0;
+    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
     const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (prices.get(item.recipe.id)! * item.quantity), 0);
     return currentItemsTotal + cartItemsTotal;
   });
@@ -218,6 +240,70 @@ export class OrderPanelComponent {
       case 'PRONTO': return 'text-green-400 font-bold';
       case 'AGUARDANDO': return 'text-gray-400';
       default: return 'text-gray-500';
+    }
+  }
+  
+  // --- Discount Methods ---
+  openDiscountModal(item: DisplayOrderItem) {
+    this.editingDiscountItem.set(item);
+    // FIX: Use an explicit if/else block to help the TypeScript compiler with type narrowing on the DisplayOrderItem union type.
+    let firstItem: OrderItem;
+    if (item.isGroup) {
+        firstItem = item.items[0];
+    } else {
+        firstItem = item.item;
+    }
+    this.discountType.set(firstItem.discount_type || 'percentage');
+    this.discountValue.set(firstItem.discount_value || null);
+    this.isDiscountModalOpen.set(true);
+  }
+
+  closeDiscountModal() {
+    this.isDiscountModalOpen.set(false);
+  }
+
+  async saveDiscount() {
+    const item = this.editingDiscountItem();
+    if (!item) return;
+
+    // FIX: Use an explicit if/else block to help the TypeScript compiler with type narrowing on the DisplayOrderItem union type.
+    let itemIds: string[];
+    if (item.isGroup) {
+        itemIds = item.items.map(i => i.id);
+    } else {
+        itemIds = [item.item.id];
+    }
+    
+    const { success, error } = await this.posDataService.applyDiscountToOrderItems(
+        itemIds,
+        this.discountValue() !== null && this.discountValue()! > 0 ? this.discountType() : null,
+        this.discountValue()
+    );
+
+    if (success) {
+      this.closeDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+    }
+  }
+
+  async removeDiscount() {
+    const item = this.editingDiscountItem();
+    if (!item) return;
+
+    // FIX: Use an explicit if/else block to help the TypeScript compiler with type narrowing on the DisplayOrderItem union type.
+    let itemIds: string[];
+    if (item.isGroup) {
+        itemIds = item.items.map(i => i.id);
+    } else {
+        itemIds = [item.item.id];
+    }
+
+    const { success, error } = await this.posDataService.applyDiscountToOrderItems(itemIds, null, null);
+    if (success) {
+      this.closeDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao remover desconto: ${error?.message}`);
     }
   }
 }
