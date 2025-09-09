@@ -6,7 +6,7 @@ import { NotificationService } from '../../services/notification.service';
 import { TimeClockService } from '../../services/time-clock.service';
 
 interface PayrollData {
-  employee: Employee;
+  employee: Employee & { role: string };
   scheduledHours: number;
   workedHours: number;
   overtimeHours: number;
@@ -111,6 +111,7 @@ export class PayrollComponent {
     const employees = this.stateService.employees();
     const timeEntries = this.timeEntriesForPeriod();
     const schedules = this.schedulesForPeriod();
+    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
 
     // Helper to get a unique week identifier (e.g., 202423 for 23rd week of 2024)
     const getWeekNumber = (d: Date): number => {
@@ -122,6 +123,11 @@ export class PayrollComponent {
     };
 
     return employees.map(employee => {
+      const augmentedEmployee = {
+        ...employee,
+        role: employee.role_id ? rolesMap.get(employee.role_id) || 'Cargo Excluído' : 'Sem Cargo'
+      };
+
       const employeeEntries = timeEntries.filter(e => e.employee_id === employee.id);
 
       // --- New Overtime Calculation (Daily and Weekly) ---
@@ -191,7 +197,7 @@ export class PayrollComponent {
       }
 
       return {
-          employee,
+          employee: augmentedEmployee,
           scheduledHours,
           workedHours,
           overtimeHours,
