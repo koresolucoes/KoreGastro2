@@ -20,6 +20,9 @@
                 <button (click)="activeTab.set('history')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'history'" [class.text-white]="activeTab() === 'history'" [class.border-transparent]="activeTab() !== 'history'" [class.text-gray-400]="activeTab() !== 'history'" [class.hover:text-gray-200]="activeTab() !== 'history'">
                     Histórico de Consumo
                 </button>
+                 <button (click)="activeTab.set('loyalty')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'loyalty'" [class.text-white]="activeTab() === 'loyalty'" [class.border-transparent]="activeTab() !== 'loyalty'" [class.text-gray-400]="activeTab() !== 'loyalty'" [class.hover:text-gray-200]="activeTab() !== 'loyalty'">
+                    Fidelidade
+                </button>
             </nav>
         </div>
     </div>
@@ -48,7 +51,7 @@
               </div>
             </div>
           </dl>
-      } @else {
+      } @else if (activeTab() === 'history') {
         @if (isLoadingHistory()) {
           <div class="flex items-center justify-center h-64">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -84,6 +87,48 @@
             }
           </div>
         }
+      } @else if (activeTab() === 'loyalty') {
+        <div class="space-y-6">
+          <div class="bg-gray-700/50 p-4 rounded-lg text-center">
+            <p class="text-sm text-gray-400">Saldo Atual de Pontos</p>
+            <p class="text-4xl font-bold text-blue-400">{{ customer().loyalty_points | number }}</p>
+          </div>
+           @if (isLoadingHistory()) {
+            <div class="flex items-center justify-center h-64">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+          } @else if (loyaltyMovements().length === 0) {
+            <div class="text-center text-gray-500 py-16">
+                <p>Nenhuma movimentação de pontos encontrada.</p>
+            </div>
+          } @else {
+            <div>
+              <h4 class="text-md font-semibold text-white mb-3">Histórico de Pontos</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+                    <tr>
+                      <th class="px-4 py-2">Data</th>
+                      <th class="px-4 py-2">Descrição</th>
+                      <th class="px-4 py-2 text-right">Pontos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for(movement of loyaltyMovements(); track movement.id) {
+                      <tr class="border-b border-gray-700">
+                        <td class="px-4 py-3 text-sm text-gray-300">{{ movement.created_at | date:'dd/MM/yy HH:mm' }}</td>
+                        <td class="px-4 py-3 text-sm text-white">{{ movement.description }}</td>
+                        <td class="px-4 py-3 text-right font-semibold font-mono" [class.text-green-400]="movement.points_change > 0" [class.text-red-400]="movement.points_change < 0">
+                          {{ movement.points_change > 0 ? '+' : '' }}{{ movement.points_change | number }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
 

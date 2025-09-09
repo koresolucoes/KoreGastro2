@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Customer, Order } from '../../../models/db.models';
+import { Customer, Order, LoyaltyMovement } from '../../../models/db.models';
 import { SettingsDataService } from '../../../services/settings-data.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -18,38 +18,58 @@ export class CustomerDetailsModalComponent {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
 
-  activeTab = signal<'details' | 'history'>('details');
+  activeTab = signal<'details' | 'history' | 'loyalty'>('details');
   isLoadingHistory = signal(false);
   consumptionHistory = signal<Order[]>([]);
+  loyaltyMovements = signal<LoyaltyMovement[]>([]);
 
   constructor() {
     effect(() => {
       // This effect runs when the customer input changes.
-      // We reset the history and if the history tab is already active, we reload the data.
       const cust = this.customer();
       this.consumptionHistory.set([]);
+      this.loyaltyMovements.set([]);
       if (this.activeTab() === 'history') {
-        this.loadHistory(cust.id);
+        this.loadConsumptionHistory(cust.id);
+      }
+      if (this.activeTab() === 'loyalty') {
+        this.loadLoyaltyHistory(cust.id);
       }
     }, { allowSignalWrites: true });
 
     effect(() => {
         // This effect runs when the active tab changes.
-        // It loads the history only when the tab is switched to 'history' for the first time.
-        if(this.activeTab() === 'history' && this.consumptionHistory().length === 0) {
-            this.loadHistory(this.customer().id);
+        const tab = this.activeTab();
+        const custId = this.customer().id;
+        if (tab === 'history' && this.consumptionHistory().length === 0) {
+            this.loadConsumptionHistory(custId);
+        }
+        if (tab === 'loyalty' && this.loyaltyMovements().length === 0) {
+            this.loadLoyaltyHistory(custId);
         }
     });
   }
 
-  async loadHistory(customerId: string) {
+  async loadConsumptionHistory(customerId: string) {
     this.isLoadingHistory.set(true);
     const { data, error } = await this.settingsDataService.getConsumptionHistory(customerId);
     if (error) {
-      this.notificationService.show('Erro ao carregar histórico.', 'error');
+      this.notificationService.show('Erro ao carregar histórico de consumo.', 'error');
       this.consumptionHistory.set([]);
     } else {
       this.consumptionHistory.set(data || []);
+    }
+    this.isLoadingHistory.set(false);
+  }
+  
+  async loadLoyaltyHistory(customerId: string) {
+    this.isLoadingHistory.set(true);
+    const { data, error } = await this.settingsDataService.getLoyaltyMovements(customerId);
+    if (error) {
+        this.notificationService.show('Erro ao carregar histórico de pontos.', 'error');
+        this.loyaltyMovements.set([]);
+    } else {
+        this.loyaltyMovements.set(data || []);
     }
     this.isLoadingHistory.set(false);
   }

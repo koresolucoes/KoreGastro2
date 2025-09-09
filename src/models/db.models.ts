@@ -10,6 +10,7 @@ export type PlanStatus = 'Planejado' | 'Em Andamento' | 'Concluído';
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Atestado';
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
+export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 
 
 // --- Main Entities ---
@@ -155,6 +156,7 @@ export interface Customer {
   cpf: string | null;
   notes: string | null;
   created_at: string;
+  loyalty_points: number;
 }
 
 export interface Order {
@@ -396,5 +398,36 @@ export interface CompanyProfile {
   company_name: string;
   cnpj: string;
   address: string | null;
+  created_at: string;
+}
+
+// --- Loyalty Program ---
+export interface LoyaltySettings {
+  user_id: string;
+  is_enabled: boolean;
+  points_per_real: number;
+  created_at: string;
+}
+
+export interface LoyaltyReward {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  points_cost: number;
+  reward_type: LoyaltyRewardType;
+  reward_value: string; // Can be a recipe ID or a numeric value as a string
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LoyaltyMovement {
+  id: string;
+  user_id: string;
+  customer_id: string;
+  order_id: string | null;
+  reward_id: string | null;
+  points_change: number;
+  description: string;
   created_at: string;
 }

@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -51,6 +51,9 @@ export class SupabaseStateService {
   leaveRequests = signal<LeaveRequest[]>([]);
   
   companyProfile = signal<CompanyProfile | null>(null);
+
+  loyaltySettings = signal<LoyaltySettings | null>(null);
+  loyaltyRewards = signal<LoyaltyReward[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -260,11 +263,18 @@ export class SupabaseStateService {
         case 'reservation_settings':
             this.refetchSingleRow('reservation_settings', '*', this.reservationSettings);
             break;
+        case 'loyalty_settings':
+            this.refetchSingleRow('loyalty_settings', '*', this.loyaltySettings);
+            break;
+        case 'loyalty_rewards':
+            this.refetchSimpleTable('loyalty_rewards', '*', this.loyaltyRewards);
+            break;
         case 'company_profile':
             this.refetchSingleRow('company_profile', '*', this.companyProfile);
             break;
         // FIX: Add a case for customers to handle real-time updates.
         case 'customers':
+        case 'loyalty_movements': // When movements change, we need to refetch customer to update points
             this.refetchSimpleTable('customers', '*', this.customers);
             break;
         // FIX: Add cases for roles and permissions to handle real-time updates.
@@ -289,7 +299,7 @@ export class SupabaseStateService {
     const userId = this.currentUser()?.id; if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     // FIX: Add customers to the list of tables ordered by creation date.
-    if (tableName === 'halls' || tableName === 'reservations' || tableName === 'customers') {
+    if (tableName === 'halls' || tableName === 'reservations' || tableName === 'customers' || tableName === 'loyalty_rewards') {
       query = query.order('created_at', { ascending: true });
     }
     if (tableName === 'purchase_orders') {
@@ -333,6 +343,8 @@ export class SupabaseStateService {
     this.schedules.set([]);
     this.leaveRequests.set([]);
     this.companyProfile.set(null);
+    this.loyaltySettings.set(null);
+    this.loyaltyRewards.set([]);
     // FIX: Clear customers data on logout.
     this.customers.set([]);
     // FIX: Clear roles and permissions data on logout.
@@ -380,6 +392,8 @@ export class SupabaseStateService {
       supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('role_permissions').select('*').eq('user_id', userId),
       supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+      supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -398,6 +412,8 @@ export class SupabaseStateService {
     this.roles.set(results[21].data || []);
     this.rolePermissions.set(results[22].data || []);
     this.customers.set(results[23].data || []);
+    this.loyaltySettings.set(results[24].data || null);
+    this.loyaltyRewards.set(results[25].data || []);
     await this.refreshDashboardAndCashierData();
   }
   
