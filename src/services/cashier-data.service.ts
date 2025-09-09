@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -13,11 +14,18 @@ interface CartItem {
 }
 
 export interface ReportData {
+  // Sales Report
   grossRevenue?: number;
   totalOrders?: number;
   averageTicket?: number;
   paymentSummary?: { method: string; total: number; count: number }[];
-  bestSellingItems?: { name: string; quantity: number; revenue: number }[];
+  // Items Report
+  bestSellingItems?: { name: string; quantity: number; revenue: number; totalCost: number; totalProfit: number; profitMargin: number; }[];
+  // Financial Report
+  cogs?: number;
+  grossProfit?: number;
+  totalExpenses?: number;
+  netProfit?: number;
 }
 
 
@@ -30,7 +38,7 @@ export class CashierDataService {
   private inventoryDataService = inject(InventoryDataService);
   private pricingService = inject(PricingService);
 
-  async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items'): Promise<ReportData> {
+  async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items' | 'financial'): Promise<ReportData> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) throw new Error('User not authenticated');
 
@@ -49,7 +57,18 @@ export class CashierDataService {
       .lte('completed_at', endDate.toISOString());
 
     if (error) throw error;
-    if (!orders) return reportType === 'sales' ? { grossRevenue: 0, totalOrders: 0, averageTicket: 0, paymentSummary: [] } : { bestSellingItems: [] };
+    if (!orders) return {};
+    
+    const recipeCosts = this.stateService.recipeCosts();
+
+    const calculateCOGS = (orderList: Order[]): number => {
+        return orderList
+            .flatMap(o => o.order_items)
+            .reduce((sum, item) => {
+                const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+                return sum + (cost * item.quantity);
+            }, 0);
+    };
 
     if (reportType === 'sales') {
         const { data: transactions, error: tError } = await supabase
@@ -84,20 +103,44 @@ export class CashierDataService {
             averageTicket,
             paymentSummary: Array.from(paymentSummaryMap.entries()).map(([method, data]) => ({ method, ...data })),
         };
-    } else { // items report
-        const itemMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+    } else if (reportType === 'items') {
+        const itemMap = new Map<string, { name: string; quantity: number; revenue: number; totalCost: number }>();
         
         for (const order of orders) {
             for (const item of order.order_items) {
-                const existing = itemMap.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0 };
+                const existing = itemMap.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0, totalCost: 0 };
+                const itemCost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
                 existing.quantity += item.quantity;
                 existing.revenue += item.price * item.quantity;
+                existing.totalCost += itemCost * item.quantity;
                 itemMap.set(item.recipe_id, existing);
             }
         }
         
-        const bestSellingItems = Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity);
+        const bestSellingItems = Array.from(itemMap.values()).map(item => {
+            const totalProfit = item.revenue - item.totalCost;
+            const profitMargin = item.revenue > 0 ? (totalProfit / item.revenue) * 100 : 0;
+            return { ...item, totalProfit, profitMargin };
+        }).sort((a, b) => b.totalProfit - a.totalProfit);
+
         return { bestSellingItems };
+    } else { // financial report
+        const { data: transactions, error: tError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('date', startDate.toISOString())
+            .lte('date', endDate.toISOString());
+        
+        if (tError) throw tError;
+        
+        const grossRevenue = (transactions || []).filter(t => t.type === 'Receita').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = (transactions || []).filter(t => t.type === 'Despesa').reduce((sum, t) => sum + t.amount, 0);
+        const cogs = calculateCOGS(orders);
+        const grossProfit = grossRevenue - cogs;
+        const netProfit = grossProfit - totalExpenses;
+
+        return { grossRevenue, totalOrders: orders.length, cogs, grossProfit, totalExpenses, netProfit };
     }
   }
   

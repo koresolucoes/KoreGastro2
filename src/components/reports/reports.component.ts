@@ -1,9 +1,10 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CashierDataService, ReportData } from '../../services/cashier-data.service';
 import { NotificationService } from '../../services/notification.service';
 
-type ReportType = 'sales' | 'items';
+type ReportType = 'sales' | 'items' | 'financial';
 
 @Component({
   selector: 'app-reports',
@@ -19,7 +20,7 @@ export class ReportsComponent implements OnInit {
     // Form inputs
     startDate = signal('');
     endDate = signal('');
-    reportType = signal<ReportType>('sales');
+    reportType = signal<ReportType>('financial');
 
     // State
     isLoading = signal(false);
@@ -28,7 +29,8 @@ export class ReportsComponent implements OnInit {
     reportTitle = computed(() => {
         switch (this.reportType()) {
             case 'sales': return 'Relatório de Vendas';
-            case 'items': return 'Relatório de Itens Mais Vendidos';
+            case 'items': return 'Relatório de Desempenho por Item';
+            case 'financial': return 'Relatório Financeiro';
             default: return 'Relatório';
         }
     });
