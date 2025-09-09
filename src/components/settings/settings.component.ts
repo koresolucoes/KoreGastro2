@@ -126,6 +126,12 @@ export class SettingsComponent {
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
 
+  publicMenuUrl = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `${window.location.origin}${window.location.pathname}#/menu/${userId}`;
+  });
+
   publicBookingUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
