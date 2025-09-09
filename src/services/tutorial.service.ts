@@ -24,22 +24,27 @@ export class TutorialService {
       id: 'configuracao-inicial',
       title: 'Configuração Inicial',
       description: 'Aprenda a cadastrar seus primeiros funcionários, estações e categorias para deixar o sistema pronto para operar.',
-      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426-1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
       steps: [
         {
-          title: '1. Cadastre seus Funcionários',
-          content: 'Vá para Configurações > Gestão de Funcionários. Clique em "Adicionar" e preencha o nome, cargo e um PIN de 4 dígitos para cada membro da equipe. O PIN é essencial para o login operacional.',
-          imageUrl: 'https://picsum.photos/800/400?random=1'
+          title: '1. Crie Cargos e Defina Permissões',
+          content: 'Antes de cadastrar funcionários, vá para `Configurações > Cargos e Permissões`. O cargo "Gerente" já vem com acesso total. Crie outros cargos como "Caixa" e "Garçom" e clique no cadeado para definir quais telas cada um poderá acessar. Isso garante que sua equipe veja apenas o necessário.',
+          imageUrl: 'https://picsum.photos/800/400?random=101'
         },
         {
-          title: '2. Crie as Estações de Produção',
-          content: 'Em Configurações > Estações de Produção, adicione todas as áreas que preparam itens, como "Cozinha", "Bar" ou "Pizzaria". Isso é crucial para o KDS funcionar corretamente.',
-          imageUrl: 'https://picsum.photos/800/400?random=2'
+          title: '2. Cadastre seus Funcionários',
+          content: 'Agora, vá para o menu `RH > Funcionários`. Clique em "Novo Funcionário" e preencha os dados, atribuindo os cargos que você criou no passo anterior. O PIN de 4 dígitos é essencial para o login operacional de cada um.',
+          imageUrl: 'https://picsum.photos/800/400?random=102'
         },
         {
-          title: '3. Defina as Categorias de Pratos',
-          content: 'Ainda em Configurações, na seção "Categorias de Pratos", crie as categorias do seu cardápio, como "Entradas", "Pratos Principais", "Bebidas", etc. Isso ajudará a organizar seu PDV e cardápio online.',
-          imageUrl: 'https://picsum.photos/800/400?random=3'
+          title: '3. Crie as Estações de Produção',
+          content: 'Em `Configurações > Estações de Produção`, adicione todas as áreas que preparam itens, como "Cozinha", "Bar" ou "Pizzaria". Isso é crucial para o KDS (tela da cozinha) funcionar corretamente.',
+          imageUrl: 'https://picsum.photos/800/400?random=103'
+        },
+        {
+          title: '4. Defina as Categorias de Pratos',
+          content: 'Ainda em `Configurações`, na seção "Categorias de Pratos", crie as categorias do seu cardápio, como "Entradas", "Pratos Principais", "Bebidas", etc. Isso ajudará a organizar seu PDV e cardápio online.',
+          imageUrl: 'https://picsum.photos/800/400?random=104'
         }
       ]
     },
@@ -112,7 +117,7 @@ export class TutorialService {
         },
         {
           title: '3. Usando o Modo Expo',
-          content: 'Alterne para a visão "Expo" para ter uma visão geral de todos os pedidos. Esta tela é ideal para o chef ou expedidor coordenar a montagem dos pratos e garantir que os pedidos saiam completos.',
+          content: 'Alterne para a visão "Expo" para ter uma visão geral de todos os pedidos. Esta tela é ideal para o chef ou expedidor coordenar a montagem dos pratos e garantir que os pedidos saiam completos e no tempo certo.',
           imageUrl: 'https://picsum.photos/800/400?random=13'
         },
         {
@@ -433,6 +438,103 @@ export class TutorialService {
           title: '3. Produtividade no Mise en Place',
           content: 'O gráfico "Produtividade (Mise en Place)" mostra quantas tarefas de preparo cada funcionário concluiu no período. Use isso para reconhecer os mais produtivos e identificar necessidades de treinamento.',
           imageUrl: 'https://picsum.photos/800/400?random=56'
+        }
+      ]
+    },
+    {
+      id: 'gestao-completa-rh',
+      title: 'Gestão Completa de RH',
+      description: 'Do cadastro à folha de pagamento, aprenda a gerenciar todos os aspectos da sua equipe de forma integrada.',
+      icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a3.001 3.001 0 015.658 0M9 9a3 3 0 11-6 0 3 3 0 016 0zm12 0a3 3 0 11-6 0 3 3 0 016 0zM9 9h6',
+      steps: [
+        {
+          title: '1. Cadastre os Funcionários',
+          content: 'Vá para RH > Funcionários para adicionar os membros da sua equipe. Preencha todos os dados, incluindo informações para a folha de pagamento.',
+          imageUrl: 'https://picsum.photos/800/400?random=57'
+        },
+        {
+          title: '2. Crie as Escalas de Trabalho',
+          content: 'Em RH > Escalas, planeje a semana da sua equipe. Selecione a semana, e clique nos dias e funcionários para adicionar os turnos de trabalho.',
+          imageUrl: 'https://picsum.photos/800/400?random=58'
+        },
+        {
+          title: '3. Gerencie Ausências',
+          content: 'Na tela de RH > Gestão de Ausências, você pode aprovar ou rejeitar as solicitações de folga e férias da equipe. Os funcionários fazem suas solicitações em RH > Minhas Ausências.',
+          imageUrl: 'https://picsum.photos/800/400?random=59'
+        },
+        {
+          title: '4. Gere a Folha de Pagamento',
+          content: 'Acesse RH > Folha de Pagamento, selecione o período e o sistema calculará uma prévia dos salários com base nas horas trabalhadas e agendadas. Você pode gerar um contracheque detalhado para cada funcionário.',
+          imageUrl: 'https://picsum.photos/800/400?random=60'
+        }
+      ]
+    },
+    {
+      id: 'controle-de-ponto',
+      title: 'Controle de Ponto Manual',
+      description: 'Aprenda a visualizar, adicionar e editar manualmente os registros de ponto dos funcionários, garantindo a precisão das horas trabalhadas.',
+      icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
+      steps: [
+        {
+          title: '1. Acessando o Controle de Ponto',
+          content: 'No menu RH, vá para "Controle de Ponto". Você verá uma lista de todos os registros de ponto. Use os filtros de data e funcionário no topo da página para encontrar os registros que você precisa.',
+          imageUrl: 'https://picsum.photos/800/400?random=67'
+        },
+        {
+          title: '2. Adicionando um Registro Manualmente',
+          content: 'Clique em "Adicionar Registro". Selecione o funcionário e preencha os horários de entrada, saída e pausas. Este recurso é útil para corrigir esquecimentos ou ajustar registros de dias anteriores.',
+          imageUrl: 'https://picsum.photos/800/400?random=68'
+        },
+        {
+          title: '3. Editando um Registro Existente',
+          content: 'Encontre o registro que deseja corrigir na lista e clique em "Editar". Na tela de edição, você pode ajustar qualquer um dos horários ou adicionar observações. Lembre-se de salvar as alterações.',
+          imageUrl: 'https://picsum.photos/800/400?random=69'
+        }
+      ]
+    },
+    {
+      id: 'gestao-de-reservas',
+      title: 'Gestão de Reservas',
+      description: 'Configure e gerencie suas reservas, desde a criação manual até a página de reserva online para clientes.',
+      icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+      steps: [
+        {
+          title: '1. Configure o Sistema de Reservas',
+          content: 'Vá para Configurações e encontre o painel de "Configurações de Reserva". Ative o sistema, defina seus horários de funcionamento, duração da reserva e capacidade.',
+          imageUrl: 'https://picsum.photos/800/400?random=61'
+        },
+        {
+          title: '2. Divulgue seu Link Público',
+          content: 'Ainda nas configurações, copie o "Link Público para Reservas". Compartilhe este link em suas redes sociais ou site para que os clientes possam fazer reservas online.',
+          imageUrl: 'https://picsum.photos/800/400?random=62'
+        },
+        {
+          title: '3. Gerencie as Reservas do Dia',
+          content: 'Acesse a tela "Reservas". As reservas online aparecerão como "Pendentes". Você pode confirmá-las, cancelá-las ou marcá-las como concluídas. Você também pode adicionar reservas manuais para clientes que ligam.',
+          imageUrl: 'https://picsum.photos/800/400?random=63'
+        }
+      ]
+    },
+    {
+      id: 'cargos-e-permissoes',
+      title: 'Cargos e Permissões',
+      description: 'Crie cargos, defina o que cada um pode acessar e garanta a segurança e o controle do seu sistema.',
+      icon: 'M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z',
+      steps: [
+        {
+          title: '1. Crie um Novo Cargo',
+          content: 'Vá para Configurações e encontre o painel "Cargos e Permissões". Adicione um novo cargo, como "Caixa" ou "Garçom Chefe".',
+          imageUrl: 'https://picsum.photos/800/400?random=64'
+        },
+        {
+          title: '2. Edite as Permissões',
+          content: 'Clique no ícone de cadeado ao lado de um cargo. Uma tela se abrirá com todas as funcionalidades do sistema. Marque as caixas para dar acesso às telas que este cargo precisa para trabalhar.',
+          imageUrl: 'https://picsum.photos/800/400?random=65'
+        },
+        {
+          title: '3. Atribua o Cargo a um Funcionário',
+          content: 'Vá para o menu `RH > Funcionários`. Edite um funcionário e, no campo "Cargo", atribua a nova função que você criou. Ao fazer login, este funcionário verá no menu apenas as telas que você permitiu.',
+          imageUrl: 'https://picsum.photos/800/400?random=66'
         }
       ]
     }
