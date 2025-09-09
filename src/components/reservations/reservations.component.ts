@@ -20,6 +20,7 @@ export class ReservationsComponent {
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
 
+  activeView = signal<'daily' | 'overview'>('daily');
   selectedDate = signal(new Date().toISOString().split('T')[0]);
 
   // Modal State
@@ -49,6 +50,39 @@ export class ReservationsComponent {
   pendingReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'PENDING'));
   confirmedReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'CONFIRMED'));
   completedOrCancelledReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED'));
+  
+  groupedOverviewReservations = computed(() => {
+    const allReservations = this.stateService.reservations();
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fifteenDaysFromNow = new Date(today);
+    fifteenDaysFromNow.setDate(today.getDate() + 15);
+    fifteenDaysFromNow.setHours(23, 59, 59, 999);
+
+    const filtered = allReservations
+      .filter(r => {
+        const resTime = new Date(r.reservation_time);
+        return resTime >= today && resTime <= fifteenDaysFromNow && r.status !== 'CANCELLED' && r.status !== 'COMPLETED';
+      })
+      .sort((a, b) => new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime());
+
+    const grouped = new Map<string, Reservation[]>();
+
+    for (const reservation of filtered) {
+      const dateKey = new Date(reservation.reservation_time).toISOString().split('T')[0];
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(reservation);
+    }
+    
+    return Array.from(grouped.entries())
+      .map(([date, reservations]) => ({ date, reservations }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  });
+
 
   handleDateChange(event: Event) {
     const newDate = (event.target as HTMLInputElement).value;
