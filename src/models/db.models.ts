@@ -22,6 +22,9 @@ export interface Employee {
   created_at: string;
   user_id: string;
   current_clock_in_id: string | null;
+  salary_type?: 'mensal' | 'horista' | null;
+  salary_rate?: number | null;
+  overtime_rate_multiplier?: number | null;
 }
 
 export interface Station {

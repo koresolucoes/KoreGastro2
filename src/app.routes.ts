@@ -23,6 +23,7 @@ import { TimeClockComponent } from './components/time-clock/time-clock.component
 import { SchedulesComponent } from './components/schedules/schedules.component';
 import { LeaveManagementComponent } from './components/leave-management/leave-management.component';
 import { MyLeaveComponent } from './components/my-leave/my-leave.component';
+import { PayrollComponent } from './components/payroll/payroll.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -43,6 +44,7 @@ export const APP_ROUTES: Routes = [
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
   { path: 'schedules', component: SchedulesComponent, canActivate: [roleGuard] },
   { path: 'my-leave', component: MyLeaveComponent, canActivate: [roleGuard] },
+  { path: 'payroll', component: PayrollComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
   { path: 'reservations', component: ReservationsComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Caixa', 'Garçom'] } },
   { path: 'time-clock', component: TimeClockComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },

@@ -78,6 +78,7 @@ export class SidebarComponent {
         { name: 'Minhas Ausências', path: '/my-leave', icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 12.75h.008v.008H12v-.008z', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
         { name: 'Gestão de Ausências', path: '/leave-management', icon: 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z', roles: ['Gerente'] },
         { name: 'Controle de Ponto', path: '/time-clock', icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', roles: ['Gerente'] },
+        { name: 'Folha de Pagamento', path: '/payroll', icon: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z', roles: ['Gerente'] },
       ]
     },
     { name: 'Cardápio Online', path: '/menu', icon: 'M4 6h16M4 12h16M4 18h7', roles: ['Gerente', 'Caixa', 'Garçom'] },

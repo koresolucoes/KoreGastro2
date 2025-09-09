@@ -1,5 +1,3 @@
-
-
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -43,6 +41,22 @@ export class CashierDataService {
   private stateService = inject(SupabaseStateService);
   private inventoryDataService = inject(InventoryDataService);
   private pricingService = inject(PricingService);
+
+  async getTransactionsForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Transaction[] | null; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+
+    return supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate.toISOString())
+      .lte('date', endDate.toISOString())
+      .order('date', { ascending: true });
+  }
 
   async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items' | 'financial'): Promise<ReportData> {
     const userId = this.authService.currentUser()?.id;

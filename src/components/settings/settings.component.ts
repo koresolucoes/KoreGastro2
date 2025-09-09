@@ -245,10 +245,22 @@ export class SettingsComponent {
   openAddEmployeeModal() { this.employeeForm.set({ role: 'Garçom', pin: '' }); this.editingEmployee.set(null); this.isEmployeeModalOpen.set(true); }
   openEditEmployeeModal(e: Employee) { this.editingEmployee.set(e); this.employeeForm.set({ ...e }); this.isEmployeeModalOpen.set(true); }
   closeEmployeeModal() { this.isEmployeeModalOpen.set(false); }
+  
   updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at'>, value: string) {
-    if (field === 'pin' && value.length > 4) return;
-    this.employeeForm.update(form => ({ ...form, [field]: value }));
+    this.employeeForm.update(form => {
+        const newForm = {...form};
+        if (field === 'pin' && value.length > 4) return form;
+        
+        if (field === 'salary_rate' || field === 'overtime_rate_multiplier') {
+            const numValue = parseFloat(value);
+            (newForm as any)[field] = isNaN(numValue) ? null : numValue;
+        } else {
+            (newForm as any)[field] = value;
+        }
+        return newForm;
+    });
   }
+
   async saveEmployee() {
     const form = this.employeeForm(); 
     if (!form.name?.trim()) {

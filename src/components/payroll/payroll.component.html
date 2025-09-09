@@ -1,0 +1,85 @@
+<div class="container mx-auto printable-area">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Folha de Pagamento</h1>
+      <p class="text-gray-400 mt-1">Calcule e visualize a prévia da folha de pagamento da sua equipe.</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <select [value]="selectedMonth()" (change)="selectedMonth.set(+$any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold">
+        @for (month of months; track month.value) {
+          <option [value]="month.value">{{ month.name }}</option>
+        }
+      </select>
+      <select [value]="selectedYear()" (change)="selectedYear.set(+$any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold">
+         @for (year of availableYears(); track year) {
+          <option [value]="year">{{ year }}</option>
+        }
+      </select>
+      <button (click)="printReport()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-gray-800 rounded-lg">
+    <div class="p-6 border-b border-gray-700">
+      <h2 class="text-2xl font-semibold text-white">
+        Prévia da Folha - {{ months[selectedMonth()].name }} de {{ selectedYear() }}
+      </h2>
+    </div>
+
+    @if (isLoading()) {
+      <div class="text-center py-20 text-gray-500">Calculando...</div>
+    } @else if (payrollData().length === 0) {
+      <div class="text-center py-20 text-gray-500">Nenhum dado de ponto ou escala encontrado para este período.</div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[1000px]">
+          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+            <tr>
+              <th class="px-6 py-3">Funcionário</th>
+              <th class="px-6 py-3 text-center">Horas Agendadas</th>
+              <th class="px-6 py-3 text-center">Horas Trabalhadas</th>
+              <th class="px-6 py-3 text-center">Horas Extras</th>
+              <th class="px-6 py-3 text-right">Salário Base</th>
+              <th class="px-6 py-3 text-right">Valor H. Extra</th>
+              <th class="px-6 py-3 text-right font-bold">Total a Pagar</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of payrollData(); track data.employee.id) {
+              <tr class="border-b border-gray-700">
+                <td class="px-6 py-4">
+                  <p class="font-medium text-white">{{ data.employee.name }}</p>
+                  <p class="text-xs text-gray-400">{{ data.employee.role }}</p>
+                </td>
+                <td class="px-6 py-4 text-center text-gray-300">{{ data.scheduledHours | number:'1.2-2' }}h</td>
+                <td class="px-6 py-4 text-center font-semibold text-white">{{ data.workedHours | number:'1.2-2' }}h</td>
+                <td class="px-6 py-4 text-center font-semibold" [class.text-yellow-400]="data.overtimeHours > 0">
+                  {{ data.overtimeHours | number:'1.2-2' }}h
+                </td>
+                <td class="px-6 py-4 text-right text-gray-300">{{ data.basePay | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right text-yellow-400">{{ data.overtimePay | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right font-bold text-lg text-green-400">{{ data.totalPay | currency:'BRL' }}</td>
+              </tr>
+            }
+          </tbody>
+           <tfoot>
+            <tr class="bg-gray-900/50">
+                <td class="px-6 py-4 font-bold text-white text-lg">TOTAIS</td>
+                <td class="px-6 py-4 text-center font-bold text-white">{{ totalScheduledHours() | number:'1.2-2' }}h</td>
+                <td class="px-6 py-4 text-center font-bold text-white">{{ totalWorkedHours() | number:'1.2-2' }}h</td>
+                <td class="px-6 py-4 text-center font-bold text-yellow-400">{{ totalOvertimeHours() | number:'1.2-2' }}h</td>
+                <td class="px-6 py-4 text-right font-bold text-white">{{ totalBasePay() | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right font-bold text-yellow-400">{{ totalOvertimePay() | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right font-bold text-2xl text-green-400">{{ grandTotalPay() | currency:'BRL' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>
