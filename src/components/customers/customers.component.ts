@@ -5,11 +5,12 @@ import { Customer } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { CustomerDetailsModalComponent } from './customer-details-modal/customer-details-modal.component';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CustomerDetailsModalComponent],
   templateUrl: './customers.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -26,6 +27,9 @@ export class CustomersComponent {
   customerForm = signal<Partial<Customer>>({});
   customerPendingDeletion = signal<Customer | null>(null);
 
+  isDetailsModalOpen = signal(false);
+  selectedCustomerForDetails = signal<Customer | null>(null);
+
   filteredCustomers = computed(() => {
     const term = this.searchTerm().toLowerCase();
     const allCustomers = this.customers();
@@ -37,6 +41,11 @@ export class CustomersComponent {
       c.cpf?.toLowerCase().includes(term)
     );
   });
+  
+  openDetailsModal(customer: Customer) {
+    this.selectedCustomerForDetails.set(customer);
+    this.isDetailsModalOpen.set(true);
+  }
 
   openAddModal() {
     this.customerForm.set({});

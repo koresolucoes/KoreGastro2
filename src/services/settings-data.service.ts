@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 // FIX: Add Customer model to imports
-import { Employee, Station, CompanyProfile, Role, Customer } from '../models/db.models';
+import { Employee, Station, CompanyProfile, Role, Customer, Order } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
@@ -137,5 +137,18 @@ export class SettingsDataService {
   async deleteCustomer(id: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('customers').delete().eq('id', id);
     return { success: !error, error };
+  }
+
+  async getConsumptionHistory(customerId: string): Promise<{ data: Order[] | null; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+
+    return supabase
+      .from('orders')
+      .select('*, order_items(*)')
+      .eq('user_id', userId)
+      .eq('customer_id', customerId)
+      .eq('is_completed', true)
+      .order('completed_at', { ascending: false });
   }
 }

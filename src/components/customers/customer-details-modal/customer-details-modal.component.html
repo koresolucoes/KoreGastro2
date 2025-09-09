@@ -1,0 +1,95 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-700">
+        <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-xl font-bold text-white">{{ customer().name }}</h3>
+              <p class="text-gray-400 text-sm">Cliente</p>
+            </div>
+            <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <!-- Tabs -->
+        <div class="mt-4 border-b border-gray-700">
+            <nav class="-mb-px flex space-x-6">
+                <button (click)="activeTab.set('details')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'details'" [class.text-white]="activeTab() === 'details'" [class.border-transparent]="activeTab() !== 'details'" [class.text-gray-400]="activeTab() !== 'details'" [class.hover:text-gray-200]="activeTab() !== 'details'">
+                    Dados Pessoais
+                </button>
+                <button (click)="activeTab.set('history')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'history'" [class.text-white]="activeTab() === 'history'" [class.border-transparent]="activeTab() !== 'history'" [class.text-gray-400]="activeTab() !== 'history'" [class.hover:text-gray-200]="activeTab() !== 'history'">
+                    Histórico de Consumo
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 p-6 overflow-y-auto">
+      @if(activeTab() === 'details') {
+          <dl class="space-y-6">
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Informações de Contato</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">Telefone</dt><dd class="text-white font-medium">{{ customer().phone || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Email</dt><dd class="text-white font-medium">{{ customer().email || 'Não informado' }}</dd></div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Documentos</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ customer().cpf || 'Não informado' }}</dd></div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Observações</h4>
+              <div class="text-sm text-white font-medium whitespace-pre-wrap">
+                {{ customer().notes || 'Nenhuma observação.' }}
+              </div>
+            </div>
+          </dl>
+      } @else {
+        @if (isLoadingHistory()) {
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        } @else if (consumptionHistory().length === 0) {
+          <div class="text-center text-gray-500 py-16">
+              <p>Nenhum histórico de consumo encontrado para este cliente.</p>
+          </div>
+        } @else {
+          <div class="space-y-4">
+            @for(order of consumptionHistory(); track order.id) {
+              <div class="bg-gray-700/50 p-4 rounded-lg">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 mb-3 border-b border-gray-600/50">
+                  <div>
+                    <p class="font-semibold text-white">{{ order.completed_at | date:'fullDate' }}</p>
+                    <p class="text-xs text-gray-400 font-mono">#{{ order.id.slice(0, 8) }}</p>
+                  </div>
+                  <div class="text-right mt-2 sm:mt-0">
+                    <p class="text-xs text-gray-400">Total do Pedido</p>
+                    <p class="text-lg font-bold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</p>
+                  </div>
+                </div>
+                <h5 class="text-sm font-semibold text-gray-300 mb-2">Itens Consumidos:</h5>
+                <ul class="space-y-1 text-sm">
+                  @for (item of order.order_items; track item.id) {
+                    <li class="flex justify-between items-center">
+                      <span class="text-gray-200">{{ item.quantity }}x {{ item.name }}</span>
+                      <span class="text-gray-300 font-mono">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+      <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    </div>
+  </div>
+</div>
