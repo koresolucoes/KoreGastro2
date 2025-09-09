@@ -253,25 +253,25 @@ export class PosDataService {
     
     const { data: items, error: fetchError } = await supabase
       .from('order_items')
-      .select('id, original_price')
+      .select('*') // FIX: Select all columns to get full object context
       .in('id', itemIds);
 
     if (fetchError) return { success: false, error: fetchError };
     if (!items) return { success: false, error: { message: 'Items not found' } };
 
-    let updates;
+    let updates: Partial<OrderItem>[];
 
     // Handle discount removal
     if (discountType === null || discountValue === null || discountValue < 0) {
       updates = items.map(item => ({
-        id: item.id,
+        ...item, // FIX: Spread existing item to preserve all fields
         price: item.original_price,
         discount_type: null,
         discount_value: null,
       }));
     } else if (discountType === 'percentage') {
       updates = items.map(item => ({
-        id: item.id,
+        ...item, // FIX: Spread existing item to preserve all fields
         price: item.original_price * (1 - discountValue / 100),
         discount_type: discountType,
         discount_value: discountValue,
@@ -285,7 +285,7 @@ export class PosDataService {
           const proportion = item.original_price / totalOriginalPrice;
           const itemDiscount = discountValue * proportion;
           return {
-            id: item.id,
+            ...item, // FIX: Spread existing item to preserve all fields
             price: Math.max(0, item.original_price - itemDiscount),
             discount_type: discountType,
             discount_value: discountValue, // Store the total discount value on all items for consistency
@@ -294,7 +294,7 @@ export class PosDataService {
       } else {
         // Cannot apply proportional discount. Just set price to 0.
         updates = items.map(item => ({
-          id: item.id,
+          ...item, // FIX: Spread existing item to preserve all fields
           price: 0,
           discount_type: discountType,
           discount_value: discountValue,

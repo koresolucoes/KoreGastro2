@@ -2,7 +2,7 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Order, Table } from '../../../models/db.models';
+import { Order, Table, OrderItem, DiscountType } from '../../../models/db.models';
 import { PosDataService, PaymentInfo } from '../../../services/pos-data.service';
 import { PrintingService } from '../../../services/printing.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -31,6 +31,13 @@ export class PaymentModalComponent {
   payments = signal<PaymentInfo[]>([]);
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
+
+  // Discount Modal State
+  isDiscountModalOpen = signal(false);
+  editingDiscountItem = signal<OrderItem | null>(null);
+  discountType = signal<DiscountType>('percentage');
+  discountValue = signal<number | null>(null);
+
 
   orderSubtotal = computed(() => this.order()?.order_items.reduce((sum, item) => sum + item.price, 0) ?? 0);
   tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
@@ -120,5 +127,47 @@ export class PaymentModalComponent {
 
   finishAndClose() {
       this.paymentFinalized.emit();
+  }
+
+  // --- Discount Methods ---
+  openDiscountModal(item: OrderItem) {
+    this.editingDiscountItem.set(item);
+    this.discountType.set(item.discount_type || 'percentage');
+    this.discountValue.set(item.discount_value || null);
+    this.isDiscountModalOpen.set(true);
+  }
+
+  closeDiscountModal() {
+    this.isDiscountModalOpen.set(false);
+  }
+
+  async saveDiscount() {
+    const item = this.editingDiscountItem();
+    if (!item) return;
+
+    const { success, error } = await this.posDataService.applyDiscountToOrderItems(
+      [item.id],
+      this.discountValue() !== null && this.discountValue()! > 0 ? this.discountType() : null,
+      this.discountValue()
+    );
+
+    if (success) {
+      this.closeDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+    }
+  }
+
+  async removeDiscount() {
+    const item = this.editingDiscountItem();
+    if (!item) return;
+
+    const { success, error } = await this.posDataService.applyDiscountToOrderItems([item.id], null, null);
+
+    if (success) {
+      this.closeDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao remover desconto: ${error?.message}`);
+    }
   }
 }

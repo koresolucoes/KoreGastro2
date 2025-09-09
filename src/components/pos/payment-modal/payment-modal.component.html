@@ -1,4 +1,5 @@
 
+
 <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="paymentSuccess() ? null : closeModal.emit(true)">
   <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
     <!-- Header -->
@@ -43,8 +44,14 @@
             <ul class="space-y-2">
               @for(item of currentOrder.order_items; track item.id) {
                 <li class="flex justify-between items-center text-sm">
-                  <p>{{ item.quantity }}x {{ item.name }}</p>
-                  <p>{{ (item.price * item.quantity) | currency:'BRL' }}</p>
+                  <p class="flex-1">{{ item.quantity }}x {{ item.name }}</p>
+                  <div class="flex items-center gap-2">
+                     @if (item.discount_type) { <span class="text-xs line-through text-gray-500">{{ (item.original_price * item.quantity) | currency:'BRL' }}</span> }
+                    <p>{{ (item.price * item.quantity) | currency:'BRL' }}</p>
+                    <button (click)="$event.stopPropagation(); openDiscountModal(item)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
+                    </button>
+                  </div>
                 </li>
               }
             </ul>
@@ -101,3 +108,42 @@
     }
   </div>
 </div>
+
+<!-- Discount Modal -->
+@if(isDiscountModalOpen() && editingDiscountItem(); as item) {
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeDiscountModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
+      <h3 class="text-xl font-bold text-white mb-2">Aplicar Desconto</h3>
+      <p class="text-gray-400 mb-4 text-sm">Item: {{ item.name }}</p>
+      
+      <div class="flex gap-1 bg-gray-700 p-1 rounded-lg mb-4">
+        <button (click)="discountType.set('percentage')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="discountType() === 'percentage'">Porcentagem (%)</button>
+        <button (click)="discountType.set('fixed_value')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="discountType() === 'fixed_value'">Valor Fixo (R$)</button>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Valor do Desconto</label>
+        <input 
+          type="number"
+          [value]="discountValue()"
+          (input)="discountValue.set(+$any($event.target).value)"
+          [placeholder]="discountType() === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 5 para R$5,00'"
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="mt-6 flex justify-between items-center">
+        <button (click)="removeDiscount()" class="px-4 py-2 font-medium rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
+          Remover Desconto
+        </button>
+        <div class="flex gap-2">
+          <button (click)="closeDiscountModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">
+            Cancelar
+          </button>
+          <button (click)="saveDiscount()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+</div>
+}

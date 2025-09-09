@@ -1,8 +1,10 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-import { Category, Order, Recipe, Transaction, CashierClosing, Table } from '../../models/db.models';
+// FIX: Import DiscountType to correctly type the cart items for the service call.
+import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
@@ -179,8 +181,44 @@ export class CashierComponent {
 
   async finalizePayment() {
     const cart = this.quickSaleCart();
-    if (!cart || !this.isPaymentComplete()) return;
-    const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cart, this.payments());
+    // FIX: Correctly check if the cart is empty and map the cart items to the detailed structure expected by the service.
+    if (cart.length === 0 || !this.isPaymentComplete()) return;
+
+    // Replicate logic from PricingService to get full promotion details for each item
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    
+    const activePromos = this.pricingService.promotions().filter(promo => 
+        promo.is_active &&
+        promo.days_of_week.includes(currentDay) &&
+        promo.start_time <= currentTime &&
+        promo.end_time >= currentTime
+    );
+
+    const recipePromoMap = new Map<string, { discount_type: DiscountType, discount_value: number }>();
+    if (activePromos.length > 0) {
+        const activePromoIds = new Set(activePromos.map(p => p.id));
+        const applicablePromotionRecipes = this.pricingService.promotionRecipes().filter(pr => activePromoIds.has(pr.promotion_id));
+        for (const pr of applicablePromotionRecipes) {
+            recipePromoMap.set(pr.recipe_id, { discount_type: pr.discount_type, discount_value: pr.discount_value });
+        }
+    }
+
+    const cartForService = cart.map(item => {
+        const promo = recipePromoMap.get(item.recipe.id);
+        return {
+            recipe: item.recipe,
+            quantity: item.quantity,
+            notes: '', // Quick sale does not support notes
+            effectivePrice: this.recipePrices().get(item.recipe.id) ?? item.recipe.price,
+            originalPrice: item.recipe.price,
+            discountType: promo?.discount_type ?? null,
+            discountValue: promo?.discount_value ?? null,
+        };
+    });
+
+    const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cartForService, this.payments());
     if (success) {
       await this.notificationService.alert('Venda registrada com sucesso!', 'Sucesso');
       this.closeQuickSalePaymentModal();

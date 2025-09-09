@@ -6,12 +6,17 @@ import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { InventoryDataService } from './inventory-data.service';
 import { PricingService } from './pricing.service';
-import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus } from '../models/db.models';
+import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus, DiscountType } from '../models/db.models';
 import { Payment } from '../components/cashier/cashier.component';
 
 interface CartItem {
   recipe: Recipe;
   quantity: number;
+  notes: string;
+  effectivePrice: number;
+  originalPrice: number;
+  discountType: DiscountType | null;
+  discountValue: number | null;
 }
 
 export interface ReportData {
@@ -157,30 +162,21 @@ export class CashierDataService {
     
     if (orderError) return { success: false, error: orderError };
 
-    const recipePrices = new Map<string, number>();
-    cart.forEach(item => {
-        recipePrices.set(item.recipe.id, this.pricingService.getEffectivePrice(item.recipe));
-    });
-
-    // FIX: Add missing properties (original_price, discount_type, discount_value) to the created OrderItem object to match the expected type.
-    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => {
-        const price = recipePrices.get(item.recipe.id) ?? item.recipe.price;
-        return {
-            order_id: order.id,
-            recipe_id: item.recipe.id,
-            name: item.recipe.name,
-            quantity: item.quantity,
-            price: price,
-            original_price: price,
-            discount_type: null,
-            discount_value: null,
-            notes: null,
-            status: 'SERVIDO' as OrderItemStatus,
-            station_id: 'none', // Not relevant for quick sale
-            group_id: null,
-            status_timestamps: { 'SERVIDO': new Date().toISOString() },
-        };
-    });
+    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => ({
+      order_id: order.id,
+      recipe_id: item.recipe.id,
+      name: item.recipe.name,
+      quantity: item.quantity,
+      price: item.effectivePrice,
+      original_price: item.originalPrice,
+      discount_type: item.discountType,
+      discount_value: item.discountValue,
+      notes: item.notes,
+      status: 'SERVIDO' as OrderItemStatus,
+      station_id: 'none', // Not relevant for quick sale
+      group_id: null,
+      status_timestamps: { 'SERVIDO': new Date().toISOString() },
+    }));
 
     const orderItemsWithUserId = orderItems.map(item => ({...item, user_id: userId}));
 
