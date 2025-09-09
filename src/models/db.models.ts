@@ -25,6 +25,16 @@ export interface Employee {
   salary_type?: 'mensal' | 'horista' | null;
   salary_rate?: number | null;
   overtime_rate_multiplier?: number | null;
+  birth_date?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  hire_date?: string | null;
+  termination_date?: string | null;
+  bank_details?: { bank?: string; agency?: string; account?: string; pix?: string } | null;
 }
 
 export interface Station {

@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Employee, Category, ReservationSettings } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Category, ReservationSettings } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
@@ -30,7 +30,6 @@ export class SettingsComponent {
   categories = this.stateService.ingredientCategories;
   recipeCategories = this.stateService.categories;
   suppliers = this.stateService.suppliers;
-  employees = this.stateService.employees;
   reservationSettings = this.stateService.reservationSettings;
 
   // Reservation Form
@@ -41,7 +40,6 @@ export class SettingsComponent {
   categorySearchTerm = signal('');
   recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
-  employeeSearchTerm = signal('');
 
   qrCodeUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
@@ -103,12 +101,6 @@ export class SettingsComponent {
       s.name.toLowerCase().includes(term) ||
       s.contact_person?.toLowerCase().includes(term)
     );
-  });
-  
-  filteredEmployees = computed(() => {
-    const term = this.employeeSearchTerm().toLowerCase();
-    if (!term) return this.employees();
-    return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role?.toLowerCase().includes(term));
   });
   
   // --- Station Management ---
@@ -233,60 +225,6 @@ export class SettingsComponent {
     const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
     if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
     this.supplierPendingDeletion.set(null);
-  }
-  
-  // --- Employee Management ---
-  isEmployeeModalOpen = signal(false);
-  editingEmployee = signal<Partial<Employee> | null>(null);
-  employeeForm = signal<Partial<Employee>>({});
-  employeePendingDeletion = signal<Employee | null>(null);
-  availableEmployeeRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
-
-  openAddEmployeeModal() { this.employeeForm.set({ role: 'Garçom', pin: '' }); this.editingEmployee.set(null); this.isEmployeeModalOpen.set(true); }
-  openEditEmployeeModal(e: Employee) { this.editingEmployee.set(e); this.employeeForm.set({ ...e }); this.isEmployeeModalOpen.set(true); }
-  closeEmployeeModal() { this.isEmployeeModalOpen.set(false); }
-  
-  updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at'>, value: string) {
-    this.employeeForm.update(form => {
-        const newForm = {...form};
-        if (field === 'pin' && value.length > 4) return form;
-        
-        if (field === 'salary_rate' || field === 'overtime_rate_multiplier') {
-            const numValue = parseFloat(value);
-            (newForm as any)[field] = isNaN(numValue) ? null : numValue;
-        } else {
-            (newForm as any)[field] = value;
-        }
-        return newForm;
-    });
-  }
-
-  async saveEmployee() {
-    const form = this.employeeForm(); 
-    if (!form.name?.trim()) {
-      await this.notificationService.alert('O nome do funcionário é obrigatório.');
-      return;
-    }
-    if (form.pin && form.pin.length !== 4) {
-      await this.notificationService.alert('O PIN deve ter exatamente 4 dígitos.');
-      return;
-    }
-    
-    let res;
-    if (this.editingEmployee()) {
-      res = await this.settingsDataService.updateEmployee({ ...form, id: this.editingEmployee()!.id });
-    } else {
-      res = await this.settingsDataService.addEmployee(form as any);
-    }
-    if (res.success) { this.closeEmployeeModal(); } else { await this.notificationService.alert(`Falha ao salvar funcionário: ${res.error?.message}`); }
-  }
-  requestDeleteEmployee(e: Employee) { this.employeePendingDeletion.set(e); }
-  cancelDeleteEmployee() { this.employeePendingDeletion.set(null); }
-  async confirmDeleteEmployee() {
-    const employee = this.employeePendingDeletion(); if (!employee) return;
-    const { success, error } = await this.settingsDataService.deleteEmployee(employee.id);
-    if (!success) { await this.notificationService.alert(`Falha ao deletar funcionário: ${error?.message}`); }
-    this.employeePendingDeletion.set(null);
   }
 
   // --- Reservation Settings ---

@@ -24,6 +24,7 @@ import { SchedulesComponent } from './components/schedules/schedules.component';
 import { LeaveManagementComponent } from './components/leave-management/leave-management.component';
 import { MyLeaveComponent } from './components/my-leave/my-leave.component';
 import { PayrollComponent } from './components/payroll/payroll.component';
+import { EmployeesComponent } from './components/employees/employees.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -42,6 +43,7 @@ export const APP_ROUTES: Routes = [
   { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] } },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
+  { path: 'employees', component: EmployeesComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'schedules', component: SchedulesComponent, canActivate: [roleGuard] },
   { path: 'my-leave', component: MyLeaveComponent, canActivate: [roleGuard] },
   { path: 'payroll', component: PayrollComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
