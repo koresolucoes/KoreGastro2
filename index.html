@@ -21,6 +21,15 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #6b7280; /* bg-gray-500 */
     }
+
+    /* Hide scrollbar for elements with this class */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
     
     /* Print styles */
     @media print {

@@ -49,36 +49,15 @@ export class BottomNavComponent {
     { name: 'Configurações', path: '/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', roles: ['Gerente'] }
   ];
 
-  private availableNavItems = computed(() => {
+  availableNavItems = computed(() => {
     const employee = this.activeEmployee();
     if (!employee || !employee.role) return [];
     if (employee.role === 'Gerente') return this.allNavItems;
     return this.allNavItems.filter(item => item.roles.includes(employee.role!));
   });
 
-  // Split items for bottom bar and off-canvas
-  primaryNavItems = computed(() => {
-    const items = this.availableNavItems();
-    const primaryPaths = ['/pos', '/reservations', '/kds', '/cashier']; // Order of importance
-    const primary = items.filter(item => primaryPaths.includes(item.path))
-                         .sort((a, b) => primaryPaths.indexOf(a.path) - primaryPaths.indexOf(b.path));
-    return primary.slice(0, 3);
-  });
-  
-  secondaryNavItems = computed(() => {
-    const all = this.availableNavItems();
-    const primary = this.primaryNavItems();
-    const primaryPaths = new Set(primary.map(p => p.path));
-    return all.filter(item => !primaryPaths.has(item.path));
-  });
-
   toggleOffCanvas() {
     this.isOffCanvasOpen.update(value => !value);
-  }
-
-  closeAndNavigate(path: string) {
-    this.isOffCanvasOpen.set(false);
-    this.router.navigate([path]);
   }
   
   async signOut() {
