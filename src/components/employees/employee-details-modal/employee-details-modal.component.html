@@ -1,0 +1,139 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-700">
+        <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-xl font-bold text-white">{{ employee().name }}</h3>
+              <p class="text-gray-400 text-sm">{{ employee().role }}</p>
+            </div>
+            <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <!-- Tabs -->
+        <div class="mt-4 border-b border-gray-700">
+            <nav class="-mb-px flex space-x-6">
+                <button (click)="activeTab.set('performance')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'performance'" [class.text-white]="activeTab() === 'performance'" [class.border-transparent]="activeTab() !== 'performance'" [class.text-gray-400]="activeTab() !== 'performance'" [class.hover:text-gray-200]="activeTab() !== 'performance'">
+                    Desempenho
+                </button>
+                <button (click)="activeTab.set('details')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'details'" [class.text-white]="activeTab() === 'details'" [class.border-transparent]="activeTab() !== 'details'" [class.text-gray-400]="activeTab() !== 'details'" [class.hover:text-gray-200]="activeTab() !== 'details'">
+                    Dados Pessoais
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 p-6 overflow-y-auto">
+      @if(activeTab() === 'performance') {
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-lg font-semibold text-white">Resumo de Desempenho</h4>
+          <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
+            <button (click)="period.set('7d')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === '7d'" [class.text-white]="period() === '7d'">7 Dias</button>
+            <button (click)="period.set('30d')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === '30d'" [class.text-white]="period() === '30d'">30 Dias</button>
+          </div>
+        </div>
+
+        @if (isLoading()) {
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        } @else if (stats(); as s) {
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Vendas Totais</p><p class="text-2xl font-bold text-white">{{ s.totalSales | currency:'BRL' }}</p></div>
+            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Gorjetas</p><p class="text-2xl font-bold text-green-400">{{ s.totalTips | currency:'BRL' }}</p></div>
+            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold text-white">{{ s.averageTicket | currency:'BRL' }}</p></div>
+            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Horas Trabalhadas</p><p class="text-2xl font-bold text-white">{{ s.workedHours | number:'1.1-1' }}h</p></div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Daily Hours Chart -->
+            @if(period() === '7d') {
+              <div class="bg-gray-700/50 p-4 rounded-lg">
+                <h5 class="text-md font-semibold text-white mb-4">Horas Trabalhadas (Últimos 7 dias)</h5>
+                @if(s.dailyHoursChartData.length > 0 && s.workedHours > 0) {
+                  <div class="flex justify-between items-end h-32 space-x-2">
+                    @for(day of s.dailyHoursChartData; track day.label) {
+                      <div class="flex-1 flex flex-col items-center justify-end h-full">
+                        <div class="w-full bg-blue-600 rounded-t-sm hover:bg-blue-500 transition-colors" [style.height.%]="day.percentage" [title]="(day.hours | number:'1.1-1') + ' horas'"></div>
+                        <p class="text-xs text-gray-400 mt-1">{{ day.label }}</p>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="text-center text-sm text-gray-500 h-32 flex items-center justify-center">Nenhum registro de horas nos últimos 7 dias.</p>
+                }
+              </div>
+            }
+
+            <!-- Recent Entries -->
+            <div class="bg-gray-700/50 p-4 rounded-lg" [class.lg:col-span-2]="period() === '30d'">
+              <h5 class="text-md font-semibold text-white mb-4">Últimos Registros de Ponto</h5>
+              @if(s.recentEntries.length > 0) {
+                <ul class="space-y-2">
+                  @for(entry of s.recentEntries; track entry.id) {
+                    <li class="flex justify-between items-center text-sm bg-gray-900/50 p-2 rounded-md">
+                      <div>
+                        <p class="font-medium text-white">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
+                        <p class="font-mono text-xs text-gray-400">{{ entry.clock_in_time | date:'HH:mm' }} - {{ entry.clock_out_time ? (entry.clock_out_time | date:'HH:mm') : 'Agora' }}</p>
+                      </div>
+                      <span class="font-semibold text-white font-mono">{{ getFormattedDuration(entry) }}</span>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-center text-sm text-gray-500 py-8">Nenhum registro de ponto no período.</p>
+              }
+            </div>
+          </div>
+        }
+      } @else if(activeTab() === 'details') {
+          <dl class="space-y-6">
+            <!-- Personal Info -->
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Informações Pessoais</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ employee().cpf || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">RG</dt><dd class="text-white font-medium">{{ employee().rg || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Data de Nascimento</dt><dd class="text-white font-medium">{{ employee().birth_date ? (employee().birth_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Endereço</dt><dd class="text-white font-medium">{{ employee().address || 'Não informado' }}</dd></div>
+              </div>
+            </div>
+             <!-- Contact Info -->
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Contato</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">Telefone</dt><dd class="text-white font-medium">{{ employee().phone || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Contato de Emergência</dt><dd class="text-white font-medium">{{ employee().emergency_contact_name || 'Não informado' }} ({{ employee().emergency_contact_phone || 'N/A' }})</dd></div>
+              </div>
+            </div>
+            <!-- Contract Info -->
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Dados Contratuais</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">Data de Contratação</dt><dd class="text-white font-medium">{{ employee().hire_date ? (employee().hire_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Tipo de Salário</dt><dd class="text-white font-medium capitalize">{{ employee().salary_type || 'Não definido' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Valor</dt><dd class="text-white font-medium">{{ (employee().salary_rate | currency:'BRL') || 'Não definido' }}</dd></div>
+              </div>
+            </div>
+             <!-- Bank Info -->
+            <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Dados Bancários</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">Banco</dt><dd class="text-white font-medium">{{ employee().bank_details?.bank || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Agência</dt><dd class="text-white font-medium">{{ employee().bank_details?.agency || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Conta</dt><dd class="text-white font-medium">{{ employee().bank_details?.account || 'Não informado' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Chave PIX</dt><dd class="text-white font-medium">{{ employee().bank_details?.pix || 'Não informado' }}</dd></div>
+              </div>
+            </div>
+          </dl>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+      <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    </div>
+  </div>
+</div>

@@ -5,11 +5,12 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { FormsModule } from '@angular/forms';
+import { EmployeeDetailsModalComponent } from './employee-details-modal/employee-details-modal.component';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EmployeeDetailsModalComponent],
   templateUrl: './employees.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -26,12 +27,21 @@ export class EmployeesComponent {
   employeeForm = signal<Partial<Employee>>({});
   employeePendingDeletion = signal<Employee | null>(null);
   availableEmployeeRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
+  
+  // State for details modal
+  isDetailsModalOpen = signal(false);
+  selectedEmployeeForDetails = signal<Employee | null>(null);
 
   filteredEmployees = computed(() => {
     const term = this.employeeSearchTerm().toLowerCase();
     if (!term) return this.employees();
     return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role?.toLowerCase().includes(term));
   });
+  
+  openDetailsModal(employee: Employee) {
+    this.selectedEmployeeForDetails.set(employee);
+    this.isDetailsModalOpen.set(true);
+  }
 
   openAddModal() {
     this.employeeForm.set({ role: 'Garçom', pin: '', bank_details: {} });

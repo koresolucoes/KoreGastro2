@@ -33,19 +33,19 @@
           </thead>
           <tbody>
             @for (employee of filteredEmployees(); track employee.id) {
-              <tr class="border-b border-gray-700 hover:bg-gray-700/40">
+              <tr (click)="openDetailsModal(employee)" class="border-b border-gray-700 hover:bg-gray-700/40 cursor-pointer">
                 <td class="px-6 py-4 font-medium text-white">{{ employee.name }}</td>
                 <td class="px-6 py-4 text-gray-300">{{ employee.role }}</td>
                 <td class="px-6 py-4 text-gray-300">{{ employee.phone || 'Não informado' }}</td>
                 <td class="px-6 py-4 text-center">
                    @if (employeePendingDeletion()?.id === employee.id) {
-                    <div class="flex gap-2 justify-center items-center">
+                    <div (click)="$event.stopPropagation()" class="flex gap-2 justify-center items-center">
                         <span class="text-sm text-red-300">Certeza?</span>
                         <button (click)="confirmDeleteEmployee()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
                         <button (click)="cancelDeleteEmployee()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
                     </div>
                   } @else {
-                    <div class="flex gap-4 justify-center">
+                    <div (click)="$event.stopPropagation()" class="flex gap-4 justify-center">
                       <button (click)="openEditModal(employee)" class="text-blue-400 hover:underline">Editar</button>
                       <button (click)="requestDeleteEmployee(employee)" class="text-red-400 hover:underline">Excluir</button>
                     </div>
@@ -60,7 +60,7 @@
        <!-- Mobile Card View -->
       <div class="block md:hidden p-4 space-y-4">
         @for (employee of filteredEmployees(); track employee.id) {
-          <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+          <div (click)="openDetailsModal(employee)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent">
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-semibold text-white text-lg">{{ employee.name }}</p>
@@ -75,7 +75,7 @@
               </div>
             </div>
 
-            <div class="flex justify-end gap-4 pt-3 border-t border-gray-600/50">
+            <div (click)="$event.stopPropagation()" class="flex justify-end gap-4 pt-3 border-t border-gray-600/50">
               @if (employeePendingDeletion()?.id === employee.id) {
                 <div class="flex gap-2 items-center w-full justify-end">
                   <span class="text-sm text-red-300">Certeza?</span>
@@ -163,4 +163,12 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Employee Details Modal -->
+@if(isDetailsModalOpen() && selectedEmployeeForDetails(); as employee) {
+    <app-employee-details-modal 
+        [employee]="employee"
+        (close)="isDetailsModalOpen.set(false)">
+    </app-employee-details-modal>
 }
