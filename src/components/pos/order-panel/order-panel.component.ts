@@ -246,12 +246,13 @@ export class OrderPanelComponent {
   // --- Discount Methods ---
   openDiscountModal(item: DisplayOrderItem) {
     this.editingDiscountItem.set(item);
-    // FIX: Check if the item is a group or single item before accessing properties.
     let firstItem: OrderItem;
-    if (item.isGroup) {
-      firstItem = item.items[0];
-    } else {
+    // FIX: The compiler was not correctly narrowing the type in the `else` block.
+    // Checking for the negative case first ensures correct type inference.
+    if (!item.isGroup) {
       firstItem = item.item;
+    } else {
+      firstItem = item.items[0];
     }
     this.discountType.set(firstItem.discount_type || 'percentage');
     this.discountValue.set(firstItem.discount_value || null);
@@ -266,12 +267,13 @@ export class OrderPanelComponent {
     const item = this.editingDiscountItem();
     if (!item) return;
 
-    // FIX: Get item IDs correctly for both single items and groups.
     let itemIds: string[];
-    if (item.isGroup) {
-      itemIds = item.items.map(i => i.id);
-    } else {
+    // FIX: The compiler was not correctly narrowing the type in the `else` block.
+    // Checking for the negative case first ensures correct type inference.
+    if (!item.isGroup) {
       itemIds = [item.item.id];
+    } else {
+      itemIds = item.items.map(i => i.id);
     }
     
     const { success, error } = await this.posDataService.applyDiscountToOrderItems(
@@ -291,12 +293,13 @@ export class OrderPanelComponent {
     const item = this.editingDiscountItem();
     if (!item) return;
 
-    // FIX: Get item IDs correctly for both single items and groups.
     let itemIds: string[];
-    if (item.isGroup) {
-      itemIds = item.items.map(i => i.id);
-    } else {
+    // FIX: The compiler was not correctly narrowing the type in the `else` block.
+    // Checking for the negative case first ensures correct type inference.
+    if (!item.isGroup) {
       itemIds = [item.item.id];
+    } else {
+      itemIds = item.items.map(i => i.id);
     }
 
     const { success, error } = await this.posDataService.applyDiscountToOrderItems(itemIds, null, null);
