@@ -5,9 +5,11 @@ export interface NotificationState {
   isOpen: boolean;
   message: string;
   title: string;
-  type: 'alert' | 'confirm';
+  type: 'alert' | 'confirm' | 'prompt';
   confirmText: string;
   cancelText: string;
+  inputType?: 'text' | 'textarea';
+  placeholder?: string;
 }
 
 @Injectable({
@@ -25,7 +27,9 @@ export class NotificationService {
     cancelText: 'Cancelar',
   });
 
-  private resolveConfirmation!: (value: boolean | PromiseLike<boolean>) => void;
+  promptInputValue = signal('');
+
+  private resolvePromise!: (value: any) => void;
 
   /**
    * Shows a short, non-blocking notification message.
@@ -54,7 +58,7 @@ export class NotificationService {
       cancelText: '',
     });
     return new Promise(resolve => {
-      this.resolveConfirmation = () => resolve();
+      this.resolvePromise = () => resolve();
     });
   }
 
@@ -68,7 +72,35 @@ export class NotificationService {
       cancelText: 'Cancelar',
     });
     return new Promise(resolve => {
-      this.resolveConfirmation = resolve;
+      this.resolvePromise = resolve;
+    });
+  }
+  
+  prompt(
+    message: string, 
+    title: string, 
+    options: { 
+      inputType?: 'text' | 'textarea', 
+      placeholder?: string, 
+      initialValue?: string, 
+      confirmText?: string 
+    } = {}
+  ): Promise<{ confirmed: boolean, value: string | null }> {
+    this.promptInputValue.set(options.initialValue || '');
+    this.notificationState.set({
+      isOpen: true,
+      message,
+      title,
+      type: 'prompt',
+      confirmText: options.confirmText || 'Salvar',
+      cancelText: 'Cancelar',
+      inputType: options.inputType || 'textarea',
+      placeholder: options.placeholder || '',
+    });
+    return new Promise(resolve => {
+      this.resolvePromise = (confirmed: boolean) => {
+        resolve({ confirmed, value: confirmed ? this.promptInputValue() : null });
+      };
     });
   }
 
@@ -78,15 +110,21 @@ export class NotificationService {
 
   onConfirm(): void {
     this.close();
-    if (this.resolveConfirmation) {
-      this.resolveConfirmation(true);
+    if (this.resolvePromise) {
+      if (this.notificationState().type === 'alert') {
+        (this.resolvePromise as () => void)();
+      } else {
+        this.resolvePromise(true);
+      }
     }
   }
 
   onCancel(): void {
     this.close();
-    if (this.resolveConfirmation) {
-      this.resolveConfirmation(false);
+    if (this.resolvePromise) {
+      if (this.notificationState().type !== 'alert') {
+        this.resolvePromise(false);
+      }
     }
   }
 }

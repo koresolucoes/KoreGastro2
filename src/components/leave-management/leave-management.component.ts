@@ -104,11 +104,22 @@ export class LeaveManagementComponent {
   }
 
   async handleRequest(request: LeaveRequest, action: 'Aprovada' | 'Rejeitada') {
-    const { value: notes } = await (window as any).prompt({
-      title: `${action === 'Aprovada' ? 'Aprovar' : 'Rejeitar'} Solicitação`,
-      message: `Adicione uma observação (opcional) para ${request.employees?.name}.`,
-      inputType: 'text',
-    }) ?? { value: null };
+    const title = `${action === 'Aprovada' ? 'Aprovar' : 'Rejeitar'} Solicitação`;
+    const message = `Adicione uma observação (opcional) para ${request.employees?.name}.`;
+    const confirmText = action === 'Aprovada' ? 'Aprovar' : 'Rejeitar';
+    
+    const { confirmed, value: notes } = await this.notificationService.prompt(
+      message,
+      title,
+      {
+        inputType: 'textarea',
+        placeholder: 'Escreva sua observação aqui...',
+        initialValue: request.manager_notes || '',
+        confirmText: confirmText,
+      }
+    );
+
+    if (!confirmed) return;
 
     const { success, error } = await this.leaveDataService.updateLeaveRequest(request.id, {
       status: action,

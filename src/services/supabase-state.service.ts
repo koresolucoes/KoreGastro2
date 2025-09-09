@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest } from '../models/db.models';
@@ -244,7 +245,7 @@ export class SupabaseStateService {
             this.refetchSimpleTable('schedules', '*, shifts(*, employees(name))', this.schedules);
             break;
         case 'leave_requests':
-            this.refetchSimpleTable('leave_requests', '*, employees(name, role)', this.leaveRequests as WritableSignal<any[]>);
+            this.refetchSimpleTable('leave_requests', '*, employees(name, role)', this.leaveRequests);
             break;
         case 'reservations':
             this.refetchSimpleTable('reservations', '*', this.reservations);
