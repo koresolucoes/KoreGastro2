@@ -1,10 +1,8 @@
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
 // FIX: Import DiscountType to correctly type the cart items for the service call.
-import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType } from '../../models/db.models';
+import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
@@ -12,6 +10,7 @@ import { PaymentModalComponent } from '../pos/payment-modal/payment-modal.compon
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { NotificationService } from '../../services/notification.service';
 import { PosDataService } from '../../services/pos-data.service';
+import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
 type CashDrawerView = 'movement' | 'closing';
@@ -35,7 +34,7 @@ interface PaymentSummary {
 @Component({
   selector: 'app-cashier',
   standalone: true,
-  imports: [CommonModule, PaymentModalComponent, PreBillModalComponent],
+  imports: [CommonModule, PaymentModalComponent, PreBillModalComponent, CustomerSelectModalComponent],
   templateUrl: './cashier.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -60,6 +59,8 @@ export class CashierComponent {
   payments = signal<Payment[]>([]);
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
+  quickSaleCustomer = signal<Customer | null>(null);
+  isCustomerSelectModalOpen = signal(false);
 
   // --- Cash Drawer Signals ---
   cashDrawerView: WritableSignal<CashDrawerView> = signal('movement');
@@ -218,14 +219,25 @@ export class CashierComponent {
         };
     });
 
-    const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cartForService, this.payments());
+    const customerId = this.quickSaleCustomer()?.id ?? null;
+    const { success, error } = await this.cashierDataService.finalizeQuickSalePayment(cartForService, this.payments(), customerId);
     if (success) {
       await this.notificationService.alert('Venda registrada com sucesso!', 'Sucesso');
       this.closeQuickSalePaymentModal();
       this.quickSaleCart.set([]);
+      this.quickSaleCustomer.set(null); // Reset customer
     } else {
       await this.notificationService.alert(`Falha ao registrar venda. Erro: ${error?.message}`);
     }
+  }
+
+  handleCustomerSelected(customer: Customer) {
+    this.quickSaleCustomer.set(customer);
+    this.isCustomerSelectModalOpen.set(false);
+  }
+
+  removeQuickSaleCustomer() {
+    this.quickSaleCustomer.set(null);
   }
 
   // --- Table Payment Methods ---

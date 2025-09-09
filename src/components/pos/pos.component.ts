@@ -1,12 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Hall, Table, Order, Employee } from '../../models/db.models';
+import { Hall, Table, Order, Employee, Customer } from '../../models/db.models';
 
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { HallManagerModalComponent } from './hall-manager-modal/hall-manager-modal.component';
 import { TableLayoutComponent } from './table-layout/table-layout.component';
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.component';
+import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -25,6 +26,7 @@ import { NotificationService } from '../../services/notification.service';
     TableLayoutComponent,
     PreBillModalComponent,
     MoveOrderModalComponent,
+    CustomerSelectModalComponent,
   ],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +56,7 @@ export class PosComponent {
   isMoveModalOpen = signal(false);
   isHallManagerOpen = signal(false);
   isPreBillModalOpen = signal(false);
+  isCustomerSelectModalOpen = signal(false);
 
   // Context Menu State
   isContextMenuOpen = signal(false);
@@ -111,14 +114,16 @@ export class PosComponent {
     this.isContextMenuOpen.set(false);
     this.selectedTable.set(table);
     this.orderError.set(null);
-    const orderExists = this.posDataService.getOrderByTableNumber(table.number);
+    let order = this.posDataService.getOrderByTableNumber(table.number);
 
-    if (!orderExists && table.status === 'LIVRE') {
+    if (!order && table.status === 'LIVRE') {
       const result = await this.posDataService.createOrderForTable(table);
-      if (!result.success) { 
+      if (!result.success || !result.data) { 
         this.orderError.set(result.error?.message ?? 'Erro desconhecido ao criar pedido.');
         return;
       }
+      // Manually add the new order to the state to avoid waiting for refetch
+      this.stateService.orders.update(orders => [...orders, result.data!]);
     }
     
     this.isOrderPanelOpen.set(true);
@@ -210,5 +215,21 @@ export class PosComponent {
         this.isPreBillModalOpen.set(true);
     }
     this.closeContextMenu();
+  }
+
+  // --- Customer Association ---
+  async handleCustomerSelected(customer: Customer) {
+    const order = this.currentOrder();
+    if (order) {
+        await this.posDataService.associateCustomerToOrder(order.id, customer.id);
+    }
+    this.isCustomerSelectModalOpen.set(false);
+  }
+
+  async handleRemoveCustomerAssociation() {
+    const order = this.currentOrder();
+    if (order) {
+        await this.posDataService.associateCustomerToOrder(order.id, null);
+    }
   }
 }

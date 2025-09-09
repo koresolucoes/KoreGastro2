@@ -1,0 +1,79 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center p-4 border-b border-gray-700">
+      <h3 class="text-xl font-bold text-white">Associar Cliente</h3>
+      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="p-4 border-b border-gray-700">
+        <div class="flex gap-1 bg-gray-700/50 p-1 rounded-lg">
+            <button (click)="isCreatingNew.set(false)" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors" [class.bg-blue-600]="!isCreatingNew()" [class.text-white]="!isCreatingNew()">
+                Buscar Cliente Existente
+            </button>
+            <button (click)="isCreatingNew.set(true)" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors" [class.bg-blue-600]="isCreatingNew()" [class.text-white]="isCreatingNew()">
+                Cadastrar Novo Cliente
+            </button>
+        </div>
+    </div>
+
+    @if (!isCreatingNew()) {
+      <!-- Search View -->
+      <div class="p-4 flex-1 flex flex-col min-h-0">
+        <input 
+          type="text" 
+          [value]="searchTerm()" 
+          (input)="searchTerm.set($any($event.target).value)" 
+          placeholder="Buscar por nome, telefone ou email..." 
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white mb-4">
+        
+        <div class="flex-1 overflow-y-auto pr-2">
+            @if (filteredCustomers().length > 0) {
+                <ul class="space-y-2">
+                    @for(customer of filteredCustomers(); track customer.id) {
+                        <li class="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
+                            <div>
+                                <p class="font-semibold text-white">{{ customer.name }}</p>
+                                <p class="text-sm text-gray-400">{{ customer.phone || customer.email }}</p>
+                            </div>
+                            <button (click)="selectCustomer(customer)" class="px-3 py-1.5 text-sm font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white">
+                                Selecionar
+                            </button>
+                        </li>
+                    }
+                </ul>
+            } @else {
+                <div class="text-center text-gray-500 py-10">
+                    <p>Nenhum cliente encontrado.</p>
+                </div>
+            }
+        </div>
+      </div>
+    } @else {
+      <!-- Create New View -->
+      <form (ngSubmit)="createAndSelectCustomer()">
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Nome *</label>
+                <input type="text" [(ngModel)]="newCustomerForm().name" name="name" required class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+                <input type="tel" [(ngModel)]="newCustomerForm().phone" name="phone" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <input type="email" [(ngModel)]="newCustomerForm().email" name="email" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+        </div>
+        <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+            <button type="button" (click)="closeModal.emit()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+            <button type="submit" [disabled]="isSaving() || !newCustomerForm().name" class="px-4 py-2 font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white disabled:bg-gray-500">
+                @if(isSaving()) { <span>Salvando...</span> } @else { <span>Salvar e Selecionar</span> }
+            </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>

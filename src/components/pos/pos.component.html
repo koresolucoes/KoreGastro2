@@ -73,7 +73,9 @@
           (checkoutStarted)="handleCheckoutStarted()"
           (moveOrderClicked)="openMoveModal()"
           (releaseTable)="handleReleaseTable()"
-          (customerCountChanged)="handleCustomerCountChanged($event)">
+          (customerCountChanged)="handleCustomerCountChanged($event)"
+          (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
+          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()">
         </app-order-panel>
       </div>
 
@@ -88,7 +90,9 @@
           (checkoutStarted)="handleCheckoutStarted()"
           (moveOrderClicked)="openMoveModal()"
           (releaseTable)="handleReleaseTable()"
-          (customerCountChanged)="handleCustomerCountChanged($event)">
+          (customerCountChanged)="handleCustomerCountChanged($event)"
+          (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
+          (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()">
         </app-order-panel>
       </div>
     }
@@ -117,6 +121,13 @@
   </app-move-order-modal>
 }
 
+@if (isCustomerSelectModalOpen()) {
+  <app-customer-select-modal
+    (closeModal)="isCustomerSelectModalOpen.set(false)"
+    (customerSelected)="handleCustomerSelected($event)">
+  </app-customer-select-modal>
+}
+
 <!-- Context Menu for Tables -->
 @if(isContextMenuOpen()) {
   <div 
@@ -126,6 +137,9 @@
     (click)="$event.stopPropagation()">
       <div class="px-3 py-2 border-b border-gray-700">
           <p class="font-bold text-white">Mesa {{ contextMenuTable()?.number }}</p>
+          @if(currentOrder()?.customers?.name; as customerName) {
+            <p class="text-xs text-blue-300">{{ customerName }}</p>
+          }
       </div>
       <ul class="text-gray-300">
           <li>

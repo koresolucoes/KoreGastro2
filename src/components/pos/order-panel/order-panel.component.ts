@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType } from '../../../models/db.models';
+import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer } from '../../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
 import { SupabaseStateService } from '../../../services/supabase-state.service';
@@ -59,6 +59,8 @@ export class OrderPanelComponent {
   moveOrderClicked: OutputEmitterRef<void> = output<void>();
   releaseTable: OutputEmitterRef<void> = output<void>();
   customerCountChanged: OutputEmitterRef<number> = output<number>();
+  associateCustomerClicked: OutputEmitterRef<void> = output<void>();
+  removeCustomerAssociationClicked: OutputEmitterRef<void> = output<void>();
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);

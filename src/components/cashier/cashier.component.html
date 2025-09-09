@@ -82,7 +82,19 @@
             </div>
             <!-- Right: Cart -->
             <div class="w-full md:w-1/2 flex flex-col bg-gray-800 p-4 rounded-lg">
-              <h2 class="text-xl font-bold text-white mb-4">Carrinho</h2>
+              <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-xl font-bold text-white">Carrinho</h2>
+                  @if(quickSaleCustomer(); as customer) {
+                    <div class="bg-gray-700/50 p-2 rounded-lg flex items-center gap-2">
+                        <span class="font-semibold text-sm text-white">{{ customer.name }}</span>
+                        <button (click)="removeQuickSaleCustomer()" class="text-xs text-red-400 hover:text-white p-1 rounded-md">X</button>
+                    </div>
+                  } @else {
+                    <button (click)="isCustomerSelectModalOpen.set(true)" class="text-sm text-blue-400 hover:underline">
+                        Associar Cliente
+                    </button>
+                  }
+              </div>
               <div class="flex-1 overflow-y-auto pr-2">
                 @if (quickSaleCart().length === 0) {
                   <div class="flex items-center justify-center h-full text-center text-gray-500"><p>O carrinho está vazio.</p></div>
@@ -219,6 +231,7 @@
                         <p class="font-mono text-xs text-gray-400">#{{ order.id.slice(0, 8) }}</p>
                         <p class="font-medium text-white">{{ getOrderOrigin(order) }}</p>
                         <p class="text-sm text-gray-300">{{ order.completed_at | date:'HH:mm:ss' }}</p>
+                         @if(order.customers) { <p class="text-sm text-blue-300">{{ order.customers.name }}</p> }
                       </div>
                       <p class="text-xl font-semibold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</p>
                     </div>
@@ -236,6 +249,7 @@
                     <tr>
                       <th scope="col" class="px-6 py-3">Pedido</th>
                       <th scope="col" class="px-6 py-3">Origem</th>
+                      <th scope="col" class="px-6 py-3">Cliente</th>
                       <th scope="col" class="px-6 py-3">Horário</th>
                       <th scope="col" class="px-6 py-3 text-right">Total</th>
                       <th scope="col" class="px-6 py-3 text-center">Ações</th>
@@ -246,6 +260,7 @@
                       <tr class="border-b border-gray-700 hover:bg-gray-700/30">
                         <td class="px-6 py-4 font-mono text-xs text-white">#{{ order.id.slice(0, 8) }}</td>
                         <td class="px-6 py-4 font-medium text-white">{{ getOrderOrigin(order) }}</td>
+                        <td class="px-6 py-4 text-gray-300">{{ order.customers?.name || 'N/A' }}</td>
                         <td class="px-6 py-4">{{ order.completed_at | date:'HH:mm:ss' }}</td>
                         <td class="px-6 py-4 text-right font-semibold">{{ getOrderTotal(order) | currency:'BRL' }}</td>
                         <td class="px-6 py-4 text-center">
@@ -330,6 +345,13 @@
   </div>
 }
 
+@if (isCustomerSelectModalOpen()) {
+  <app-customer-select-modal
+    (closeModal)="isCustomerSelectModalOpen.set(false)"
+    (customerSelected)="handleCustomerSelected($event)">
+  </app-customer-select-modal>
+}
+
 <!-- Cash Closing Confirmation Modal -->
 @if(isClosingModalOpen()) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeClosingModal()">
@@ -388,6 +410,12 @@
                 <p class="text-gray-400">Finalizada em</p>
                 <p class="font-semibold text-white">{{ order.completed_at | date:'dd/MM/yy HH:mm:ss' }}</p>
             </div>
+             @if(order.customers) {
+              <div class="col-span-2">
+                  <p class="text-gray-400">Cliente</p>
+                  <p class="font-semibold text-white">{{ order.customers.name }}</p>
+              </div>
+            }
         </div>
 
         <!-- Items -->

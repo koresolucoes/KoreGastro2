@@ -164,13 +164,20 @@ export class CashierDataService {
     }
   }
   
-  async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[]): Promise<{ success: boolean; error: any }> {
+  async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[], customerId: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert({ table_number: 0, order_type: 'QuickSale', is_completed: true, completed_at: new Date().toISOString(), user_id: userId })
+        .insert({ 
+          table_number: 0, 
+          order_type: 'QuickSale', 
+          is_completed: true, 
+          completed_at: new Date().toISOString(), 
+          user_id: userId,
+          customer_id: customerId 
+        })
         .select()
         .single();
     

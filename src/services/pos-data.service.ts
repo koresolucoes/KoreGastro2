@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType } from '../models/db.models';
+import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { PrintingService } from './printing.service';
@@ -27,7 +27,7 @@ export class PosDataService {
   async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { data, error } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select().single();
+    const { data, error } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select('*, customers(*)').single();
     if (error) return { success: false, error };
     return { success: true, error: null, data: { ...data, order_items: [] } };
   }
@@ -369,5 +369,14 @@ export class PosDataService {
     await this.stateService.refreshDashboardAndCashierData();
 
     return { success: true, error: null };
+  }
+
+  async associateCustomerToOrder(orderId: string, customerId: string | null): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase
+      .from('orders')
+      .update({ customer_id: customerId })
+      .eq('id', orderId);
+      
+    return { success: !error, error };
   }
 }
