@@ -62,11 +62,18 @@ export class ScheduleDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const shiftData = {
+    const shiftData: Partial<Shift> = {
       ...shift,
       schedule_id: scheduleId,
       user_id: userId,
     };
+    
+    // If it's a day off, nullify time-related fields
+    if (shiftData.is_day_off) {
+      shiftData.end_time = shiftData.start_time; // Set end time same as start to represent a single day
+      shiftData.role_assigned = null;
+      shiftData.notes = 'Folga';
+    }
     
     const { error } = await supabase.from('shifts').upsert(shiftData);
     return { success: !error, error };

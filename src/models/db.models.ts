@@ -8,6 +8,9 @@ export type PurchaseOrderStatus = 'Rascunho' | 'Enviada' | 'Recebida';
 export type ProductionTaskStatus = 'A Fazer' | 'Em Preparo' | 'Concluído' | 'Rascunho';
 export type PlanStatus = 'Planejado' | 'Em Andamento' | 'Concluído';
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Atestado';
+export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
+
 
 // --- Main Entities ---
 
@@ -322,9 +325,25 @@ export interface Shift {
   schedule_id: string;
   employee_id: string;
   start_time: string; // ISO string
-  end_time: string; // ISO string
+  end_time: string | null; // Can be null for day off
   notes: string | null;
   role_assigned: string | null;
+  is_day_off?: boolean;
   created_at: string;
   employees?: { name: string }; // Relation from join
+}
+
+export interface LeaveRequest {
+  id: string;
+  user_id: string;
+  employee_id: string;
+  request_type: LeaveRequestType;
+  status: LeaveRequestStatus;
+  start_date: string; // date string
+  end_date: string; // date string
+  reason: string | null;
+  manager_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  employees?: { name: string, role: string }; // Relation
 }

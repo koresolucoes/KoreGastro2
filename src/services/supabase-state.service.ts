@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -42,6 +42,7 @@ export class SupabaseStateService {
   reservationSettings = signal<ReservationSettings | null>(null);
 
   schedules = signal<Schedule[]>([]);
+  leaveRequests = signal<LeaveRequest[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -242,6 +243,9 @@ export class SupabaseStateService {
         case 'shifts':
             this.refetchSimpleTable('schedules', '*, shifts(*, employees(name))', this.schedules);
             break;
+        case 'leave_requests':
+            this.refetchSimpleTable('leave_requests', '*, employees(name, role)', this.leaveRequests as WritableSignal<any[]>);
+            break;
         case 'reservations':
             this.refetchSimpleTable('reservations', '*', this.reservations);
             break;
@@ -298,6 +302,7 @@ export class SupabaseStateService {
     this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
     this.reservations.set([]); this.reservationSettings.set(null);
     this.schedules.set([]);
+    this.leaveRequests.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -333,6 +338,7 @@ export class SupabaseStateService {
       supabase.from('reservations').select('*').eq('user_id', userId).order('reservation_time', { ascending: true }),
       supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }),
+      supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -346,6 +352,7 @@ export class SupabaseStateService {
     this.reservations.set(results[16].data || []);
     this.reservationSettings.set(results[17].data || null);
     this.schedules.set(results[18].data as Schedule[] || []);
+    this.leaveRequests.set(results[19].data as LeaveRequest[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

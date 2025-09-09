@@ -1,0 +1,109 @@
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestão de Ausências</h1>
+      <p class="text-gray-400 mt-1">Gerencie férias, folgas e faltas da sua equipe.</p>
+    </div>
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+      <span>Lançar Ausência</span>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-4 border-b border-gray-700">
+    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+      <button (click)="activeTab.set('Pendente')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeTab() === 'Pendente'" [class.text-white]="activeTab() === 'Pendente'" [class.border-transparent]="activeTab() !== 'Pendente'" [class.text-gray-400]="activeTab() !== 'Pendente'" [class.hover:text-gray-200]="activeTab() !== 'Pendente'" [class.hover:border-gray-500]="activeTab() !== 'Pendente'">
+        Pendente ({{ pendingRequests().length }})
+      </button>
+      <button (click)="activeTab.set('Aprovada')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeTab() === 'Aprovada'" [class.text-white]="activeTab() === 'Aprovada'" [class.border-transparent]="activeTab() !== 'Aprovada'" [class.text-gray-400]="activeTab() !== 'Aprovada'" [class.hover:text-gray-200]="activeTab() !== 'Aprovada'" [class.hover:border-gray-500]="activeTab() !== 'Aprovada'">
+        Aprovadas ({{ approvedRequests().length }})
+      </button>
+      <button (click)="activeTab.set('Rejeitada')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeTab() === 'Rejeitada'" [class.text-white]="activeTab() === 'Rejeitada'" [class.border-transparent]="activeTab() !== 'Rejeitada'" [class.text-gray-400]="activeTab() !== 'Rejeitada'" [class.hover:text-gray-200]="activeTab() !== 'Rejeitada'" [class.hover:border-gray-500]="activeTab() !== 'Rejeitada'">
+        Rejeitadas ({{ rejectedRequests().length }})
+      </button>
+    </nav>
+  </div>
+
+  <!-- Request List -->
+  <div class="space-y-4">
+    @if (currentList().length === 0) {
+      <div class="text-center bg-gray-800 rounded-lg py-16">
+        <p class="text-gray-500">Nenhuma solicitação nesta categoria.</p>
+      </div>
+    } @else {
+      @for (request of currentList(); track request.id) {
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center">
+            <div class="flex-1">
+              <p class="font-bold text-white text-lg">{{ request.employees?.name }}</p>
+              <p class="text-sm text-blue-300 font-semibold">{{ request.request_type }}</p>
+              <p class="text-sm text-gray-300">{{ formatDateRange(request.start_date, request.end_date) }}</p>
+            </div>
+            @if (activeTab() === 'Pendente') {
+              <div class="flex-shrink-0 flex gap-2 mt-4 sm:mt-0">
+                <button (click)="handleRequest(request, 'Rejeitada')" class="px-4 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Rejeitar</button>
+                <button (click)="handleRequest(request, 'Aprovada')" class="px-4 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white">Aprovar</button>
+              </div>
+            }
+          </div>
+           @if (request.reason) {
+            <p class="text-sm italic text-yellow-200 mt-2 pt-2 border-t border-gray-700">"{{ request.reason }}"</p>
+          }
+           @if (request.manager_notes) {
+            <p class.text-sm text-gray-400 mt-2 pt-2 border-t border-gray-700><strong>Observação do Gestor:</strong> {{ request.manager_notes }}</p>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if (isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">{{ editingRequest() ? 'Editar Ausência' : 'Lançar Ausência' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+            <select [value]="requestForm().employee_id" (change)="updateFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                @for (emp of employees(); track emp.id) {
+                    <option [value]="emp.id">{{ emp.name }}</option>
+                }
+            </select>
+        </div>
+         <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Tipo *</label>
+            <select [value]="requestForm().request_type" (change)="updateFormField('request_type', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                @for (type of availableRequestTypes; track type) {
+                    <option [value]="type">{{ type }}</option>
+                }
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+             <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Data Início *</label>
+                <input type="date" [value]="requestForm().start_date" (input)="updateFormField('start_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+             <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Data Fim *</label>
+                <input type="date" [value]="requestForm().end_date" (input)="updateFormField('end_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Motivo (Opcional)</label>
+          <textarea [value]="requestForm().reason || ''" (input)="updateFormField('reason', $any($event.target).value)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="saveRequest()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
