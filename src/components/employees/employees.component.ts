@@ -20,35 +20,32 @@ export class EmployeesComponent {
   private notificationService = inject(NotificationService);
 
   employees = computed(() => {
-    // FIX: The 'roles' signal is now available on the state service.
     const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
     return this.stateService.employees().map(e => ({
       ...e,
       role: e.role_id ? rolesMap.get(e.role_id) || 'Cargo Excluído' : 'Sem Cargo'
     }));
   });
-
-  // FIX: The 'roles' signal is now available on the state service.
+  
   roles = this.stateService.roles;
   employeeSearchTerm = signal('');
 
   isModalOpen = signal(false);
   editingEmployee = signal<Partial<Employee> | null>(null);
   employeeForm = signal<Partial<Employee>>({});
-  employeePendingDeletion = signal<Employee | null>(null);
+  employeePendingDeletion = signal<(Employee & { role: string }) | null>(null);
   
   // State for details modal
   isDetailsModalOpen = signal(false);
-  selectedEmployeeForDetails = signal<Employee | null>(null);
+  selectedEmployeeForDetails = signal<(Employee & { role: string }) | null>(null);
 
   filteredEmployees = computed(() => {
     const term = this.employeeSearchTerm().toLowerCase();
     if (!term) return this.employees();
-    // FIX: Removed 'any' cast and now filter by the strongly-typed 'role' property.
     return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term));
   });
   
-  openDetailsModal(employee: Employee) {
+  openDetailsModal(employee: Employee & { role: string }) {
     this.selectedEmployeeForDetails.set(employee);
     this.isDetailsModalOpen.set(true);
   }
@@ -123,7 +120,7 @@ export class EmployeesComponent {
     }
   }
 
-  requestDeleteEmployee(e: Employee) {
+  requestDeleteEmployee(e: Employee & { role: string }) {
     this.employeePendingDeletion.set(e);
   }
 

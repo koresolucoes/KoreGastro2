@@ -5,6 +5,7 @@ export const ALL_PERMISSION_KEYS = [
   '/cashier',
   '/inventory',
   '/purchasing',
+  '/customers',
   '/menu',
   '/technical-sheets',
   '/mise-en-place',

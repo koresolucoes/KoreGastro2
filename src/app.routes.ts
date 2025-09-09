@@ -25,6 +25,7 @@ import { LeaveManagementComponent } from './components/leave-management/leave-ma
 import { MyLeaveComponent } from './components/my-leave/my-leave.component';
 import { PayrollComponent } from './components/payroll/payroll.component';
 import { EmployeesComponent } from './components/employees/employees.component';
+import { CustomersComponent } from './components/customers/customers.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -36,6 +37,7 @@ export const APP_ROUTES: Routes = [
   { path: 'cashier', component: CashierComponent, canActivate: [roleGuard] },
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
+  { path: 'customers', component: CustomersComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Caixa'] } },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
   { path: 'book/:userId', component: PublicBookingComponent }, // Public booking route

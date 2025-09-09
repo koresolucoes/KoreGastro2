@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Employee, Station, CompanyProfile, Role } from '../models/db.models';
+// FIX: Add Customer model to imports
+import { Employee, Station, CompanyProfile, Role, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
@@ -116,6 +117,25 @@ export class SettingsDataService {
 
     const { error } = await supabase.from('role_permissions').insert(permissionsToInsert);
     
+    return { success: !error, error };
+  }
+  
+  // FIX: Add methods to manage customer data.
+  async addCustomer(customer: Partial<Customer>): Promise<{ success: boolean; error: any; data?: Customer }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { data, error } = await supabase.from('customers').insert({ ...customer, user_id: userId }).select().single();
+    return { success: !error, error, data };
+  }
+
+  async updateCustomer(customer: Partial<Customer>): Promise<{ success: boolean; error: any }> {
+    const { id, ...updateData } = customer;
+    const { error } = await supabase.from('customers').update(updateData).eq('id', id!);
+    return { success: !error, error };
+  }
+
+  async deleteCustomer(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('customers').delete().eq('id', id);
     return { success: !error, error };
   }
 }

@@ -192,7 +192,6 @@ export class SchedulesComponent {
       endTime.setHours(17, 0, 0, 0);
       const employee = this.allEmployees().find(e => e.id === employeeId);
       
-      // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
       const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
       const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
 

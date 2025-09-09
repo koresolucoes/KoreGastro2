@@ -1,0 +1,141 @@
+<div class="container mx-auto">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestão de Clientes</h1>
+      <p class="text-gray-400 mt-1">Cadastre e gerencie os dados dos seus clientes.</p>
+    </div>
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>
+      <span>Novo Cliente</span>
+    </button>
+  </div>
+
+  <div class="bg-gray-800 rounded-lg">
+    <div class="p-4">
+      <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar cliente por nome, telefone, email ou CPF..." class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-4 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    @if (filteredCustomers().length === 0) {
+      <div class="text-center py-16">
+        <p class="text-gray-500">Nenhum cliente encontrado.</p>
+      </div>
+    } @else {
+      <!-- Desktop Table View -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+            <tr>
+              <th class="px-6 py-3">Nome</th>
+              <th class="px-6 py-3">Telefone</th>
+              <th class="px-6 py-3">Email</th>
+              <th class="px-6 py-3 text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (customer of filteredCustomers(); track customer.id) {
+              <tr class="border-b border-gray-700 hover:bg-gray-700/40">
+                <td class="px-6 py-4 font-medium text-white">{{ customer.name }}</td>
+                <td class="px-6 py-4 text-gray-300">{{ customer.phone || 'Não informado' }}</td>
+                <td class="px-6 py-4 text-gray-300">{{ customer.email || 'Não informado' }}</td>
+                <td class="px-6 py-4 text-center">
+                   @if (customerPendingDeletion()?.id === customer.id) {
+                    <div class="flex gap-2 justify-center items-center">
+                        <span class="text-sm text-red-300">Certeza?</span>
+                        <button (click)="confirmDeleteCustomer()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                        <button (click)="cancelDeleteCustomer()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                    </div>
+                  } @else {
+                    <div class="flex gap-4 justify-center">
+                      <button (click)="openEditModal(customer)" class="text-blue-400 hover:underline">Editar</button>
+                      <button (click)="requestDeleteCustomer(customer)" class="text-red-400 hover:underline">Excluir</button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+       <!-- Mobile Card View -->
+      <div class="block md:hidden p-4 space-y-4">
+        @for (customer of filteredCustomers(); track customer.id) {
+          <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-semibold text-white text-lg">{{ customer.name }}</p>
+                <p class="text-sm text-gray-400">{{ customer.cpf || '' }}</p>
+              </div>
+            </div>
+            
+            <div class="space-y-2 text-sm pt-3 border-t border-gray-600/50">
+              <div class="flex items-center gap-2 text-gray-300">
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                <span>{{ customer.phone || 'Não informado' }}</span>
+              </div>
+               <div class="flex items-center gap-2 text-gray-300">
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span>{{ customer.email || 'Não informado' }}</span>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-4 pt-3 border-t border-gray-600/50">
+              @if (customerPendingDeletion()?.id === customer.id) {
+                <div class="flex gap-2 items-center w-full justify-end">
+                  <span class="text-sm text-red-300">Certeza?</span>
+                  <button (click)="confirmDeleteCustomer()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                  <button (click)="cancelDeleteCustomer()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                </div>
+              } @else {
+                <button (click)="openEditModal(customer)" class="text-blue-400 hover:underline text-sm font-semibold">Editar</button>
+                <button (click)="requestDeleteCustomer(customer)" class="text-red-400 hover:underline text-sm font-semibold">Excluir</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Add/Edit Customer Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingCustomer() ? 'Editar Cliente' : 'Novo Cliente' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Nome Completo *</label>
+                <input type="text" [value]="customerForm().name || ''" (input)="updateCustomerFormField('name', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Telefone</label>
+                <input type="tel" [value]="customerForm().phone || ''" (input)="updateCustomerFormField('phone', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Email</label>
+                <input type="email" [value]="customerForm().email || ''" (input)="updateCustomerFormField('email', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">CPF</label>
+                <input type="text" [value]="customerForm().cpf || ''" (input)="updateCustomerFormField('cpf', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm text-gray-300 mb-1">Observações</label>
+            <textarea [value]="customerForm().notes || ''" (input)="updateCustomerFormField('notes', $any($event.target).value)" rows="3" class="w-full bg-gray-700 rounded p-2 text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="saveCustomer()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -57,7 +57,8 @@ export class SettingsComponent {
       permissions: [
         { key: '/pos', label: 'PDV' },
         { key: '/cashier', label: 'Caixa' },
-        { key: '/reservations', label: 'Reservas' }
+        { key: '/reservations', label: 'Reservas' },
+        { key: '/customers', label: 'Clientes' }
       ]
     },
     {

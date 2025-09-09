@@ -25,7 +25,6 @@ export class MiseEnPlaceComponent {
   // Data Signals
   subRecipes = computed(() => this.stateService.recipes().filter(r => r.is_sub_recipe));
   stations = this.stateService.stations;
-  // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
   employees = computed(() => {
     const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
     const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);

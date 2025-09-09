@@ -255,7 +255,6 @@ export class PayrollComponent {
   }
   
   totalHours = computed(() => {
-    // FIX: The property 'filteredEntries' does not exist. It should be 'timeEntriesForPeriod'.
     const totalMilliseconds = this.timeEntriesForPeriod()
         .reduce((sum, entry) => {
             const duration = calculateDurationInMs(entry);

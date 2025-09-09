@@ -146,6 +146,17 @@ export interface Recipe {
   hasStock?: boolean; // App-level property
 }
 
+export interface Customer {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  cpf: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   table_number: number;
@@ -153,9 +164,11 @@ export interface Order {
   completed_at: string | null;
   order_type: 'Dine-in' | 'QuickSale';
   timestamp: string;
+  customer_id: string | null;
   created_at: string;
   user_id: string;
   order_items: OrderItem[];
+  customers?: Customer; // Relation
 }
 
 export interface OrderItem {
