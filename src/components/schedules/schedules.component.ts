@@ -4,6 +4,7 @@ import { Employee, Schedule, Shift } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ScheduleDataService } from '../../services/schedule-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { OperationalAuthService } from '../../services/operational-auth.service';
 
 // Helper to format ISO string to datetime-local input value
 function formatISOToInput(isoString: string | null | undefined): string {
@@ -30,6 +31,7 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
   private stateService = inject(SupabaseStateService);
   private scheduleDataService = inject(ScheduleDataService);
   private notificationService = inject(NotificationService);
+  private operationalAuthService = inject(OperationalAuthService);
   private elementRef = inject(ElementRef);
 
   // Data
@@ -50,8 +52,15 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
   private observer?: IntersectionObserver;
   mobileVisibleDayIndex = signal(0);
 
+  isManager = computed(() => this.operationalAuthService.activeEmployee()?.role === 'Gerente');
+
   activeSchedule = computed(() => {
-    return this.stateService.schedules().find(s => s.week_start_date === this.weekStartDate());
+    const schedule = this.stateService.schedules().find(s => s.week_start_date === this.weekStartDate());
+    if (this.isManager()) {
+        return schedule; // Manager sees published and drafts
+    }
+    // Other roles only see published schedules
+    return schedule?.is_published ? schedule : null;
   });
 
   weekDays = computed(() => {
@@ -109,13 +118,19 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
         return;
       }
       
-      this.isLoading.set(true);
-      this.scheduleDataService.getOrCreateScheduleForDate(date).then(({ error }) => {
-        if (error) {
-          this.notificationService.alert(`Erro ao carregar ou criar escala: ${error.message}`);
-        }
+      // Only managers can create a new schedule record by navigating to a week that doesn't have one.
+      if (this.isManager()) {
+        this.isLoading.set(true);
+        this.scheduleDataService.getOrCreateScheduleForDate(date).then(({ error }) => {
+          if (error) {
+            this.notificationService.alert(`Erro ao carregar ou criar escala: ${error.message}`);
+          }
+          this.isLoading.set(false);
+        });
+      } else {
+        // Non-managers can only view existing schedules, which are loaded in SupabaseStateService.
         this.isLoading.set(false);
-      });
+      }
     }, { allowSignalWrites: true });
   }
 
@@ -188,6 +203,8 @@ export class SchedulesComponent implements AfterViewInit, OnDestroy {
   }
 
   openShiftModal(day: Date, shift: Shift | null = null) {
+    if (!this.isManager()) return;
+
     if (this.activeSchedule()?.is_published) {
       this.notificationService.alert('A escala está publicada e não pode ser editada. Cancele a publicação para fazer alterações.');
       return;

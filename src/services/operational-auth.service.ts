@@ -10,9 +10,9 @@ const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
 const PERMISSIONS: Record<string, string[]> = {
   'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings', '/reservations', '/time-clock', '/tutorials', '/purchasing', '/mise-en-place'],
-  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place', '/reservations', '/tutorials'],
-  'Garçom': ['/pos', '/menu', '/mise-en-place', '/reservations', '/tutorials'],
-  'Cozinha': ['/kds', '/mise-en-place', '/tutorials'],
+  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules'],
+  'Garçom': ['/pos', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules'],
+  'Cozinha': ['/kds', '/mise-en-place', '/tutorials', '/schedules'],
 };
 
 const DEFAULT_ROUTES: Record<string, string> = {

@@ -36,11 +36,19 @@
                     <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
                 }
             </div>
-            <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
-            </button>
+            @if (isManager()) {
+              <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                  {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
+              </button>
+            }
         } @else {
-            <p class="text-gray-500">Nenhuma escala para esta semana ainda.</p>
+            <div class="text-center text-gray-500 py-2 w-full">
+              @if (isManager()) {
+                  <p>Nenhuma escala para esta semana. Adicione turnos para criar uma.</p>
+              } @else {
+                  <p>A escala para esta semana ainda não foi publicada.</p>
+              }
+            </div>
         }
     </div>
 
@@ -68,15 +76,20 @@
           </div>
           <div class="p-2 space-y-2 flex-1 overflow-y-auto">
             @for(shift of (shiftsByDay().get(day.toISOString().split('T')[0]) || []); track shift.id) {
-                <div (click)="openShiftModal(day, shift)" class="bg-gray-700 p-2 rounded-md cursor-pointer hover:bg-gray-600 transition-colors">
+                <div (click)="openShiftModal(day, shift)" 
+                     class="bg-gray-700 p-2 rounded-md transition-colors"
+                     [class.cursor-pointer]="isManager()"
+                     [class.hover:bg-gray-600]="isManager()">
                     <p class="font-semibold text-white text-sm">{{ shift.employees?.name }}</p>
                     <p class="text-xs text-gray-300">{{ shift.role_assigned }}</p>
                     <p class="text-xs font-mono text-blue-300 mt-1">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
                 </div>
             }
-            <button (click)="openShiftModal(day)" class="w-full text-center text-sm py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors">
-              + Adicionar
-            </button>
+            @if(isManager()) {
+              <button (click)="openShiftModal(day)" class="w-full text-center text-sm py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors">
+                + Adicionar
+              </button>
+            }
           </div>
         </div>
       }
