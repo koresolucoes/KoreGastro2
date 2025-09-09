@@ -61,10 +61,12 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão Interna:** Cadastre e gerencie reservas diretamente no sistema, com visão por dia e status (Pendente, Confirmada, Cancelada).
 - **Página Pública de Reservas:** Ative uma página pública onde seus clientes podem fazer reservas online, respeitando seus horários e capacidade.
 
-### 👥 **Gestão de RH**
+### 👥 **Recursos Humanos (RH)**
+- **Cadastro Completo de Funcionários:** Gerencie informações pessoais, de contato, contratuais, de pagamento e bancárias de toda a equipe.
 - **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais para toda a equipe.
 - **Controle de Ponto:** Gerencie manualmente os registros de entrada, saída e pausas dos funcionários.
 - **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
+- **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas e agendadas, incluindo horas extras, e gere contracheques detalhados.
 
 ### 🚀 **Performance e Relatórios**
 - **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
@@ -72,7 +74,8 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha.
 
 ### ⚙️ **Configurações e Cardápio Online**
-- **Gestão Centralizada:** Cadastre funcionários (com PINs), estações de produção, categorias, fornecedores e mais.
+- **Gestão Centralizada:** Cadastre funcionários (com PINs), estações de produção, categorias, fornecedores e dados da empresa.
+- **Cargos e Permissões:** Crie cargos personalizados (ex: Garçom, Caixa) e defina quais telas cada cargo pode acessar, garantindo segurança e controle.
 - **QR Code para Cardápio:** O sistema gera automaticamente um QR Code para um cardápio online público, que os clientes podem acessar de seus celulares.
 
 ### 🎓 **Tutoriais**
@@ -144,12 +147,14 @@ Para executar este projeto, você precisa de credenciais para o Supabase e para 
 |   |-- /auth/               # Login, seleção de funcionário
 |   |-- /cashier/            # Tela do Caixa
 |   |-- /dashboard/          # Tela do Dashboard
+|   |-- /employees/          # Gestão de Funcionários
 |   |-- /inventory/          # Tela de Estoque
 |   |-- /kds/                # Tela do KDS
 |   |-- /leave-management/   # Gestão de ausências (Gerente)
 |   |-- /menu/               # Cardápio online (interno)
 |   |-- /mise-en-place/      # Planejamento de produção
 |   |-- /my-leave/           # Solicitação de ausência (Funcionário)
+|   |-- /payroll/            # Folha de Pagamento
 |   |-- /performance/        # Análise de desempenho
 |   |-- /pos/                # Ponto de Venda
 |   |-- /public-booking/     # Página pública de reservas
