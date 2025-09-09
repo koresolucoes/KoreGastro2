@@ -83,6 +83,64 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 ---
 
+## 🗺️ Roadmap de Futuras Funcionalidades
+
+Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades focadas em aumentar a lucratividade, eficiência e a experiência do cliente.
+
+### 🎯 Alta Prioridade (Foco em Core Business e Lucratividade)
+
+*   **Módulo CRM e Fidelidade:**
+    *   **Cadastro de Clientes:** Base de dados de clientes, vinculada a pedidos e reservas.
+    *   **Histórico de Consumo:** Análise de pratos preferidos e frequência de visitas.
+    *   **Programa de Fidelidade:** Sistema de pontos e recompensas para incentivar o retorno.
+    *   **Gestão de Vouchers:** Criação e controle de cupons de desconto.
+
+*   **Módulo de Delivery e Integrações:**
+    *   **Integração com Marketplaces:** Recebimento automático de pedidos do iFood, Rappi, etc., diretamente no PDV e KDS.
+    *   **Gestão de Entregadores:** Acompanhamento do status dos entregadores (próprios ou da plataforma).
+    *   **Cardápio Específico para Delivery:** Gestão de preços e disponibilidade de itens para entrega.
+
+*   **Módulo de Relatórios Avançados:**
+    *   **Análise Comparativa:** Comparação de vendas (dia/semana/mês anterior).
+    *   **Análise de Horários de Pico:** Identificação dos horários de maior e menor movimento para otimização de equipe e estoque.
+    *   **Dashboard de CMV vs. Vendas:** Acompanhamento da saúde financeira em tempo real.
+    *   **Construtor de Relatórios:** Ferramenta para criar relatórios personalizados.
+
+*   **Módulo de Estoque Avançado:**
+    *   **Controle de Desperdício:** Ferramenta para registrar perdas de insumos de forma detalhada (vencimento, quebra, etc.) para análise de custos.
+    *   **Rastreabilidade de Lotes:** Acompanhamento de lotes de ingredientes para segurança alimentar.
+
+### ⭐ Média Prioridade (Melhorias de Eficiência e Usabilidade)
+
+*   **Melhorias no Módulo de RH:**
+    *   **Gestão de Documentos:** Armazenamento digital de contratos e documentos dos funcionários.
+    *   **Avaliações de Desempenho:** Registro e acompanhamento de feedbacks e avaliações periódicas.
+    *   **Comunicação Interna:** Mural de avisos e comunicados para a equipe.
+
+*   **Melhorias no PDV:**
+    *   **Divisão de Conta por Item:** Permitir que clientes em uma mesma mesa paguem apenas o que consumiram.
+    *   **Integração com Pagamento na Mesa:** Suporte para maquininhas de cartão que se comunicam com o sistema para fechar a conta na mesa.
+    *   **Gestão de Combos e Modificadores:** Interface aprimorada para criação de ofertas "monte seu combo" e modificadores complexos.
+
+*   **Melhorias no KDS:**
+    *   **Suporte a "Bump Bar":** Permitir a finalização de comandas com teclados físicos.
+    *   **Consulta de Ficha Técnica:** Acesso rápido à receita ou modo de preparo diretamente na tela da comanda.
+
+### 💡 Baixa Prioridade (Expansão e "Nice-to-haves")
+
+*   **Módulo de Multi-loja/Franquias:**
+    *   **Gestão Centralizada:** Controle de cardápio, funcionários e relatórios para múltiplas unidades.
+    *   **Relatórios Consolidados:** Visão geral do desempenho de toda a rede.
+
+*   **Módulo de Eventos:**
+    *   **Gestão de Reservas para Grupos:** Ferramenta para agendamento e organização de eventos fechados.
+    *   **Orçamentos e Cardápios Personalizados:** Criação de pacotes e menus específicos para eventos.
+
+*   **Módulo de Marketing:**
+    *   **Campanhas de E-mail/SMS:** Envio de promoções para a base de clientes cadastrados no CRM.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
