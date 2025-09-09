@@ -26,85 +26,95 @@
     </div>
   } @else {
     <!-- Schedule Actions -->
-    <div class="mb-4 flex justify-between items-center bg-gray-800 p-3 rounded-lg">
-        @if (activeSchedule(); as schedule) {
-            <div class="flex items-center gap-2">
-                <span class="px-3 py-1 text-sm font-semibold rounded-full" [class.bg-green-600]="schedule.is_published" [class.bg-yellow-600]="!schedule.is_published" [class.text-white]="schedule.is_published" [class.text-gray-900]="!schedule.is_published">
-                    {{ schedule.is_published ? 'Publicada' : 'Rascunho' }}
-                </span>
-                @if (schedule.notes) {
-                    <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
-                }
-            </div>
-            @if (isManager()) {
+    @if (isManager()) {
+      <div class="mb-4 flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+          @if (activeSchedule(); as schedule) {
+              <div class="flex items-center gap-2">
+                  <span class="px-3 py-1 text-sm font-semibold rounded-full" [class.bg-green-600]="schedule.is_published" [class.bg-yellow-600]="!schedule.is_published" [class.text-white]="schedule.is_published" [class.text-gray-900]="!schedule.is_published">
+                      {{ schedule.is_published ? 'Publicada' : 'Rascunho' }}
+                  </span>
+                  @if (schedule.notes) {
+                      <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
+                  }
+              </div>
               <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
                   {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
               </button>
-            }
-        } @else {
-            <div class="text-center text-gray-500 py-2 w-full">
-              @if (isManager()) {
-                  <p>Nenhuma escala para esta semana. Adicione turnos para criar uma.</p>
-              } @else {
-                  <p>A escala para esta semana ainda não foi publicada.</p>
+          } @else {
+              <div class="text-center text-gray-500 py-2 w-full">
+                <p>Nenhuma escala para esta semana. Adicione turnos para criar uma.</p>
+              </div>
+          }
+      </div>
+    }
+
+    <!-- Schedule Table -->
+    <div class="flex-1 bg-gray-800 rounded-lg overflow-hidden flex flex-col">
+      <div class="overflow-auto">
+        <table class="w-full text-left">
+          <thead class="bg-gray-700/50 sticky top-0 z-10">
+            <tr>
+              <th class="px-4 py-3 text-sm font-semibold text-white w-48">Funcionário</th>
+              @for (day of weekDays(); track day) {
+                <th class="px-2 py-3 text-sm font-semibold text-white text-center">
+                  <span class="block">{{ day | date:'EEEE' }}</span>
+                  <span class="block text-xs text-gray-400">{{ day | date:'dd/MM' }}</span>
+                </th>
               }
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            @for (employee of employeesToDisplay(); track employee.id) {
+              <tr class="divide-x divide-gray-700">
+                <td class="px-4 py-3 font-medium text-white align-top">
+                  <p>{{ employee.name }}</p>
+                  <p class="text-xs text-gray-400">{{ employee.role }}</p>
+                </td>
+                @for (day of weekDays(); track day) {
+                  @php (shift = shiftsByEmployeeAndDay().get(employee.id)?.get(day.toISOString().split('T')[0]) ?? null)
+                  @php (approvedLeave = getApprovedLeave(day, employee))
+                  <td 
+                    class="px-2 py-3 align-top"
+                    [class.cursor-pointer]="isManager()"
+                    (click)="openShiftModal(day, employee.id, shift)">
+                    @if (shift) {
+                      @if (shift.is_day_off) {
+                        <div class="bg-gray-600 text-center text-gray-300 p-2 rounded-md text-sm font-semibold">Folga</div>
+                      } @else {
+                        <div class="bg-gray-700 p-2 rounded-md text-center">
+                           <p class="text-xs text-gray-300">{{ shift.role_assigned }}</p>
+                           <p class="font-mono text-sm font-semibold text-blue-300">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
+                           @if(shift.notes) {
+                            <p class="text-xs text-yellow-200 mt-1 truncate" [title]="shift.notes">{{shift.notes}}</p>
+                           }
+                        </div>
+                      }
+                    } @else if (approvedLeave) {
+                      <div class="bg-purple-800 text-center text-purple-200 p-2 rounded-md text-sm font-semibold">
+                          {{ approvedLeave.request_type }}
+                      </div>
+                    }
+                     @else {
+                        <!-- Empty Cell -->
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+         @if (!activeSchedule() && !isManager()) {
+            <div class="text-center text-gray-500 py-20 w-full">
+              <p>A escala para esta semana ainda não foi publicada.</p>
             </div>
         }
-    </div>
-
-    <!-- Mobile Day Navigator -->
-    <div class="md:hidden flex justify-around bg-gray-800 p-2 rounded-lg mb-4">
-      @for (day of weekDays(); track day; let i = $index) {
-        <button 
-          (click)="scrollToDay(i)" 
-          class="px-3 py-1 text-xs font-semibold rounded-md transition-colors uppercase"
-          [class.bg-blue-600]="mobileVisibleDayIndex() === i"
-          [class.text-white]="mobileVisibleDayIndex() === i"
-          [class.text-gray-400]="mobileVisibleDayIndex() !== i">
-          {{ day | date:'EEE' }}
-        </button>
-      }
-    </div>
-
-    <!-- Schedule Grid -->
-    <div class="schedule-scroll-container flex-1 flex md:grid md:grid-cols-7 gap-2 overflow-x-auto snap-x snap-mandatory">
-      @for (day of weekDays(); track day; let i = $index) {
-        <div #dayColumn [attr.data-index]="i" class="bg-gray-800/50 rounded-lg flex flex-col w-[85vw] md:w-auto flex-shrink-0 snap-center">
-          <div class="text-center py-2 border-b border-gray-700">
-            <p class="font-bold text-white">{{ day | date:'EEEE' }}</p>
-            <p class="text-sm text-gray-400">{{ day | date:'dd/MM' }}</p>
-          </div>
-          <div class="p-2 space-y-2 flex-1 overflow-y-auto">
-            @if ((shiftsByDay().get(day.toISOString().split('T')[0]) || []).length > 0) {
-              @for(shift of (shiftsByDay().get(day.toISOString().split('T')[0]) || []); track shift.id) {
-                  <div (click)="openShiftModal(day, shift)" 
-                      class="bg-gray-700 p-2 rounded-md transition-colors"
-                      [class.cursor-pointer]="isManager()"
-                      [class.hover:bg-gray-600]="isManager()">
-                      <p class="font-semibold text-white text-sm">{{ shift.employees?.name }}</p>
-                      <p class="text-xs text-gray-300">{{ shift.role_assigned }}</p>
-                      <p class="text-xs font-mono text-blue-300 mt-1">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
-                  </div>
-              }
-            } @else {
-              <div class="flex items-center justify-center h-full">
-                <p class="text-xs text-gray-500">Nenhum turno.</p>
-              </div>
-            }
-            @if(isManager()) {
-              <button (click)="openShiftModal(day)" class="w-full text-center text-sm py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors">
-                + Adicionar
-              </button>
-            }
-          </div>
-        </div>
-      }
+      </div>
     </div>
   }
 </div>
 
 <!-- Add/Edit Shift Modal -->
-@if(isModalOpen()) {
+@if(isModalOpen() && isManager()) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
       <div class="p-4 border-b border-gray-700 flex justify-between items-center">
@@ -112,37 +122,52 @@
         <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       <div class="p-6 space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
-          <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-            <option [value]="undefined">Selecione...</option>
-            @for (emp of employees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
-          </select>
+        <div class="flex items-center">
+            <input type="checkbox" id="is_day_off" [checked]="shiftForm().is_day_off" (change)="updateShiftFormField('is_day_off', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600">
+            <label for="is_day_off" class="ml-2 text-sm text-gray-200">Marcar como dia de Folga</label>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+
+        @if (!shiftForm().is_day_off) {
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Início *</label>
-            <input type="datetime-local" [value]="formatForInput(shiftForm().start_time)" (input)="updateShiftFormDateTime('start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              <option [value]="undefined">Selecione...</option>
+              @for (emp of allEmployees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Início *</label>
+              <input type="datetime-local" [value]="formatForInput(shiftForm().start_time)" (input)="updateShiftFormDateTime('start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+             <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Fim *</label>
+              <input type="datetime-local" [value]="formatForInput(shiftForm().end_time)" (input)="updateShiftFormDateTime('end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
           </div>
            <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Fim *</label>
-            <input type="datetime-local" [value]="formatForInput(shiftForm().end_time)" (input)="updateShiftFormDateTime('end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Cargo no Turno</label>
+            <select [value]="shiftForm().role_assigned" (change)="updateShiftFormField('role_assigned', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+               @for(role of availableRoles; track role) { <option [value]="role">{{ role }}</option> }
+            </select>
           </div>
-        </div>
-         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Cargo no Turno</label>
-          <select [value]="shiftForm().role_assigned" (change)="updateShiftFormField('role_assigned', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-             @for(role of availableRoles; track role) { <option [value]="role">{{ role }}</option> }
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-          <textarea [value]="shiftForm().notes || ''" (input)="updateShiftFormField('notes', $any($event.target).value)" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+            <textarea [value]="shiftForm().notes || ''" (input)="updateShiftFormField('notes', $any($event.target).value)" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+          </div>
+        } @else {
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              <option [value]="undefined">Selecione...</option>
+              @for (emp of allEmployees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
+            </select>
+          </div>
+        }
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-between items-center">
         @if (editingShift()) {
-          <button (click)="deleteShift(editingShift()!.id)" class="px-4 py-2 font-medium rounded-lg bg-red-600/50 hover:bg-red-600 text-red-100 transition-colors">Excluir Turno</button>
+          <button (click)="deleteShift()" class="px-4 py-2 font-medium rounded-lg bg-red-600/50 hover:bg-red-600 text-red-100 transition-colors">Excluir Turno</button>
         } @else { <div></div> }
         <div class="flex gap-3">
           <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>

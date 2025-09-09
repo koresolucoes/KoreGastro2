@@ -1,0 +1,87 @@
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Minhas Ausências</h1>
+      <p class="text-gray-400 mt-1">Acompanhe e solicite suas folgas, férias e atestados.</p>
+    </div>
+    <button (click)="openRequestModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+      <span>Solicitar Ausência</span>
+    </button>
+  </div>
+
+  <!-- Request List -->
+  <div class="space-y-4">
+    @if (myLeaveRequests().length === 0) {
+      <div class="text-center bg-gray-800 rounded-lg py-16">
+        <p class="text-gray-500">Você ainda não fez nenhuma solicitação.</p>
+      </div>
+    } @else {
+      @for (request of myLeaveRequests(); track request.id) {
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center">
+            <div class="flex-1">
+              <div class="flex items-center gap-3">
+                 <p class="font-bold text-white text-lg">{{ request.request_type }}</p>
+                 <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusClass(request.status)">
+                    {{ request.status }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-300 mt-1">{{ formatDateRange(request.start_date, request.end_date) }}</p>
+            </div>
+            <div class="text-sm text-gray-400 mt-2 sm:mt-0">
+              Solicitado em: {{ request.created_at | date:'dd/MM/yyyy' }}
+            </div>
+          </div>
+           @if (request.reason) {
+            <p class="text-sm italic text-yellow-200 mt-3 pt-3 border-t border-gray-700"><strong>Sua justificativa:</strong> "{{ request.reason }}"</p>
+          }
+           @if (request.manager_notes) {
+            <p class="text-sm text-gray-400 mt-3 pt-3 border-t border-gray-700"><strong>Observação do Gestor:</strong> {{ request.manager_notes }}</p>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Add Request Modal -->
+@if (isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">Solicitar Ausência</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+         <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de Solicitação *</label>
+            <select [value]="requestForm().request_type" (change)="updateFormField('request_type', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                @for (type of availableRequestTypes; track type) {
+                    <option [value]="type">{{ type }}</option>
+                }
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+             <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Data Início *</label>
+                <input type="date" [value]="requestForm().start_date" (input)="updateFormField('start_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+             <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Data Fim *</label>
+                <input type="date" [value]="requestForm().end_date" (input)="updateFormField('end_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Motivo/Justificativa (Opcional)</label>
+          <textarea [value]="requestForm().reason || ''" (input)="updateFormField('reason', $any($event.target).value)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="submitRequest()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Enviar Solicitação</button>
+      </div>
+    </div>
+  </div>
+}
