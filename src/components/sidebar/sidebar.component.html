@@ -40,7 +40,9 @@
             </div>
             <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
               <p class="font-semibold text-white truncate text-sm" [title]="employee.name">{{ employee.name }}</p>
-              <button (click)="clockOut()" class="text-xs text-yellow-400 hover:text-yellow-300 hover:underline">Encerrar Turno</button>
+              <button (click)="handleShiftAction()" class="text-xs hover:underline" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+                {{ shiftButtonState().text }}
+              </button>
             </div>
         </div>
     }

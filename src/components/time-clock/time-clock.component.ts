@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Employee, TimeClockEntry } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -34,14 +34,13 @@ export class TimeClockComponent {
     private notificationService = inject(NotificationService);
 
     // Data signals
-    allEntries = this.stateService.timeClockEntries;
     employees = this.stateService.employees;
-    isLoading = computed(() => !this.stateService.isDataLoaded());
+    isLoading = signal(true);
+    filteredEntries = signal<TimeClockEntry[]>([]);
 
     // Filter signals
     filterEmployeeId = signal<string>('all');
     
-    // Set default date range to current month
     private today = new Date();
     private startOfMonth = new Date(this.today.getFullYear(), this.today.getMonth(), 1);
     private endOfMonth = new Date(this.today.getFullYear(), this.today.getMonth() + 1, 0);
@@ -55,68 +54,81 @@ export class TimeClockComponent {
     entryForm = signal<Partial<TimeClockEntry>>({});
     entryPendingDeletion = signal<TimeClockEntry | null>(null);
 
-    filteredEntries = computed(() => {
-        const employeeId = this.filterEmployeeId();
-        const startDateStr = this.filterStartDate(); // e.g., '2025-09-01'
-        const endDateStr = this.filterEndDate();   // e.g., '2025-09-30'
-        
-        if (!startDateStr || !endDateStr) {
-            return this.allEntries();
-        }
+    constructor() {
+        effect(() => {
+            const employeeId = this.filterEmployeeId();
+            const startDate = this.filterStartDate();
+            const endDate = this.filterEndDate();
+            this.loadEntries(startDate, endDate, employeeId);
+        }, { allowSignalWrites: true });
+    }
 
-        return this.allEntries().filter(entry => {
-            if (employeeId !== 'all' && entry.employee_id !== employeeId) {
-                return false;
-            }
-            
-            // Create a Date object from the UTC timestamp string from the database.
-            const entryDate = new Date(entry.clock_in_time);
-            
-            // getFullYear(), getMonth(), and getDate() return values based on the host's local timezone.
-            // This correctly converts the UTC time to a local date string for comparison.
-            const year = entryDate.getFullYear();
-            const month = String(entryDate.getMonth() + 1).padStart(2, '0');
-            const day = String(entryDate.getDate()).padStart(2, '0');
-            const entryDateStr = `${year}-${month}-${day}`;
-            
-            // Compare the local date string of the entry with the filter's date strings.
-            return entryDateStr >= startDateStr && entryDateStr <= endDateStr;
-        });
-    });
+    async loadEntries(startDate: string, endDate: string, employeeId: string) {
+        if (!startDate || !endDate) return;
+        this.isLoading.set(true);
+        const { data, error } = await this.timeClockService.getEntriesForPeriod(startDate, endDate, employeeId);
+        if (error) {
+            this.notificationService.alert(`Erro ao carregar registros: ${error.message}`);
+            this.filteredEntries.set([]);
+        } else {
+            this.filteredEntries.set(data || []);
+        }
+        this.isLoading.set(false);
+    }
 
     totalHours = computed(() => {
         const totalMilliseconds = this.filteredEntries()
-            .filter(entry => entry.clock_out_time)
             .reduce((sum, entry) => {
-                const duration = new Date(entry.clock_out_time!).getTime() - new Date(entry.clock_in_time).getTime();
-                return sum + (duration > 0 ? duration : 0);
+                const duration = this.calculateDurationInMs(entry);
+                return sum + duration;
             }, 0);
         
         return totalMilliseconds / (1000 * 60 * 60); // Convert to hours
     });
 
-    calculateDuration(entry: TimeClockEntry): string {
-        if (!entry.clock_out_time) {
-            return 'Em andamento';
+    private calculateDurationInMs(entry: TimeClockEntry): number {
+        if (!entry.clock_out_time) return 0;
+        
+        const start = new Date(entry.clock_in_time).getTime();
+        const end = new Date(entry.clock_out_time).getTime();
+        const totalDuration = end > start ? end - start : 0;
+        
+        let breakDuration = 0;
+        if (entry.break_start_time && entry.break_end_time) {
+            const breakStart = new Date(entry.break_start_time).getTime();
+            const breakEnd = new Date(entry.break_end_time).getTime();
+            if (breakEnd > breakStart) {
+                breakDuration = breakEnd - breakStart;
+            }
         }
-        const start = new Date(entry.clock_in_time);
-        const end = new Date(entry.clock_out_time);
-        const diffMs = end.getTime() - start.getTime();
-        if (diffMs < 0) return 'Inválido';
+        
+        return Math.max(0, totalDuration - breakDuration);
+    }
 
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    formatDuration(durationMs: number): string {
+        if (durationMs <= 0) return '00:00:00';
+
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
 
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
+    getFormattedDuration(entry: TimeClockEntry): string {
+        if (!entry.clock_out_time) return 'Em andamento';
+        const durationMs = this.calculateDurationInMs(entry);
+        return this.formatDuration(durationMs);
+    }
+    
     openAddModal() {
         this.editingEntry.set(null);
         this.entryForm.set({
-            employee_id: this.employees()[0]?.id ?? null,
+            employee_id: this.employees()[0]?.id ?? undefined,
             clock_in_time: new Date().toISOString(),
             clock_out_time: null,
+            break_start_time: null,
+            break_end_time: null,
             notes: '',
         });
         this.isModalOpen.set(true);
@@ -146,6 +158,8 @@ export class TimeClockComponent {
         if (result.success) {
             await this.notificationService.alert(this.editingEntry() ? 'Registro atualizado!' : 'Registro adicionado!', 'Sucesso');
             this.closeModal();
+            // Re-fetch data to show the new/updated entry
+            this.loadEntries(this.filterStartDate(), this.filterEndDate(), this.filterEmployeeId());
         } else {
             await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
         }
@@ -158,18 +172,21 @@ export class TimeClockComponent {
         const entry = this.entryPendingDeletion();
         if (entry) {
             const result = await this.timeClockService.deleteEntry(entry.id);
-            if (!result.success) {
+            if (result.success) {
+                 // Re-fetch data to remove the deleted entry
+                this.loadEntries(this.filterStartDate(), this.filterEndDate(), this.filterEmployeeId());
+            } else {
                 await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             }
             this.entryPendingDeletion.set(null);
         }
     }
 
-    updateEntryFormField(field: keyof Omit<TimeClockEntry, 'id' | 'created_at' | 'user_id' | 'employees' | 'clock_in_time' | 'clock_out_time'>, value: string | null) {
+    updateEntryFormField(field: keyof Omit<TimeClockEntry, 'id' | 'created_at' | 'user_id' | 'employees' | 'clock_in_time' | 'clock_out_time' | 'break_start_time' | 'break_end_time'>, value: string | null) {
         this.entryForm.update(form => ({...form, [field]: value}));
     }
 
-    updateEntryFormDateTime(field: 'clock_in_time' | 'clock_out_time', value: string) {
+    updateEntryFormDateTime(field: 'clock_in_time' | 'clock_out_time' | 'break_start_time' | 'break_end_time', value: string) {
         this.entryForm.update(form => ({ ...form, [field]: parseInputToISO(value) }));
     }
 

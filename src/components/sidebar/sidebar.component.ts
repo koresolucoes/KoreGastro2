@@ -25,6 +25,7 @@ export class SidebarComponent {
   
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
+  shiftButtonState = this.operationalAuthService.shiftButtonState;
   
   isSidebarOpen = signal(true);
 
@@ -62,7 +63,7 @@ export class SidebarComponent {
     this.router.navigate(['/login']);
   }
 
-  async clockOut() {
-    await this.operationalAuthService.clockOut();
+  async handleShiftAction() {
+    await this.operationalAuthService.handleShiftAction();
   }
 }

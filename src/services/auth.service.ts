@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-import { User } from '@supabase/supabase-js';
+// FIX: Use `import type` to fix module resolution for Supabase types.
+import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
 
 @Injectable({
@@ -35,7 +36,7 @@ export class AuthService {
    * @param password The user's password.
    */
   async signInWithPassword(email: string, password: string): Promise<{ error: any }> {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   }
 

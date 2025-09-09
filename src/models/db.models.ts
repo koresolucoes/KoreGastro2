@@ -298,6 +298,8 @@ export interface TimeClockEntry {
   employee_id: string;
   clock_in_time: string;
   clock_out_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
   notes: string | null;
   created_at: string;
   employees?: { name: string }; // Relation

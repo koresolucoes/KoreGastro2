@@ -25,6 +25,7 @@ export class BottomNavComponent {
 
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
+  shiftButtonState = this.operationalAuthService.shiftButtonState;
   
   isOffCanvasOpen = signal(false);
   
@@ -85,8 +86,8 @@ export class BottomNavComponent {
     this.router.navigate(['/login']);
   }
 
-  async clockOut() {
+  async handleShiftAction() {
     this.isOffCanvasOpen.set(false);
-    await this.operationalAuthService.clockOut();
+    await this.operationalAuthService.handleShiftAction();
   }
 }

@@ -53,9 +53,10 @@
               <th class="px-6 py-3">Funcionário</th>
               <th class="px-6 py-3">Data</th>
               <th class="px-6 py-3">Entrada</th>
+              <th class="px-6 py-3">Início Pausa</th>
+              <th class="px-6 py-3">Fim Pausa</th>
               <th class="px-6 py-3">Saída</th>
-              <th class="px-6 py-3">Duração</th>
-              <th class="px-6 py-3">Observações</th>
+              <th class="px-6 py-3">Duração Líquida</th>
               <th class="px-6 py-3 text-center">Ações</th>
             </tr>
           </thead>
@@ -65,12 +66,13 @@
                 <td class="px-6 py-4 font-medium text-white">{{ entry.employees?.name }}</td>
                 <td class="px-6 py-4">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</td>
                 <td class="px-6 py-4 font-mono text-green-400">{{ entry.clock_in_time | date:'HH:mm' }}</td>
+                <td class="px-6 py-4 font-mono text-yellow-400">{{ entry.break_start_time ? (entry.break_start_time | date:'HH:mm') : '--:--' }}</td>
+                <td class="px-6 py-4 font-mono text-yellow-400">{{ entry.break_end_time ? (entry.break_end_time | date:'HH:mm') : '--:--' }}</td>
                 <td class="px-6 py-4 font-mono text-red-400">
                   @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm' }} }
                   @else { <span class="text-yellow-400">--:--</span> }
                 </td>
-                <td class="px-6 py-4 font-mono">{{ calculateDuration(entry) }}</td>
-                <td class="px-6 py-4 text-sm text-gray-400 truncate max-w-xs" [title]="entry.notes">{{ entry.notes || '---' }}</td>
+                <td class="px-6 py-4 font-mono font-semibold">{{ getFormattedDuration(entry) }}</td>
                 <td class="px-6 py-4 text-center">
                   @if (entryPendingDeletion()?.id === entry.id) {
                     <div class="flex justify-center gap-2"><span class="text-sm text-red-300">Certeza?</span><button (click)="confirmDeleteEntry()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button><button (click)="cancelDeleteEntry()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button></div>
@@ -93,18 +95,29 @@
                 <p class="font-bold text-white">{{ entry.employees?.name }}</p>
                 <p class="text-sm text-gray-400">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
               </div>
-              <span class="font-mono text-sm px-2 py-1 rounded-md bg-gray-900/50">{{ calculateDuration(entry) }}</span>
+              <span class="font-mono text-sm px-2 py-1 rounded-md bg-gray-900/50">{{ getFormattedDuration(entry) }}</span>
             </div>
-            <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
               <div class="text-center bg-gray-900/50 p-2 rounded">
-                <p class="text-xs text-gray-400">Entrada</p>
-                <p class="font-mono text-green-400 font-semibold">{{ entry.clock_in_time | date:'HH:mm:ss' }}</p>
+                <p class="text-xs text-green-400">Entrada</p>
+                <p class="font-mono font-semibold">{{ entry.clock_in_time | date:'HH:mm' }}</p>
+              </div>
+               <div class="text-center bg-gray-900/50 p-2 rounded">
+                <p class="text-xs text-red-400">Saída</p>
+                <p class="font-mono font-semibold">
+                  @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm' }} } @else { <span>--:--</span> }
+                </p>
               </div>
               <div class="text-center bg-gray-900/50 p-2 rounded">
-                <p class="text-xs text-gray-400">Saída</p>
-                <p class="font-mono text-red-400 font-semibold">
-                  @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm:ss' }} }
-                  @else { <span class="text-yellow-400">Em andamento</span> }
+                <p class="text-xs text-yellow-400">Início Pausa</p>
+                <p class="font-mono font-semibold">
+                  @if(entry.break_start_time) { {{ entry.break_start_time | date:'HH:mm' }} } @else { <span>--:--</span> }
+                </p>
+              </div>
+               <div class="text-center bg-gray-900/50 p-2 rounded">
+                <p class="text-xs text-yellow-400">Fim Pausa</p>
+                <p class="font-mono font-semibold">
+                  @if(entry.break_end_time) { {{ entry.break_end_time | date:'HH:mm' }} } @else { <span>--:--</span> }
                 </p>
               </div>
             </div>
@@ -136,11 +149,11 @@
         <h3 class="text-xl font-bold text-white">{{ editingEntry() ? 'Editar Registro' : 'Adicionar Registro Manual' }}</h3>
         <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
           <select [value]="entryForm().employee_id" (change)="updateEntryFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-            <option [value]="null">Selecione...</option>
+            <option [value]="undefined">Selecione...</option>
             @for (emp of employees(); track emp.id) {
               <option [value]="emp.id">{{ emp.name }}</option>
             }
@@ -155,6 +168,19 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">Saída</label>
             <input type="datetime-local" [value]="formatForInput(entryForm().clock_out_time)" (input)="updateEntryFormDateTime('clock_out_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
           </div>
+        </div>
+        <div class="p-4 bg-gray-700/50 rounded-lg space-y-4">
+            <h4 class="text-md font-semibold text-white">Registro de Pausa (Opcional)</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Início da Pausa</label>
+                <input type="datetime-local" [value]="formatForInput(entryForm().break_start_time)" (input)="updateEntryFormDateTime('break_start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Fim da Pausa</label>
+                <input type="datetime-local" [value]="formatForInput(entryForm().break_end_time)" (input)="updateEntryFormDateTime('break_end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              </div>
+            </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>

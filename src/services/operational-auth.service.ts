@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
-import { Employee } from '../models/db.models';
+import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { toObservable } from '@angular/core/rxjs/interop';
 import { filter, take } from 'rxjs';
 import { supabase } from './supabase-client';
 import { SupabaseStateService } from './supabase-state.service';
@@ -22,6 +22,8 @@ const DEFAULT_ROUTES: Record<string, string> = {
   'Cozinha': '/kds',
 };
 
+type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'end_shift'; disabled: boolean; className: string; };
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,12 +31,66 @@ export class OperationalAuthService {
   private router = inject(Router);
   private stateService = inject(SupabaseStateService);
   activeEmployee = signal<Employee | null>(null);
+  activeShift = signal<TimeClockEntry | null>(null);
 
   constructor() {
     const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
     if (storedEmployee) {
-      this.activeEmployee.set(JSON.parse(storedEmployee));
+      const employee = JSON.parse(storedEmployee);
+      this.activeEmployee.set(employee);
+      this.loadActiveShift(employee);
     }
+  }
+
+  private async loadActiveShift(employee: Employee | null) {
+      if (employee && employee.current_clock_in_id) {
+          const { data, error } = await supabase
+              .from('time_clock_entries')
+              .select('*')
+              .eq('id', employee.current_clock_in_id)
+              .single();
+          if (!error) this.activeShift.set(data);
+          else this.activeShift.set(null);
+      } else {
+          this.activeShift.set(null);
+      }
+  }
+
+  shiftButtonState = computed<ShiftButtonState>(() => {
+    const shift = this.activeShift();
+    if (!shift) {
+        return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400 hover:text-yellow-300' };
+    }
+    if (!shift.break_start_time) {
+        return { text: 'Iniciar Pausa', action: 'start_break', disabled: false, className: 'text-blue-400 hover:text-blue-300' };
+    }
+    if (!shift.break_end_time) {
+        return { text: 'Encerrar Pausa', action: 'end_break', disabled: false, className: 'text-green-400 hover:text-green-300' };
+    }
+    return { text: 'Encerrar Turno', action: 'end_shift', disabled: false, className: 'text-yellow-400 hover:text-yellow-300' };
+  });
+
+  async handleShiftAction() {
+      const shift = this.activeShift();
+      const employee = this.activeEmployee();
+      if (!shift || !employee) return;
+
+      const state = this.shiftButtonState().action;
+      
+      switch (state) {
+          case 'start_break':
+              await supabase.from('time_clock_entries').update({ break_start_time: new Date().toISOString() }).eq('id', shift.id);
+              break;
+          case 'end_break':
+              await supabase.from('time_clock_entries').update({ break_end_time: new Date().toISOString() }).eq('id', shift.id);
+              break;
+          case 'end_shift':
+              await this.clockOut();
+              return; // clockOut handles logout and navigation
+      }
+      
+      // Refresh shift state after action
+      await this.loadActiveShift(employee);
   }
 
   async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
@@ -103,10 +159,12 @@ export class OperationalAuthService {
   login(employee: Employee) {
     this.activeEmployee.set(employee);
     sessionStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employee));
+    this.loadActiveShift(employee);
   }
 
   logout() {
     this.activeEmployee.set(null);
+    this.activeShift.set(null);
     sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
     this.router.navigate(['/employee-selection']);
   }
