@@ -79,6 +79,20 @@ export class SchedulesComponent {
     return map;
   });
 
+  weekInputValue = computed(() => {
+    const startOfWeekStr = this.weekStartDate();
+    const date = new Date(startOfWeekStr + 'T12:00:00Z'); // Use UTC and noon to avoid timezone issues
+
+    // Thursday of the week determines the week number and year
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const year = date.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    // Calculate week number
+    const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    
+    return `${year}-W${String(weekNo).padStart(2, '0')}`;
+  });
+
   constructor() {
     effect(() => {
       const date = this.weekStartDate();
@@ -119,10 +133,15 @@ export class SchedulesComponent {
   }
   
   handleDateChange(event: Event) {
-    const newDateStr = (event.target as HTMLInputElement).value;
-    // Parse as local time to avoid timezone issues with the date picker.
-    const localDate = new Date(newDateStr + 'T00:00:00');
-    this.weekStartDate.set(this.getStartOfWeek(localDate));
+    const weekValue = (event.target as HTMLInputElement).value; // "YYYY-Www"
+    if (!weekValue) return;
+
+    const [year, week] = weekValue.split('-W').map(Number);
+    
+    // Get a date roughly in the middle of the week (e.g., the 4th day) to avoid edge cases
+    const dayInWeek = new Date(year, 0, 4 + (week - 1) * 7);
+
+    this.weekStartDate.set(this.getStartOfWeek(dayInWeek));
   }
 
   openShiftModal(day: Date, shift: Shift | null = null) {
