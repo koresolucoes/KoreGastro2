@@ -38,6 +38,8 @@ export class BottomNavComponent {
   shiftButtonState = this.operationalAuthService.shiftButtonState;
   
   isOffCanvasOpen = signal(false);
+  activeGroup = signal<NavGroup | null>(null);
+  expandedGroups = signal<Record<string, boolean>>({});
   
   allNavLinks: CombinedNavItem[] = [
     {
@@ -73,6 +75,7 @@ export class BottomNavComponent {
       name: 'RH',
       icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a3.001 3.001 0 015.658 0M9 9a3 3 0 11-6 0 3 3 0 016 0zm12 0a3 3 0 11-6 0 3 3 0 016 0zM9 9h6',
       children: [
+        { name: 'Funcionários', path: '/employees', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a3.001 3.001 0 015.658 0M9 9a3 3 0 11-6 0 3 3 0 016 0zm12 0a3 3 0 11-6 0 3 3 0 016 0zM9 9h6', roles: ['Gerente'] },
         { name: 'Escalas', path: '/schedules', icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
         { name: 'Minhas Ausências', path: '/my-leave', icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 12.75h.008v.008H12v-.008z', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
         { name: 'Gestão de Ausências', path: '/leave-management', icon: 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z', roles: ['Gerente'] },
@@ -85,17 +88,59 @@ export class BottomNavComponent {
     { name: 'Configurações', path: '/settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', roles: ['Gerente'] }
   ];
 
-  // Flatten the grouped structure for the simple, scrollable bottom nav
-  allNavItems = computed(() => {
-    return this.allNavLinks.flatMap(item => 'children' in item ? item.children : item);
-  });
-
-  availableNavItems = computed(() => {
+  navItems = computed(() => {
     const employee = this.activeEmployee();
     if (!employee || !employee.role) return [];
-    if (employee.role === 'Gerente') return this.allNavItems();
-    return this.allNavItems().filter(item => item.roles.includes(employee.role!));
+    
+    const employeeRole = employee.role;
+
+    const filterLink = (link: NavLink): boolean => {
+      return employeeRole === 'Gerente' || link.roles.includes(employeeRole);
+    };
+
+    const result: CombinedNavItem[] = [];
+
+    for (const item of this.allNavLinks) {
+      if (this.isNavGroup(item)) {
+        const visibleChildren = item.children.filter(filterLink);
+        if (visibleChildren.length > 0) {
+          result.push({ ...item, children: visibleChildren });
+        }
+      } else { // It's a NavLink
+        if (filterLink(item as NavLink)) {
+          result.push(item);
+        }
+      }
+    }
+    return result;
   });
+
+  isNavGroup(item: CombinedNavItem): item is NavGroup {
+    return 'children' in item;
+  }
+
+  toggleGroup(group: NavGroup) {
+    if (this.activeGroup()?.name === group.name) {
+      this.activeGroup.set(null); // Close if already open
+    } else {
+      this.activeGroup.set(group);
+    }
+  }
+
+  handleLinkClick() {
+    this.activeGroup.set(null); // Close any open group when navigating
+  }
+  
+  toggleGroupOffCanvas(groupName: string) {
+    this.expandedGroups.update(groups => ({
+      ...groups,
+      [groupName]: !groups[groupName]
+    }));
+  }
+
+  handleOffCanvasLinkClick() {
+    this.isOffCanvasOpen.set(false);
+  }
 
   toggleOffCanvas() {
     this.isOffCanvasOpen.update(value => !value);
