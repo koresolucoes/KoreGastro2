@@ -25,7 +25,15 @@ export class MiseEnPlaceComponent {
   // Data Signals
   subRecipes = computed(() => this.stateService.recipes().filter(r => r.is_sub_recipe));
   stations = this.stateService.stations;
-  employees = computed(() => this.stateService.employees().filter(e => ['Gerente', 'Cozinha', 'Garçom', 'Caixa'].includes(e.role)));
+  // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
+  employees = computed(() => {
+    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);
+    return this.stateService.employees().filter(e => {
+        const roleName = e.role_id ? rolesMap.get(e.role_id) : undefined;
+        return roleName ? allowedRoles.has(roleName) : false;
+    });
+  });
   activeEmployee = this.operationalAuthService.activeEmployee;
 
   // View State

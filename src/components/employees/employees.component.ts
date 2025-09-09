@@ -19,14 +19,23 @@ export class EmployeesComponent {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
 
-  employees = this.stateService.employees;
+  employees = computed(() => {
+    // FIX: The 'roles' signal is now available on the state service.
+    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    return this.stateService.employees().map(e => ({
+      ...e,
+      role: e.role_id ? rolesMap.get(e.role_id) || 'Cargo Excluído' : 'Sem Cargo'
+    }));
+  });
+
+  // FIX: The 'roles' signal is now available on the state service.
+  roles = this.stateService.roles;
   employeeSearchTerm = signal('');
 
   isModalOpen = signal(false);
   editingEmployee = signal<Partial<Employee> | null>(null);
   employeeForm = signal<Partial<Employee>>({});
   employeePendingDeletion = signal<Employee | null>(null);
-  availableEmployeeRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
   
   // State for details modal
   isDetailsModalOpen = signal(false);
@@ -35,7 +44,8 @@ export class EmployeesComponent {
   filteredEmployees = computed(() => {
     const term = this.employeeSearchTerm().toLowerCase();
     if (!term) return this.employees();
-    return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role?.toLowerCase().includes(term));
+    // FIX: Removed 'any' cast and now filter by the strongly-typed 'role' property.
+    return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term));
   });
   
   openDetailsModal(employee: Employee) {
@@ -44,7 +54,7 @@ export class EmployeesComponent {
   }
 
   openAddModal() {
-    this.employeeForm.set({ role: 'Garçom', pin: '', bank_details: {} });
+    this.employeeForm.set({ role_id: this.roles()[0]?.id || null, pin: '', bank_details: {} });
     this.editingEmployee.set(null);
     this.isModalOpen.set(true);
   }
@@ -60,7 +70,7 @@ export class EmployeesComponent {
     this.isModalOpen.set(false);
   }
 
-  updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at' | 'bank_details'>, value: string) {
+  updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at' | 'bank_details' | 'roles'>, value: string) {
     this.employeeForm.update(form => {
       const newForm = { ...form };
       if (field === 'pin' && value.length > 4) return form;
@@ -69,7 +79,7 @@ export class EmployeesComponent {
         const numValue = parseFloat(value);
         (newForm as any)[field] = isNaN(numValue) ? null : numValue;
       } else {
-        (newForm as any)[field] = value === '' ? null : value;
+        (newForm as any)[field] = value === '' || value === 'null' ? null : value;
       }
       return newForm;
     });
@@ -89,6 +99,10 @@ export class EmployeesComponent {
     const form = this.employeeForm();
     if (!form.name?.trim()) {
       await this.notificationService.alert('O nome do funcionário é obrigatório.');
+      return;
+    }
+     if (!form.role_id) {
+      await this.notificationService.alert('O cargo é obrigatório.');
       return;
     }
     if (form.pin && form.pin.length !== 4) {
@@ -125,5 +139,23 @@ export class EmployeesComponent {
       await this.notificationService.alert(`Falha ao deletar funcionário: ${error?.message}`);
     }
     this.employeePendingDeletion.set(null);
+  }
+  
+  async createNewRole() {
+    const { confirmed, value: roleName } = await this.notificationService.prompt(
+      'Qual o nome do novo cargo?',
+      'Criar Novo Cargo',
+      { placeholder: 'Ex: Garçom Chefe' }
+    );
+
+    if (confirmed && roleName) {
+      const { success, error, data: newRole } = await this.settingsDataService.addRole(roleName);
+      if (success && newRole) {
+        this.notificationService.show('Cargo criado! Acesse as Configurações para definir as permissões.', 'success');
+        this.updateEmployeeFormField('role_id', newRole.id);
+      } else {
+        this.notificationService.show(`Erro ao criar cargo: ${error?.message}`, 'error');
+      }
+    }
   }
 }

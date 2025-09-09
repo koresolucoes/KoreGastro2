@@ -14,11 +14,24 @@ export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 
 // --- Main Entities ---
 
+export interface Role {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface RolePermission {
+  role_id: string;
+  permission_key: string; // e.g., '/pos', '/inventory'
+  user_id: string;
+}
+
 export interface Employee {
   id: string;
   name: string;
   pin: string;
-  role: 'Gerente' | 'Caixa' | 'Garçom' | 'Cozinha' | string;
+  role_id: string | null;
   created_at: string;
   user_id: string;
   current_clock_in_id: string | null;
@@ -35,6 +48,7 @@ export interface Employee {
   hire_date?: string | null;
   termination_date?: string | null;
   bank_details?: { bank?: string; agency?: string; account?: string; pix?: string } | null;
+  roles?: { id: string, name: string }; // Relation
 }
 
 export interface Station {

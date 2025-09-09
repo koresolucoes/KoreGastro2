@@ -22,7 +22,13 @@ export class EmployeeSelectionComponent {
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
-  employees = this.stateService.employees;
+  employees = computed(() => {
+    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    return this.stateService.employees().map(e => ({
+      ...e,
+      role: e.role_id ? rolesMap.get(e.role_id) || 'Sem Cargo' : 'Sem Cargo'
+    }));
+  });
   
   // States for different stages
   selectedEmployee = signal<Employee | null>(null); // For PIN entry
@@ -132,10 +138,31 @@ export class EmployeeSelectionComponent {
     }
 
     this.isCreatingManager.set(true);
+    
+    // FIX: 'role' is not a valid property. Must use 'role_id' and find/create the 'Gerente' role.
+    let gerenteRole = this.stateService.roles().find(r => r.name === 'Gerente');
+    if (!gerenteRole) {
+        const { data: newRole, error: roleError } = await this.settingsDataService.addRole('Gerente');
+        if (roleError || !newRole) {
+            this.notificationService.show(`Erro ao criar cargo de Gerente: ${roleError?.message}`, 'error');
+            this.isCreatingManager.set(false);
+            return;
+        }
+        // FIX: Manually update the state service to prevent race condition
+        this.stateService.roles.update(roles => [...roles, newRole]);
+        gerenteRole = newRole;
+
+        // Seed all permissions for the new manager role to ensure they are a super-admin
+        const { success: permSuccess, error: permError } = await this.settingsDataService.grantAllPermissionsToRole(gerenteRole.id);
+        if (!permSuccess) {
+            this.notificationService.show(`Aviso: Falha ao definir permissões para o Gerente: ${permError?.message}`, 'warning');
+        }
+    }
+    
     const { success, error } = await this.settingsDataService.addEmployee({
       name,
       pin,
-      role: 'Gerente',
+      role_id: gerenteRole.id,
     });
 
     if (success) {

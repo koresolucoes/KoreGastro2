@@ -191,10 +191,14 @@ export class SchedulesComponent {
       const endTime = new Date(day);
       endTime.setHours(17, 0, 0, 0);
       const employee = this.allEmployees().find(e => e.id === employeeId);
+      
+      // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
+      const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+      const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
 
       this.shiftForm.set({
         employee_id: employeeId,
-        role_assigned: employee?.role,
+        role_assigned: employeeRoleName,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString()
       });

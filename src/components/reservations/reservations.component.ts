@@ -27,6 +27,7 @@ export class ReservationsComponent {
   reservationForModal = signal<Partial<Reservation> | null>(null);
 
   canAddReservation = computed(() => {
+    // FIX: Property 'role' is now available on the augmented activeEmployee signal.
     const role = this.operationalAuthService.activeEmployee()?.role;
     return role === 'Gerente' || role === 'Garçom';
   });

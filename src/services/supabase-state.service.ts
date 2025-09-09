@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -24,6 +24,9 @@ export class SupabaseStateService {
   recipes = signal<Recipe[]>([]);
   orders = signal<Order[]>([]);
   employees = signal<Employee[]>([]);
+  // FIX: Add signals for roles and permissions to be available application-wide.
+  roles = signal<Role[]>([]);
+  rolePermissions = signal<RolePermission[]>([]);
   
   ingredients = signal<Ingredient[]>([]);
   ingredientCategories = signal<IngredientCategory[]>([]);
@@ -257,6 +260,13 @@ export class SupabaseStateService {
         case 'company_profile':
             this.refetchSingleRow('company_profile', '*', this.companyProfile);
             break;
+        // FIX: Add cases for roles and permissions to handle real-time updates.
+        case 'roles':
+            this.refetchSimpleTable('roles', '*', this.roles);
+            break;
+        case 'role_permissions':
+            this.refetchSimpleTable('role_permissions', '*', this.rolePermissions);
+            break;
         case 'time_clock_entries':
             // Refetch employees to update their clock-in status bubble
             this.refetchSimpleTable('employees', '*', this.employees);
@@ -315,6 +325,9 @@ export class SupabaseStateService {
     this.schedules.set([]);
     this.leaveRequests.set([]);
     this.companyProfile.set(null);
+    // FIX: Clear roles and permissions data on logout.
+    this.roles.set([]);
+    this.rolePermissions.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -330,6 +343,7 @@ export class SupabaseStateService {
 
   private async refreshData(userId: string) {
     await this.fetchRecipes(userId);
+    // FIX: Add roles and role_permissions to the initial data fetch.
     const results = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -352,6 +366,8 @@ export class SupabaseStateService {
       supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }),
       supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }),
       supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+      supabase.from('role_permissions').select('*').eq('user_id', userId),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -367,6 +383,8 @@ export class SupabaseStateService {
     this.schedules.set(results[18].data as Schedule[] || []);
     this.leaveRequests.set(results[19].data as LeaveRequest[] || []);
     this.companyProfile.set(results[20].data || null);
+    this.roles.set(results[21].data || []);
+    this.rolePermissions.set(results[22].data || []);
     await this.refreshDashboardAndCashierData();
   }
   

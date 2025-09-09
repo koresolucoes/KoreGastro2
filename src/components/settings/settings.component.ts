@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile } from '../../models/db.models';
+import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
@@ -8,6 +8,7 @@ import { RecipeDataService } from '../../services/recipe-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
+import { ALL_PERMISSION_KEYS } from '../../config/permissions';
 
 @Component({
   selector: 'app-settings',
@@ -32,6 +33,8 @@ export class SettingsComponent {
   suppliers = this.stateService.suppliers;
   reservationSettings = this.stateService.reservationSettings;
   companyProfile = this.stateService.companyProfile;
+  roles = this.stateService.roles;
+  rolePermissions = this.stateService.rolePermissions;
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
@@ -44,6 +47,63 @@ export class SettingsComponent {
   categorySearchTerm = signal('');
   recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
+
+  // Role Management State
+  allPermissions = ALL_PERMISSION_KEYS;
+  
+  permissionGroups = [
+    {
+      name: 'Vendas',
+      permissions: [
+        { key: '/pos', label: 'PDV' },
+        { key: '/cashier', label: 'Caixa' },
+        { key: '/reservations', label: 'Reservas' }
+      ]
+    },
+    {
+      name: 'Produção',
+      permissions: [
+        { key: '/kds', label: 'Cozinha (KDS)' },
+        { key: '/mise-en-place', label: 'Mise en Place' },
+        { key: '/technical-sheets', label: 'Fichas Técnicas' }
+      ]
+    },
+    {
+      name: 'Gestão',
+      permissions: [
+        { key: '/dashboard', label: 'Dashboard' },
+        { key: '/inventory', label: 'Estoque' },
+        { key: '/purchasing', label: 'Compras' },
+        { key: '/performance', label: 'Desempenho' },
+        { key: '/reports', label: 'Relatórios' }
+      ]
+    },
+    {
+      name: 'RH',
+      permissions: [
+        { key: '/employees', label: 'Funcionários' },
+        { key: '/schedules', label: 'Escalas' },
+        { key: '/my-leave', label: 'Minhas Ausências' },
+        { key: '/leave-management', label: 'Gestão de Ausências' },
+        { key: '/time-clock', label: 'Controle de Ponto' },
+        { key: '/payroll', label: 'Folha de Pagamento' }
+      ]
+    },
+    {
+      name: 'Outros',
+      permissions: [
+        { key: '/menu', label: 'Cardápio Online' },
+        { key: '/tutorials', label: 'Tutoriais' },
+        { key: '/settings', label: 'Configurações' }
+      ]
+    }
+  ];
+
+  isPermissionsModalOpen = signal(false);
+  editingRole = signal<Role | null>(null);
+  rolePermissionsForm = signal<Record<string, boolean>>({});
+  newRoleName = signal('');
+  rolePendingDeletion = signal<Role | null>(null);
 
   qrCodeUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
@@ -285,5 +345,81 @@ export class SettingsComponent {
     } catch (err) {
       await this.notificationService.alert('Falha ao copiar o link.');
     }
+  }
+
+  // --- Role Methods ---
+  openPermissionsModal(role: Role) {
+    this.editingRole.set(role);
+    const currentPermissions = new Set(
+      this.rolePermissions()
+        .filter(p => p.role_id === role.id)
+        .map(p => p.permission_key)
+    );
+    const formState: Record<string, boolean> = {};
+    for (const key of this.allPermissions) {
+      formState[key] = currentPermissions.has(key);
+    }
+    this.rolePermissionsForm.set(formState);
+    this.isPermissionsModalOpen.set(true);
+  }
+
+  closePermissionsModal() {
+    this.isPermissionsModalOpen.set(false);
+    this.editingRole.set(null);
+  }
+
+  updatePermission(key: string, isChecked: boolean) {
+    this.rolePermissionsForm.update(form => ({
+      ...form,
+      [key]: isChecked
+    }));
+  }
+
+  async savePermissions() {
+    const role = this.editingRole();
+    if (!role) return;
+
+    const selectedPermissions = Object.entries(this.rolePermissionsForm())
+      .filter(([, isSelected]) => isSelected)
+      .map(([key]) => key);
+
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, selectedPermissions);
+
+    if (success) {
+      this.notificationService.show('Permissões atualizadas com sucesso!', 'success');
+      this.closePermissionsModal();
+    } else {
+      await this.notificationService.alert(`Erro ao salvar permissões: ${error?.message}`);
+    }
+  }
+
+  async handleAddRole() {
+    const name = this.newRoleName().trim();
+    if (!name) return;
+    const { success, error } = await this.settingsDataService.addRole(name);
+    if (success) {
+      this.newRoleName.set('');
+      this.notificationService.show(`Cargo "${name}" criado com sucesso.`, 'success');
+    } else {
+      await this.notificationService.alert(`Falha ao criar cargo: ${error?.message}`);
+    }
+  }
+
+  requestDeleteRole(role: Role) {
+    this.rolePendingDeletion.set(role);
+  }
+
+  cancelDeleteRole() {
+    this.rolePendingDeletion.set(null);
+  }
+
+  async confirmDeleteRole() {
+    const role = this.rolePendingDeletion();
+    if (!role) return;
+    const { success, error } = await this.settingsDataService.deleteRole(role.id);
+    if (!success) {
+      await this.notificationService.alert(`Falha ao deletar: ${error?.message}`);
+    }
+    this.rolePendingDeletion.set(null);
   }
 }

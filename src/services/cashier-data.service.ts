@@ -200,7 +200,9 @@ export class CashierDataService {
         return { success: false, error: itemsError };
     }
 
-    const cashierEmployeeId = this.stateService.employees().find(e => e.role === 'Caixa')?.id ?? null;
+    // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
+    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
     const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
       description: `Receita Pedido #${order.id.slice(0, 8)} (${p.method})`,
@@ -232,7 +234,9 @@ export class CashierDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const cashierEmployeeId = this.stateService.employees().find(e => e.role === 'Caixa')?.id ?? null;
+    // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
+    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
     const { error } = await supabase.from('transactions').insert({
         description,

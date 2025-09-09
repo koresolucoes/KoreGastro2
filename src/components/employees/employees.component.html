@@ -129,7 +129,18 @@
         <section>
             <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-4">Dados Contratuais</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div><label class="block text-sm text-gray-300 mb-1">Cargo</label><select [value]="employeeForm().role || ''" (change)="updateEmployeeFormField('role', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">@for(r of availableEmployeeRoles; track r){<option [value]="r">{{r}}</option>}</select></div>
+              <div>
+                <label class="block text-sm text-gray-300 mb-1">Cargo *</label>
+                <div class="flex items-center gap-2">
+                    <select [value]="employeeForm().role_id" (change)="updateEmployeeFormField('role_id', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+                        <option [value]="null">Selecione...</option>
+                        @for(r of roles(); track r.id){
+                            <option [value]="r.id">{{r.name}}</option>
+                        }
+                    </select>
+                    <button type="button" (click)="createNewRole()" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg shrink-0" title="Adicionar novo cargo">+</button>
+                </div>
+              </div>
               <div><label class="block text-sm text-gray-300 mb-1">PIN (4 dígitos)</label><input type="password" [value]="employeeForm().pin || ''" (input)="updateEmployeeFormField('pin', $any($event.target).value)" maxlength="4" class="w-full bg-gray-700 rounded p-2 text-white text-center tracking-widest"></div>
               <div><label class="block text-sm text-gray-300 mb-1">Data de Contratação</label><input type="date" [value]="employeeForm().hire_date || ''" (input)="updateEmployeeFormField('hire_date', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
               <div><label class="block text-sm text-gray-300 mb-1">Data de Demissão</label><input type="date" [value]="employeeForm().termination_date || ''" (input)="updateEmployeeFormField('termination_date', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>

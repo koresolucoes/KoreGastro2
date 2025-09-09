@@ -1,0 +1,22 @@
+export const ALL_PERMISSION_KEYS = [
+  '/dashboard',
+  '/pos',
+  '/kds',
+  '/cashier',
+  '/inventory',
+  '/purchasing',
+  '/menu',
+  '/technical-sheets',
+  '/mise-en-place',
+  '/performance',
+  '/reports',
+  '/employees',
+  '/schedules',
+  '/my-leave',
+  '/payroll',
+  '/settings',
+  '/reservations',
+  '/time-clock',
+  '/leave-management',
+  '/tutorials'
+];

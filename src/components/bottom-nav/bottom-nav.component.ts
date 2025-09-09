@@ -90,8 +90,10 @@ export class BottomNavComponent {
 
   navItems = computed(() => {
     const employee = this.activeEmployee();
+    // FIX: Property 'role' does not exist on type 'Employee'. Access the augmented 'role' property.
     if (!employee || !employee.role) return [];
     
+    // FIX: Property 'role' does not exist on type 'Employee'. Access the augmented 'role' property.
     const employeeRole = employee.role;
 
     const filterLink = (link: NavLink): boolean => {

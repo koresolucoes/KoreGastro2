@@ -8,19 +8,12 @@ import { SupabaseStateService } from './supabase-state.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
-const PERMISSIONS: Record<string, string[]> = {
-  'Gerente': ['/dashboard', '/pos', '/kds', '/cashier', '/menu', '/inventory', '/technical-sheets', '/performance', '/reports', '/settings', '/reservations', '/time-clock', '/tutorials', '/purchasing', '/mise-en-place', '/leave-management', '/my-leave', '/schedules'],
-  'Caixa': ['/pos', '/cashier', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules', '/my-leave'],
-  'Garçom': ['/pos', '/menu', '/mise-en-place', '/reservations', '/tutorials', '/schedules', '/my-leave'],
-  'Cozinha': ['/kds', '/mise-en-place', '/tutorials', '/schedules', '/my-leave'],
-};
-
-const DEFAULT_ROUTES: Record<string, string> = {
-  'Gerente': '/dashboard',
-  'Caixa': '/cashier',
-  'Garçom': '/pos',
-  'Cozinha': '/kds',
-};
+const ORDERED_ROUTES = [
+    '/dashboard', '/pos', '/kds', '/cashier', '/inventory', '/purchasing', 
+    '/mise-en-place', '/technical-sheets', '/performance', '/reports', 
+    '/employees', '/schedules', '/my-leave', '/leave-management', 
+    '/payroll', '/reservations', '/time-clock', '/menu', '/tutorials', '/settings'
+];
 
 type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'end_shift'; disabled: boolean; className: string; };
 
@@ -30,7 +23,8 @@ type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'e
 export class OperationalAuthService {
   private router = inject(Router);
   private stateService = inject(SupabaseStateService);
-  activeEmployee = signal<Employee | null>(null);
+  // FIX: Augment the Employee type to include the role name string for easier access in components.
+  activeEmployee = signal<(Employee & { role?: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
 
   constructor() {
@@ -42,7 +36,7 @@ export class OperationalAuthService {
     }
   }
 
-  private async loadActiveShift(employee: Employee | null) {
+  private async loadActiveShift(employee: (Employee & { role?: string }) | null) {
       if (employee && employee.current_clock_in_id) {
           const { data, error } = await supabase
               .from('time_clock_entries')
@@ -157,9 +151,17 @@ export class OperationalAuthService {
   }
 
   login(employee: Employee) {
-    this.activeEmployee.set(employee);
-    sessionStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employee));
-    this.loadActiveShift(employee);
+    // FIX: Augment the employee object with the role name for easy access throughout the app.
+    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    const roleName = employee.role_id ? rolesMap.get(employee.role_id) : undefined;
+    const employeeWithRole = {
+      ...employee,
+      role: roleName,
+    };
+
+    this.activeEmployee.set(employeeWithRole);
+    sessionStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employeeWithRole));
+    this.loadActiveShift(employeeWithRole);
   }
 
   logout() {
@@ -171,25 +173,46 @@ export class OperationalAuthService {
 
   hasPermission(url: string): boolean {
     const employee = this.activeEmployee();
-    if (!employee || !employee.role) {
-      return false; // Default to no access if role is not defined
-    }
+    // FIX: Check for the augmented 'role' property instead of 'role_id'.
+    if (!employee || !employee.role) return false;
     
-    // Manager has access to everything
-    if (employee.role === 'Gerente') {
-      return true;
-    }
+    // Gerente is a super-admin and always has access to everything.
+    if (employee.role === 'Gerente') return true;
 
-    const allowedRoutes = PERMISSIONS[employee.role] || [];
-    // Check if the URL starts with any of the allowed paths.
-    return allowedRoutes.some(allowedPath => url.startsWith(allowedPath));
+    // FIX: Find the role object by name to get its ID for permission checking.
+    const role = this.stateService.roles().find(r => r.name === employee.role);
+    if (!role) return false;
+
+    const permissions = this.stateService.rolePermissions()
+      .filter(p => p.role_id === role.id)
+      .map(p => p.permission_key);
+
+    return permissions.some(allowedPath => url.startsWith(allowedPath));
   }
 
   getDefaultRoute(): string {
     const employee = this.activeEmployee();
-    if (!employee || !employee.role) {
-      return '/employee-selection';
+    // FIX: Check for the augmented 'role' property instead of 'role_id'.
+    if (!employee || !employee.role) return '/employee-selection';
+    
+    if (employee.role === 'Gerente') return '/dashboard';
+
+    // FIX: Find the role object by name to get its ID for permission checking.
+    const role = this.stateService.roles().find(r => r.name === employee.role);
+    if (!role) return '/employee-selection';
+
+    const permissions = this.stateService.rolePermissions()
+      .filter(p => p.role_id === role.id)
+      .map(p => p.permission_key);
+      
+    // Find the first available route for the user based on a predefined importance order
+    for (const route of ORDERED_ROUTES) {
+        if (permissions.includes(route)) {
+            return route;
+        }
     }
-    return DEFAULT_ROUTES[employee.role] || '/pos';
+
+    // Fallback if no permissions are set
+    return '/employee-selection';
   }
 }
