@@ -1,8 +1,16 @@
 # ChefOS - Sistema de Gestão de Restaurantes
 
-**ChefOS** é um sistema de gestão para restaurantes completo, moderno e integrado. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque e análise de desempenho, tudo sincronizado em tempo real.
+**ChefOS** é um sistema de gestão para restaurantes completo, moderno e integrado. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque, gestão de RH, reservas e análise de desempenho, tudo sincronizado em tempo real.
 
 O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando inteligência artificial para auxiliar em tarefas complexas como a criação de fichas técnicas e a previsão de compras.
+
+---
+
+## 🚀 Acesso à Versão de Testes
+
+**O ChefOS está atualmente em uma fase exclusiva de testes.** Para explorar a plataforma e todas as suas funcionalidades, é necessário solicitar credenciais de acesso.
+
+**Entre em contato para receber seu login de avaliação e testar o sistema.**
 
 ---
 
@@ -10,10 +18,10 @@ O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando i
 
 O ChefOS é modular e cobre todas as áreas críticas da gestão de um restaurante:
 
-### 📊 **Dashboard**
+### 📊 **Dashboard Analítico**
 - **Visão Geral em Tempo Real:** Acompanhe os principais indicadores de desempenho (KPIs) assim que você entra no sistema.
-- **Métricas Chave:** Vendas totais do dia, número de mesas ocupadas, itens com estoque baixo e pedidos pendentes na cozinha.
-- **Análises Rápidas:** Gráficos com os itens mais vendidos e as transações mais recentes.
+- **Métricas Financeiras Chave:** Vendas totais, **Lucro Bruto**, **Ticket Médio**, mesas ocupadas, itens com estoque baixo e pedidos pendentes na cozinha.
+- **Análises Rápidas:** Gráficos com os itens mais vendidos, incluindo **margem de lucro** por item, e as transações mais recentes.
 
 ### 🍽️ **PDV (Ponto de Venda)**
 - **Gerenciamento Visual de Mesas:** Crie múltiplos salões e organize as mesas com uma interface de arrastar e soltar (drag-and-drop).
@@ -33,25 +41,42 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado com resumo para impressão.
 - **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes.
 
-### 📈 **Estoque e Compras**
+### 📦 **Estoque e Compras**
 - **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades e fornecedores.
-- **Ajustes de Estoque:** Dê entrada e saída de produtos com justificativas para um controle preciso.
 - **Alertas Automatizados:** O sistema sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
 - **Previsão com IA (Gemini):** Utilize o histórico de vendas para prever a necessidade de compra de insumos para a próxima semana.
-- **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A funcionalidade de IA pode gerar uma ordem de compra sugerida automaticamente.
+- **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A IA pode gerar uma ordem de compra sugerida automaticamente.
 
 ### 📋 **Fichas Técnicas**
 - **Custeio de Pratos (CMV):** Associe ingredientes e sub-receitas aos seus pratos para calcular o custo exato de cada um.
 - **Baixa Automática de Estoque:** Ao vender um prato, o sistema deduz automaticamente os ingredientes do estoque com base na ficha técnica.
 - **Criação com IA (Gemini):** Descreva um prato e deixe a inteligência artificial gerar uma ficha técnica completa, sugerindo ingredientes e quantidades.
 
+### 🔪 **Mise en Place**
+- **Planejamento de Produção:** Crie quadros de tarefas diários para a preparação de sub-receitas e outros itens.
+- **Atribuição e Acompanhamento:** Atribua tarefas para funcionários e estações específicas e acompanhe o progresso em tempo real (A Fazer, Em Preparo, Concluído).
+- **Integração com Estoque:** Ao concluir uma tarefa de produção de sub-receita, o sistema dá baixa nos insumos e adiciona o item produzido ao estoque.
+
+### 📅 **Reservas**
+- **Gestão Interna:** Cadastre e gerencie reservas diretamente no sistema, com visão por dia e status (Pendente, Confirmada, Cancelada).
+- **Página Pública de Reservas:** Ative uma página pública onde seus clientes podem fazer reservas online, respeitando seus horários e capacidade.
+
+### 👥 **Gestão de RH**
+- **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais para toda a equipe.
+- **Controle de Ponto:** Gerencie manualmente os registros de entrada, saída e pausas dos funcionários.
+- **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
+
 ### 🚀 **Performance e Relatórios**
-- **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário.
-- **Relatórios Customizáveis:** Gere relatórios de vendas e de itens mais vendidos por período para tomar decisões estratégicas.
+- **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
+- **Análise de Desempenho por Prato:** Descubra quais são seus pratos mais lucrativos com relatórios que incluem receita, custo, lucro total e margem de lucro por item.
+- **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha.
 
 ### ⚙️ **Configurações e Cardápio Online**
-- **Gestão Centralizada:** Cadastre funcionários (com PINs de acesso), estações de produção, categorias, fornecedores e mais.
+- **Gestão Centralizada:** Cadastre funcionários (com PINs), estações de produção, categorias, fornecedores e mais.
 - **QR Code para Cardápio:** O sistema gera automaticamente um QR Code para um cardápio online público, que os clientes podem acessar de seus celulares.
+
+### 🎓 **Tutoriais**
+- **Central de Ajuda Integrada:** Guias passo a passo com imagens que ensinam a usar todas as funcionalidades do sistema, desde a configuração inicial até as operações mais avançadas.
 
 ---
 
@@ -121,7 +146,22 @@ Para executar este projeto, você precisa de credenciais para o Supabase e para 
 |   |-- /dashboard/          # Tela do Dashboard
 |   |-- /inventory/          # Tela de Estoque
 |   |-- /kds/                # Tela do KDS
-|   |-- ... e outros
+|   |-- /leave-management/   # Gestão de ausências (Gerente)
+|   |-- /menu/               # Cardápio online (interno)
+|   |-- /mise-en-place/      # Planejamento de produção
+|   |-- /my-leave/           # Solicitação de ausência (Funcionário)
+|   |-- /performance/        # Análise de desempenho
+|   |-- /pos/                # Ponto de Venda
+|   |-- /public-booking/     # Página pública de reservas
+|   |-- /purchasing/         # Gestão de compras
+|   |-- /reports/            # Geração de relatórios
+|   |-- /reservations/       # Gestão interna de reservas
+|   |-- /schedules/          # Gestão de escalas
+|   |-- /settings/           # Configurações gerais
+|   |-- /technical-sheets/   # Fichas técnicas
+|   |-- /time-clock/         # Controle de ponto
+|   |-- /tutorials/          # Central de ajuda
+|   |-- /shared/             # Componentes compartilhados (modais, etc.)
 |-- /config/                 # Arquivos de configuração (environment)
 |-- /guards/                 # Guards de autenticação e permissão
 |-- /models/                 # Interfaces e tipos (TypeScript)
