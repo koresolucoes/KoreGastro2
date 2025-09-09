@@ -247,13 +247,14 @@ export class OrderPanelComponent {
   openDiscountModal(item: DisplayOrderItem) {
     this.editingDiscountItem.set(item);
     let firstItem: OrderItem;
-    // FIX: The compiler was not correctly narrowing the type in the `else` block.
-    // Checking for the negative case first ensures correct type inference.
-    if (!item.isGroup) {
-      firstItem = item.item;
-    } else {
+    
+    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
+    if ('items' in item) { // This is a GroupedOrderItem
       firstItem = item.items[0];
+    } else { // This is a SingleOrderItem
+      firstItem = item.item;
     }
+    
     this.discountType.set(firstItem.discount_type || 'percentage');
     this.discountValue.set(firstItem.discount_value || null);
     this.isDiscountModalOpen.set(true);
@@ -268,12 +269,12 @@ export class OrderPanelComponent {
     if (!item) return;
 
     let itemIds: string[];
-    // FIX: The compiler was not correctly narrowing the type in the `else` block.
-    // Checking for the negative case first ensures correct type inference.
-    if (!item.isGroup) {
-      itemIds = [item.item.id];
-    } else {
+
+    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
+    if ('items' in item) { // This is a GroupedOrderItem
       itemIds = item.items.map(i => i.id);
+    } else { // This is a SingleOrderItem
+      itemIds = [item.item.id];
     }
     
     const { success, error } = await this.posDataService.applyDiscountToOrderItems(
@@ -294,12 +295,12 @@ export class OrderPanelComponent {
     if (!item) return;
 
     let itemIds: string[];
-    // FIX: The compiler was not correctly narrowing the type in the `else` block.
-    // Checking for the negative case first ensures correct type inference.
-    if (!item.isGroup) {
-      itemIds = [item.item.id];
-    } else {
+
+    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
+    if ('items' in item) { // This is a GroupedOrderItem
       itemIds = item.items.map(i => i.id);
+    } else { // This is a SingleOrderItem
+      itemIds = [item.item.id];
     }
 
     const { success, error } = await this.posDataService.applyDiscountToOrderItems(itemIds, null, null);
