@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-// FIX: Use `import type` to fix module resolution for Supabase types.
-import type { User } from '@supabase/supabase-js';
+// FIX: The `User` type is not always exported directly. Using `Session['user']` is a more robust way to get the user type.
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
 
 @Injectable({
@@ -8,7 +8,7 @@ import { supabase } from './supabase-client'; // Use the shared client
 })
 export class AuthService {
   // Use a signal to hold the current user state
-  currentUser = signal<User | null>(null);
+  currentUser = signal<Session['user'] | null>(null);
 
   // This signal will be true once the initial session check is complete.
   // The authGuard will wait for this signal before proceeding.

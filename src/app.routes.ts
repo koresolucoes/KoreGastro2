@@ -20,6 +20,7 @@ import { TutorialDetailComponent } from './components/tutorials/tutorial-detail.
 import { ReservationsComponent } from './components/reservations/reservations.component';
 import { PublicBookingComponent } from './components/public-booking/public-booking.component';
 import { TimeClockComponent } from './components/time-clock/time-clock.component';
+import { SchedulesComponent } from './components/schedules/schedules.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -38,6 +39,7 @@ export const APP_ROUTES: Routes = [
   { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] } },
   { path: 'performance', component: PerformanceComponent, canActivate: [roleGuard] },
   { path: 'reports', component: ReportsComponent, canActivate: [roleGuard] },
+  { path: 'schedules', component: SchedulesComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },
   { path: 'settings', component: SettingsComponent, canActivate: [roleGuard] },
   { path: 'reservations', component: ReservationsComponent, canActivate: [roleGuard], data: { roles: ['Gerente', 'Caixa', 'Garçom'] } },
   { path: 'time-clock', component: TimeClockComponent, canActivate: [roleGuard], data: { roles: ['Gerente'] } },

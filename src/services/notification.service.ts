@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { ToastService } from './toast.service';
 
 export interface NotificationState {
   isOpen: boolean;
@@ -13,6 +14,8 @@ export interface NotificationState {
   providedIn: 'root',
 })
 export class NotificationService {
+  private toastService = inject(ToastService);
+
   notificationState = signal<NotificationState>({
     isOpen: false,
     message: '',
@@ -22,11 +25,25 @@ export class NotificationService {
     cancelText: 'Cancelar',
   });
 
-  // FIX: Updated type to correctly handle promise resolvers for boolean Promises.
-  // The original type `(value: boolean | void) => void` was not compatible with the
-  // `(value: boolean | PromiseLike<boolean>) => void` signature of a Promise<boolean> resolver.
   private resolveConfirmation!: (value: boolean | PromiseLike<boolean>) => void;
 
+  /**
+   * Shows a short, non-blocking notification message.
+   * @param message The message to display.
+   * @param type The type of toast ('success', 'error', 'info', 'warning').
+   * @param duration The duration in milliseconds.
+   */
+  show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration = 4000) {
+    this.toastService.show(message, type, duration);
+  }
+
+  /**
+   * Shows a modal dialog that requires user interaction. Use for critical information.
+   * For simple success/error messages, prefer `show()`.
+   * @param message The message to display.
+   * @param title The title of the modal.
+   * @deprecated Use `show()` for non-blocking feedback or `confirm()` for user decisions. This is for critical, blocking alerts.
+   */
   alert(message: string, title: string = 'Aviso'): Promise<void> {
     this.notificationState.set({
       isOpen: true,

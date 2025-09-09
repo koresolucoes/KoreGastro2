@@ -1,4 +1,3 @@
-
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -39,7 +38,7 @@ export class PrintingService {
 
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-      await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
       return;
     }
     
@@ -60,7 +59,7 @@ export class PrintingService {
   async printPreBill(order: Order, options: PreBillOptions) {
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-      await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
       return;
     }
     printWindow.document.title = `Pré-conta - Mesa #${order.table_number}`;
@@ -77,7 +76,7 @@ export class PrintingService {
   async printCustomerReceipt(order: Order, payments: {method: string, amount: number}[]) {
     const printWindow = window.open('', '_blank', 'width=300,height=500');
     if (!printWindow) {
-        await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
+        this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
         return;
     }
     printWindow.document.title = `Recibo - Pedido #${order.id.slice(0, 8)}`;
@@ -94,7 +93,7 @@ export class PrintingService {
   async printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) {
       const printWindow = window.open('', '_blank', 'width=300,height=500');
       if (!printWindow) {
-          await this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
+          this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
           return;
       }
       printWindow.document.title = `Fechamento de Caixa - ${this.datePipe.transform(closingData.closed_at, 'short')}`;
@@ -415,4 +414,3 @@ export class PrintingService {
     `;
   }
 }
-      

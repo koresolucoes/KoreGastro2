@@ -304,3 +304,27 @@ export interface TimeClockEntry {
   created_at: string;
   employees?: { name: string }; // Relation
 }
+
+// --- HR & Scheduling ---
+export interface Schedule {
+  id: string;
+  user_id: string;
+  week_start_date: string; // date string
+  is_published: boolean;
+  notes: string | null;
+  created_at: string;
+  shifts: Shift[]; // Relation from join
+}
+
+export interface Shift {
+  id: string;
+  user_id: string;
+  schedule_id: string;
+  employee_id: string;
+  start_time: string; // ISO string
+  end_time: string; // ISO string
+  notes: string | null;
+  role_assigned: string | null;
+  created_at: string;
+  employees?: { name: string }; // Relation from join
+}

@@ -1,0 +1,121 @@
+<div class="container mx-auto h-full flex flex-col">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Escalas de Trabalho</h1>
+      <p class="text-gray-400 mt-1">Planeje e visualize a escala semanal da sua equipe.</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <button (click)="changeWeek(-1)" class="p-2 bg-gray-700 rounded-lg hover:bg-gray-600">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <input 
+        type="date"
+        [value]="weekStartDate()"
+        (change)="handleDateChange($event)"
+        class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button (click)="changeWeek(1)" class="p-2 bg-gray-700 rounded-lg hover:bg-gray-600">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex-1 flex items-center justify-center bg-gray-800 rounded-lg">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    </div>
+  } @else {
+    <!-- Schedule Actions -->
+    <div class="mb-4 flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+        @if (activeSchedule(); as schedule) {
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 text-sm font-semibold rounded-full" [class.bg-green-600]="schedule.is_published" [class.bg-yellow-600]="!schedule.is_published" [class.text-white]="schedule.is_published" [class.text-gray-900]="!schedule.is_published">
+                    {{ schedule.is_published ? 'Publicada' : 'Rascunho' }}
+                </span>
+                @if (schedule.notes) {
+                    <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
+                }
+            </div>
+            <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
+            </button>
+        } @else {
+            <p class="text-gray-500">Nenhuma escala para esta semana ainda.</p>
+        }
+    </div>
+
+    <!-- Schedule Grid -->
+    <div class="flex-1 grid grid-cols-7 gap-2">
+      @for (day of weekDays(); track day) {
+        <div class="bg-gray-800/50 rounded-lg flex flex-col">
+          <div class="text-center py-2 border-b border-gray-700">
+            <p class="font-bold text-white">{{ day | date:'EEEE' }}</p>
+            <p class="text-sm text-gray-400">{{ day | date:'dd/MM' }}</p>
+          </div>
+          <div class="p-2 space-y-2 flex-1 overflow-y-auto">
+            @for(shift of (shiftsByDay().get(day.toISOString().split('T')[0]) || []); track shift.id) {
+                <div (click)="openShiftModal(day, shift)" class="bg-gray-700 p-2 rounded-md cursor-pointer hover:bg-gray-600 transition-colors">
+                    <p class="font-semibold text-white text-sm">{{ shift.employees?.name }}</p>
+                    <p class="text-xs text-gray-300">{{ shift.role_assigned }}</p>
+                    <p class="text-xs font-mono text-blue-300 mt-1">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
+                </div>
+            }
+            <button (click)="openShiftModal(day)" class="w-full text-center text-sm py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Add/Edit Shift Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">{{ editingShift() ? 'Editar Turno' : 'Novo Turno' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+          <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <option [value]="undefined">Selecione...</option>
+            @for (emp of employees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Início *</label>
+            <input type="datetime-local" [value]="formatForInput(shiftForm().start_time)" (input)="updateShiftFormDateTime('start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+           <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Fim *</label>
+            <input type="datetime-local" [value]="formatForInput(shiftForm().end_time)" (input)="updateShiftFormDateTime('end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+         <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Cargo no Turno</label>
+          <select [value]="shiftForm().role_assigned" (change)="updateShiftFormField('role_assigned', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+             @for(role of availableRoles; track role) { <option [value]="role">{{ role }}</option> }
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+          <textarea [value]="shiftForm().notes || ''" (input)="updateShiftFormField('notes', $any($event.target).value)" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-between items-center">
+        @if (editingShift()) {
+          <button (click)="deleteShift(editingShift()!.id)" class="px-4 py-2 font-medium rounded-lg bg-red-600/50 hover:bg-red-600 text-red-100 transition-colors">Excluir Turno</button>
+        } @else { <div></div> }
+        <div class="flex gap-3">
+          <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+          <button (click)="saveShift()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Turno</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

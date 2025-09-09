@@ -1,0 +1,9 @@
+<div class="fixed top-4 right-4 z-[200] space-y-2">
+  @for (toast of toasts(); track toast.id) {
+    <app-toast 
+      [message]="toast.message" 
+      [type]="toast.type"
+      (close)="toastService.remove(toast.id)">
+    </app-toast>
+  }
+</div>

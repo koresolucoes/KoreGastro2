@@ -1,7 +1,6 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
-// FIX: Use `import type` to fix module resolution for Supabase types.
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry } from '../models/db.models';
+// FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -14,7 +13,7 @@ export class SupabaseStateService {
   private pricingService = inject(PricingService);
   
   private currentUser = this.authService.currentUser;
-  private realtimeChannel: RealtimeChannel | null = null;
+  private realtimeChannel: any | null = null;
 
   isDataLoaded = signal(false);
 
@@ -41,6 +40,8 @@ export class SupabaseStateService {
 
   reservations = signal<Reservation[]>([]);
   reservationSettings = signal<ReservationSettings | null>(null);
+
+  schedules = signal<Schedule[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -166,7 +167,7 @@ export class SupabaseStateService {
       .on(
         'postgres_changes', 
         { event: '*', schema: 'public' }, 
-        (payload) => this.handleChanges(payload)
+        (payload: any) => this.handleChanges(payload)
       )
       .subscribe(status => {
         console.log(`Supabase realtime subscription status: ${status}`);
@@ -179,7 +180,7 @@ export class SupabaseStateService {
       });
   }
 
-  private handleChanges(payload: RealtimePostgresChangesPayload<any>) {
+  private handleChanges(payload: any) {
     console.log('Realtime change received:', payload);
     switch (payload.table) {
         case 'orders':
@@ -237,6 +238,10 @@ export class SupabaseStateService {
         case 'production_tasks':
             this.refetchSimpleTable('production_plans', '*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))', this.productionPlans);
             break;
+        case 'schedules':
+        case 'shifts':
+            this.refetchSimpleTable('schedules', '*, shifts(*, employees(name))', this.schedules);
+            break;
         case 'reservations':
             this.refetchSimpleTable('reservations', '*', this.reservations);
             break;
@@ -292,6 +297,7 @@ export class SupabaseStateService {
     this.promotionRecipes.set([]); this.completedOrders.set([]); this.transactions.set([]); this.cashierClosings.set([]);
     this.recipeSubRecipes.set([]); this.purchaseOrders.set([]); this.productionPlans.set([]);
     this.reservations.set([]); this.reservationSettings.set(null);
+    this.schedules.set([]);
     this.dashboardTransactions.set([]); this.dashboardCompletedOrders.set([]); this.performanceTransactions.set([]);
     this.performanceProductionPlans.set([]);
     this.performanceCompletedOrders.set([]);
@@ -326,6 +332,7 @@ export class SupabaseStateService {
       supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }),
       supabase.from('reservations').select('*').eq('user_id', userId).order('reservation_time', { ascending: true }),
       supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -338,6 +345,7 @@ export class SupabaseStateService {
     this.productionPlans.set(results[15].data as ProductionPlan[] || []);
     this.reservations.set(results[16].data || []);
     this.reservationSettings.set(results[17].data || null);
+    this.schedules.set(results[18].data as Schedule[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

@@ -1,6 +1,3 @@
-
-
-
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -111,7 +108,7 @@ export class EmployeeSelectionComponent {
         const defaultRoute = this.operationalAuth.getDefaultRoute();
         this.router.navigate([defaultRoute]);
     } else {
-        await this.notificationService.alert(`Erro ao iniciar turno: ${error?.message}`);
+        this.notificationService.show(`Erro ao iniciar turno: ${error?.message}`, 'error');
     }
     this.confirmationEmployee.set(null);
   }
@@ -126,11 +123,11 @@ export class EmployeeSelectionComponent {
     const pin = this.newManagerPin().trim();
 
     if (!name) {
-      await this.notificationService.alert('Por favor, insira o nome do gerente.');
+      this.notificationService.show('Por favor, insira o nome do gerente.', 'warning');
       return;
     }
     if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      await this.notificationService.alert('O PIN deve conter exatamente 4 números.');
+      this.notificationService.show('O PIN deve conter exatamente 4 números.', 'warning');
       return;
     }
 
@@ -142,9 +139,9 @@ export class EmployeeSelectionComponent {
     });
 
     if (success) {
-      await this.notificationService.alert('Usuário Gerente criado com sucesso! Agora você pode selecioná-lo para começar.');
+      this.notificationService.show('Usuário Gerente criado com sucesso! Agora você pode selecioná-lo para começar.', 'success');
     } else {
-      await this.notificationService.alert(`Erro ao criar usuário: ${error?.message}`);
+      this.notificationService.show(`Erro ao criar usuário: ${error?.message}`, 'error');
     }
     
     this.isCreatingManager.set(false);
