@@ -1,4 +1,3 @@
-
 import { Injectable, signal } from '@angular/core';
 
 export interface TutorialStep {
@@ -29,22 +28,22 @@ export class TutorialService {
         {
           title: '1. Crie Cargos e Defina Permissões',
           content: 'Antes de cadastrar funcionários, vá para `Configurações > Cargos e Permissões`. O cargo "Gerente" já vem com acesso total. Crie outros cargos como "Caixa" e "Garçom" e clique no cadeado para definir quais telas cada um poderá acessar. Isso garante que sua equipe veja apenas o necessário.',
-          imageUrl: 'https://picsum.photos/800/400?random=101'
+          imageUrl: 'https://i.imgur.com/au6yAUY.png'
         },
         {
           title: '2. Cadastre seus Funcionários',
           content: 'Agora, vá para o menu `RH > Funcionários`. Clique em "Novo Funcionário" e preencha os dados, atribuindo os cargos que você criou no passo anterior. O PIN de 4 dígitos é essencial para o login operacional de cada um.',
-          imageUrl: 'https://picsum.photos/800/400?random=102'
+          imageUrl: 'https://i.imgur.com/h9pw1An.png'
         },
         {
           title: '3. Crie as Estações de Produção',
           content: 'Em `Configurações > Estações de Produção`, adicione todas as áreas que preparam itens, como "Cozinha", "Bar" ou "Pizzaria". Isso é crucial para o KDS (tela da cozinha) funcionar corretamente.',
-          imageUrl: 'https://picsum.photos/800/400?random=103'
+          imageUrl: 'https://i.imgur.com/1IC1q7P.png'
         },
         {
           title: '4. Defina as Categorias de Pratos',
           content: 'Ainda em `Configurações`, na seção "Categorias de Pratos", crie as categorias do seu cardápio, como "Entradas", "Pratos Principais", "Bebidas", etc. Isso ajudará a organizar seu PDV e cardápio online.',
-          imageUrl: 'https://picsum.photos/800/400?random=104'
+          imageUrl: 'https://i.imgur.com/sLWip0i.png'
         }
       ]
     },
@@ -57,17 +56,17 @@ export class TutorialService {
         {
           title: '1. Cadastre um Ingrediente',
           content: 'Navegue até a página "Estoque" e clique em "Adicionar Ingrediente". Preencha as informações como nome, unidade de medida, custo e estoque mínimo. O estoque mínimo é usado para alertá-lo quando um item está acabando.',
-          imageUrl: 'https://picsum.photos/800/400?random=4'
+          imageUrl: 'https://i.imgur.com/4e00wUT.png'
         },
         {
           title: '2. Registre uma Entrada (Compra)',
           content: 'Na lista de ingredientes, encontre o item que você comprou e clique em "Ajustar". Selecione "Registrar Entrada", informe a quantidade e o motivo (ex: Compra de Fornecedor). Isso aumentará seu estoque.',
-          imageUrl: 'https://picsum.photos/800/400?random=5'
+          imageUrl: 'https://i.imgur.com/bfeP6tU.png'
         },
         {
           title: '3. Registre uma Saída (Perda)',
           content: 'Se precisar dar baixa em um item por perda ou quebra, clique em "Ajustar", selecione "Registrar Saída", e informe a quantidade e o motivo. Isso deduzirá o item do seu estoque.',
-          imageUrl: 'https://picsum.photos/800/400?random=6'
+          imageUrl: 'https://i.imgur.com/ID5t7AM.png'
         }
       ]
     },
