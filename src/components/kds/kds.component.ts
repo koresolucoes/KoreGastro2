@@ -1,8 +1,3 @@
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
@@ -188,7 +183,6 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         }
 
-        // FIX: Changed tickets array type from BaseTicket[] to StationTicket[] to correctly type the ticket objects.
         const tickets: StationTicket[] = [];
         for (const [tableNumber, tableItems] of itemsByTable.entries()) {
             if (tableItems.length === 0) continue;
@@ -324,15 +318,16 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     getStatusHistory(timestamps: any): { status: string; time: string }[] {
         if (!timestamps) return [];
-        return Object.entries(timestamps).map(([status, time]) => ({ status, time: time as string })).sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+        return Object.entries(timestamps)
+            .map(([status, time]) => ({ status, time: time as string }))
+            .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     }
 
     getItemStatusClass(status: OrderItemStatus): string {
-        switch (status) {
-            case 'PENDENTE': return 'border-yellow-500';
-            case 'EM_PREPARO': return 'border-blue-500';
-            case 'PRONTO': return 'border-green-500';
-            default: return 'border-gray-500';
-        }
+      switch (status) {
+        case 'PENDENTE': return 'border-yellow-500';
+        case 'EM_PREPARO': return 'border-blue-500';
+        default: return 'border-gray-600';
+      }
     }
 }
