@@ -275,6 +275,12 @@ export class SupabaseStateService {
     if (tableName === 'production_plans') {
       query = query.order('plan_date', { ascending: false });
     }
+    if (tableName === 'schedules') {
+      query = query.order('week_start_date', { ascending: false });
+    }
+    if (tableName === 'leave_requests') {
+      query = query.order('start_date', { ascending: false });
+    }
     const { data, error } = await query;
     if (!error) signal.set(data as T[] || []);
     else console.error(`Error refetching ${tableName}:`, error);
