@@ -1,7 +1,6 @@
-
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
@@ -52,6 +51,34 @@ export class PublicDataService {
       .eq('user_id', userId);
     if (error) {
       console.error('Error fetching public promotion recipes:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async getPublicLoyaltySettings(userId: string): Promise<LoyaltySettings | null> {
+    const { data, error } = await supabase
+      .from('loyalty_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_enabled', true)
+      .single();
+    if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
+      console.error('Error fetching public loyalty settings:', error);
+      return null;
+    }
+    return data;
+  }
+
+  async getPublicLoyaltyRewards(userId: string): Promise<LoyaltyReward[]> {
+    const { data, error } = await supabase
+      .from('loyalty_rewards')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('points_cost', { ascending: true });
+    if (error) {
+      console.error('Error fetching public loyalty rewards:', error);
       return [];
     }
     return data || [];

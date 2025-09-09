@@ -17,87 +17,155 @@
         <p class="mt-2 text-sm sm:text-base text-gray-500 max-w-2xl mx-auto px-4">Pratos feitos com os melhores ingredientes frescos, com opções para todos os gostos.</p>
       </header>
       
-      <!-- Sticky Category Nav for Mobile -->
-      @if (onlineMenu().length > 1) {
-        <nav class="md:hidden sticky top-0 bg-white/90 backdrop-blur-sm shadow-md z-20">
-          <div class="container mx-auto px-4 overflow-x-auto">
-            <ul class="flex items-center whitespace-nowrap space-x-4 h-12">
-              @for(group of onlineMenu(); track group.categoryName) {
-                <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block py-2 text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">{{ group.categoryName }}</a></li>
-              }
-            </ul>
-          </div>
-        </nav>
-      }
+      <!-- Tab Navigation -->
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-8">
+        <div class="flex justify-center border-b border-gray-200">
+          <nav class="flex space-x-4" aria-label="Tabs">
+            <button (click)="activeTab.set('menu')"
+                    class="whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-base transition-colors"
+                    [class.border-blue-600]="activeTab() === 'menu'"
+                    [class.text-gray-900]="activeTab() === 'menu'"
+                    [class.border-transparent]="activeTab() !== 'menu'"
+                    [class.text-gray-500]="activeTab() !== 'menu'"
+                    [class.hover:text-gray-700]="activeTab() !== 'menu'"
+                    [class.hover:border-gray-300]="activeTab() !== 'menu'">
+                Cardápio
+            </button>
+            @if(publicLoyaltySettings()?.is_enabled) {
+              <button (click)="activeTab.set('rewards')"
+                      class="whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-base transition-colors"
+                      [class.border-blue-600]="activeTab() === 'rewards'"
+                      [class.text-gray-900]="activeTab() === 'rewards'"
+                      [class.border-transparent]="activeTab() !== 'rewards'"
+                      [class.text-gray-500]="activeTab() !== 'rewards'"
+                      [class.hover:text-gray-700]="activeTab() !== 'rewards'"
+                      [class.hover:border-gray-300]="activeTab() !== 'rewards'">
+                  Fidelidade
+              </button>
+            }
+          </nav>
+        </div>
+      </div>
 
       <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Search bar -->
-        <div class="mb-10 max-w-2xl mx-auto">
-          <div class="relative">
-            <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar um prato..." class="w-full rounded-lg border-gray-300 shadow-sm pl-10 pr-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-          </div>
-        </div>
-
-        @if (onlineMenu().length > 0) {
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <!-- Desktop Category Nav -->
-            <aside class="hidden md:block md:col-span-4 lg:col-span-3">
-              <nav class="sticky top-8">
-                <h3 class="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-4">Categorias</h3>
-                <ul class="space-y-2">
+        @if (activeTab() === 'menu') {
+          <!-- Sticky Category Nav for Mobile -->
+          @if (onlineMenu().length > 1) {
+            <nav class="md:hidden sticky top-0 bg-white/90 backdrop-blur-sm shadow-md z-20">
+              <div class="container mx-auto px-4 overflow-x-auto">
+                <ul class="flex items-center whitespace-nowrap space-x-4 h-12">
                   @for(group of onlineMenu(); track group.categoryName) {
-                    <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block text-gray-600 hover:text-blue-600 font-medium transition-colors">{{ group.categoryName }}</a></li>
+                    <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block py-2 text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">{{ group.categoryName }}</a></li>
                   }
                 </ul>
-              </nav>
-            </aside>
-            
-            <!-- Menu Items -->
-            <div class="md:col-span-8 lg:col-span-9 space-y-12">
-              @for(group of onlineMenu(); track group.categoryName) {
-                <section [id]="createSlug(group.categoryName)" class="scroll-mt-20 md:scroll-mt-8">
-                  <h2 class="text-3xl font-bold text-gray-800 mb-6">{{ group.categoryName }}</h2>
-                  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    @for(recipe of group.recipes; track recipe.id) {
-                      <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md">
-                        <div class="flex justify-between items-start gap-4">
-                          <div class="flex-1">
-                            <h3 class="font-bold text-lg text-gray-900">{{ recipe.name }}</h3>
-                            @if(recipe.description) {
-                              <p class="text-sm text-gray-600 mt-1">{{ recipe.description }}</p>
-                            }
-                          </div>
-                          <div class="text-right flex-shrink-0 ml-2">
-                            @if (recipe.effectivePrice < recipe.price) {
-                              <p class="font-semibold text-lg text-green-600 whitespace-nowrap">{{ recipe.effectivePrice | currency:'BRL' }}</p>
-                              <p class="text-sm line-through text-gray-500">{{ recipe.price | currency:'BRL' }}</p>
-                            } @else {
-                              <p class="font-semibold text-lg text-gray-900 whitespace-nowrap">{{ recipe.price | currency:'BRL' }}</p>
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </section>
-              }
+              </div>
+            </nav>
+          }
+
+          <!-- Search bar -->
+          <div class="mb-10 max-w-2xl mx-auto">
+            <div class="relative">
+              <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar um prato..." class="w-full rounded-lg border-gray-300 shadow-sm pl-10 pr-4 py-3 text-base focus:ring-blue-500 focus:border-blue-500">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
             </div>
           </div>
-        } @else {
-          <div class="text-center py-20 rounded-lg bg-white border border-gray-200">
-            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.5 4.5 0 0018 12a4.5 4.5 0 00-2.818-4.182M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 12a3 3 0 116 0 3 3 0 01-6 0z" />
-            </svg>
-            <h3 class="mt-2 text-lg font-medium text-gray-900">Nenhum prato encontrado</h3>
-            @if (searchTerm()) {
-              <p class="mt-1 text-sm text-gray-600">Nenhum resultado para "{{ searchTerm() }}". Tente buscar por outro termo.</p>
-            } @else {
-              <p class="mt-1 text-sm text-gray-600">Nenhum prato está disponível para exibição no momento. Por favor, volte mais tarde.</p>
+
+          @if (onlineMenu().length > 0) {
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+              <!-- Desktop Category Nav -->
+              <aside class="hidden md:block md:col-span-4 lg:col-span-3">
+                <nav class="sticky top-8">
+                  <h3 class="text-sm font-semibold uppercase text-gray-500 tracking-wider mb-4">Categorias</h3>
+                  <ul class="space-y-2">
+                    @for(group of onlineMenu(); track group.categoryName) {
+                      <li><a (click)="scrollToCategory(createSlug(group.categoryName))" class="cursor-pointer block text-gray-600 hover:text-blue-600 font-medium transition-colors">{{ group.categoryName }}</a></li>
+                    }
+                  </ul>
+                </nav>
+              </aside>
+              
+              <!-- Menu Items -->
+              <div class="md:col-span-8 lg:col-span-9 space-y-12">
+                @for(group of onlineMenu(); track group.categoryName) {
+                  <section [id]="createSlug(group.categoryName)" class="scroll-mt-20 md:scroll-mt-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">{{ group.categoryName }}</h2>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      @for(recipe of group.recipes; track recipe.id) {
+                        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md">
+                          <div class="flex justify-between items-start gap-4">
+                            <div class="flex-1">
+                              <h3 class="font-bold text-lg text-gray-900">{{ recipe.name }}</h3>
+                              @if(recipe.description) {
+                                <p class="text-sm text-gray-600 mt-1">{{ recipe.description }}</p>
+                              }
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                              @if (recipe.effectivePrice < recipe.price) {
+                                <p class="font-semibold text-lg text-green-600 whitespace-nowrap">{{ recipe.effectivePrice | currency:'BRL' }}</p>
+                                <p class="text-sm line-through text-gray-500">{{ recipe.price | currency:'BRL' }}</p>
+                              } @else {
+                                <p class="font-semibold text-lg text-gray-900 whitespace-nowrap">{{ recipe.price | currency:'BRL' }}</p>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </section>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="text-center py-20 rounded-lg bg-white border border-gray-200">
+              <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.5 4.5 0 0018 12a4.5 4.5 0 00-2.818-4.182M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 12a3 3 0 116 0 3 3 0 01-6 0z" />
+              </svg>
+              <h3 class="mt-2 text-lg font-medium text-gray-900">Nenhum prato encontrado</h3>
+              @if (searchTerm()) {
+                <p class="mt-1 text-sm text-gray-600">Nenhum resultado para "{{ searchTerm() }}". Tente buscar por outro termo.</p>
+              } @else {
+                <p class="mt-1 text-sm text-gray-600">Nenhum prato está disponível para exibição no momento. Por favor, volte mais tarde.</p>
+              }
+            </div>
+          }
+        } @else if (activeTab() === 'rewards') {
+          <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold text-gray-800">Nossos Prêmios</h2>
+            <p class="mt-2 text-gray-600">Acumule pontos e troque por recompensas incríveis!</p>
+            @if (publicLoyaltySettings(); as settings) {
+              <p class="mt-4 text-sm font-semibold text-blue-600 bg-blue-100 inline-block px-3 py-1 rounded-full">
+                  Você ganha {{ settings.points_per_real }} ponto(s) a cada R$ 1,00 gasto!
+              </p>
             }
           </div>
+
+          @if (loyaltyRewardsDisplay().length > 0) {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              @for(reward of loyaltyRewardsDisplay(); track reward.id) {
+                <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center text-center transition-shadow hover:shadow-lg">
+                    <div class="mb-4">
+                        <span class="text-4xl font-extrabold text-blue-600">{{ reward.points_cost }}</span>
+                        <span class="text-gray-600 font-medium">pontos</span>
+                    </div>
+                    <h3 class="font-bold text-lg text-gray-900">{{ reward.name }}</h3>
+                    <p class="text-sm text-gray-500 mt-1">{{ reward.valueLabel }}</p>
+                    @if(reward.description) {
+                      <p class="text-xs text-gray-500 mt-2 flex-grow">{{ reward.description }}</p>
+                    }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="text-center py-20 rounded-lg bg-white border border-gray-200">
+              <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+              </svg>
+              <h3 class="mt-2 text-lg font-medium text-gray-900">Nenhum prêmio disponível</h3>
+              <p class="mt-1 text-sm text-gray-600">Volte em breve para conferir as novidades do nosso programa de fidelidade.</p>
+            </div>
+          }
         }
       </main>
     </div>
