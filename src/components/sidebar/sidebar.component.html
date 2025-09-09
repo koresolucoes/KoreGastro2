@@ -14,18 +14,52 @@
     </button>
   </div>
   
-  <nav class="flex-1 mt-4">
+  <nav class="flex-1 mt-4 overflow-y-auto">
     <ul>
-      @for (item of navItems(); track item.path) {
+      @for (item of navItems(); track item.name) {
         <li>
-          <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" 
-            class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
-            [class.justify-center]="!isSidebarOpen()">
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-            </svg>
-            <span class="font-medium" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
-          </a>
+          @if (isNavGroup(item)) {
+            <button (click)="toggleGroup(item.name)" 
+                    class="w-full flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
+                    [class.justify-center]="!isSidebarOpen()"
+                    [class.bg-gray-700]="isGroupActive(item)">
+              <div class="flex items-center space-x-4 flex-1 min-w-0">
+                <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
+                </svg>
+                <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
+              </div>
+              @if(isSidebarOpen()) {
+                <svg class="h-5 w-5 transition-transform duration-200 flex-shrink-0" [class.rotate-90]="expandedGroups()[item.name]">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              }
+            </button>
+            @if (expandedGroups()[item.name] && isSidebarOpen()) {
+              <ul class="bg-gray-900/50">
+                @for (child of item.children; track child.path) {
+                  <li>
+                    <a [routerLink]="child.path" routerLinkActive="bg-blue-600 text-white" 
+                       class="flex items-center h-12 pl-12 pr-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200">
+                      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="child.icon" />
+                      </svg>
+                      <span class="font-medium truncate">{{ child.name }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" 
+              class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
+              [class.justify-center]="!isSidebarOpen()">
+              <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
+              </svg>
+              <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
+            </a>
+          }
         </li>
       }
     </ul>
