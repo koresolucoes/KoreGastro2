@@ -71,8 +71,8 @@
                   <p class="text-xs text-gray-400">{{ employee.role }}</p>
                 </td>
                 @for (day of weekDays(); track day) {
-                  @php (shift = shiftsByEmployeeAndDay().get(employee.id)?.get(day.toISOString().split('T')[0]) ?? null)
-                  @php (approvedLeave = getApprovedLeave(day, employee))
+                  @let shift = shiftsByEmployeeAndDay().get(employee.id)?.get(day.toISOString().split('T')[0]) ?? null;
+                  @let approvedLeave = getApprovedLeave(day, employee);
                   <td 
                     class="px-2 py-3 align-top"
                     [class.cursor-pointer]="isManager()"
