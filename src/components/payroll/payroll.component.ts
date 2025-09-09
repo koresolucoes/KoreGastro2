@@ -15,6 +15,26 @@ interface PayrollData {
   totalPay: number;
 }
 
+// Helper function to calculate effective work duration in milliseconds for a time entry
+function calculateDurationInMs(entry: TimeClockEntry): number {
+    if (!entry.clock_out_time) return 0;
+    
+    const start = new Date(entry.clock_in_time).getTime();
+    const end = new Date(entry.clock_out_time).getTime();
+    const totalDuration = end > start ? end - start : 0;
+    
+    let breakDuration = 0;
+    if (entry.break_start_time && entry.break_end_time) {
+        const breakStart = new Date(entry.break_start_time).getTime();
+        const breakEnd = new Date(entry.break_end_time).getTime();
+        if (breakEnd > breakStart) {
+            breakDuration = breakEnd - breakStart;
+        }
+    }
+    
+    return Math.max(0, totalDuration - breakDuration);
+}
+
 @Component({
   selector: 'app-payroll',
   standalone: true,
@@ -92,25 +112,58 @@ export class PayrollComponent {
     const timeEntries = this.timeEntriesForPeriod();
     const schedules = this.schedulesForPeriod();
 
-    return employees.map(employee => {
-      // 1. Calculate Worked Hours
-      const employeeEntries = timeEntries.filter(e => e.employee_id === employee.id);
-      const totalWorkedMs = employeeEntries.reduce((acc, entry) => {
-          if (!entry.clock_out_time) return acc;
-          const start = new Date(entry.clock_in_time).getTime();
-          const end = new Date(entry.clock_out_time).getTime();
-          const totalDuration = end > start ? end - start : 0;
-          let breakDuration = 0;
-          if (entry.break_start_time && entry.break_end_time) {
-              const breakStart = new Date(entry.break_start_time).getTime();
-              const breakEnd = new Date(entry.break_end_time).getTime();
-              if (breakEnd > breakStart) breakDuration = breakEnd - breakStart;
-          }
-          return acc + Math.max(0, totalDuration - breakDuration);
-      }, 0);
-      const workedHours = totalWorkedMs / (1000 * 60 * 60);
+    // Helper to get a unique week identifier (e.g., 202423 for 23rd week of 2024)
+    const getWeekNumber = (d: Date): number => {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return d.getUTCFullYear() * 100 + weekNo;
+    };
 
-      // 2. Calculate Scheduled Hours
+    return employees.map(employee => {
+      const employeeEntries = timeEntries.filter(e => e.employee_id === employee.id);
+
+      // --- New Overtime Calculation (Daily and Weekly) ---
+      let totalOvertimeMs = 0;
+      const dailyRegularMsMap = new Map<string, number>(); // Key: YYYY-MM-DD, Value: regular ms
+      const entriesByDay = new Map<string, TimeClockEntry[]>();
+      
+      // Group entries by day
+      employeeEntries.forEach(entry => {
+        const dayKey = new Date(entry.clock_in_time).toISOString().split('T')[0];
+        if (!entriesByDay.has(dayKey)) entriesByDay.set(dayKey, []);
+        entriesByDay.get(dayKey)!.push(entry);
+      });
+
+      // 1. Calculate daily overtime (anything over 9 hours a day)
+      for (const [dayKey, dayEntries] of entriesByDay.entries()) {
+          const dailyWorkedMs = dayEntries.reduce((acc, entry) => acc + calculateDurationInMs(entry), 0);
+          const dailyOvertimeMs = Math.max(0, dailyWorkedMs - (9 * 60 * 60 * 1000));
+          totalOvertimeMs += dailyOvertimeMs;
+          dailyRegularMsMap.set(dayKey, dailyWorkedMs - dailyOvertimeMs);
+      }
+      
+      // Group the remaining regular hours by week
+      const weeklyRegularMsMap = new Map<number, number>(); // Key: week number, Value: regular ms
+      for (const [dayKey, regularMs] of dailyRegularMsMap.entries()) {
+          // Use noon UTC to avoid timezone issues when determining the week
+          const weekKey = getWeekNumber(new Date(dayKey + 'T12:00:00Z'));
+          weeklyRegularMsMap.set(weekKey, (weeklyRegularMsMap.get(weekKey) || 0) + regularMs);
+      }
+
+      // 2. Calculate weekly overtime (regular hours over 44 per week)
+      for (const weeklyMs of weeklyRegularMsMap.values()) {
+          const weeklyOvertimeMs = Math.max(0, weeklyMs - (44 * 60 * 60 * 1000));
+          totalOvertimeMs += weeklyOvertimeMs;
+      }
+      // --- End New Overtime Calculation ---
+
+      const totalWorkedMs = employeeEntries.reduce((acc, entry) => acc + calculateDurationInMs(entry), 0);
+      const workedHours = totalWorkedMs / (1000 * 60 * 60);
+      const overtimeHours = totalOvertimeMs / (1000 * 60 * 60);
+
+      // Calculate Scheduled Hours (for display purposes only)
       const employeeShifts = schedules.flatMap(s => s.shifts).filter(sh => sh.employee_id === employee.id && !sh.is_day_off);
       const scheduledHours = employeeShifts.reduce((acc, shift) => {
           if (!shift.end_time) return acc;
@@ -119,17 +172,17 @@ export class PayrollComponent {
           return acc + (end > start ? (end - start) / (1000 * 60 * 60) : 0);
       }, 0);
 
-      // 3. Calculate Pay
-      let basePay = 0, overtimePay = 0, overtimeHours = 0;
+      // Calculate Pay
+      let basePay = 0, overtimePay = 0;
       const { salary_type, salary_rate, overtime_rate_multiplier } = employee;
 
       if (salary_type && salary_rate) {
-          overtimeHours = Math.max(0, workedHours - scheduledHours);
           const regularHours = workedHours - overtimeHours;
 
           if (salary_type === 'mensal') {
-              basePay = salary_rate;
-              const effectiveHourlyRate = salary_rate / 220; // Standard Brazilian divisor for monthly salary
+              // CLT DSR (Descanso Semanal Remunerado) consideration makes the divisor 220
+              const effectiveHourlyRate = salary_rate / 220; 
+              basePay = regularHours * effectiveHourlyRate;
               overtimePay = overtimeHours * effectiveHourlyRate * (overtime_rate_multiplier || 1.5);
           } else { // horista
               basePay = regularHours * salary_rate;
@@ -146,7 +199,7 @@ export class PayrollComponent {
           overtimePay,
           totalPay: basePay + overtimePay
       };
-    }).filter(p => p.workedHours > 0 || p.scheduledHours > 0); // Only show employees with activity
+    }).filter(p => p.workedHours > 0 || p.scheduledHours > 0);
   });
   
   // Totals for the template
@@ -193,5 +246,32 @@ export class PayrollComponent {
 
   printReport() {
     window.print();
+  }
+  
+  totalHours = computed(() => {
+// FIX: The property 'filteredEntries' does not exist. It should be 'timeEntriesForPeriod'.
+    const totalMilliseconds = this.timeEntriesForPeriod()
+        .reduce((sum, entry) => {
+            const duration = calculateDurationInMs(entry);
+            return sum + duration;
+        }, 0);
+    
+    return totalMilliseconds / (1000 * 60 * 60); // Convert to hours
+  });
+
+  formatDuration(durationMs: number): string {
+    if (durationMs <= 0) return '00:00:00';
+
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  getFormattedDuration(entry: TimeClockEntry): string {
+    if (!entry.clock_out_time) return 'Em andamento';
+    const durationMs = calculateDurationInMs(entry);
+    return this.formatDuration(durationMs);
   }
 }
