@@ -107,6 +107,75 @@ export class PrintingService {
       }, 250);
   }
 
+  async printPayslip(payslipHtml: string, employeeName: string) {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      return;
+    }
+    const title = `Contracheque - ${employeeName}`;
+    printWindow.document.title = title;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { 
+              font-family: sans-serif;
+              color: #000;
+              background-color: #fff;
+            }
+            @media print {
+              @page { 
+                size: A4;
+                margin: 20mm; 
+              }
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+               .payslip-printable-area * {
+                color: #000 !important;
+                background-color: transparent !important;
+                border-color: #ccc !important;
+                box-shadow: none !important;
+              }
+
+              .payslip-printable-area table {
+                  width: 100%;
+                  border-collapse: collapse;
+              }
+              .payslip-printable-area th, .payslip-printable-area td {
+                  border: 1px solid #ccc !important;
+                  padding: 6px;
+              }
+              .payslip-printable-area thead {
+                  background-color: #f2f2f2 !important;
+              }
+              
+              .payslip-container {
+                page-break-inside: avoid; 
+                margin-bottom: 2rem;
+              }
+            }
+          </style>
+        </head>
+        <body class="bg-white">
+          ${payslipHtml}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Timeout is crucial to allow styles (especially from CDN) to load and apply
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500); 
+  }
+
 
   private generateTicketHtml(order: Order, items: OrderItem[], station: Station): string {
     const formattedTimestamp = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');

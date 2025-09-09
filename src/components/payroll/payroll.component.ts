@@ -4,6 +4,7 @@ import { Employee, Schedule, Shift, TimeClockEntry, CompanyProfile } from '../..
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { TimeClockService } from '../../services/time-clock.service';
+import { PrintingService } from '../../services/printing.service';
 
 interface PayrollData {
   employee: Employee & { role: string };
@@ -46,6 +47,7 @@ export class PayrollComponent {
   private stateService = inject(SupabaseStateService);
   private timeClockService = inject(TimeClockService);
   private notificationService = inject(NotificationService);
+  private printingService = inject(PrintingService);
 
   isLoading = signal(true);
   
@@ -118,6 +120,7 @@ export class PayrollComponent {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        // Calculate week number
         const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
         return d.getUTCFullYear() * 100 + weekNo;
     };
@@ -247,7 +250,14 @@ export class PayrollComponent {
   }
 
   printPayslip() {
-    window.print();
+    const payslipElement = document.querySelector('.payslip-printable-area');
+    if (payslipElement) {
+      const payslipData = this.employeeForPayslip();
+      const employeeName = payslipData?.employee.name || 'Funcionário';
+      this.printingService.printPayslip(payslipElement.outerHTML, employeeName);
+    } else {
+      this.notificationService.show('Não foi possível encontrar o conteúdo do contracheque para impressão.', 'error');
+    }
   }
 
   printReport() {
