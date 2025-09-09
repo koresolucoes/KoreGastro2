@@ -90,14 +90,11 @@ export class BottomNavComponent {
 
   navItems = computed(() => {
     const employee = this.activeEmployee();
-    // FIX: Property 'role' does not exist on type 'Employee'. Access the augmented 'role' property.
-    if (!employee || !employee.role) return [];
+    if (!employee) return [];
     
-    // FIX: Property 'role' does not exist on type 'Employee'. Access the augmented 'role' property.
-    const employeeRole = employee.role;
-
     const filterLink = (link: NavLink): boolean => {
-      return employeeRole === 'Gerente' || link.roles.includes(employeeRole);
+      // Use the central permission service instead of the hardcoded role list
+      return this.operationalAuthService.hasPermission(link.path);
     };
 
     const result: CombinedNavItem[] = [];
