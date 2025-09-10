@@ -30,7 +30,7 @@ export class SoundNotificationService {
       src: [`${supabaseStorageUrl}/train.mp3`]
     });
     this.confirmationSound = new Howl({
-      src: [`${supabaseStorageUrl}/button.mp3`]
+      src: [`${supabaseStorageUrl}/ui.wav`]
     });
     
     // Set the initial mute state in Howler
@@ -67,5 +67,9 @@ export class SoundNotificationService {
 
   playDelayedOrderSound() {
     this.playSound(this.delayedOrderSound);
+  }
+
+  playConfirmationSound() {
+    this.playSound(this.confirmationSound);
   }
 }

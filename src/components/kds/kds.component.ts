@@ -277,6 +277,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         event.stopPropagation();
         if (this.updatingItems().has(item.id)) return;
 
+        this.soundNotificationService.playConfirmationSound();
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.acknowledgeOrderItemAttention(item.id);
         if (!success) await this.notificationService.alert(`Erro ao confirmar ciência: ${error?.message}`);
@@ -289,6 +290,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             return;
         }
 
+        this.soundNotificationService.playConfirmationSound();
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, 'PRONTO');
         if (!success) {
@@ -311,6 +313,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             default: return;
         }
         
+        this.soundNotificationService.playConfirmationSound();
         this.updatingItems.update(set => new Set(set).add(item.id));
         const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
         if (!success) await this.notificationService.alert(`Erro ao atualizar o status do item: ${error?.message}`);
@@ -334,6 +337,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             return;
         }
     
+        this.soundNotificationService.playConfirmationSound();
         this.updatingTickets.update(set => new Set(set).add(ticket.tableNumber));
         try {
             const { success, error } = await this.posDataService.markOrderAsServed(order.id);
@@ -399,4 +403,3 @@ export class KdsComponent implements OnInit, OnDestroy {
       }
     }
 }
-      
