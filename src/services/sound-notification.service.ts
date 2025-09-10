@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../config/environment';
 
 // Declare Howler globals to inform TypeScript they exist from the CDN script
 declare var Howl: any;
@@ -16,18 +17,20 @@ export class SoundNotificationService {
   private confirmationSound: any;
 
   constructor() {
+    const supabaseStorageUrl = `${environment.supabaseUrl}/storage/v1/object/public/koregastro`;
+
     // Initialize Howl sounds. Howler handles loading and decoding.
     this.newOrderSound = new Howl({
-      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/ion.mp3']
+      src: [`${supabaseStorageUrl}/ion.mp3`]
     });
     this.allergyAlertSound = new Howl({
-      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/timer.mp3']
+      src: [`${supabaseStorageUrl}/timer.mp3`]
     });
     this.delayedOrderSound = new Howl({
-      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/train.mp3']
+      src: [`${supabaseStorageUrl}/train.mp3`]
     });
     this.confirmationSound = new Howl({
-      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/button.mp3']
+      src: [`${supabaseStorageUrl}/button.mp3`]
     });
     
     // Set the initial mute state in Howler

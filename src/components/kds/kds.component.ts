@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
@@ -79,18 +80,6 @@ export class KdsComponent implements OnInit, OnDestroy {
             if (stations.length > 0 && !this.selectedStation()) {
                 this.selectStation(stations[0]);
             }
-        });
-
-        // Effect to reset sound alert state when view changes
-        effect(() => {
-            this.selectedStation(); // dependency
-            this.viewMode(); // dependency
-            
-            untracked(() => {
-                // When view changes, reset the sets to re-evaluate alerts for the new context
-                this.processedNewItems.set(new Set());
-                this.alertedLateItems.set(new Set());
-            });
         });
         
         // Main effect for sound notifications
@@ -410,3 +399,4 @@ export class KdsComponent implements OnInit, OnDestroy {
       }
     }
 }
+      
