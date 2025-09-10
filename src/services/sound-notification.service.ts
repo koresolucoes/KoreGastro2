@@ -1,57 +1,57 @@
 import { Injectable, signal } from '@angular/core';
 
+// Declare Howler globals to inform TypeScript they exist from the CDN script
+declare var Howl: any;
+declare var Howler: any;
+
 @Injectable({
   providedIn: 'root',
 })
 export class SoundNotificationService {
-  isMuted = signal(true); // Start muted by default to encourage user interaction
-  private audioContextUnlocked = signal(false);
+  isMuted = signal(true);
 
-  // Sound files from a highly reliable CDN (jsDelivr serving from the howler.js GitHub repo)
-  private newOrderSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/ion.mp3');
-  private allergyAlertSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/timer.mp3');
-  private delayedOrderSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/train.mp3');
-  private confirmationSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/button.mp3');
+  private newOrderSound: any;
+  private allergyAlertSound: any;
+  private delayedOrderSound: any;
+  private confirmationSound: any;
 
   constructor() {
-    this.newOrderSound.load();
-    this.allergyAlertSound.load();
-    this.delayedOrderSound.load();
-    this.confirmationSound.load();
+    // Initialize Howl sounds. Howler handles loading and decoding.
+    this.newOrderSound = new Howl({
+      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/ion.mp3']
+    });
+    this.allergyAlertSound = new Howl({
+      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/timer.mp3']
+    });
+    this.delayedOrderSound = new Howl({
+      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/train.mp3']
+    });
+    this.confirmationSound = new Howl({
+      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/button.mp3']
+    });
+    
+    // Set the initial mute state in Howler
+    Howler.mute(this.isMuted());
   }
   
   toggleMute() {
-    const wasMuted = this.isMuted();
     this.isMuted.update(muted => !muted);
+    // Use Howler's global mute function
+    Howler.mute(this.isMuted());
 
-    // If it was muted and now it is not, we need to unlock the audio context.
-    // This requires a user interaction, which this toggle click provides.
-    if (wasMuted && !this.isMuted() && !this.audioContextUnlocked()) {
-      // Play a short, quiet confirmation sound. The browser will remember that the user
-      // has initiated audio playback, allowing subsequent sounds to play automatically.
-      this.confirmationSound.volume = 0.5;
-      this.confirmationSound.play().then(() => {
-        console.log("Audio context unlocked successfully.");
-        this.audioContextUnlocked.set(true);
-      }).catch(error => {
-        console.error("Could not unlock audio context. Sounds may still be blocked.", error);
-        // Even if this one sound fails, the user interaction occurred.
-        // We'll set the flag to true to allow future attempts.
-        this.audioContextUnlocked.set(true);
-      });
+    // Howler attempts to unlock the audio context automatically on the first play
+    // that is initiated by a user gesture. This toggle serves as that gesture.
+    // We play a very quiet sound to unlock it if it's currently suspended.
+    if (!this.isMuted() && Howler.ctx && Howler.ctx.state === 'suspended') {
+      console.log("Attempting to unlock audio context with Howler...");
+      this.confirmationSound.volume(0.1);
+      this.confirmationSound.play();
     }
   }
 
-  private playSound(audio: HTMLAudioElement) {
-    if (!this.isMuted()) {
-      // Ensure audio context is unlocked if the first interaction wasn't the mute button.
-      if (!this.audioContextUnlocked()) {
-        this.audioContextUnlocked.set(true);
-        console.warn("Audio context was not explicitly unlocked. Attempting to play directly.");
-      }
-      audio.currentTime = 0;
-      audio.play().catch(error => console.error("Error playing sound:", error));
-    }
+  private playSound(sound: any) { // Type `any` because `Howl` is a declared global
+    // Howler respects its own global mute state, so we don't need to check `isMuted()` here.
+    sound.play();
   }
 
   playNewOrderSound() {
