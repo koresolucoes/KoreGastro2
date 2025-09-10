@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
@@ -6,6 +6,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { SoundNotificationService } from '../../services/sound-notification.service';
 
 interface BaseTicket {
   tableNumber: number;
@@ -49,6 +50,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     settingsDataService = inject(SettingsDataService);
     printingService = inject(PrintingService);
     notificationService = inject(NotificationService);
+    soundNotificationService = inject(SoundNotificationService);
     
     stations = this.stateService.stations;
     employees = this.stateService.employees;
@@ -67,12 +69,71 @@ export class KdsComponent implements OnInit, OnDestroy {
     selectedTicketForDetail = signal<StationTicket | ExpoTicket | null>(null);
     isAssignEmployeeModalOpen = signal(false);
 
+    // State for sound alerts
+    private processedNewItems = signal<Set<string>>(new Set());
+    private alertedLateItems = signal<Set<string>>(new Set());
+
     constructor() {
         effect(() => {
             const stations = this.stations();
             if (stations.length > 0 && !this.selectedStation()) {
                 this.selectStation(stations[0]);
             }
+        });
+
+        // Effect to reset sound alert state when view changes
+        effect(() => {
+            this.selectedStation(); // dependency
+            this.viewMode(); // dependency
+            
+            untracked(() => {
+                // When view changes, reset the sets to re-evaluate alerts for the new context
+                this.processedNewItems.set(new Set());
+                this.alertedLateItems.set(new Set());
+            });
+        });
+        
+        // Main effect for sound notifications
+        effect(() => {
+            const allItems = this.allKdsItemsProcessed();
+            const currentItemIds = new Set(allItems.map(i => i.id));
+            const currentStationId = this.selectedStation()?.id;
+            
+            untracked(() => {
+                const previouslyProcessed = this.processedNewItems();
+                const previouslyLate = this.alertedLateItems();
+                
+                // 1. Check for new items
+                for (const item of allItems) {
+                    if (!previouslyProcessed.has(item.id)) {
+                        const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
+                        if (isForThisView) {
+                            if (item.isCritical && !item.attention_acknowledged) {
+                                this.soundNotificationService.playAllergyAlertSound();
+                            } else {
+                                this.soundNotificationService.playNewOrderSound();
+                            }
+                        }
+                    }
+                }
+                
+                // 2. Check for newly late items
+                for (const item of allItems) {
+                    if (item.isLate && !previouslyLate.has(item.id)) {
+                         const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
+                         if(isForThisView) {
+                            this.soundNotificationService.playDelayedOrderSound();
+                            previouslyLate.add(item.id);
+                         }
+                    }
+                }
+
+                // 3. Update state for next run
+                this.processedNewItems.set(currentItemIds);
+                // Clean up alertedLateItems set from items that are no longer visible
+                const currentLateIds = new Set(allItems.filter(i => i.isLate).map(i => i.id));
+                this.alertedLateItems.set(currentLateIds);
+            });
         });
     }
 
