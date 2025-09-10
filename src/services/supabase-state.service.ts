@@ -120,6 +120,35 @@ export class SupabaseStateService {
     return memo;
   });
 
+  recipeDirectComposition = computed(() => {
+    const recipes = this.recipes();
+    const recipeIngredients = this.recipeIngredients();
+    const recipeSubRecipes = this.recipeSubRecipes();
+    const recipesMap = new Map(recipes.map(r => [r.id, r]));
+
+    const compositionMap = new Map<string, { directIngredients: { ingredientId: string, quantity: number }[], subRecipeIngredients: { ingredientId: string, quantity: number }[] }>();
+
+    for (const recipe of recipes) {
+        const directIngredients = recipeIngredients
+            .filter(ri => ri.recipe_id === recipe.id)
+            .map(ri => ({ ingredientId: ri.ingredient_id, quantity: ri.quantity }));
+
+        const subRecipeIngredients = recipeSubRecipes
+            .filter(rsr => rsr.parent_recipe_id === recipe.id)
+            .map(rsr => {
+                const childRecipe = recipesMap.get(rsr.child_recipe_id);
+                // The ingredient to deduct is the one linked to the sub-recipe via source_ingredient_id
+                return childRecipe?.source_ingredient_id 
+                    ? { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity }
+                    : null;
+            })
+            .filter((item): item is { ingredientId: string, quantity: number } => item !== null);
+
+        compositionMap.set(recipe.id, { directIngredients, subRecipeIngredients });
+    }
+    return compositionMap;
+  });
+
   lastCashierClosing = computed(() => {
     const closings = this.cashierClosings();
     if (closings.length === 0) return null;

@@ -6,6 +6,7 @@ import { InventoryDataService } from './inventory-data.service';
 import { PricingService } from './pricing.service';
 import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus, DiscountType } from '../models/db.models';
 import { Payment } from '../components/cashier/cashier.component';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CartItem {
   recipe: Recipe;
@@ -183,23 +184,67 @@ export class CashierDataService {
     
     if (orderError) return { success: false, error: orderError };
 
-    const orderItems: Omit<OrderItem, 'id' | 'created_at' | 'user_id'>[] = cart.map(item => ({
-      order_id: order.id,
-      recipe_id: item.recipe.id,
-      name: item.recipe.name,
-      quantity: item.quantity,
-      price: item.effectivePrice,
-      original_price: item.originalPrice,
-      discount_type: item.discountType,
-      discount_value: item.discountValue,
-      notes: item.notes,
-      status: 'SERVIDO' as OrderItemStatus,
-      station_id: 'none', // Not relevant for quick sale
-      group_id: null,
-      status_timestamps: { 'SERVIDO': new Date().toISOString() },
-    }));
+    const stations = this.stateService.stations();
+    if (stations.length === 0) {
+        await supabase.from('orders').delete().eq('id', order.id); // Rollback order
+        return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
+    }
+    const fallbackStationId = stations[0].id;
 
-    const orderItemsWithUserId = orderItems.map(item => ({...item, user_id: userId}));
+    const recipeIds = cart.map(item => item.recipe.id);
+    const { data: preps } = await supabase
+        .from('recipe_preparations')
+        .select('*')
+        .in('recipe_id', recipeIds)
+        .eq('user_id', userId);
+        
+    const prepsByRecipeId = (preps || []).reduce((acc, p) => {
+        if (!acc.has(p.recipe_id)) acc.set(p.recipe_id, []);
+        acc.get(p.recipe_id)!.push(p);
+        return acc;
+    }, new Map<string, any[]>());
+
+    const allOrderItemsToInsert = cart.flatMap(item => {
+        const recipePreps = prepsByRecipeId.get(item.recipe.id);
+        const status_timestamps = { 'SERVIDO': new Date().toISOString() };
+
+        if (recipePreps && recipePreps.length > 0) {
+            const groupId = uuidv4();
+            return recipePreps.map(prep => ({
+                order_id: order.id,
+                recipe_id: item.recipe.id,
+                name: `${item.recipe.name} (${prep.name})`,
+                quantity: item.quantity,
+                price: (item.effectivePrice / recipePreps.length),
+                original_price: (item.originalPrice / recipePreps.length),
+                discount_type: item.discountType,
+                discount_value: item.discountValue,
+                notes: item.notes,
+                status: 'SERVIDO' as OrderItemStatus,
+                station_id: prep.station_id,
+                group_id: groupId,
+                status_timestamps,
+            }));
+        } else {
+            return [{
+                order_id: order.id,
+                recipe_id: item.recipe.id,
+                name: item.recipe.name,
+                quantity: item.quantity,
+                price: item.effectivePrice,
+                original_price: item.originalPrice,
+                discount_type: item.discountType,
+                discount_value: item.discountValue,
+                notes: item.notes,
+                status: 'SERVIDO' as OrderItemStatus,
+                station_id: fallbackStationId,
+                group_id: null,
+                status_timestamps,
+            }];
+        }
+    });
+
+    const orderItemsWithUserId = allOrderItemsToInsert.map(item => ({...item, user_id: userId}));
 
     const { error: itemsError } = await supabase.from('order_items').insert(orderItemsWithUserId);
     if (itemsError) {
@@ -207,7 +252,6 @@ export class CashierDataService {
         return { success: false, error: itemsError };
     }
 
-    // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
     const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
     const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
@@ -241,7 +285,6 @@ export class CashierDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    // FIX: Property 'role' does not exist on type 'Employee'. Look up role name by role_id.
     const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
     const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 

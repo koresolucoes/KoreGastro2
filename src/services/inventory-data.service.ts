@@ -176,10 +176,122 @@ export class InventoryDataService {
     const { error } = await supabase.from('suppliers').update(updateData).eq('id', id!);
     return { success: !error, error };
   }
-
-  async deleteSupplier(id: string): Promise<{ success: boolean, error: any }> {
+  
+  async deleteSupplier(id: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('suppliers').delete().eq('id', id);
     return { success: !error, error };
+  }
+
+  async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const recipeComposition = this.stateService.recipeCosts().get(subRecipeId);
+    if (!recipeComposition) {
+      return { success: false, error: { message: `Recipe composition not found for ${subRecipeId}` } };
+    }
+    
+    try {
+      // 1. Deduct raw ingredients
+      const deductionPromises = [];
+      const deductionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
+      for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
+        const totalDeduction = quantityNeeded * quantityProduced;
+        deductionPromises.push(
+          this.adjustIngredientStock(ingredientId, -totalDeduction, deductionReason, undefined)
+        );
+      }
+      const deductionResults = await Promise.all(deductionPromises);
+      const firstDeductionError = deductionResults.find(r => !r.success);
+      if (firstDeductionError) throw firstDeductionError.error;
+
+      // 2. Add produced sub-recipe to stock
+      const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
+      const { success, error } = await this.adjustIngredientStock(sourceIngredientId, quantityProduced, additionReason, undefined);
+      if (!success) throw error;
+      
+      return { success: true, error: null };
+    } catch (error) {
+      console.error("Stock adjustment for production failed.", error);
+      return { success: false, error };
+    }
+  }
+
+  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const recipeCompositions = this.stateService.recipeDirectComposition();
+    const deductions = new Map<string, number>();
+    const processedGroupIds = new Set<string>();
+
+    for (const item of orderItems) {
+      if (item.group_id) {
+        if (processedGroupIds.has(item.group_id)) {
+          continue; // This group has already been processed.
+        }
+        processedGroupIds.add(item.group_id);
+        
+        const representativeItem = orderItems.find(i => i.group_id === item.group_id);
+        if (!representativeItem || !representativeItem.recipe_id) continue;
+        
+        const composition = recipeCompositions.get(representativeItem.recipe_id);
+        if (composition) {
+          // Add direct ingredients
+          for (const ing of composition.directIngredients) {
+            const totalQuantityToDeduct = ing.quantity * representativeItem.quantity;
+            deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
+          }
+          // Add sub-recipe ingredients (which are treated as single ingredients at this stage)
+          for (const sub of composition.subRecipeIngredients) {
+            const totalQuantityToDeduct = sub.quantity * representativeItem.quantity;
+            deductions.set(sub.ingredientId, (deductions.get(sub.ingredientId) || 0) + totalQuantityToDeduct);
+          }
+        }
+      } else {
+        // Handle single items or items sold directly from inventory
+        if (!item.recipe_id) continue;
+        const composition = recipeCompositions.get(item.recipe_id);
+        if (composition) {
+          // Add direct ingredients
+          for (const ing of composition.directIngredients) {
+            const totalQuantityToDeduct = ing.quantity * item.quantity;
+            deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
+          }
+          // Add sub-recipe ingredients
+          for (const sub of composition.subRecipeIngredients) {
+            const totalQuantityToDeduct = sub.quantity * item.quantity;
+            deductions.set(sub.ingredientId, (deductions.get(sub.ingredientId) || 0) + totalQuantityToDeduct);
+          }
+        }
+      }
+    }
+
+    if (deductions.size === 0) {
+      return { success: true, error: null }; // Nothing to deduct
+    }
+
+    try {
+      const adjustmentPromises = [];
+      const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
+      for (const [ingredientId, quantityChange] of deductions.entries()) {
+        if (quantityChange > 0) {
+          adjustmentPromises.push(
+            this.adjustIngredientStock(ingredientId, -quantityChange, reason, undefined)
+          );
+        }
+      }
+      
+      const results = await Promise.all(adjustmentPromises);
+      const firstError = results.find(r => !r.success);
+      if (firstError) {
+        return { success: false, error: firstError.error };
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error };
+    }
   }
 
   async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
@@ -194,100 +306,43 @@ export class InventoryDataService {
       .gte('completed_at', startDate.toISOString())
       .lte('completed_at', endDate.toISOString());
 
-    if (error) {
-      console.error("Error fetching orders for usage calculation", error);
+    if (error || !orders) {
+      console.error('Error fetching orders for usage calculation:', error);
       return new Map();
     }
 
-    const totalUsage = new Map<string, number>();
-    const recipeCostMap = this.stateService.recipeCosts();
-
-    const getRawIngredientsForRecipe = (recipeId: string, quantity: number) => {
-      const recipeComposition = recipeCostMap.get(recipeId);
-      if (!recipeComposition) return;
-
-      for (const [ingredientId, amount] of recipeComposition.rawIngredients.entries()) {
-        const totalAmount = amount * quantity;
-        totalUsage.set(ingredientId, (totalUsage.get(ingredientId) || 0) + totalAmount);
-      }
-    };
+    const recipeCosts = this.stateService.recipeCosts();
+    const usageMap = new Map<string, number>();
     
     for (const order of orders) {
+      const processedGroupIds = new Set<string>();
       for (const item of order.order_items) {
-        getRawIngredientsForRecipe(item.recipe_id, item.quantity);
-      }
-    }
-    
-    return totalUsage;
-  }
+        if (item.group_id) {
+          if (processedGroupIds.has(item.group_id)) continue;
+          processedGroupIds.add(item.group_id);
 
-  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any }> {
-    const recipeCostMap = this.stateService.recipeCosts();
-    const deductions = new Map<string, number>();
+          const representativeItem = order.order_items.find(i => i.group_id === item.group_id);
+          if (!representativeItem || !representativeItem.recipe_id) continue;
 
-    for (const item of orderItems) {
-      const recipeComposition = recipeCostMap.get(item.recipe_id);
-      if (recipeComposition) {
-        for (const [ingredientId, quantityPerRecipe] of recipeComposition.rawIngredients.entries()) {
-          const totalAmountToDeduct = quantityPerRecipe * item.quantity;
-          deductions.set(ingredientId, (deductions.get(ingredientId) || 0) + totalAmountToDeduct);
+          const recipeComposition = recipeCosts.get(representativeItem.recipe_id);
+          if (recipeComposition?.rawIngredients) {
+            for (const [ingId, qtyNeeded] of recipeComposition.rawIngredients.entries()) {
+              const totalUsed = qtyNeeded * representativeItem.quantity;
+              usageMap.set(ingId, (usageMap.get(ingId) || 0) + totalUsed);
+            }
+          }
+        } else {
+          if (!item.recipe_id) continue;
+          const recipeComposition = recipeCosts.get(item.recipe_id);
+          if (recipeComposition?.rawIngredients) {
+            for (const [ingId, qtyNeeded] of recipeComposition.rawIngredients.entries()) {
+              const totalUsed = qtyNeeded * item.quantity;
+              usageMap.set(ingId, (usageMap.get(ingId) || 0) + totalUsed);
+            }
+          }
         }
       }
     }
-
-    if (deductions.size === 0) {
-      return { success: true, error: null };
-    }
-
-    const deductionPromises = Array.from(deductions.entries()).map(([ingredientId, totalQuantity]) =>
-      this.adjustIngredientStock(
-        ingredientId,
-        -totalQuantity,
-        `Venda - Pedido #${orderId.slice(0, 8)}`,
-        null // expiration date is not relevant for deductions
-      )
-    );
-
-    try {
-      const results = await Promise.all(deductionPromises);
-      const firstError = results.find(r => !r.success);
-      if (firstError) {
-        console.error('One or more stock deductions failed', firstError.error);
-        return { success: false, error: firstError.error };
-      }
-      return { success: true, error: null };
-    } catch (error) {
-      console.error('An unexpected error occurred during stock deduction:', error);
-      return { success: false, error };
-    }
-  }
-
-  async adjustStockForProduction(subRecipeId: string, producedIngredientId: string, quantityProduced: number): Promise<{ success: boolean, error: any }> {
-    const recipeCost = this.stateService.recipeCosts().get(subRecipeId);
-    const subRecipeName = this.stateService.recipesById().get(subRecipeId)?.name || 'sub-receita';
-
-    if (!recipeCost) {
-      return { success: false, error: { message: `Ficha técnica para a sub-receita ID ${subRecipeId} não encontrada.` } };
-    }
-
-    // 1. Consume raw ingredients
-    const consumptionReason = `Produção: ${quantityProduced}x ${subRecipeName}`;
-    for (const [rawIngredientId, quantityPerUnit] of recipeCost.rawIngredients.entries()) {
-      const totalToConsume = quantityPerUnit * quantityProduced;
-      const { success, error } = await this.adjustIngredientStock(rawIngredientId, -totalToConsume, consumptionReason, null);
-      if (!success) {
-        return { success: false, error: { message: `Falha ao consumir o ingrediente ID ${rawIngredientId}: ${error.message}` } };
-      }
-    }
-
-    // 2. Add produced sub-recipe to stock
-    const productionReason = `Produzido: ${quantityProduced}x ${subRecipeName}`;
-    const { success, error } = await this.adjustIngredientStock(producedIngredientId, quantityProduced, productionReason, null);
-    if (!success) {
-      // Note: At this point, raw ingredients have been consumed. This would ideally be a transaction.
-      return { success: false, error: { message: `Falha ao adicionar o produto final ao estoque: ${error.message}` } };
-    }
-
-    return { success: true, error: null };
+    return usageMap;
   }
 }
