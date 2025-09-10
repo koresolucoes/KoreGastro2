@@ -7,11 +7,11 @@ export class SoundNotificationService {
   isMuted = signal(true); // Start muted by default to encourage user interaction
   private audioContextUnlocked = signal(false);
 
-  // Sound files from a reliable CDN (jsDelivr serving from a GitHub repo)
-  private newOrderSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/2.mp3');
-  private allergyAlertSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/10.mp3');
-  private delayedOrderSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/8.mp3');
-  private confirmationSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/1.mp3');
+  // Sound files from a highly reliable CDN (jsDelivr serving from the howler.js GitHub repo)
+  private newOrderSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/ion.mp3');
+  private allergyAlertSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/timer.mp3');
+  private delayedOrderSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/train.mp3');
+  private confirmationSound = new Audio('https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/button.mp3');
 
   constructor() {
     this.newOrderSound.load();
