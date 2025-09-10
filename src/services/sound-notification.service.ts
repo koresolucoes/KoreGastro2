@@ -18,16 +18,16 @@ export class SoundNotificationService {
   constructor() {
     // Initialize Howl sounds. Howler handles loading and decoding.
     this.newOrderSound = new Howl({
-      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/ion.mp3']
+      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/ion.mp3']
     });
     this.allergyAlertSound = new Howl({
-      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/timer.mp3']
+      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/timer.mp3']
     });
     this.delayedOrderSound = new Howl({
-      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/train.mp3']
+      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/train.mp3']
     });
     this.confirmationSound = new Howl({
-      src: ['https://cdn.jsdelivr.net/gh/goldfire/howler.js/examples/sound/button.mp3']
+      src: ['https://rawcdn.githack.com/goldfire/howler.js/master/examples/sound/button.mp3']
     });
     
     // Set the initial mute state in Howler
