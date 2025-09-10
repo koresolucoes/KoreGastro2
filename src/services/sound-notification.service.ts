@@ -7,11 +7,11 @@ export class SoundNotificationService {
   isMuted = signal(true); // Start muted by default to encourage user interaction
   private audioContextUnlocked = signal(false);
 
-  // Sound files from a reliable CDN
-  private newOrderSound = new Audio('https://cdn.pixabay.com/audio/2022/11/17/audio_85d138a165.mp3');
-  private allergyAlertSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c396c7365f.mp3');
-  private delayedOrderSound = new Audio('https://cdn.pixabay.com/audio/2022/10/28/audio_3341a4a194.mp3');
-  private confirmationSound = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c744c8.mp3');
+  // Sound files from a reliable CDN (jsDelivr serving from a GitHub repo)
+  private newOrderSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/2.mp3');
+  private allergyAlertSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/10.mp3');
+  private delayedOrderSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/8.mp3');
+  private confirmationSound = new Audio('https://cdn.jsdelivr.net/gh/lonniebest/js-sound-effects/sounds/1.mp3');
 
   constructor() {
     this.newOrderSound.load();
