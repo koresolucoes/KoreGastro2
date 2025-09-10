@@ -233,6 +233,24 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
     
+    async markAsReady(item: OrderItem, event: MouseEvent) {
+        event.stopPropagation();
+        if (this.updatingItems().has(item.id) || item.status === 'PRONTO') {
+            return;
+        }
+
+        this.updatingItems.update(set => new Set(set).add(item.id));
+        const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, 'PRONTO');
+        if (!success) {
+            await this.notificationService.alert(`Erro ao marcar como pronto: ${error?.message}`);
+        }
+        this.updatingItems.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(item.id);
+            return newSet;
+        });
+    }
+
     async updateStatus(item: OrderItem, forceStart = false) {
         if (this.updatingItems().has(item.id) || ((item as ProcessedOrderItem).isHeld && !forceStart)) return;
 
