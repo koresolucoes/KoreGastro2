@@ -578,7 +578,7 @@ export class CashierDataService {
         });
         return { headers: finalHeaders, rows };
     } else {
-        const grouped = mappedData.reduce((acc, row) => {
+        const grouped = mappedData.reduce<Record<string, { date: string, description: string, type: string, employeeName: string, count: number, totalAmount: number }>>((acc, row) => {
             let key = '';
             if (groupBy === 'day') key = new Date(row.date).toISOString().split('T')[0];
             else if (groupBy === 'type') key = row.type;
@@ -597,12 +597,12 @@ export class CashierDataService {
             acc[key].count++;
             acc[key].totalAmount += row.amount;
             return acc;
-        // FIX: Provide an explicit type for the initial value of the reduce function to ensure type safety.
-        }, {} as Record<string, { date: string, description: string, type: string, employeeName: string, count: number, totalAmount: number }>);
+        }, {});
         
         const rows = Object.values(grouped);
         const headers = [
-            { key: groupBy === 'day' ? 'date' : groupBy, label: 'Agrupado por' },
+            // FIX: Use 'employeeName' as the key when grouping by employee to match the data structure.
+            { key: groupBy === 'day' ? 'date' : (groupBy === 'employee' ? 'employeeName' : groupBy), label: 'Agrupado por' },
             { key: 'count', label: 'Nº Transações' },
             { key: 'totalAmount', label: 'Valor Total' }
         ];
@@ -611,7 +611,8 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-                totalAmount: rows.reduce((sum, r) => sum + r.totalAmount, 0)
+// FIX: Explicitly cast 'r' to a type with 'totalAmount' to resolve inference issue.
+                totalAmount: rows.reduce((sum, r) => sum + (r as { totalAmount: number }).totalAmount, 0)
             }
         };
     }
