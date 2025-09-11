@@ -32,6 +32,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 ### 🍳 **KDS (Kitchen Display System)**
 - **Comandas Digitais:** Substitua as comandas de papel por um sistema digital eficiente que envia pedidos diretamente para as estações corretas (Cozinha, Bar, etc.).
 - **Timers Inteligentes:** Cada item e pedido possui um timer de preparo, com cores que indicam o andamento e alertam sobre atrasos.
+- **Interface Otimizada:** Ações separadas para visualizar detalhes (ícone de informação) e avançar o status do preparo (clique no item), prevenindo cliques acidentais e agilizando o fluxo de trabalho da cozinha.
 - **Modo "Expo":** Uma tela centralizada para o chef ou expedidor visualizar todos os itens prontos e garantir que os pedidos saiam completos e no tempo certo.
 - **Lógica de Retenção (Hold):** O sistema calcula o tempo de preparo de cada item e segura os pratos mais rápidos para que tudo fique pronto ao mesmo tempo.
 
