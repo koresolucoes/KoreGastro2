@@ -1,4 +1,5 @@
 
+
 <div class="container mx-auto">
   @if (isLoading()) {
     <div class="flex items-center justify-center h-[calc(100vh-10rem)]">
@@ -24,6 +25,29 @@
           </div>
         </div>
       }
+    </div>
+
+    <!-- Sales vs COGS Chart -->
+    <div class="mt-8 bg-gray-800 rounded-lg p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        <div>
+          <h2 class="text-xl font-semibold text-white">Vendas vs. CMV</h2>
+          <p class="text-sm text-gray-400">Análise de faturamento bruto contra o custo dos produtos vendidos.</p>
+        </div>
+        <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
+          <button (click)="setChartPeriod(7)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 7" [class.text-white]="chartPeriod() === 7">Últimos 7 dias</button>
+          <button (click)="setChartPeriod(30)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 30" [class.text-white]="chartPeriod() === 30">Últimos 30 dias</button>
+        </div>
+      </div>
+      <div class="h-80">
+        @if (isChartLoading()) {
+          <div class="flex items-center justify-center h-full">
+             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        } @else {
+          <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
+        }
+      </div>
     </div>
 
     <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -55,6 +55,29 @@ export interface PeakDaysData {
   sales: number;
 }
 
+export interface DailySalesCogs {
+  date: string; // YYYY-MM-DD
+  sales: number;
+  cogs: number;
+}
+
+export interface CustomReportConfig {
+  dataSource: 'transactions';
+  columns: Set<string>;
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    employeeId?: string;
+  };
+  groupBy: string;
+}
+
+export interface CustomReportData {
+  headers: { key: string; label: string }[];
+  rows: any[];
+  totals?: { [key: string]: number };
+}
+
 
 @Injectable({
   providedIn: 'root',
@@ -449,5 +472,148 @@ export class CashierDataService {
     if (openError) console.error("Failed to log opening balance for next session", openError);
     
     return { success: true, error: null, data };
+  }
+  
+  async getSalesAndCogsForPeriod(days: 7 | 30): Promise<DailySalesCogs[]> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return [];
+    
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    const [ordersRes, transactionsRes] = await Promise.all([
+         supabase.from('orders')
+            .select('completed_at, order_items(*)')
+            .eq('user_id', userId).eq('is_completed', true)
+            .gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()),
+        supabase.from('transactions')
+            .select('date, amount')
+            .eq('user_id', userId).eq('type', 'Receita')
+            .gte('date', startDate.toISOString()).lte('date', endDate.toISOString())
+    ]);
+
+    if (ordersRes.error || transactionsRes.error) {
+        console.error("Error fetching chart data", ordersRes.error || transactionsRes.error);
+        return [];
+    }
+    
+    const recipeCosts = this.stateService.recipeCosts();
+    const dailyData = new Map<string, { sales: number; cogs: number }>();
+
+    // Initialize map for all days in the period
+    for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateString = date.toISOString().split('T')[0];
+        dailyData.set(dateString, { sales: 0, cogs: 0 });
+    }
+
+    // Process transactions for sales data
+    for (const t of transactionsRes.data || []) {
+        const dateString = new Date(t.date).toISOString().split('T')[0];
+        if (dailyData.has(dateString)) {
+            dailyData.get(dateString)!.sales += t.amount;
+        }
+    }
+    
+    // Process orders for COGS data
+    for (const o of ordersRes.data || []) {
+        if (!o.completed_at) continue;
+        const dateString = new Date(o.completed_at).toISOString().split('T')[0];
+        if (dailyData.has(dateString)) {
+             const orderCogs = o.order_items.reduce((sum, item) => {
+                const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+                return sum + (cost * item.quantity);
+            }, 0);
+            dailyData.get(dateString)!.cogs += orderCogs;
+        }
+    }
+
+    return Array.from(dailyData.entries())
+        .map(([date, values]) => ({ date, ...values }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+  
+  async buildCustomReport(config: CustomReportConfig): Promise<CustomReportData> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) throw new Error("Usuário não autenticado.");
+
+    const { dataSource, columns, filters, groupBy } = config;
+    const { startDate, endDate, employeeId } = filters;
+
+    if (dataSource !== 'transactions') {
+        throw new Error("Fonte de dados não suportada no momento.");
+    }
+    
+    let query = supabase.from('transactions').select('*, employees(name)')
+        .eq('user_id', userId)
+        .gte('date', new Date(`${startDate}T00:00:00`).toISOString())
+        .lte('date', new Date(`${endDate}T23:59:59`).toISOString());
+
+    if (employeeId && employeeId !== 'all') {
+        query = query.eq('employee_id', employeeId);
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    const availableColumnsMap = new Map(this.stateService.employees().map(e => [e.id, e.name]));
+
+    const mappedData = data.map(d => ({
+        ...d,
+        employeeName: d.employees?.name || 'N/A'
+    }));
+
+    const finalHeaders = Array.from(columns).map(key => {
+        const colMap: Record<string, string> = { date: 'Data', description: 'Descrição', amount: 'Valor', type: 'Tipo', employeeName: 'Funcionário' };
+        return { key, label: colMap[key] || key };
+    });
+
+    if (groupBy === 'none') {
+        const rows = mappedData.map(row => {
+            const newRow: any = {};
+            columns.forEach(col => newRow[col] = (row as any)[col]);
+            return newRow;
+        });
+        return { headers: finalHeaders, rows };
+    } else {
+        const grouped = mappedData.reduce((acc, row) => {
+            let key = '';
+            if (groupBy === 'day') key = new Date(row.date).toISOString().split('T')[0];
+            else if (groupBy === 'type') key = row.type;
+            else if (groupBy === 'employee') key = row.employeeName;
+
+            if (!acc[key]) {
+                acc[key] = {
+                    date: key,
+                    description: `${groupBy === 'day' ? 'Vendas do dia' : 'Agrupado por'} ${key}`,
+                    type: key,
+                    employeeName: key,
+                    count: 0,
+                    totalAmount: 0
+                };
+            }
+            acc[key].count++;
+            acc[key].totalAmount += row.amount;
+            return acc;
+        // FIX: Provide an explicit type for the initial value of the reduce function to ensure type safety.
+        }, {} as Record<string, { date: string, description: string, type: string, employeeName: string, count: number, totalAmount: number }>);
+        
+        const rows = Object.values(grouped);
+        const headers = [
+            { key: groupBy === 'day' ? 'date' : groupBy, label: 'Agrupado por' },
+            { key: 'count', label: 'Nº Transações' },
+            { key: 'totalAmount', label: 'Valor Total' }
+        ];
+
+        return {
+            headers: headers,
+            rows: rows,
+            totals: {
+                totalAmount: rows.reduce((sum, r) => sum + r.totalAmount, 0)
+            }
+        };
+    }
   }
 }

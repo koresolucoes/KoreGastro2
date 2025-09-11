@@ -4,15 +4,16 @@ import { CashierDataService, ReportData } from '../../services/cashier-data.serv
 import { NotificationService } from '../../services/notification.service';
 import { ComparativeReportComponent } from './comparative-report/comparative-report.component';
 import { PeakHoursReportComponent } from './peak-hours-report/peak-hours-report.component';
+import { ReportBuilderComponent } from './report-builder/report-builder.component';
 
 type ReportType = 'sales' | 'items' | 'financial';
-type ActiveReport = 'summary' | 'comparative' | 'peakHours';
+type ActiveReport = 'summary' | 'comparative' | 'peakHours' | 'builder';
 
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, ComparativeReportComponent, PeakHoursReportComponent],
+  imports: [CommonModule, ComparativeReportComponent, PeakHoursReportComponent, ReportBuilderComponent],
   templateUrl: './reports.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

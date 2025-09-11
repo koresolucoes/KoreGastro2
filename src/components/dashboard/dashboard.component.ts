@@ -1,19 +1,46 @@
 
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { CashierDataService, DailySalesCogs } from '../../services/cashier-data.service';
+import { SalesCogsChartComponent } from './sales-cogs-chart/sales-cogs-chart.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SalesCogsChartComponent],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [DatePipe]
 })
 export class DashboardComponent {
   private stateService = inject(SupabaseStateService);
+  private cashierDataService = inject(CashierDataService);
   
   isLoading = computed(() => !this.stateService.isDataLoaded());
+
+  // Chart state
+  isChartLoading = signal(true);
+  chartPeriod = signal<7 | 30>(7);
+  salesCogsData = signal<DailySalesCogs[]>([]);
+
+  constructor() {
+    effect(() => {
+        const period = this.chartPeriod();
+        untracked(() => this.loadChartData(period));
+    });
+  }
+
+  async loadChartData(days: 7 | 30) {
+    this.isChartLoading.set(true);
+    const data = await this.cashierDataService.getSalesAndCogsForPeriod(days);
+    this.salesCogsData.set(data);
+    this.isChartLoading.set(false);
+  }
+
+  setChartPeriod(days: 7 | 30) {
+    this.chartPeriod.set(days);
+  }
 
   totalSales = computed(() => {
     return this.stateService.dashboardTransactions()

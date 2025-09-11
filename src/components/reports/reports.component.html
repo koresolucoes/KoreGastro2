@@ -29,6 +29,9 @@
           <button (click)="activeReport.set('peakHours')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() !== 'peakHours'" [class.text-gray-400]="activeReport() !== 'peakHours'">
               Horários de Pico
           </button>
+          <button (click)="activeReport.set('builder')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'builder'" [class.text-white]="activeReport() === 'builder'" [class.border-transparent]="activeReport() !== 'builder'" [class.text-gray-400]="activeReport() !== 'builder'">
+              Construtor
+          </button>
       </nav>
   </div>
 
@@ -149,6 +152,9 @@
     }
     @case('peakHours') {
         <app-peak-hours-report [startDate]="startDate()" [endDate]="endDate()"></app-peak-hours-report>
+    }
+    @case('builder') {
+        <app-report-builder [startDate]="startDate()" [endDate]="endDate()"></app-report-builder>
     }
   }
 </div>
