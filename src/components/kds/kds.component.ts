@@ -304,7 +304,8 @@ export class KdsComponent implements OnInit, OnDestroy {
         });
     }
 
-    async updateStatus(item: OrderItem, forceStart = false) {
+    async updateStatus(item: OrderItem, forceStart = false, event?: MouseEvent) {
+        event?.stopPropagation();
         if (this.updatingItems().has(item.id) || ((item as ProcessedOrderItem).isHeld && !forceStart)) return;
 
         let nextStatus: OrderItemStatus;
