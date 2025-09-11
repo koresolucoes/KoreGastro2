@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { GoogleGenAI, Type } from '@google/genai';
 import { environment } from '../config/environment';

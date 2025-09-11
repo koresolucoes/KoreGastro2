@@ -17,38 +17,70 @@
     } @else {
       @switch (view()) {
         @case ('payingTables') {
-          <div class="bg-gray-800 rounded-lg h-full flex flex-col">
-            <div class="p-6 border-b border-gray-700 flex-shrink-0">
-              <h2 class="text-xl font-semibold text-white">Mesas Aguardando Pagamento</h2>
-            </div>
-            @if(tablesForPayment().length > 0) {
-              <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-y-auto">
-                @for(table of tablesForPayment(); track table.id) {
-                  <div 
-                    (click)="openTableOptionsModal(table)" 
-                    class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-blue-500 bg-blue-500/10 text-blue-300 md:cursor-default cursor-pointer hover:bg-blue-500/20">
-                    <div class="flex-1 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-4xl font-bold">{{ table.number }}</span>
-                        <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
-                    </div>
-                    <!-- Buttons visible only on medium screens and up -->
-                    <div class="hidden md:flex gap-2 mt-2">
-                        <button (click)="$event.stopPropagation(); reopenTable(table)" class="flex-1 text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
-                        <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="flex-1 text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
-                        <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="flex-1 text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Pagar</button>
-                    </div>
-                  </div>
-                }
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+            <!-- Tables for Payment -->
+            <div class="bg-gray-800 rounded-lg h-full flex flex-col">
+              <div class="p-6 border-b border-gray-700 flex-shrink-0">
+                <h2 class="text-xl font-semibold text-white">Mesas Aguardando Pagamento</h2>
               </div>
-            } @else {
-              <div class="flex-1 flex items-center justify-center">
-                <div class="text-center text-gray-500">
-                  <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <h3 class="mt-2 text-lg font-medium text-white">Nenhuma mesa aguardando</h3>
-                  <p class="mt-1 text-sm text-gray-500">Envie uma conta do PDV para que ela apareça aqui.</p>
+              @if(tablesForPayment().length > 0) {
+                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto">
+                  @for(table of tablesForPayment(); track table.id) {
+                    <div 
+                      (click)="openTableOptionsModal(table)" 
+                      class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-blue-500 bg-blue-500/10 text-blue-300 md:cursor-default cursor-pointer hover:bg-blue-500/20">
+                      <div class="flex-1 flex flex-col items-center justify-center pointer-events-none">
+                          <span class="text-4xl font-bold">{{ table.number }}</span>
+                          <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
+                      </div>
+                      <!-- Buttons visible only on medium screens and up -->
+                      <div class="hidden md:flex gap-2 mt-2">
+                          <button (click)="$event.stopPropagation(); reopenTable(table)" class="flex-1 text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
+                          <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="flex-1 text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
+                          <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="flex-1 text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Pagar</button>
+                      </div>
+                    </div>
+                  }
                 </div>
+              } @else {
+                <div class="flex-1 flex items-center justify-center">
+                  <div class="text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <h3 class="mt-2 text-lg font-medium text-white">Nenhuma mesa aguardando</h3>
+                    <p class="mt-1 text-sm text-gray-500">Envie uma conta do PDV para que ela apareça aqui.</p>
+                  </div>
+                </div>
+              }
+            </div>
+             <!-- Quick Sales for Payment -->
+            <div class="bg-gray-800 rounded-lg h-full flex flex-col">
+              <div class="p-6 border-b border-gray-700 flex-shrink-0">
+                <h2 class="text-xl font-semibold text-white">Vendas Rápidas para Pagar</h2>
               </div>
-            }
+              @if(quickSalesForPayment().length > 0) {
+                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto">
+                   @for(order of quickSalesForPayment(); track order.id) {
+                    <div (click)="openPaymentForQuickSale(order)" class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-purple-500 bg-purple-500/10 text-purple-300 cursor-pointer hover:bg-purple-500/20">
+                      <div class="flex-1 flex flex-col items-center justify-center">
+                          <span class="text-2xl font-bold">Caixa</span>
+                          <span class="text-sm font-semibold mt-1">#{{ order.id.slice(0, 4) }}</span>
+                          @if(order.customers) {
+                            <span class="text-xs text-gray-400 truncate mt-1">{{ order.customers.name }}</span>
+                          }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="flex-1 flex items-center justify-center">
+                  <div class="text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h3.5c.414 0 .75-.336.75-.75 0-.231-.035-.454-.1-.664M6.75 8.25h10.5M6.75 12h10.5m-10.5 3.75h10.5M4.5 21V5.25A2.25 2.25 0 016.75 3h10.5a2.25 2.25 0 012.25 2.25V21" /></svg>
+                    <h3 class="mt-2 text-lg font-medium text-white">Nenhuma venda rápida em aberto</h3>
+                    <p class="mt-1 text-sm text-gray-500">Envie um pedido da Venda Rápida para a cozinha.</p>
+                  </div>
+                </div>
+              }
+            </div>
           </div>
         }
         @case ('quickSale') {
@@ -120,7 +152,10 @@
                   <span class="text-2xl font-bold text-white">Total</span>
                   <span class="text-2xl font-bold text-white">{{ cartTotal() | currency:'BRL' }}</span>
                 </div>
-                <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Finalizar Venda</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button (click)="sendQuickSaleToKitchen()" [disabled]="quickSaleCart().length === 0" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Enviar p/ Cozinha</button>
+                    <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Pagamento Direto</button>
+                </div>
               </div>
             </div>
           </div>

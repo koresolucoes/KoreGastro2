@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports

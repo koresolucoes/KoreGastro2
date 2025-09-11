@@ -180,6 +180,7 @@ export class PrintingService {
   private generateTicketHtml(order: Order, items: OrderItem[], station: Station): string {
     const formattedTimestamp = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
     const orderId = order.id.substring(0, 8).toUpperCase();
+    const headerText = order.table_number === 0 ? 'Caixa' : `Mesa ${order.table_number}`;
     
     let itemsHtml = items.map(item => {
         const notesHtml = item.notes ? `<p style="font-style: italic; margin-left: 15px;"> -> ${item.notes}</p>` : '';
@@ -241,7 +242,7 @@ export class PrintingService {
           </style>
         </head>
         <body>
-          <div class="header">Mesa ${order.table_number}</div>
+          <div class="header">${headerText}</div>
           <div class="station">${station.name}</div>
           <div class="info">
             <span>Pedido: #${orderId}</span>

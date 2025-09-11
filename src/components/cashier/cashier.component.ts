@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
@@ -61,6 +62,7 @@ export class CashierComponent {
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
   quickSaleCustomer = signal<Customer | null>(null);
   isCustomerSelectModalOpen = signal(false);
+  processingQuickSaleOrder = signal<Order | null>(null);
 
   // --- Cash Drawer Signals ---
   cashDrawerView: WritableSignal<CashDrawerView> = signal('movement');
@@ -101,6 +103,10 @@ export class CashierComponent {
   });
 
   // --- Quick Sale Computeds & Methods ---
+  quickSalesForPayment = computed(() => {
+    return this.stateService.openOrders().filter(o => o.order_type === 'QuickSale');
+  });
+
   filteredRecipes = computed(() => {
     const category = this.selectedCategory();
     const term = this.recipeSearchTerm().toLowerCase();
@@ -148,7 +154,10 @@ export class CashierComponent {
     this.selectedPaymentMethod.set('Dinheiro');
     this.isQuickSalePaymentModalOpen.set(true);
   }
-  closeQuickSalePaymentModal() { this.isQuickSalePaymentModalOpen.set(false); }
+  closeQuickSalePaymentModal() { 
+    this.isQuickSalePaymentModalOpen.set(false);
+    this.processingQuickSaleOrder.set(null);
+  }
 
   async addPayment() {
     const method = this.selectedPaymentMethod(), balance = this.balanceDue();
@@ -182,9 +191,25 @@ export class CashierComponent {
 
   async finalizePayment() {
     const cart = this.quickSaleCart();
-    // FIX: Correctly check if the cart is empty and map the cart items to the detailed structure expected by the service.
     if (cart.length === 0 || !this.isPaymentComplete()) return;
 
+    const processingOrder = this.processingQuickSaleOrder();
+    
+    if (processingOrder) {
+        // Finalizing an existing QuickSale order that was sent to the kitchen
+        const { success, error } = await this.cashierDataService.finalizeExistingQuickSalePayment(processingOrder.id, this.payments());
+        if (success) {
+            await this.notificationService.alert('Venda registrada com sucesso!', 'Sucesso');
+            this.closeQuickSalePaymentModal();
+            this.quickSaleCart.set([]);
+            this.quickSaleCustomer.set(null);
+        } else {
+            await this.notificationService.alert(`Falha ao registrar venda. Erro: ${error?.message}`);
+        }
+        return; // Exit after handling
+    }
+
+    // --- Original logic for direct payment ---
     // Replicate logic from PricingService to get full promotion details for each item
     const now = new Date();
     const currentDay = now.getDay();
@@ -211,7 +236,7 @@ export class CashierComponent {
         return {
             recipe: item.recipe,
             quantity: item.quantity,
-            notes: '', // Quick sale does not support notes
+            notes: '', // Quick sale does not support notes for direct payment
             effectivePrice: this.recipePrices().get(item.recipe.id) ?? item.recipe.price,
             originalPrice: item.recipe.price,
             discountType: promo?.discount_type ?? null,
@@ -239,6 +264,58 @@ export class CashierComponent {
   removeQuickSaleCustomer() {
     this.quickSaleCustomer.set(null);
   }
+
+  async sendQuickSaleToKitchen() {
+    const cart = this.quickSaleCart();
+    if (cart.length === 0) return;
+
+    const confirmed = await this.notificationService.confirm(
+        `Enviar ${cart.length} item(ns) para a cozinha? O pedido ficará aguardando pagamento.`,
+        'Confirmar Envio'
+    );
+    if (!confirmed) return;
+
+    const customerId = this.quickSaleCustomer()?.id ?? null;
+    // Notes are not currently supported in the simple cart, so we pass an empty string.
+    const cartWithNotes = cart.map(c => ({...c, notes: ''})); 
+    const { success, error } = await this.cashierDataService.createQuickSaleOrderForKitchen(cartWithNotes, customerId);
+
+    if (success) {
+        this.notificationService.show('Pedido enviado para a cozinha!', 'success');
+        this.quickSaleCart.set([]);
+        this.quickSaleCustomer.set(null);
+    } else {
+        await this.notificationService.alert(`Falha ao enviar pedido. Erro: ${error?.message}`);
+    }
+  }
+  
+  openPaymentForQuickSale(order: Order) {
+    const recipesMap = this.stateService.recipesById();
+    
+    // This logic assumes quick sale items sent to kitchen are not grouped.
+    // Reconstructs the simple cart from the order items.
+    const cartItems: CartItem[] = (order.order_items || [])
+        .reduce((acc, orderItem) => {
+            if (orderItem.recipe_id) {
+                const recipe = recipesMap.get(orderItem.recipe_id);
+                if (recipe) {
+                    const existing = acc.find(ci => ci.recipe.id === recipe.id);
+                    if (existing) {
+                        existing.quantity += orderItem.quantity;
+                    } else {
+                        acc.push({ recipe, quantity: orderItem.quantity });
+                    }
+                }
+            }
+            return acc;
+        }, [] as CartItem[]);
+    
+    this.quickSaleCart.set(cartItems);
+    this.quickSaleCustomer.set(order.customers || null);
+    this.processingQuickSaleOrder.set(order);
+    this.openQuickSalePaymentModal();
+  }
+
 
   // --- Table Payment Methods ---
   openTableOptionsModal(table: Table) {

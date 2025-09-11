@@ -61,7 +61,7 @@
           @for (ticket of groupedKdsTickets(); track ticket.tableNumber) {
             <div (click)="openDetailModal(ticket)" class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col cursor-pointer hover:border-blue-500 transition-colors">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
-                <span>Mesa {{ ticket.tableNumber }}</span>
+                <span>{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</span>
                 <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
@@ -140,7 +140,7 @@
           @for (ticket of expoViewTickets(); track ticket.tableNumber) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup" [class.border-gray-700]="!ticket.isReadyForPickup">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
-                <span>Mesa {{ ticket.tableNumber }}</span>
+                <span>{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</span>
                 <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
@@ -204,10 +204,10 @@
 @if(isDetailModalOpen() && selectedTicketForDetail(); as ticket) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="closeDetailModal()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Detalhes do Pedido da Mesa</h3><button (click)="closeDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+      <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Detalhes do Pedido</h3><button (click)="closeDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
       <div class="p-6 flex-1 overflow-y-auto">
         <div class="grid grid-cols-3 gap-4 text-center mb-6 pb-4 border-b border-gray-600">
-            <div><p class="text-sm text-gray-400">Mesa</p><p class="text-lg font-semibold text-white">{{ ticket.tableNumber }}</p></div>
+            <div><p class="text-sm text-gray-400">Origem</p><p class="text-lg font-semibold text-white">{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</p></div>
             <div><p class="text-sm text-gray-400">Recebido</p><p class="text-lg font-semibold text-white">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p></div>
             <div><p class="text-sm text-gray-400">Tempo Total</p><p class="text-lg font-semibold font-mono" [class.text-red-400]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p></div>
         </div>

@@ -1,3 +1,4 @@
+
 import { Injectable, signal } from '@angular/core';
 // FIX: The `User` type is not always exported directly. Using `Session['user']` is a more robust way to get the user type.
 import type { Session } from '@supabase/supabase-js';

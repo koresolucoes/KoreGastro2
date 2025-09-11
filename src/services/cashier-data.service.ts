@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -430,6 +431,121 @@ export class CashierDataService {
     
     return { success: true, error: null };
   }
+
+  async createQuickSaleOrderForKitchen(cart: { recipe: Recipe; quantity: number; notes: string }[], customerId: string | null): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    // 1. Create the order
+    const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+            table_number: 0, // Using 0 for cashier/quick sale
+            order_type: 'QuickSale',
+            is_completed: false,
+            user_id: userId,
+            customer_id: customerId
+        })
+        .select('id')
+        .single();
+
+    if (orderError) return { success: false, error: orderError };
+    
+    // 2. Create order items
+    const stations = this.stateService.stations();
+    if (stations.length === 0) return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
+    const fallbackStationId = stations[0].id;
+    
+    const { data: preps } = await supabase.from('recipe_preparations').select('*').in('recipe_id', cart.map(i => i.recipe.id)).eq('user_id', userId);
+    const prepsByRecipeId = (preps || []).reduce((acc, p) => {
+        if (!acc.has(p.recipe_id)) acc.set(p.recipe_id, []);
+        acc.get(p.recipe_id)!.push(p);
+        return acc;
+    }, new Map<string, any[]>());
+    
+    const cartWithPrices = cart.map(item => ({
+        ...item,
+        effectivePrice: this.pricingService.getEffectivePrice(item.recipe)
+    }));
+
+    const allItemsToInsert = cartWithPrices.flatMap(item => {
+        const recipePreps = prepsByRecipeId.get(item.recipe.id);
+        const status_timestamps = { 'PENDENTE': new Date().toISOString() };
+        if (recipePreps && recipePreps.length > 0) {
+            const groupId = uuidv4();
+            return recipePreps.map((prep: any) => ({
+                order_id: order.id, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: item.notes,
+                status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
+                price: item.effectivePrice / recipePreps.length, 
+                original_price: item.recipe.price / recipePreps.length,
+                group_id: groupId, user_id: userId,
+                discount_type: null, discount_value: null
+            }));
+        }
+        return [{
+            order_id: order.id, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,
+            status: 'PENDENTE' as OrderItemStatus, station_id: fallbackStationId, status_timestamps,
+            price: item.effectivePrice, 
+            original_price: item.recipe.price,
+            group_id: null, user_id: userId,
+            discount_type: null, discount_value: null
+        }];
+    });
+
+    if (allItemsToInsert.length === 0) {
+        await supabase.from('orders').delete().eq('id', order.id);
+        return { success: true, error: null };
+    }
+
+    const { error: itemsError } = await supabase.from('order_items').insert(allItemsToInsert);
+    if (itemsError) {
+        await supabase.from('orders').delete().eq('id', order.id); // Rollback
+        return { success: false, error: itemsError };
+    }
+
+    return { success: true, error: null };
+  }
+
+  async finalizeExistingQuickSalePayment(orderId: string, payments: Payment[]): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .update({ is_completed: true, completed_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .select('*, order_items(*)')
+        .single();
+
+    if (orderError) return { success: false, error: orderError };
+
+    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
+
+    const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
+        description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
+        type: 'Receita' as TransactionType,
+        amount: p.amount,
+        user_id: userId,
+        employee_id: cashierEmployeeId
+    }));
+    
+    if (transactionsToInsert.length > 0) {
+        const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
+        if (transactionError) return { success: false, error: transactionError };
+    }
+    
+    if (order.order_items) {
+        const { success, error } = await this.inventoryDataService.deductStockForOrderItems(order.order_items, order.id);
+        if (!success) {
+            console.error('Stock deduction failed for existing quick sale', error);
+        }
+    }
+
+    await this.stateService.refreshDashboardAndCashierData();
+    return { success: true, error: null };
+  }
+
 
   async logTransaction(description: string, amount: number, type: 'Despesa'): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
