@@ -1,10 +1,12 @@
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
 import { IngredientDetailsModalComponent } from './ingredient-details-modal/ingredient-details-modal.component';
 
@@ -38,7 +40,7 @@ interface StockPrediction {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, IngredientDetailsModalComponent],
+  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink],
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,4 +1,5 @@
 
+
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -27,6 +28,7 @@ import { MyLeaveComponent } from './components/my-leave/my-leave.component';
 import { PayrollComponent } from './components/payroll/payroll.component';
 import { EmployeesComponent } from './components/employees/employees.component';
 import { CustomersComponent } from './components/customers/customers.component';
+import { InventoryAuditComponent } from './components/inventory/inventory-audit/inventory-audit.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -37,6 +39,7 @@ export const APP_ROUTES: Routes = [
   { path: 'kds', component: KdsComponent, canActivate: [roleGuard] },
   { path: 'cashier', component: CashierComponent, canActivate: [roleGuard] },
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
+  { path: 'inventory/audit', component: InventoryAuditComponent, canActivate: [roleGuard] },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [roleGuard] },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },

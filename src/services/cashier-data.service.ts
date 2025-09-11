@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -727,8 +728,8 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-// FIX: The type of `r` is incorrectly inferred as `unknown` within the reduce function. Typing `r` as `any` allows the `totalAmount` property to be accessed and summed correctly.
-                totalAmount: rows.reduce((sum, r: any) => sum + r.totalAmount, 0)
+                // FIX: Explicitly type the accumulator and current value in the reduce function to ensure type safety.
+                totalAmount: rows.reduce((sum: number, r: { totalAmount: number }) => sum + r.totalAmount, 0)
             }
         };
     }
