@@ -33,6 +33,28 @@ export interface ReportData {
   netProfit?: number;
 }
 
+export interface PeriodSalesData {
+    totalSales: number;
+    orderCount: number;
+    averageTicket: number;
+}
+
+export interface ComparativeData {
+    current: PeriodSalesData;
+    previous: PeriodSalesData;
+}
+
+export interface PeakHoursData {
+    hour: number;
+    sales: number;
+}
+
+export interface PeakDaysData {
+  dayOfWeek: string;
+  dayIndex: number;
+  sales: number;
+}
+
 
 @Injectable({
   providedIn: 'root',
@@ -163,6 +185,111 @@ export class CashierDataService {
 
         return { grossRevenue, totalOrders: orders.length, cogs, grossProfit, totalExpenses, netProfit };
     }
+  }
+
+  private async getSalesDataForPeriod(startDate: Date, endDate: Date): Promise<PeriodSalesData> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { totalSales: 0, orderCount: 0, averageTicket: 0 };
+
+    const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('amount, description')
+        .eq('user_id', userId)
+        .eq('type', 'Receita')
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString());
+
+    if (error) throw error;
+    if (!transactions) return { totalSales: 0, orderCount: 0, averageTicket: 0 };
+
+    const totalSales = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const orderIds = new Set(transactions.map(t => t.description.match(/#([a-f0-9-]+)/)?.[1]).filter(Boolean));
+    const orderCount = orderIds.size;
+    const averageTicket = orderCount > 0 ? totalSales / orderCount : 0;
+
+    return { totalSales, orderCount, averageTicket };
+  }
+
+  async getSalesDataForComparativeReport(currentStart: string, currentEnd: string): Promise<ComparativeData> {
+      const currentStartDate = new Date(`${currentStart}T00:00:00`);
+      const currentEndDate = new Date(`${currentEnd}T23:59:59`);
+
+      const duration = currentEndDate.getTime() - currentStartDate.getTime();
+      const previousEndDate = new Date(currentStartDate.getTime() - 1);
+      const previousStartDate = new Date(previousEndDate.getTime() - duration);
+
+      const [current, previous] = await Promise.all([
+          this.getSalesDataForPeriod(currentStartDate, currentEndDate),
+          this.getSalesDataForPeriod(previousStartDate, previousEndDate),
+      ]);
+      
+      return { current, previous };
+  }
+
+  async getSalesByHourForPeriod(startDateStr: string, endDateStr: string): Promise<PeakHoursData[]> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return [];
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+
+    const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .eq('type', 'Receita')
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString());
+
+    if (error) throw error;
+    if (!transactions) return [];
+
+    const salesByHour: { [key: number]: number } = {};
+    for (let i = 0; i < 24; i++) salesByHour[i] = 0;
+
+    for (const t of transactions) {
+        const hour = new Date(t.date).getHours();
+        salesByHour[hour] = (salesByHour[hour] || 0) + t.amount;
+    }
+
+    return Object.entries(salesByHour).map(([hour, sales]) => ({
+        hour: Number(hour),
+        sales,
+    }));
+  }
+
+  async getSalesByDayOfWeekForPeriod(startDateStr: string, endDateStr: string): Promise<PeakDaysData[]> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return [];
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+
+    const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .eq('type', 'Receita')
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString());
+
+    if (error) throw error;
+    if (!transactions) return [];
+
+    const salesByDay: number[] = [0, 0, 0, 0, 0, 0, 0]; // Sun -> Sat
+    
+    for (const t of transactions) {
+        const dayIndex = new Date(t.date).getDay(); // 0 for Sunday, 1 for Monday...
+        salesByDay[dayIndex] += t.amount;
+    }
+    
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    return salesByDay.map((sales, index) => ({
+      dayOfWeek: dayNames[index],
+      dayIndex: index,
+      sales: sales,
+    }));
   }
   
   async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[], customerId: string | null): Promise<{ success: boolean; error: any }> {

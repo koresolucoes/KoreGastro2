@@ -1,8 +1,8 @@
 <div class="container mx-auto">
-  <!-- Report Generation Form -->
   <div class="bg-gray-800 rounded-lg p-6 mb-6 no-print">
-    <h1 class="text-3xl font-bold text-white mb-4">Gerador de Relatórios</h1>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <h1 class="text-3xl font-bold text-white mb-4">Relatórios</h1>
+    <!-- Date Filters -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
       <div>
         <label for="start-date" class="block text-sm font-medium text-gray-300 mb-1">Data de Início</label>
         <input type="date" id="start-date" [value]="startDate()" (input)="startDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
@@ -11,112 +11,144 @@
         <label for="end-date" class="block text-sm font-medium text-gray-300 mb-1">Data de Fim</label>
         <input type="date" id="end-date" [value]="endDate()" (input)="endDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
       </div>
-      <div>
-        <label for="report-type" class="block text-sm font-medium text-gray-300 mb-1">Tipo de Relatório</label>
-        <select id="report-type" [value]="reportType()" (change)="reportType.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-          <option value="financial">Resumo Financeiro</option>
-          <option value="items">Desempenho por Item</option>
-          <option value="sales">Vendas Detalhadas</option>
-        </select>
+      <div class="text-gray-400 text-sm">
+        Selecione o período e o tipo de relatório que deseja visualizar.
       </div>
-      <button (click)="generateReport()" [disabled]="isLoading()" class="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600">
-        Gerar Relatório
-      </button>
     </div>
   </div>
 
-  <!-- Report Display Area -->
-  <div class="printable-area">
-    @if (isLoading()) {
-      <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-        <p class="ml-4 text-white">Gerando relatório...</p>
-      </div>
-    } @else if (generatedReport(); as report) {
-      <div class="bg-gray-800 rounded-lg p-6">
-        <div class="flex justify-between items-start mb-6">
+  <!-- Tabs for Report Types -->
+  <div class="mb-6 border-b border-gray-700 no-print">
+      <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+          <button (click)="activeReport.set('summary')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.border-transparent]="activeReport() !== 'summary'" [class.text-gray-400]="activeReport() !== 'summary'">
+              Resumo
+          </button>
+           <button (click)="activeReport.set('comparative')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.border-transparent]="activeReport() !== 'comparative'" [class.text-gray-400]="activeReport() !== 'comparative'">
+              Análise Comparativa
+          </button>
+          <button (click)="activeReport.set('peakHours')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() !== 'peakHours'" [class.text-gray-400]="activeReport() !== 'peakHours'">
+              Horários de Pico
+          </button>
+      </nav>
+  </div>
+
+  @switch (activeReport()) {
+    @case('summary') {
+      <!-- Report Generation Form -->
+      <div class="bg-gray-800 rounded-lg p-6 mb-6 no-print">
+        <h2 class="text-xl font-semibold text-white mb-4">Gerador de Resumo</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div>
-            <h2 class="text-2xl font-bold text-white">{{ reportTitle() }}</h2>
-            <p class="text-gray-400">Período: {{ startDate() | date:'dd/MM/yyyy' }} a {{ endDate() | date:'dd/MM/yyyy' }}</p>
+            <label for="report-type" class="block text-sm font-medium text-gray-300 mb-1">Tipo de Resumo</label>
+            <select id="report-type" [value]="summaryReportType()" (change)="summaryReportType.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              <option value="financial">Resumo Financeiro</option>
+              <option value="items">Desempenho por Item</option>
+              <option value="sales">Vendas Detalhadas</option>
+            </select>
           </div>
-          <div class="no-print flex gap-2">
-            <button (click)="exportReportAsCsv()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
-              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              Exportar CSV
-            </button>
-            <button (click)="printReport()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
-              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
-              Imprimir
-            </button>
-          </div>
+          <button (click)="generateSummaryReport()" [disabled]="isSummaryLoading()" class="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600">
+            Gerar Resumo
+          </button>
         </div>
-        
-        @switch (reportType()) {
-          @case('financial') {
-            <div class="space-y-4 text-lg">
-              <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Faturamento Bruto</span><span class="font-semibold text-green-400">{{ report.grossRevenue | currency:'BRL' }}</span></div>
-              <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Custo de Mercadoria (CMV)</span><span class="font-semibold text-yellow-400">- {{ report.cogs | currency:'BRL' }}</span></div>
-              <div class="flex justify-between items-center bg-gray-700 p-4 rounded-lg text-xl"><strong class="text-white">Lucro Bruto</strong><strong class="text-white">{{ report.grossProfit | currency:'BRL' }}</strong></div>
-              <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Despesas Totais</span><span class="font-semibold text-red-400">- {{ report.totalExpenses | currency:'BRL' }}</span></div>
-              <div class="flex justify-between items-center p-4 rounded-lg text-xl" [class.bg-green-600]="(report.netProfit ?? 0) >= 0" [class.bg-red-600]="(report.netProfit ?? 0) < 0"><strong class="text-white">Resultado Líquido</strong><strong class="text-white">{{ report.netProfit | currency:'BRL' }}</strong></div>
-            </div>
-          }
-          @case ('sales') {
-            <!-- Sales Report View -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Faturamento Bruto</p><p class="text-2xl font-bold text-white mt-1">{{ report.grossRevenue | currency:'BRL' }}</p></div>
-              <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Total de Pedidos</p><p class="text-2xl font-bold text-white mt-1">{{ report.totalOrders }}</p></div>
-              <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Ticket Médio</p><p class="text-2xl font-bold text-white mt-1">{{ report.averageTicket | currency:'BRL' }}</p></div>
-            </div>
-            <h3 class="text-lg font-semibold text-white mb-4">Resumo por Forma de Pagamento</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left">
-                <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase"><tr><th class="px-6 py-3">Forma de Pagamento</th><th class="px-6 py-3 text-right">Valor Total</th></tr></thead>
-                <tbody>
-                  @for(item of report.paymentSummary; track item.method) {
-                    <tr class="border-b border-gray-700">
-                      <td class="px-6 py-4 font-medium text-white">{{ item.method }}</td>
-                      <td class="px-6 py-4 text-right">{{ item.total | currency:'BRL' }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-          @case ('items') {
-            <!-- Items Report View -->
-            @if(report.bestSellingItems && report.bestSellingItems.length > 0) {
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase"><tr><th class="px-6 py-3">Item</th><th class="px-6 py-3 text-right">Qtd.</th><th class="px-6 py-3 text-right">Receita</th><th class="px-6 py-3 text-right">Custo Total</th><th class="px-6 py-3 text-right">Lucro Total</th><th class="px-6 py-3 text-right">Margem</th></tr></thead>
-                  <tbody>
-                    @for(item of report.bestSellingItems; track item.name) {
-                      <tr class="border-b border-gray-700">
-                        <td class="px-6 py-4 font-medium text-white">{{ item.name }}</td>
-                        <td class="px-6 py-4 text-right">{{ item.quantity }}</td>
-                        <td class="px-6 py-4 text-right">{{ item.revenue | currency:'BRL' }}</td>
-                        <td class="px-6 py-4 text-right text-yellow-300">{{ item.totalCost | currency:'BRL' }}</td>
-                        <td class="px-6 py-4 text-right font-semibold text-green-400">{{ item.totalProfit | currency:'BRL' }}</td>
-                        <td class="px-6 py-4 text-right font-bold" [class.text-green-400]="item.profitMargin > 20" [class.text-yellow-400]="item.profitMargin <= 20 && item.profitMargin >= 0" [class.text-red-400]="item.profitMargin < 0">{{ item.profitMargin | number:'1.0-0' }}%</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+      </div>
+      <!-- Report Display Area -->
+      <div class="printable-area">
+        @if (isSummaryLoading()) {
+          <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+            <p class="ml-4 text-white">Gerando resumo...</p>
+          </div>
+        } @else if (generatedSummaryReport(); as report) {
+          <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-white">{{ summaryReportTitle() }}</h2>
+                <p class="text-gray-400">Período: {{ startDate() | date:'dd/MM/yyyy' }} a {{ endDate() | date:'dd/MM/yyyy' }}</p>
               </div>
-            } @else {
-               <p class="text-center text-gray-500 py-16">Nenhum item vendido no período selecionado.</p>
+              <div class="no-print flex gap-2 w-full sm:w-auto">
+                <button (click)="exportReportAsCsv()" class="flex-1 sm:flex-initial justify-center bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                  Exportar CSV
+                </button>
+                <button (click)="printReport()" class="flex-1 sm:flex-initial justify-center bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
+                  Imprimir
+                </button>
+              </div>
+            </div>
+            
+            @switch (summaryReportType()) {
+              @case('financial') {
+                <div class="space-y-4 text-lg">
+                  <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Faturamento Bruto</span><span class="font-semibold text-green-400">{{ report.grossRevenue | currency:'BRL' }}</span></div>
+                  <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Custo de Mercadoria (CMV)</span><span class="font-semibold text-yellow-400">- {{ report.cogs | currency:'BRL' }}</span></div>
+                  <div class="flex justify-between items-center bg-gray-700 p-4 rounded-lg text-xl"><strong class="text-white">Lucro Bruto</strong><strong class="text-white">{{ report.grossProfit | currency:'BRL' }}</strong></div>
+                  <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Despesas Totais</span><span class="font-semibold text-red-400">- {{ report.totalExpenses | currency:'BRL' }}</span></div>
+                  <div class="flex justify-between items-center p-4 rounded-lg text-xl" [class.bg-green-600]="(report.netProfit ?? 0) >= 0" [class.bg-red-600]="(report.netProfit ?? 0) < 0"><strong class="text-white">Resultado Líquido</strong><strong class="text-white">{{ report.netProfit | currency:'BRL' }}</strong></div>
+                </div>
+              }
+              @case ('sales') {
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Faturamento Bruto</p><p class="text-2xl font-bold text-white mt-1">{{ report.grossRevenue | currency:'BRL' }}</p></div>
+                  <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Total de Pedidos</p><p class="text-2xl font-bold text-white mt-1">{{ report.totalOrders }}</p></div>
+                  <div class="bg-gray-700/50 rounded-lg p-4"><p class="text-gray-400 text-sm">Ticket Médio</p><p class="text-2xl font-bold text-white mt-1">{{ report.averageTicket | currency:'BRL' }}</p></div>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-4">Resumo por Forma de Pagamento</h3>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left">
+                    <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase"><tr><th class="px-6 py-3">Forma de Pagamento</th><th class="px-6 py-3 text-right">Valor Total</th></tr></thead>
+                    <tbody>
+                      @for(item of report.paymentSummary; track item.method) {
+                        <tr class="border-b border-gray-700">
+                          <td class="px-6 py-4 font-medium text-white">{{ item.method }}</td>
+                          <td class="px-6 py-4 text-right">{{ item.total | currency:'BRL' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+              @case ('items') {
+                @if(report.bestSellingItems && report.bestSellingItems.length > 0) {
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                      <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase"><tr><th class="px-6 py-3">Item</th><th class="px-6 py-3 text-right">Qtd.</th><th class="px-6 py-3 text-right">Receita</th><th class="px-6 py-3 text-right">Custo Total</th><th class="px-6 py-3 text-right">Lucro Total</th><th class="px-6 py-3 text-right">Margem</th></tr></thead>
+                      <tbody>
+                        @for(item of report.bestSellingItems; track item.name) {
+                          <tr class="border-b border-gray-700">
+                            <td class="px-6 py-4 font-medium text-white">{{ item.name }}</td>
+                            <td class="px-6 py-4 text-right">{{ item.quantity }}</td>
+                            <td class="px-6 py-4 text-right">{{ item.revenue | currency:'BRL' }}</td>
+                            <td class="px-6 py-4 text-right text-yellow-300">{{ item.totalCost | currency:'BRL' }}</td>
+                            <td class="px-6 py-4 text-right font-semibold text-green-400">{{ item.totalProfit | currency:'BRL' }}</td>
+                            <td class="px-6 py-4 text-right font-bold" [class.text-green-400]="item.profitMargin > 20" [class.text-yellow-400]="item.profitMargin <= 20 && item.profitMargin >= 0" [class.text-red-400]="item.profitMargin < 0">{{ item.profitMargin | number:'1.0-0' }}%</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="text-center text-gray-500 py-16">Nenhum item vendido no período selecionado.</p>
+                }
+              }
             }
-          }
+          </div>
+        } @else {
+          <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
+            <div class="text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-400">Nenhum resumo gerado</h3>
+              <p class="mt-1 text-sm text-gray-500">Selecione um tipo e clique em "Gerar Resumo" para começar.</p>
+            </div>
+          </div>
         }
       </div>
-    } @else {
-      <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
-        <div class="text-center">
-          <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-400">Nenhum relatório gerado</h3>
-          <p class="mt-1 text-sm text-gray-500">Selecione um período e tipo de relatório para começar.</p>
-        </div>
-      </div>
     }
-  </div>
+    @case('comparative') {
+        <app-comparative-report [startDate]="startDate()" [endDate]="endDate()"></app-comparative-report>
+    }
+    @case('peakHours') {
+        <app-peak-hours-report [startDate]="startDate()" [endDate]="endDate()"></app-peak-hours-report>
+    }
+  }
 </div>

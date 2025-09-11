@@ -1,0 +1,54 @@
+@if (isLoading()) {
+  <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+  </div>
+} @else if (reportData(); as data) {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Current Period -->
+    <div class="bg-gray-800 p-6 rounded-lg">
+      <h3 class="text-lg font-semibold text-white mb-4">Período Atual</h3>
+      <div class="space-y-4">
+        <div><p class="text-sm text-gray-400">Faturamento</p><p class="text-2xl font-bold text-blue-300">{{ data.current.totalSales | currency:'BRL' }}</p></div>
+        <div><p class="text-sm text-gray-400">Pedidos</p><p class="text-2xl font-bold">{{ data.current.orderCount }}</p></div>
+        <div><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold">{{ data.current.averageTicket | currency:'BRL' }}</p></div>
+      </div>
+    </div>
+    <!-- Previous Period -->
+    <div class="bg-gray-800 p-6 rounded-lg">
+      <h3 class="text-lg font-semibold text-white mb-4">Período Anterior</h3>
+      <div class="space-y-4">
+        <div><p class="text-sm text-gray-400">Faturamento</p><p class="text-2xl font-bold text-gray-300">{{ data.previous.totalSales | currency:'BRL' }}</p></div>
+        <div><p class="text-sm text-gray-400">Pedidos</p><p class="text-2xl font-bold">{{ data.previous.orderCount }}</p></div>
+        <div><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold">{{ data.previous.averageTicket | currency:'BRL' }}</p></div>
+      </div>
+    </div>
+    <!-- Comparison -->
+    <div class="bg-gray-800 p-6 rounded-lg">
+      <h3 class="text-lg font-semibold text-white mb-4">Comparação</h3>
+      <div class="space-y-4">
+        <div>
+            <p class="text-sm text-gray-400">Faturamento</p>
+            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(salesChange())" [class.text-red-400]="!isPositiveChange(salesChange())">
+                {{ salesChange() | number:'1.2-2' }}%
+            </p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-400">Pedidos</p>
+            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(ordersChange())" [class.text-red-400]="!isPositiveChange(ordersChange())">
+                {{ ordersChange() | number:'1.2-2' }}%
+            </p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-400">Ticket Médio</p>
+            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(ticketChange())" [class.text-red-400]="!isPositiveChange(ticketChange())">
+                {{ ticketChange() | number:'1.2-2' }}%
+            </p>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="text-center text-gray-500 py-16 bg-gray-800 rounded-lg">
+    <p>Não foi possível carregar os dados para comparação.</p>
+  </div>
+}

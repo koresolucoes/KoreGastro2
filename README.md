@@ -68,7 +68,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
 - **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas e agendadas, incluindo horas extras, e gere contracheques detalhados.
 
-### 💖 **CRM e Fidelidade (Novo!)**
+### 💖 **CRM e Fidelidade**
 - **Cadastro de Clientes:** Base de dados completa de clientes com histórico de consumo e observações.
 - **Histórico de Consumo:** Visualize todos os pedidos anteriores de um cliente para um atendimento personalizado.
 - **Programa de Fidelidade:** Configure um sistema de pontos por valor gasto e crie recompensas, como descontos ou itens grátis, para incentivar a lealdade.
@@ -76,6 +76,8 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 ### 🚀 **Performance e Relatórios**
 - **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
+- **Análise Comparativa (Novo!):** Compare o desempenho de vendas entre diferentes períodos (dia, semana, mês) para identificar tendências de crescimento.
+- **Análise de Horários de Pico (Novo!):** Visualize graficamente os horários e dias da semana com maior volume de vendas para otimizar a alocação de equipe e preparo de insumos.
 - **Análise de Desempenho por Prato:** Descubra quais são seus pratos mais lucrativos com relatórios que incluem receita, custo, lucro total e margem de lucro por item.
 - **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha.
 
@@ -101,8 +103,6 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
     *   **Cardápio Específico para Delivery:** Gestão de preços e disponibilidade de itens para entrega.
 
 *   **Módulo de Relatórios Avançados:**
-    *   **Análise Comparativa:** Comparação de vendas (dia/semana/mês anterior).
-    *   **Análise de Horários de Pico:** Identificação dos horários de maior e menor movimento para otimização de equipe e estoque.
     *   **Dashboard de CMV vs. Vendas:** Acompanhamento da saúde financeira em tempo real.
     *   **Construtor de Relatórios:** Ferramenta para criar relatórios personalizados.
 
