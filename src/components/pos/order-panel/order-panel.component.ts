@@ -113,7 +113,7 @@ export class OrderPanelComponent {
   filteredRecipes = computed(() => {
       const category = this.selectedCategory();
       const term = this.recipeSearchTerm().toLowerCase();
-      let recipesToShow = this.recipes();
+      let recipesToShow = this.recipes().filter(r => !r.is_sub_recipe);
       if (category) recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
       if (term) recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
       return recipesToShow;

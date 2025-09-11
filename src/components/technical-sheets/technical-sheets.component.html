@@ -106,7 +106,7 @@
           <div class="bg-gray-900/50 p-4 rounded-lg space-y-4">
             <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" placeholder="Nome do Prato" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-lg font-bold">
             <textarea [value]="recipeForm().recipe.description || ''" (input)="updateRecipeField('description', $any($event.target).value)" placeholder="Descrição do prato para o cardápio..." rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm"></textarea>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Preço Venda</label>
                 <input type="number" [value]="recipeForm().recipe.price ?? 0" (input)="updateRecipeField('price', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
@@ -117,14 +117,14 @@
                     <select [value]="recipeForm().recipe.category_id || ''" (change)="updateRecipeField('category_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
                     @for(cat of categories(); track cat.id) { <option [value]="cat.id">{{cat.name}}</option> }
                     </select>
-                    <button (click)="openAddCategoryModal()" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg" title="Adicionar nova categoria">+</button>
+                    <button (click)="openAddCategoryModal()" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg shrink-0" title="Adicionar nova categoria">+</button>
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Tempo Preparo</label>
                 <input type="number" [value]="recipeForm().recipe.prep_time_in_minutes ?? 0" (input)="updateRecipeField('prep_time_in_minutes', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
               </div>
-              <div class="flex flex-col gap-2 justify-center pt-5">
+              <div class="flex flex-col gap-2 justify-start sm:justify-center items-start pt-2 sm:pt-5">
                   <div class="flex items-center"><input type="checkbox" id="is_sub_recipe" [checked]="recipeForm().recipe.is_sub_recipe" (change)="updateRecipeField('is_sub_recipe', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600"><label for="is_sub_recipe" class="ml-2 text-sm text-gray-200">É sub-receita?</label></div>
                   <div class="flex items-center"><input type="checkbox" id="is_available" [checked]="recipeForm().recipe.is_available" (change)="updateRecipeField('is_available', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600"><label for="is_available" class="ml-2 text-sm text-gray-200">Disponível?</label></div>
               </div>
@@ -157,22 +157,22 @@
           <div class="space-y-4">
             @for(prep of recipeForm().preparations; track prep.id) {
               <div class="bg-gray-900/50 p-4 rounded-lg">
-                  <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center gap-4 flex-1">
+                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
                       <input type="text" [value]="prep.name || ''" (input)="updatePreparationField(prep.id, 'name', $any($event.target).value)" placeholder="Nome da etapa" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white font-semibold">
                       <div class="flex items-center gap-2">
-                        <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-sm"><option value="">Estação...</option>@for(s of stations(); track s.id){<option [value]="s.id">{{s.name}}</option>}</select>
-                        <button (click)="openAddStationModal(prep.id)" class="p-2 h-8 w-8 text-xs bg-gray-600 hover:bg-gray-500 rounded-lg" title="Adicionar nova estação">+</button>
+                        <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 text-white text-sm"><option value="">Estação...</option>@for(s of stations(); track s.id){<option [value]="s.id">{{s.name}}</option>}</select>
+                        <button (click)="openAddStationModal(prep.id)" class="p-2 h-8 w-8 text-xs bg-gray-600 hover:bg-gray-500 rounded-lg shrink-0" title="Adicionar nova estação">+</button>
                       </div>
                     </div>
-                    <button (click)="removePreparation(prep.id)" class="ml-4 p-1 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    <button (click)="removePreparation(prep.id)" class="p-1 text-red-400 hover:text-red-300 self-end sm:self-center sm:ml-4"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                   </div>
                   <ul class="space-y-2">
                     @for(ing of getIngredientsForPreparation(prep.id); track ing.ingredient_id) {
                       <li class="flex items-center gap-2 text-sm">
                         <span class="flex-1 text-gray-300">{{getIngredientName(ing.ingredient_id)}}</span>
-                        <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-24 bg-gray-700 rounded-md p-1 text-center">
-                        <span class="w-10 text-gray-400">{{getIngredientUnit(ing.ingredient_id)}}</span>
+                        <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-20 bg-gray-700 rounded-md p-1 text-center">
+                        <span class="w-12 text-gray-400">{{getIngredientUnit(ing.ingredient_id)}}</span>
                         <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-red-500 hover:text-red-400 p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                       </li>
                     }
@@ -188,8 +188,8 @@
                   @for(sr of recipeForm().subRecipes; track sr.child_recipe_id) {
                      <li class="flex items-center gap-2 text-sm">
                         <span class="flex-1 text-gray-300">{{getSubRecipeName(sr.child_recipe_id)}}</span>
-                        <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-24 bg-gray-700 rounded-md p-1 text-center">
-                        <span class="w-10 text-gray-400">un</span>
+                        <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-20 bg-gray-700 rounded-md p-1 text-center">
+                        <span class="w-12 text-gray-400">un</span>
                         <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-red-500 hover:text-red-400 p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
                       </li>
                   }
@@ -203,7 +203,7 @@
         </div>
         <!-- Right Column: Cost & AI -->
         <div class="lg:col-span-1 space-y-4">
-            <div class="bg-gray-900/50 p-4 rounded-lg sticky top-0">
+            <div class="bg-gray-900/50 p-4 rounded-lg lg:sticky top-0">
                 <h3 class="font-semibold text-white text-lg mb-2">Análise de Custos</h3>
                 <div class="flex justify-between items-center text-3xl font-bold border-t border-b border-gray-700 py-3 my-3">
                   <span class="text-gray-300">CMV</span>
@@ -223,9 +223,9 @@
         </div>
       </div>
 
-      <div class="p-4 bg-gray-900/50 flex justify-end gap-3 border-t border-gray-700">
-         <button (click)="closeModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-         <button (click)="saveTechnicalSheet()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Ficha Técnica</button>
+      <div class="p-4 bg-gray-900/50 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-gray-700">
+         <button (click)="closeModal()" class="w-full sm:w-auto px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="saveTechnicalSheet()" class="w-full sm:w-auto px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Ficha Técnica</button>
       </div>
     </div>
   </div>

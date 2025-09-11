@@ -104,7 +104,7 @@ export class CashierComponent {
   filteredRecipes = computed(() => {
     const category = this.selectedCategory();
     const term = this.recipeSearchTerm().toLowerCase();
-    let recipesToShow = this.recipes().filter(r => r.is_available);
+    let recipesToShow = this.recipes().filter(r => r.is_available && !r.is_sub_recipe);
     if (category) {
       recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
     }

@@ -68,6 +68,12 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
 - **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas e agendadas, incluindo horas extras, e gere contracheques detalhados.
 
+### 💖 **CRM e Fidelidade (Novo!)**
+- **Cadastro de Clientes:** Base de dados completa de clientes com histórico de consumo e observações.
+- **Histórico de Consumo:** Visualize todos os pedidos anteriores de um cliente para um atendimento personalizado.
+- **Programa de Fidelidade:** Configure um sistema de pontos por valor gasto e crie recompensas, como descontos ou itens grátis, para incentivar a lealdade.
+- **Resgate no PDV:** Permita que os clientes resgatem suas recompensas diretamente ao fazer um novo pedido na mesa ou no caixa.
+
 ### 🚀 **Performance e Relatórios**
 - **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
 - **Análise de Desempenho por Prato:** Descubra quais são seus pratos mais lucrativos com relatórios que incluem receita, custo, lucro total e margem de lucro por item.
@@ -89,12 +95,6 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
 
 ### 🎯 Alta Prioridade (Foco em Core Business e Lucratividade)
 
-*   **Módulo CRM e Fidelidade:**
-    *   **Cadastro de Clientes:** Base de dados de clientes, vinculada a pedidos e reservas.
-    *   **Histórico de Consumo:** Análise de pratos preferidos e frequência de visitas.
-    *   **Programa de Fidelidade:** Sistema de pontos e recompensas para incentivar o retorno.
-    *   **Gestão de Vouchers:** Criação e controle de cupons de desconto.
-
 *   **Módulo de Delivery e Integrações:**
     *   **Integração com Marketplaces:** Recebimento automático de pedidos do iFood, Rappi, etc., diretamente no PDV e KDS.
     *   **Gestão de Entregadores:** Acompanhamento do status dos entregadores (próprios ou da plataforma).
@@ -106,21 +106,24 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
     *   **Dashboard de CMV vs. Vendas:** Acompanhamento da saúde financeira em tempo real.
     *   **Construtor de Relatórios:** Ferramenta para criar relatórios personalizados.
 
+*   **Melhorias no PDV:**
+    *   **Divisão de Conta por Item:** Permitir que clientes em uma mesma mesa paguem apenas o que consumiram.
+    *   **Integração com Pagamento na Mesa:** Suporte para maquininhas de cartão que se comunicam com o sistema para fechar a conta na mesa.
+    *   **Gestão de Combos e Modificadores:** Interface aprimorada para criação de ofertas "monte seu combo" e modificadores complexos.
+
+### ⭐ Média Prioridade (Melhorias de Eficiência e Usabilidade)
+
 *   **Módulo de Estoque Avançado:**
     *   **Controle de Desperdício:** Ferramenta para registrar perdas de insumos de forma detalhada (vencimento, quebra, etc.) para análise de custos.
     *   **Rastreabilidade de Lotes:** Acompanhamento de lotes de ingredientes para segurança alimentar.
 
-### ⭐ Média Prioridade (Melhorias de Eficiência e Usabilidade)
+*   **Gestão de Vouchers e Cupons:**
+    *   Criação e controle de cupons de desconto para uso no PDV.
 
 *   **Melhorias no Módulo de RH:**
     *   **Gestão de Documentos:** Armazenamento digital de contratos e documentos dos funcionários.
     *   **Avaliações de Desempenho:** Registro e acompanhamento de feedbacks e avaliações periódicas.
     *   **Comunicação Interna:** Mural de avisos e comunicados para a equipe.
-
-*   **Melhorias no PDV:**
-    *   **Divisão de Conta por Item:** Permitir que clientes em uma mesma mesa paguem apenas o que consumiram.
-    *   **Integração com Pagamento na Mesa:** Suporte para maquininhas de cartão que se comunicam com o sistema para fechar a conta na mesa.
-    *   **Gestão de Combos e Modificadores:** Interface aprimorada para criação de ofertas "monte seu combo" e modificadores complexos.
 
 *   **Melhorias no KDS:**
     *   **Suporte a "Bump Bar":** Permitir a finalização de comandas com teclados físicos.
