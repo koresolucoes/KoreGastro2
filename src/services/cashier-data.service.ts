@@ -1,5 +1,6 @@
 
 
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -728,7 +729,7 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-                // FIX: Explicitly type the accumulator and current value in the reduce function to ensure type safety.
+// FIX: Explicitly type the accumulator and current value in the reduce function to ensure type safety.
                 totalAmount: rows.reduce((sum: number, r: { totalAmount: number }) => sum + r.totalAmount, 0)
             }
         };
