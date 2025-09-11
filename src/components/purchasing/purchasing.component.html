@@ -109,21 +109,29 @@
         <div>
           <h4 class="text-lg font-semibold text-white mb-3">Itens do Pedido</h4>
           <!-- Table Header -->
-          <div class="flex items-center gap-3 px-2 mb-1 text-xs text-gray-400 font-medium">
+          <div class="hidden lg:flex items-center gap-3 px-2 mb-1 text-xs text-gray-400 font-medium">
             <span class="flex-1">Ingrediente</span>
+            <span class="w-32 text-center">Lote</span>
+            <span class="w-32 text-center">Validade</span>
             <span class="w-28 text-center">Quantidade</span>
             <span class="w-28 text-center">Custo Unit.</span>
             <span class="w-8 h-6"></span> <!-- Spacer for delete icon -->
           </div>
           <div class="space-y-2 mb-3">
             @for(item of orderItems(); track item.id) {
-              <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-700/50">
-                <span class="flex-1 font-medium text-white">{{item.name}}</span>
-                <input type="number" [value]="item.quantity" (change)="updateItemField(item.id, 'quantity', +$any($event.target).value)" class="w-28 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
-                <input type="number" [value]="item.cost" (change)="updateItemField(item.id, 'cost', +$any($event.target).value)" class="w-28 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
-                <button (click)="removeItem(item.id)" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Remover">
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
-                </button>
+              <div class="p-2 rounded-lg hover:bg-gray-700/50">
+                <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+                    <span class="flex-1 font-medium text-white">{{item.name}}</span>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" [value]="item.lot_number || ''" (change)="updateItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="Lote (Opcional)" class="w-full sm:w-32 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updateItemField(item.id, 'expiration_date', $any($event.target).value)" class="w-full sm:w-32 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <input type="number" [value]="item.quantity" (change)="updateItemField(item.id, 'quantity', +$any($event.target).value)" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <input type="number" [value]="item.cost" (change)="updateItemField(item.id, 'cost', +$any($event.target).value)" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                    </div>
+                    <button (click)="removeItem(item.id)" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40 self-end lg:self-center" title="Remover">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
+                    </button>
+                </div>
               </div>
             }
           </div>

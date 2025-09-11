@@ -13,6 +13,8 @@ type FormItem = {
     cost: number;
     name: string;
     unit: string;
+    lot_number: string | null;
+    expiration_date: string | null;
 };
 
 @Component({
@@ -100,6 +102,8 @@ export class PurchasingComponent implements OnInit {
                     cost: ingredient.cost,
                     name: ingredient.name,
                     unit: ingredient.unit,
+                    lot_number: null,
+                    expiration_date: null,
                 } : null;
             }).filter(i => i !== null) as FormItem[];
             this.orderItems.set(items);
@@ -120,6 +124,8 @@ export class PurchasingComponent implements OnInit {
             cost: item.cost,
             name: item.ingredients?.name || '?',
             unit: item.ingredients?.unit || '?',
+            lot_number: item.lot_number,
+            expiration_date: item.expiration_date,
         }));
         this.orderItems.set(items);
         this.isModalOpen.set(true);
@@ -137,11 +143,13 @@ export class PurchasingComponent implements OnInit {
             cost: ingredient.cost,
             name: ingredient.name,
             unit: ingredient.unit,
+            lot_number: null,
+            expiration_date: null,
         }]);
         this.itemSearchTerm.set('');
     }
 
-    updateItemField(itemId: string, field: 'quantity' | 'cost', value: number) {
+    updateItemField(itemId: string, field: 'quantity' | 'cost' | 'lot_number' | 'expiration_date', value: any) {
         this.orderItems.update(items => items.map(item => 
             item.id === itemId ? { ...item, [field]: value } : item
         ));

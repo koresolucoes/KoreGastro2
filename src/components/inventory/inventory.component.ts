@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -12,6 +6,7 @@ import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
+import { IngredientDetailsModalComponent } from './ingredient-details-modal/ingredient-details-modal.component';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -43,7 +38,7 @@ interface StockPrediction {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IngredientDetailsModalComponent],
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,6 +67,7 @@ export class InventoryComponent {
     adjustmentCustomReason = signal('');
     adjustmentSupplierId = signal<string | null>(null);
     adjustmentExpirationDate = signal<string | null>(null);
+    adjustmentLotNumber = signal<string | null>(null);
 
     ingredientPendingDeletion = signal<Ingredient | null>(null);
 
@@ -82,6 +78,10 @@ export class InventoryComponent {
     // AI Prediction State
     isAnalyzingStock = signal(false);
     stockPrediction = signal<StockPrediction[] | null>(null);
+
+    // Ingredient Details Modal State
+    isDetailsModalOpen = signal(false);
+    selectedIngredientForDetails = signal<Ingredient | null>(null);
 
     hasItemsToOrder = computed(() => {
         const predictions = this.stockPrediction();
@@ -129,6 +129,22 @@ export class InventoryComponent {
         return ingredient.stock + change;
     });
 
+    lotsForSelectedIngredient = computed(() => {
+      const ingredient = this.selectedIngredientForDetails();
+      if (!ingredient) return [];
+      return this.stateService.inventoryLots()
+        .filter(lot => lot.ingredient_id === ingredient.id && lot.quantity > 0)
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
+
+    lotsForAdjustmentModal = computed(() => {
+      const ingredient = this.adjustmentIngredient();
+      if (!ingredient) return [];
+      return this.stateService.inventoryLots()
+        .filter(lot => lot.ingredient_id === ingredient.id && lot.quantity > 0)
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
+
     setDashboardFilter(filter: DashboardFilter) { this.activeDashboardFilter.set(filter); }
     setCategoryFilter(categoryId: string | null) { this.activeCategoryFilter.set(categoryId); }
 
@@ -163,6 +179,11 @@ export class InventoryComponent {
     closeModal() {
         this.isModalOpen.set(false);
         this.editingIngredient.set(null);
+    }
+
+    openDetailsModal(ingredient: Ingredient) {
+        this.selectedIngredientForDetails.set(ingredient);
+        this.isDetailsModalOpen.set(true);
     }
 
     updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'ingredient_categories' | 'suppliers'>, value: any) {
@@ -211,6 +232,7 @@ export class InventoryComponent {
         this.adjustmentCustomReason.set('');
         this.adjustmentSupplierId.set(null);
         this.adjustmentExpirationDate.set(ingredient.expiration_date || null);
+        this.adjustmentLotNumber.set(null);
         this.isAdjustmentModalOpen.set(true);
     }
 
@@ -222,6 +244,7 @@ export class InventoryComponent {
         this.adjustmentSupplierId.set(null);
         this.adjustmentCustomReason.set('');
         this.adjustmentQuantity.set(0);
+        this.adjustmentLotNumber.set(null);
     }
 
     async handleAdjustStock() {
@@ -248,7 +271,14 @@ export class InventoryComponent {
             if (supplierName) finalReason = `${finalReason} - ${supplierName}`;
         }
         
-        const result = await this.inventoryDataService.adjustIngredientStock(ingredient.id, this.adjustmentType() === 'entry' ? quantity : -quantity, finalReason, this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null);
+        const params = {
+            ingredientId: ingredient.id,
+            quantityChange: this.adjustmentType() === 'entry' ? quantity : -quantity,
+            reason: finalReason,
+            lotNumberForEntry: this.adjustmentType() === 'entry' ? this.adjustmentLotNumber() : null,
+            expirationDateForEntry: this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null,
+        };
+        const result = await this.inventoryDataService.adjustIngredientStock(params);
         if (result.success) this.closeAdjustmentModal();
         else await this.notificationService.alert(`Falha ao ajustar estoque. Erro: ${result.error?.message}`);
     }

@@ -123,6 +123,16 @@ export interface Ingredient {
   suppliers?: { name: string }; // Relation
 }
 
+export interface InventoryLot {
+    id: string;
+    ingredient_id: string;
+    lot_number: string | null;
+    expiration_date: string | null;
+    quantity: number;
+    user_id: string;
+    created_at: string;
+}
+
 export interface Category { // For Recipes/POS
   id: string;
   name: string;
@@ -285,6 +295,8 @@ export interface PurchaseOrderItem {
   cost: number;
   created_at: string;
   user_id: string;
+  lot_number: string | null;
+  expiration_date: string | null;
   ingredients?: { name: string, unit: string }; // Relation
 }
 

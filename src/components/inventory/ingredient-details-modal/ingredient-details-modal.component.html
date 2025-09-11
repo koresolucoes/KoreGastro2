@@ -1,0 +1,99 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-700">
+        <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-xl font-bold text-white">{{ ingredient().name }}</h3>
+              <p class="text-gray-400 text-sm">{{ ingredient().ingredient_categories?.name || 'Sem Categoria' }}</p>
+            </div>
+            <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 p-6 overflow-y-auto space-y-6">
+        <!-- Stock & Cost Info -->
+        <section>
+          <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Estoque e Custos</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <p class="text-gray-400">Estoque Atual</p>
+                <p class="text-xl font-bold text-white">{{ ingredient().stock | number:'1.0-3' }} {{ ingredient().unit }}</p>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <p class="text-gray-400">Estoque Mínimo</p>
+                <p class="text-xl font-bold text-white">{{ ingredient().min_stock | number:'1.0-3' }} {{ ingredient().unit }}</p>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <p class="text-gray-400">Custo Unitário</p>
+                <p class="text-xl font-bold text-white">{{ ingredient().cost | currency:'BRL' }}</p>
+            </div>
+            <div class="bg-gray-700/50 p-3 rounded-lg">
+                <p class="text-gray-400">Valor em Estoque</p>
+                <p class="text-xl font-bold text-white">{{ totalStockValue() | currency:'BRL' }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Supplier & Dates -->
+        <section>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                 <div class="flex flex-col"><dt class="text-gray-400">Fornecedor Principal</dt><dd class="text-white font-medium">{{ ingredient().suppliers?.name || 'Não informado' }}</dd></div>
+                 <div class="flex flex-col"><dt class="text-gray-400">Validade Geral</dt><dd class="text-white font-medium">{{ ingredient().expiration_date ? (ingredient().expiration_date | date:'dd/MM/yyyy') : 'Não informada' }}</dd></div>
+                 <div class="flex flex-col"><dt class="text-gray-400">Última Movimentação</dt><dd class="text-white font-medium">{{ ingredient().last_movement_at ? (ingredient().last_movement_at | date:'dd/MM/yyyy HH:mm') : 'Nenhuma' }}</dd></div>
+            </div>
+        </section>
+        
+        <!-- Sellable Info -->
+        @if(ingredient().is_sellable) {
+            <section>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Informações de Venda (PDV)</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div class="flex flex-col"><dt class="text-gray-400">Preço de Venda</dt><dd class="text-white font-medium">{{ ingredient().price | currency:'BRL' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Categoria no PDV</dt><dd class="text-white font-medium">{{ posCategoryName() }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-gray-400">Estação KDS</dt><dd class="text-white font-medium">{{ stationName() }}</dd></div>
+              </div>
+            </section>
+        }
+
+        <!-- Lots Table -->
+        <section>
+            <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Lotes em Estoque</h4>
+            @if(lots().length > 0) {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-700/50 text-xs text-gray-300 uppercase">
+                            <tr>
+                                <th class="px-4 py-2">Lote</th>
+                                <th class="px-4 py-2">Validade</th>
+                                <th class="px-4 py-2 text-right">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for(lot of lots(); track lot.id) {
+                                <tr class="border-b border-gray-700 text-sm">
+                                    <td class="px-4 py-2">{{ lot.lot_number || 'N/A' }}</td>
+                                    <td class="px-4 py-2">{{ lot.expiration_date | date:'dd/MM/yyyy' }}</td>
+                                    <td class="px-4 py-2 text-right font-mono">{{ lot.quantity | number:'1.0-3' }} {{ ingredient().unit }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            } @else {
+                 <div class="text-center text-gray-500 py-8">
+                    <p>Nenhum lote específico registrado para este ingrediente.</p>
+                </div>
+            }
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+      <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    </div>
+  </div>
+</div>

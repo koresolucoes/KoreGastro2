@@ -134,15 +134,34 @@ export class InventoryDataService {
     return { success: !error, error };
   }
   
-  async adjustIngredientStock(ingredientId: string, quantityChange: number, reason: string, expirationDate: string | null | undefined): Promise<{ success: boolean, error: any }> {
+  async adjustIngredientStock(params: {
+    ingredientId: string;
+    quantityChange: number;
+    reason: string;
+    lotIdForExit?: string | null;
+    lotNumberForEntry?: string | null;
+    expirationDateForEntry?: string | null;
+  }): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { error } = await supabase.rpc('adjust_stock', { 
-        p_ingredient_id: ingredientId, 
-        p_quantity_change: quantityChange, 
-        p_reason: reason, 
-        p_user_id: userId, 
-        p_expiration_date: expirationDate 
+
+    const {
+        ingredientId,
+        quantityChange,
+        reason,
+        lotIdForExit = null,
+        lotNumberForEntry = null,
+        expirationDateForEntry = null
+    } = params;
+
+    const { error } = await supabase.rpc('adjust_stock_by_lot', {
+        p_ingredient_id: ingredientId,
+        p_quantity_change: quantityChange,
+        p_reason: reason,
+        p_user_id: userId,
+        p_lot_id_for_exit: lotIdForExit,
+        p_lot_number_for_entry: lotNumberForEntry,
+        p_expiration_date_for_entry: expirationDateForEntry,
     });
     return { success: !error, error };
   }
@@ -198,7 +217,7 @@ export class InventoryDataService {
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
         deductionPromises.push(
-          this.adjustIngredientStock(ingredientId, -totalDeduction, deductionReason, undefined)
+          this.adjustIngredientStock({ ingredientId, quantityChange: -totalDeduction, reason: deductionReason })
         );
       }
       const deductionResults = await Promise.all(deductionPromises);
@@ -207,7 +226,13 @@ export class InventoryDataService {
 
       // 2. Add produced sub-recipe to stock
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
-      const { success, error } = await this.adjustIngredientStock(sourceIngredientId, quantityProduced, additionReason, undefined);
+      const { success, error } = await this.adjustIngredientStock({ 
+          ingredientId: sourceIngredientId, 
+          quantityChange: quantityProduced, 
+          reason: additionReason,
+          lotNumberForEntry: null,
+          expirationDateForEntry: null,
+      });
       if (!success) throw error;
       
       return { success: true, error: null };
@@ -277,7 +302,7 @@ export class InventoryDataService {
       for (const [ingredientId, quantityChange] of deductions.entries()) {
         if (quantityChange > 0) {
           adjustmentPromises.push(
-            this.adjustIngredientStock(ingredientId, -quantityChange, reason, undefined)
+            this.adjustIngredientStock({ ingredientId: ingredientId, quantityChange: -quantityChange, reason: reason })
           );
         }
       }

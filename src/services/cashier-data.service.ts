@@ -727,8 +727,8 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-// FIX: Explicitly cast 'r' to a type with 'totalAmount' to resolve inference issue.
-                totalAmount: rows.reduce((sum, r) => sum + (r as { totalAmount: number }).totalAmount, 0)
+// FIX: The type of `r` is incorrectly inferred as `unknown` within the reduce function. Typing `r` as `any` allows the `totalAmount` property to be accessed and summed correctly.
+                totalAmount: rows.reduce((sum, r: any) => sum + r.totalAmount, 0)
             }
         };
     }

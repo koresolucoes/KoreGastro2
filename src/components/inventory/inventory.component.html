@@ -1,4 +1,3 @@
-
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
@@ -155,7 +154,7 @@
         </thead>
         <tbody>
           @for (ingredient of filteredIngredients(); track ingredient.id) {
-            <tr class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+            <tr (click)="openDetailsModal(ingredient)" class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150 cursor-pointer" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
               <td class="px-6 py-4 font-medium text-white">
                 <div>{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</div>
                 <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
@@ -173,19 +172,21 @@
                 }
               </td>
               <td class="px-6 py-4 text-center">
-                @if (ingredientPendingDeletion()?.id === ingredient.id) {
-                    <div class="flex gap-2 justify-center items-center">
-                        <span class="text-sm text-red-300">Certeza?</span>
-                        <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                        <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
-                    </div>
-                } @else {
-                    <div class="flex gap-2 justify-center">
-                        <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
-                        <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
-                        <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
-                    </div>
-                }
+                <div (click)="$event.stopPropagation()">
+                  @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                      <div class="flex gap-2 justify-center items-center">
+                          <span class="text-sm text-red-300">Certeza?</span>
+                          <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                          <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                      </div>
+                  } @else {
+                      <div class="flex gap-2 justify-center">
+                          <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
+                          <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
+                          <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                      </div>
+                  }
+                </div>
               </td>
             </tr>
           }
@@ -203,7 +204,7 @@
     <!-- Mobile Card View -->
     <div class="block md:hidden p-4 space-y-4">
       @for (ingredient of filteredIngredients(); track ingredient.id) {
-        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+        <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
           <!-- Top row: Name and Status -->
           <div class="flex justify-between items-start">
               <div>
@@ -238,7 +239,7 @@
           </div>
 
           <!-- Bottom: Actions -->
-          <div class="pt-3 border-t border-gray-600/50">
+          <div (click)="$event.stopPropagation()" class="pt-3 border-t border-gray-600/50">
               @if (ingredientPendingDeletion()?.id === ingredient.id) {
                   <div class="flex gap-2 justify-end items-center">
                       <span class="text-sm text-red-300">Certeza?</span>
@@ -423,16 +424,18 @@
                         <input type="number" min="0" [value]="adjustmentQuantity()" (input)="adjustmentQuantity.set(+$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <span class="ml-3 text-gray-400 uppercase font-semibold">{{ ingredient.unit }}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500 mt-2 px-1">
-                        <span>Estoque Atual: <span class="font-bold text-gray-400">{{ ingredient.stock }}</span></span>
-                        <span>Após Ajuste: <span class="font-bold text-lg" [class.text-green-400]="stockAfterAdjustment() > ingredient.stock" [class.text-red-400]="stockAfterAdjustment() < ingredient.stock">{{ stockAfterAdjustment() }}</span></span>
-                    </div>
                 </div>
 
                  @if (adjustmentType() === 'entry') {
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
-                        <input type="date" [value]="adjustmentExpirationDate() | date:'yyyy-MM-dd'" (input)="adjustmentExpirationDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Nº do Lote</label>
+                            <input type="text" [value]="adjustmentLotNumber()" (input)="adjustmentLotNumber.set($any($event.target).value || null)" placeholder="(Opcional)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
+                            <input type="date" [value]="adjustmentExpirationDate() | date:'yyyy-MM-dd'" (input)="adjustmentExpirationDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
                     </div>
                  }
 
@@ -472,6 +475,40 @@
                     </div>
                 }
             </div>
+
+            <!-- Stock Preview -->
+            <div class="flex justify-between text-xs text-gray-500 mt-4 px-1">
+                <span>Estoque Atual: <span class="font-bold text-gray-400">{{ ingredient.stock }}</span></span>
+                <span>Após Ajuste: <span class="font-bold text-lg" [class.text-green-400]="stockAfterAdjustment() > ingredient.stock" [class.text-red-400]="stockAfterAdjustment() < ingredient.stock">{{ stockAfterAdjustment() }}</span></span>
+            </div>
+
+             <!-- Lot Listing -->
+            @if (lotsForAdjustmentModal().length > 0) {
+              <div class="mt-6 pt-4 border-t border-gray-700">
+                <h4 class="text-md font-semibold text-white mb-2">Lotes em Estoque</h4>
+                <div class="max-h-40 overflow-y-auto pr-2 bg-gray-900/50 rounded-lg">
+                  <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-gray-700/80 backdrop-blur-sm">
+                      <tr>
+                        <th class="p-2">Lote</th>
+                        <th class="p-2">Validade</th>
+                        <th class="p-2 text-right">Quantidade</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for(lot of lotsForAdjustmentModal(); track lot.id) {
+                        <tr class="border-b border-gray-700/50">
+                          <td class="p-2">{{ lot.lot_number || 'N/A' }}</td>
+                          <td class="p-2">{{ lot.expiration_date | date:'dd/MM/yy' }}</td>
+                          <td class="p-2 text-right font-mono">{{ lot.quantity | number }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
         </div>
 
         <div class="p-4 bg-gray-900/50 flex justify-end gap-3">
@@ -488,4 +525,13 @@
         </div>
     </div>
   </div>
+}
+
+<!-- Ingredient Details Modal -->
+@if(isDetailsModalOpen() && selectedIngredientForDetails()) {
+  <app-ingredient-details-modal
+    [ingredient]="selectedIngredientForDetails()!"
+    [lots]="lotsForSelectedIngredient()"
+    (close)="isDetailsModalOpen.set(false)">
+  </app-ingredient-details-modal>
 }

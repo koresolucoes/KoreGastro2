@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { PurchaseOrder, PurchaseOrderStatus, PurchaseOrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -6,9 +5,12 @@ import { InventoryDataService } from './inventory-data.service';
 import { supabase } from './supabase-client';
 
 type FormItem = {
+    id: string; // Can be temp id
     ingredient_id: string;
     quantity: number;
     cost: number;
+    lot_number: string | null;
+    expiration_date: string | null;
 };
 
 @Injectable({
@@ -38,6 +40,8 @@ export class PurchasingDataService {
       ingredient_id: item.ingredient_id,
       quantity: item.quantity,
       cost: item.cost,
+      lot_number: item.lot_number,
+      expiration_date: item.expiration_date,
       user_id: userId,
     }));
 
@@ -68,11 +72,15 @@ export class PurchasingDataService {
       ingredient_id: item.ingredient_id,
       quantity: item.quantity,
       cost: item.cost,
+      lot_number: item.lot_number,
+      expiration_date: item.expiration_date,
       user_id: userId,
     }));
 
-    const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsToInsert);
-    if (itemsError) return { success: false, error: itemsError };
+    if (itemsToInsert.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsToInsert);
+      if (itemsError) return { success: false, error: itemsError };
+    }
     
     return { success: true, error: null };
   }
@@ -86,7 +94,13 @@ export class PurchasingDataService {
 
     for (const item of order.purchase_order_items) {
       const reason = `Compra de Fornecedor${supplierName ? ` - ${supplierName}` : ''}`;
-      const result = await this.inventoryDataService.adjustIngredientStock(item.ingredient_id, item.quantity, reason, undefined);
+      const result = await this.inventoryDataService.adjustIngredientStock({
+          ingredientId: item.ingredient_id,
+          quantityChange: item.quantity,
+          reason: reason,
+          lotNumberForEntry: item.lot_number,
+          expirationDateForEntry: item.expiration_date
+      });
       if (!result.success) {
         return { success: false, error: { message: `Falha ao atualizar o estoque para o item ID ${item.ingredient_id}: ${result.error?.message}` } };
       }
