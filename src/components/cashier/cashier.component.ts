@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
@@ -314,6 +313,20 @@ export class CashierComponent {
     this.quickSaleCustomer.set(order.customers || null);
     this.processingQuickSaleOrder.set(order);
     this.openQuickSalePaymentModal();
+  }
+  
+  getOrderProgress(order: Order): { ready: number; preparing: number; pending: number; total: number; percentage: number; isAllReady: boolean } {
+    const items = order.order_items || [];
+    if (items.length === 0) {
+        return { ready: 0, preparing: 0, pending: 0, total: 0, percentage: 100, isAllReady: true };
+    }
+    const total = items.length;
+    const ready = items.filter(item => item.status === 'PRONTO').length;
+    const preparing = items.filter(item => item.status === 'EM_PREPARO').length;
+    const pending = items.filter(item => item.status === 'PENDENTE').length;
+    const percentage = total > 0 ? (ready / total) * 100 : 0;
+    const isAllReady = ready === total;
+    return { ready, preparing, pending, total, percentage, isAllReady };
   }
 
 
