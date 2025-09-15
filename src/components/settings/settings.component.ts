@@ -129,6 +129,15 @@ export class SettingsComponent {
   });
 
   permissionGroups = computed(() => {
+    const isGerente = this.operationalAuthService.activeEmployee()?.role === 'Gerente';
+    
+    // A manager sees all possible permissions. The security check is in the service layer.
+    // This allows a manager to self-assign newly available permissions.
+    if (isGerente) {
+      return this.allPermissionGroups;
+    }
+
+    // For non-managers (future-proofing), filter what they can see/edit based on their own permissions.
     const available = this.userAvailablePermissions();
     return this.allPermissionGroups.map(group => ({
         ...group,

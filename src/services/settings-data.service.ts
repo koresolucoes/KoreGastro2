@@ -114,21 +114,24 @@ export class SettingsDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    // Security Check: Fetch caller's permissions to ensure they can grant what they're trying to grant.
-    const { data: callerPermissionsData, error: fetchError } = await supabase
-      .from('role_permissions')
-      .select('permission_key')
-      .eq('role_id', callerRoleId);
-      
-    if (fetchError) {
-      return { success: false, error: fetchError };
-    }
+    // Security Check: Only apply permission granting restrictions if the caller is editing a DIFFERENT role.
+    // A manager should always be able to add/remove any permission from their own role.
+    if (roleId !== callerRoleId) {
+      const { data: callerPermissionsData, error: fetchError } = await supabase
+        .from('role_permissions')
+        .select('permission_key')
+        .eq('role_id', callerRoleId);
+        
+      if (fetchError) {
+        return { success: false, error: fetchError };
+      }
 
-    const callerPermissionsSet = new Set((callerPermissionsData || []).map(p => p.permission_key));
-    const canGrantAll = permissions.every(p => callerPermissionsSet.has(p));
+      const callerPermissionsSet = new Set((callerPermissionsData || []).map(p => p.permission_key));
+      const canGrantAll = permissions.every(p => callerPermissionsSet.has(p));
 
-    if (!canGrantAll) {
-      return { success: false, error: { message: 'Ação não permitida. Você não pode conceder uma permissão que não possui.' } };
+      if (!canGrantAll) {
+        return { success: false, error: { message: 'Ação não permitida. Você não pode conceder a outros uma permissão que você não possui.' } };
+      }
     }
 
     // Proceed with update
