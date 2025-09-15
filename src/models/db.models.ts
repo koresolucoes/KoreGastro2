@@ -481,3 +481,15 @@ export interface LoyaltyMovement {
   description: string;
   created_at: string;
 }
+
+export interface IfoodWebhookLog {
+  id: string;
+  created_at: string;
+  user_id: string | null;
+  merchant_id: string | null;
+  ifood_order_id: string | null;
+  event_code: string | null;
+  raw_payload: any; // jsonb
+  processing_status: string | null;
+  error_message: string | null;
+}

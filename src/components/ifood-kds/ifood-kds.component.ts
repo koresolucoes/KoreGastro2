@@ -3,11 +3,9 @@ import { CommonModule } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
 import { PosDataService } from '../../services/pos-data.service';
-// FIX: Import `OrderStatus` model to resolve type error.
-import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus } from '../../models/db.models';
+import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus, IfoodWebhookLog } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
-// FIX: Import the supabase client to handle database operations.
 import { supabase } from '../../services/supabase-client';
 
 interface ProcessedIfoodOrder extends Order {
@@ -35,6 +33,14 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   currentTime = signal(Date.now());
   
   private processedNewOrders = signal<Set<string>>(new Set());
+  
+  // New state for webhook logs
+  isLogVisible = signal(false);
+  webhookLogs = computed(() => 
+    this.stateService.ifoodWebhookLogs()
+      .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  );
+  selectedLogForDetail = signal<IfoodWebhookLog | null>(null);
 
   constructor() {
     effect(() => {
@@ -75,10 +81,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     }
     if (hasPreparing) return 'IN_PREPARATION';
     
-    // If no items are preparing or ready, but the order is not yet confirmed via an action,
-    // we can assume it's still in the "received" state from the KDS perspective.
-    // A 'CONFIRMED' status could be represented by the first action taken.
-    // For simplicity, we'll treat anything before 'IN_PREPARATION' as 'RECEIVED' in this logic.
     return 'RECEIVED';
   }
 
@@ -115,14 +117,12 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     
     this.soundNotificationService.playConfirmationSound();
     
-    // First, send update to iFood
     const { success, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, status);
     if (!success) {
         this.notificationService.show(`Falha ao comunicar com iFood: ${apiError?.message}`, 'error');
         return;
     }
 
-    // Then, update local item statuses based on the action
     let targetStatus: OrderItemStatus | null = null;
     let orderStatus: OrderStatus | null = null;
     
@@ -148,8 +148,24 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
   
   formatTime(seconds: number): string {
+    if (isNaN(seconds)) return '00:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+  
+  openLogDetailModal(log: IfoodWebhookLog) {
+    this.selectedLogForDetail.set(log);
+  }
+  
+  closeLogDetailModal() {
+    this.selectedLogForDetail.set(null);
+  }
+
+  getLogStatusClass(status: string | null): string {
+    if (!status) return 'bg-gray-600';
+    if (status.startsWith('SUCCESS')) return 'bg-green-600';
+    if (status.startsWith('ERROR')) return 'bg-red-600';
+    return 'bg-blue-600';
   }
 }
