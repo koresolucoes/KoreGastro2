@@ -45,6 +45,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 ### 📦 **Estoque e Compras**
 - **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades e fornecedores.
 - **Alertas Automatizados:** O sistema sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
+- **Controle de Lotes:** Registre números de lote e datas de validade para insumos recebidos, garantindo rastreabilidade do estoque.
 - **Previsão com IA (Gemini):** Utilize o histórico de vendas para prever a necessidade de compra de insumos para a próxima semana.
 - **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A IA pode gerar uma ordem de compra sugerida automaticamente.
 
@@ -56,7 +57,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 ### 🔪 **Mise en Place**
 - **Planejamento de Produção:** Crie quadros de tarefas diários para a preparação de sub-receitas e outros itens.
 - **Atribuição e Acompanhamento:** Atribua tarefas para funcionários e estações específicas e acompanhe o progresso em tempo real (A Fazer, Em Preparo, Concluído).
-- **Integração com Estoque:** Ao concluir uma tarefa de produção de sub-receita, o sistema dá baixa nos insumos e adiciona o item produzido ao estoque.
+- **Integração com Estoque:** Ao concluir uma tarefa de produção, o sistema gera um **número de lote** para rastreabilidade, calcula o **custo total da produção** e dá baixa nos insumos, adicionando o item final ao estoque.
 
 ### 📅 **Reservas**
 - **Gestão Interna:** Cadastre e gerencie reservas diretamente no sistema, com visão por dia e status (Pendente, Confirmada, Cancelada).
@@ -67,7 +68,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais para toda a equipe.
 - **Controle de Ponto:** Gerencie manualmente os registros de entrada, saída e pausas dos funcionários.
 - **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
-- **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas e agendadas, incluindo horas extras, e gere contracheques detalhados.
+- **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas, considerando **horas extras com base em limites diários (9h) e semanais (44h)**, e gere contracheques detalhados.
 
 ### 💖 **CRM e Fidelidade**
 - **Cadastro de Clientes:** Base de dados completa de clientes com histórico de consumo e observações.
@@ -77,9 +78,10 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 ### 🚀 **Performance e Relatórios**
 - **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
-- **Análise Comparativa (Novo!):** Compare o desempenho de vendas entre diferentes períodos (dia, semana, mês) para identificar tendências de crescimento.
-- **Análise de Horários de Pico (Novo!):** Visualize graficamente os horários e dias da semana com maior volume de vendas para otimizar a alocação de equipe e preparo de insumos.
+- **Análise Comparativa:** Compare o desempenho de vendas entre diferentes períodos (dia, semana, mês) para identificar tendências de crescimento.
+- **Análise de Horários de Pico:** Visualize graficamente os horários e dias da semana com maior volume de vendas para otimizar a alocação de equipe e preparo de insumos.
 - **Análise de Desempenho por Prato:** Descubra quais são seus pratos mais lucrativos com relatórios que incluem receita, custo, lucro total e margem de lucro por item.
+- **Construtor de Relatórios:** Crie relatórios personalizados selecionando colunas, filtros (período, funcionário) e agrupamentos para extrair os dados exatos que você precisa.
 - **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha.
 
 ### ⚙️ **Configurações e Cardápio Online**
@@ -105,7 +107,6 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
 
 *   **Módulo de Relatórios Avançados:**
     *   **Dashboard de CMV vs. Vendas:** Acompanhamento da saúde financeira em tempo real.
-    *   **Construtor de Relatórios:** Ferramenta para criar relatórios personalizados.
 
 *   **Melhorias no PDV:**
     *   **Divisão de Conta por Item:** Permitir que clientes em uma mesma mesa paguem apenas o que consumiram.
@@ -116,7 +117,6 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
 
 *   **Módulo de Estoque Avançado:**
     *   **Controle de Desperdício:** Ferramenta para registrar perdas de insumos de forma detalhada (vencimento, quebra, etc.) para análise de custos.
-    *   **Rastreabilidade de Lotes:** Acompanhamento de lotes de ingredientes para segurança alimentar.
 
 *   **Gestão de Vouchers e Cupons:**
     *   Criação e controle de cupons de desconto para uso no PDV.
