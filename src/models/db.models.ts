@@ -329,6 +329,8 @@ export interface ProductionTask {
   station_id: string;
   employee_id: string | null;
   status: ProductionTaskStatus;
+  lot_number: string | null;
+  total_cost: number | null;
   created_at: string;
   user_id: string;
   recipes?: { name: string, source_ingredient_id: string | null }; // Relation

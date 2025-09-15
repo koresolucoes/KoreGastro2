@@ -34,6 +34,7 @@ export class MiseEnPlaceComponent {
     });
   });
   activeEmployee = this.operationalAuthService.activeEmployee;
+  recipeCosts = this.stateService.recipeCosts;
 
   // View State
   selectedDate = signal(new Date().toISOString().split('T')[0]);
@@ -261,27 +262,37 @@ export class MiseEnPlaceComponent {
   async handleTaskClick(task: ProductionTask) {
     if (task.status === 'Concluído' || this.updatingStockTasks().has(task.id)) return;
 
-    let nextStatus: ProductionTaskStatus;
-    switch (task.status) {
-        case 'A Fazer': nextStatus = 'Em Preparo'; break;
-        case 'Em Preparo': nextStatus = 'Concluído'; break;
-        default: return;
-    }
-
     this.updatingStockTasks.update(set => new Set(set).add(task.id));
     
-    const { success, error } = await this.dataService.updateTaskStatusAndStock(task.id, nextStatus);
-    
-    if (!success) {
-        await this.notificationService.alert(`Erro ao atualizar status: ${error?.message}`);
+    try {
+      if (task.status === 'A Fazer') {
+        const { success, error } = await this.dataService.updateTask(task.id, { status: 'Em Preparo' });
+        if (!success) throw error;
+      } else if (task.status === 'Em Preparo') {
+        const date = new Date();
+        const defaultLot = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+        
+        const { confirmed, value: lotNumber } = await this.notificationService.prompt(
+            'Confirme ou edite o número do lote para esta produção.',
+            'Finalizar Produção',
+            { initialValue: defaultLot, confirmText: 'Confirmar', inputType: 'text' }
+        );
+        
+        if (confirmed && lotNumber) {
+            const totalCost = this.getTaskCost(task);
+            const { success, error } = await this.dataService.completeTask(task, lotNumber, totalCost);
+            if (!success) throw error;
+        }
+      }
+    } catch (error: any) {
+        await this.notificationService.alert(`Ocorreu um erro: ${error.message}`);
+    } finally {
+        this.updatingStockTasks.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(task.id);
+            return newSet;
+        });
     }
-    
-    // The realtime subscription will refresh the data, so we just remove the loading state.
-    this.updatingStockTasks.update(set => {
-        const newSet = new Set(set);
-        newSet.delete(task.id);
-        return newSet;
-    });
   }
 
   async deleteTask(taskId: string) {
@@ -292,6 +303,17 @@ export class MiseEnPlaceComponent {
     }
   }
   
+  getTaskCost(task: ProductionTask): number {
+    if (task.total_cost !== null && task.total_cost !== undefined) {
+        return task.total_cost;
+    }
+    if (task.sub_recipe_id) {
+        const recipeCost = this.recipeCosts().get(task.sub_recipe_id)?.totalCost ?? 0;
+        return recipeCost * task.quantity_to_produce;
+    }
+    return 0;
+  }
+
   getStatusClass(status: ProductionTaskStatus): string {
     switch (status) {
         case 'A Fazer': return 'border-yellow-500 bg-gray-800';

@@ -232,7 +232,7 @@ export class InventoryDataService {
     return { success: !error, error };
   }
 
-  async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number): Promise<{ success: boolean; error: any }> {
+  async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -261,7 +261,7 @@ export class InventoryDataService {
           ingredientId: sourceIngredientId, 
           quantityChange: quantityProduced, 
           reason: additionReason,
-          lotNumberForEntry: null,
+          lotNumberForEntry: lotNumberForEntry,
           expirationDateForEntry: null,
       });
       if (!success) throw error;

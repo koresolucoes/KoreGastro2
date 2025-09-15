@@ -68,26 +68,37 @@ export class MiseEnPlaceDataService {
     return { success: !error, error };
   }
   
-  async updateTaskStatusAndStock(taskId: string, status: ProductionTaskStatus): Promise<{ success: boolean; error: any }> {
-    // If task is being marked as complete, handle stock adjustment
-    if (status === 'Concluído') {
-      const { data: task } = await supabase.from('production_tasks').select('*, recipes!inner(id, source_ingredient_id)').eq('id', taskId).single();
-      
-      if (task && task.sub_recipe_id && task.recipes?.source_ingredient_id) {
+  async completeTask(task: ProductionTask, lotNumber: string, totalCost: number): Promise<{ success: boolean; error: any }> {
+    // Refetch task to be sure about source_ingredient_id
+    const { data: fullTaskData, error: fetchError } = await supabase
+        .from('production_tasks')
+        .select('*, recipes!inner(id, source_ingredient_id)')
+        .eq('id', task.id)
+        .single();
+
+    if (fetchError) {
+        return { success: false, error: fetchError };
+    }
+    
+    if (fullTaskData.sub_recipe_id && fullTaskData.recipes?.source_ingredient_id) {
         const { success, error } = await this.inventoryDataService.adjustStockForProduction(
-          task.sub_recipe_id, 
-          task.recipes.source_ingredient_id, 
-          task.quantity_to_produce
+            fullTaskData.sub_recipe_id, 
+            fullTaskData.recipes.source_ingredient_id, 
+            fullTaskData.quantity_to_produce,
+            lotNumber
         );
         if (!success) {
-          // If stock adjustment fails, don't update the status and return the error.
-          return { success: false, error };
+            return { success: false, error };
         }
-      }
     }
-
-    const { error } = await supabase.from('production_tasks').update({ status }).eq('id', taskId);
-    return { success: !error, error };
+    
+    // Now update the task itself
+    const { error: updateError } = await supabase
+        .from('production_tasks')
+        .update({ status: 'Concluído', lot_number: lotNumber, total_cost: totalCost })
+        .eq('id', task.id);
+        
+    return { success: !updateError, error: updateError };
   }
 
   async deleteTask(taskId: string): Promise<{ success: boolean; error: any }> {

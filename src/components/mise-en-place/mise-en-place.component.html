@@ -54,7 +54,13 @@
                                   <div class="flex justify-between items-start">
                                       <div class="flex-1">
                                         <p class="font-bold text-white text-lg">{{ task.quantity_to_produce }}x {{ task.recipes?.name || task.custom_task_name }}</p>
-                                        @if(task.sub_recipe_id) { <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-xs text-blue-400 hover:underline">Ver ficha técnica</button> }
+                                        @if(task.sub_recipe_id) {
+                                          <div class="text-xs">
+                                            <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-blue-400 hover:underline">Ver ficha técnica</button>
+                                            <span class="text-gray-500 mx-1">|</span>
+                                            <span class="text-gray-400">Custo: <span class="font-semibold text-yellow-300">{{ getTaskCost(task) | currency:'BRL' }}</span></span>
+                                          </div>
+                                        }
                                       </div>
                                       @if (isManager() && task.status === 'Concluído') {
                                           <button (click)="$event.stopPropagation(); deleteTask(task.id)" class="p-1 text-red-400 hover:text-red-300" title="Remover tarefa concluída">
@@ -68,6 +74,9 @@
                                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                           <span>{{ task.employees?.name || 'Não atribuído' }}</span>
                                       </div>
+                                      @if (task.lot_number) {
+                                        <span class="text-xs text-gray-500 font-mono">Lote: {{ task.lot_number }}</span>
+                                      }
                                       @if (isManager()) {
                                         <button (click)="$event.stopPropagation(); openTaskModal(task)" class="text-xs text-gray-400 hover:text-white hover:underline">Editar</button>
                                       }
