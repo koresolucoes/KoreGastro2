@@ -19,75 +19,83 @@ O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando i
 O ChefOS é modular e cobre todas as áreas críticas da gestão de um restaurante:
 
 ### 📊 **Dashboard Analítico**
-- **Visão Geral em Tempo Real:** Acompanhe os principais indicadores de desempenho (KPIs) assim que você entra no sistema.
-- **Métricas Financeiras Chave:** Vendas totais, **Lucro Bruto**, **Ticket Médio**, mesas ocupadas, itens com estoque baixo e pedidos pendentes na cozinha.
-- **Análises Rápidas:** Gráficos com os itens mais vendidos, incluindo **margem de lucro** por item, e as transações mais recentes.
+- **Visão Geral em Tempo Real:** Acompanhe os principais indicadores de desempenho (KPIs) do dia assim que você entra no sistema.
+- **Métricas Financeiras Chave:** Vendas totais, **Lucro Bruto**, **Ticket Médio**, mesas ocupadas, contagem de itens com estoque baixo e pedidos pendentes na cozinha.
+- **Gráfico de Vendas vs. CMV:** Análise visual do faturamento contra o custo dos produtos vendidos nos últimos 7 ou 30 dias.
+- **Análises Rápidas:** Rankings com os itens mais vendidos do dia, incluindo a **margem de lucro** individual de cada um, e uma lista das transações de venda mais recentes.
 
 ### 🍽️ **PDV (Ponto de Venda)**
 - **Gerenciamento Visual de Mesas:** Crie múltiplos salões e organize as mesas com uma interface de arrastar e soltar (drag-and-drop).
-- **Lançamento de Pedidos:** Uma interface rápida e intuitiva para garçons lançarem pedidos diretamente na mesa.
+- **Editor de Layout Completo:** No modo de edição, adicione, delete, redimensione e altere o número das mesas para espelhar perfeitamente o layout do seu salão.
+- **Lançamento de Pedidos:** Uma interface rápida e intuitiva para garçons lançarem pedidos diretamente na mesa a partir de um menu categorizado e com busca.
 - **Status em Tempo Real:** As cores das mesas mudam instantaneamente (`Livre`, `Ocupada`, `Pagando`), mantendo toda a equipe sincronizada.
-- **Ações Rápidas:** Imprima pré-contas e mova pedidos entre mesas com o menu de contexto.
+- **Associação de Clientes:** Vincule um cliente do seu cadastro a uma mesa para registrar o histórico de consumo e habilitar o resgate de prêmios de fidelidade.
+- **Ações Rápidas:** Imprima pré-contas, mova pedidos entre mesas e aplique descontos diretamente no painel do pedido.
 
 ### 🍳 **KDS (Kitchen Display System)**
 - **Comandas Digitais:** Substitua as comandas de papel por um sistema digital eficiente que envia pedidos diretamente para as estações corretas (Cozinha, Bar, etc.).
 - **Timers Inteligentes:** Cada item e pedido possui um timer de preparo, com cores que indicam o andamento e alertam sobre atrasos.
-- **Interface Otimizada:** Ações separadas para visualizar detalhes (ícone de informação) e avançar o status do preparo (clique no item), prevenindo cliques acidentais e agilizando o fluxo de trabalho da cozinha.
-- **Modo "Expo":** Uma tela centralizada para o chef ou expedidor visualizar todos os itens prontos e garantir que os pedidos saiam completos e no tempo certo.
+- **Alertas Sonoros:** Notificações audíveis para novos pedidos, itens atrasados e, mais importante, **alertas de atenção** para itens com observações críticas (como alergias).
+- **Fluxo de Segurança:** Itens com observações críticas exigem um passo de "confirmação de ciência" pela cozinha, garantindo que a informação foi lida.
 - **Lógica de Retenção (Hold):** O sistema calcula o tempo de preparo de cada item e segura os pratos mais rápidos para que tudo fique pronto ao mesmo tempo.
+- **Modo "Expo":** Uma tela centralizada para o chef ou expedidor visualizar todos os itens prontos e garantir que os pedidos saiam completos e no tempo certo.
 
 ### 💰 **Caixa (Cashier)**
-- **Venda Rápida:** Um PDV simplificado para vendas no balcão (takeout).
-- **Fechamento de Conta:** Processe pagamentos das mesas enviadas pelo PDV com múltiplos métodos de pagamento.
-- **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado com resumo para impressão.
+- **Venda Rápida:** Um PDV simplificado para vendas no balcão. Os pedidos podem ser pagos na hora ou enviados para a cozinha para pagamento posterior.
+- **Fechamento de Conta:** Processe pagamentos das mesas e das vendas rápidas em espera. Suporta **múltiplos métodos de pagamento** para dividir a conta.
+- **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado, que compara o valor esperado com o contado e gera um resumo para impressão.
 - **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes.
 
 ### 📦 **Estoque e Compras**
 - **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades e fornecedores.
-- **Alertas Automatizados:** O sistema sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
-- **Controle de Lotes:** Registre números de lote e datas de validade para insumos recebidos, garantindo rastreabilidade do estoque.
+- **Alertas Automatizados:** O dashboard sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
+- **Controle de Lotes:** Registre números de lote e datas de validade para insumos recebidos, garantindo total rastreabilidade.
+- **Contagem de Estoque (Auditoria):** Uma tela dedicada para realizar a contagem física do inventário. O sistema mostra a diferença entre o estoque contado e o do sistema e permite ajustar tudo com um único clique.
 - **Previsão com IA (Gemini):** Utilize o histórico de vendas para prever a necessidade de compra de insumos para a próxima semana.
-- **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A IA pode gerar uma ordem de compra sugerida automaticamente.
+- **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A IA pode gerar uma ordem de compra sugerida automaticamente. Ao receber um pedido, o sistema atualiza o estoque e também o **custo médio** do insumo.
 
 ### 📋 **Fichas Técnicas**
-- **Custeio de Pratos (CMV):** Associe ingredientes e sub-receitas aos seus pratos para calcular o custo exato de cada um.
+- **Custeio de Pratos (CMV):** Associe ingredientes e sub-receitas aos seus pratos para calcular o custo exato de cada um em tempo real.
 - **Baixa Automática de Estoque:** Ao vender um prato, o sistema deduz automaticamente os ingredientes do estoque com base na ficha técnica.
-- **Criação com IA (Gemini):** Descreva um prato e deixe a inteligência artificial gerar uma ficha técnica completa, sugerindo ingredientes e quantidades.
+- **Vincular Sub-receitas ao Estoque:** Transforme uma sub-receita (ex: "Molho de Tomate") em um item de estoque controlável, permitindo a gestão da produção intermediária.
+- **Otimização com IA (Gemini):** Descreva um prato e deixe a IA gerar uma sugestão de ficha técnica. Para receitas já prontas, a IA pode fornecer **dicas de otimização de mise en place** para agilizar o preparo.
 
 ### 🔪 **Mise en Place**
-- **Planejamento de Produção:** Crie quadros de tarefas diários para a preparação de sub-receitas e outros itens.
+- **Planejamento de Produção:** Crie quadros de tarefas diários para a preparação de sub-receitas e tarefas personalizadas (ex: "Limpar câmara fria").
 - **Atribuição e Acompanhamento:** Atribua tarefas para funcionários e estações específicas e acompanhe o progresso em tempo real (A Fazer, Em Preparo, Concluído).
-- **Integração com Estoque:** Ao concluir uma tarefa de produção, o sistema gera um **número de lote** para rastreabilidade, calcula o **custo total da produção** e dá baixa nos insumos, adicionando o item final ao estoque.
+- **Integração com Estoque:** Ao concluir uma tarefa de produção, o sistema gera um **número de lote** para rastreabilidade, calcula o **custo total da produção** e dá baixa nos insumos, adicionando o item final (a sub-receita produzida) ao estoque.
+- **Acesso Rápido:** Visualize a ficha técnica completa diretamente do card da tarefa, sem precisar sair da tela.
 
 ### 📅 **Reservas**
-- **Gestão Interna:** Cadastre e gerencie reservas diretamente no sistema, com visão por dia e status (Pendente, Confirmada, Cancelada).
-- **Página Pública de Reservas:** Ative uma página pública onde seus clientes podem fazer reservas online, respeitando seus horários e capacidade.
+- **Configuração Flexível:** Defina seus horários de funcionamento para cada dia da semana, duração padrão da reserva, capacidade de pessoas por mesa e antecedência máxima.
+- **Gestão Interna:** Cadastre e gerencie reservas diretamente no sistema, com visão diária ou uma visão geral dos próximos 15 dias.
+- **Página Pública de Reservas:** Ative uma página pública onde seus clientes podem fazer reservas online 24/7, respeitando suas regras e capacidade.
 
 ### 👥 **Recursos Humanos (RH)**
 - **Cadastro Completo de Funcionários:** Gerencie informações pessoais, de contato, contratuais, de pagamento e bancárias de toda a equipe.
-- **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais para toda a equipe.
-- **Controle de Ponto:** Gerencie manualmente os registros de entrada, saída e pausas dos funcionários.
-- **Gestão de Ausências:** Aprove ou rejeite solicitações de férias, folgas e atestados. Os funcionários também têm uma tela para solicitar e acompanhar suas próprias ausências.
-- **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas, considerando **horas extras com base em limites diários (9h) e semanais (44h)**, e gere contracheques detalhados.
+- **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais. Apenas escalas publicadas são visíveis para não-gerentes.
+- **Controle de Ponto:** Monitore e realize ajustes manuais nos registros de entrada, saída e pausas dos funcionários. O registro em si é feito pelo funcionário logado.
+- **Gestão de Ausências:** Aprove ou rejeite solicitações de férias e folgas. Os funcionários têm uma tela para solicitar e acompanhar suas próprias ausências.
+- **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas, considerando **horas extras com base em limites diários e semanais**, e gere **contracheques (holerites)** detalhados e prontos para impressão.
 
 ### 💖 **CRM e Fidelidade**
-- **Cadastro de Clientes:** Base de dados completa de clientes com histórico de consumo e observações.
-- **Histórico de Consumo:** Visualize todos os pedidos anteriores de um cliente para um atendimento personalizado.
-- **Programa de Fidelidade:** Configure um sistema de pontos por valor gasto e crie recompensas, como descontos ou itens grátis, para incentivar a lealdade.
+- **Cadastro de Clientes:** Base de dados completa de clientes com histórico de consumo, pontos de fidelidade e observações.
+- **Visão 360° do Cliente:** Visualize o histórico completo de consumo e de pontos de fidelidade em uma tela detalhada.
+- **Programa de Fidelidade:** Configure um sistema de pontos por valor gasto e crie recompensas flexíveis: **desconto fixo (R$), desconto percentual (%) ou um item grátis** do seu cardápio.
 - **Resgate no PDV:** Permita que os clientes resgatem suas recompensas diretamente ao fazer um novo pedido na mesa ou no caixa.
 
 ### 🚀 **Performance e Relatórios**
 - **Relatórios Financeiros Completos:** Gere relatórios detalhados com Faturamento, Custo (CMV), Lucro Bruto e Resultado Líquido.
-- **Análise Comparativa:** Compare o desempenho de vendas entre diferentes períodos (dia, semana, mês) para identificar tendências de crescimento.
-- **Análise de Horários de Pico:** Visualize graficamente os horários e dias da semana com maior volume de vendas para otimizar a alocação de equipe e preparo de insumos.
+- **Análise Comparativa:** Compare o desempenho de vendas entre diferentes períodos para identificar tendências.
+- **Análise de Horários de Pico:** Visualize graficamente os horários e dias da semana com maior volume de vendas para otimizar sua operação.
 - **Análise de Desempenho por Prato:** Descubra quais são seus pratos mais lucrativos com relatórios que incluem receita, custo, lucro total e margem de lucro por item.
-- **Construtor de Relatórios:** Crie relatórios personalizados selecionando colunas, filtros (período, funcionário) e agrupamentos para extrair os dados exatos que você precisa.
-- **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha.
+- **Construtor de Relatórios:** Crie relatórios personalizados selecionando colunas, filtros e agrupamentos para extrair os dados exatos que você precisa.
+- **Desempenho da Equipe:** Monitore as vendas, gorjetas e ticket médio de cada funcionário, além da produtividade da cozinha por tarefas concluídas e tempo de preparo.
 
 ### ⚙️ **Configurações e Cardápio Online**
-- **Gestão Centralizada:** Cadastre funcionários (com PINs), estações de produção, categorias, fornecedores e dados da empresa.
+- **Gestão Centralizada:** Cadastre funcionários, estações de produção, fornecedores, categorias de ingredientes, categorias de pratos (com imagem) e os dados da sua empresa (com logo).
 - **Cargos e Permissões:** Crie cargos personalizados (ex: Garçom, Caixa) e defina quais telas cada cargo pode acessar, garantindo segurança e controle.
-- **QR Code para Cardápio:** O sistema gera automaticamente um QR Code para um cardápio online público, que os clientes podem acessar de seus celulares.
+- **Cardápio Online:** O sistema gera automaticamente um **QR Code** e um link para um cardápio online público e elegante, que inclui uma página de capa, o menu e uma página de informações com horários de funcionamento e contato.
 
 ### 🎓 **Tutoriais**
 - **Central de Ajuda Integrada:** Guias passo a passo com imagens que ensinam a usar todas as funcionalidades do sistema, desde a configuração inicial até as operações mais avançadas.
