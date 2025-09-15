@@ -12,6 +12,8 @@ import { ReservationDataService } from '../../services/reservation-data.service'
 import { ALL_PERMISSION_KEYS } from '../../config/permissions';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
+
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -44,6 +46,9 @@ export class SettingsComponent {
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+  // Tab state
+  activeTab = signal<SettingsTab>('empresa');
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
@@ -149,20 +154,20 @@ export class SettingsComponent {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
     // Construct the full URL including the hash for the router
-    const menuUrl = `${window.location.origin}${window.location.pathname}#/menu/${userId}`;
+    const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
 
   publicMenuUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
-    return `${window.location.origin}${window.location.pathname}#/menu/${userId}`;
+    return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
   });
 
   publicBookingUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
-    return `${window.location.origin}${window.location.pathname}#/book/${userId}`;
+    return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
   });
 
   constructor() {
@@ -217,6 +222,10 @@ export class SettingsComponent {
             this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
         }
     });
+  }
+
+  setActiveTab(tab: SettingsTab) {
+    this.activeTab.set(tab);
   }
 
   // Filtered lists

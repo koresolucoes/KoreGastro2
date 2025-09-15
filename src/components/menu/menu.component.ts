@@ -205,7 +205,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 // FIX: Use the public `authService.currentUser` signal instead of the private one on `stateService`.
     const userId = this.isPublicView() ? this.route.snapshot.paramMap.get('userId') : this.authService.currentUser()?.id;
     if (!userId) return '#';
-    return `${window.location.origin}${window.location.pathname}#/book/${userId}`;
+    return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
   });
 
   isRestaurantOpen = computed(() => {
