@@ -58,11 +58,17 @@
       @if (viewMode() === 'station') {
         <!-- Station View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          @for (ticket of groupedKdsTickets(); track ticket.tableNumber) {
+          @for (ticket of groupedKdsTickets(); track ticket.tableNumber + (ticket.ifoodDisplayId || '')) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
                 <div class="flex items-center gap-2">
-                  <span>{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</span>
+                  @if (ticket.orderType.startsWith('iFood')) {
+                    <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                  } @else if (ticket.orderType === 'QuickSale') {
+                    <span>Caixa</span>
+                  } @else {
+                    <span>Mesa {{ ticket.tableNumber }}</span>
+                  }
                   <button (click)="openDetailModal(ticket); $event.stopPropagation()" class="p-1 rounded-full text-white/70 hover:bg-white/20 hover:text-white transition-colors" title="Ver Detalhes">
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
@@ -144,10 +150,16 @@
       } @else {
         <!-- Expo View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          @for (ticket of expoViewTickets(); track ticket.tableNumber) {
+          @for (ticket of expoViewTickets(); track ticket.tableNumber + (ticket.ifoodDisplayId || '')) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup" [class.border-gray-700]="!ticket.isReadyForPickup">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
-                <span>{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</span>
+                @if (ticket.orderType.startsWith('iFood')) {
+                  <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                } @else if (ticket.orderType === 'QuickSale') {
+                  <span>Caixa</span>
+                } @else {
+                  <span>Mesa {{ ticket.tableNumber }}</span>
+                }
                 <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
@@ -214,7 +226,15 @@
       <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Detalhes do Pedido</h3><button (click)="closeDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
       <div class="p-6 flex-1 overflow-y-auto">
         <div class="grid grid-cols-3 gap-4 text-center mb-6 pb-4 border-b border-gray-600">
-            <div><p class="text-sm text-gray-400">Origem</p><p class="text-lg font-semibold text-white">{{ ticket.tableNumber === 0 ? 'Caixa' : ('Mesa ' + ticket.tableNumber) }}</p></div>
+            <div><p class="text-sm text-gray-400">Origem</p><p class="text-lg font-semibold text-white">
+                @if (ticket.orderType.startsWith('iFood')) {
+                    <span>#{{ ticket.ifoodDisplayId }}</span>
+                  } @else if (ticket.orderType === 'QuickSale') {
+                    <span>Caixa</span>
+                  } @else {
+                    <span>Mesa {{ ticket.tableNumber }}</span>
+                  }
+            </p></div>
             <div><p class="text-sm text-gray-400">Recebido</p><p class="text-lg font-semibold text-white">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p></div>
             <div><p class="text-sm text-gray-400">Tempo Total</p><p class="text-lg font-semibold font-mono" [class.text-red-400]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p></div>
         </div>

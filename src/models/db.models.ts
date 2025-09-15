@@ -11,6 +11,11 @@ export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLET
 export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Atestado';
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
+export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
+export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout';
+// FIX: Add IfoodOrderStatus type for iFood integration.
+export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
+
 
 // --- New Types for Settings ---
 export interface OperatingHours {
@@ -18,6 +23,44 @@ export interface OperatingHours {
   opening_time: string; // "HH:mm"
   closing_time: string; // "HH:mm"
   is_closed: boolean;
+}
+
+export interface IfoodOrderDelivery {
+    deliveredBy: 'IFOOD' | 'MERCHANT';
+    deliveryAddress: {
+        streetName: string;
+        streetNumber: string;
+        neighborhood: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        complement?: string;
+        reference?: string;
+    }
+}
+
+// FIX: Add IfoodOrderItem and IfoodOrder interfaces for iFood integration.
+export interface IfoodOrderItem {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  observations?: string;
+}
+
+export interface IfoodOrder {
+  id: string;
+  user_id: string;
+  ifood_order_id: string;
+  display_id: string;
+  ifood_created_at: string; // ISO string
+  order_type: 'DELIVERY' | 'TAKEOUT';
+  customer_name: string;
+  items: IfoodOrderItem[]; // Stored as JSONB
+  total_amount: number;
+  payment_method: string;
+  status: IfoodOrderStatus;
+  created_at: string;
 }
 
 // --- Main Entities ---
@@ -124,6 +167,7 @@ export interface Ingredient {
   pos_category_id: string | null;
   station_id: string | null;
   proxy_recipe_id: string | null;
+  external_code: string | null;
   created_at: string;
   user_id: string;
   ingredient_categories?: { name: string }; // Relation
@@ -181,15 +225,22 @@ export interface Customer {
 export interface Order {
   id: string;
   table_number: number;
+  status: OrderStatus;
+  // FIX: Add the missing 'is_completed' property.
   is_completed: boolean;
   completed_at: string | null;
-  order_type: 'Dine-in' | 'QuickSale';
+  order_type: OrderType;
   timestamp: string;
   customer_id: string | null;
   created_at: string;
   user_id: string;
   order_items: OrderItem[];
   customers?: Customer; // Relation
+  
+  // iFood fields
+  ifood_order_id?: string | null;
+  ifood_display_id?: string | null;
+  delivery_info?: IfoodOrderDelivery | null; // Stored as JSONB
 }
 
 export interface OrderItem {
@@ -423,6 +474,7 @@ export interface CompanyProfile {
   address: string | null;
   phone: string | null;
   logo_url: string | null;
+  ifood_merchant_id: string | null;
   created_at: string;
 }
 

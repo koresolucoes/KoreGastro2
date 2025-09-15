@@ -51,10 +51,12 @@
               @if(logoPreviewUrl()) {
                 <img [src]="logoPreviewUrl()" alt="Logo preview" class="h-24 w-24 rounded-full object-cover border-2 border-gray-600 hover:opacity-80">
               } @else {
-                <div class="h-24 w-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600">
-                  <svg class="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 017.5 0z" /></svg>
-                </div>
-              }
+               <div class="h-24 w-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600">
+                  <span class="text-5xl font-extrabold text-gray-800">
+                    <span>C</span><span class="text-blue-600">OS</span>
+                  </span>
+               </div>
+            }
             </label>
             <input id="logo-upload" type="file" class="hidden" (change)="handleLogoFileChange($event)" accept="image/png, image/jpeg, image/webp">
             <p class="text-xs text-gray-400">Clique na imagem para alterar o logo</p>
@@ -264,66 +266,85 @@
     }
     @case ('funcionalidades') {
       <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <!-- Panel: Loyalty Program -->
-        <div class="bg-gray-800 rounded-lg p-6 lg:col-span-1 xl:col-span-2">
-          <h2 class="text-xl font-semibold text-white mb-4">Programa de Fidelidade</h2>
-          <div class="space-y-4 bg-gray-900/50 p-4 rounded-lg">
-              <div class="flex items-center justify-between">
-                  <label for="loyalty-enabled" class="font-medium text-white">Ativar Programa de Fidelidade</label>
-                  <button
-                      type="button" role="switch" id="loyalty-enabled"
-                      [attr.aria-checked]="loyaltySettingsForm().is_enabled"
-                      (click)="updateLoyaltySettingsField('is_enabled', !loyaltySettingsForm().is_enabled); saveLoyaltySettings()"
-                      [class.bg-green-600]="loyaltySettingsForm().is_enabled"
-                      [class.bg-gray-600]="!loyaltySettingsForm().is_enabled"
-                      class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
-                      <span [class.translate-x-5]="loyaltySettingsForm().is_enabled" [class.translate-x-0]="!loyaltySettingsForm().is_enabled" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"></span>
-                  </button>
-              </div>
-              <div [class.opacity-50]="!loyaltySettingsForm().is_enabled" [class.pointer-events-none]="!loyaltySettingsForm().is_enabled">
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Pontos ganhos por cada R$ 1,00 gasto</label>
-                  <div class="flex items-center gap-2">
-                      <input type="number" step="0.1" [value]="loyaltySettingsForm().points_per_real" (input)="updateLoyaltySettingsField('points_per_real', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                      <button (click)="saveLoyaltySettings()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
-                  </div>
-              </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6 space-y-6">
+          <!-- iFood Integration -->
+          <div>
+            <h2 class="text-xl font-semibold text-white mb-4">Integração iFood</h2>
+             <div class="space-y-4">
+                <div>
+                  <label for="ifood-merchant-id" class="block text-sm font-medium text-gray-300 mb-1">iFood Merchant ID</label>
+                  <input type="text" id="ifood-merchant-id" [value]="companyProfileForm().ifood_merchant_id || ''" (input)="updateCompanyProfileField('ifood_merchant_id', $any($event.target).value)" placeholder="Cole seu ID do iFood aqui" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500">
+                   <p class="text-xs text-gray-400 mt-1">Este ID é necessário para que o webhook identifique seu restaurante.</p>
+                </div>
+                <div>
+                  <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Configurações iFood</button>
+                </div>
+            </div>
           </div>
-          
-          <div class="mt-6" [class.opacity-50]="!loyaltySettingsForm().is_enabled" [class.pointer-events-none]="!loyaltySettingsForm().is_enabled">
-              <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold text-white">Prêmios e Recompensas</h3>
-                  <button (click)="openAddRewardModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-lg text-sm">Adicionar Prêmio</button>
-              </div>
-               @if (loyaltyRewards().length > 0) {
-                <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
-                  @for(reward of loyaltyRewards(); track reward.id) {
-                    <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
-                      @if (rewardPendingDeletion()?.id === reward.id) {
-                        <span class="text-sm text-red-300">Certeza?</span>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                          <button (click)="confirmDeleteReward()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                          <button (click)="cancelDeleteReward()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
-                        </div>
-                      } @else {
-                        <div class="flex-1 min-w-0">
-                          <p class="font-semibold text-white">{{reward.name}} - <span class="text-blue-300">{{reward.points_cost}} pts</span></p>
-                          <p class="text-xs text-gray-400">{{ getRewardValueLabel(reward) }}</p>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                          <button (click)="openEditRewardModal(reward)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
-                          <button (click)="requestDeleteReward(reward)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                        </div>
-                      }
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="text-center text-gray-500 py-4">Nenhum prêmio cadastrado.</p>
-              }
+
+          <!-- Panel: Loyalty Program -->
+          <div class="pt-6 border-t border-gray-700">
+            <h2 class="text-xl font-semibold text-white mb-4">Programa de Fidelidade</h2>
+            <div class="space-y-4 bg-gray-900/50 p-4 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <label for="loyalty-enabled" class="font-medium text-white">Ativar Programa de Fidelidade</label>
+                    <button
+                        type="button" role="switch" id="loyalty-enabled"
+                        [attr.aria-checked]="loyaltySettingsForm().is_enabled"
+                        (click)="updateLoyaltySettingsField('is_enabled', !loyaltySettingsForm().is_enabled); saveLoyaltySettings()"
+                        [class.bg-green-600]="loyaltySettingsForm().is_enabled"
+                        [class.bg-gray-600]="!loyaltySettingsForm().is_enabled"
+                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
+                        <span [class.translate-x-5]="loyaltySettingsForm().is_enabled" [class.translate-x-0]="!loyaltySettingsForm().is_enabled" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"></span>
+                    </button>
+                </div>
+                <div [class.opacity-50]="!loyaltySettingsForm().is_enabled" [class.pointer-events-none]="!loyaltySettingsForm().is_enabled">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Pontos ganhos por cada R$ 1,00 gasto</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.1" [value]="loyaltySettingsForm().points_per_real" (input)="updateLoyaltySettingsField('points_per_real', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <button (click)="saveLoyaltySettings()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6" [class.opacity-50]="!loyaltySettingsForm().is_enabled" [class.pointer-events-none]="!loyaltySettingsForm().is_enabled">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">Prêmios e Recompensas</h3>
+                    <button (click)="openAddRewardModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-3 rounded-lg text-sm">Adicionar Prêmio</button>
+                </div>
+                 @if (loyaltyRewards().length > 0) {
+                  <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                    @for(reward of loyaltyRewards(); track reward.id) {
+                      <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+                        @if (rewardPendingDeletion()?.id === reward.id) {
+                          <span class="text-sm text-red-300">Certeza?</span>
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <button (click)="confirmDeleteReward()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                            <button (click)="cancelDeleteReward()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                          </div>
+                        } @else {
+                          <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-white">{{reward.name}} - <span class="text-blue-300">{{reward.points_cost}} pts</span></p>
+                            <p class="text-xs text-gray-400">{{ getRewardValueLabel(reward) }}</p>
+                          </div>
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <button (click)="openEditRewardModal(reward)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                            <button (click)="requestDeleteReward(reward)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                          </div>
+                        }
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="text-center text-gray-500 py-4">Nenhum prêmio cadastrado.</p>
+                }
+            </div>
           </div>
         </div>
+
         <!-- Panel: Reservation & Menu -->
-        <div class="lg:col-span-1 space-y-6">
+        <div class="lg:col-span-1 xl:col-span-2 space-y-6">
             <!-- Panel: Reservation Settings -->
             <div class="bg-gray-800 rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">

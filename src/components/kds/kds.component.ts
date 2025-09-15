@@ -3,7 +3,7 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee } from '../../models/db.models';
+import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
@@ -17,6 +17,8 @@ interface BaseTicket {
   ticketTimerColor: string;
   isTicketLate: boolean;
   oldestTimestamp: string;
+  orderType: OrderType;
+  ifoodDisplayId?: string | null;
 }
 
 interface StationTicket extends BaseTicket {
@@ -216,38 +218,39 @@ export class KdsComponent implements OnInit, OnDestroy {
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            const allOrderItems = this.stateService.openOrders().find(o => o.table_number === ticket.tableNumber)?.order_items ?? [];
-            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO');
+            const allOrderItems = this.stateService.openOrders().find(o => (o.table_number === ticket.tableNumber && o.order_type.startsWith('Dine-in')) || o.ifood_display_id === ticket.ifoodDisplayId)?.order_items ?? [];
+            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO');
             return { ...ticket, isReadyForPickup };
         });
     });
 
-    // FIX: Changed return type from BaseTicket[] to StationTicket[] to include the `items` property.
     private groupItemsIntoTickets(items: ProcessedOrderItem[]): StationTicket[] {
         const now = this.currentTime();
-        const itemsByTable = new Map<number, ProcessedOrderItem[]>();
+        const itemsByOrderId = new Map<string, ProcessedOrderItem[]>();
 
         for (const item of items) {
-            const order = this.stateService.openOrders().find(o => o.id === item.order_id);
-            if (order) {
-                if (!itemsByTable.has(order.table_number)) itemsByTable.set(order.table_number, []);
-                itemsByTable.get(order.table_number)!.push(item);
+            if (!itemsByOrderId.has(item.order_id)) {
+                itemsByOrderId.set(item.order_id, []);
             }
+            itemsByOrderId.get(item.order_id)!.push(item);
         }
 
         const tickets: StationTicket[] = [];
-        for (const [tableNumber, tableItems] of itemsByTable.entries()) {
-            if (tableItems.length === 0) continue;
+        for (const [orderId, orderItems] of itemsByOrderId.entries()) {
+            if (orderItems.length === 0) continue;
             
-            tableItems.sort((a, b) => b.prepTime - a.prepTime);
+            const order = this.stateService.openOrders().find(o => o.id === orderId);
+            if (!order) continue;
 
-            const oldestItem = tableItems.reduce((oldest, current) => 
+            orderItems.sort((a, b) => b.prepTime - a.prepTime);
+
+            const oldestItem = orderItems.reduce((oldest, current) => 
                 (new Date(current.status_timestamps?.['PENDENTE'] ?? current.created_at) < new Date(oldest.status_timestamps?.['PENDENTE'] ?? oldest.created_at)) ? current : oldest
             );
             const oldestTimestamp = new Date(oldestItem.status_timestamps?.['PENDENTE'] ?? oldestItem.created_at).getTime();
             const ticketElapsedTime = Math.floor((now - oldestTimestamp) / 1000);
             
-            const avgPrepTime = tableItems.reduce((acc, item) => acc + item.prepTime, 0) / tableItems.length;
+            const avgPrepTime = orderItems.reduce((acc, item) => acc + item.prepTime, 0) / orderItems.length;
             const percentage = avgPrepTime > 0 ? (ticketElapsedTime / avgPrepTime) * 100 : 0;
             
             let ticketTimerColor = 'bg-green-600';
@@ -255,9 +258,14 @@ export class KdsComponent implements OnInit, OnDestroy {
             if (percentage > 80) ticketTimerColor = 'bg-red-600';
 
             tickets.push({
-                tableNumber, items: tableItems, ticketElapsedTime, ticketTimerColor,
+                tableNumber: order.table_number,
+                items: orderItems,
+                ticketElapsedTime,
+                ticketTimerColor,
                 isTicketLate: ticketElapsedTime > avgPrepTime,
                 oldestTimestamp: new Date(oldestTimestamp).toISOString(),
+                orderType: order.order_type,
+                ifoodDisplayId: order.ifood_display_id
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
@@ -334,7 +342,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     async markOrderAsServed(ticket: ExpoTicket) {
         if (this.updatingTickets().has(ticket.tableNumber)) return;
         
-        const order = this.stateService.openOrders().find(o => o.table_number === ticket.tableNumber);
+        const order = this.stateService.openOrders().find(o => (o.table_number === ticket.tableNumber && o.order_type.startsWith('Dine-in')) || o.ifood_display_id === ticket.ifoodDisplayId);
         if (!order) {
             await this.notificationService.alert('Erro: Pedido não encontrado.');
             return;

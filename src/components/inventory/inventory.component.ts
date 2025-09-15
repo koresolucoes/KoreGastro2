@@ -23,6 +23,7 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
     price: null,
     pos_category_id: null,
     station_id: null,
+    external_code: null,
 };
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
@@ -197,8 +198,8 @@ export class InventoryComponent {
             } else if (['category_id', 'supplier_id', 'pos_category_id', 'station_id', 'expiration_date'].includes(field as string)) {
                 newForm[field as 'category_id' | 'supplier_id' | 'pos_category_id' | 'station_id' | 'expiration_date'] = (value === 'null' || value === '') ? null : value;
 // FIX: Cast `field` to string for `includes` method check.
-            } else if (['name', 'unit', 'last_movement_at'].includes(field as string)) {
-                newForm[field as 'name' | 'unit' | 'last_movement_at'] = value;
+            } else if (['name', 'unit', 'last_movement_at', 'external_code'].includes(field as string)) {
+                newForm[field as 'name' | 'unit' | 'last_movement_at' | 'external_code'] = value;
 // FIX: Cast `field` to string for `includes` method check.
             } else if (['stock', 'cost', 'min_stock', 'price'].includes(field as string)) {
                 const numValue = parseFloat(value);

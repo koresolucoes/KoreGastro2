@@ -73,6 +73,7 @@ export class SettingsComponent {
       permissions: [
         { key: '/pos', label: 'PDV' },
         { key: '/cashier', label: 'Caixa' },
+        { key: '/ifood-kds', label: 'iFood / Delivery' },
         { key: '/reservations', label: 'Reservas' },
         { key: '/customers', label: 'Clientes' }
       ]
@@ -210,7 +211,7 @@ export class SettingsComponent {
             this.companyProfileForm.set({ ...profile });
             this.logoPreviewUrl.set(profile.logo_url);
         } else {
-            this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: ''});
+            this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: '', ifood_merchant_id: null});
         }
     });
 

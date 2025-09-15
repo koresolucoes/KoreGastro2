@@ -156,8 +156,7 @@
           <tr>
             <th scope="col" class="px-6 py-3">Ingrediente</th>
             <th scope="col" class="px-6 py-3">Estoque</th>
-            <th scope="col" class="px-6 py-3">Validade</th>
-            <th scope="col" class="px-6 py-3">Últ. Mov.</th>
+            <th scope="col" class="px-6 py-3">Cód. Externo</th>
             <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
             <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
             <th scope="col" class="px-6 py-3 text-center">Status</th>
@@ -172,8 +171,7 @@
                 <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
               </td>
               <td class="px-6 py-4">{{ ingredient.stock }} {{ ingredient.unit }}</td>
-              <td class="px-6 py-4 text-gray-400">{{ ingredient.expiration_date | date:'dd/MM/yyyy' }}</td>
-              <td class="px-6 py-4 text-gray-400">{{ ingredient.last_movement_at | date:'dd/MM/yyyy' }}</td>
+              <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ ingredient.external_code || '-' }}</td>
               <td class="px-6 py-4 text-right">{{ ingredient.cost | currency:'BRL' }}</td>
               <td class="px-6 py-4 text-right font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</td>
               <td class="px-6 py-4 text-center">
@@ -241,8 +239,8 @@
                   <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
               </div>
               <div>
-                  <p class="text-gray-400 text-xs">Validade</p>
-                  <p class="text-white font-medium">{{ ingredient.expiration_date | date:'dd/MM/yy' }}</p>
+                  <p class="text-gray-400 text-xs">Cód. Externo</p>
+                  <p class="text-white font-mono text-xs">{{ ingredient.external_code || '-' }}</p>
               </div>
               <div>
                   <p class="text-gray-400 text-xs">Últ. Mov.</p>
@@ -290,9 +288,15 @@
       </div>
 
       <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Ingrediente</label>
-          <input type="text" [value]="ingredientForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" placeholder="Ex: Farinha de Trigo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Ingrediente</label>
+              <input type="text" [value]="ingredientForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" placeholder="Ex: Farinha de Trigo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Cód. Externo (PDV / iFood)</label>
+              <input type="text" [value]="ingredientForm().external_code || ''" (input)="updateFormValue('external_code', $any($event.target).value)" placeholder="Ex: SKU123" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
