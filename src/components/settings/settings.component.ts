@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType } from '../../models/db.models';
@@ -9,6 +10,7 @@ import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+import { OperationalAuthService } from '../../services/operational-auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -25,6 +27,7 @@ export class SettingsComponent {
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
   private reservationDataService = inject(ReservationDataService);
+  private operationalAuthService = inject(OperationalAuthService);
 
   // Data Signals from Service
   stations = this.stateService.stations;
@@ -54,7 +57,7 @@ export class SettingsComponent {
   // Role Management State
   allPermissions = ALL_PERMISSION_KEYS;
   
-  permissionGroups = [
+  private allPermissionGroups = [
     {
       name: 'Vendas',
       permissions: [
@@ -102,6 +105,25 @@ export class SettingsComponent {
       ]
     }
   ];
+
+  userAvailablePermissions = computed(() => {
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!activeEmployee || !activeEmployee.role_id) return new Set<string>();
+
+    return new Set(
+        this.rolePermissions()
+            .filter(p => p.role_id === activeEmployee.role_id)
+            .map(p => p.permission_key)
+    );
+  });
+
+  permissionGroups = computed(() => {
+    const available = this.userAvailablePermissions();
+    return this.allPermissionGroups.map(group => ({
+        ...group,
+        permissions: group.permissions.filter(p => available.has(p.key))
+    })).filter(group => group.permissions.length > 0);
+  });
 
   isPermissionsModalOpen = signal(false);
   editingRole = signal<Role | null>(null);
@@ -405,13 +427,15 @@ export class SettingsComponent {
 
   async savePermissions() {
     const role = this.editingRole();
-    if (!role) return;
+    const activeEmployee = this.operationalAuthService.activeEmployee(); // Get the currently logged-in operator
+    if (!role || !activeEmployee?.role_id) return; // Ensure we have the operator's role_id for validation
 
     const selectedPermissions = Object.entries(this.rolePermissionsForm())
       .filter(([, isSelected]) => isSelected)
       .map(([key]) => key);
 
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, selectedPermissions);
+    // Pass the active operator's role ID to the service for server-side validation
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, selectedPermissions, activeEmployee.role_id);
 
     if (success) {
       this.notificationService.show('Permissões atualizadas com sucesso!', 'success');

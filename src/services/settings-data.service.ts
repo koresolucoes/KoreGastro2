@@ -82,12 +82,28 @@ export class SettingsDataService {
     return { success: !error, error };
   }
   
-  async updateRolePermissions(roleId: string, permissions: string[]): Promise<{ success: boolean, error: any }> {
+  async updateRolePermissions(roleId: string, permissions: string[], callerRoleId: string): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    // Simple approach: delete all existing and insert new ones.
-    // For large scale, an RPC function would be better.
+    // Security Check: Fetch caller's permissions to ensure they can grant what they're trying to grant.
+    const { data: callerPermissionsData, error: fetchError } = await supabase
+      .from('role_permissions')
+      .select('permission_key')
+      .eq('role_id', callerRoleId);
+      
+    if (fetchError) {
+      return { success: false, error: fetchError };
+    }
+
+    const callerPermissionsSet = new Set((callerPermissionsData || []).map(p => p.permission_key));
+    const canGrantAll = permissions.every(p => callerPermissionsSet.has(p));
+
+    if (!canGrantAll) {
+      return { success: false, error: { message: 'Ação não permitida. Você não pode conceder uma permissão que não possui.' } };
+    }
+
+    // Proceed with update
     const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
     if (deleteError) return { success: false, error: deleteError };
 
