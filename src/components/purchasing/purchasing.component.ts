@@ -176,6 +176,11 @@ export class PurchasingComponent implements OnInit {
     }
 
     async markAsReceived(order: PurchaseOrder) {
+        if (order.purchase_order_items?.some(item => !item.cost || item.cost <= 0)) {
+            await this.notificationService.alert('Atenção: Preencha o custo de todos os itens antes de receber o pedido. Edite o pedido para adicionar os custos.');
+            return;
+        }
+
         const confirmed = await this.notificationService.confirm(`Tem certeza que deseja marcar o pedido #${order.id.slice(0, 8)} como recebido? Esta ação atualizará seu estoque.`, 'Confirmar Recebimento');
         if (!confirmed) {
             return;

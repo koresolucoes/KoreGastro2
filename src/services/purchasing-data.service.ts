@@ -104,6 +104,21 @@ export class PurchasingDataService {
       if (!result.success) {
         return { success: false, error: { message: `Falha ao atualizar o estoque para o item ID ${item.ingredient_id}: ${result.error?.message}` } };
       }
+      
+      // After successfully adding to stock, update the main ingredient cost if a new cost is provided.
+      // This keeps the ingredient's base cost up-to-date with the latest purchase.
+      if (item.cost > 0) {
+        const { error: costUpdateError } = await supabase
+          .from('ingredients')
+          .update({ cost: item.cost })
+          .eq('id', item.ingredient_id);
+        
+        if (costUpdateError) {
+          // Log the error but don't fail the entire process, as the stock is already updated.
+          // This prevents potential stock duplication on retry.
+          console.error(`Failed to update cost for ingredient ${item.ingredient_id}:`, costUpdateError);
+        }
+      }
     }
     
     const { error: updateError } = await supabase.from('purchase_orders').update({ status: 'Recebida' }).eq('id', order.id);
