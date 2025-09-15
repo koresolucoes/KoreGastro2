@@ -1,18 +1,18 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee } from '../../models/db.models';
+import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
-import { RouterLink } from '@angular/router';
+import { MiseEnPlaceRecipeModalComponent } from './mise-en-place-recipe-modal/mise-en-place-recipe-modal.component';
 
 type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user_id'>> & { task_type: 'recipe' | 'custom' };
 
 @Component({
   selector: 'app-mise-en-place',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, MiseEnPlaceRecipeModalComponent],
   templateUrl: './mise-en-place.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -50,7 +50,69 @@ export class MiseEnPlaceComponent {
   editingTask = signal<ProductionTask | null>(null);
   taskForm = signal<TaskForm>({ task_type: 'recipe' });
 
+  // Recipe Modal State
+  isRecipeModalOpen = signal(false);
+  selectedTaskForRecipe = signal<ProductionTask | null>(null);
+
   isManager = computed(() => this.activeEmployee()?.role === 'Gerente');
+
+  recipeForModal = computed(() => {
+    const task = this.selectedTaskForRecipe();
+    if (!task || !task.sub_recipe_id) return null;
+
+    const allRecipes = this.stateService.recipes();
+    const recipe = allRecipes.find(r => r.id === task.sub_recipe_id);
+    if (!recipe) return null;
+
+    const allPreparations = this.stateService.recipePreparations();
+    const allIngredients = this.stateService.recipeIngredients();
+    const allSubRecipes = this.stateService.recipeSubRecipes();
+    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.id, i]));
+    const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
+
+    const recipePreps = allPreparations
+      .filter(p => p.recipe_id === recipe.id)
+      .map(p => {
+        const prepIngredients = allIngredients
+          .filter(i => i.preparation_id === p.id)
+          .map(i => {
+            const ingredientDetails = ingredientsMap.get(i.ingredient_id);
+            const baseUnit = ingredientDetails?.unit || 'un';
+            let displayUnit: IngredientUnit = baseUnit;
+            let displayQuantity = i.quantity;
+
+            if (baseUnit === 'kg' && displayQuantity > 0 && displayQuantity < 1) {
+                displayUnit = 'g';
+                displayQuantity *= 1000;
+            } else if (baseUnit === 'l' && displayQuantity > 0 && displayQuantity < 1) {
+                displayUnit = 'ml';
+                displayQuantity *= 1000;
+            }
+
+            return {
+              ...i,
+              name: ingredientDetails?.name || '?',
+              unit: displayUnit,
+              quantity: displayQuantity
+            };
+          });
+        return { ...p, ingredients: prepIngredients };
+      })
+      .sort((a,b) => a.display_order - b.display_order);
+
+    const recipeSubRecipesData = allSubRecipes
+      .filter(sr => sr.parent_recipe_id === recipe.id)
+      .map(sr => ({
+        ...sr,
+        name: recipesMap.get(sr.child_recipe_id)?.name || '?'
+      }));
+
+    return {
+      recipe: recipe,
+      preparations: recipePreps,
+      subRecipes: recipeSubRecipesData
+    };
+  });
 
   constructor() {
     effect(() => {
@@ -238,5 +300,19 @@ export class MiseEnPlaceComponent {
         case 'Rascunho': return 'border-gray-500 bg-gray-900/40';
         default: return 'border-gray-600';
     }
+  }
+
+  openRecipeModal(task: ProductionTask) {
+    if (!task.sub_recipe_id) {
+      this.notificationService.show('Esta é uma tarefa personalizada e não possui ficha técnica.', 'info');
+      return;
+    }
+    this.selectedTaskForRecipe.set(task);
+    this.isRecipeModalOpen.set(true);
+  }
+
+  closeRecipeModal() {
+    this.isRecipeModalOpen.set(false);
+    this.selectedTaskForRecipe.set(null);
   }
 }

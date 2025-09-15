@@ -54,7 +54,7 @@
                                   <div class="flex justify-between items-start">
                                       <div class="flex-1">
                                         <p class="font-bold text-white text-lg">{{ task.quantity_to_produce }}x {{ task.recipes?.name || task.custom_task_name }}</p>
-                                        @if(task.sub_recipe_id) { <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: task.sub_recipe_id }" class="text-xs text-blue-400 hover:underline">Ver ficha técnica</a> }
+                                        @if(task.sub_recipe_id) { <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-xs text-blue-400 hover:underline">Ver ficha técnica</button> }
                                       </div>
                                       @if (isManager() && task.status === 'Concluído') {
                                           <button (click)="$event.stopPropagation(); deleteTask(task.id)" class="p-1 text-red-400 hover:text-red-300" title="Remover tarefa concluída">
@@ -151,4 +151,12 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Recipe Modal -->
+@if(isRecipeModalOpen()) {
+  <app-mise-en-place-recipe-modal 
+    [recipeData]="recipeForModal()"
+    (close)="closeRecipeModal()">
+  </app-mise-en-place-recipe-modal>
 }

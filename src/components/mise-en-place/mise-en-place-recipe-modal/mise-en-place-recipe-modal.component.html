@@ -1,0 +1,77 @@
+@if (recipeData(); as data) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+        <div>
+            <h3 class="text-xl font-bold text-white">Ficha Técnica: {{ data.recipe.name }}</h3>
+            <p class="text-gray-400 text-sm">Modo de preparo e ingredientes</p>
+        </div>
+        <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      
+      <!-- Body -->
+      <div class="flex-1 p-6 overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Ingredients & Sub-Recipes Column -->
+          <div class="md:col-span-1 space-y-6">
+            <div>
+              <h4 class="font-semibold text-lg text-white mb-2 pb-2 border-b border-gray-700">Ingredientes</h4>
+              @if(hasIngredients()) {
+                <ul class="space-y-1 text-sm">
+                  @for(prep of data.preparations; track prep.id) {
+                      @for(ing of prep.ingredients; track ing.ingredient_id) {
+                          <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md">
+                              <span class="text-gray-200">{{ ing.name }}</span>
+                              <span class="font-mono font-semibold text-gray-300">{{ ing.quantity | number:'1.0-3' }} {{ ing.unit }}</span>
+                          </li>
+                      }
+                  }
+                </ul>
+              } @else {
+                  <p class="text-gray-500 text-sm">Nenhum ingrediente direto.</p>
+              }
+            </div>
+            @if(data.subRecipes.length > 0) {
+                <div>
+                  <h4 class="font-semibold text-lg text-white mb-2 pb-2 border-b border-gray-700">Sub-Receitas</h4>
+                  <ul class="space-y-1 text-sm">
+                    @for(sub of data.subRecipes; track sub.child_recipe_id) {
+                        <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md">
+                            <span class="text-gray-200">{{ sub.name }}</span>
+                            <span class="font-mono font-semibold text-gray-300">{{ sub.quantity | number }} un</span>
+                        </li>
+                    }
+                  </ul>
+                </div>
+            }
+          </div>
+
+          <!-- Preparations Column -->
+          <div class="md:col-span-2">
+            <h4 class="font-semibold text-lg text-white mb-2 pb-2 border-b border-gray-700">Modo de Preparo</h4>
+            @if(data.preparations.length > 0) {
+              <div class="space-y-4">
+                @for(prep of data.preparations; track prep.id; let i = $index) {
+                  <div class="bg-gray-900/50 p-3 rounded-lg">
+                    <h5 class="font-bold text-blue-300 mb-2">Etapa {{ i + 1 }}: {{ prep.name }}</h5>
+                    <p class="text-sm text-gray-400">Ingredientes para esta etapa:</p>
+                    <ul class="list-disc list-inside text-sm text-gray-300 mt-1 pl-2">
+                      @for(ing of prep.ingredients; track ing.ingredient_id) {
+                        <li>{{ ing.name }} - <span class="font-mono">{{ ing.quantity | number:'1.0-3' }} {{ ing.unit }}</span></li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-gray-500 text-center py-10">Nenhum modo de preparo cadastrado para esta receita.</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
