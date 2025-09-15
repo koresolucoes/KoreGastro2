@@ -38,29 +38,6 @@ export interface IfoodOrderDelivery {
     }
 }
 
-export interface IfoodOrderItem {
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  observations?: string;
-}
-
-export interface IfoodOrder {
-  id: string;
-  user_id: string;
-  ifood_order_id: string;
-  display_id: string;
-  ifood_created_at: string; // ISO string
-  order_type: 'DELIVERY' | 'TAKEOUT';
-  customer_name: string;
-  items: IfoodOrderItem[]; // Stored as JSONB
-  total_amount: number;
-  payment_method: string;
-  status: IfoodOrderStatus;
-  created_at: string;
-}
-
 // --- Main Entities ---
 
 export interface Role {

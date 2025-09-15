@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodOrder } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -55,8 +55,6 @@ export class SupabaseStateService {
 
   loyaltySettings = signal<LoyaltySettings | null>(null);
   loyaltyRewards = signal<LoyaltyReward[]>([]);
-
-  ifoodOrders = signal<IfoodOrder[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -231,9 +229,6 @@ export class SupabaseStateService {
         case 'order_items':
             this.refetchOrders();
             break;
-        case 'ifood_orders':
-            this.refetchSimpleTable('ifood_orders', '*', this.ifoodOrders);
-            break;
         case 'tables':
             this.refetchSimpleTable('tables', '*', this.tables);
             break;
@@ -336,7 +331,7 @@ export class SupabaseStateService {
     const userId = this.currentUser()?.id; if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     // FIX: Add customers to the list of tables ordered by creation date.
-    if (tableName === 'halls' || tableName === 'reservations' || tableName === 'customers' || tableName === 'loyalty_rewards' || tableName === 'inventory_lots' || tableName === 'ifood_orders') {
+    if (tableName === 'halls' || tableName === 'reservations' || tableName === 'customers' || tableName === 'loyalty_rewards' || tableName === 'inventory_lots') {
       query = query.order('created_at', { ascending: true });
     }
     if (tableName === 'purchase_orders') {
@@ -383,7 +378,6 @@ export class SupabaseStateService {
     this.loyaltySettings.set(null);
     this.loyaltyRewards.set([]);
     this.inventoryLots.set([]);
-    this.ifoodOrders.set([]);
     // FIX: Clear customers data on logout.
     this.customers.set([]);
     // FIX: Clear roles and permissions data on logout.
@@ -434,7 +428,6 @@ export class SupabaseStateService {
       supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-      supabase.from('ifood_orders').select('*').in('status', ['RECEIVED', 'CONFIRMED', 'IN_PREPARATION', 'READY_FOR_PICKUP']).eq('user_id', userId).order('created_at', { ascending: true }),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -456,7 +449,6 @@ export class SupabaseStateService {
     this.loyaltySettings.set(results[24].data || null);
     this.loyaltyRewards.set(results[25].data || []);
     this.inventoryLots.set(results[26].data || []);
-    this.ifoodOrders.set(results[27].data || []);
     await this.refreshDashboardAndCashierData();
   }
   

@@ -29,6 +29,7 @@ import { PayrollComponent } from './components/payroll/payroll.component';
 import { EmployeesComponent } from './components/employees/employees.component';
 import { CustomersComponent } from './components/customers/customers.component';
 import { InventoryAuditComponent } from './components/inventory/inventory-audit/inventory-audit.component';
+import { IfoodKdsComponent } from './components/ifood-kds/ifood-kds.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -37,6 +38,7 @@ export const APP_ROUTES: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [roleGuard] },
   { path: 'pos', component: PosComponent, canActivate: [roleGuard] },
   { path: 'kds', component: KdsComponent, canActivate: [roleGuard] },
+  { path: 'ifood-kds', component: IfoodKdsComponent, canActivate: [roleGuard] },
   { path: 'cashier', component: CashierComponent, canActivate: [roleGuard] },
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
   { path: 'inventory/audit', component: InventoryAuditComponent, canActivate: [roleGuard] },
