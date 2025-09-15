@@ -46,6 +46,12 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado, que compara o valor esperado com o contado e gera um resumo para impressão.
 - **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes.
 
+### 🛵 **Integração com iFood**
+- **Webhook Bidirecional:** Receba pedidos do iFood diretamente no sistema e mantenha os status sincronizados em tempo real. O sistema captura eventos de novos pedidos, confirmações, despachos, prontos para retirada, conclusões e cancelamentos.
+- **Gestão de Status Completa:** Confirme, inicie o preparo, despache para entrega ou marque como pronto para retirada, tudo dentro do ChefOS. As atualizações são enviadas automaticamente para o iFood.
+- **Tratamento de Cancelamentos:** Gerencie cancelamentos de pedidos (iniciados pelo cliente ou pelo restaurante) de forma integrada, mantendo seus registros precisos.
+- **KDS Dedicado:** Uma tela de KDS otimizada para a operação de delivery, mostrando informações cruciais como ID do pedido iFood, tipo (entrega/retirada) e endereço do cliente.
+
 ### 📦 **Estoque e Compras**
 - **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades e fornecedores.
 - **Alertas Automatizados:** O dashboard sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
@@ -108,8 +114,8 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
 
 ### 🎯 Alta Prioridade (Foco em Core Business e Lucratividade)
 
-*   **Módulo de Delivery e Integrações:**
-    *   **Integração com Marketplaces:** Recebimento automático de pedidos do iFood, Rappi, etc., diretamente no PDV e KDS.
+*   **Melhorias na Integração de Delivery:**
+    *   **Integração com outros Marketplaces:** Suporte para Rappi e outras plataformas de delivery.
     *   **Gestão de Entregadores:** Acompanhamento do status dos entregadores (próprios ou da plataforma).
     *   **Cardápio Específico para Delivery:** Gestão de preços e disponibilidade de itens para entrega.
 
