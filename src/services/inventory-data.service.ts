@@ -17,55 +17,86 @@ export class InventoryDataService {
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    
-    // Insert the ingredient first
+
+    const initialStock = ingredient.stock || 0;
+    const { stock, ...ingredientData } = ingredient;
+
+    // 1. Create the ingredient with stock 0. The RPC will update it later.
     const { data: newIngredient, error: ingredientError } = await supabase
       .from('ingredients')
-      .insert({ ...ingredient, user_id: userId })
+      .insert({ ...ingredientData, stock: 0, user_id: userId })
       .select()
       .single();
 
     if (ingredientError) return { success: false, error: ingredientError, data: undefined };
 
-    // If it's sellable, create the proxy recipe
-    if (newIngredient.is_sellable) {
-      const { success, error } = await this.createOrUpdateProxyRecipe(newIngredient);
-      if (!success) {
-        // Rollback ingredient creation if proxy recipe fails
+    // --- Post-creation steps. If any fail, rollback. ---
+    try {
+        if (initialStock > 0) {
+            const { success, error } = await this.adjustIngredientStock({
+                ingredientId: newIngredient.id,
+                quantityChange: initialStock,
+                reason: 'Entrada de estoque inicial',
+                expirationDateForEntry: newIngredient.expiration_date
+            });
+            if (!success) throw error;
+        }
+
+        if (newIngredient.is_sellable) {
+            // The service needs the full ingredient object. Refetch it after potential stock adjustment.
+            const { data: updatedIngredient, error: refetchError } = await supabase.from('ingredients').select('*').eq('id', newIngredient.id).single();
+            if (refetchError) throw refetchError;
+            
+            const { success, error } = await this.createOrUpdateProxyRecipe(updatedIngredient);
+            if (!success) throw error;
+        }
+        
+        // Success, now refetch the final version of the ingredient to return
+        const { data: finalIngredient, error: finalError } = await supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('id', newIngredient.id).single();
+        if (finalError) throw finalError;
+
+        return { success: true, error: null, data: finalIngredient as Ingredient };
+
+    } catch (error) {
+        // Rollback: delete the ingredient if any post-creation step fails.
         await supabase.from('ingredients').delete().eq('id', newIngredient.id);
         return { success: false, error, data: undefined };
-      }
     }
-
-    return { success: true, error: null, data: newIngredient };
   }
   
   async updateIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean; error: any }> {
     const { data: currentIngredient, error: fetchError } = await supabase.from('ingredients').select('*').eq('id', ingredient.id!).single();
     if (fetchError) return { success: false, error: fetchError };
 
+    // IMPORTANT: Exclude 'stock' from the direct update payload.
+    // Stock is now only managed via adjustments, preventing data inconsistencies.
+    const { id, stock, ...updateData } = ingredient;
+
+    // Handle proxy recipe logic based on changes to other fields
     const wasSellable = currentIngredient.is_sellable;
-    const isNowSellable = ingredient.is_sellable;
+    const isNowSellable = updateData.is_sellable;
 
     if (wasSellable !== isNowSellable) {
       if (isNowSellable) { // Becoming sellable
-        const { success, error, proxyRecipeId } = await this.createOrUpdateProxyRecipe(ingredient as Ingredient);
+        // We need the full object context for createOrUpdateProxyRecipe.
+        const fullIngredientDataForProxy = { ...currentIngredient, ...updateData };
+        const { success, error, proxyRecipeId } = await this.createOrUpdateProxyRecipe(fullIngredientDataForProxy as Ingredient);
         if (!success) return { success, error };
-        ingredient.proxy_recipe_id = proxyRecipeId;
+        updateData.proxy_recipe_id = proxyRecipeId;
       } else { // Becoming non-sellable
         if (currentIngredient.proxy_recipe_id) {
           await this.recipeDataService.deleteRecipe(currentIngredient.proxy_recipe_id);
         }
-        ingredient.proxy_recipe_id = null;
+        updateData.proxy_recipe_id = null;
       }
     } else if (isNowSellable && currentIngredient.proxy_recipe_id) {
       // If it's already sellable, just sync name and price
-      if (ingredient.name !== currentIngredient.name || ingredient.price !== currentIngredient.price) {
-        await supabase.from('recipes').update({ name: ingredient.name, price: ingredient.price }).eq('id', currentIngredient.proxy_recipe_id);
+      if (updateData.name !== currentIngredient.name || updateData.price !== currentIngredient.price) {
+        await supabase.from('recipes').update({ name: updateData.name, price: updateData.price }).eq('id', currentIngredient.proxy_recipe_id);
       }
     }
     
-    const { id, ...updateData } = ingredient;
+    // Perform the final update with all changes except 'stock'
     const { error } = await supabase.from('ingredients').update(updateData).eq('id', id!);
     return { success: !error, error };
   }
@@ -211,18 +242,18 @@ export class InventoryDataService {
     }
     
     try {
-      // 1. Deduct raw ingredients
-      const deductionPromises = [];
+      // 1. Deduct raw ingredients sequentially to avoid race conditions
       const deductionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
-        deductionPromises.push(
-          this.adjustIngredientStock({ ingredientId, quantityChange: -totalDeduction, reason: deductionReason })
-        );
+        const result = await this.adjustIngredientStock({ ingredientId, quantityChange: -totalDeduction, reason: deductionReason });
+        if (!result.success) {
+          // If one deduction fails, stop and report the error.
+          // A full transaction rollback would be ideal but requires backend changes.
+          // This sequential approach prevents further deductions after a failure.
+          throw result.error; 
+        }
       }
-      const deductionResults = await Promise.all(deductionPromises);
-      const firstDeductionError = deductionResults.find(r => !r.success);
-      if (firstDeductionError) throw firstDeductionError.error;
 
       // 2. Add produced sub-recipe to stock
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
@@ -251,43 +282,24 @@ export class InventoryDataService {
     const processedGroupIds = new Set<string>();
 
     for (const item of orderItems) {
+      if (!item.recipe_id) continue;
+
       if (item.group_id) {
-        if (processedGroupIds.has(item.group_id)) {
-          continue; // This group has already been processed.
-        }
+        if (processedGroupIds.has(item.group_id)) continue; 
         processedGroupIds.add(item.group_id);
-        
-        const representativeItem = orderItems.find(i => i.group_id === item.group_id);
-        if (!representativeItem || !representativeItem.recipe_id) continue;
-        
-        const composition = recipeCompositions.get(representativeItem.recipe_id);
-        if (composition) {
-          // Add direct ingredients
-          for (const ing of composition.directIngredients) {
-            const totalQuantityToDeduct = ing.quantity * representativeItem.quantity;
-            deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
-          }
-          // Add sub-recipe ingredients (which are treated as single ingredients at this stage)
-          for (const sub of composition.subRecipeIngredients) {
-            const totalQuantityToDeduct = sub.quantity * representativeItem.quantity;
-            deductions.set(sub.ingredientId, (deductions.get(sub.ingredientId) || 0) + totalQuantityToDeduct);
-          }
+      }
+      
+      const composition = recipeCompositions.get(item.recipe_id);
+      if (composition) {
+        // Deduct direct raw ingredients
+        for (const ing of composition.directIngredients) {
+          const totalQuantityToDeduct = ing.quantity * item.quantity;
+          deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
         }
-      } else {
-        // Handle single items or items sold directly from inventory
-        if (!item.recipe_id) continue;
-        const composition = recipeCompositions.get(item.recipe_id);
-        if (composition) {
-          // Add direct ingredients
-          for (const ing of composition.directIngredients) {
-            const totalQuantityToDeduct = ing.quantity * item.quantity;
-            deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
-          }
-          // Add sub-recipe ingredients
-          for (const sub of composition.subRecipeIngredients) {
-            const totalQuantityToDeduct = sub.quantity * item.quantity;
-            deductions.set(sub.ingredientId, (deductions.get(sub.ingredientId) || 0) + totalQuantityToDeduct);
-          }
+        // Deduct finished sub-recipe ingredients
+        for (const subIng of composition.subRecipeIngredients) {
+            const totalQuantityToDeduct = subIng.quantity * item.quantity;
+            deductions.set(subIng.ingredientId, (deductions.get(subIng.ingredientId) || 0) + totalQuantityToDeduct);
         }
       }
     }
@@ -297,22 +309,18 @@ export class InventoryDataService {
     }
 
     try {
-      const adjustmentPromises = [];
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
+      // Process deductions sequentially to avoid database race conditions.
       for (const [ingredientId, quantityChange] of deductions.entries()) {
         if (quantityChange > 0) {
-          adjustmentPromises.push(
-            this.adjustIngredientStock({ ingredientId: ingredientId, quantityChange: -quantityChange, reason: reason })
-          );
+          const result = await this.adjustIngredientStock({ ingredientId: ingredientId, quantityChange: -quantityChange, reason: reason });
+          if (!result.success) {
+            // Stop on the first error to prevent partial stock deductions.
+            throw result.error;
+          }
         }
       }
       
-      const results = await Promise.all(adjustmentPromises);
-      const firstError = results.find(r => !r.success);
-      if (firstError) {
-        return { success: false, error: firstError.error };
-      }
-
       return { success: true, error: null };
     } catch (error) {
       return { success: false, error };

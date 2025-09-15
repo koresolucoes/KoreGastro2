@@ -141,7 +141,14 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
     for (const item of form.ingredients) {
       const ingredient = ingredientsMap.get(item.ingredient_id);
       if (ingredient) {
-        total += ingredient.cost * (item.quantity || 0);
+        let convertedQuantity = item.quantity;
+        if (item.unit !== ingredient.unit) {
+          if (item.unit === 'g' && ingredient.unit === 'kg') convertedQuantity /= 1000;
+          else if (item.unit === 'kg' && ingredient.unit === 'g') convertedQuantity *= 1000;
+          else if (item.unit === 'ml' && ingredient.unit === 'l') convertedQuantity /= 1000;
+          else if (item.unit === 'l' && ingredient.unit === 'ml') convertedQuantity *= 1000;
+        }
+        total += ingredient.cost * (convertedQuantity || 0);
       }
     }
     for (const item of form.subRecipes) {
@@ -182,11 +189,32 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
     const preparations = this.recipePreparations().filter(p => p.recipe_id === recipe.id);
     const ingredients = this.recipeIngredients().filter(i => i.recipe_id === recipe.id);
     const subRecipes = this.recipeSubRecipes().filter(sr => sr.parent_recipe_id === recipe.id);
+    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
 
     this.recipeForm.set({
       recipe: { ...recipe },
       preparations: preparations.map(p => ({...p})),
-      ingredients: ingredients.map(({ recipe_id, user_id, ingredients, ...rest }) => rest),
+      ingredients: ingredients.map(i => {
+          const { recipe_id, user_id, ingredients, ...rest } = i;
+          const baseIngredient = ingredientsMap.get(i.ingredient_id);
+          const baseUnit = baseIngredient?.unit || 'un';
+          
+          let displayUnit = baseUnit;
+          let displayQuantity = rest.quantity;
+
+          // If stored in KG and value is < 1, show in G
+          if (baseUnit === 'kg' && displayQuantity > 0 && displayQuantity < 1) {
+              displayUnit = 'g';
+              displayQuantity *= 1000;
+          } 
+          // If stored in L and value is < 1, show in ML
+          else if (baseUnit === 'l' && displayQuantity > 0 && displayQuantity < 1) {
+              displayUnit = 'ml';
+              displayQuantity *= 1000;
+          }
+
+          return { ...rest, quantity: displayQuantity, unit: displayUnit };
+      }),
       subRecipes: subRecipes.map(({ parent_recipe_id, user_id, recipes, ...rest }) => rest),
     });
     this.aiSuggestions.set(null);
@@ -243,13 +271,24 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
   }
 
   // --- Ingredients / Sub-Recipes (Form Helpers) ---
-  getIngredientsForPreparation(prepId: string): Omit<RecipeIngredient, 'user_id' | 'recipe_id'>[] {
+  getIngredientsForPreparation(prepId: string) {
     return this.recipeForm().ingredients.filter(i => i.preparation_id === prepId);
   }
 
   updateFormIngredient(prepId: string, ingredientId: string, quantity: number) {
     if (isNaN(quantity) || quantity < 0) return;
     this.recipeForm.update(form => ({ ...form, ingredients: form.ingredients.map(i => i.preparation_id === prepId && i.ingredient_id === ingredientId ? { ...i, quantity } : i ) }));
+  }
+  
+  updateFormIngredientUnit(prepId: string, ingredientId: string, newUnit: IngredientUnit) {
+    this.recipeForm.update(form => ({
+        ...form,
+        ingredients: form.ingredients.map(i => 
+            i.preparation_id === prepId && i.ingredient_id === ingredientId 
+            ? { ...i, unit: newUnit } 
+            : i
+        )
+    }));
   }
 
   removeFormIngredient(prepId: string, ingredientId: string) {
@@ -271,7 +310,7 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
   addIngredientToPrep(ingredient: Ingredient) {
     const prepId = this.addingToPreparationId();
     if (prepId && prepId !== 'sub-recipe') {
-      this.recipeForm.update(form => ({ ...form, ingredients: [...form.ingredients, { ingredient_id: ingredient.id, quantity: 0, preparation_id: prepId }] }));
+      this.recipeForm.update(form => ({ ...form, ingredients: [...form.ingredients, { ingredient_id: ingredient.id, quantity: 0, preparation_id: prepId, unit: ingredient.unit }] }));
     }
     this.stopAddingItem();
   }
@@ -289,8 +328,14 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
 
   // --- Data Lookups for Template ---
   getIngredientName(id: string): string { return this.ingredients().find(i => i.id === id)?.name ?? '?'; }
-  getIngredientUnit(id: string): string { return this.ingredients().find(i => i.id === id)?.unit ?? '?'; }
+  getIngredientUnit(id: string): IngredientUnit { return this.ingredients().find(i => i.id === id)?.unit ?? 'un'; }
   getSubRecipeName(id: string): string { return this.allRecipes().find(r => r.id === id)?.name ?? '?'; }
+
+  getCompatibleUnits(baseUnit: IngredientUnit): IngredientUnit[] {
+    if (baseUnit === 'g' || baseUnit === 'kg') return ['g', 'kg'];
+    if (baseUnit === 'ml' || baseUnit === 'l') return ['ml', 'l'];
+    return ['un'];
+  }
 
   // --- Add on the fly methods ---
   openAddCategoryModal() { this.isAddingCategory.set(true); this.newCategoryName.set(''); }
@@ -390,14 +435,42 @@ export class TechnicalSheetsComponent implements OnInit, OnDestroy {
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
+    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+    const ingredientsToSave = form.ingredients.map(formIngredient => {
+        const baseIngredient = ingredientsMap.get(formIngredient.ingredient_id);
+        if (!baseIngredient) return null;
+
+        let convertedQuantity = formIngredient.quantity;
+        const formUnit = formIngredient.unit;
+        const baseUnit = baseIngredient.unit;
+
+        if (formUnit !== baseUnit) {
+            if (formUnit === 'g' && baseUnit === 'kg') {
+                convertedQuantity = formIngredient.quantity / 1000;
+            } else if (formUnit === 'kg' && baseUnit === 'g') {
+                convertedQuantity = formIngredient.quantity * 1000;
+            } else if (formUnit === 'ml' && baseUnit === 'l') {
+                convertedQuantity = formIngredient.quantity / 1000;
+            } else if (formUnit === 'l' && baseUnit === 'ml') {
+                convertedQuantity = formIngredient.quantity * 1000;
+            }
+        }
+        
+        return {
+            preparation_id: formIngredient.preparation_id,
+            ingredient_id: formIngredient.ingredient_id,
+            quantity: convertedQuantity
+        };
+    }).filter((i): i is Omit<RecipeIngredient, 'user_id' | 'recipe_id'> => i !== null);
+
     if (this.selectedRecipeId()) { // Update
-      const { success, error } = await this.recipeDataService.saveTechnicalSheet( this.selectedRecipeId()!, recipeDataToSave, form.preparations as RecipePreparation[], form.ingredients as RecipeIngredient[], form.subRecipes as RecipeSubRecipe[] );
+      const { success, error } = await this.recipeDataService.saveTechnicalSheet( this.selectedRecipeId()!, recipeDataToSave, form.preparations as RecipePreparation[], ingredientsToSave, form.subRecipes as RecipeSubRecipe[] );
       if (success) { await this.notificationService.alert('Ficha técnica salva com sucesso!', 'Sucesso'); this.closeModal(); } 
       else { await this.notificationService.alert(`Erro ao salvar: ${error?.message}`); }
     } else { // Create
       const { success, error, data: newRecipe } = await this.recipeDataService.addRecipe(recipeDataToSave);
       if (success && newRecipe) {
-        const { success: tsSuccess, error: tsError } = await this.recipeDataService.saveTechnicalSheet( newRecipe.id, {}, form.preparations as RecipePreparation[], form.ingredients as RecipeIngredient[], form.subRecipes as RecipeSubRecipe[] );
+        const { success: tsSuccess, error: tsError } = await this.recipeDataService.saveTechnicalSheet( newRecipe.id, {}, form.preparations as RecipePreparation[], ingredientsToSave, form.subRecipes as RecipeSubRecipe[] );
         if (tsSuccess) { await this.notificationService.alert('Receita criada com sucesso!', 'Sucesso'); this.closeModal(); } 
         else { await this.recipeDataService.deleteRecipe(newRecipe.id); await this.notificationService.alert(`Erro ao salvar ficha técnica: ${tsError?.message}`); }
       } else { await this.notificationService.alert(`Erro ao criar receita: ${error?.message}`); }

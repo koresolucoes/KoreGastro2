@@ -1,6 +1,3 @@
-
-
-
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -718,8 +715,8 @@ export class CashierDataService {
         }, {});
         
         const rows = Object.values(grouped);
+        // FIX: Use 'employeeName' as the key when grouping by employee to match the data structure.
         const headers = [
-            // FIX: Use 'employeeName' as the key when grouping by employee to match the data structure.
             { key: groupBy === 'day' ? 'date' : (groupBy === 'employee' ? 'employeeName' : groupBy), label: 'Agrupado por' },
             { key: 'count', label: 'Nº Transações' },
             { key: 'totalAmount', label: 'Valor Total' }
@@ -729,8 +726,9 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-// FIX: Explicitly type the accumulator and current value in the reduce function to ensure type safety.
-                totalAmount: rows.reduce((sum: number, r: { totalAmount: number }) => sum + r.totalAmount, 0)
+                // FIX: The `reduce` method with an `any` typed argument was causing incorrect type inference for the result.
+                // Providing an explicit generic argument `<number>` to `reduce` ensures the final result is correctly typed.
+                totalAmount: rows.reduce<number>((sum, r: any) => sum + (r.totalAmount || 0), 0)
             }
         };
     }

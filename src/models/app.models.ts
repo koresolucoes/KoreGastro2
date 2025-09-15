@@ -1,10 +1,10 @@
-import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe } from './db.models';
+import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit } from './db.models';
 
 // Represents the data structure for the technical sheet form
 export interface RecipeForm {
   recipe: Partial<Recipe>;
   preparations: (Partial<RecipePreparation> & { id: string })[];
-  ingredients: Omit<RecipeIngredient, 'user_id' | 'recipe_id'>[];
+  ingredients: (Omit<RecipeIngredient, 'user_id' | 'recipe_id'> & { unit: IngredientUnit })[];
   subRecipes: Omit<RecipeSubRecipe, 'user_id' | 'parent_recipe_id'>[];
 }
 
