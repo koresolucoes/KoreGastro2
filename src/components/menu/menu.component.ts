@@ -31,6 +31,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   isPublicView = signal(false);
   isLoading = signal(true);
   activeTab = signal<'menu' | 'rewards'>('menu');
+  activeCategorySlug = signal<string | null>(null);
   
   // Signals for public data
   publicCompanyProfile = signal<Partial<CompanyProfile> | null>(null);
@@ -88,9 +89,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.isLoading.set(false);
   }
 
-  onlineMenu = computed<MenuGroup[]>(() => {
-    const term = this.searchTerm().toLowerCase();
-    
+  baseMenu = computed<MenuGroup[]>(() => {
     let recipesSource: Recipe[];
     let categoriesSource: Category[];
     
@@ -103,13 +102,6 @@ export class MenuComponent implements OnInit, OnDestroy {
       categoriesSource = this.stateService.categories();
     }
 
-    if (term) {
-      recipesSource = recipesSource.filter(recipe => 
-        recipe.name.toLowerCase().includes(term) ||
-        recipe.description?.toLowerCase().includes(term)
-      );
-    }
-    
     const recipesWithPrice = recipesSource.map(recipe => ({
         ...recipe,
         effectivePrice: this.pricingService.getEffectivePrice(recipe)
@@ -130,6 +122,31 @@ export class MenuComponent implements OnInit, OnDestroy {
       }))
       .filter(group => group.recipes.length > 0)
       .sort((a, b) => a.category.name.localeCompare(b.category.name));
+  });
+
+  menuCategories = computed(() => this.baseMenu().map(group => group.category));
+  
+  filteredMenu = computed(() => {
+    const menu = this.baseMenu();
+    const activeSlug = this.activeCategorySlug();
+    const term = this.searchTerm().toLowerCase();
+
+    let categoryFilteredMenu = menu;
+    if (activeSlug) {
+        categoryFilteredMenu = menu.filter(group => this.createSlug(group.category.name) === activeSlug);
+    }
+    
+    if (!term) {
+        return categoryFilteredMenu;
+    }
+    
+    return categoryFilteredMenu.map(group => ({
+        ...group,
+        recipes: group.recipes.filter(recipe => 
+            recipe.name.toLowerCase().includes(term) ||
+            recipe.description?.toLowerCase().includes(term)
+        )
+    })).filter(group => group.recipes.length > 0);
   });
   
   loyaltyRewardsDisplay = computed(() => {
@@ -155,15 +172,12 @@ export class MenuComponent implements OnInit, OnDestroy {
       };
     });
   });
+  
+  setSelectedCategory(slug: string | null) {
+    this.activeCategorySlug.set(slug);
+  }
 
   createSlug(text: string): string {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-  }
-
-  scrollToCategory(slug: string) {
-    const element = document.getElementById(slug);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   }
 }
