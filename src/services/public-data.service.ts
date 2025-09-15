@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
@@ -87,11 +87,25 @@ export class PublicDataService {
   async getPublicCompanyProfile(userId: string): Promise<Partial<CompanyProfile> | null> {
     const { data, error } = await supabase
       .from('company_profile')
-      .select('company_name, logo_url')
+      .select('company_name, logo_url, address, phone')
       .eq('user_id', userId)
       .single();
     if (error) {
       console.error('Error fetching public company profile:', error);
+      return null;
+    }
+    return data;
+  }
+
+  async getPublicReservationSettings(userId: string): Promise<ReservationSettings | null> {
+    const { data, error } = await supabase
+      .from('reservation_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_enabled', true)
+      .single(); // Use single() as there should be only one
+    if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
+      console.error('Error fetching public reservation settings:', error);
       return null;
     }
     return data;

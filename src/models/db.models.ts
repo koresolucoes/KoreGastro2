@@ -12,6 +12,13 @@ export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Ates
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 
+// --- New Types for Settings ---
+export interface OperatingHours {
+  day_of_week: number; // 0 for Sunday, 6 for Saturday
+  opening_time: string; // "HH:mm"
+  closing_time: string; // "HH:mm"
+  is_closed: boolean;
+}
 
 // --- Main Entities ---
 
@@ -333,8 +340,7 @@ export interface ReservationSettings {
   id: string;
   user_id: string;
   is_enabled: boolean;
-  opening_time: string; // "HH:mm:ss"
-  closing_time: string; // "HH:mm:ss"
+  weekly_hours: OperatingHours[] | null;
   booking_duration_minutes: number;
   max_party_size: number;
   min_party_size: number;
@@ -413,6 +419,7 @@ export interface CompanyProfile {
   company_name: string;
   cnpj: string;
   address: string | null;
+  phone: string | null;
   logo_url: string | null;
   created_at: string;
 }

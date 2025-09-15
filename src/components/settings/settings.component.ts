@@ -1,7 +1,7 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType } from '../../models/db.models';
+// FIX: Add OperatingHours to the model imports to support the weekly schedule feature.
+import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
@@ -41,6 +41,9 @@ export class SettingsComponent {
   rolePermissions = this.stateService.rolePermissions;
   loyaltySettings = this.stateService.loyaltySettings;
   loyaltyRewards = this.stateService.loyaltyRewards;
+
+  // For template display
+  daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
@@ -166,13 +169,28 @@ export class SettingsComponent {
     effect(() => {
         const settings = this.reservationSettings();
         if (settings) {
-            this.reservationForm.set({ ...settings });
+            // Ensure weekly_hours is a full 7-day array
+            const weeklyHours = settings.weekly_hours || [];
+            const fullWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => {
+                const existing = weeklyHours.find(h => h.day_of_week === i);
+                return existing || {
+                    day_of_week: i,
+                    opening_time: '18:00',
+                    closing_time: '23:00',
+                    is_closed: true,
+                };
+            });
+            this.reservationForm.set({ ...settings, weekly_hours: fullWeeklyHours });
         } else {
-            // Set default values if no settings exist
-            this.reservationForm.set({
-                is_enabled: false,
+            const defaultWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => ({
+                day_of_week: i, // 0=Sun, 1=Mon, ..., 6=Sat
                 opening_time: '18:00',
                 closing_time: '23:00',
+                is_closed: i === 1, // Default Monday as closed
+            }));
+            this.reservationForm.set({
+                is_enabled: false,
+                weekly_hours: defaultWeeklyHours,
                 booking_duration_minutes: 90,
                 max_party_size: 8,
                 min_party_size: 1,
@@ -187,7 +205,7 @@ export class SettingsComponent {
             this.companyProfileForm.set({ ...profile });
             this.logoPreviewUrl.set(profile.logo_url);
         } else {
-            this.companyProfileForm.set({ company_name: '', cnpj: '', address: ''});
+            this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: ''});
         }
     });
 
@@ -394,12 +412,24 @@ export class SettingsComponent {
   }
 
   // --- Reservation Settings ---
-  updateReservationFormField(field: keyof Omit<ReservationSettings, 'id' | 'created_at' | 'user_id'>, value: any) {
+  updateReservationFormField(field: keyof Omit<ReservationSettings, 'id' | 'created_at' | 'user_id' | 'weekly_hours'>, value: any) {
     if (field === 'is_enabled') {
         this.reservationForm.update(form => ({ ...form, [field]: !!value }));
     } else {
         this.reservationForm.update(form => ({ ...form, [field]: value }));
     }
+  }
+
+  updateWeeklyHours(dayIndex: number, field: 'opening_time' | 'closing_time' | 'is_closed', value: string | boolean) {
+    this.reservationForm.update(form => {
+      const newHours = form.weekly_hours ? [...form.weekly_hours] : [];
+      if (newHours[dayIndex]) {
+        const updatedDay = { ...newHours[dayIndex], [field]: value };
+        newHours[dayIndex] = updatedDay;
+        return { ...form, weekly_hours: newHours };
+      }
+      return form;
+    });
   }
 
   async saveReservationSettings() {
@@ -428,24 +458,26 @@ export class SettingsComponent {
   }
   
   async saveCompanyProfile() {
-      const form = this.companyProfileForm();
-      if (!form.company_name || !form.cnpj) {
+      const profileForm = this.companyProfileForm();
+      if (!profileForm.company_name || !profileForm.cnpj) {
           await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
           return;
       }
-      const { success, error } = await this.settingsDataService.updateCompanyProfile(form, this.logoFile());
+      
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile());
+
       if (success) {
-          await this.notificationService.alert('Dados da empresa salvos!', 'Sucesso');
+          await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
           this.logoFile.set(null);
       } else {
-          await this.notificationService.alert(`Erro ao salvar dados da empresa: ${error?.message}`);
+          await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
       }
   }
 
   async copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      await this.notificationService.alert('Link copiado para a área de transferência!');
+      this.notificationService.show('Link copiado!', 'success');
     } catch (err) {
       await this.notificationService.alert('Falha ao copiar o link.');
     }
@@ -473,26 +505,20 @@ export class SettingsComponent {
   }
 
   updatePermission(key: string, isChecked: boolean) {
-    this.rolePermissionsForm.update(form => ({
-      ...form,
-      [key]: isChecked
-    }));
+    this.rolePermissionsForm.update(form => ({ ...form, [key]: isChecked }));
   }
 
   async savePermissions() {
     const role = this.editingRole();
-    const activeEmployee = this.operationalAuthService.activeEmployee(); // Get the currently logged-in operator
-    if (!role || !activeEmployee?.role_id) return; // Ensure we have the operator's role_id for validation
-
-    const selectedPermissions = Object.entries(this.rolePermissionsForm())
-      .filter(([, isSelected]) => isSelected)
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!role || !activeEmployee?.role_id) return;
+    
+    const permissions = Object.entries(this.rolePermissionsForm())
+      .filter(([, isEnabled]) => isEnabled)
       .map(([key]) => key);
 
-    // Pass the active operator's role ID to the service for server-side validation
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, selectedPermissions, activeEmployee.role_id);
-
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, permissions, activeEmployee.role_id);
     if (success) {
-      this.notificationService.show('Permissões atualizadas com sucesso!', 'success');
       this.closePermissionsModal();
     } else {
       await this.notificationService.alert(`Erro ao salvar permissões: ${error?.message}`);
@@ -500,47 +526,67 @@ export class SettingsComponent {
   }
 
   async handleAddRole() {
-    const name = this.newRoleName().trim();
-    if (!name) return;
-    const { success, error } = await this.settingsDataService.addRole(name);
-    if (success) {
-      this.newRoleName.set('');
-      this.notificationService.show(`Cargo "${name}" criado com sucesso.`, 'success');
-    } else {
-      await this.notificationService.alert(`Falha ao criar cargo: ${error?.message}`);
+    const { confirmed, value: roleName } = await this.notificationService.prompt('Qual o nome do novo cargo?', 'Novo Cargo', { placeholder: 'Ex: Cozinha' });
+    if (confirmed && roleName) {
+      const { success, error } = await this.settingsDataService.addRole(roleName);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao criar cargo: ${error?.message}`);
+      }
     }
   }
 
   requestDeleteRole(role: Role) {
     this.rolePendingDeletion.set(role);
   }
-
   cancelDeleteRole() {
     this.rolePendingDeletion.set(null);
   }
-
   async confirmDeleteRole() {
     const role = this.rolePendingDeletion();
-    if (!role) return;
-    const { success, error } = await this.settingsDataService.deleteRole(role.id);
-    if (!success) {
-      await this.notificationService.alert(`Falha ao deletar: ${error?.message}`);
+    if (role) {
+      const { success, error } = await this.settingsDataService.deleteRole(role.id);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao deletar cargo: ${error?.message}`);
+      }
+      this.rolePendingDeletion.set(null);
     }
-    this.rolePendingDeletion.set(null);
   }
-
-  // --- Loyalty Methods ---
-  updateLoyaltySettingsField(field: keyof LoyaltySettings, value: any) {
-    this.loyaltySettingsForm.update(form => ({ ...form, [field]: value }));
+  
+  // --- Loyalty Program ---
+  getRewardValueLabel(reward: LoyaltyReward): string {
+    const recipesMap = new Map(this.recipes().map(r => [r.id, r.name]));
+    switch (reward.reward_type) {
+      case 'free_item':
+        return `Item Grátis: ${recipesMap.get(reward.reward_value) || 'Item especial'}`;
+      case 'discount_percentage':
+        return `${reward.reward_value}% de desconto`;
+      case 'discount_fixed':
+        return `R$ ${reward.reward_value} de desconto`;
+    }
+  }
+  getRewardTypeLabel(type: LoyaltyRewardType): string {
+    switch (type) {
+        case 'discount_fixed': return 'Desconto (R$)';
+        case 'discount_percentage': return 'Desconto (%)';
+        case 'free_item': return 'Item Grátis';
+    }
+  }
+  
+  updateLoyaltySettingsField(field: keyof Omit<LoyaltySettings, 'user_id' | 'created_at'>, value: any) {
+    this.loyaltySettingsForm.update(form => {
+        if (field === 'is_enabled') return { ...form, [field]: !!value };
+        if (field === 'points_per_real') return { ...form, [field]: Number(value) };
+        return form;
+    });
   }
 
   async saveLoyaltySettings() {
     const form = this.loyaltySettingsForm();
     const { success, error } = await this.settingsDataService.upsertLoyaltySettings(form);
     if (success) {
-      this.notificationService.show('Configurações de fidelidade salvas!', 'success');
+      this.notificationService.show('Configurações salvas!', 'success');
     } else {
-      await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+      await this.notificationService.alert(`Erro: ${error?.message}`);
     }
   }
 
@@ -551,81 +597,59 @@ export class SettingsComponent {
       description: '',
       points_cost: 100,
       reward_type: 'discount_fixed',
-      reward_value: '10', // Default value
+      reward_value: '10', // 10 reais
       is_active: true
     });
     this.isRewardModalOpen.set(true);
   }
-
+  
   openEditRewardModal(reward: LoyaltyReward) {
     this.editingReward.set(reward);
     this.rewardForm.set({ ...reward });
     this.isRewardModalOpen.set(true);
   }
 
-  closeRewardModal() {
-    this.isRewardModalOpen.set(false);
-  }
-  
-  updateRewardFormField(field: keyof Omit<LoyaltyReward, 'id' | 'created_at' | 'user_id'>, value: string | boolean | number) {
+  closeRewardModal() { this.isRewardModalOpen.set(false); }
+
+  updateRewardFormField(field: keyof Omit<LoyaltyReward, 'id' | 'user_id' | 'created_at'>, value: any) {
     this.rewardForm.update(form => {
-        const newForm = { ...form, [field]: value };
-        if (field === 'reward_type') {
-            newForm.reward_value = ''; // Reset value when type changes
+        if(field === 'is_active') return { ...form, [field]: !!value };
+        if(field === 'points_cost') return { ...form, [field]: Number(value) };
+        if(field === 'reward_type') {
+            const newForm = { ...form, [field]: value };
+            // Reset reward_value when type changes
+            newForm.reward_value = value === 'free_item' ? '' : '10';
+            return newForm;
         }
-        return newForm;
+        return { ...form, [field]: value };
     });
   }
 
   async saveReward() {
     const form = this.rewardForm();
-    if (!form.name || !form.points_cost || !form.reward_type || !form.reward_value) {
-        await this.notificationService.alert('Preencha todos os campos do prêmio.');
+    if (!form.name?.trim() || !form.reward_value?.trim()) {
+        await this.notificationService.alert('Nome e valor da recompensa são obrigatórios.');
         return;
     }
-
-    let result;
-    if (this.editingReward()?.id) {
-        result = await this.settingsDataService.updateLoyaltyReward({ ...form, id: this.editingReward()!.id });
-    } else {
-        result = await this.settingsDataService.addLoyaltyReward(form);
-    }
+    const result = this.editingReward()
+      ? await this.settingsDataService.updateLoyaltyReward({ ...form, id: this.editingReward()!.id })
+      : await this.settingsDataService.addLoyaltyReward(form);
+    
     if (result.success) {
         this.closeRewardModal();
     } else {
-        await this.notificationService.alert(`Erro ao salvar prêmio: ${result.error?.message}`);
+        await this.notificationService.alert(`Erro: ${result.error?.message}`);
     }
   }
-  
+
   requestDeleteReward(reward: LoyaltyReward) { this.rewardPendingDeletion.set(reward); }
   cancelDeleteReward() { this.rewardPendingDeletion.set(null); }
-  
   async confirmDeleteReward() {
     const reward = this.rewardPendingDeletion();
-    if (!reward) return;
-    const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
-    if (!success) {
-      await this.notificationService.alert(`Erro ao excluir prêmio: ${error?.message}`);
+    if(reward) {
+        const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
+        if(!success) await this.notificationService.alert(`Erro: ${error?.message}`);
+        this.rewardPendingDeletion.set(null);
     }
-    this.rewardPendingDeletion.set(null);
-  }
-
-  getRewardTypeLabel(type: LoyaltyRewardType): string {
-    switch(type) {
-      case 'discount_fixed': return 'Desconto (R$)';
-      case 'discount_percentage': return 'Desconto (%)';
-      case 'free_item': return 'Item Grátis';
-      default: return 'Desconhecido';
-    }
-  }
-
-  getRewardValueLabel(reward: LoyaltyReward): string {
-    if (reward.reward_type === 'free_item') {
-      return this.sellableRecipes().find(r => r.id === reward.reward_value)?.name || 'Item não encontrado';
-    }
-    if (reward.reward_type === 'discount_percentage') {
-        return `${reward.reward_value}%`;
-    }
-    return `R$ ${reward.reward_value}`;
   }
 }

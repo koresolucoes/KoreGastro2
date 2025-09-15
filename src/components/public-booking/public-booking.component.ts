@@ -112,14 +112,26 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
 
   timeSlots = computed<TimeSlot[]>(() => {
     const s = this.settings();
-    if (!s) return [];
+    const selectedDate = new Date(this.selectedDate() + 'T12:00:00Z'); // Use UTC noon to avoid timezone shifts with getDay()
+    const dayOfWeek = selectedDate.getUTCDay(); // 0 for Sunday, 1 for Monday, etc.
+
+    if (!s || !s.weekly_hours) return [];
+
+    const daySettings = s.weekly_hours.find(d => d.day_of_week === dayOfWeek);
+    if (!daySettings || daySettings.is_closed) return [];
 
     const slots: TimeSlot[] = [];
-    const opening = new Date(`1970-01-01T${s.opening_time}`);
-    const closing = new Date(`1970-01-01T${s.closing_time}`);
+    const opening = new Date(`1970-01-01T${daySettings.opening_time}`);
+    let closing = new Date(`1970-01-01T${daySettings.closing_time}`);
+    
+    // Handle overnight closing times
+    if (closing <= opening) {
+        closing.setDate(closing.getDate() + 1);
+    }
+
     const existingTimes = new Set(this.existingReservations().map(r => {
         const d = new Date(r.reservation_time);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
     }));
 
     let current = opening;

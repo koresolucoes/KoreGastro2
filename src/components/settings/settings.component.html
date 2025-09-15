@@ -72,7 +72,7 @@
               <img [src]="logoPreviewUrl()" alt="Logo preview" class="h-24 w-24 rounded-full object-cover border-2 border-gray-600 hover:opacity-80">
             } @else {
               <div class="h-24 w-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600">
-                <svg class="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                <svg class="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 017.5 0z" /></svg>
               </div>
             }
           </label>
@@ -90,6 +90,10 @@
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
           <input type="text" [value]="companyProfileForm().address || ''" (input)="updateCompanyProfileField('address', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Telefone de Contato</label>
+          <input type="tel" [value]="companyProfileForm().phone || ''" (input)="updateCompanyProfileField('phone', $any($event.target).value)" placeholder="(XX) XXXXX-XXXX" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         </div>
       </div>
       <div class="mt-6">
@@ -111,10 +115,34 @@
             </button>
         </div>
         <div class="space-y-4" [class.opacity-50]="!reservationForm().is_enabled" [class.pointer-events-none]="!reservationForm().is_enabled">
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-300 mb-1">Abre às</label><input type="time" [value]="reservationForm().opening_time" (input)="updateReservationFormField('opening_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
-                <div><label class="block text-sm font-medium text-gray-300 mb-1">Fecha às</label><input type="time" [value]="reservationForm().closing_time" (input)="updateReservationFormField('closing_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
+            
+            <div class="pt-4 border-t border-gray-700 space-y-3">
+              <h3 class="text-md font-semibold text-white">Horário de Funcionamento</h3>
+              @if(reservationForm().weekly_hours; as hours) {
+                @for(day of hours; track day.day_of_week; let i = $index) {
+                  <div class="grid grid-cols-3 items-center gap-3 bg-gray-900/50 p-2 rounded-lg">
+                    <label [for]="'closed-' + i" class="col-span-3 sm:col-span-1 flex items-center gap-2 text-sm font-medium text-white">
+                      <input type="checkbox" [id]="'closed-' + i" [checked]="day.is_closed" (change)="updateWeeklyHours(i, 'is_closed', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600">
+                      <span>{{ daysOfWeek[day.day_of_week] }}</span>
+                      @if(day.is_closed) {
+                        <span class="ml-auto text-xs text-red-400 font-bold">FECHADO</span>
+                      }
+                    </label>
+                    <div class="col-span-3 sm:col-span-2 grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Abre às</label>
+                        <input type="time" [value]="day.opening_time" (input)="updateWeeklyHours(i, 'opening_time', $any($event.target).value)" [disabled]="day.is_closed" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm disabled:opacity-50">
+                      </div>
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Fecha às</label>
+                        <input type="time" [value]="day.closing_time" (input)="updateWeeklyHours(i, 'closing_time', $any($event.target).value)" [disabled]="day.is_closed" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-white text-sm disabled:opacity-50">
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
             </div>
+
              <div class="grid grid-cols-2 gap-4">
                 <div><label class="block text-sm font-medium text-gray-300 mb-1">Duração (min)</label><input type="number" [value]="reservationForm().booking_duration_minutes" (input)="updateReservationFormField('booking_duration_minutes', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
                 <div><label class="block text-sm font-medium text-gray-300 mb-1">Antecedência (dias)</label><input type="number" [value]="reservationForm().booking_notice_days" (input)="updateReservationFormField('booking_notice_days', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></div>
@@ -488,7 +516,7 @@
                 <img [src]="recipeCategoryImagePreviewUrl()" alt="Pré-visualização da categoria" class="h-24 w-24 rounded-md object-cover border-2 border-gray-600 hover:opacity-80">
               } @else {
                 <div class="h-24 w-24 rounded-md bg-gray-700 flex flex-col items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600 text-gray-500 text-center p-2">
-                  <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                  <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 017.5 0z" /></svg>
                    <span class="text-xs mt-1">Imagem</span>
                 </div>
               }

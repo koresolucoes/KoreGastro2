@@ -1,4 +1,4 @@
- @if(isLoading()) {
+@if(isLoading()) {
   <div class="flex items-center justify-center h-screen" [class.bg-gray-100]="isPublicView()" [class.bg-gray-900]="!isPublicView()">
     <div class="flex flex-col items-center gap-4">
       <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
@@ -6,189 +6,156 @@
     </div>
   </div>
 } @else {
-    <div class="min-h-screen font-sans relative overflow-x-clip" [class.bg-slate-50]="isPublicView()" [class.text-gray-900]="isPublicView()" [class.bg-gray-900]="!isPublicView()" [class.text-white]="!isPublicView()">
-      
-      @if(isPublicView()) {
-        <!-- Background decorative elements -->
-        <div class="absolute top-0 left-0 -translate-x-1/3 -translate-y-1/3 -z-0">
-          <div class="w-[40rem] h-[40rem] rounded-full bg-gradient-to-tr from-blue-100 to-transparent blur-3xl opacity-40"></div>
-        </div>
-        <div class="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 -z-0">
-          <div class="w-[50rem] h-[50rem] rounded-full bg-gradient-to-tl from-blue-200 to-transparent blur-3xl opacity-50"></div>
+  <div class="max-w-md mx-auto min-h-screen shadow-2xl flex flex-col font-sans" [class.bg-gray-50]="isPublicView()" [class.text-gray-900]="isPublicView()" [class.bg-gray-900]="!isPublicView()" [class.text-white]="!isPublicView()">
+    @switch(view()) {
+      @case('cover') {
+        <div class="flex-1 flex flex-col justify-between bg-cover bg-center" [style.background-image]="'url(' + (companyProfile()?.logo_url || 'https://picsum.photos/id/1060/500/900') + ')'">
+            <div class="flex-1 flex flex-col justify-center items-center bg-black/50 p-8 text-center">
+              <h1 class="text-5xl font-extrabold text-white uppercase tracking-wider">{{ companyProfile()?.company_name || 'Nosso Cardápio' }}</h1>
+              <p class="mt-4 text-lg text-white/90">Descubra os sabores que preparamos para você.</p>
+            </div>
+            <div class="p-4 bg-gradient-to-t from-black/60 to-transparent">
+               <button (click)="setView('menu')" class="w-full bg-blue-600 text-white font-bold py-4 px-4 rounded-xl hover:bg-blue-500 transition-transform hover:scale-105 text-lg">
+                  Ver Cardápio
+                </button>
+            </div>
         </div>
       }
-      
-      <div class="relative z-10">
-          <header class="text-center py-8">
-            @if (isPublicView()) {
-                @if (publicCompanyProfile()?.logo_url; as logoUrl) {
-                  <img [src]="logoUrl" alt="Logo do Restaurante" class="h-20 w-auto mx-auto mb-4 object-contain">
-                } @else {
-                  <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
-                    <span>{{ publicCompanyProfile()?.company_name || 'ChefOS' }}</span>
-                  </h1>
+      @case('menu') {
+        <div class="flex-1 flex flex-col overflow-y-auto">
+           <header class="p-4 border-b" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
+              <div class="flex items-center gap-4">
+                @if(companyProfile()?.logo_url; as logo) {
+                    <img [src]="logo" [alt]="companyProfile()?.company_name" class="w-12 h-12 rounded-full object-cover border-2" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
                 }
-                <p class="mt-2 text-base text-gray-500 max-w-2xl mx-auto px-4">Conheça os sabores que preparamos para você.</p>
-            } @else {
-                <div class="container mx-auto max-w-4xl">
-                  <div class="text-center">
-                    <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl text-white">Cardápio Online</h1>
-                    <p class="mt-4 text-xl text-gray-400">Esta é a visualização do cardápio que seus clientes veem.</p>
-                  </div>
+                <div class="flex-1">
+                    <h1 class="font-bold text-xl">{{ companyProfile()?.company_name }}</h1>
+                    @if (isRestaurantOpen()) {
+                      <p class="text-xs font-semibold text-green-500">Aberto agora</p>
+                    } @else {
+                      <p class="text-xs font-semibold text-red-500">Fechado</p>
+                    }
                 </div>
-            }
-          </header>
-
-          <!-- Tab Navigation for Public View-->
-          @if (isPublicView() && publicLoyaltySettings()?.is_enabled) {
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-              <div class="flex justify-center border-b" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
-                <nav class="flex space-x-4" aria-label="Tabs">
-                  <button (click)="activeTab.set('menu')"
-                          class="whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-base transition-colors"
-                          [class.border-blue-600]="activeTab() === 'menu'"
-                          [class.text-gray-900]="activeTab() === 'menu'"
-                          [class.border-transparent]="activeTab() !== 'menu'"
-                          [class.text-gray-500]="activeTab() !== 'menu'">
-                      Cardápio
-                  </button>
-                  <button (click)="activeTab.set('rewards')"
-                          class="whitespace-nowrap py-3 px-1 border-b-2 font-semibold text-base transition-colors"
-                          [class.border-blue-600]="activeTab() === 'rewards'"
-                          [class.text-gray-900]="activeTab() === 'rewards'"
-                          [class.border-transparent]="activeTab() !== 'rewards'"
-                          [class.text-gray-500]="activeTab() !== 'rewards'">
-                      Fidelidade
-                  </button>
-                </nav>
               </div>
-            </div>
-          }
-
-          @if (activeTab() === 'menu') {
-            <div class="sticky top-0 z-20 py-4 backdrop-blur-lg" [class.bg-slate-50/80]="isPublicView()" [class.bg-gray-900/80]="!isPublicView()">
-              <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col sm:flex-row gap-4">
-                  <div class="relative flex-grow">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    </div>
-                    <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar no cardápio..." 
-                           class="w-full rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           [class.bg-gray-100]="isPublicView()" [class.border-gray-300]="isPublicView()" [class.text-gray-900]="isPublicView()"
-                           [class.bg-gray-800]="!isPublicView()" [class.border-gray-700]="!isPublicView()" [class.text-white]="!isPublicView()">
-                  </div>
-                </div>
-                 @if (menuCategories().length > 1) {
-                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 mt-4 hide-scrollbar">
-                      <button (click)="setSelectedCategory(null)" 
-                              class="px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-colors"
-                              [class.bg-blue-600]="activeCategorySlug() === null" [class.text-white]="activeCategorySlug() === null"
-                              [class.bg-white]="activeCategorySlug() !== null && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== null && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== null && isPublicView()"
-                              [class.bg-gray-700]="activeCategorySlug() !== null && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== null && !isPublicView()">
-                          Todas
+           </header>
+          
+           <div class="sticky top-0 z-20 py-2 backdrop-blur-lg" [class.bg-gray-50/80]="isPublicView()" [class.bg-gray-900/80]="!isPublicView()">
+              <div class="px-4">
+                <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Pesquisar no cardápio..." 
+                       class="w-full rounded-full pl-4 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       [class.bg-gray-200]="isPublicView()" [class.border-gray-300]="isPublicView()" [class.text-gray-900]="isPublicView()"
+                       [class.bg-gray-800]="!isPublicView()" [class.border-gray-700]="!isPublicView()" [class.text-white]="!isPublicView()">
+              </div>
+               @if (menuCategories().length > 1) {
+                  <div class="flex items-center space-x-2 overflow-x-auto pb-2 pt-3 px-4 hide-scrollbar">
+                    <button (click)="setSelectedCategory(null)" class="px-4 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-colors" [class.bg-blue-600]="activeCategorySlug() === null" [class.text-white]="activeCategorySlug() === null" [class.bg-white]="activeCategorySlug() !== null && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== null && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== null && isPublicView()" [class.bg-gray-700]="activeCategorySlug() !== null && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== null && !isPublicView()">
+                        Todas
+                    </button>
+                    @for(category of menuCategories(); track category.id) {
+                      <button (click)="setSelectedCategory(createSlug(category.name))" class="px-4 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-colors" [class.bg-blue-600]="activeCategorySlug() === createSlug(category.name)" [class.text-white]="activeCategorySlug() === createSlug(category.name)" [class.bg-white]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.bg-gray-700]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()">
+                          {{ category.name }}
                       </button>
-                      @for(category of menuCategories(); track category.id) {
-                        <button (click)="setSelectedCategory(createSlug(category.name))" 
-                                class="px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-colors"
-                                [class.bg-blue-600]="activeCategorySlug() === createSlug(category.name)" [class.text-white]="activeCategorySlug() === createSlug(category.name)"
-                                [class.bg-white]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== createSlug(category.name) && isPublicView()"
-                                [class.bg-gray-700]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()">
-                            {{ category.name }}
-                        </button>
+                    }
+                  </div>
+                }
+            </div>
+
+            <main class="p-4 space-y-8">
+               @if (filteredMenu().length > 0) {
+                @for(group of filteredMenu(); track group.category.id) {
+                  <section>
+                    <h2 class="text-2xl font-bold mb-4" [class.text-gray-800]="isPublicView()" [class.text-white]="!isPublicView()">
+                      {{ group.category.name }}
+                    </h2>
+                    <div class="space-y-4">
+                      @for(recipe of group.recipes; track recipe.id) {
+                        <div class="flex gap-4">
+                          <img [src]="recipe.image_url || 'https://picsum.photos/id/292/400/300'" [alt]="recipe.name" class="w-28 h-28 rounded-lg object-cover flex-shrink-0 border" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
+                          <div class="flex-1 flex flex-col">
+                            <h3 class="font-bold text-lg" [class.text-gray-900]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.name }}</h3>
+                            @if(recipe.description) {
+                              <p class="text-sm mt-1 flex-grow" [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.description }}</p>
+                            }
+                             <div class="mt-2 text-right">
+                              @if (recipe.effectivePrice < recipe.price) {
+                                <span class="text-sm line-through mr-2" [class.text-gray-500]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
+                                <span class="font-semibold text-lg text-green-600">{{ recipe.effectivePrice | currency:'R$' }}</span>
+                              } @else {
+                                <span class="font-semibold text-lg" [class.text-gray-800]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
                       }
                     </div>
-                  }
-              </div>
-            </div>
-
-            <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                @if (filteredMenu().length > 0) {
-                  <div class="space-y-12">
-                    @for(group of filteredMenu(); track group.category.id) {
-                      <section>
-                        <h2 class="text-3xl font-bold mb-6" [class.text-blue-800]="isPublicView()" [class.text-blue-400]="!isPublicView()">
-                          {{ group.category.name }}
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          @for(recipe of group.recipes; track recipe.id) {
-                            <div class="flex gap-4 p-4 rounded-2xl transition-all duration-300"
-                                [class.bg-white/80]="isPublicView()"
-                                [class.backdrop-blur-sm]="isPublicView()"
-                                [class.shadow-lg]="isPublicView()"
-                                [class.hover:shadow-xl]="isPublicView()"
-                                [class.hover:-translate-y-1]="isPublicView()"
-                                [class.border]="isPublicView()"
-                                [class.border-white/50]="isPublicView()"
-                                [class.border-gray-700]="!isPublicView()"
-                                [class.hover:border-gray-600]="!isPublicView()">
-                              <img [src]="recipe.image_url || 'https://picsum.photos/id/292/400/300'" [alt]="recipe.name" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover flex-shrink-0 border border-slate-100">
-                              <div class="flex-1 flex flex-col">
-                                <div class="flex-grow">
-                                  <h3 class="font-bold text-lg" [class.text-slate-900]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.name }}</h3>
-                                  @if(recipe.description) {
-                                    <p class="text-sm mt-1" [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.description }}</p>
-                                  }
-                                </div>
-                                <div class="mt-2 text-right">
-                                  @if (recipe.effectivePrice < recipe.price) {
-                                    <span class="text-sm line-through mr-2" [class.text-gray-500]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
-                                    <span class="font-semibold text-lg text-green-600">{{ recipe.effectivePrice | currency:'R$' }}</span>
-                                  } @else {
-                                    <span class="font-semibold text-lg" [class.text-slate-800]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          }
-                        </div>
-                      </section>
-                    }
-                  </div>
-                } @else {
-                  <div class="text-center py-20 rounded-lg" [class.bg-white/50]="isPublicView()" [class.backdrop-blur-sm]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.5 4.5 0 0018 12a4.5 4.5 0 00-2.818-4.182M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 12a3 3 0 116 0 3 3 0 01-6 0z" /></svg>
-                    <h3 class="mt-2 text-lg font-medium" [class.text-gray-900]="isPublicView()" [class.text-white]="!isPublicView()">Nenhum prato encontrado</h3>
-                    <p class="mt-1 text-sm" [class.text-gray-600]="isPublicView()" [class.text-gray-500]="!isPublicView()">Nenhum resultado para sua busca. Tente outro termo ou categoria.</p>
-                  </div>
+                  </section>
                 }
-            </main>
-          } @else if (activeTab() === 'rewards') {
-            <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div class="text-center mb-10">
-                  <h2 class="text-3xl font-bold text-gray-800">Nossos Prêmios</h2>
-                  <p class="mt-2 text-gray-600">Acumule pontos e troque por recompensas incríveis!</p>
-                  @if (publicLoyaltySettings(); as settings) {
-                    <p class="mt-4 text-sm font-semibold text-blue-600 bg-blue-100 inline-block px-3 py-1 rounded-full">
-                        Você ganha {{ settings.points_per_real }} ponto(s) a cada R$ 1,00 gasto!
-                    </p>
-                  }
+               } @else {
+                <div class="text-center py-16">
+                   <p class="text-lg" [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">Nenhum item encontrado.</p>
                 </div>
-                @if (loyaltyRewardsDisplay().length > 0) {
-                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @for(reward of loyaltyRewardsDisplay(); track reward.id) {
-                      <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center text-center transition-shadow hover:shadow-lg">
-                          <div class="mb-4">
-                              <span class="text-4xl font-extrabold text-blue-600">{{ reward.points_cost }}</span>
-                              <span class="text-gray-600 font-medium">pontos</span>
-                          </div>
-                          <h3 class="font-bold text-lg text-gray-900">{{ reward.name }}</h3>
-                          <p class="text-sm text-gray-500 mt-1">{{ reward.valueLabel }}</p>
-                          @if(reward.description) {
-                            <p class="text-xs text-gray-500 mt-2 flex-grow">{{ reward.description }}</p>
-                          }
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <div class="text-center py-20 rounded-lg bg-white border border-gray-200">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
-                    <h3 class="mt-2 text-lg font-medium text-gray-900">Nenhum prêmio disponível</h3>
-                    <p class="mt-1 text-sm text-gray-600">Volte em breve para conferir as novidades do nosso programa de fidelidade.</p>
-                  </div>
-                }
+               }
             </main>
-          }
-      </div>
-    </div>
+        </div>
+      }
+      @case('info') {
+        <div class="flex-1 flex flex-col overflow-y-auto">
+          <header class="p-4 border-b" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
+              <h1 class="font-bold text-xl text-center">Informações</h1>
+          </header>
+          <main class="p-6 space-y-6">
+            @if(reservationSettings(); as settings) {
+              <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
+                  <h2 class="font-semibold text-lg flex items-center gap-2 mb-3"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Horários de Funcionamento</h2>
+                  <ul class="space-y-1 text-sm">
+                    @for(day of sortedWeeklyHours(); track day.day_of_week) {
+                      <li class="flex justify-between items-center">
+                        <span class="font-medium">{{ daysOfWeek[day.day_of_week] }}</span>
+                        @if(day.is_closed) {
+                          <span class="font-semibold text-red-500">Fechado</span>
+                        } @else {
+                          <span class="font-mono">{{ day.opening_time }} - {{ day.closing_time }}</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+              </div>
+            }
+             @if(companyProfile()?.address) {
+              <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
+                  <h2 class="font-semibold text-lg flex items-center gap-2 mb-2"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>Endereço</h2>
+                  <p>{{ companyProfile()?.address }}</p>
+              </div>
+            }
+            <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
+                <h2 class="font-semibold text-lg flex items-center gap-2 mb-2"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>Contato</h2>
+                 @if(companyProfile()?.phone) {
+                    <p>Telefone: {{ companyProfile()?.phone }}</p>
+                 }
+                <p>Email: contato&#64;restaurante.com</p>
+            </div>
+          </main>
+        </div>
+      }
+    }
+
+    @if (view() !== 'cover') {
+      <nav class="mt-auto sticky bottom-0 border-t w-full" [class.bg-white]="isPublicView()" [class.border-gray-200]="isPublicView()" [class.bg-gray-800]="!isPublicView()" [class.border-gray-700]="!isPublicView()">
+        <div class="grid grid-cols-3 h-16">
+          <button (click)="setView('menu')" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100" [class.text-blue-600]="view() === 'menu'" [class.text-gray-500]="view() !== 'menu'" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
+            <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+            <span class="text-xs">Cardápio</span>
+          </button>
+          <a [href]="publicBookingUrl()" target="_blank" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100 text-gray-500" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
+             <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18" /></svg>
+            <span class="text-xs">Reservar</span>
+          </a>
+          <button (click)="setView('info')" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100" [class.text-blue-600]="view() === 'info'" [class.text-gray-500]="view() !== 'info'" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
+            <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+            <span class="text-xs">Info</span>
+          </button>
+        </div>
+      </nav>
+    }
+  </div>
 }
