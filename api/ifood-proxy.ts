@@ -1,19 +1,12 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getIFoodAccessToken } from './ifood-webhook-lib/ifood-api';
+import { sendIFoodOrderAction } from './ifood-webhook-lib/ifood-api';
 
-const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
-
-/**
- * This handler acts as a secure proxy for iFood API actions initiated from the frontend.
- * It receives an action from the client, authenticates with iFood on the server-side
- * using environment variables, and forwards the request to the appropriate iFood endpoint.
- * This avoids exposing client secrets and bypasses browser CORS restrictions.
- */
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
     return response.status(405).send({ message: 'Only POST requests are allowed' });
   }
+  
+  console.log('[Proxy] Received iFood action request from frontend.');
 
   try {
     const { action, orderId, details } = request.body;
@@ -21,25 +14,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (!action || !orderId) {
       return response.status(400).json({ message: 'Missing "action" or "orderId" in request body' });
     }
-
-    const accessToken = await getIFoodAccessToken();
-
-    let endpoint = '';
+    
+    let apiAction: 'confirm' | 'dispatch' | 'readyToPickup' | 'requestCancellation' | null = null;
     let body: any = null;
-    const method = 'POST';
 
     switch (action) {
       case 'confirm':
-        endpoint = `/order/v1.0/orders/${orderId}/confirm`;
+        apiAction = 'confirm';
         break;
       case 'dispatch':
-        endpoint = `/order/v1.0/orders/${orderId}/dispatch`;
+        apiAction = 'dispatch';
         break;
       case 'readyToPickup':
-        endpoint = `/order/v1.0/orders/${orderId}/readyToPickup`;
+        apiAction = 'readyToPickup';
         break;
       case 'cancel':
-        endpoint = `/order/v1.0/orders/${orderId}/requestCancellation`;
+        apiAction = 'requestCancellation';
         body = {
           reason: details?.reason || 'CANCELAMENTO SOLICITADO PELO RESTAURANTE',
           cancellationCode: details?.code || '501'
@@ -48,28 +38,24 @@ export default async function handler(request: VercelRequest, response: VercelRe
       default:
         return response.status(400).json({ message: `Invalid action provided: ${action}` });
     }
-
-    const iFoodResponse = await fetch(`${iFoodApiBaseUrl}${endpoint}`, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: body ? JSON.stringify(body) : null
-    });
-
-    if (!iFoodResponse.ok) {
-      const errorBodyText = await iFoodResponse.text();
-      console.error(`iFood API Error (${iFoodResponse.status}) for action '${action}' on order '${orderId}':`, errorBodyText);
-      // Forward the error from iFood to the frontend
-      return response.status(iFoodResponse.status).json({ message: `iFood API error: ${errorBodyText}` });
+    
+    if (!apiAction) {
+       return response.status(400).json({ message: `Action '${action}' could not be mapped.` });
     }
 
-    // iFood often returns 202 Accepted. Forward the status.
-    return response.status(iFoodResponse.status).json({ message: 'Action processed successfully by iFood.' });
+    console.log(`[Proxy] Forwarding action '${apiAction}' for order '${orderId}' to iFood API.`);
+    await sendIFoodOrderAction(orderId, apiAction, body);
+    
+    // Most iFood order actions return 202 Accepted with no body.
+    console.log(`[Proxy] Action for order '${orderId}' processed successfully.`);
+    return response.status(202).json({ message: 'Action processed successfully by iFood.' });
 
   } catch (error: any) {
-    console.error('[IFOOD_PROXY_ERROR]', error);
-    return response.status(500).json({ message: error.message || 'An internal server error occurred.' });
+    console.error('[Proxy] Error processing request:', error);
+    // Try to parse iFood error message if it exists
+    const errorMessage = error.message.includes('iFood API error:') 
+      ? error.message 
+      : 'An internal server error occurred.';
+    return response.status(500).json({ message: errorMessage });
   }
 }

@@ -1,23 +1,28 @@
 
-import { VercelResponse } from '@vercel/node';
+const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
 /**
- * Retrieves an OAuth access token from the iFood API using client credentials.
- * @returns The access token string.
+ * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
+ * This is the central function for all outgoing iFood API calls.
  */
-export async function getIFoodAccessToken(): Promise<string> {
+async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET', body: any = null) {
+  console.log(`[iFood API] Initiating call to endpoint: ${endpoint}`);
+
   const clientId = process.env.IFOOD_CLIENT_ID;
   const clientSecret = process.env.IFOOD_CLIENT_SECRET;
-  const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
   if (!clientId || !clientSecret) {
-    throw new Error('As credenciais da API do iFood não foram definidas como variáveis de ambiente do servidor (IFOOD_CLIENT_ID, IFOOD_CLIENT_SECRET).');
+    console.error('[iFood API] CRITICAL: iFood environment variables not set.');
+    throw new Error('Server configuration error: iFood credentials missing.');
   }
 
-  const tokenParams = new URLSearchParams();
-  tokenParams.append('grantType', 'client_credentials');
-  tokenParams.append('clientId', clientId);
-  tokenParams.append('clientSecret', clientSecret);
+  // 1. Get Access Token
+  console.log('[iFood API] Requesting access token...');
+  const tokenParams = new URLSearchParams({
+    grantType: 'client_credentials',
+    clientId: clientId,
+    clientSecret: clientSecret,
+  });
 
   const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
     method: 'POST',
@@ -26,50 +31,85 @@ export async function getIFoodAccessToken(): Promise<string> {
   });
 
   if (!tokenResponse.ok) {
-    throw new Error(`Failed to get iFood access token: ${await tokenResponse.text()}`);
+    const errorText = await tokenResponse.text();
+    console.error('[iFood API] Failed to get access token:', errorText);
+    throw new Error(`iFood authentication failed: ${errorText}`);
   }
 
   const tokenData = await tokenResponse.json();
   const accessToken = tokenData.accessToken;
+  console.log('[iFood API] Access token received successfully.');
 
-  if (!accessToken) {
-    throw new Error('Access token not found in iFood authentication response.');
+  // 2. Make the authenticated API call
+  const fullUrl = `${iFoodApiBaseUrl}${endpoint}`;
+  console.log(`[iFood API] Making ${method} request to ${fullUrl}`);
+
+  const apiResponse = await fetch(fullUrl, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : null,
+  });
+
+  if (!apiResponse.ok) {
+    const errorText = await apiResponse.text();
+    console.error(`[iFood API] API call to ${endpoint} failed with status ${apiResponse.status}:`, errorText);
+    throw new Error(`iFood API error (${apiResponse.status}): ${errorText}`);
   }
 
-  return accessToken;
+  console.log(`[iFood API] Call to ${endpoint} successful with status ${apiResponse.status}.`);
+  
+  if (apiResponse.status === 202 || apiResponse.status === 204) {
+    return null; // No JSON body to parse for these success statuses
+  }
+  
+  return await apiResponse.json();
 }
 
 /**
- * Fetches the full order details from the iFood Merchant API.
- * Includes a retry mechanism for 404 errors to handle API race conditions.
- * @param orderId The ID of the iFood order.
- * @returns The full order details object.
+ * Fetches the full order details from the iFood Merchant API, with retries for 404 errors.
  */
 export async function getIFoodOrderDetails(orderId: string): Promise<any> {
-  const accessToken = await getIFoodAccessToken();
-  const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
   let lastError: any = null;
   const maxRetries = 3;
   const retryDelay = 2000; // 2 seconds
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const orderDetailsResponse = await fetch(`${iFoodApiBaseUrl}/order/v1.0/orders/${orderId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (orderDetailsResponse.ok) {
-      return await orderDetailsResponse.json();
-    }
-
-    lastError = await orderDetailsResponse.json();
-
-    if (orderDetailsResponse.status === 404) {
-      console.log(`Attempt ${attempt}: Order ${orderId} not found. Retrying in ${retryDelay / 1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-    } else {
-      break; // Fail fast on other errors
+    try {
+      const details = await makeIFoodApiCall(`/order/v1.0/orders/${orderId}`);
+      return details;
+    } catch (error: any) {
+      lastError = error;
+      if (error.message && error.message.includes('(404)')) {
+        console.log(`[iFood API] Attempt ${attempt}: Order ${orderId} not found (404). Retrying in ${retryDelay / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        // Fail fast on other errors (e.g., 401 Unauthorized, 500 Server Error)
+        break;
+      }
     }
   }
 
-  throw new Error(`Failed to fetch iFood order details for ${orderId} after ${maxRetries} attempts: ${JSON.stringify(lastError)}`);
+  throw new Error(`Failed to fetch iFood order details for ${orderId} after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
+/**
+ * Sends a status update action for a given order to the iFood API.
+ */
+export async function sendIFoodOrderAction(orderId: string, action: 'confirm' | 'dispatch' | 'readyToPickup' | 'requestCancellation', body: any = null): Promise<any> {
+    const endpointMap = {
+        confirm: `/order/v1.0/orders/${orderId}/confirm`,
+        dispatch: `/order/v1.0/orders/${orderId}/dispatch`,
+        readyToPickup: `/order/v1.0/orders/${orderId}/readyToPickup`,
+        requestCancellation: `/order/v1.0/orders/${orderId}/requestCancellation`
+    };
+    
+    const endpoint = endpointMap[action];
+    if (!endpoint) {
+        throw new Error(`Invalid iFood order action: ${action}`);
+    }
+
+    return makeIFoodApiCall(endpoint, 'POST', body);
 }
