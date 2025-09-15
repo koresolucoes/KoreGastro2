@@ -1,16 +1,17 @@
+
 import { VercelResponse } from '@vercel/node';
 
 /**
  * Retrieves an OAuth access token from the iFood API using client credentials.
  * @returns The access token string.
  */
-async function getIFoodAccessToken(): Promise<string> {
+export async function getIFoodAccessToken(): Promise<string> {
   const clientId = process.env.IFOOD_CLIENT_ID;
   const clientSecret = process.env.IFOOD_CLIENT_SECRET;
   const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
   if (!clientId || !clientSecret) {
-    throw new Error('iFood API credentials are not set.');
+    throw new Error('As credenciais da API do iFood não foram definidas como variáveis de ambiente do servidor (IFOOD_CLIENT_ID, IFOOD_CLIENT_SECRET).');
   }
 
   const tokenParams = new URLSearchParams();

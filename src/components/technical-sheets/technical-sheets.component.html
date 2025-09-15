@@ -106,7 +106,16 @@
           <div class="bg-gray-900/50 p-4 rounded-lg space-y-4">
             <div class="flex flex-col sm:flex-row gap-4 items-start">
               <div class="flex-1 space-y-4">
-                  <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" placeholder="Nome do Prato" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-lg font-bold">
+                  <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <div class="sm:col-span-3">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Prato *</label>
+                        <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Cód. Externo (iFood/PDV)</label>
+                        <input type="text" [value]="recipeForm().recipe.external_code || ''" (input)="updateRecipeField('external_code', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+                    </div>
+                  </div>
                   <textarea [value]="recipeForm().recipe.description || ''" (input)="updateRecipeField('description', $any($event.target).value)" placeholder="Descrição do prato para o cardápio..." rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm"></textarea>
               </div>
               <div class="flex flex-col items-center gap-2">

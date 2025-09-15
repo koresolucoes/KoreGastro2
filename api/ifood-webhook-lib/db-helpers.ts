@@ -1,7 +1,7 @@
-
 import { SupabaseClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery } from '../../src/models/db.models';
 import { getOrderIdFromPayload } from './ifood-utils.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // --- LOGGING ---
 
@@ -127,22 +127,117 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
 
   if (Array.isArray(payload.items) && payload.items.length > 0) {
     const allExternalCodes = payload.items.flatMap((item: any) => [item.externalCode, ...(item.options || []).map((opt: any) => opt.externalCode)]).filter(Boolean);
-    const { data: ingredients } = await supabase.from('ingredients').select('id, external_code, proxy_recipe_id, station_id').in('external_code', allExternalCodes).eq('user_id', userId);
-    const ingredientMap = new Map(ingredients?.map(i => [i.external_code, i]));
-    const orderItemsToInsert: Partial<OrderItem>[] = payload.items.map((item: any) => {
-      const mainIngredient = ingredientMap.get(item.externalCode);
-      return {
-          order_id: newOrder.id, recipe_id: mainIngredient?.proxy_recipe_id ?? null, name: item.name,
-          quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
-          notes: [item.observations, ...(item.options || []).map((opt: any) => `${opt.quantity}x ${opt.name}`)].filter(Boolean).join('; '),
-          status: 'PENDENTE',
-          station_id: mainIngredient?.station_id ?? fallbackStationId,
-          status_timestamps: { 'PENDENTE': new Date().toISOString() }, user_id: userId
-      };
+    
+    // 1. Fetch both recipes and ingredients that match any external code.
+    const [recipesRes, ingredientsRes] = await Promise.all([
+        supabase.from('recipes').select('id, external_code').in('external_code', allExternalCodes).eq('user_id', userId),
+        supabase.from('ingredients').select('id, external_code, proxy_recipe_id, station_id').in('external_code', allExternalCodes).eq('user_id', userId)
+    ]);
+
+    if (recipesRes.error) throw recipesRes.error;
+    if (ingredientsRes.error) throw ingredientsRes.error;
+
+    // 2. Create maps for quick lookups.
+    const recipeByExternalCodeMap = new Map(recipesRes.data?.map(r => [r.external_code, r.id]));
+    const ingredientByExternalCodeMap = new Map(ingredientsRes.data?.map(i => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
+
+    // 3. For ingredients that are linked to sub-recipes, create a map for that.
+    const ingredientIds = (ingredientsRes.data || []).map(i => i.id);
+    let sourceRecipeByIngredientIdMap = new Map();
+    if (ingredientIds.length > 0) {
+        const { data: sourceRecipes, error: recipeError } = await supabase.from('recipes').select('id, source_ingredient_id').in('source_ingredient_id', ingredientIds).eq('user_id', userId);
+        if (recipeError) throw recipeError;
+        sourceRecipeByIngredientIdMap = new Map(sourceRecipes?.map(r => [r.source_ingredient_id, r.id]));
+    }
+
+    // 4. Fetch all preparations needed for any potential recipe match.
+    const allPossibleRecipeIds = [
+        ...recipeByExternalCodeMap.values(),
+        ...(ingredientsRes.data || []).map(i => i.proxy_recipe_id).filter(Boolean),
+        ...sourceRecipeByIngredientIdMap.values()
+    ];
+
+    const { data: preparations, error: prepsError } = await supabase
+        .from('recipe_preparations')
+        .select('recipe_id, station_id, name')
+        .in('recipe_id', allPossibleRecipeIds)
+        .eq('user_id', userId);
+    if (prepsError) throw prepsError;
+
+    const prepsByRecipeId = (preparations || []).reduce((acc, p) => {
+        if (!acc.has(p.recipe_id)) acc.set(p.recipe_id, []);
+        acc.get(p.recipe_id)!.push(p);
+        return acc;
+    }, new Map<string, any[]>());
+
+    // 5. Process items and build the insert payload.
+    const orderItemsToInsert = payload.items.flatMap((item: any) => {
+        let recipeId: string | null = null;
+        let stationId: string | null = fallbackStationId;
+        let isSimpleIngredient = true;
+
+        // Priority 1: Direct match on recipe.external_code
+        recipeId = recipeByExternalCodeMap.get(item.externalCode) || null;
+        
+        // Priority 2: Match via ingredient.external_code
+        if (recipeId) {
+            isSimpleIngredient = false;
+        } else {
+            const matchedIngredient = ingredientByExternalCodeMap.get(item.externalCode);
+            if (matchedIngredient) {
+                isSimpleIngredient = false;
+                recipeId = sourceRecipeByIngredientIdMap.get(matchedIngredient.id) ?? matchedIngredient.proxy_recipe_id ?? null;
+                stationId = matchedIngredient.station_id ?? fallbackStationId;
+                if (!recipeId) {
+                    isSimpleIngredient = true;
+                }
+            }
+        }
+        
+        const status_timestamps = { 'PENDENTE': new Date().toISOString() };
+        const notes = [item.observations, ...(item.options || []).map((opt: any) => `${opt.quantity}x ${opt.name}`)].filter(Boolean).join('; ');
+
+        // Case A: A recipe was found
+        if (recipeId && !isSimpleIngredient) {
+            const recipePreps = prepsByRecipeId.get(recipeId);
+            if (recipePreps && recipePreps.length > 0) {
+                const groupId = uuidv4();
+                return recipePreps.map(prep => ({
+                    order_id: newOrder.id, recipe_id: recipeId, name: `${item.name} (${prep.name})`,
+                    quantity: item.quantity, price: item.totalPrice / recipePreps.length, original_price: (item.unitPrice * item.quantity) / recipePreps.length,
+                    notes, status: 'PENDENTE', station_id: prep.station_id, group_id: groupId,
+                    status_timestamps, user_id: userId
+                }));
+            } else {
+                return [{
+                    order_id: newOrder.id, recipe_id: recipeId, name: item.name,
+                    quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
+                    notes, status: 'PENDENTE', station_id: fallbackStationId, group_id: null,
+                    status_timestamps, user_id: userId
+                }];
+            }
+        }
+        
+        // Case B: A simple sellable ingredient was found
+        if (isSimpleIngredient && ingredientByExternalCodeMap.has(item.externalCode)) {
+             return [{
+                order_id: newOrder.id, recipe_id: null, name: item.name,
+                quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
+                notes, status: 'PENDENTE', station_id: stationId, group_id: null,
+                status_timestamps, user_id: userId
+            }];
+        }
+        
+        // Case C: No match found
+        console.warn(`No recipe or sellable ingredient found for external code: ${item.externalCode}. Skipping item: ${item.name}`);
+        return [];
     });
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
-    if (itemsError) {
-      if (logId) await updateLogStatus(supabase, logId, 'ERROR_ITEM_INSERT', itemsError.message);
+
+    if (orderItemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
+        if (itemsError) {
+          if (logId) await updateLogStatus(supabase, logId, 'ERROR_ITEM_INSERT', itemsError.message);
+        }
     }
   }
 }

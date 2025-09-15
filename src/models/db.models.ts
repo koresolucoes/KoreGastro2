@@ -180,6 +180,7 @@ export interface Recipe {
   proxy_recipe_id?: string | null;
   image_url: string | null;
   operational_cost?: number;
+  external_code: string | null;
   created_at: string;
   user_id: string;
   hasStock?: boolean; // App-level property

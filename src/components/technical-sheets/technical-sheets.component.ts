@@ -23,6 +23,7 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
     is_available: true,
     is_sub_recipe: false,
     source_ingredient_id: null,
+    external_code: null,
   },
   preparations: [],
   ingredients: [],

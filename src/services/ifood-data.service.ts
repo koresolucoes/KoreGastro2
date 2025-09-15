@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 import { IfoodOrderStatus } from '../models/db.models';
 
@@ -6,26 +7,72 @@ import { IfoodOrderStatus } from '../models/db.models';
 })
 export class IfoodDataService {
 
-  constructor() { }
-
   /**
-   * Simulates sending a status update to the iFood API.
-   * In a real application, this would be an HTTP POST request with authentication.
+   * Sends a status update to our backend proxy, which then securely communicates with the iFood API.
    * @param ifoodOrderId The unique ID of the order on the iFood platform.
    * @param status The new status to be sent.
    * @param details Optional details, e.g., cancellation reason.
    */
   async sendStatusUpdate(ifoodOrderId: string, status: IfoodOrderStatus, details?: any): Promise<{ success: boolean; error: any }> {
-    console.log(
-      `[MOCK iFood API Call] Updating order ${ifoodOrderId} to status ${status} with details:`, 
-      details || 'No details'
-    );
-    
-    // Simulate a network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      let action: string | null = null;
+      let bodyDetails: any = details;
 
-    // In a real scenario, you would handle the response from the iFood API.
-    // For this mock, we always assume success.
-    return { success: true, error: null };
+      switch (status) {
+        case 'CONFIRMED':
+          action = 'confirm';
+          break;
+        case 'IN_PREPARATION':
+          // This iFood status is implicit after confirming the order.
+          // No direct API call is needed, so we return success immediately.
+          return { success: true, error: null };
+        case 'DISPATCHED':
+          action = 'dispatch';
+          break;
+        case 'READY_FOR_PICKUP':
+          action = 'readyToPickup';
+          break;
+        case 'CANCELLED':
+          action = 'cancel';
+          // Standardize the details payload for the proxy
+          bodyDetails = {
+            reason: details?.reason || 'CANCELAMENTO SOLICITADO PELO RESTAURANTE',
+            code: details?.code || '501' // Generic cancellation by restaurant
+          };
+          break;
+        default:
+          console.warn(`Unsupported iFood status update requested: ${status}. No action taken.`);
+          // Return success as there's no action to fail on.
+          return { success: true, error: null };
+      }
+
+      if (!action) {
+        return { success: false, error: { message: `No valid action found for status ${status}` } };
+      }
+
+      const response = await fetch('/api/ifood-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action,
+          orderId: ifoodOrderId,
+          details: bodyDetails
+        })
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.message || `Proxy error (${response.status})`);
+      }
+      
+      console.log(`Successfully sent update via proxy for order ${ifoodOrderId} with status ${status}.`);
+      return { success: true, error: null };
+
+    } catch (error) {
+      console.error(`Error sending iFood status update via proxy for order ${ifoodOrderId}:`, error);
+      return { success: false, error };
+    }
   }
 }
