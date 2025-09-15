@@ -73,6 +73,7 @@ export class TechnicalSheetsComponent {
   selectedRecipeId = signal<string | null>(null);
   recipeForm = signal<RecipeForm>(EMPTY_RECIPE_FORM);
   recipePendingDeletion = signal<Recipe | null>(null);
+  recipeImagePreviewUrl = signal<string | null>(null);
   
   // AI State
   isAiLoading = signal(false);
@@ -220,7 +221,9 @@ export class TechnicalSheetsComponent {
           return { ...rest, quantity: displayQuantity, unit: displayUnit };
       }),
       subRecipes: subRecipes.map(({ parent_recipe_id, user_id, recipes, ...rest }) => rest),
+      image_file: null
     });
+    this.recipeImagePreviewUrl.set(recipe.image_url);
     this.aiSuggestions.set(null);
     this.viewMode.set('edit');
   }
@@ -232,6 +235,7 @@ export class TechnicalSheetsComponent {
       ...EMPTY_RECIPE_FORM,
       recipe: { ...EMPTY_RECIPE_FORM.recipe, category_id: firstCategoryId },
     });
+    this.recipeImagePreviewUrl.set(null);
     this.aiSuggestions.set(null);
     this.viewMode.set('edit');
   }
@@ -252,6 +256,16 @@ export class TechnicalSheetsComponent {
         ...form,
         recipe: { ...form.recipe, [field]: value }
     }));
+  }
+  
+  handleRecipeImageChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.recipeForm.update(form => ({ ...form, image_file: file }));
+      const reader = new FileReader();
+      reader.onload = (e) => this.recipeImagePreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   }
 
   // --- Preparations ---
@@ -472,16 +486,29 @@ export class TechnicalSheetsComponent {
             quantity: convertedQuantity
         };
     }).filter((i): i is Omit<RecipeIngredient, 'user_id' | 'recipe_id'> => i !== null);
+    
+    const recipeImageFile = form.image_file;
 
     if (this.selectedRecipeId()) { // Update
-      const { success, error } = await this.recipeDataService.saveTechnicalSheet( this.selectedRecipeId()!, recipeDataToSave, form.preparations as RecipePreparation[], ingredientsToSave, form.subRecipes as RecipeSubRecipe[] );
-      if (success) { await this.notificationService.alert('Ficha técnica salva com sucesso!', 'Sucesso'); this.closeModal(); } 
+      const recipeId = this.selectedRecipeId()!;
+      const { success, error } = await this.recipeDataService.saveTechnicalSheet( recipeId, recipeDataToSave, form.preparations as RecipePreparation[], ingredientsToSave, form.subRecipes as RecipeSubRecipe[] );
+      if (success) { 
+        if (recipeImageFile) {
+          await this.recipeDataService.updateRecipeImage(recipeId, recipeImageFile);
+        }
+        await this.notificationService.alert('Ficha técnica salva com sucesso!', 'Sucesso'); this.closeModal(); 
+      } 
       else { await this.notificationService.alert(`Erro ao salvar: ${error?.message}`); }
     } else { // Create
       const { success, error, data: newRecipe } = await this.recipeDataService.addRecipe(recipeDataToSave);
       if (success && newRecipe) {
         const { success: tsSuccess, error: tsError } = await this.recipeDataService.saveTechnicalSheet( newRecipe.id, {}, form.preparations as RecipePreparation[], ingredientsToSave, form.subRecipes as RecipeSubRecipe[] );
-        if (tsSuccess) { await this.notificationService.alert('Receita criada com sucesso!', 'Sucesso'); this.closeModal(); } 
+        if (tsSuccess) {
+          if (recipeImageFile) {
+            await this.recipeDataService.updateRecipeImage(newRecipe.id, recipeImageFile);
+          }
+          await this.notificationService.alert('Receita criada com sucesso!', 'Sucesso'); this.closeModal();
+        } 
         else { await this.recipeDataService.deleteRecipe(newRecipe.id); await this.notificationService.alert(`Erro ao salvar ficha técnica: ${tsError?.message}`); }
       } else { await this.notificationService.alert(`Erro ao criar receita: ${error?.message}`); }
     }

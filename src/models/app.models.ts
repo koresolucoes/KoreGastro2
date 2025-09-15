@@ -6,6 +6,7 @@ export interface RecipeForm {
   preparations: (Partial<RecipePreparation> & { id: string })[];
   ingredients: (Omit<RecipeIngredient, 'user_id' | 'recipe_id'> & { unit: IngredientUnit })[];
   subRecipes: Omit<RecipeSubRecipe, 'user_id' | 'parent_recipe_id'>[];
+  image_file?: File | null;
 }
 
 // Represents a complete recipe object with all its relations for display

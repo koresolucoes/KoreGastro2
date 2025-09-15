@@ -104,8 +104,25 @@
         <div class="lg:col-span-2 space-y-4">
           <!-- Basic Info -->
           <div class="bg-gray-900/50 p-4 rounded-lg space-y-4">
-            <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" placeholder="Nome do Prato" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-lg font-bold">
-            <textarea [value]="recipeForm().recipe.description || ''" (input)="updateRecipeField('description', $any($event.target).value)" placeholder="Descrição do prato para o cardápio..." rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm"></textarea>
+            <div class="flex flex-col sm:flex-row gap-4 items-start">
+              <div class="flex-1 space-y-4">
+                  <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" placeholder="Nome do Prato" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-lg font-bold">
+                  <textarea [value]="recipeForm().recipe.description || ''" (input)="updateRecipeField('description', $any($event.target).value)" placeholder="Descrição do prato para o cardápio..." rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm"></textarea>
+              </div>
+              <div class="flex flex-col items-center gap-2">
+                  <label for="recipe-image-upload" class="cursor-pointer">
+                      @if(recipeImagePreviewUrl()) {
+                        <img [src]="recipeImagePreviewUrl()" alt="Pré-visualização do prato" class="h-28 w-28 rounded-md object-cover border-2 border-gray-600 hover:opacity-80">
+                      } @else {
+                        <div class="h-28 w-28 rounded-md bg-gray-700 flex flex-col items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600 text-gray-500 text-center p-2">
+                          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                          <span class="text-xs mt-1">Imagem do Prato</span>
+                        </div>
+                      }
+                  </label>
+                  <input id="recipe-image-upload" type="file" class="hidden" (change)="handleRecipeImageChange($event)" accept="image/png, image/jpeg, image/webp">
+              </div>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Preço Venda</label>

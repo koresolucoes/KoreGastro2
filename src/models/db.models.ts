@@ -136,6 +136,7 @@ export interface InventoryLot {
 export interface Category { // For Recipes/POS
   id: string;
   name: string;
+  image_url: string | null;
   created_at: string;
   user_id: string;
 }
@@ -151,6 +152,7 @@ export interface Recipe {
   is_sub_recipe: boolean;
   source_ingredient_id: string | null;
   proxy_recipe_id?: string | null;
+  image_url: string | null;
   operational_cost?: number;
   created_at: string;
   user_id: string;
@@ -411,6 +413,7 @@ export interface CompanyProfile {
   company_name: string;
   cnpj: string;
   address: string | null;
+  logo_url: string | null;
   created_at: string;
 }
 

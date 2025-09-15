@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
@@ -82,5 +82,18 @@ export class PublicDataService {
       return [];
     }
     return data || [];
+  }
+  
+  async getPublicCompanyProfile(userId: string): Promise<Partial<CompanyProfile> | null> {
+    const { data, error } = await supabase
+      .from('company_profile')
+      .select('company_name, logo_url')
+      .eq('user_id', userId)
+      .single();
+    if (error) {
+      console.error('Error fetching public company profile:', error);
+      return null;
+    }
+    return data;
   }
 }

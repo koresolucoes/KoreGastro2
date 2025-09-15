@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 // FIX: Add Customer model to imports
 import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement } from '../models/db.models';
@@ -11,6 +10,22 @@ import { ALL_PERMISSION_KEYS } from '../config/permissions';
 })
 export class SettingsDataService {
   private authService = inject(AuthService);
+
+  private async uploadAsset(file: File, path: string): Promise<{ publicUrl: string | null; error: any }> {
+    const { error: uploadError } = await supabase.storage
+      .from('restaurant_assets')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      return { publicUrl: null, error: uploadError };
+    }
+
+    const { data } = supabase.storage
+      .from('restaurant_assets')
+      .getPublicUrl(path);
+
+    return { publicUrl: data.publicUrl, error: null };
+  }
 
   // FIX: Updated method to return the created station object.
   async addStation(name: string): Promise<{ success: boolean; error: any; data?: Station }> {
@@ -53,12 +68,25 @@ export class SettingsDataService {
     return { success: !error, error };
   }
   
-  async updateCompanyProfile(profile: Partial<CompanyProfile>): Promise<{ success: boolean, error: any }> {
+  async updateCompanyProfile(profile: Partial<CompanyProfile>, logoFile?: File | null): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const profileData = { ...profile };
+
+    if (logoFile) {
+      const fileExt = logoFile.name.split('.').pop();
+      const path = `public/logos/${userId}-logo.${fileExt}`;
+      const { publicUrl, error: uploadError } = await this.uploadAsset(logoFile, path);
+      if (uploadError) {
+        return { success: false, error: uploadError };
+      }
+      profileData.logo_url = publicUrl;
+    }
+
     const { error } = await supabase
       .from('company_profile')
-      .upsert({ ...profile, user_id: userId }, { onConflict: 'user_id' });
+      .upsert({ ...profileData, user_id: userId }, { onConflict: 'user_id' });
     return { success: !error, error };
   }
 

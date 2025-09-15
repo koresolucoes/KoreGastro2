@@ -57,6 +57,33 @@ export class RecipeDataService {
     return { success: true, error: null };
   }
 
+  async updateRecipeImage(recipeId: string, imageFile: File): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    
+    const fileExt = imageFile.name.split('.').pop();
+    const path = `public/recipes/${recipeId}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('restaurant_assets')
+      .upload(path, imageFile, { upsert: true });
+
+    if (uploadError) {
+      return { success: false, error: uploadError };
+    }
+
+    const { data } = supabase.storage
+      .from('restaurant_assets')
+      .getPublicUrl(path);
+
+    const { error: dbError } = await supabase
+      .from('recipes')
+      .update({ image_url: data.publicUrl })
+      .eq('id', recipeId);
+
+    return { success: !dbError, error: dbError };
+  }
+
   async updateRecipeAvailability(recipeId: string, isAvailable: boolean): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase
       .from('recipes')
@@ -80,16 +107,69 @@ export class RecipeDataService {
   }
 
   // --- Recipe Category Management ---
-  async addRecipeCategory(name: string): Promise<{ success: boolean, error: any, data?: Category }> {
+  async addRecipeCategory(name: string, imageFile?: File | null): Promise<{ success: boolean, error: any, data?: Category }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
     const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
-    return { success: !error, error, data };
+    
+    if (error) {
+        return { success: false, error, data: undefined };
+    }
+
+    if (imageFile && data) {
+        const { success, error: imageError } = await this.updateRecipeCategoryImage(data.id, imageFile);
+        if (!success) {
+            // Optionally, decide if you want to delete the created category if image upload fails
+            console.error("Category created, but image upload failed:", imageError);
+        }
+    }
+    
+    // Refetch data to include the image_url if it was added
+    const { data: finalData } = await supabase.from('categories').select('*').eq('id', data.id).single();
+
+    return { success: true, error: null, data: finalData || data };
   }
 
-  async updateRecipeCategory(id: string, name: string): Promise<{ success: boolean, error: any }> {
+  async updateRecipeCategory(id: string, name: string, imageFile?: File | null): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('categories').update({ name }).eq('id', id);
-    return { success: !error, error };
+
+    if (error) {
+        return { success: false, error };
+    }
+
+    if (imageFile) {
+        return this.updateRecipeCategoryImage(id, imageFile);
+    }
+
+    return { success: true, error: null };
+  }
+
+  async updateRecipeCategoryImage(id: string, imageFile: File): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const fileExt = imageFile.name.split('.').pop();
+    const path = `public/categories/${id}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('restaurant_assets')
+      .upload(path, imageFile, { upsert: true });
+
+    if (uploadError) {
+      return { success: false, error: uploadError };
+    }
+
+    const { data } = supabase.storage
+      .from('restaurant_assets')
+      .getPublicUrl(path);
+
+    const { error: dbError } = await supabase
+      .from('categories')
+      .update({ image_url: data.publicUrl })
+      .eq('id', id);
+      
+    return { success: !dbError, error: dbError };
   }
 
   async deleteRecipeCategory(id: string): Promise<{ success: boolean, error: any }> {

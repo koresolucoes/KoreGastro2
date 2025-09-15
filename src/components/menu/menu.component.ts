@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,7 +8,7 @@ import { PublicDataService } from '../../services/public-data.service';
 import { Subscription } from 'rxjs';
 
 interface MenuGroup {
-  categoryName: string;
+  category: Category;
   recipes: (Recipe & { effectivePrice: number })[];
 }
 
@@ -33,6 +33,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   activeTab = signal<'menu' | 'rewards'>('menu');
   
   // Signals for public data
+  publicCompanyProfile = signal<Partial<CompanyProfile> | null>(null);
   private publicRecipes = signal<Recipe[]>([]);
   private publicCategories = signal<Category[]>([]);
   publicLoyaltySettings = signal<LoyaltySettings | null>(null);
@@ -64,7 +65,8 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   async loadPublicData(userId: string) {
     this.isLoading.set(true);
-    const [recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards] = await Promise.all([
+    const [companyProfile, recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards] = await Promise.all([
+      this.publicDataService.getPublicCompanyProfile(userId),
       this.publicDataService.getPublicRecipes(userId),
       this.publicDataService.getPublicCategories(userId),
       this.publicDataService.getPublicPromotions(userId),
@@ -77,6 +79,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.pricingService.promotions.set(promotions);
     this.pricingService.promotionRecipes.set(promotionRecipes);
 
+    this.publicCompanyProfile.set(companyProfile);
     this.publicRecipes.set(recipes);
     this.publicCategories.set(categories);
     this.publicLoyaltySettings.set(loyaltySettings);
@@ -107,28 +110,26 @@ export class MenuComponent implements OnInit, OnDestroy {
       );
     }
     
-    const categoryMap = new Map(categoriesSource.map(c => [c.id, c.name]));
-
     const recipesWithPrice = recipesSource.map(recipe => ({
         ...recipe,
         effectivePrice: this.pricingService.getEffectivePrice(recipe)
     }));
 
-    const grouped = recipesWithPrice.reduce((acc, recipe) => {
-      const categoryName = categoryMap.get(recipe.category_id) || 'Outros';
-      if (!acc[categoryName]) {
-        acc[categoryName] = [];
-      }
-      acc[categoryName].push(recipe);
-      return acc;
-    }, {} as Record<string, (Recipe & { effectivePrice: number })[]>);
-
-    return Object.keys(grouped)
-      .map(categoryName => ({
-        categoryName,
-        recipes: grouped[categoryName]
+    const groupedByCategory = new Map<string, (Recipe & { effectivePrice: number })[]>();
+    for (const recipe of recipesWithPrice) {
+        if (!groupedByCategory.has(recipe.category_id)) {
+            groupedByCategory.set(recipe.category_id, []);
+        }
+        groupedByCategory.get(recipe.category_id)!.push(recipe);
+    }
+    
+    return categoriesSource
+      .map(category => ({
+        category,
+        recipes: groupedByCategory.get(category.id) || []
       }))
-      .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
+      .filter(group => group.recipes.length > 0)
+      .sort((a, b) => a.category.name.localeCompare(b.category.name));
   });
   
   loyaltyRewardsDisplay = computed(() => {
@@ -160,10 +161,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   scrollToCategory(slug: string) {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      fragment: slug,
-      queryParamsHandling: 'preserve',
-    });
+    const element = document.getElementById(slug);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 }

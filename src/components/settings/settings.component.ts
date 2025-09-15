@@ -47,6 +47,8 @@ export class SettingsComponent {
   
   // Company Profile Form
   companyProfileForm = signal<Partial<CompanyProfile>>({});
+  logoFile = signal<File | null>(null);
+  logoPreviewUrl = signal<string | null>(null);
 
   // Search terms
   stationSearchTerm = signal('');
@@ -183,6 +185,7 @@ export class SettingsComponent {
         const profile = this.companyProfile();
         if (profile) {
             this.companyProfileForm.set({ ...profile });
+            this.logoPreviewUrl.set(profile.logo_url);
         } else {
             this.companyProfileForm.set({ company_name: '', cnpj: '', address: ''});
         }
@@ -287,27 +290,67 @@ export class SettingsComponent {
   }
 
   // --- Recipe Category Management ---
+  isRecipeCategoryModalOpen = signal(false);
   newRecipeCategoryName = signal('');
   editingRecipeCategory = signal<Category | null>(null);
   recipeCategoryPendingDeletion = signal<Category | null>(null);
+  recipeCategoryImageFile = signal<File | null>(null);
+  recipeCategoryImagePreviewUrl = signal<string | null>(null);
 
-  async handleAddRecipeCategory() {
-    const name = this.newRecipeCategoryName().trim(); if (!name) return;
-    const { success, error } = await this.recipeDataService.addRecipeCategory(name);
-    if (success) { this.newRecipeCategoryName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  openAddRecipeCategoryModal() {
+    this.editingRecipeCategory.set(null);
+    this.newRecipeCategoryName.set('');
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(null);
+    this.isRecipeCategoryModalOpen.set(true);
   }
-  startEditingRecipeCategory(c: Category) { this.editingRecipeCategory.set({ ...c }); this.recipeCategoryPendingDeletion.set(null); }
-  cancelEditingRecipeCategory() { this.editingRecipeCategory.set(null); }
-  updateEditingRecipeCategoryName(event: Event) {
-    const name = (event.target as HTMLInputElement).value;
-    this.editingRecipeCategory.update(c => c ? { ...c, name } : c);
+
+  openEditRecipeCategoryModal(c: Category) {
+    this.editingRecipeCategory.set({ ...c });
+    this.newRecipeCategoryName.set(c.name);
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(c.image_url);
+    this.isRecipeCategoryModalOpen.set(true);
   }
+
+  closeRecipeCategoryModal() {
+    this.isRecipeCategoryModalOpen.set(false);
+  }
+  
+  handleRecipeCategoryImageChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.recipeCategoryImageFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.recipeCategoryImagePreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
   async saveRecipeCategory() {
-    const category = this.editingRecipeCategory(); if (!category?.name.trim()) return;
-    const { success, error } = await this.recipeDataService.updateRecipeCategory(category.id, category.name.trim());
-    if (success) { this.cancelEditingRecipeCategory(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+    const name = this.newRecipeCategoryName().trim();
+    if (!name) {
+      await this.notificationService.alert('O nome da categoria é obrigatório.');
+      return;
+    }
+    const imageFile = this.recipeCategoryImageFile();
+    const editingCategory = this.editingRecipeCategory();
+    
+    let result;
+    if (editingCategory) {
+      result = await this.recipeDataService.updateRecipeCategory(editingCategory.id, name, imageFile);
+    } else {
+      result = await this.recipeDataService.addRecipeCategory(name, imageFile);
+    }
+
+    if (result.success) {
+      this.closeRecipeCategoryModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${result.error?.message}`);
+    }
   }
-  requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); this.editingRecipeCategory.set(null); }
+
+  requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); }
   cancelDeleteRecipeCategory() { this.recipeCategoryPendingDeletion.set(null); }
   async confirmDeleteRecipeCategory() {
     const category = this.recipeCategoryPendingDeletion(); if (!category) return;
@@ -370,8 +413,18 @@ export class SettingsComponent {
   }
 
   // --- Company Profile ---
-  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at'>, value: string) {
+  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url'>, value: string) {
       this.companyProfileForm.update(form => ({ ...form, [field]: value }));
+  }
+  
+  handleLogoFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.logoFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.logoPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   }
   
   async saveCompanyProfile() {
@@ -380,9 +433,10 @@ export class SettingsComponent {
           await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
           return;
       }
-      const { success, error } = await this.settingsDataService.updateCompanyProfile(form);
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(form, this.logoFile());
       if (success) {
           await this.notificationService.alert('Dados da empresa salvos!', 'Sucesso');
+          this.logoFile.set(null);
       } else {
           await this.notificationService.alert(`Erro ao salvar dados da empresa: ${error?.message}`);
       }
