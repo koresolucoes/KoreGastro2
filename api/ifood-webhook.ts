@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'crypto';
-// FIX: Import the newly created IfoodOrder and IfoodOrderStatus types from the models file.
-import type { IfoodOrder, IfoodOrderStatus } from '../src/models/db.models';
+import type { Order, OrderItem, OrderStatus, OrderType, IfoodOrderDelivery } from '../src/models/db.models';
+import { v4 as uuidv4 } from 'uuid';
 
 // This config is necessary for Vercel to provide the raw request body
 export const config = {
@@ -11,7 +11,7 @@ export const config = {
   },
 };
 
-// Initialize Supabase Admin Client
+// Initialize Supabase Admin Client for server-side operations
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -19,7 +19,6 @@ const supabase = createClient(
 
 // --- HELPER FUNCTIONS ---
 
-// 1. Read Raw Body from Request Stream
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -28,7 +27,6 @@ async function getRawBody(req: VercelRequest): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-// 2. Verify iFood's Signature
 function verifySignature(signature: string, body: Buffer, secret: string): boolean {
   if (!signature || !body || !secret) {
     return false;
@@ -39,17 +37,36 @@ function verifySignature(signature: string, body: Buffer, secret: string): boole
   return computedSignature === signature;
 }
 
-// 3. Map iFood status codes to our internal status
-function mapToInternalStatus(ifoodCode: string): IfoodOrderStatus | null {
-    const statusMap: { [key: string]: IfoodOrderStatus } = {
-        'PLC': 'RECEIVED',
-        'CFM': 'CONFIRMED',
-        'DSP': 'DISPATCHED',
-        // FIX: Handle 'CON' (Concluded) and map it to a valid internal status.
-        'CON': 'CONCLUDED',
-        'CAN': 'CANCELLED',
-    };
-    return statusMap[ifoodCode] || null;
+async function getOrCreateCustomer(userId: string, ifoodCustomer: any): Promise<string | null> {
+    // Try to find a customer by name or phone (if provided)
+    let query = supabase.from('customers').select('id').eq('user_id', userId);
+    
+    if (ifoodCustomer.phone?.number) {
+        query = query.eq('phone', ifoodCustomer.phone.number);
+    } else {
+        query = query.eq('name', ifoodCustomer.name);
+    }
+
+    const { data: existingCustomer, error: findError } = await query.maybeSingle();
+    if (findError) console.error("Error finding customer:", findError);
+    if (existingCustomer) return existingCustomer.id;
+
+    // Create a new customer if not found
+    const { data: newCustomer, error: createError } = await supabase
+        .from('customers')
+        .insert({
+            user_id: userId,
+            name: ifoodCustomer.name,
+            phone: ifoodCustomer.phone?.number || null,
+        })
+        .select('id')
+        .single();
+    
+    if (createError) {
+        console.error("Error creating customer:", createError);
+        return null;
+    }
+    return newCustomer.id;
 }
 
 
@@ -71,94 +88,142 @@ export default async function handler(
 
   try {
     const rawBody = await getRawBody(request);
-    const signature = request.headers['x-ifood-signature'] as string;
+    // IMPORTANT: The iFood API may send different payloads for different events.
+    // The "PLACED" event notification might just be an ID, but for this integration to work,
+    // we are assuming the FULL order payload is sent, as per the documentation provided earlier.
+    const payload = JSON.parse(rawBody.toString('utf-8'));
 
-    // IMPORTANT: Security validation
+    // The signature check must be done on the raw, unparsed body.
+    const signature = request.headers['x-ifood-signature'] as string;
     if (!verifySignature(signature, rawBody, ifoodSecret)) {
       console.warn('Invalid signature received.');
       return response.status(401).send({ error: 'Invalid signature.' });
     }
 
-    const payload = JSON.parse(rawBody.toString('utf-8'));
-
     // --- Event Handling Logic ---
 
-    switch (payload.code) {
-      case 'KEEPALIVE':
-        console.log('Keepalive heartbeat received.');
-        // Respond to heartbeat to keep the webhook active
-        return response.status(202).send({ message: 'Accepted' });
+    if (payload.fullCode === 'KEEPALIVE' || payload.code === 'KEEPALIVE') {
+      console.log('Keepalive heartbeat received.');
+      return response.status(202).send({ message: 'Accepted' });
+    }
+
+    // From here, we assume an order event. We need the merchantId to find the user.
+    const merchantId = payload.merchant?.id || payload.merchantId;
+    if (!merchantId) {
+       console.warn('Webhook received without merchantId.');
+       return response.status(400).send({ error: 'Merchant ID missing.' });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+        .from('company_profile')
+        .select('user_id')
+        .eq('ifood_merchant_id', merchantId)
+        .single();
+
+    if (profileError || !profile) {
+        console.error(`Merchant not found for ID: ${merchantId}`);
+        return response.status(404).send({ error: 'Merchant not found' });
+    }
+    const userId = profile.user_id;
+    const orderId = payload.id || payload.orderId;
+
+    if (payload.fullCode === 'PLACED' || payload.code === 'PLC') {
+      console.log(`Processing new order: ${orderId}`);
       
-      case 'PLC': // PLACED
-        console.log(`New order received: ${payload.orderId}`);
-        const { data: profile, error: profileError } = await supabase
-            .from('company_profile')
-            .select('user_id')
-            .eq('ifood_merchant_id', payload.merchantId)
-            .single();
+      const customerId = await getOrCreateCustomer(userId, payload.customer);
 
-        if (profileError || !profile) {
-            console.error(`Merchant not found for ID: ${payload.merchantId}`);
-            return response.status(404).send({ error: 'Merchant not found' });
+      const orderType: OrderType = payload.orderType === 'DELIVERY' ? 'iFood-Delivery' : 'iFood-Takeout';
+      const deliveryInfo: IfoodOrderDelivery | null = payload.delivery ? {
+          deliveredBy: payload.delivery.deliveredBy,
+          deliveryAddress: payload.delivery.deliveryAddress
+      } : null;
+
+      const { data: newOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: userId,
+          table_number: 0,
+          status: 'OPEN',
+          order_type: orderType,
+          customer_id: customerId,
+          ifood_order_id: payload.id,
+          ifood_display_id: payload.displayId,
+          delivery_info: deliveryInfo
+        })
+        .select('id')
+        .single();
+
+      if (orderError) {
+        console.error('Error inserting iFood order:', orderError);
+        return response.status(500).json({ error: 'Failed to save order.' });
+      }
+
+      // Map iFood items to ChefOS ingredients via external_code
+      const allExternalCodes = payload.items.flatMap((item: any) => 
+        [item.externalCode, ...(item.options || []).map((opt: any) => opt.externalCode)]
+      ).filter(Boolean);
+
+      const { data: ingredients, error: ingredientsError } = await supabase
+        .from('ingredients')
+        .select('id, external_code, proxy_recipe_id, station_id')
+        .in('external_code', allExternalCodes)
+        .eq('user_id', userId);
+      
+      if (ingredientsError) {
+        console.error('Error fetching ingredients by external code:', ingredientsError);
+        // Continue, but some items might not be linked.
+      }
+
+      const ingredientMap = new Map(ingredients?.map(i => [i.external_code, i]));
+
+      const orderItemsToInsert: Partial<OrderItem>[] = [];
+      for (const item of payload.items) {
+        const mainIngredient = ingredientMap.get(item.externalCode);
+        orderItemsToInsert.push({
+            order_id: newOrder.id,
+            recipe_id: mainIngredient?.proxy_recipe_id ?? null,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.totalPrice, // Using total price from iFood
+            original_price: item.unitPrice * item.quantity,
+            notes: [
+                item.observations,
+                ...(item.options || []).map((opt: any) => `${opt.quantity}x ${opt.name}`)
+            ].filter(Boolean).join('; '),
+            status: 'PENDENTE',
+            station_id: mainIngredient?.station_id, // This is crucial for KDS
+            status_timestamps: { 'PENDENTE': new Date().toISOString() },
+            user_id: userId
+        });
+      }
+
+      if (orderItemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
+        if (itemsError) {
+          console.error('Error inserting order items for iFood order:', itemsError);
+          // Don't fail the whole request, order is already created.
         }
-        
-        // NOTE: The PLACED event does not contain full order details.
-        // In a real-world scenario, you would now call the iFood API to get order details.
-        // Here, we create a simplified mock order to make the KDS functional.
-        const newOrder: Omit<IfoodOrder, 'id' | 'created_at'> = {
-            user_id: profile.user_id,
-            ifood_order_id: payload.orderId,
-            display_id: payload.orderId.slice(-5).toUpperCase(),
-            ifood_created_at: payload.createdAt,
-            order_type: 'DELIVERY',
-            customer_name: 'Cliente iFood',
-            items: [{ 
-                name: 'Pedido iFood', 
-                quantity: 1, 
-                unitPrice: 0, 
-                totalPrice: 0, 
-                observations: 'Detalhes completos do pedido serão carregados em breve.' 
-            }],
-            total_amount: 0,
-            payment_method: 'Online',
-            status: 'RECEIVED'
-        };
-
-        const { error: insertError } = await supabase.from('ifood_orders').insert(newOrder);
-        if (insertError) {
-            console.error('Error inserting iFood order:', insertError);
-            return response.status(500).json({ error: 'Failed to save order.' });
-        }
-        break;
-
-      case 'CFM': // CONFIRMED
-      case 'DSP': // DISPATCHED
-      case 'CON': // CONCLUDED
-      case 'CAN': // CANCELLED
-        console.log(`Status update for order ${payload.orderId}: ${payload.fullCode}`);
-        const newStatus = mapToInternalStatus(payload.code);
-        if (newStatus) {
-            const { error: updateError } = await supabase
-                .from('ifood_orders')
-                .update({ status: newStatus })
-                .eq('ifood_order_id', payload.orderId);
-
-            if (updateError) {
-                console.error(`Error updating status for order ${payload.orderId}:`, updateError);
-                // Don't send 500, as iFood might retry. If it's a genuine DB error,
-                // it's better to log it and let it fail silently for the client.
-            }
-        }
-        break;
-
-      default:
-        console.log(`Received unhandled event code: ${payload.code}`);
-        break;
+      }
+      
+    } else if (payload.fullCode === 'DISPATCHED' || payload.code === 'DSP') {
+      // Logic for DISPATCHED can be added later if needed.
+      // For now, it doesn't change our internal status from 'OPEN'.
+    } else if (payload.fullCode === 'CANCELLED' || payload.code === 'CAN') {
+        await supabase
+          .from('orders')
+          .update({ status: 'CANCELLED' })
+          .eq('ifood_order_id', orderId);
+    } else {
+        console.log(`Received unhandled event code: ${payload.fullCode || payload.code}`);
     }
 
     return response.status(202).send({ message: 'Event received successfully.' });
+
   } catch (error: any) {
     console.error('Error processing webhook:', error);
+    if (error instanceof SyntaxError) {
+        return response.status(400).send({ error: 'Invalid JSON payload.' });
+    }
     return response.status(500).send({ error: 'Internal Server Error' });
   }
 }
