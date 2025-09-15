@@ -106,6 +106,34 @@ export class PosDataService {
     return { success: !error, error };
   }
 
+  async updateMultipleItemStatuses(itemIds: string[], status: OrderItemStatus): Promise<{ success: boolean; error: any }> {
+    if (itemIds.length === 0) return { success: true, error: null };
+
+    const { data: items, error: fetchError } = await supabase
+      .from('order_items')
+      .select('*')
+      .in('id', itemIds);
+
+    if (fetchError) return { success: false, error: fetchError };
+    
+    const now = new Date().toISOString();
+
+    const updates = (items || []).map(item => {
+      const newTimestamps = {
+        ...(item.status_timestamps || {}),
+        [status.toUpperCase()]: now,
+      };
+      return {
+        ...item,
+        status: status,
+        status_timestamps: newTimestamps,
+      };
+    });
+
+    const { error } = await supabase.from('order_items').upsert(updates);
+    return { success: !error, error };
+  }
+
   async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean; error: any }> {
     const { data: currentItem, error: fetchError } = await supabase
       .from('order_items')
@@ -369,6 +397,14 @@ export class PosDataService {
     await this.stateService.refreshDashboardAndCashierData();
 
     return { success: true, error: null };
+  }
+
+  async cancelOrder(orderId: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'CANCELLED', completed_at: new Date().toISOString() })
+      .eq('id', orderId);
+    return { success: !error, error };
   }
 
   async associateCustomerToOrder(orderId: string, customerId: string | null): Promise<{ success: boolean; error: any }> {
