@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendIFoodOrderAction } from './ifood-webhook-lib/ifood-api';
+import { sendIFoodOrderAction } from './ifood-webhook-lib/ifood-api.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
