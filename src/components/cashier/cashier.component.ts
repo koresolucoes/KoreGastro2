@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-// FIX: Import DiscountType to correctly type the cart items for the service call.
 import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';

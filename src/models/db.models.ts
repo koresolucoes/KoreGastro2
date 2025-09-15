@@ -13,7 +13,6 @@ export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout';
-// FIX: Add IfoodOrderStatus type for iFood integration.
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 
 
@@ -39,7 +38,6 @@ export interface IfoodOrderDelivery {
     }
 }
 
-// FIX: Add IfoodOrderItem and IfoodOrder interfaces for iFood integration.
 export interface IfoodOrderItem {
   name: string;
   quantity: number;

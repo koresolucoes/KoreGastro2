@@ -10,8 +10,6 @@ export class AiRecipeService {
   private ai: GoogleGenAI;
 
   constructor() {
-    // FIX: Removed the check for the specific placeholder key, as it was incorrectly flagging configured keys.
-    // Now it only checks for the existence of the key.
     if (!environment.geminiApiKey) {
       document.body.innerHTML = `<div style="color: white; background-color: #111827; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 2rem;">
           <h1 style="color: #ef4444; font-size: 1.5rem;">Erro de Configuração</h1>

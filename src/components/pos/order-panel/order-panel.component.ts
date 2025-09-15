@@ -255,7 +255,6 @@ export class OrderPanelComponent {
     this.editingDiscountItem.set(item);
     let firstItem: OrderItem;
     
-    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
     if ('items' in item) { // This is a GroupedOrderItem
       firstItem = item.items[0];
     } else { // This is a SingleOrderItem
@@ -277,7 +276,6 @@ export class OrderPanelComponent {
 
     let itemIds: string[];
 
-    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
     if ('items' in item) { // This is a GroupedOrderItem
       itemIds = item.items.map(i => i.id);
     } else { // This is a SingleOrderItem
@@ -303,7 +301,6 @@ export class OrderPanelComponent {
 
     let itemIds: string[];
 
-    // FIX: Use the 'in' operator for a more robust type guard on the union type, addressing type narrowing issues.
     if ('items' in item) { // This is a GroupedOrderItem
       itemIds = item.items.map(i => i.id);
     } else { // This is a SingleOrderItem

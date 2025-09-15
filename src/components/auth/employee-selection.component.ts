@@ -140,7 +140,6 @@ export class EmployeeSelectionComponent {
 
     this.isCreatingManager.set(true);
     
-    // FIX: 'role' is not a valid property. Must use 'role_id' and find/create the 'Gerente' role.
     let gerenteRole = this.stateService.roles().find(r => r.name === 'Gerente');
     if (!gerenteRole) {
         const { data: newRole, error: roleError } = await this.settingsDataService.addRole('Gerente');
@@ -149,7 +148,6 @@ export class EmployeeSelectionComponent {
             this.isCreatingManager.set(false);
             return;
         }
-        // FIX: Manually update the state service to prevent race condition
         this.stateService.roles.update(roles => [...roles, newRole]);
         gerenteRole = newRole;
 
