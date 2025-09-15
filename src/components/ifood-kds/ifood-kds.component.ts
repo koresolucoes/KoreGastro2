@@ -68,19 +68,26 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   private getIfoodStatus(order: Order): IfoodOrderStatus {
-    if (order.status === 'CANCELLED') return 'CANCELLED';
+    if (order.status === 'CANCELLED') {
+      return 'CANCELLED';
+    }
 
     const items = order.order_items || [];
-    if (items.length === 0) return 'RECEIVED';
+    if (items.length === 0) {
+      return 'RECEIVED';
+    }
+
+    const allReadyOrServed = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+    if (allReadyOrServed) {
+      return order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
+    }
 
     const hasPreparing = items.some(i => i.status === 'EM_PREPARO');
-    const allReady = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
-
-    if (allReady) {
-        return order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
+    if (hasPreparing) {
+      return 'IN_PREPARATION';
     }
-    if (hasPreparing) return 'IN_PREPARATION';
     
+    // If not preparing and not all ready, it means at least one item is PENDENTE.
     return 'RECEIVED';
   }
 
@@ -117,6 +124,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     
     this.soundNotificationService.playConfirmationSound();
     
+    // In a real scenario, this would send CONFIRMED, then DISPATCHED etc.
+    // For this flow, we just log the action.
     const { success, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, status);
     if (!success) {
         this.notificationService.show(`Falha ao comunicar com iFood: ${apiError?.message}`, 'error');
@@ -125,16 +134,26 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
 
     let targetStatus: OrderItemStatus | null = null;
     let orderStatus: OrderStatus | null = null;
+    let itemSelector: ((item: OrderItem) => boolean) | null = null;
     
     switch(status) {
-        case 'IN_PREPARATION': targetStatus = 'EM_PREPARO'; break;
+        case 'IN_PREPARATION': 
+            targetStatus = 'EM_PREPARO';
+            itemSelector = (i) => i.status === 'PENDENTE';
+            break;
         case 'DISPATCHED':
-        case 'READY_FOR_PICKUP': targetStatus = 'PRONTO'; break;
-        case 'CANCELLED': orderStatus = 'CANCELLED'; break;
+        case 'READY_FOR_PICKUP':
+            targetStatus = 'PRONTO';
+            // Only update items that are not already finished
+            itemSelector = (i) => i.status === 'PENDENTE' || i.status === 'EM_PREPARO';
+            break;
+        case 'CANCELLED': 
+            orderStatus = 'CANCELLED';
+            break;
     }
 
-    if (targetStatus) {
-        const itemIdsToUpdate = order.order_items.map(i => i.id);
+    if (targetStatus && itemSelector) {
+        const itemIdsToUpdate = (order.order_items || []).filter(itemSelector).map(i => i.id);
         if (itemIdsToUpdate.length > 0) {
             const { error } = await supabase.from('order_items').update({ status: targetStatus }).in('id', itemIdsToUpdate);
             if(error) this.notificationService.show(`Erro ao atualizar itens: ${error.message}`, 'error');
@@ -148,7 +167,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
   
   formatTime(seconds: number): string {
-    if (isNaN(seconds)) return '00:00';
+    if (isNaN(seconds) || seconds < 0) return '00:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;

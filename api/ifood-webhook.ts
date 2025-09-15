@@ -19,6 +19,57 @@ const supabase = createClient(
 
 // --- HELPER FUNCTIONS ---
 
+/**
+ * Fetches the full order details from the iFood Merchant API.
+ * This is necessary when the webhook is a simple notification without the full payload.
+ * @param orderId The ID of the iFood order.
+ * @returns The full order details object.
+ */
+async function getIFoodOrderDetails(orderId: string): Promise<any> {
+    const clientId = process.env.IFOOD_CLIENT_ID;
+    const clientSecret = process.env.IFOOD_CLIENT_SECRET;
+    const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
+
+    if (!clientId || !clientSecret) {
+        throw new Error('iFood API credentials (IFOOD_CLIENT_ID, IFOOD_CLIENT_SECRET) are not set in environment variables.');
+    }
+
+    // 1. Get Access Token using Client Credentials flow
+    const tokenParams = new URLSearchParams();
+    tokenParams.append('grantType', 'client_credentials');
+    tokenParams.append('clientId', clientId);
+    tokenParams.append('clientSecret', clientSecret);
+
+    const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenParams,
+    });
+
+    if (!tokenResponse.ok) {
+        throw new Error(`Failed to get iFood access token: ${await tokenResponse.text()}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.accessToken;
+
+    if (!accessToken) {
+        throw new Error('Access token not found in iFood authentication response.');
+    }
+
+    // 2. Get Order Details using the access token
+    const orderDetailsResponse = await fetch(`${iFoodApiBaseUrl}/order/v1.0/orders/${orderId}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    
+    if (!orderDetailsResponse.ok) {
+        throw new Error(`Failed to fetch iFood order details for ${orderId}: ${await orderDetailsResponse.text()}`);
+    }
+
+    return await orderDetailsResponse.json();
+}
+
+
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -97,7 +148,8 @@ export default async function handler(
   const rawBody = await getRawBody(request);
 
   try {
-    const payload = JSON.parse(rawBody.toString('utf-8'));
+    // Make payload mutable to allow for enrichment from API call
+    let payload = JSON.parse(rawBody.toString('utf-8'));
     const signature = request.headers['x-ifood-signature'] as string;
 
     const { data: logEntry, error: logError } = await supabase
@@ -148,29 +200,44 @@ export default async function handler(
         return response.status(404).send({ error: 'Merchant not found' });
     }
     const userId = profile.user_id;
-    const orderId = payload.id || payload.orderId;
+    const orderIdFromEvent = payload.id || payload.orderId;
     
-    // Update log with user_id for easier filtering
     if(logId) await supabase.from('ifood_webhook_logs').update({ user_id: userId }).eq('id', logId);
 
     if (payload.fullCode === 'PLACED' || payload.code === 'PLC') {
-      const { data: existingOrder, error: checkError } = await supabase
-            .from('orders')
-            .select('id')
-            .eq('ifood_order_id', orderId)
-            .eq('user_id', userId)
-            .maybeSingle();
       
-      if (checkError) {
-        if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'ERROR_DB_CHECK', error_message: checkError.message }).eq('id', logId);
-        return response.status(500).json({ error: 'Database error while checking for existing order.' });
+      // If the payload is minimal (doesn't contain items), it's a notification.
+      // We must fetch the full order details from the iFood API.
+      if (!payload.items) {
+          try {
+              console.log(`Minimal 'PLACED' event for ${orderIdFromEvent}. Fetching full details from iFood API...`);
+              const fullOrderDetails = await getIFoodOrderDetails(orderIdFromEvent);
+              payload = fullOrderDetails; // Overwrite the payload with the full details.
+              if (logId) await supabase.from('ifood_webhook_logs').update({ raw_payload: payload, processing_status: 'FETCHED_DETAILS' }).eq('id', logId);
+          } catch (fetchError: any) {
+              console.error('Failed to fetch full order details from iFood API:', fetchError);
+              if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'ERROR_FETCH_DETAILS', error_message: fetchError.message }).eq('id', logId);
+              // Acknowledge the event to prevent iFood from retrying if our API call is what's failing.
+              return response.status(202).send({ message: 'Accepted, but failed to fetch details.' });
+          }
       }
 
+      const ifoodOrderId = payload.id; // Use ID from the full payload now
+
+      const { data: existingOrder } = await supabase.from('orders').select('id').eq('ifood_order_id', ifoodOrderId).eq('user_id', userId).maybeSingle();
       if (existingOrder) {
-        console.warn(`Duplicate PLACED event for iFood order ${orderId}. Ignoring.`);
+        console.warn(`Duplicate PLACED event for iFood order ${ifoodOrderId}. Ignoring.`);
         if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'SUCCESS_DUPLICATE_IGNORED' }).eq('id', logId);
         return response.status(202).send({ message: 'Duplicate order, accepted.' });
       }
+
+      const { data: stations, error: stationsError } = await supabase.from('stations').select('id').eq('user_id', userId).order('created_at', { ascending: true });
+      if (stationsError || !stations || stations.length === 0) {
+        console.error(`No production stations found for user ${userId}. Cannot process iFood order.`);
+        if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'ERROR_NO_STATIONS_CONFIGURED', error_message: 'No production stations configured for this restaurant.' }).eq('id', logId);
+        return response.status(400).send({ error: 'Restaurant not configured for production.' });
+      }
+      const fallbackStationId = stations[0].id;
 
       const customerId = await getOrCreateCustomer(userId, payload.customer);
       const orderType: OrderType = payload.orderType === 'DELIVERY' ? 'iFood-Delivery' : 'iFood-Takeout';
@@ -202,7 +269,8 @@ export default async function handler(
               order_id: newOrder.id, recipe_id: mainIngredient?.proxy_recipe_id ?? null, name: item.name,
               quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
               notes: [item.observations, ...(item.options || []).map((opt: any) => `${opt.quantity}x ${opt.name}`)].filter(Boolean).join('; '),
-              status: 'PENDENTE', station_id: mainIngredient?.station_id,
+              status: 'PENDENTE',
+              station_id: mainIngredient?.station_id ?? fallbackStationId,
               status_timestamps: { 'PENDENTE': new Date().toISOString() }, user_id: userId
           };
         });
@@ -213,7 +281,7 @@ export default async function handler(
       }
       if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'SUCCESS_CREATED' }).eq('id', logId);
     } else if (payload.fullCode === 'CANCELLED' || payload.code === 'CAN') {
-        await supabase.from('orders').update({ status: 'CANCELLED' }).eq('ifood_order_id', orderId);
+        await supabase.from('orders').update({ status: 'CANCELLED' }).eq('ifood_order_id', orderIdFromEvent);
         if (logId) await supabase.from('ifood_webhook_logs').update({ processing_status: 'SUCCESS_CANCELLED' }).eq('id', logId);
     } else {
         console.log(`Received unhandled event code: ${payload.fullCode || payload.code}`);
