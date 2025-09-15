@@ -243,5 +243,37 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
 }
 
 export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-  await supabase.from('orders').update({ status: 'CANCELLED' }).eq('ifood_order_id', ifoodOrderId);
+  await supabase.from('orders')
+    .update({ status: 'CANCELLED', completed_at: new Date().toISOString() })
+    .eq('ifood_order_id', ifoodOrderId);
+}
+
+export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+    const { data: order, error } = await supabase.from('orders').select('id').eq('ifood_order_id', ifoodOrderId).single();
+    if (error || !order) {
+        console.error(`Order with ifood_order_id ${ifoodOrderId} not found for CONFIRMED event.`);
+        return;
+    }
+    await supabase.from('order_items')
+        .update({ status: 'EM_PREPARO' })
+        .eq('order_id', order.id)
+        .eq('status', 'PENDENTE');
+}
+
+export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+    const { data: order, error } = await supabase.from('orders').select('id').eq('ifood_order_id', ifoodOrderId).single();
+    if (error || !order) {
+        console.error(`Order with ifood_order_id ${ifoodOrderId} not found for DISPATCHED/READY_FOR_PICKUP event.`);
+        return;
+    }
+    await supabase.from('order_items')
+        .update({ status: 'PRONTO' })
+        .eq('order_id', order.id)
+        .in('status', ['PENDENTE', 'EM_PREPARO']);
+}
+
+export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+    await supabase.from('orders')
+        .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
+        .eq('ifood_order_id', ifoodOrderId);
 }

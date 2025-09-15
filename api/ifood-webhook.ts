@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api.js';
 import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils.js';
-import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb } from './ifood-webhook-lib/db-helpers.js';
+import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb } from './ifood-webhook-lib/db-helpers.js';
 
 export const config = {
   api: {
@@ -86,6 +86,24 @@ export default async function handler(request: VercelRequest, response: VercelRe
       await processPlacedOrder(supabase, userId, fullOrderPayload, logId);
       if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CREATED');
     
+    } else if (eventCode === 'CONFIRMED') {
+      const orderIdToConfirm = getOrderIdFromPayload(payload);
+      if (!orderIdToConfirm) throw new Error("CONFIRMED event is missing a valid 'orderId'.");
+      await confirmOrderInDb(supabase, orderIdToConfirm);
+      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONFIRMED');
+
+    } else if (eventCode === 'DISPATCHED' || eventCode === 'READY_FOR_PICKUP') {
+      const orderIdToDispatch = getOrderIdFromPayload(payload);
+      if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_FOR_PICKUP event is missing a valid 'orderId'.");
+      await dispatchOrderInDb(supabase, orderIdToDispatch);
+      if (logId) await updateLogStatus(supabase, logId, `SUCCESS_${eventCode}`);
+
+    } else if (eventCode === 'CONCLUDED') {
+      const orderIdToConclude = getOrderIdFromPayload(payload);
+      if (!orderIdToConclude) throw new Error("CONCLUDED event is missing a valid 'orderId'.");
+      await concludeOrderInDb(supabase, orderIdToConclude);
+      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
+    
     } else if (eventCode === 'CANCELLED') {
         const orderIdToCancel = payload.orderId;
         if (!orderIdToCancel || typeof orderIdToCancel !== 'string') {
@@ -95,7 +113,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CANCELLED');
     
     } else {
-        // For other events like CONFIRMED, DISPATCHED, etc., we just log them as unhandled for now.
+        // For other events we don't handle explicitly
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_UNHANDLED_EVENT');
     }
 
