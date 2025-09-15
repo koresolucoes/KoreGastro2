@@ -1,161 +1,211 @@
-@if(isLoading()) {
-  <div class="flex items-center justify-center h-screen" [class.bg-gray-100]="isPublicView()" [class.bg-gray-900]="!isPublicView()">
-    <div class="flex flex-col items-center gap-4">
-      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-      <p [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">Carregando cardápio...</p>
-    </div>
-  </div>
-} @else {
-  <div class="max-w-md mx-auto min-h-screen shadow-2xl flex flex-col font-sans" [class.bg-gray-50]="isPublicView()" [class.text-gray-900]="isPublicView()" [class.bg-gray-900]="!isPublicView()" [class.text-white]="!isPublicView()">
-    @switch(view()) {
-      @case('cover') {
-        <div class="flex-1 flex flex-col justify-between bg-cover bg-center" [style.background-image]="'url(' + (companyProfile()?.logo_url || 'https://picsum.photos/id/1060/500/900') + ')'">
-            <div class="flex-1 flex flex-col justify-center items-center bg-black/50 p-8 text-center">
-              <h1 class="text-5xl font-extrabold text-white uppercase tracking-wider">{{ companyProfile()?.company_name || 'Nosso Cardápio' }}</h1>
-              <p class="mt-4 text-lg text-white/90">Descubra os sabores que preparamos para você.</p>
-            </div>
-            <div class="p-4 bg-gradient-to-t from-black/60 to-transparent">
-               <button (click)="setView('menu')" class="w-full bg-blue-600 text-white font-bold py-4 px-4 rounded-xl hover:bg-blue-500 transition-transform hover:scale-105 text-lg">
-                  Ver Cardápio
-                </button>
-            </div>
-        </div>
-      }
-      @case('menu') {
-        <div class="flex-1 flex flex-col overflow-y-auto">
-           <header class="p-4 border-b" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
-              <div class="flex items-center gap-4">
-                @if(companyProfile()?.logo_url; as logo) {
-                    <img [src]="logo" [alt]="companyProfile()?.company_name" class="w-12 h-12 rounded-full object-cover border-2" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
-                }
-                <div class="flex-1">
-                    <h1 class="font-bold text-xl">{{ companyProfile()?.company_name }}</h1>
-                    @if (isRestaurantOpen()) {
-                      <p class="text-xs font-semibold text-green-500">Aberto agora</p>
-                    } @else {
-                      <p class="text-xs font-semibold text-red-500">Fechado</p>
-                    }
-                </div>
-              </div>
-           </header>
-          
-           <div class="sticky top-0 z-20 py-2 backdrop-blur-lg" [class.bg-gray-50/80]="isPublicView()" [class.bg-gray-900/80]="!isPublicView()">
-              <div class="px-4">
-                <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Pesquisar no cardápio..." 
-                       class="w-full rounded-full pl-4 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       [class.bg-gray-200]="isPublicView()" [class.border-gray-300]="isPublicView()" [class.text-gray-900]="isPublicView()"
-                       [class.bg-gray-800]="!isPublicView()" [class.border-gray-700]="!isPublicView()" [class.text-white]="!isPublicView()">
-              </div>
-               @if (menuCategories().length > 1) {
-                  <div class="flex items-center space-x-2 overflow-x-auto pb-2 pt-3 px-4 hide-scrollbar">
-                    <button (click)="setSelectedCategory(null)" class="px-4 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-colors" [class.bg-blue-600]="activeCategorySlug() === null" [class.text-white]="activeCategorySlug() === null" [class.bg-white]="activeCategorySlug() !== null && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== null && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== null && isPublicView()" [class.bg-gray-700]="activeCategorySlug() !== null && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== null && !isPublicView()">
-                        Todas
-                    </button>
-                    @for(category of menuCategories(); track category.id) {
-                      <button (click)="setSelectedCategory(createSlug(category.name))" class="px-4 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-colors" [class.bg-blue-600]="activeCategorySlug() === createSlug(category.name)" [class.text-white]="activeCategorySlug() === createSlug(category.name)" [class.bg-white]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.shadow-sm]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.text-gray-800]="activeCategorySlug() !== createSlug(category.name) && isPublicView()" [class.bg-gray-700]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()" [class.text-gray-200]="activeCategorySlug() !== createSlug(category.name) && !isPublicView()">
-                          {{ category.name }}
-                      </button>
-                    }
-                  </div>
-                }
-            </div>
+<!-- Main container: Handles public vs. internal view styling -->
+<div [class.bg-white]="isPublicView()" [class.min-h-screen]="isPublicView()" [class.text-gray-800]="isPublicView()" [class.font-sans]="isPublicView()">
 
-            <main class="p-4 space-y-8">
-               @if (filteredMenu().length > 0) {
-                @for(group of filteredMenu(); track group.category.id) {
-                  <section>
-                    <h2 class="text-2xl font-bold mb-4" [class.text-gray-800]="isPublicView()" [class.text-white]="!isPublicView()">
-                      {{ group.category.name }}
-                    </h2>
-                    <div class="space-y-4">
-                      @for(recipe of group.recipes; track recipe.id) {
-                        <div class="flex gap-4">
-                          <img [src]="recipe.image_url || 'https://picsum.photos/id/292/400/300'" [alt]="recipe.name" class="w-28 h-28 rounded-lg object-cover flex-shrink-0 border" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
-                          <div class="flex-1 flex flex-col">
-                            <h3 class="font-bold text-lg" [class.text-gray-900]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.name }}</h3>
-                            @if(recipe.description) {
-                              <p class="text-sm mt-1 flex-grow" [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.description }}</p>
-                            }
-                             <div class="mt-2 text-right">
-                              @if (recipe.effectivePrice < recipe.price) {
-                                <span class="text-sm line-through mr-2" [class.text-gray-500]="isPublicView()" [class.text-gray-400]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
-                                <span class="font-semibold text-lg text-green-600">{{ recipe.effectivePrice | currency:'R$' }}</span>
-                              } @else {
-                                <span class="font-semibold text-lg" [class.text-gray-800]="isPublicView()" [class.text-white]="!isPublicView()">{{ recipe.price | currency:'R$' }}</span>
-                              }
-                            </div>
+  <!-- =================================================================== -->
+  <!-- ========================= PUBLIC VIEW ========================= -->
+  <!-- =================================================================== -->
+  @if (isPublicView()) {
+    @if (isLoading()) {
+      <div class="flex items-center justify-center h-screen">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+      </div>
+    } @else {
+      @switch (view()) {
+        
+        <!-- Case 1: Cover Page -->
+        @case ('cover') {
+          <div class="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+            @if(companyProfile()?.logo_url; as logo) {
+              <img [src]="logo" alt="Logo" class="h-32 w-32 rounded-full object-cover mb-4 shadow-lg">
+            } @else {
+               <div class="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 shadow-lg">
+                  <span class="text-5xl font-extrabold text-gray-800">
+                    <span>C</span><span class="text-blue-600">OS</span>
+                  </span>
+               </div>
+            }
+            <h1 class="text-4xl font-bold text-gray-900">{{ companyProfile()?.company_name || 'Bem-vindo!' }}</h1>
+            <div class="mt-8 space-y-4 w-full max-w-xs">
+                <button (click)="setView('menu')" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors text-lg shadow-md">Ver Cardápio</button>
+                <button (click)="setView('info')" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors text-lg">Informações & Reservas</button>
+            </div>
+          </div>
+        }
+
+        <!-- Case 2: Menu Page -->
+        @case ('menu') {
+          <div class="max-w-4xl mx-auto p-4">
+              <header class="flex justify-between items-center mb-4">
+                  <button (click)="setView('cover')" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M15.75 19.5L8.25 12l7.5-7.5" /></svg></button>
+                  <h1 class="text-2xl font-bold">{{ companyProfile()?.company_name }}</h1>
+                  <button (click)="setView('info')" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg></button>
+              </header>
+              <!-- Search & Filters -->
+              <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar no cardápio..." class="w-full bg-gray-100 border-2 border-gray-300 rounded-lg pl-4 pr-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              
+              <div class="flex flex-wrap items-start gap-2 mb-6">
+                  <button (click)="setSelectedCategory(null)" class="h-12 px-4 text-sm font-semibold rounded-lg transition-colors flex-shrink-0" [class.bg-blue-600]="activeCategorySlug() === null" [class.text-white]="activeCategorySlug() === null" [class.bg-gray-200]="activeCategorySlug() !== null" [class.hover:bg-gray-300]="activeCategorySlug() !== null">
+                    Todas
+                  </button>
+                  @for(category of menuCategories(); track category.id) {
+                      @if (category.image_url) {
+                          <div class="w-1/3 flex-grow sm:w-1/4">
+                            <button [style.background-image]="'url(' + category.image_url + ')'" (click)="setSelectedCategory(createSlug(category.name))" class="relative w-full h-20 rounded-lg bg-cover bg-center text-white font-bold shadow-md overflow-hidden flex items-center justify-center p-2 text-sm" [class.ring-2]="activeCategorySlug() === createSlug(category.name)" [class.ring-blue-500]="activeCategorySlug() === createSlug(category.name)" [class.ring-offset-2]="activeCategorySlug() === createSlug(category.name)" [class.ring-offset-white]="activeCategorySlug() === createSlug(category.name)">
+                                <div class="absolute inset-0 bg-black/50 hover:bg-black/30 transition-colors"></div>
+                                <span class="relative z-10 truncate">{{ category.name }}</span>
+                            </button>
                           </div>
+                      } @else {
+                           <button (click)="setSelectedCategory(createSlug(category.name))" class="h-12 px-4 text-sm font-semibold rounded-lg transition-colors flex-shrink-0" [class.bg-blue-600]="activeCategorySlug() === createSlug(category.name)" [class.text-white]="activeCategorySlug() === createSlug(category.name)" [class.bg-gray-200]="activeCategorySlug() !== createSlug(category.name)" [class.hover:bg-gray-300]="activeCategorySlug() !== createSlug(category.name)">
+                                {{ category.name }}
+                           </button>
+                      }
+                  }
+              </div>
+
+              <!-- Menu Items -->
+              <div class="space-y-8">
+                @for (group of filteredMenu(); track group.category.id) {
+                  <section>
+                    <h2 class="text-2xl font-bold mb-4 border-b-2 border-gray-200 pb-2">{{ group.category.name }}</h2>
+                    <div class="space-y-6">
+                      @for (recipe of group.recipes; track recipe.id) {
+                        <div class="flex gap-4">
+                            @if(recipe.image_url) {
+                                <img [src]="recipe.image_url" alt="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover flex-shrink-0">
+                            }
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="text-lg font-semibold">{{ recipe.name }}</h3>
+                                    <div class="text-right flex-shrink-0 pl-2">
+                                        @if (recipe.effectivePrice < recipe.price) { <p class="text-sm line-through text-gray-500">{{ recipe.price | currency:'BRL' }}</p> }
+                                        <p class="font-bold text-lg text-blue-600">{{ recipe.effectivePrice | currency:'BRL' }}</p>
+                                    </div>
+                                </div>
+                                @if (recipe.description) { <p class="text-sm text-gray-600 mt-1">{{ recipe.description }}</p> }
+                            </div>
                         </div>
                       }
                     </div>
                   </section>
                 }
-               } @else {
-                <div class="text-center py-16">
-                   <p class="text-lg" [class.text-gray-600]="isPublicView()" [class.text-gray-400]="!isPublicView()">Nenhum item encontrado.</p>
-                </div>
-               }
-            </main>
-        </div>
-      }
-      @case('info') {
-        <div class="flex-1 flex flex-col overflow-y-auto">
-          <header class="p-4 border-b" [class.border-gray-200]="isPublicView()" [class.border-gray-700]="!isPublicView()">
-              <h1 class="font-bold text-xl text-center">Informações</h1>
-          </header>
-          <main class="p-6 space-y-6">
-            @if(reservationSettings(); as settings) {
-              <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
-                  <h2 class="font-semibold text-lg flex items-center gap-2 mb-3"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Horários de Funcionamento</h2>
-                  <ul class="space-y-1 text-sm">
-                    @for(day of sortedWeeklyHours(); track day.day_of_week) {
-                      <li class="flex justify-between items-center">
-                        <span class="font-medium">{{ daysOfWeek[day.day_of_week] }}</span>
-                        @if(day.is_closed) {
-                          <span class="font-semibold text-red-500">Fechado</span>
-                        } @else {
-                          <span class="font-mono">{{ day.opening_time }} - {{ day.closing_time }}</span>
-                        }
-                      </li>
-                    }
-                  </ul>
               </div>
-            }
-             @if(companyProfile()?.address) {
-              <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
-                  <h2 class="font-semibold text-lg flex items-center gap-2 mb-2"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>Endereço</h2>
-                  <p>{{ companyProfile()?.address }}</p>
-              </div>
-            }
-            <div class="p-4 rounded-lg" [class.bg-gray-100]="isPublicView()" [class.bg-gray-800]="!isPublicView()">
-                <h2 class="font-semibold text-lg flex items-center gap-2 mb-2"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>Contato</h2>
-                 @if(companyProfile()?.phone) {
-                    <p>Telefone: {{ companyProfile()?.phone }}</p>
-                 }
-                <p>Email: contato&#64;restaurante.com</p>
-            </div>
-          </main>
-        </div>
-      }
-    }
+          </div>
+        }
 
-    @if (view() !== 'cover') {
-      <nav class="mt-auto sticky bottom-0 border-t w-full" [class.bg-white]="isPublicView()" [class.border-gray-200]="isPublicView()" [class.bg-gray-800]="!isPublicView()" [class.border-gray-700]="!isPublicView()">
-        <div class="grid grid-cols-3 h-16">
-          <button (click)="setView('menu')" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100" [class.text-blue-600]="view() === 'menu'" [class.text-gray-500]="view() !== 'menu'" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
-            <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
-            <span class="text-xs">Cardápio</span>
-          </button>
-          <a [href]="publicBookingUrl()" target="_blank" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100 text-gray-500" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
-             <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18" /></svg>
-            <span class="text-xs">Reservar</span>
-          </a>
-          <button (click)="setView('info')" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-100" [class.text-blue-600]="view() === 'info'" [class.text-gray-500]="view() !== 'info'" [class.dark:hover:bg-gray-700]="!isPublicView()" [class.dark:text-gray-400]="!isPublicView()">
-            <svg class="w-6 h-6 mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-            <span class="text-xs">Info</span>
-          </button>
-        </div>
-      </nav>
+        <!-- Case 3: Info Page -->
+        @case ('info') {
+          <div class="max-w-4xl mx-auto p-4">
+              <header class="flex items-center mb-6">
+                  <button (click)="setView('menu')" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M15.75 19.5L8.25 12l7.5-7.5" /></svg></button>
+                  <h1 class="text-2xl font-bold mx-auto">Informações</h1>
+                  <div class="w-10"></div>
+              </header>
+              <div class="space-y-6">
+                <!-- Contact & Address -->
+                <div class="bg-gray-100 p-4 rounded-lg">
+                  <h2 class="text-lg font-semibold mb-2">Contato e Endereço</h2>
+                  <div class="space-y-2 text-sm">
+                    @if(companyProfile()?.address; as address) { <p><span class="font-semibold">Endereço:</span> {{ address }}</p> }
+                    @if(companyProfile()?.phone; as phone) { <p><span class="font-semibold">Telefone:</span> {{ phone }}</p> }
+                  </div>
+                </div>
+                <!-- Opening Hours -->
+                @if(sortedWeeklyHours().length > 0) {
+                  <div class="bg-gray-100 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold mb-2">Horário de Funcionamento</h2>
+                    <ul class="space-y-1 text-sm">
+                      @for (day of sortedWeeklyHours(); track day.day_of_week) {
+                        <li class="flex justify-between items-center">
+                          <span class="font-semibold">{{ daysOfWeek[day.day_of_week] }}:</span>
+                          @if(day.is_closed) { <span class="text-red-600 font-bold">Fechado</span> }
+                          @else { <span>{{ day.opening_time }} - {{ day.closing_time }}</span> }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+                <!-- Loyalty Program -->
+                @if(publicLoyaltySettings()?.is_enabled && loyaltyRewardsDisplay().length > 0) {
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold mb-2">Programa de Fidelidade</h2>
+                        <p class="text-sm mb-3">Ganhe <span class="font-bold">{{publicLoyaltySettings()?.points_per_real}}</span> ponto(s) a cada R$ 1,00 gasto e troque por prêmios!</p>
+                        <ul class="space-y-2">
+                            @for(reward of loyaltyRewardsDisplay(); track reward.id) {
+                                <li class="p-3 bg-white rounded-md border border-gray-200">
+                                    <p class="font-semibold text-gray-800">{{ reward.name }} - <span class="text-blue-600 font-bold">{{reward.points_cost}} pts</span></p>
+                                    <p class="text-xs text-gray-600">{{ reward.valueLabel }}</p>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                <!-- Reservations -->
+                @if (reservationSettings()?.is_enabled) {
+                  <div class="text-center pt-4">
+                      <p class="mb-2 font-semibold" [class.text-green-600]="isRestaurantOpen()" [class.text-red-600]="!isRestaurantOpen()">
+                          {{ isRestaurantOpen() ? 'Estamos abertos!' : 'Estamos fechados no momento.' }}
+                      </p>
+                      <a [href]="publicBookingUrl()" class="w-full max-w-xs inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors text-lg shadow-md">Fazer uma Reserva</a>
+                  </div>
+                }
+              </div>
+          </div>
+        }
+      }
     }
-  </div>
-}
+  } @else {
+  <!-- =================================================================== -->
+  <!-- ========================= INTERNAL VIEW ========================= -->
+  <!-- =================================================================== -->
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">Cardápio & Disponibilidade</h1>
+        <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar no cardápio..." class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-4 pr-4 py-2 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+        <!-- Category Filters -->
+        <div class="flex flex-wrap items-start gap-2 mb-6">
+            <button (click)="setSelectedCategory(null)" class="h-12 px-4 text-sm font-semibold rounded-lg transition-colors flex-shrink-0" [class.bg-blue-600]="activeCategorySlug() === null" [class.text-white]="activeCategorySlug() === null" [class.bg-gray-700]="activeCategorySlug() !== null" [class.hover:bg-gray-600]="activeCategorySlug() !== null">
+                Todas
+            </button>
+            @for(category of menuCategories(); track category.id) {
+                @if (category.image_url) {
+                    <div class="w-1/3 flex-grow sm:w-1/4">
+                        <button [style.background-image]="'url(' + category.image_url + ')'" (click)="setSelectedCategory(createSlug(category.name))" class="relative w-full h-20 rounded-lg bg-cover bg-center text-white font-bold shadow-md overflow-hidden flex items-center justify-center p-2 text-sm" [class.ring-2]="activeCategorySlug() === createSlug(category.name)" [class.ring-blue-500]="activeCategorySlug() === createSlug(category.name)" [class.ring-offset-2]="activeCategorySlug() === createSlug(category.name)" [class.ring-offset-gray-800]="activeCategorySlug() === createSlug(category.name)">
+                            <div class="absolute inset-0 bg-black/50 hover:bg-black/30 transition-colors"></div>
+                            <span class="relative z-10 truncate">{{ category.name }}</span>
+                        </button>
+                    </div>
+                } @else {
+                     <button (click)="setSelectedCategory(createSlug(category.name))" class="h-12 px-4 text-sm font-semibold rounded-lg transition-colors flex-shrink-0" [class.bg-blue-600]="activeCategorySlug() === createSlug(category.name)" [class.text-white]="activeCategorySlug() === createSlug(category.name)" [class.bg-gray-700]="activeCategorySlug() !== createSlug(category.name)" [class.hover:bg-gray-600]="activeCategorySlug() !== createSlug(category.name)">
+                          {{ category.name }}
+                     </button>
+                }
+            }
+        </div>
+
+        <!-- Recipe List -->
+        <div class="space-y-8">
+            @for (group of filteredMenu(); track group.category.id) {
+                <section>
+                    <h2 class="text-2xl font-bold text-white mb-4 border-b-2 border-gray-700 pb-2">{{ group.category.name }}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @for (recipe of group.recipes; track recipe.id) {
+                            <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class.border-green-500]="recipe.is_available && recipe.hasStock" [class.border-red-500]="!recipe.is_available || !recipe.hasStock">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="text-lg font-semibold text-white">{{ recipe.name }}</h3>
+                                    <p class="font-bold text-lg text-blue-400">{{ recipe.effectivePrice | currency:'BRL' }}</p>
+                                </div>
+                                @if (recipe.description) { <p class="text-sm text-gray-400 mt-1">{{ recipe.description }}</p> }
+                                <div class="mt-3 pt-3 border-t border-gray-700 text-xs flex justify-end gap-4">
+                                    <span [class.text-green-400]="recipe.is_available" [class.text-gray-500]="!recipe.is_available">{{ recipe.is_available ? 'Disponível' : 'Indisponível' }}</span>
+                                    <span [class.text-green-400]="recipe.hasStock" [class.text-red-400]="!recipe.hasStock">{{ recipe.hasStock ? 'Com Estoque' : 'Sem Estoque' }}</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    </div>
+  }
+</div>
