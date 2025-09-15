@@ -76,7 +76,7 @@
                         <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 items-start">
                            @for (recipe of filteredRecipes(); track recipe.id) {
                             <div (click)="addToCart(recipe)" 
-                                class="bg-gray-700 p-2 rounded-lg text-center flex flex-col h-full justify-center min-h-[60px] transition-opacity"
+                                class="bg-gray-700 p-2 rounded-lg text-center flex flex-col justify-center h-24 transition-opacity"
                                 [class.cursor-pointer]="recipe.is_available && recipe.hasStock"
                                 [class.hover:bg-gray-600]="recipe.is_available && recipe.hasStock"
                                 [class.opacity-50]="!recipe.is_available || !recipe.hasStock"
