@@ -2,9 +2,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api';
-import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils';
-import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb } from './ifood-webhook-lib/db-helpers';
+import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api.js';
+import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils.js';
+import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb } from './ifood-webhook-lib/db-helpers.js';
 
 export const config = {
   api: {

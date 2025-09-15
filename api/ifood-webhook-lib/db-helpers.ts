@@ -1,6 +1,7 @@
+
 import { SupabaseClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery } from '../../src/models/db.models';
-import { getOrderIdFromPayload } from './ifood-utils';
+import { getOrderIdFromPayload } from './ifood-utils.js';
 
 // --- LOGGING ---
 
