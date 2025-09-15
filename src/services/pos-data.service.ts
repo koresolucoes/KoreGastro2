@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -319,7 +318,7 @@ export class PosDataService {
     
     const { error: orderError } = await supabase
       .from('orders')
-      .update({ is_completed: true, completed_at: new Date().toISOString() })
+      .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
       .eq('id', orderId);
     if (orderError) return { success: false, error: orderError };
 

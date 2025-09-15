@@ -226,8 +226,6 @@ export interface Order {
   id: string;
   table_number: number;
   status: OrderStatus;
-  // FIX: Add the missing 'is_completed' property.
-  is_completed: boolean;
   completed_at: string | null;
   order_type: OrderType;
   timestamp: string;

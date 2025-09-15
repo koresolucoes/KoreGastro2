@@ -70,7 +70,7 @@ export class SupabaseStateService {
   performanceCompletedOrders = signal<Order[]>([]);
 
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
-  openOrders = computed(() => this.orders().filter(o => !o.is_completed));
+  openOrders = computed(() => this.orders().filter(o => o.status === 'OPEN'));
   
   recipeCosts = computed(() => {
     const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
@@ -365,7 +365,7 @@ export class SupabaseStateService {
 
   private async refetchOrders() {
     const userId = this.currentUser()?.id; if (!userId) return;
-    const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*)').eq('is_completed', false).eq('user_id', userId);
+    const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId);
     if (!error) this.setOrdersWithPrices(data || []);
     else console.error('Error refetching orders:', error);
   }
@@ -411,7 +411,7 @@ export class SupabaseStateService {
       supabase.from('tables').select('*').eq('user_id', userId),
       supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
-      supabase.from('orders').select('*, order_items(*), customers(*)').eq('is_completed', false).eq('user_id', userId),
+      supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId),
       supabase.from('employees').select('*').eq('user_id', userId),
       supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
       supabase.from('ingredient_categories').select('*').eq('user_id', userId),
@@ -467,10 +467,10 @@ export class SupabaseStateService {
     const today = new Date(); const isoEndDate = today.toISOString(); today.setHours(0, 0, 0, 0); const isoStartDate = today.toISOString();
     const cashierStartDate = this.lastCashierClosing() ? new Date(this.lastCashierClosing()!.closed_at) : new Date(isoStartDate);
     const results = await Promise.all([
-        supabase.from('orders').select('*, order_items(*), customers(*)').eq('is_completed', true).gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
+        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'COMPLETED').gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
         supabase.from('transactions').select('*').gte('date', cashierStartDate.toISOString()).lte('date', isoEndDate).eq('user_id', userId),
         supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId),
-        supabase.from('orders').select('*, order_items(*), customers(*)').eq('is_completed', true).gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId)
+        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'COMPLETED').gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId)
     ]);
     this.setCompletedOrdersWithPrices(results[0].data || []);
     this.transactions.set(results[1].data || []);
@@ -498,7 +498,7 @@ export class SupabaseStateService {
   async fetchSalesDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean, error: any }> {
     const userId = this.currentUser()?.id; if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const [completedOrders, transactions] = await Promise.all([
-      supabase.from('orders').select('*, order_items(*), customers(*)').eq('is_completed', true).gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()).eq('user_id', userId),
+      supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()).eq('user_id', userId),
       supabase.from('transactions').select('*').gte('date', startDate.toISOString()).lte('date', endDate.toISOString()).eq('user_id', userId).eq('type', 'Receita')
     ]);
     if (completedOrders.error || transactions.error) return { success: false, error: completedOrders.error || transactions.error };
@@ -525,7 +525,7 @@ export class SupabaseStateService {
       supabase.from('orders')
         .select('*, order_items(*), customers(*)')
         .eq('user_id', userId)
-        .eq('is_completed', true)
+        .eq('status', 'COMPLETED')
         .gte('completed_at', startDate.toISOString())
         .lte('completed_at', endDate.toISOString())
     ]);

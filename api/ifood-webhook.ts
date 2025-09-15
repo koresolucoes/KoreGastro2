@@ -38,7 +38,14 @@ function verifySignature(signature: string, body: Buffer, secret: string): boole
 }
 
 async function getOrCreateCustomer(userId: string, ifoodCustomer: any): Promise<string | null> {
-    // Try to find a customer by name or phone (if provided)
+    // GUARD CLAUSE: If no customer data is provided in the payload, we can't create a customer.
+    // The order will be created without a customer association, which is allowed by the database schema.
+    if (!ifoodCustomer || !ifoodCustomer.name) {
+        console.warn('No customer data in iFood payload. Creating order without customer link.');
+        return null;
+    }
+    
+    // Try to find a customer by phone (more unique) or name
     let query = supabase.from('customers').select('id').eq('user_id', userId);
     
     if (ifoodCustomer.phone?.number) {
@@ -48,8 +55,12 @@ async function getOrCreateCustomer(userId: string, ifoodCustomer: any): Promise<
     }
 
     const { data: existingCustomer, error: findError } = await query.maybeSingle();
-    if (findError) console.error("Error finding customer:", findError);
-    if (existingCustomer) return existingCustomer.id;
+    if (findError) {
+      console.error("Error finding customer (will proceed to create):", findError);
+    }
+    if (existingCustomer) {
+      return existingCustomer.id;
+    }
 
     // Create a new customer if not found
     const { data: newCustomer, error: createError } = await supabase

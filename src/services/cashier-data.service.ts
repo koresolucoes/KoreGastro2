@@ -118,7 +118,7 @@ export class CashierDataService {
       .from('orders')
       .select('*, order_items(*)')
       .eq('user_id', userId)
-      .eq('is_completed', true)
+      .eq('status', 'COMPLETED')
       .gte('completed_at', startDate.toISOString())
       .lte('completed_at', endDate.toISOString());
 
@@ -324,7 +324,7 @@ export class CashierDataService {
         .insert({ 
           table_number: 0, 
           order_type: 'QuickSale', 
-          is_completed: true, 
+          status: 'COMPLETED', 
           completed_at: new Date().toISOString(), 
           user_id: userId,
           customer_id: customerId 
@@ -441,7 +441,7 @@ export class CashierDataService {
         .insert({
             table_number: 0, // Using 0 for cashier/quick sale
             order_type: 'QuickSale',
-            is_completed: false,
+            status: 'OPEN',
             user_id: userId,
             customer_id: customerId
         })
@@ -511,7 +511,7 @@ export class CashierDataService {
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
-        .update({ is_completed: true, completed_at: new Date().toISOString() })
+        .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
         .eq('id', orderId)
         .select('*, order_items(*)')
         .single();
@@ -600,7 +600,7 @@ export class CashierDataService {
     const [ordersRes, transactionsRes] = await Promise.all([
          supabase.from('orders')
             .select('completed_at, order_items(*)')
-            .eq('user_id', userId).eq('is_completed', true)
+            .eq('user_id', userId).eq('status', 'COMPLETED')
             .gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString()),
         supabase.from('transactions')
             .select('date, amount')
