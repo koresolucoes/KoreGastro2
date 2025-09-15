@@ -407,6 +407,31 @@ export class PosDataService {
     return { success: !error, error };
   }
 
+  async deleteOrderAndItems(orderId: string): Promise<{ success: boolean; error: any }> {
+    // First, delete associated order items due to foreign key constraints
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .delete()
+      .eq('order_id', orderId);
+
+    if (itemsError) {
+      console.error('Error deleting order items:', itemsError);
+      return { success: false, error: itemsError };
+    }
+
+    // Then, delete the order itself
+    const { error: orderError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId);
+
+    if (orderError) {
+      console.error('Error deleting order:', orderError);
+    }
+    
+    return { success: !orderError, error: orderError };
+  }
+
   async associateCustomerToOrder(orderId: string, customerId: string | null): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase
       .from('orders')

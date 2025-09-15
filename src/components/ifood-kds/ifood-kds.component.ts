@@ -212,6 +212,29 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       }
   }
 
+  async deleteOrder(order: ProcessedIfoodOrder) {
+      const confirmed = await this.notificationService.confirm(`Tem certeza que deseja DELETAR PERMANENTEMENTE o pedido #${order.ifood_display_id}? Esta ação não pode ser desfeita.`, 'Deletar Pedido?');
+      if (!confirmed) return;
+
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+
+      try {
+          const { success, error } = await this.posDataService.deleteOrderAndItems(order.id);
+          if (!success) throw error;
+          
+          this.notificationService.show(`Pedido #${order.ifood_display_id} deletado com sucesso.`, 'success');
+          this.closeDetailModal();
+
+      } catch (error: any) {
+          this.notificationService.show(`Erro ao deletar pedido: ${error.message}`, 'error');
+      } finally {
+          this.updatingOrders.update(set => {
+              const newSet = new Set(set);
+              newSet.delete(order.id);
+              return newSet;
+          });
+      }
+  }
   
   formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) return '00:00';

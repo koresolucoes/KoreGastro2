@@ -202,9 +202,14 @@
             </ul>
         </div>
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-end gap-3 border-t border-gray-700">
-         <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
-         <button (click)="cancelOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white">Cancelar Pedido</button>
+      <div class="p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
+         <button (click)="deleteOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-red-800/80 hover:bg-red-800 text-white transition-colors">
+            Deletar Pedido
+        </button>
+         <div class="flex gap-3">
+             <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+             <button (click)="cancelOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white">Cancelar no iFood</button>
+         </div>
       </div>
     </div>
   </div>
