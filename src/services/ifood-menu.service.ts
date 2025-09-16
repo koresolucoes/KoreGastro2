@@ -2,6 +2,8 @@ import { inject, Injectable, signal } from '@angular/core';
 import { SupabaseStateService } from './supabase-state.service';
 import { NotificationService } from './notification.service';
 import { Recipe } from '../models/db.models';
+import { supabase } from './supabase-client';
+import { AuthService } from './auth.service';
 
 export interface IfoodCatalog {
   catalogId: string;
@@ -50,6 +52,7 @@ export interface UnsellableCategory {
 export class IfoodMenuService {
   private stateService = inject(SupabaseStateService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   private companyProfile = this.stateService.companyProfile;
 
@@ -107,7 +110,29 @@ export class IfoodMenuService {
     return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, payload);
   }
 
-  async syncItem(itemPayload: any): Promise<void> {
-    return this.proxyRequest<void>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
+  async syncItem(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
+    const { item, products } = await this.proxyRequest<{item: any, products: any[]}>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
+    
+    // After successful sync, save to our DB
+    // FIX: Inject AuthService to get user ID instead of accessing private property of SupabaseStateService.
+    const userId = this.authService.currentUser()?.id;
+    if (!userId || !item) throw new Error("User not found or invalid iFood response");
+
+    const syncRecord = {
+      recipe_id: recipe.id,
+      user_id: userId,
+      ifood_item_id: item.id,
+      ifood_product_id: products[0].id,
+      ifood_category_id: item.categoryId,
+      last_sync_hash: syncHash,
+      last_synced_at: new Date().toISOString(),
+    };
+    
+    const { error } = await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
+    
+    if (error) {
+        console.error("Failed to save sync status to DB", error);
+        this.notificationService.show(`Item sincronizado com iFood, mas falha ao salvar estado local.`, 'warning');
+    }
   }
 }

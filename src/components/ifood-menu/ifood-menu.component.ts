@@ -4,6 +4,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCategory } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
 import { Recipe, Category } from '../../models/db.models';
+import { RouterLink } from '@angular/router';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
@@ -17,7 +18,7 @@ interface MappedLocalItem {
 @Component({
   selector: 'app-ifood-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './ifood-menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -43,39 +44,56 @@ export class IfoodMenuComponent implements OnInit {
     }
     return map;
   });
-  
-  // Local Data
+
+  // Local Data & Sync State
+  ifoodSyncData = this.stateService.ifoodMenuSync;
+  syncDataMap = computed(() => new Map(this.ifoodSyncData().map(s => [s.recipe_id, s])));
+  syncingItems = signal<Set<string>>(new Set());
+
   localCategoriesMap = computed(() => new Map(this.stateService.categories().map(c => [c.id, c.name])));
-  localItemsToSync = computed<MappedLocalItem[]>(() => {
+  
+  private createSyncHash(recipe: Recipe): string {
+    return `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}`;
+  }
+
+  private localItemsWithSyncStatus = computed<MappedLocalItem[]>(() => {
     const localRecipes = this.stateService.recipes().filter(r => !r.is_sub_recipe && r.is_available);
     const categoriesMap = this.localCategoriesMap();
-    const ifoodItemsMap = this.ifoodItemsByExternalCode();
+    const syncMap = this.syncDataMap();
+    const syncing = this.syncingItems();
 
     return localRecipes.map(recipe => {
-      const externalCode = recipe.external_code || recipe.id;
-      const ifoodItem = ifoodItemsMap.get(externalCode);
-      let status: SyncStatus = 'unsynced';
-
-      if (ifoodItem) {
-        // Simple comparison for modification check
-        const priceMatches = ifoodItem.price.value === recipe.price;
-        const nameMatches = ifoodItem.name === recipe.name;
-        const descriptionMatches = ifoodItem.description === (recipe.description || null);
-
-        if (priceMatches && nameMatches && descriptionMatches) {
-          status = 'synced';
+        let status: SyncStatus = 'unsynced';
+        
+        if (syncing.has(recipe.id)) {
+            status = 'syncing';
         } else {
-          status = 'modified';
+            const syncInfo = syncMap.get(recipe.id);
+            if (syncInfo) {
+                const currentHash = this.createSyncHash(recipe);
+                if (currentHash === syncInfo.last_sync_hash) {
+                    status = 'synced';
+                } else {
+                    status = 'modified';
+                }
+            }
         }
-      }
 
-      return {
-        recipe,
-        categoryName: categoriesMap.get(recipe.category_id) || 'Sem Categoria',
-        status: status,
-      };
+        return {
+            recipe,
+            categoryName: categoriesMap.get(recipe.category_id) || 'Sem Categoria',
+            status: status,
+        };
     });
   });
+
+  localItemsToSync = computed<MappedLocalItem[]>(() => 
+    this.localItemsWithSyncStatus().filter(item => !!item.recipe.external_code)
+  );
+  
+  unsyncableLocalItems = computed<MappedLocalItem[]>(() => 
+    this.localItemsWithSyncStatus().filter(item => !item.recipe.external_code)
+  );
 
   ngOnInit(): void {
     this.loadInitialData();
@@ -124,12 +142,12 @@ export class IfoodMenuComponent implements OnInit {
       return;
     }
     
-    this.updateItemStatus(item.recipe.id, 'syncing');
+    this.syncingItems.update(s => new Set(s).add(item.recipe.id));
 
     try {
       const recipe = item.recipe;
-      const categoryName = this.localCategoriesMap().get(recipe.category_id);
-      if (!categoryName) {
+      const categoryName = item.categoryName;
+      if (!categoryName || categoryName === 'Sem Categoria') {
         throw new Error('Receita sem categoria válida no ChefOS.');
       }
       
@@ -138,46 +156,32 @@ export class IfoodMenuComponent implements OnInit {
       if (!ifoodCategoryId) {
         const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName);
         ifoodCategoryId = newCategory.id;
-        // Refetch categories to update the UI state
         const updatedCategories = await this.ifoodMenuService.getCategories(catalogId);
         this.ifoodCategories.set(updatedCategories);
       }
       
       const payload = this.mapRecipeToIfoodPayload(recipe, ifoodCategoryId);
-      await this.ifoodMenuService.syncItem(payload);
+      const syncHash = this.createSyncHash(recipe);
+      await this.ifoodMenuService.syncItem(payload, recipe, syncHash);
       
       this.notificationService.show(`'${recipe.name}' sincronizado com sucesso!`, 'success');
-      // Optimistically update status
-      this.updateItemStatus(item.recipe.id, 'synced');
-      // Refetch for consistency
-      this.loadCatalogData(catalogId);
-
     } catch (error: any) {
       this.notificationService.show(`Erro ao sincronizar '${item.recipe.name}': ${error.message}`, 'error');
-      this.updateItemStatus(item.recipe.id, 'error', error.message);
+    } finally {
+        this.syncingItems.update(s => {
+            const newSet = new Set(s);
+            newSet.delete(item.recipe.id);
+            return newSet;
+        });
     }
-  }
-
-  private updateItemStatus(recipeId: string, status: SyncStatus, errorMessage?: string) {
-      // This is a temporary in-memory update for the UI feedback.
-      // The `localItemsToSync` computed will recalculate the correct state on the next data refresh.
-      const items = document.querySelectorAll(`[data-recipe-id="${recipeId}"] .status-indicator`);
-      items.forEach(el => {
-        el.className = `status-indicator h-3 w-3 rounded-full ${this.getStatusClass(status)}`;
-      });
-       const button = document.querySelector(`[data-recipe-id="${recipeId}"] button`) as HTMLButtonElement;
-       if(button) {
-          button.disabled = status === 'syncing';
-          button.textContent = status === 'syncing' ? 'Sincronizando...' : 'Sincronizar';
-       }
   }
   
   private mapRecipeToIfoodPayload(recipe: Recipe, categoryId: string): any {
-    const externalCode = recipe.external_code || recipe.id;
-    // For now, we use a consistent UUID based on the recipe ID for idempotency.
-    // A better approach in a full implementation would be to store these IDs.
-    const productId = `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
-    const itemId = `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
+    const externalCode = recipe.external_code!;
+    const syncInfo = this.syncDataMap().get(recipe.id);
+    
+    const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
+    const itemId = syncInfo?.ifood_item_id || `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     
     return {
       item: {

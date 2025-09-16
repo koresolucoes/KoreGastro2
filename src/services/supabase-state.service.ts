@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog, IfoodMenuSync } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -58,6 +58,7 @@ export class SupabaseStateService {
 
   // New signal for iFood logs
   ifoodWebhookLogs = signal<IfoodWebhookLog[]>([]);
+  ifoodMenuSync = signal<IfoodMenuSync[]>([]);
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -235,6 +236,9 @@ export class SupabaseStateService {
         case 'ifood_webhook_logs':
             this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodWebhookLogs);
             break;
+        case 'ifood_menu_sync':
+            this.refetchSimpleTable('ifood_menu_sync', '*', this.ifoodMenuSync);
+            break;
         case 'tables':
             this.refetchSimpleTable('tables', '*', this.tables);
             break;
@@ -388,6 +392,7 @@ export class SupabaseStateService {
     this.loyaltyRewards.set([]);
     this.inventoryLots.set([]);
     this.ifoodWebhookLogs.set([]);
+    this.ifoodMenuSync.set([]);
     // FIX: Clear customers data on logout.
     this.customers.set([]);
     // FIX: Clear roles and permissions data on logout.
@@ -439,6 +444,7 @@ export class SupabaseStateService {
       supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+      supabase.from('ifood_menu_sync').select('*').eq('user_id', userId),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -461,6 +467,7 @@ export class SupabaseStateService {
     this.loyaltyRewards.set(results[25].data || []);
     this.inventoryLots.set(results[26].data || []);
     this.ifoodWebhookLogs.set(results[27].data as IfoodWebhookLog[] || []);
+    this.ifoodMenuSync.set(results[28].data || []);
     await this.refreshDashboardAndCashierData();
   }
   

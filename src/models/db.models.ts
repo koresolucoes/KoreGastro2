@@ -483,6 +483,17 @@ export interface LoyaltyMovement {
   created_at: string;
 }
 
+export interface IfoodMenuSync {
+    recipe_id: string; // PK
+    user_id: string;
+    ifood_item_id: string;
+    ifood_product_id: string;
+    ifood_category_id: string;
+    last_synced_at: string;
+    last_sync_hash: string;
+    created_at: string;
+}
+
 export interface IfoodWebhookLog {
   id: string;
   created_at: string;
