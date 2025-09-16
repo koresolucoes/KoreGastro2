@@ -144,8 +144,13 @@
                         </div>
                       </div>
                       <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-600/50">
-                        <div (click)="openPriceModal(item)" class="cursor-pointer p-2 bg-gray-800/50 rounded-md hover:bg-gray-800 transition-colors">
-                            <p class="text-gray-400 text-xs">Preço iFood</p>
+                        <div class="p-2 bg-gray-800/50 rounded-md">
+                            <div class="flex items-center justify-between text-gray-400 text-xs">
+                              <span>Preço iFood</span>
+                              <button (click)="openPriceModal(item)" class="text-blue-400 hover:text-blue-300" title="Editar Preço">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                              </button>
+                            </div>
                             <p class="font-bold text-lg text-green-400">{{ item.price.value | currency:'BRL' }}</p>
                         </div>
                         <div class="p-2 bg-gray-800/50 rounded-md">
@@ -157,11 +162,16 @@
                             }
                         </div>
                       </div>
-                      <div (click)="openStatusModal(item)" class="cursor-pointer flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
-                          <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
-                          <span class="text-xs text-gray-400">Clique para alterar</span>
-                      </div>
+                      <button (click)="openStatusModal(item)" class="cursor-pointer w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
+                          <div class="flex items-center gap-2">
+                            <div class="h-3 w-3 rounded-full" [class.bg-green-500]="item.status === 'AVAILABLE'" [class.bg-red-500]="item.status !== 'AVAILABLE'"></div>
+                            <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                          </div>
+                          <span class="text-xs text-gray-400">Alterar</span>
+                      </button>
                     </div>
+                  } @empty {
+                    <p class="text-sm text-gray-500 italic col-span-full">Nenhum item nesta categoria.</p>
                   }
                 </div>
               </section>

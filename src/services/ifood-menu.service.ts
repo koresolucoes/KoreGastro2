@@ -11,14 +11,6 @@ export interface IfoodCatalog {
   status: string;
 }
 
-export interface IfoodCategory {
-  id: string;
-  name: string;
-  status: string;
-  sequence: number;
-  items: IfoodItem[];
-}
-
 export interface IfoodItem {
   id: string;
   name: string;
@@ -30,6 +22,14 @@ export interface IfoodItem {
     originalValue?: number;
   };
   hasOptionGroups: boolean;
+}
+
+export interface IfoodCategory {
+  id: string;
+  name: string;
+  status: string;
+  sequence: number;
+  items: IfoodItem[];
 }
 
 export interface UnsellableItem {
@@ -93,7 +93,8 @@ export class IfoodMenuService {
   }
 
   async getCategories(catalogId: string): Promise<IfoodCategory[]> {
-    return this.proxyRequest<IfoodCategory[]>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories?include_items=true`);
+    // The include_items=true parameter is crucial for fetching items nested in categories.
+    return this.proxyRequest<IfoodCategory[]>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories?includeItems=true`);
   }
   
   async getUnsellableItems(catalogId: string): Promise<{categories: UnsellableCategory[]}> {
