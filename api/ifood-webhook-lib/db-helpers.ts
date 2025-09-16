@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery } from '../../src/models/db.models';
+import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery, Customer } from '../../src/models/db.models';
 import { getOrderIdFromPayload } from './ifood-utils.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -60,29 +60,78 @@ async function getOrCreateCustomer(supabase: SupabaseClient, userId: string, ifo
     return null;
   }
 
-  let query = supabase.from('customers').select('id').eq('user_id', userId);
-  if (ifoodCustomer.phone?.number) {
-    query = query.eq('phone', ifoodCustomer.phone.number);
-  } else {
-    query = query.eq('name', ifoodCustomer.name);
+  const phone = ifoodCustomer.phone?.number || null;
+  const cpf = ifoodCustomer.documentNumber || null;
+  const name = ifoodCustomer.name;
+  let existingCustomer: { id: string, cpf: string | null, phone: string | null } | null = null;
+  let updates: Partial<Customer> = {};
+
+  // Strategy 1: Find by CPF (most reliable)
+  if (cpf) {
+    const { data } = await supabase.from('customers').select('id, cpf, phone').eq('user_id', userId).eq('cpf', cpf).maybeSingle();
+    existingCustomer = data;
+    if (existingCustomer && !existingCustomer.phone && phone) {
+      updates.phone = phone; // Update phone if it was missing
+    }
   }
 
-  const { data: existingCustomer } = await query.maybeSingle();
+  // Strategy 2: Find by Phone (if not found by CPF)
+  if (!existingCustomer && phone) {
+    const { data } = await supabase.from('customers').select('id, cpf, phone').eq('user_id', userId).eq('phone', phone).maybeSingle();
+    existingCustomer = data;
+    if (existingCustomer && !existingCustomer.cpf && cpf) {
+      updates.cpf = cpf; // Update CPF if it was missing
+    }
+  }
+  
+  // Strategy 3: Find by Name (least reliable, only for customers likely from iFood without phone/cpf)
+  if (!existingCustomer && name && !phone && !cpf) {
+      const { data } = await supabase
+        .from('customers')
+        .select('id, cpf, phone')
+        .eq('user_id', userId)
+        .eq('name', name)
+        .is('phone', null)
+        .is('cpf', null)
+        .limit(1)
+        .maybeSingle();
+      existingCustomer = data;
+  }
+
+  // Handle found customer
   if (existingCustomer) {
+    // If we have updates (e.g., new phone or CPF), apply them
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('customers').update(updates).eq('id', existingCustomer.id);
+    }
     return existingCustomer.id;
   }
 
+  // Handle new customer creation
   const { data: newCustomer, error } = await supabase
     .from('customers')
-    .insert({ user_id: userId, name: ifoodCustomer.name, phone: ifoodCustomer.phone?.number || null })
+    .insert({ user_id: userId, name: name, phone: phone, cpf: cpf })
     .select('id')
     .single();
   
   if (error) {
+    // Handle potential unique constraint violation if a race condition occurs
+    if (error.code === '23505') { // unique_violation
+        console.warn(`Attempted to create a duplicate customer for ${name}, likely due to a race condition. Refetching...`);
+        // Refetch to be safe.
+        if (cpf) {
+             const { data } = await supabase.from('customers').select('id').eq('user_id', userId).eq('cpf', cpf).maybeSingle();
+             if (data) return data.id;
+        }
+        if (phone) {
+            const { data } = await supabase.from('customers').select('id').eq('user_id', userId).eq('phone', phone).maybeSingle();
+            if (data) return data.id;
+        }
+    }
     console.error("Error creating customer:", error);
     return null;
   }
-  return newCustomer.id;
+  return newCustomer!.id;
 }
 
 
