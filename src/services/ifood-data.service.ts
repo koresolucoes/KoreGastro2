@@ -49,7 +49,7 @@ export class IfoodDataService {
         return { success: false, error: { message: `No valid action found for status ${status}` } };
       }
 
-      const response = await fetch('/api/ifood-proxy', {
+      const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -77,7 +77,7 @@ export class IfoodDataService {
 
   async sendLogisticsAction(ifoodOrderId: string, action: string, details?: any): Promise<{ success: boolean; error: any }> {
     try {
-       const response = await fetch('/api/ifood-proxy', {
+       const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
