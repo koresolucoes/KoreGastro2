@@ -139,22 +139,24 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
 
     // 2. Create maps for quick lookups.
     // FIX: Add explicit types to map callbacks to avoid type errors.
-    const recipeByExternalCodeMap = new Map((recipesRes.data || []).map((r: { external_code: string; id: string }) => [r.external_code, r.id]));
-    const ingredientByExternalCodeMap = new Map((ingredientsRes.data || []).map((i: { external_code: string, id: string, proxy_recipe_id: string | null, station_id: string | null }) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
+    const recipeByExternalCodeMap = new Map((recipesRes.data || []).map((r: any) => [r.external_code, r.id]));
+    const ingredientByExternalCodeMap = new Map((ingredientsRes.data || []).map((i: any) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
 
     // 3. For ingredients that are linked to sub-recipes, create a map for that.
-    const ingredientIds = (ingredientsRes.data || []).map((i: { id: string }) => i.id);
+    const ingredientIds = (ingredientsRes.data || []).map((i: any) => i.id);
     let sourceRecipeByIngredientIdMap = new Map();
     if (ingredientIds.length > 0) {
         const { data: sourceRecipes, error: recipeError } = await supabase.from('recipes').select('id, source_ingredient_id').in('source_ingredient_id', ingredientIds).eq('user_id', userId);
         if (recipeError) throw recipeError;
-        sourceRecipeByIngredientIdMap = new Map(sourceRecipes?.map((r: { source_ingredient_id: string; id: string }) => [r.source_ingredient_id, r.id]));
+// FIX: Changed optional chaining to a safer pattern and typed the map item as 'any' to resolve 'unknown' type errors.
+        sourceRecipeByIngredientIdMap = new Map((sourceRecipes || []).map((r: any) => [r.source_ingredient_id, r.id]));
     }
 
     // 4. Fetch all preparations needed for any potential recipe match.
     const allPossibleRecipeIds = [
         ...recipeByExternalCodeMap.values(),
-        ...(ingredientsRes.data || []).map((i: { proxy_recipe_id: string | null }) => i.proxy_recipe_id).filter(Boolean),
+// FIX: Typed the map item as 'any' to resolve property access errors on type 'unknown'.
+        ...(ingredientsRes.data || []).map((i: any) => i.proxy_recipe_id).filter(Boolean),
         ...sourceRecipeByIngredientIdMap.values()
     ];
 

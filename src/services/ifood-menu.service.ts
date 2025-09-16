@@ -73,8 +73,14 @@ export class IfoodMenuService {
       });
 
       if (!response.ok) {
-        const errorBody = await response.json();
-        throw new Error(errorBody.message || `Proxy error (${response.status})`);
+        const errorText = await response.text();
+        let errorBody;
+        try {
+            errorBody = errorText ? JSON.parse(errorText) : { message: `Proxy error (${response.status}) with empty body.` };
+        } catch(e) {
+            errorBody = { message: errorText || `Proxy error (${response.status})` };
+        }
+        throw new Error(errorBody.message);
       }
       
       if (response.status === 202 || response.status === 204) {

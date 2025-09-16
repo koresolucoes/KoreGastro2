@@ -57,24 +57,27 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         if (!apiResponse.ok) {
             const errorText = await apiResponse.text();
-            // Try to parse the error, but fall back to text if it's not JSON
             let errorJson;
             try {
-                errorJson = JSON.parse(errorText);
+                // Only attempt to parse JSON if there's content to parse.
+                errorJson = errorText ? JSON.parse(errorText) : { message: `iFood API returned status ${apiResponse.status} with an empty body.` };
             } catch (e) {
+                // If parsing fails, use the raw text as the message.
                 errorJson = { message: errorText };
             }
             console.error(`[iFood Catalog Proxy] API call to ${endpoint} failed with status ${apiResponse.status}:`, errorText);
             return response.status(apiResponse.status).json(errorJson);
         }
         
-        // Handle responses with no content
+        // Handle successful responses with no content (e.g., 202 Accepted, 204 No Content).
         if (apiResponse.status === 202 || apiResponse.status === 204) {
-            return response.status(apiResponse.status).send('');
+            return response.status(apiResponse.status).end();
         }
 
+        // For all other successful responses, parse JSON and forward it.
         const data = await apiResponse.json();
-        return response.status(200).json(data);
+        // Forward the original success status code (e.g., 200 OK, 201 Created).
+        return response.status(apiResponse.status).json(data);
 
     } catch (error: any) {
         console.error('[iFood Catalog Proxy] Fatal error:', error);
