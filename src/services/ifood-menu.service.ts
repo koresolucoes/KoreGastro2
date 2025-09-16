@@ -112,12 +112,12 @@ export class IfoodMenuService {
      return this.proxyRequest<{categories: UnsellableCategory[]}>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/unsellableItems`);
   }
   
-  async createCategory(catalogId: string, name: string): Promise<{ id: string }> {
+  async createCategory(catalogId: string, name: string, sequence: number): Promise<{ id: string }> {
     const payload = {
       name: name,
       status: 'AVAILABLE',
       template: 'DEFAULT',
-      sequence: 0
+      sequence: sequence
     };
     return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, payload);
   }
