@@ -335,7 +335,7 @@ export class InventoryDataService {
       .from('orders')
       .select('*, order_items(*)')
       .eq('user_id', userId)
-      .eq('is_completed', true)
+      .eq('status', 'COMPLETED')
       .gte('completed_at', startDate.toISOString())
       .lte('completed_at', endDate.toISOString());
 

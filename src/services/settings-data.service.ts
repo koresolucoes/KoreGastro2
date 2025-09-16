@@ -196,7 +196,7 @@ export class SettingsDataService {
       .select('*, order_items(*)')
       .eq('user_id', userId)
       .eq('customer_id', customerId)
-      .eq('is_completed', true)
+      .eq('status', 'COMPLETED')
       .order('completed_at', { ascending: false });
   }
 
