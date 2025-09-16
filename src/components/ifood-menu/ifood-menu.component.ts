@@ -6,6 +6,7 @@ import { NotificationService } from '../../services/notification.service';
 import { Recipe, Category } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
 import { RecipeDataService } from '../../services/recipe-data.service';
+import { FormsModule } from '@angular/forms';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
@@ -19,7 +20,7 @@ interface MappedLocalItem {
 @Component({
   selector: 'app-ifood-menu',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './ifood-menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -310,6 +311,7 @@ export class IfoodMenuComponent implements OnInit {
   closeCategoryModal() { this.isCategoryModalOpen.set(false); }
 
   async saveNewCategory() {
+    // FIX: Called .trim() on the signal's value, not the signal itself.
     const name = this.newCategoryName().trim();
     const catalogId = this.selectedCatalogId();
     if (!name || !catalogId) return;
