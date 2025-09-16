@@ -21,6 +21,17 @@ const LOGISTICS_EVENTS = new Set(['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED
 
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  // Set CORS headers for all responses
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  // iFood webhook requires this custom header
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-ifood-signature');
+
+  // Handle preflight OPTIONS request
+  if (request.method === 'OPTIONS') {
+    return response.status(204).end();
+  }
+  
   if (request.method !== 'POST') {
     return response.status(405).send({ error: 'Method Not Allowed' });
   }

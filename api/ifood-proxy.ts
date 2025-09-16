@@ -2,6 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sendIFoodOrderAction, sendIFoodLogisticsAction } from './ifood-webhook-lib/ifood-api.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  // Set CORS headers for all responses
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight OPTIONS request
+  if (request.method === 'OPTIONS') {
+    return response.status(204).end();
+  }
+
   if (request.method !== 'POST') {
     return response.status(405).send({ message: 'Only POST requests are allowed' });
   }
