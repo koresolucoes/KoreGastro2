@@ -118,7 +118,8 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
     .insert({
       user_id: userId, table_number: 0, status: 'OPEN', order_type: orderType,
       customer_id: customerId, ifood_order_id: ifoodOrderId, ifood_display_id: payload.displayId,
-      delivery_info: deliveryInfo
+      delivery_info: deliveryInfo,
+      timestamp: payload.createdAt // Store the original iFood timestamp
     }).select('id').single();
 
   if (orderError) {
