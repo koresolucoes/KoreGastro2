@@ -5,12 +5,12 @@
       <h1 class="text-3xl font-bold text-white">Gestão de Reservas</h1>
       <p class="text-gray-400 mt-1">Veja e gerencie as reservas para o dia selecionado.</p>
     </div>
-    <div class="flex items-center gap-4">
-      <div class="flex gap-1 bg-gray-700 p-1 rounded-lg">
-          <button (click)="activeView.set('daily')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'daily'" [class.text-white]="activeView() === 'daily'">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+      <div class="flex gap-1 bg-gray-700 p-1 rounded-lg w-full sm:w-auto">
+          <button (click)="activeView.set('daily')" class="flex-1 sm:flex-initial px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'daily'" [class.text-white]="activeView() === 'daily'">
               Visão Diária
           </button>
-          <button (click)="activeView.set('overview')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'overview'" [class.text-white]="activeView() === 'overview'">
+          <button (click)="activeView.set('overview')" class="flex-1 sm:flex-initial px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'overview'" [class.text-white]="activeView() === 'overview'">
               Visão Geral (15d)
           </button>
       </div>
@@ -24,7 +24,7 @@
       }
       
       @if (canAddReservation()) {
-        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2">
           <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
           <span>Adicionar Reserva</span>
         </button>

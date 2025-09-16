@@ -5,11 +5,11 @@
 } @else {
   <div class="space-y-8">
     <!-- Hourly Sales Chart -->
-    <div class="bg-gray-800 p-6 rounded-lg">
+    <div class="bg-gray-800 p-4 md:p-6 rounded-lg">
       <h3 class="text-xl font-semibold text-white mb-6">Volume de Vendas por Hora</h3>
       @if (maxSales() > 0) {
-          <div class="overflow-x-auto pb-4 -mx-6 px-6">
-            <div class="flex items-end h-72 space-x-2 border-b-2 border-l-2 border-gray-600 p-4 min-w-[700px]">
+          <div class="overflow-x-auto pb-4">
+            <div class="flex items-end h-72 space-x-1 md:space-x-2 border-b-2 border-l-2 border-gray-600 p-2 md:p-4 md:min-w-[700px]">
                 @for (hour of chartData(); track hour.hour) {
                     <div class="flex flex-col items-center justify-end h-full w-full">
                         <div 
@@ -17,12 +17,12 @@
                             [style.height.%]="hour.percentage"
                             [title]="(hour.sales | currency:'BRL') + ' às ' + hour.hour + 'h'">
                         </div>
-                        <p class="text-xs text-gray-400 mt-2">{{ hour.hour }}h</p>
+                        <p class="text-[10px] md:text-xs text-gray-400 mt-2">{{ hour.hour }}h</p>
                     </div>
                 }
             </div>
           </div>
-           <p class="text-xs text-gray-500 text-center mt-2">Passe o mouse sobre as barras para ver os valores exatos.</p>
+           <p class="text-xs text-gray-500 text-center mt-2 no-print">Passe o mouse sobre as barras para ver os valores exatos.</p>
       } @else {
           <div class="text-center text-gray-500 py-16">
               <p>Nenhum dado de vendas encontrado para este período para gerar o gráfico.</p>
@@ -31,11 +31,11 @@
     </div>
 
     <!-- Day of the Week Sales Chart -->
-    <div class="bg-gray-800 p-6 rounded-lg">
+    <div class="bg-gray-800 p-4 md:p-6 rounded-lg">
       <h3 class="text-xl font-semibold text-white mb-6">Volume de Vendas por Dia da Semana</h3>
       @if (maxSalesByDay() > 0) {
-        <div class="overflow-x-auto pb-4 -mx-6 px-6">
-          <div class="flex items-end justify-between h-72 space-x-4 border-b-2 border-l-2 border-gray-600 p-4 min-w-[500px]">
+        <div class="overflow-x-auto pb-4">
+          <div class="flex items-end justify-between h-72 space-x-2 md:space-x-4 border-b-2 border-l-2 border-gray-600 p-2 md:p-4 md:min-w-[500px]">
               @for (day of dayOfWeekChartData(); track day.dayIndex) {
                   <div class="flex flex-col items-center justify-end h-full w-full">
                       <div 
@@ -43,12 +43,12 @@
                           [style.height.%]="day.percentage"
                           [title]="(day.sales | currency:'BRL')">
                       </div>
-                      <p class="text-sm font-semibold text-gray-400 mt-2">{{ day.dayOfWeek }}</p>
+                      <p class="text-xs md:text-sm font-semibold text-gray-400 mt-2">{{ day.dayOfWeek }}</p>
                   </div>
               }
           </div>
         </div>
-        <p class="text-xs text-gray-500 text-center mt-2">Passe o mouse sobre as barras para ver os valores exatos.</p>
+        <p class="text-xs text-gray-500 text-center mt-2 no-print">Passe o mouse sobre as barras para ver os valores exatos.</p>
       } @else {
         <div class="text-center text-gray-500 py-16">
             <p>Nenhum dado de vendas encontrado para este período para gerar o gráfico.</p>

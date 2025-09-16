@@ -33,9 +33,9 @@
         <div class="space-y-6">
           <!-- Items to Sync -->
           <div class="bg-gray-800 rounded-lg">
-              <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+              <div class="p-4 border-b border-gray-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                   <h2 class="text-xl font-semibold text-white">Itens do Cardápio para Sincronizar</h2>
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                       <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-green-500"></div><span>Sincronizado</span></div>
                       <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-yellow-500"></div><span>Modificado</span></div>
                       <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-blue-500"></div><span>Não Sincronizado</span></div>
@@ -48,44 +48,85 @@
                   </div>
               } @else {
                   <div class="max-h-[60vh] overflow-y-auto">
-                      <table class="w-full text-left">
-                          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-                              <tr>
-                                  <th class="px-6 py-3 w-12">Status</th>
-                                  <th class="px-6 py-3">Item</th>
-                                  <th class="px-6 py-3">Cód. Externo</th>
-                                  <th class="px-6 py-3 text-right">Preço ChefOS</th>
-                                  <th class="px-6 py-3 text-right">Preço iFood</th>
-                                  <th class="px-6 py-3 text-center">Ações</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              @for(item of localItemsToSync(); track item.recipe.id) {
-                                  <tr class="border-b border-gray-700" [attr.data-recipe-id]="item.recipe.id">
-                                      <td class="px-6 py-4">
-                                          <div class="h-3 w-3 rounded-full" [class]="getStatusClass(item.status)" [title]="item.status"></div>
-                                      </td>
-                                      <td class="px-6 py-4 font-medium text-white">
-                                        <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: item.recipe.id }" class="hover:underline hover:text-blue-400" title="Editar Ficha Técnica">
+                      <!-- Desktop Table -->
+                      <div class="hidden md:block">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 w-12">Status</th>
+                                    <th class="px-6 py-3">Item</th>
+                                    <th class="px-6 py-3">Cód. Externo</th>
+                                    <th class="px-6 py-3 text-right">Preço ChefOS</th>
+                                    <th class="px-6 py-3 text-right">Preço iFood</th>
+                                    <th class="px-6 py-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for(item of localItemsToSync(); track item.recipe.id) {
+                                    <tr class="border-b border-gray-700" [attr.data-recipe-id]="item.recipe.id">
+                                        <td class="px-6 py-4">
+                                            <div class="h-3 w-3 rounded-full" [class]="getStatusClass(item.status)" [title]="item.status"></div>
+                                        </td>
+                                        <td class="px-6 py-4 font-medium text-white">
+                                          <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: item.recipe.id }" class="hover:underline hover:text-blue-400" title="Editar Ficha Técnica">
+                                            {{ item.recipe.name }}
+                                          </a>
+                                        </td>
+                                        <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ item.recipe.external_code }}</td>
+                                        <td class="px-6 py-4 text-right text-white font-semibold">{{ item.recipe.price | currency:'BRL' }}</td>
+                                        <td class="px-6 py-4 text-right text-gray-300">
+                                            {{ (ifoodItemsByExternalCode().get(item.recipe.external_code!)?.price.value | currency:'BRL') || '-' }}
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            @if(item.status !== 'synced') {
+                                                <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
+                                                    {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                      </div>
+                      <!-- Mobile Cards -->
+                      <div class="block md:hidden p-4 space-y-4">
+                        @for(item of localItemsToSync(); track item.recipe.id) {
+                            <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+                                <!-- Top row: Status and Name -->
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: item.recipe.id }" class="font-medium text-white hover:underline hover:text-blue-400" title="Editar Ficha Técnica">
                                           {{ item.recipe.name }}
                                         </a>
-                                      </td>
-                                      <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ item.recipe.external_code }}</td>
-                                      <td class="px-6 py-4 text-right text-white font-semibold">{{ item.recipe.price | currency:'BRL' }}</td>
-                                      <td class="px-6 py-4 text-right text-gray-300">
-                                          {{ (ifoodItemsByExternalCode().get(item.recipe.external_code!)?.price.value | currency:'BRL') || '-' }}
-                                      </td>
-                                      <td class="px-6 py-4 text-center">
-                                          @if(item.status !== 'synced') {
-                                              <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
-                                                  {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
-                                              </button>
-                                          }
-                                      </td>
-                                  </tr>
-                              }
-                          </tbody>
-                      </table>
+                                        <p class="text-xs text-gray-400 font-mono">{{ item.recipe.external_code }}</p>
+                                    </div>
+                                    <div class="h-4 w-4 rounded-full flex-shrink-0 ml-2" [class]="getStatusClass(item.status)" [title]="item.status"></div>
+                                </div>
+                        
+                                <!-- Middle: Prices Grid -->
+                                <div class="grid grid-cols-2 gap-4 text-sm pt-3 border-t border-gray-600/50">
+                                    <div>
+                                        <p class="text-gray-400 text-xs">Preço ChefOS</p>
+                                        <p class="text-white font-semibold">{{ item.recipe.price | currency:'BRL' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-400 text-xs">Preço iFood</p>
+                                        <p class="text-white font-semibold">{{ (ifoodItemsByExternalCode().get(item.recipe.external_code!)?.price.value | currency:'BRL') || '-' }}</p>
+                                    </div>
+                                </div>
+                        
+                                <!-- Bottom: Action -->
+                                @if(item.status !== 'synced') {
+                                    <div class="pt-3 border-t border-gray-600/50">
+                                        <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
+                                            {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                      </div>
                   </div>
               }
           </div>
@@ -97,22 +138,37 @@
              </div>
               @if (unsyncableLocalItems().length > 0) {
                  <div class="max-h-60 overflow-y-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-                            <tr><th class="px-6 py-3">Item</th><th class="px-6 py-3">Categoria</th><th class="px-6 py-3 text-right">Ação</th></tr>
-                        </thead>
-                        <tbody>
-                             @for(item of unsyncableLocalItems(); track item.recipe.id) {
-                                <tr class="border-b border-gray-700">
-                                    <td class="px-6 py-4 font-medium text-white">{{ item.recipe.name }}</td>
-                                    <td class="px-6 py-4 text-gray-400">{{ item.categoryName }}</td>
-                                    <td class="px-6 py-4 text-right">
-                                        <button (click)="openRecipeEditModal(item.recipe)" class="text-blue-400 hover:underline text-sm font-semibold">Configurar</button>
-                                    </td>
-                                </tr>
-                             }
-                        </tbody>
-                    </table>
+                    <!-- Desktop Table -->
+                    <div class="hidden md:block">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
+                                <tr><th class="px-6 py-3">Item</th><th class="px-6 py-3">Categoria</th><th class="px-6 py-3 text-right">Ação</th></tr>
+                            </thead>
+                            <tbody>
+                                @for(item of unsyncableLocalItems(); track item.recipe.id) {
+                                    <tr class="border-b border-gray-700">
+                                        <td class="px-6 py-4 font-medium text-white">{{ item.recipe.name }}</td>
+                                        <td class="px-6 py-4 text-gray-400">{{ item.categoryName }}</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button (click)="openRecipeEditModal(item.recipe)" class="text-blue-400 hover:underline text-sm font-semibold">Configurar</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Mobile Cards -->
+                    <div class="block md:hidden p-4 space-y-3">
+                         @for(item of unsyncableLocalItems(); track item.recipe.id) {
+                            <div class="bg-gray-700/50 p-4 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold text-white">{{ item.recipe.name }}</p>
+                                    <p class="text-sm text-gray-400">{{ item.categoryName }}</p>
+                                </div>
+                                <button (click)="openRecipeEditModal(item.recipe)" class="text-blue-400 hover:underline text-sm font-semibold flex-shrink-0 ml-2">Configurar</button>
+                            </div>
+                        }
+                    </div>
                  </div>
               }
           </div>
