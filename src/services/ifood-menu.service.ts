@@ -1,139 +1,118 @@
 import { Injectable, inject } from '@angular/core';
-import { SupabaseStateService } from './supabase-state.service';
-import { Recipe, IfoodMenuSync } from '../models/db.models';
-import { supabase } from './supabase-client';
+import { NotificationService } from './notification.service';
 
-// Interfaces for iFood catalog objects
-export interface IfoodPrice {
-  value: number;
-  originalValue?: number;
-}
-
-export interface IfoodItem {
-  id: string;
-  name: string;
-  description: string;
-  price: IfoodPrice;
-  externalCode: string;
-  order: number;
-}
-
+// Basic interfaces for iFood API responses.
 export interface IfoodCategory {
   id: string;
+  merchantId: string;
   name: string;
-  order: number;
-  items: IfoodItem[];
+  sequence: number;
+  externalCode?: string;
+  status: 'AVAILABLE' | 'UNAVAILABLE';
+  template?: 'DEFAULT' | 'PIZZA';
+  items?: IfoodProduct[]; // When fetching categories with items
+}
+
+export interface IfoodProductPrice {
+    value: number; // in cents
+    originalValue?: number;
+}
+
+export interface IfoodProduct {
+  id: string;
+  merchantId: string;
+  name: string;
+  description: string;
+  externalCode: string;
+  ean?: string;
+  status: 'AVAILABLE' | 'UNAVAILABLE';
+  sequence: number;
+  price: IfoodProductPrice;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class IfoodMenuService {
-  private stateService = inject(SupabaseStateService);
+  private notificationService = inject(NotificationService);
 
-  private getMerchantId(): string {
-    const merchantId = this.stateService.companyProfile()?.ifood_merchant_id;
-    if (!merchantId) {
-      throw new Error('iFood Merchant ID não está configurado no perfil da empresa.');
+  private async apiRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'LINK' | 'UNLINK', endpoint: string, payload: any = null): Promise<T> {
+    // LINK and UNLINK are custom methods to simplify the endpoint logic
+    if (method === 'LINK' || method === 'UNLINK') {
+      const actualMethod = 'POST';
+      const actualEndpoint = method === 'LINK' ? `${endpoint}:link` : `${endpoint}:unlink`;
+      return this.apiRequest<T>(actualMethod, actualEndpoint, payload);
     }
-    return merchantId;
-  }
-
-  private async callCatalogApi(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', endpoint: string, payload?: any): Promise<any> {
-    const response = await fetch('/api/ifood-catalog', {
-      method: 'POST', // The proxy itself is always POSTed to
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method, endpoint, payload })
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({ message: `iFood Catalog API error (${response.status})` }));
-      throw new Error(errorBody.message || `iFood Catalog API error (${response.status})`);
-    }
-
-    if (response.status === 204 || response.status === 202) {
-      return null; // No content
-    }
-    return response.json();
-  }
-
-  async getCatalog(): Promise<IfoodCategory[]> {
-    const merchantId = this.getMerchantId();
-    // This endpoint fetches categories and their items
-    return this.callCatalogApi('GET', `/catalog/v2.0/merchants/${merchantId}/menus`);
-  }
-
-  private async generateSyncHash(recipe: Recipe): Promise<string> {
-    const data = `${recipe.name}|${recipe.description || ''}|${recipe.price}|${recipe.is_available}`;
-    const encoder = new TextEncoder();
-    const dataBuffer = encoder.encode(data);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  async syncRecipe(recipe: Recipe, categoryId: string): Promise<{ success: boolean, error?: any }> {
-    const merchantId = this.getMerchantId();
-    const existingSync = this.stateService.ifoodMenuSync().find(s => s.recipe_id === recipe.id);
-    const currentHash = await this.generateSyncHash(recipe);
-
-    const itemPayload = {
-      name: recipe.name,
-      description: recipe.description || '',
-      price: { value: Math.round(recipe.price * 100) }, // iFood uses cents
-      externalCode: recipe.id,
-    };
 
     try {
-      if (existingSync) {
-        await this.callCatalogApi('PATCH', `/catalog/v2.0/merchants/${merchantId}/categories/${existingSync.ifood_category_id}/products/${existingSync.ifood_item_id}`, itemPayload);
-        await supabase.from('ifood_menu_sync').update({ last_sync_hash: currentHash, last_synced_at: new Date().toISOString() }).eq('recipe_id', recipe.id);
-      } else {
-        const newItem = await this.callCatalogApi('POST', `/catalog/v2.0/merchants/${merchantId}/categories/${categoryId}/products`, itemPayload);
-        const syncData: Omit<IfoodMenuSync, 'created_at' | 'last_synced_at'> = {
-            recipe_id: recipe.id,
-            user_id: this.stateService.currentUser()!.id,
-            ifood_item_id: newItem.id,
-            ifood_product_id: newItem.id,
-            ifood_category_id: categoryId,
-            last_sync_hash: currentHash,
-        };
-        const { error } = await supabase.from('ifood_menu_sync').insert(syncData);
-        if (error) throw error;
+      const response = await fetch('/api/ifood-catalog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, endpoint, payload })
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({ message: response.statusText }));
+        const errorMessage = errorBody.message || errorBody.details?.[0]?.message || 'An unknown API error occurred.';
+        console.error(`iFood Menu API Error (${method} ${endpoint}):`, errorBody);
+        this.notificationService.show(`Erro na API iFood: ${errorMessage}`, 'error');
+        throw new Error(errorMessage);
       }
       
-      await this.updateItemAvailability(recipe);
-      return { success: true };
-    } catch(error) {
-      return { success: false, error };
+      // Handle responses with no content
+      if (response.status === 201 || response.status === 202 || response.status === 204) {
+        return null as T;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`iFood Menu API Error (${method} ${endpoint}):`, error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown network error occurred.';
+      this.notificationService.show(`Erro na API iFood: ${errorMessage}`, 'error');
+      throw new Error(errorMessage);
     }
   }
 
-  async updateItemAvailability(recipe: Recipe): Promise<void> {
-    const merchantId = this.getMerchantId();
-    const syncInfo = this.stateService.ifoodMenuSync().find(s => s.recipe_id === recipe.id);
-    if (!syncInfo) return;
-
-    const endpoint = `/catalog/v2.0/merchants/${merchantId}/products/${syncInfo.ifood_item_id}/${recipe.is_available ? 'activate' : 'deactivate'}`;
-    await this.callCatalogApi('POST', endpoint);
+  // Categories
+  async getCategories(merchantId: string): Promise<IfoodCategory[]> {
+    return this.apiRequest<IfoodCategory[]>('GET', `/catalog/v2.0/merchants/${merchantId}/categories?withItems=true`);
   }
 
-  async unlinkRecipe(recipeId: string): Promise<{ success: boolean, error?: any }> {
-    const merchantId = this.getMerchantId();
-    const syncInfo = this.stateService.ifoodMenuSync().find(s => s.recipe_id === recipeId);
-    if (!syncInfo) return { success: true };
+  async upsertCategory(merchantId: string, category: { name: string; externalCode: string; sequence: number }): Promise<void> {
+    // iFood uses POST for both create and update based on externalCode
+    await this.apiRequest<void>('POST', `/catalog/v2.0/merchants/${merchantId}/categories`, [category]);
+  }
 
-    try {
-      await this.callCatalogApi('DELETE', `/catalog/v2.0/merchants/${merchantId}/categories/${syncInfo.ifood_category_id}/products/${syncInfo.ifood_item_id}`);
-    } catch (error: any) {
-        if (!error.message.includes('404')) { // Ignore if it's already deleted on iFood's side
-            return { success: false, error };
-        }
-    }
-    
-    const { error } = await supabase.from('ifood_menu_sync').delete().eq('recipe_id', recipeId);
-    if (error) return { success: false, error };
+  // Products
+  async getProductByExternalCode(merchantId: string, externalCode: string): Promise<IfoodProduct | null> {
+    const products = await this.apiRequest<IfoodProduct[]>( 'GET', `/catalog/v2.0/merchants/${merchantId}/products?externalCode=${externalCode}`);
+    return products?.[0] || null;
+  }
 
-    return { success: true };
+  async upsertProduct(merchantId: string, product: { name: string; description: string; externalCode: string; price: IfoodProductPrice; sequence: number }): Promise<void> {
+    await this.apiRequest<void>('POST', `/catalog/v2.0/merchants/${merchantId}/products`, [product]);
+  }
+
+  // Linking
+  async linkProductToCategory(merchantId: string, categoryId: string, productId: string, sequence: number, priceInCents: number): Promise<void> {
+    const payload = {
+        "items": [{
+            "id": productId,
+            "sequence": sequence,
+            "price": {
+                "value": priceInCents,
+            }
+        }]
+    };
+    await this.apiRequest<void>('LINK', `/catalog/v2.0/merchants/${merchantId}/categories/${categoryId}/products`, payload);
+  }
+
+  async unlinkProductFromCategory(merchantId: string, categoryId: string, productId: string): Promise<void> {
+    const payload = {
+        "items": [{
+            "id": productId
+        }]
+    };
+    await this.apiRequest<void>('UNLINK', `/catalog/v2.0/merchants/${merchantId}/categories/${categoryId}/products`, payload);
   }
 }
