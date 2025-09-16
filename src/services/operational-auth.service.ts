@@ -166,7 +166,9 @@ export class OperationalAuthService {
     if (!employee || !employee.role_id) return false;
 
     // Use the database-driven permissions from SupabaseStateService
-    const routeKey = '/' + url.split('/')[1];
+    // Strip query parameters from the URL to get the base path for permission checking.
+    const pathOnly = url.split('?')[0];
+    const routeKey = '/' + pathOnly.split('/')[1];
     
     const permissions = this.stateService.rolePermissions();
     return permissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
