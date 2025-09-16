@@ -16,6 +16,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const ORDER_EVENTS = new Set(['PLACED', 'CONFIRMED', 'DISPATCHED', 'READY_FOR_PICKUP', 'CONCLUDED', 'CANCELLED']);
+const LOGISTICS_EVENTS = new Set(['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DELIVERY_PICKUP_CODE_REQUESTED', 'ARRIVED_AT_DESTINATION']);
+
+
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
     return response.status(405).send({ error: 'Method Not Allowed' });
@@ -64,54 +68,54 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if(logId) await updateLogStatus(supabase, logId, 'PROCESSING', undefined, undefined, userId);
     
     // --- Event Routing ---
-    if (eventCode === 'PLACED') {
-      let fullOrderPayload = payload;
-      // If it's a minimal notification (no items), we need to fetch the full details.
-      if (!payload.items) {
-          const orderIdToFetch = payload.orderId;
-          if (!orderIdToFetch || typeof orderIdToFetch !== 'string') {
-              throw new Error("PLACED event is missing a valid 'orderId'.");
+    if (ORDER_EVENTS.has(eventCode)) {
+      switch (eventCode) {
+        case 'PLACED':
+          let fullOrderPayload = payload;
+          if (!payload.items) {
+              const orderIdToFetch = payload.orderId;
+              if (!orderIdToFetch || typeof orderIdToFetch !== 'string') throw new Error("PLACED event is missing a valid 'orderId'.");
+              
+              try {
+                  fullOrderPayload = await getIFoodOrderDetails(orderIdToFetch);
+                  if (logId) await updateLogStatus(supabase, logId, 'FETCHED_DETAILS', undefined, fullOrderPayload);
+              } catch (fetchError: any) {
+                  if (logId) await updateLogStatus(supabase, logId, 'ERROR_FETCH_DETAILS', fetchError.message);
+                  return response.status(202).send({ message: 'Accepted, but failed to fetch details.' });
+              }
           }
-          
-          try {
-              fullOrderPayload = await getIFoodOrderDetails(orderIdToFetch);
-              if (logId) await updateLogStatus(supabase, logId, 'FETCHED_DETAILS', undefined, fullOrderPayload);
-          } catch (fetchError: any) {
-              if (logId) await updateLogStatus(supabase, logId, 'ERROR_FETCH_DETAILS', fetchError.message);
-              // Acknowledge receipt even if fetch fails, as per iFood docs, to avoid retries.
-              return response.status(202).send({ message: 'Accepted, but failed to fetch details.' });
-          }
+          await processPlacedOrder(supabase, userId, fullOrderPayload, logId);
+          if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CREATED');
+          break;
+        case 'CONFIRMED':
+            const orderIdToConfirm = getOrderIdFromPayload(payload);
+            if (!orderIdToConfirm) throw new Error("CONFIRMED event is missing a valid 'orderId'.");
+            await confirmOrderInDb(supabase, orderIdToConfirm);
+            if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONFIRMED');
+            break;
+        case 'DISPATCHED':
+        case 'READY_FOR_PICKUP':
+            const orderIdToDispatch = getOrderIdFromPayload(payload);
+            if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_FOR_PICKUP event is missing a valid 'orderId'.");
+            await dispatchOrderInDb(supabase, orderIdToDispatch);
+            if (logId) await updateLogStatus(supabase, logId, `SUCCESS_${eventCode}`);
+            break;
+        case 'CONCLUDED':
+            const orderIdToConclude = getOrderIdFromPayload(payload);
+            if (!orderIdToConclude) throw new Error("CONCLUDED event is missing a valid 'orderId'.");
+            await concludeOrderInDb(supabase, orderIdToConclude);
+            if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
+            break;
+        case 'CANCELLED':
+            const orderIdToCancel = payload.orderId;
+            if (!orderIdToCancel || typeof orderIdToCancel !== 'string') throw new Error("CANCELLED event is missing a valid 'orderId'.");
+            await cancelOrderInDb(supabase, orderIdToCancel);
+            if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CANCELLED');
+            break;
       }
-      // processPlacedOrder is smart enough to handle the full payload (fetched or original).
-      await processPlacedOrder(supabase, userId, fullOrderPayload, logId);
-      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CREATED');
-    
-    } else if (eventCode === 'CONFIRMED') {
-      const orderIdToConfirm = getOrderIdFromPayload(payload);
-      if (!orderIdToConfirm) throw new Error("CONFIRMED event is missing a valid 'orderId'.");
-      await confirmOrderInDb(supabase, orderIdToConfirm);
-      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONFIRMED');
-
-    } else if (eventCode === 'DISPATCHED' || eventCode === 'READY_FOR_PICKUP') {
-      const orderIdToDispatch = getOrderIdFromPayload(payload);
-      if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_FOR_PICKUP event is missing a valid 'orderId'.");
-      await dispatchOrderInDb(supabase, orderIdToDispatch);
-      if (logId) await updateLogStatus(supabase, logId, `SUCCESS_${eventCode}`);
-
-    } else if (eventCode === 'CONCLUDED') {
-      const orderIdToConclude = getOrderIdFromPayload(payload);
-      if (!orderIdToConclude) throw new Error("CONCLUDED event is missing a valid 'orderId'.");
-      await concludeOrderInDb(supabase, orderIdToConclude);
-      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
-    
-    } else if (eventCode === 'CANCELLED') {
-        const orderIdToCancel = payload.orderId;
-        if (!orderIdToCancel || typeof orderIdToCancel !== 'string') {
-          throw new Error("CANCELLED event is missing a valid 'orderId'.");
-        }
-        await cancelOrderInDb(supabase, orderIdToCancel);
-        if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CANCELLED');
-    
+    } else if (LOGISTICS_EVENTS.has(eventCode)) {
+        // For logistics events, we just log them. The frontend will react to the log entry.
+        if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
     } else {
         // For other events we don't handle explicitly
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_UNHANDLED_EVENT');

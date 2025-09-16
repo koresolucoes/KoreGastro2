@@ -109,7 +109,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
   
   private getLogisticsStatus(order: Order, logs: IfoodWebhookLog[]): LogisticsStatus | null {
-    if (order.order_type !== 'iFood-Delivery') {
+    if (order.delivery_info?.deliveredBy !== 'IFOOD') {
         return null;
     }
 
@@ -208,11 +208,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       this.updatingOrders.update(set => new Set(set).add(order.id));
       this.soundNotificationService.playConfirmationSound();
       
-      // According to iFood's documentation, for orders with their delivery partners,
-      // the restaurant should send the READY_FOR_PICKUP status. This notifies the driver
-      // to come to the store. The DISPATCHED status is then sent automatically by iFood's
-      // system when the driver collects the order. This applies to both Delivery and Takeout.
-      const targetStatus: IfoodOrderStatus = 'READY_FOR_PICKUP';
+      const targetStatus: IfoodOrderStatus = order.delivery_info?.deliveredBy === 'IFOOD' ? 'READY_FOR_PICKUP' : 'DISPATCHED';
 
       try {
           const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
