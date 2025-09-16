@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { IfoodOrderStatus } from '../models/db.models';
 
@@ -72,6 +71,34 @@ export class IfoodDataService {
 
     } catch (error) {
       console.error(`Error sending iFood status update via proxy for order ${ifoodOrderId}:`, error);
+      return { success: false, error };
+    }
+  }
+
+  async sendLogisticsAction(ifoodOrderId: string, action: string, details?: any): Promise<{ success: boolean; error: any }> {
+    try {
+       const response = await fetch('/api/ifood-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action,
+          orderId: ifoodOrderId,
+          isLogistics: true, // Flag to differentiate from order status actions
+          details: details
+        })
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.message || `Proxy error (${response.status})`);
+      }
+      
+      console.log(`Successfully sent logistics action '${action}' for order ${ifoodOrderId}.`);
+      return { success: true, error: null };
+    } catch (error) {
+       console.error(`Error sending iFood logistics action '${action}' for order ${ifoodOrderId}:`, error);
       return { success: false, error };
     }
   }

@@ -6,14 +6,17 @@ import { PosDataService } from '../../services/pos-data.service';
 import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus, IfoodWebhookLog } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
-import { supabase } from '../../services/supabase-client';
 
 interface ProcessedIfoodOrder extends Order {
   elapsedTime: number;
   isLate: boolean;
   timerColor: string;
   ifoodStatus: IfoodOrderStatus;
+  logisticsStatus: LogisticsStatus | null;
+  requiresDeliveryCode: boolean;
 }
+
+type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARRIVED_AT_ORIGIN' | 'DISPATCHED_TO_CUSTOMER' | 'ARRIVED_AT_DESTINATION';
 
 @Component({
   selector: 'app-ifood-kds',
@@ -46,6 +49,15 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   updatingOrders = signal<Set<string>>(new Set());
   isDetailModalOpen = signal(false);
   selectedOrderForDetail = signal<ProcessedIfoodOrder | null>(null);
+
+  // New state for logistics modals
+  isAssignDriverModalOpen = signal(false);
+  isVerifyCodeModalOpen = signal(false);
+  orderForDriverModal = signal<ProcessedIfoodOrder | null>(null);
+  orderForCodeModal = signal<ProcessedIfoodOrder | null>(null);
+  driverForm = signal({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
+  verificationCode = signal('');
+
 
   constructor() {
     effect(() => {
@@ -95,9 +107,42 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     // If not preparing and not all ready, it means at least one item is PENDENTE.
     return 'RECEIVED';
   }
+  
+  private getLogisticsStatus(order: Order, logs: IfoodWebhookLog[]): LogisticsStatus | null {
+    if (order.order_type !== 'iFood-Delivery') {
+        return null;
+    }
+
+    const relevantLogs = logs
+        .filter(log => log.ifood_order_id === order.ifood_order_id && log.event_code)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const latestStatusLog = relevantLogs.find(log => 
+        ['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DISPATCHED', 'ARRIVED_AT_DESTINATION'].includes(log.event_code!)
+    );
+
+    if (latestStatusLog) {
+        switch(latestStatusLog.event_code) {
+            case 'ASSIGNED_DRIVER': return 'ASSIGNED';
+            case 'GOING_TO_ORIGIN': return 'GOING_TO_ORIGIN';
+            case 'ARRIVED_AT_ORIGIN': return 'ARRIVED_AT_ORIGIN';
+            case 'DISPATCHED': return 'DISPATCHED_TO_CUSTOMER';
+            case 'ARRIVED_AT_DESTINATION': return 'ARRIVED_AT_DESTINATION';
+        }
+    }
+    
+    const allItemsReady = (order.order_items || []).every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+    if (allItemsReady) {
+        return 'AWAITING_DRIVER';
+    }
+
+    return null;
+  }
 
   processedOrders = computed<ProcessedIfoodOrder[]>(() => {
     const now = this.currentTime();
+    const allLogs = this.webhookLogs();
+
     return this.stateService.openOrders()
       .filter(o => o.order_type === 'iFood-Delivery' || o.order_type === 'iFood-Takeout')
       .map(order => {
@@ -109,12 +154,16 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         if (elapsedTime > 300) timerColor = 'text-yellow-300'; // 5 mins
         if (isLate) timerColor = 'text-red-300';
 
+        const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
+
         return {
           ...order,
           elapsedTime,
           isLate,
           timerColor,
-          ifoodStatus: this.getIfoodStatus(order)
+          ifoodStatus: this.getIfoodStatus(order),
+          logisticsStatus: this.getLogisticsStatus(order, allLogs),
+          requiresDeliveryCode: requiresCode,
         };
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -235,6 +284,71 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           });
       }
   }
+  
+  // --- LOGISTICS METHODS ---
+  openAssignDriverModal(order: ProcessedIfoodOrder) {
+    this.orderForDriverModal.set(order);
+    this.driverForm.set({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
+    this.isAssignDriverModalOpen.set(true);
+  }
+  closeAssignDriverModal() { this.isAssignDriverModalOpen.set(false); }
+
+  async assignDriver() {
+    const order = this.orderForDriverModal();
+    const form = this.driverForm();
+    if (!order || !order.ifood_order_id || !form.name || !form.phone) {
+      this.notificationService.show('Nome e telefone do entregador são obrigatórios.', 'warning');
+      return;
+    }
+    await this.handleLogisticsAction(order.id, order.ifood_order_id, 'assignDriver', {
+      workerName: form.name,
+      workerPhone: form.phone,
+      workerVehicleType: form.vehicle
+    });
+    this.closeAssignDriverModal();
+  }
+
+  async updateLogisticsStatus(order: ProcessedIfoodOrder, action: 'goingToOrigin' | 'arrivedAtOrigin' | 'dispatch' | 'arrivedAtDestination') {
+    if (!order.ifood_order_id) return;
+    await this.handleLogisticsAction(order.id, order.ifood_order_id, action);
+  }
+
+  openVerifyCodeModal(order: ProcessedIfoodOrder) {
+    this.orderForCodeModal.set(order);
+    this.verificationCode.set('');
+    this.isVerifyCodeModalOpen.set(true);
+  }
+  closeVerifyCodeModal() { this.isVerifyCodeModalOpen.set(false); }
+  
+  async submitVerificationCode() {
+    const order = this.orderForCodeModal();
+    const code = this.verificationCode();
+    if (!order || !order.ifood_order_id || !code || code.length !== 4) {
+      this.notificationService.show('O código de verificação deve ter 4 dígitos.', 'warning');
+      return;
+    }
+    await this.handleLogisticsAction(order.id, order.ifood_order_id, 'verifyDeliveryCode', { code });
+    this.closeVerifyCodeModal();
+  }
+
+  private async handleLogisticsAction(orderId: string, ifoodOrderId: string, action: string, details?: any) {
+    this.updatingOrders.update(set => new Set(set).add(orderId));
+    try {
+      const { success, error } = await this.ifoodDataService.sendLogisticsAction(ifoodOrderId, action, details);
+      if (!success) throw error;
+      // Manually refetch logs to update the UI state
+      await this.stateService.refetchIfoodLogs(); 
+    } catch (error: any) {
+      this.notificationService.show(`Erro na ação de logística: ${error.message}`, 'error');
+    } finally {
+       this.updatingOrders.update(set => {
+            const newSet = new Set(set);
+            newSet.delete(orderId);
+            return newSet;
+        });
+    }
+  }
+
   
   formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) return '00:00';

@@ -1,4 +1,3 @@
-
 const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
 /**
@@ -109,6 +108,27 @@ export async function sendIFoodOrderAction(orderId: string, action: 'confirm' | 
     const endpoint = endpointMap[action];
     if (!endpoint) {
         throw new Error(`Invalid iFood order action: ${action}`);
+    }
+
+    return makeIFoodApiCall(endpoint, 'POST', body);
+}
+
+/**
+ * Sends a logistics action for a given order to the iFood Logistics API.
+ */
+export async function sendIFoodLogisticsAction(orderId: string, action: string, body: any = null): Promise<any> {
+    const endpointMap: { [key: string]: string } = {
+        assignDriver: `/logistics/v1.0/orders/${orderId}/assignDriver`,
+        goingToOrigin: `/logistics/v1.0/orders/${orderId}/goingToOrigin`,
+        arrivedAtOrigin: `/logistics/v1.0/orders/${orderId}/arrivedAtOrigin`,
+        dispatch: `/logistics/v1.0/orders/${orderId}/dispatch`, // Note: This is a logistics dispatch, separate from order status dispatch
+        arrivedAtDestination: `/logistics/v1.0/orders/${orderId}/arrivedAtDestination`,
+        verifyDeliveryCode: `/logistics/v1.0/orders/${orderId}/verifyDeliveryCode`
+    };
+
+    const endpoint = endpointMap[action];
+    if (!endpoint) {
+        throw new Error(`Invalid iFood logistics action: ${action}`);
     }
 
     return makeIFoodApiCall(endpoint, 'POST', body);

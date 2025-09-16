@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendIFoodOrderAction } from './ifood-webhook-lib/ifood-api.js';
+import { sendIFoodOrderAction, sendIFoodLogisticsAction } from './ifood-webhook-lib/ifood-api.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
@@ -9,12 +9,20 @@ export default async function handler(request: VercelRequest, response: VercelRe
   console.log('[Proxy] Received iFood action request from frontend.');
 
   try {
-    const { action, orderId, details } = request.body;
+    const { action, orderId, details, isLogistics } = request.body;
 
     if (!action || !orderId) {
       return response.status(400).json({ message: 'Missing "action" or "orderId" in request body' });
     }
     
+    if (isLogistics) {
+      console.log(`[Proxy] Forwarding LOGISTICS action '${action}' for order '${orderId}' to iFood API.`);
+      await sendIFoodLogisticsAction(orderId, action, details);
+      console.log(`[Proxy] Logistics action for order '${orderId}' processed successfully.`);
+      return response.status(202).json({ message: 'Logistics action processed successfully by iFood.' });
+    }
+
+    // --- Original Order Status Logic ---
     let apiAction: 'confirm' | 'dispatch' | 'readyToPickup' | 'requestCancellation' | null = null;
     let body: any = null;
 

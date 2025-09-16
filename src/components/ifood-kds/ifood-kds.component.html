@@ -85,7 +85,12 @@
         <h2 class="text-lg font-bold p-3 border-b border-gray-700 text-green-300 sticky top-0 bg-gray-800 z-10">Prontos ({{ readyOrders().length }})</h2>
         <div class="p-2 space-y-2 overflow-y-auto">
           @for(order of readyOrders(); track order.id) {
-            <div (click)="openDetailModal(order)" class="bg-gray-900/50 rounded-lg p-3 flex flex-col gap-2 border-l-4 cursor-pointer" [class.border-green-500]="order.order_type === 'iFood-Takeout'" [class.border-purple-500]="order.order_type === 'iFood-Delivery'">
+            <div (click)="openDetailModal(order)" class="bg-gray-900/50 rounded-lg p-3 flex flex-col gap-2 border-l-4 cursor-pointer relative" [class.border-green-500]="order.order_type === 'iFood-Takeout'" [class.border-purple-500]="order.order_type === 'iFood-Delivery'">
+              @if(updatingOrders().has(order.id)) {
+                <div class="absolute inset-0 bg-gray-900/70 flex items-center justify-center rounded-lg z-20">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              }
               <div class="flex justify-between items-start">
                 <div>
                   <h3 class="font-bold text-lg text-white">#{{ order.ifood_display_id }}</h3>
@@ -93,16 +98,30 @@
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
               </div>
-               @if(order.order_type === 'iFood-Delivery') {
-                <div class="text-xs bg-gray-800 p-2 rounded-md">
-                    <p class="font-semibold text-purple-300">Endereço de Entrega:</p>
-                    <p class="text-gray-400">{{ order.delivery_info?.deliveryAddress.streetName }}, {{ order.delivery_info?.deliveryAddress.streetNumber }}</p>
-                    <p class="text-gray-400">{{ order.delivery_info?.deliveryAddress.neighborhood }}</p>
+
+              @if (order.order_type === 'iFood-Delivery') {
+                <div class="text-xs space-y-2 border-t border-gray-700 pt-2 mt-2">
+                    <p class="font-semibold text-purple-300">Status da Entrega:</p>
+                    @switch (order.logisticsStatus) {
+                        @case ('AWAITING_DRIVER') { <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Alocar Entregador</button> }
+                        @case ('ASSIGNED') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'goingToOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">A Caminho da Loja</button> }
+                        @case ('GOING_TO_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou na Loja</button> }
+                        @case ('ARRIVED_AT_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'dispatch')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Saiu para Entrega</button> }
+                        @case ('DISPATCHED_TO_CUSTOMER') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtDestination')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou ao Destino</button> }
+                        @case ('ARRIVED_AT_DESTINATION') {
+                           @if (order.requiresDeliveryCode) {
+                             <button (click)="$event.stopPropagation(); openVerifyCodeModal(order)" class="w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-md">Confirmar Entrega</button>
+                           } @else {
+                              <div class="text-center p-2 bg-gray-700 rounded-md text-sm text-gray-300">Aguardando confirmação final...</div>
+                           }
+                        }
+                    }
+                </div>
+              } @else {
+                 <div class="text-sm mt-auto">
+                    <button class="w-full bg-gray-600 text-white font-semibold py-2 rounded-md cursor-default">Aguardando Cliente</button>
                 </div>
               }
-               <div class="text-sm mt-auto">
-                <button class="w-full bg-gray-600 text-white font-semibold py-2 rounded-md cursor-default">Aguardando {{ order.order_type === 'iFood-Delivery' ? 'Entregador' : 'Cliente' }}</button>
-              </div>
             </div>
           }
         </div>
@@ -210,6 +229,55 @@
              <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
              <button (click)="cancelOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white">Cancelar no iFood</button>
          </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Assign Driver Modal -->
+@if(isAssignDriverModalOpen() && orderForDriverModal(); as order) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAssignDriverModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Alocar Entregador para #{{order.ifood_display_id}}</h3></div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Entregador *</label>
+          <input type="text" [(ngModel)]="driverForm().name" name="driverName" required class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Telefone do Entregador *</label>
+          <input type="tel" [(ngModel)]="driverForm().phone" name="driverPhone" required class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Veículo *</label>
+          <select [(ngModel)]="driverForm().vehicle" name="driverVehicle" class="w-full bg-gray-700 rounded p-2 text-white">
+            <option value="MOTORCYCLE">Moto</option>
+            <option value="CAR">Carro</option>
+            <option value="BICYCLE">Bicicleta</option>
+            <option value="ONFOOT">A pé</option>
+          </select>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeAssignDriverModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="assignDriver()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Confirmar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Verify Code Modal -->
+@if(isVerifyCodeModalOpen() && orderForCodeModal(); as order) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeVerifyCodeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Confirmar Entrega #{{order.ifood_display_id}}</h3></div>
+      <div class="p-6 space-y-4 text-center">
+        <p class="text-gray-300">Peça ao cliente o código de 4 dígitos para confirmar a entrega.</p>
+        <input type="text" [(ngModel)]="verificationCode" name="verificationCode" maxlength="4" class="w-full bg-gray-700 rounded p-3 text-white text-2xl tracking-[1em] text-center" placeholder="••••">
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeVerifyCodeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="submitVerificationCode()" class="px-4 py-2 font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white">Verificar Código</button>
       </div>
     </div>
   </div>

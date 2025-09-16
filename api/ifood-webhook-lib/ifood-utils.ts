@@ -1,6 +1,5 @@
 import { VercelRequest } from '@vercel/node';
 import { createHmac } from 'crypto';
-// FIX: Import Buffer to make it available in environments where it's not a global.
 import { Buffer } from 'buffer';
 
 /**

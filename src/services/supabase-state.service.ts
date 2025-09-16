@@ -199,6 +199,10 @@ export class SupabaseStateService {
     });
   }
 
+  public async refetchIfoodLogs() {
+    await this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodWebhookLogs);
+  }
+
   private unsubscribeFromChanges() {
     if (this.realtimeChannel) {
         supabase.removeChannel(this.realtimeChannel);
@@ -234,7 +238,7 @@ export class SupabaseStateService {
             this.refetchOrders();
             break;
         case 'ifood_webhook_logs':
-            this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodWebhookLogs);
+            this.refetchIfoodLogs();
             break;
         case 'ifood_menu_sync':
             this.refetchSimpleTable('ifood_menu_sync', '*', this.ifoodMenuSync);
