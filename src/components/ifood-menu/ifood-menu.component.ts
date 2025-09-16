@@ -106,15 +106,13 @@ interface IfoodCategoryWithSync extends IfoodCategory {
                     <div class="mt-4 pt-4 border-t border-gray-700">
                       <h4 class="text-sm font-semibold text-gray-400 mb-2">Adicionar itens do ChefOS a esta categoria:</h4>
                       <ul class="space-y-2">
-                        @for (recipe of chefosMenu().find(c => c.id === ifoodCategory.chefosCategoryId)?.recipes; track recipe.id) {
-                          @if (!isRecipeSyncedToCategory(recipe, ifoodCategory)) {
-                            <li class="flex justify-between items-center text-sm p-2 rounded-md bg-gray-900/50">
-                              <span>{{ recipe.name }}</span>
-                              <button (click)="syncRecipe(recipe, ifoodCategory)" [disabled]="isLoading()" class="px-2 py-0.5 text-xs bg-green-600 hover:bg-green-500 rounded-md disabled:bg-green-800">
-                                Adicionar
-                              </button>
-                            </li>
-                          }
+                        @for (recipe of getUnsyncedRecipesForCategory(ifoodCategory); track recipe.id) {
+                          <li class="flex justify-between items-center text-sm p-2 rounded-md bg-gray-900/50">
+                            <span>{{ recipe.name }}</span>
+                            <button (click)="syncRecipe(recipe, ifoodCategory)" [disabled]="isLoading()" class="px-2 py-0.5 text-xs bg-green-600 hover:bg-green-500 rounded-md disabled:bg-green-800">
+                              Adicionar
+                            </button>
+                          </li>
                         }
                       </ul>
                     </div>
@@ -182,6 +180,17 @@ export class IfoodMenuComponent {
         this.loadIfoodMenu();
     }
     
+    getUnsyncedRecipesForCategory(ifoodCategory: IfoodCategoryWithSync): Recipe[] {
+        if (!ifoodCategory.isSynced || !ifoodCategory.chefosCategoryId) {
+            return [];
+        }
+        const chefosCategory = this.chefosMenu().find(c => c.id === ifoodCategory.chefosCategoryId);
+        if (!chefosCategory) {
+            return [];
+        }
+        return chefosCategory.recipes.filter(recipe => !this.isRecipeSyncedToCategory(recipe, ifoodCategory));
+    }
+
     async loadIfoodMenu() {
         this.isLoading.set(true);
         const merchantId = this.ifoodMerchantId();

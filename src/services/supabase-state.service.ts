@@ -13,7 +13,7 @@ export class SupabaseStateService {
   private authService = inject(AuthService);
   private pricingService = inject(PricingService);
   
-  private currentUser = this.authService.currentUser;
+  currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
 
   isDataLoaded = signal(false);
@@ -341,7 +341,7 @@ export class SupabaseStateService {
     }
   }
 
-  private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
+  public async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
     const userId = this.currentUser()?.id; if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     // FIX: Add customers to the list of tables ordered by creation date.
