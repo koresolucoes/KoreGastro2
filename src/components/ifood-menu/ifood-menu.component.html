@@ -11,6 +11,9 @@
       <button (click)="view.set('sync')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'sync'" [class.text-white]="view() === 'sync'" [class.border-transparent]="view() !== 'sync'" [class.text-gray-400]="view() !== 'sync'">
         Sincronização
       </button>
+       <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'live'" [class.text-white]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-gray-400]="view() !== 'live'">
+        Cardápio no iFood
+      </button>
       <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'unsellable'" [class.text-white]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-gray-400]="view() !== 'unsellable'">
         Itens Não Vendáveis
       </button>
@@ -27,7 +30,7 @@
   } @else {
     @switch (view()) {
       @case ('sync') {
-        <div class.="space-y-6">
+        <div class="space-y-6">
           <!-- Items to Sync -->
           <div class="bg-gray-800 rounded-lg">
               <div class="p-4 border-b border-gray-700 flex justify-between items-center">
@@ -115,6 +118,57 @@
           </div>
         </div>
       }
+      @case('live') {
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Seu Cardápio Ativo no iFood</h2>
+            <button (click)="openCategoryModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 text-sm">Nova Categoria</button>
+          </div>
+          
+          <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+            @for(category of ifoodCategories(); track category.id) {
+              <section>
+                <h3 class="text-lg font-bold text-blue-300 border-b border-gray-700 pb-2 mb-3">{{ category.name }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  @for(item of category.items; track item.id) {
+                    <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col gap-3">
+                      <div class="flex gap-4">
+                        <div class="flex-shrink-0">
+                          <button (click)="handleImageUpload()" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1" title="Alterar imagem (funcionalidade em desenvolvimento)">
+                            Alterar Imagem
+                          </button>
+                        </div>
+                        <div class="flex-1">
+                          <p class="font-semibold text-white">{{ item.name }}</p>
+                          <p class="text-xs text-gray-400">{{ item.description }}</p>
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-600/50">
+                        <div (click)="openPriceModal(item)" class="cursor-pointer p-2 bg-gray-800/50 rounded-md hover:bg-gray-800 transition-colors">
+                            <p class="text-gray-400 text-xs">Preço iFood</p>
+                            <p class="font-bold text-lg text-green-400">{{ item.price.value | currency:'BRL' }}</p>
+                        </div>
+                        <div class="p-2 bg-gray-800/50 rounded-md">
+                            <p class="text-gray-400 text-xs">Preço ChefOS</p>
+                             @if(localRecipesByExternalCode().has(item.externalCode)) {
+                                <p class="font-bold text-lg text-white">{{ localRecipesByExternalCode().get(item.externalCode)!.price | currency:'BRL' }}</p>
+                            } @else {
+                                <p class="text-xs text-gray-500 mt-2">Não vinculado</p>
+                            }
+                        </div>
+                      </div>
+                      <div (click)="openStatusModal(item)" class="cursor-pointer flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
+                          <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                          <span class="text-xs text-gray-400">Clique para alterar</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        </div>
+      }
       @case ('unsellable') {
         <div class="bg-gray-800 rounded-lg p-6">
             <h2 class="text-xl font-semibold text-white mb-4">Itens Não Vendáveis no iFood</h2>
@@ -139,3 +193,68 @@
     }
   }
 </div>
+
+<!-- Price Edit Modal -->
+@if(isPriceModalOpen() && editingPriceItem(); as item) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePriceModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Alterar Preço no iFood</h3></div>
+      <div class="p-6 space-y-4">
+        <p class="text-gray-300">Item: <span class="font-semibold text-white">{{ item.name }}</span></p>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Novo Preço (R$)</label>
+          <input type="number" step="0.01" [(ngModel)]="newPrice" name="newPrice" class="w-full bg-gray-700 rounded p-2 text-white text-lg">
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closePriceModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="savePrice()" [disabled]="isChangingPrice()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+          {{ isChangingPrice() ? 'Salvando...' : 'Salvar Preço' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Status Edit Modal -->
+@if(isStatusModalOpen() && editingStatusItem(); as item) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeStatusModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Alterar Disponibilidade</h3></div>
+      <div class="p-6 space-y-4">
+        <p class="text-gray-300">Item: <span class="font-semibold text-white">{{ item.name }}</span></p>
+        <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
+            <button (click)="newStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newStatus() === 'AVAILABLE'">Disponível</button>
+            <button (click)="newStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newStatus() === 'UNAVAILABLE'">Indisponível</button>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeStatusModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveStatus()" [disabled]="isChangingStatus()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+          {{ isChangingStatus() ? 'Salvando...' : 'Salvar Status' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- New Category Modal -->
+@if(isCategoryModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeCategoryModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Criar Nova Categoria no iFood</h3></div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Categoria</label>
+          <input type="text" [(ngModel)]="newCategoryName" name="newCategoryName" class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeCategoryModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveNewCategory()" [disabled]="isCreatingCategory()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+          {{ isCreatingCategory() ? 'Criando...' : 'Criar Categoria' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

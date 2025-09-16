@@ -53,7 +53,15 @@ export class IfoodMenuComponent implements OnInit {
   syncingItems = signal<Set<string>>(new Set());
 
   localCategoriesMap = computed(() => new Map(this.stateService.categories().map(c => [c.id, c.name])));
-  localRecipesByExternalCode = computed(() => new Map(this.stateService.recipes().map(r => [r.external_code, r])));
+  localRecipesByExternalCode = computed(() => {
+    const map = new Map<string, Recipe>();
+    this.stateService.recipes().forEach(r => {
+      if (r.external_code) {
+        map.set(r.external_code, r);
+      }
+    });
+    return map;
+  });
   
   // Modal states for live editing
   isPriceModalOpen = signal(false);
@@ -198,6 +206,7 @@ export class IfoodMenuComponent implements OnInit {
     const externalCode = recipe.external_code!;
     const syncInfo = this.syncDataMap().get(recipe.id);
     
+    // Generate deterministic UUIDs from the recipe ID for idempotency, if no sync info exists.
     const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     const itemId = syncInfo?.ifood_item_id || `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     
@@ -304,7 +313,7 @@ export class IfoodMenuComponent implements OnInit {
   }
 
   handleImageUpload() {
-    this.notificationService.show('Funcionalidade de upload de imagem ainda não implementada.', 'info');
+    this.notificationService.show('A API do iFood para upload de imagem via parceiros não está disponível publicamente.', 'info');
   }
 
   private async refreshCatalogData() {
