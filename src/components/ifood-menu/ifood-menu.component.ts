@@ -256,14 +256,16 @@ export class IfoodMenuComponent implements OnInit {
 
   async savePrice() {
     const item = this.editingPriceItem();
-    const catalogId = this.selectedCatalogId();
-    if (!item || !catalogId) return;
+    if (!item || !item.externalCode) {
+        this.notificationService.show('Item inválido ou sem código externo.', 'error');
+        return;
+    }
 
     this.isChangingPrice.set(true);
     try {
-      await this.ifoodMenuService.patchItemPrice(item.id, catalogId, this.newPrice());
-      this.notificationService.show('Preço atualizado no iFood!', 'success');
-      await this.refreshCatalogData();
+      await this.ifoodMenuService.patchItemPrice(item.externalCode, this.newPrice());
+      this.notificationService.show('Solicitação de alteração de preço enviada!', 'success');
+      setTimeout(() => this.refreshCatalogData(), 2000);
       this.closePriceModal();
     } catch (error: any) {
       this.notificationService.show(`Erro ao alterar preço: ${error.message}`, 'error');
@@ -281,14 +283,16 @@ export class IfoodMenuComponent implements OnInit {
   
   async saveStatus() {
     const item = this.editingStatusItem();
-    const catalogId = this.selectedCatalogId();
-    if (!item || !catalogId) return;
+    if (!item || !item.externalCode) {
+        this.notificationService.show('Item inválido ou sem código externo.', 'error');
+        return;
+    }
 
     this.isChangingStatus.set(true);
     try {
-      await this.ifoodMenuService.patchItemStatus(item.id, catalogId, this.newStatus());
-      this.notificationService.show('Status atualizado no iFood!', 'success');
-      await this.refreshCatalogData();
+      await this.ifoodMenuService.patchItemStatus(item.externalCode, this.newStatus());
+      this.notificationService.show('Solicitação de alteração de status enviada!', 'success');
+      setTimeout(() => this.refreshCatalogData(), 2000);
       this.closeStatusModal();
     } catch (error: any) {
       this.notificationService.show(`Erro ao alterar status: ${error.message}`, 'error');
@@ -425,7 +429,7 @@ export class IfoodMenuComponent implements OnInit {
       this.notificationService.show('Detalhes da receita atualizados!', 'success');
       this.closeRecipeEditModal();
     } else {
-      this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+      this.notificationService.alert(`Erro ao salvar: ${error.message}`);
     }
   }
 

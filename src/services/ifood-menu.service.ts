@@ -72,15 +72,16 @@ export class IfoodMenuService {
         body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body })
       });
 
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorText = await response.text();
         let errorMessage = `Proxy error (${response.status})`;
-        if (errorText) {
+        if (responseText) {
             try {
-                const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorText;
+                const errorJson = JSON.parse(responseText);
+                errorMessage = errorJson.message || JSON.stringify(errorJson.details || errorJson.error || responseText);
             } catch(e) {
-                errorMessage = errorText; // Use raw text if it's not JSON
+                errorMessage = responseText; // Use raw text if it's not JSON
             }
         }
         throw new Error(errorMessage);
@@ -90,8 +91,6 @@ export class IfoodMenuService {
         return null as T;
       }
 
-      // Read as text first to safely handle successful but empty responses
-      const responseText = await response.text();
       return responseText ? JSON.parse(responseText) as T : null as T;
 
     } catch (error) {
@@ -148,25 +147,27 @@ export class IfoodMenuService {
     }
   }
 
-  async patchItemPrice(itemId: string, catalogId: string, newPrice: number): Promise<void> {
-    const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/price`;
+  async patchItemPrice(externalCode: string, newPrice: number): Promise<void> {
+    const endpoint = `/catalog/v2.0/merchants/{merchantId}/products/price`;
     const payload = [{
-        itemId: itemId,
+        externalCode: externalCode,
         price: {
             value: newPrice,
             originalValue: newPrice
-        }
+        },
+        resources: ["ITEM"]
     }];
-    await this.proxyRequest<void>('PATCH', endpoint, payload);
+    await this.proxyRequest<any>('PATCH', endpoint, payload);
   }
 
-  async patchItemStatus(itemId: string, catalogId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
-      const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/status`;
-      const payload = {
-          itemId: itemId,
-          status: status
-      };
-      await this.proxyRequest<void>('PATCH', endpoint, payload);
+  async patchItemStatus(externalCode: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
+      const endpoint = `/catalog/v2.0/merchants/{merchantId}/products/status`;
+      const payload = [{
+          externalCode: externalCode,
+          status: status,
+          resources: ["ITEM"]
+      }];
+      await this.proxyRequest<any>('PATCH', endpoint, payload);
   }
   
   async updateItemImage(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
