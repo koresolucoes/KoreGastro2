@@ -5,6 +5,7 @@ import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCat
 import { NotificationService } from '../../services/notification.service';
 import { Recipe, Category } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
+import { RecipeDataService } from '../../services/recipe-data.service';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
@@ -26,6 +27,7 @@ export class IfoodMenuComponent implements OnInit {
   private stateService = inject(SupabaseStateService);
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
+  private recipeDataService = inject(RecipeDataService);
 
   isLoading = signal(true);
   view = signal<'sync' | 'unsellable' | 'live'>('sync');
@@ -52,7 +54,8 @@ export class IfoodMenuComponent implements OnInit {
   syncDataMap = computed(() => new Map(this.ifoodSyncData().map(s => [s.recipe_id, s])));
   syncingItems = signal<Set<string>>(new Set());
 
-  localCategoriesMap = computed(() => new Map(this.stateService.categories().map(c => [c.id, c.name])));
+  localCategories = this.stateService.categories;
+  localCategoriesMap = computed(() => new Map(this.localCategories().map(c => [c.id, c.name])));
   localRecipesByExternalCode = computed(() => {
     const map = new Map<string, Recipe>();
     this.stateService.recipes().forEach(r => {
@@ -77,6 +80,10 @@ export class IfoodMenuComponent implements OnInit {
   isCategoryModalOpen = signal(false);
   newCategoryName = signal('');
   isCreatingCategory = signal(false);
+
+  // Modal for editing recipe details
+  isEditRecipeModalOpen = signal(false);
+  editingRecipeForm = signal<Partial<Recipe>>({});
 
 
   private createSyncHash(recipe: Recipe): string {
@@ -322,6 +329,43 @@ export class IfoodMenuComponent implements OnInit {
         await this.loadCatalogData(catalogId);
     }
   }
+  
+  // --- Recipe Edit Modal Methods ---
+  openRecipeEditModal(recipe: Recipe) {
+    this.editingRecipeForm.set({ ...recipe });
+    this.isEditRecipeModalOpen.set(true);
+  }
+
+  closeRecipeEditModal() {
+    this.isEditRecipeModalOpen.set(false);
+  }
+
+  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) {
+    this.editingRecipeForm.update(form => ({
+        ...form,
+        [field]: (field === 'price' || field === 'prep_time_in_minutes') ? +value : value
+    }));
+  }
+
+  async saveRecipeDetails() {
+    const formValue = this.editingRecipeForm();
+    if (!formValue || !formValue.id) return;
+    
+    if (!formValue.name?.trim() || !formValue.external_code?.trim()) {
+      this.notificationService.alert('Nome e Código Externo são obrigatórios.');
+      return;
+    }
+
+    const { success, error } = await this.recipeDataService.updateRecipeDetails(formValue.id, formValue);
+
+    if (success) {
+      this.notificationService.show('Detalhes da receita atualizados!', 'success');
+      this.closeRecipeEditModal();
+    } else {
+      this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+    }
+  }
+
 
   getStatusClass(status: SyncStatus): string {
     switch(status) {

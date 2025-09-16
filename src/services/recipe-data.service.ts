@@ -57,6 +57,16 @@ export class RecipeDataService {
     return { success: true, error: null };
   }
 
+  async updateRecipeDetails(recipeId: string, recipeData: Partial<Recipe>): Promise<{ success: boolean; error: any }> {
+    const { id, created_at, hasStock, ...updateData } = recipeData as any;
+    const { error } = await supabase
+      .from('recipes')
+      .update(updateData)
+      .eq('id', recipeId);
+      
+    return { success: !error, error };
+  }
+
   async updateRecipeImage(recipeId: string, imageFile: File): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
