@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
@@ -55,29 +56,34 @@ export default async function handler(request: VercelRequest, response: VercelRe
             body: payload ? JSON.stringify(payload) : null,
         });
 
+        const responseBodyText = await apiResponse.text();
+
         if (!apiResponse.ok) {
-            const errorText = await apiResponse.text();
             let errorJson;
             try {
-                // Only attempt to parse JSON if there's content to parse.
-                errorJson = errorText ? JSON.parse(errorText) : { message: `iFood API returned status ${apiResponse.status} with an empty body.` };
+                errorJson = responseBodyText ? JSON.parse(responseBodyText) : { message: `iFood API returned status ${apiResponse.status} with an empty body.` };
             } catch (e) {
-                // If parsing fails, use the raw text as the message.
-                errorJson = { message: errorText };
+                errorJson = { message: responseBodyText };
             }
-            console.error(`[iFood Catalog Proxy] API call to ${endpoint} failed with status ${apiResponse.status}:`, errorText);
+            console.error(`[iFood Catalog Proxy] API call to ${endpoint} failed with status ${apiResponse.status}:`, responseBodyText);
             return response.status(apiResponse.status).json(errorJson);
         }
         
-        // Handle successful responses with no content (e.g., 202 Accepted, 204 No Content).
-        if (apiResponse.status === 202 || apiResponse.status === 204) {
+        // If the body is empty (common for 201, 202, 204), send an empty response with the correct status code.
+        if (!responseBodyText) {
             return response.status(apiResponse.status).end();
         }
-
-        // For all other successful responses, parse JSON and forward it.
-        const data = await apiResponse.json();
-        // Forward the original success status code (e.g., 200 OK, 201 Created).
-        return response.status(apiResponse.status).json(data);
+        
+        // If a body exists, parse and send it as JSON.
+        try {
+            const data = JSON.parse(responseBodyText);
+            return response.status(apiResponse.status).json(data);
+        } catch (e) {
+            console.error(`[iFood Catalog Proxy] Could not parse JSON from successful iFood response. Body:`, responseBodyText);
+            // This is an unexpected state; the API returned a non-JSON body on success.
+            // We return a 500 error because our application expects JSON.
+            return response.status(500).json({ message: 'Failed to parse response from iFood API.' });
+        }
 
     } catch (error: any) {
         console.error('[iFood Catalog Proxy] Fatal error:', error);

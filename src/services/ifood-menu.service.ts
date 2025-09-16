@@ -1,3 +1,4 @@
+
 import { inject, Injectable, signal } from '@angular/core';
 import { SupabaseStateService } from './supabase-state.service';
 import { NotificationService } from './notification.service';
@@ -74,20 +75,25 @@ export class IfoodMenuService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        let errorBody;
-        try {
-            errorBody = errorText ? JSON.parse(errorText) : { message: `Proxy error (${response.status}) with empty body.` };
-        } catch(e) {
-            errorBody = { message: errorText || `Proxy error (${response.status})` };
+        let errorMessage = `Proxy error (${response.status})`;
+        if (errorText) {
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorText;
+            } catch(e) {
+                errorMessage = errorText; // Use raw text if it's not JSON
+            }
         }
-        throw new Error(errorBody.message);
+        throw new Error(errorMessage);
       }
       
       if (response.status === 202 || response.status === 204) {
         return null as T;
       }
 
-      return await response.json() as T;
+      // Read as text first to safely handle successful but empty responses
+      const responseText = await response.text();
+      return responseText ? JSON.parse(responseText) as T : null as T;
 
     } catch (error) {
       console.error(`[IfoodMenuService] Error calling proxy for ${method} ${fullEndpoint}:`, error);
