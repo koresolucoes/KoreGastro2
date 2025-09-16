@@ -58,7 +58,7 @@
       @if (viewMode() === 'station') {
         <!-- Station View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          @for (ticket of groupedKdsTickets(); track ticket.tableNumber + (ticket.ifoodDisplayId || '')) {
+          @for (ticket of groupedKdsTickets(); track ticket.orderId) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
                 <div class="flex items-center gap-2">
@@ -150,7 +150,7 @@
       } @else {
         <!-- Expo View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          @for (ticket of expoViewTickets(); track ticket.tableNumber + (ticket.ifoodDisplayId || '')) {
+          @for (ticket of expoViewTickets(); track ticket.orderId) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup" [class.border-gray-700]="!ticket.isReadyForPickup">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
                 @if (ticket.orderType.startsWith('iFood')) {
@@ -184,8 +184,8 @@
               </ul>
               @if(ticket.isReadyForPickup) {
                 <div class="p-2 border-t border-gray-700">
-                  <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.tableNumber)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2">
-                    @if(updatingTickets().has(ticket.tableNumber)) {
+                  <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2">
+                    @if(updatingTickets().has(ticket.orderId)) {
                       <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                       <span>Enviando...</span>
                     } @else {

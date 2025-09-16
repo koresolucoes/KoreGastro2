@@ -138,8 +138,9 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
     if (ingredientsRes.error) throw ingredientsRes.error;
 
     // 2. Create maps for quick lookups.
-    const recipeByExternalCodeMap = new Map(recipesRes.data?.map(r => [r.external_code, r.id]));
-    const ingredientByExternalCodeMap = new Map(ingredientsRes.data?.map(i => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
+    // FIX: Add explicit types to map callbacks to avoid type errors.
+    const recipeByExternalCodeMap = new Map((recipesRes.data || []).map((r: { external_code: string; id: string }) => [r.external_code, r.id]));
+    const ingredientByExternalCodeMap = new Map((ingredientsRes.data || []).map((i: { external_code: string, id: string, proxy_recipe_id: string | null, station_id: string | null }) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
 
     // 3. For ingredients that are linked to sub-recipes, create a map for that.
     const ingredientIds = (ingredientsRes.data || []).map(i => i.id);

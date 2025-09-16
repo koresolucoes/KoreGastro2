@@ -3,15 +3,17 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType } from '../../models/db.models';
+import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType, IfoodOrderStatus } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
+import { IfoodDataService } from '../../services/ifood-data.service';
 
 interface BaseTicket {
+  orderId: string;
   tableNumber: number;
   ticketElapsedTime: number;
   ticketTimerColor: string;
@@ -56,6 +58,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     printingService = inject(PrintingService);
     notificationService = inject(NotificationService);
     soundNotificationService = inject(SoundNotificationService);
+    ifoodDataService = inject(IfoodDataService);
     
     stations = this.stateService.stations;
     employees = this.stateService.employees;
@@ -69,7 +72,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     currentTime = signal(Date.now());
     
     updatingItems = signal<Set<string>>(new Set());
-    updatingTickets = signal<Set<number>>(new Set());
+    updatingTickets = signal<Set<string>>(new Set());
     isDetailModalOpen = signal(false);
     selectedTicketForDetail = signal<StationTicket | ExpoTicket | null>(null);
     isAssignEmployeeModalOpen = signal(false);
@@ -218,7 +221,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            const allOrderItems = this.stateService.openOrders().find(o => (o.table_number === ticket.tableNumber && o.order_type.startsWith('Dine-in')) || o.ifood_display_id === ticket.ifoodDisplayId)?.order_items ?? [];
+            const allOrderItems = this.stateService.openOrders().find(o => o.id === ticket.orderId)?.order_items ?? [];
             const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO');
             return { ...ticket, isReadyForPickup };
         });
@@ -258,6 +261,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             if (percentage > 80) ticketTimerColor = 'bg-red-600';
 
             tickets.push({
+                orderId: order.id,
                 tableNumber: order.table_number,
                 items: orderItems,
                 ticketElapsedTime,
@@ -340,34 +344,40 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
 
     async markOrderAsServed(ticket: ExpoTicket) {
-        if (this.updatingTickets().has(ticket.tableNumber)) return;
-        
-        const order = this.stateService.openOrders().find(o => (o.table_number === ticket.tableNumber && o.order_type.startsWith('Dine-in')) || o.ifood_display_id === ticket.ifoodDisplayId);
+        if (this.updatingTickets().has(ticket.orderId)) return;
+    
+        const order = this.stateService.openOrders().find(o => o.id === ticket.orderId);
         if (!order) {
             await this.notificationService.alert('Erro: Pedido não encontrado.');
             return;
         }
     
         this.soundNotificationService.playConfirmationSound();
-        this.updatingTickets.update(set => new Set(set).add(ticket.tableNumber));
+        this.updatingTickets.update(set => new Set(set).add(ticket.orderId));
+    
         try {
+            // Step 1: Communicate with iFood if necessary
+            if (order.ifood_order_id) {
+                const targetStatus: IfoodOrderStatus = order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
+                const { success, error } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
+                if (!success) {
+                    throw error || new Error('Falha ao comunicar com a API do iFood.');
+                }
+            }
+    
+            // Step 2: Update internal status
             const { success, error } = await this.posDataService.markOrderAsServed(order.id);
             if (!success) {
-                await this.notificationService.alert(`Erro ao marcar pedido como servido: ${error?.message}`);
-                // Reset loading state on failure
-                this.updatingTickets.update(set => {
-                    const newSet = new Set(set);
-                    newSet.delete(ticket.tableNumber);
-                    return newSet;
-                });
+                throw error;
             }
-            // On success, we rely on the realtime subscription to remove the ticket.
+            // On success, realtime subscription will remove the ticket from view.
+    
         } catch (e: any) {
-            await this.notificationService.alert(`Ocorreu um erro inesperado: ${e.message}`);
-             // Reset loading state on unexpected error
+            await this.notificationService.alert(`Ocorreu um erro: ${e.message}`);
+            // Reset loading state on any error
             this.updatingTickets.update(set => {
                 const newSet = new Set(set);
-                newSet.delete(ticket.tableNumber);
+                newSet.delete(ticket.orderId);
                 return newSet;
             });
         }
@@ -386,7 +396,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     async printTicket(ticket: StationTicket | ExpoTicket) {
         const station = this.selectedStation();
         if (station) {
-            const orderShellForPrinting = { id: ticket.items[0]?.order_id || 'N/A', table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
+            const orderShellForPrinting = { id: ticket.orderId, table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
             this.printingService.printOrder(orderShellForPrinting, ticket.items, station);
         } else {
             await this.notificationService.alert('Erro: Nenhuma estação selecionada.');
