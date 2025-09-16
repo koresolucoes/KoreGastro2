@@ -28,7 +28,7 @@ export class IfoodMenuComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   isLoading = signal(true);
-  view = signal<'sync' | 'unsellable'>('sync');
+  view = signal<'sync' | 'unsellable' | 'live'>('sync');
 
   // iFood Data
   ifoodCatalogs = signal<IfoodCatalog[]>([]);
@@ -39,7 +39,9 @@ export class IfoodMenuComponent implements OnInit {
     const map = new Map<string, IfoodItem>();
     for (const category of this.ifoodCategories()) {
       for (const item of category.items) {
-        map.set(item.externalCode, item);
+        if (item.externalCode) {
+           map.set(item.externalCode, item);
+        }
       }
     }
     return map;
@@ -51,7 +53,24 @@ export class IfoodMenuComponent implements OnInit {
   syncingItems = signal<Set<string>>(new Set());
 
   localCategoriesMap = computed(() => new Map(this.stateService.categories().map(c => [c.id, c.name])));
+  localRecipesByExternalCode = computed(() => new Map(this.stateService.recipes().map(r => [r.external_code, r])));
   
+  // Modal states for live editing
+  isPriceModalOpen = signal(false);
+  editingPriceItem = signal<IfoodItem | null>(null);
+  newPrice = signal<number>(0);
+  isChangingPrice = signal(false);
+
+  isStatusModalOpen = signal(false);
+  editingStatusItem = signal<IfoodItem | null>(null);
+  newStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
+  isChangingStatus = signal(false);
+  
+  isCategoryModalOpen = signal(false);
+  newCategoryName = signal('');
+  isCreatingCategory = signal(false);
+
+
   private createSyncHash(recipe: Recipe): string {
     return `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}`;
   }
@@ -156,8 +175,7 @@ export class IfoodMenuComponent implements OnInit {
       if (!ifoodCategoryId) {
         const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName);
         ifoodCategoryId = newCategory.id;
-        const updatedCategories = await this.ifoodMenuService.getCategories(catalogId);
-        this.ifoodCategories.set(updatedCategories);
+        await this.refreshCatalogData();
       }
       
       const payload = this.mapRecipeToIfoodPayload(recipe, ifoodCategoryId);
@@ -210,6 +228,92 @@ export class IfoodMenuComponent implements OnInit {
     };
   }
   
+  // --- Live Editing Methods ---
+  openPriceModal(item: IfoodItem) {
+    this.editingPriceItem.set(item);
+    this.newPrice.set(item.price.value);
+    this.isPriceModalOpen.set(true);
+  }
+  closePriceModal() { this.isPriceModalOpen.set(false); }
+
+  async savePrice() {
+    const item = this.editingPriceItem();
+    const catalogId = this.selectedCatalogId();
+    if (!item || !catalogId) return;
+
+    this.isChangingPrice.set(true);
+    try {
+      await this.ifoodMenuService.patchItemPrice(item.id, catalogId, this.newPrice());
+      this.notificationService.show('Preço atualizado no iFood!', 'success');
+      await this.refreshCatalogData();
+      this.closePriceModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao alterar preço: ${error.message}`, 'error');
+    } finally {
+      this.isChangingPrice.set(false);
+    }
+  }
+  
+  openStatusModal(item: IfoodItem) {
+    this.editingStatusItem.set(item);
+    this.newStatus.set(item.status as 'AVAILABLE' | 'UNAVAILABLE');
+    this.isStatusModalOpen.set(true);
+  }
+  closeStatusModal() { this.isStatusModalOpen.set(false); }
+  
+  async saveStatus() {
+    const item = this.editingStatusItem();
+    const catalogId = this.selectedCatalogId();
+    if (!item || !catalogId) return;
+
+    this.isChangingStatus.set(true);
+    try {
+      await this.ifoodMenuService.patchItemStatus(item.id, catalogId, this.newStatus());
+      this.notificationService.show('Status atualizado no iFood!', 'success');
+      await this.refreshCatalogData();
+      this.closeStatusModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao alterar status: ${error.message}`, 'error');
+    } finally {
+      this.isChangingStatus.set(false);
+    }
+  }
+  
+  openCategoryModal() {
+    this.newCategoryName.set('');
+    this.isCategoryModalOpen.set(true);
+  }
+  closeCategoryModal() { this.isCategoryModalOpen.set(false); }
+
+  async saveNewCategory() {
+    const name = this.newCategoryName().trim();
+    const catalogId = this.selectedCatalogId();
+    if (!name || !catalogId) return;
+
+    this.isCreatingCategory.set(true);
+    try {
+      await this.ifoodMenuService.createCategory(catalogId, name);
+      this.notificationService.show('Categoria criada com sucesso no iFood!', 'success');
+      await this.refreshCatalogData();
+      this.closeCategoryModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao criar categoria: ${error.message}`, 'error');
+    } finally {
+      this.isCreatingCategory.set(false);
+    }
+  }
+
+  handleImageUpload() {
+    this.notificationService.show('Funcionalidade de upload de imagem ainda não implementada.', 'info');
+  }
+
+  private async refreshCatalogData() {
+    const catalogId = this.selectedCatalogId();
+    if (catalogId) {
+        await this.loadCatalogData(catalogId);
+    }
+  }
+
   getStatusClass(status: SyncStatus): string {
     switch(status) {
       case 'synced': return 'bg-green-500';

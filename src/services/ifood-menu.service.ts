@@ -114,7 +114,6 @@ export class IfoodMenuService {
     const { item, products } = await this.proxyRequest<{item: any, products: any[]}>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
     
     // After successful sync, save to our DB
-    // FIX: Inject AuthService to get user ID instead of accessing private property of SupabaseStateService.
     const userId = this.authService.currentUser()?.id;
     if (!userId || !item) throw new Error("User not found or invalid iFood response");
 
@@ -134,5 +133,26 @@ export class IfoodMenuService {
         console.error("Failed to save sync status to DB", error);
         this.notificationService.show(`Item sincronizado com iFood, mas falha ao salvar estado local.`, 'warning');
     }
+  }
+
+  async patchItemPrice(itemId: string, catalogId: string, newPrice: number): Promise<void> {
+    const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/price`;
+    const payload = {
+        catalogId: catalogId,
+        price: {
+            value: newPrice,
+            originalValue: newPrice
+        }
+    };
+    await this.proxyRequest<void>('PATCH', endpoint, payload);
+  }
+
+  async patchItemStatus(itemId: string, catalogId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
+      const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/status`;
+      const payload = {
+          catalogId: catalogId,
+          status: status
+      };
+      await this.proxyRequest<void>('PATCH', endpoint, payload);
   }
 }
