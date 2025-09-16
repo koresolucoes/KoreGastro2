@@ -133,9 +133,19 @@
                   @for(item of category.items; track item.id) {
                     <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col gap-3">
                       <div class="flex gap-4">
-                        <div class="flex-shrink-0">
-                          <button (click)="handleImageUpload()" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1" title="Alterar imagem (funcionalidade em desenvolvimento)">
-                            Alterar Imagem
+                        <div class="flex-shrink-0 relative">
+                          <input type="file" [id]="'image-input-' + item.id" (change)="onImageSelected($event, item)" accept="image/png, image/jpeg" class="hidden">
+                          <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1 disabled:cursor-wait overflow-hidden group">
+                            @if(isUploadingImage() === item.id) {
+                                <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            } @else if (item.image) {
+                                <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span class="text-white text-xs font-semibold">Alterar</span>
+                                </div>
+                            } @else {
+                                <span>Adicionar Imagem</span>
+                            }
                           </button>
                         </div>
                         <div class="flex-1">

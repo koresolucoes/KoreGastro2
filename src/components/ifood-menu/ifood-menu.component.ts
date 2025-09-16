@@ -85,6 +85,8 @@ export class IfoodMenuComponent implements OnInit {
   isEditRecipeModalOpen = signal(false);
   editingRecipeForm = signal<Partial<Recipe>>({});
 
+  isUploadingImage = signal<string | null>(null); // Use item.id to track
+
 
   private createSyncHash(recipe: Recipe): string {
     return `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}`;
@@ -319,8 +321,69 @@ export class IfoodMenuComponent implements OnInit {
     }
   }
 
-  handleImageUpload() {
-    this.notificationService.show('A API do iFood para upload de imagem via parceiros não está disponível publicamente.', 'info');
+  triggerImageUpload(item: IfoodItem) {
+    const input = document.getElementById(`image-input-${item.id}`) as HTMLInputElement;
+    if (input) {
+        input.click();
+    }
+  }
+
+  async onImageSelected(event: Event, item: IfoodItem) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file || !item.externalCode) return;
+    
+    const recipe = this.localRecipesByExternalCode().get(item.externalCode);
+    if (!recipe) {
+        this.notificationService.show('Receita local correspondente não encontrada.', 'error');
+        return;
+    }
+
+    this.isUploadingImage.set(item.id);
+    
+    try {
+        // 1. Convert file to base64 for iFood
+        const base64Image = await this.fileToBase64(file);
+
+        // 2. Update image in Supabase and get the new URL for our own recipe
+        await this.recipeDataService.updateRecipeImage(recipe.id, file);
+
+        // 3. Prepare payload for iFood
+        const category = this.ifoodCategories().find(c => c.items.some(i => i.id === item.id));
+        if (!category) {
+          throw new Error("Categoria iFood não encontrada para o item.");
+        }
+        
+        // Refetch recipe to ensure we have the latest data after image upload
+        const updatedRecipe = { ...recipe, image_url: 'temp' }; // Placeholder, actual URL is in DB
+        const payload = this.mapRecipeToIfoodPayload(updatedRecipe, category.id);
+        
+        // Add the image to the product payload
+        payload.products[0].image = base64Image;
+
+        // 4. Send updated item with image to iFood
+        await this.ifoodMenuService.updateItemImage(payload, updatedRecipe, this.createSyncHash(updatedRecipe));
+        
+        this.notificationService.show(`Imagem de '${item.name}' atualizada com sucesso no iFood!`, 'success');
+
+        // 5. Refresh data to show new image from iFood
+        await this.refreshCatalogData();
+
+    } catch (error: any) {
+        this.notificationService.show(`Erro ao atualizar imagem: ${error.message}`, 'error');
+    } finally {
+        this.isUploadingImage.set(null);
+        // Reset file input value to allow re-uploading the same file
+        (event.target as HTMLInputElement).value = '';
+    }
+  }
+
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]); // Return only the base64 part
+        reader.onerror = error => reject(error);
+    });
   }
 
   private async refreshCatalogData() {

@@ -22,6 +22,7 @@ export interface IfoodItem {
     originalValue?: number;
   };
   hasOptionGroups: boolean;
+  image?: string;
 }
 
 export interface IfoodCategory {
@@ -137,9 +138,9 @@ export class IfoodMenuService {
   }
 
   async patchItemPrice(itemId: string, catalogId: string, newPrice: number): Promise<void> {
-    const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/price`;
+    const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/price`;
     const payload = {
-        catalogId: catalogId,
+        itemId: itemId,
         price: {
             value: newPrice,
             originalValue: newPrice
@@ -149,11 +150,34 @@ export class IfoodMenuService {
   }
 
   async patchItemStatus(itemId: string, catalogId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
-      const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/status`;
+      const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/status`;
       const payload = {
-          catalogId: catalogId,
+          itemId: itemId,
           status: status
       };
       await this.proxyRequest<void>('PATCH', endpoint, payload);
+  }
+  
+  async updateItemImage(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
+    const { item, products } = await this.proxyRequest<{item: any, products: any[]}>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
+    
+    const userId = this.authService.currentUser()?.id;
+    if (!userId || !item) throw new Error("User not found or invalid iFood response");
+
+    const syncRecord = {
+      recipe_id: recipe.id,
+      user_id: userId,
+      ifood_item_id: item.id,
+      ifood_product_id: products[0].id,
+      ifood_category_id: item.categoryId,
+      last_sync_hash: syncHash,
+      last_synced_at: new Date().toISOString(),
+    };
+    
+    const { error } = await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
+    
+    if (error) {
+        console.error("Failed to save sync status to DB after image update", error);
+    }
   }
 }
