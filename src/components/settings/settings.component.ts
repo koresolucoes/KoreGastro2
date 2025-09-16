@@ -74,6 +74,7 @@ export class SettingsComponent {
         { key: '/pos', label: 'PDV' },
         { key: '/cashier', label: 'Caixa' },
         { key: '/ifood-kds', label: 'iFood / Delivery' },
+        { key: '/ifood-menu', label: 'Cardápio iFood' },
         { key: '/reservations', label: 'Reservas' },
         { key: '/customers', label: 'Clientes' }
       ]

@@ -8,6 +8,7 @@ export const ALL_PERMISSION_KEYS = [
   '/purchasing',
   '/customers',
   '/menu',
+  '/ifood-menu',
   '/technical-sheets',
   '/mise-en-place',
   '/performance',

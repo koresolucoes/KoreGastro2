@@ -30,6 +30,7 @@ import { EmployeesComponent } from './components/employees/employees.component';
 import { CustomersComponent } from './components/customers/customers.component';
 import { InventoryAuditComponent } from './components/inventory/inventory-audit/inventory-audit.component';
 import { IfoodKdsComponent } from './components/ifood-kds/ifood-kds.component';
+import { IfoodMenuComponent } from './components/ifood-menu/ifood-menu.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -46,6 +47,7 @@ export const APP_ROUTES: Routes = [
   { path: 'customers', component: CustomersComponent, canActivate: [roleGuard] },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
+  { path: 'ifood-menu', component: IfoodMenuComponent, canActivate: [roleGuard] },
   { path: 'book/:userId', component: PublicBookingComponent }, // Public booking route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
   { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard] },
