@@ -40,20 +40,30 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Lógica de Retenção (Hold):** O sistema calcula o tempo de preparo de cada item e segura os pratos mais rápidos para que tudo fique pronto ao mesmo tempo.
 - **Modo "Expo":** Uma tela centralizada para o chef ou expedidor visualizar todos os itens prontos e garantir que os pedidos saiam completos e no tempo certo.
 
-### 💰 **Caixa (Cashier)**
-- **Venda Rápida:** Um PDV simplificado para vendas no balcão. Os pedidos podem ser pagos na hora ou enviados para a cozinha para pagamento posterior.
-- **Fechamento de Conta:** Processe pagamentos das mesas e das vendas rápidas em espera. Suporta **múltiplos métodos de pagamento** para dividir a conta.
-- **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado, que compara o valor esperado com o contado e gera um resumo para impressão.
-- **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes.
-
 ### 🛵 **Integração com iFood**
+#### KDS para iFood
 - **Webhook Bidirecional:** Receba pedidos do iFood diretamente no sistema e mantenha os status sincronizados em tempo real. O sistema captura eventos de novos pedidos, confirmações, despachos, prontos para retirada, conclusões e cancelamentos.
 - **Gestão de Status Completa:** Confirme, inicie o preparo, despache para entrega ou marque como pronto para retirada, tudo dentro do ChefOS. As atualizações são enviadas automaticamente para o iFood.
-- **Tratamento de Cancelamentos:** Gerencie cancelamentos de pedidos (iniciados pelo cliente ou pelo restaurante) de forma integrada, mantendo seus registros precisos.
+- **Tratamento de Cancelamentos:** Gerencie cancelamentos de pedidos (iniciados pelo cliente ou pelo restaurante) de forma integrada.
 - **KDS Dedicado:** Uma tela de KDS otimizada para a operação de delivery, mostrando informações cruciais como ID do pedido iFood, tipo (entrega/retirada) e endereço do cliente.
+- **Visualizador de Logs:** Uma ferramenta para depuração que exibe todos os eventos recebidos do webhook do iFood, ajudando a diagnosticar problemas de comunicação.
+
+#### Cardápio iFood
+- **Sincronização Inteligente:** Sincronize itens do seu cardápio ChefOS com o iFood. O sistema identifica itens já sincronizados, modificados ou que ainda não foram enviados.
+- **Requisito de Código Externo:** Apenas itens com um "Código Externo" (SKU) definido na Ficha Técnica podem ser sincronizados, garantindo uma integração robusta.
+- **Visão "Ao Vivo" do Cardápio:** Uma aba exclusiva que busca e exibe seu cardápio *exatamente* como ele está no iFood, mostrando categorias, itens, imagens e preços.
+- **Ações Rápidas:** Altere o **preço** e a **disponibilidade** de um item diretamente na visão "ao vivo", e a alteração é enviada imediatamente para o iFood.
+- **Criação de Categorias:** Crie novas categorias no seu cardápio do iFood diretamente pelo ChefOS.
+
+### 💰 **Caixa (Cashier)**
+- **Fila de Pagamento:** Visualize todas as mesas que estão aguardando para pagar em uma tela dedicada.
+- **Venda Rápida:** Um PDV simplificado para vendas no balcão. Os pedidos podem ser pagos na hora ou enviados para a cozinha para pagamento posterior.
+- **Fechamento de Conta Completo:** Processe pagamentos de mesas e vendas rápidas. Suporta **múltiplos métodos de pagamento** para dividir a conta.
+- **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado, que compara o valor esperado com o contado e gera um resumo para impressão.
+- **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes de um pedido.
 
 ### 📦 **Estoque e Compras**
-- **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades e fornecedores.
+- **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades, fornecedores e categorias.
 - **Alertas Automatizados:** O dashboard sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
 - **Controle de Lotes:** Registre números de lote e datas de validade para insumos recebidos, garantindo total rastreabilidade.
 - **Contagem de Estoque (Auditoria):** Uma tela dedicada para realizar a contagem física do inventário. O sistema mostra a diferença entre o estoque contado e o do sistema e permite ajustar tudo com um único clique.
