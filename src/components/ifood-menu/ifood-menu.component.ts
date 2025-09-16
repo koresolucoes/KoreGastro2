@@ -1,322 +1,453 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
-import { IfoodMenuService, IfoodCategory, IfoodProduct } from '../../services/ifood-menu.service';
+import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCategory } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
-import { Recipe, Category, IfoodMenuSync } from '../../models/db.models';
-import { supabase } from '../../services/supabase-client';
+import { Recipe, Category } from '../../models/db.models';
+import { RouterLink } from '@angular/router';
+import { RecipeDataService } from '../../services/recipe-data.service';
+import { FormsModule } from '@angular/forms';
 
-interface ChefosCategory extends Category {
-    recipes: Recipe[];
-}
+type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
-interface IfoodCategoryWithSync extends IfoodCategory {
-    products: (IfoodProduct & { chefosRecipeId: string | null })[];
-    isSynced: boolean;
-    chefosCategoryId: string | null;
+interface MappedLocalItem {
+  recipe: Recipe;
+  categoryName: string;
+  status: SyncStatus;
+  errorMessage?: string;
 }
 
 @Component({
-    selector: 'app-ifood-menu',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
-    <div class="p-4 md:p-6 bg-gray-900 text-gray-200 h-full overflow-y-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Sincronização com Cardápio iFood</h1>
-        <button (click)="loadIfoodMenu()" [disabled]="isLoading()" class="p-2 rounded-md hover:bg-gray-700 disabled:opacity-50">
-          <svg class="w-6 h-6" [class.animate-spin]="isLoading()" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181 9.865a8.25 8.25 0 01-11.664 0l-3.18-3.185m3.181-9.865l-3.18-3.18a8.25 8.25 0 0111.664 0l3.18 3.18" />
-          </svg>
-        </button>
-      </div>
-
-      @if (!ifoodMerchantId()) {
-        <div class="bg-yellow-900/50 border border-yellow-700 text-yellow-200 p-4 rounded-lg">
-          <p class="font-bold">Configuração Necessária</p>
-          <p>O ID do Comerciante iFood (Merchant ID) não foi encontrado. Por favor, adicione-o em <span class="font-semibold">Configurações > Empresa</span> para habilitar a sincronização.</p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- ChefOS Menu -->
-          <div>
-            <h2 class="text-xl font-semibold mb-4 text-blue-400">Cardápio ChefOS</h2>
-            @if (chefosMenu().length === 0) {
-              <p class="text-gray-500">Nenhuma categoria ou item no seu cardápio. Crie-os em Fichas Técnicas e Configurações.</p>
-            }
-            @for (category of chefosMenu(); track category.id) {
-              <div class="bg-gray-800 rounded-lg p-4 mb-4">
-                <div class="flex justify-between items-center">
-                  <h3 class="font-bold text-lg">{{ category.name }}</h3>
-                  <button (click)="syncCategory(category)" [disabled]="isLoading()" class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded-md disabled:bg-blue-800 disabled:cursor-not-allowed">
-                    Sincronizar Categoria
-                  </button>
-                </div>
-                <ul class="mt-3 space-y-2">
-                  @for (recipe of category.recipes; track recipe.id) {
-                    <li class="flex justify-between items-center text-sm p-2 rounded-md bg-gray-700/50">
-                      <span>{{ recipe.name }}</span>
-                      @if (syncDataMap().has(recipe.id)) {
-                        <span class="text-green-400 text-xs font-semibold flex items-center">
-                          <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" /></svg>
-                          Sincronizado
-                        </span>
-                      }
-                    </li>
-                  }
-                </ul>
-              </div>
-            }
-          </div>
-
-          <!-- iFood Menu -->
-          <div>
-            <h2 class="text-xl font-semibold mb-4 text-green-400">Cardápio iFood</h2>
-            @if (isLoading()) {
-              <p class="text-gray-500">Carregando cardápio do iFood...</p>
-            } @else if (ifoodMenu().length === 0) {
-              <p class="text-gray-500">Nenhuma categoria encontrada no iFood. Sincronize uma categoria do ChefOS para começar.</p>
-            }
-            @for (ifoodCategory of ifoodMenu(); track ifoodCategory.id) {
-              <div class="bg-gray-800 rounded-lg p-4 mb-4">
-                <h3 class="font-bold text-lg">{{ ifoodCategory.name }}</h3>
-                @if (!ifoodCategory.isSynced) {
-                  <p class="text-xs text-yellow-400">Esta categoria não está vinculada a uma categoria do ChefOS.</p>
-                }
-                <div class="mt-3 space-y-2">
-                  <h4 class="text-sm font-semibold text-gray-400">Itens Sincronizados</h4>
-                  @if (ifoodCategory.products.length > 0) {
-                    <ul class="space-y-2">
-                      @for (product of ifoodCategory.products; track product.id) {
-                        <li class="flex justify-between items-center text-sm p-2 rounded-md bg-gray-700/50">
-                          <span>{{ product.name }}</span>
-                          @if(product.chefosRecipeId) {
-                            <button (click)="unlinkRecipe(product.chefosRecipeId, ifoodCategory)" [disabled]="isLoading()" class="px-2 py-0.5 text-xs bg-red-600 hover:bg-red-500 rounded-md disabled:bg-red-800">
-                              Desvincular
-                            </button>
-                          }
-                        </li>
-                      }
-                    </ul>
-                  } @else {
-                    <p class="text-xs text-gray-500">Nenhum item nesta categoria.</p>
-                  }
-                  
-                  @if (ifoodCategory.isSynced && ifoodCategory.chefosCategoryId) {
-                    <div class="mt-4 pt-4 border-t border-gray-700">
-                      <h4 class="text-sm font-semibold text-gray-400 mb-2">Adicionar itens do ChefOS a esta categoria:</h4>
-                      <ul class="space-y-2">
-                        @for (recipe of getUnsyncedRecipesForCategory(ifoodCategory); track recipe.id) {
-                          <li class="flex justify-between items-center text-sm p-2 rounded-md bg-gray-900/50">
-                            <span>{{ recipe.name }}</span>
-                            <button (click)="syncRecipe(recipe, ifoodCategory)" [disabled]="isLoading()" class="px-2 py-0.5 text-xs bg-green-600 hover:bg-green-500 rounded-md disabled:bg-green-800">
-                              Adicionar
-                            </button>
-                          </li>
-                        }
-                      </ul>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-    `,
-    changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'app-ifood-menu',
+  standalone: true,
+  imports: [CommonModule, RouterLink, FormsModule],
+  templateUrl: './ifood-menu.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class IfoodMenuComponent {
-    private stateService = inject(SupabaseStateService);
-    private ifoodMenuService = inject(IfoodMenuService);
-    private notificationService = inject(NotificationService);
+export class IfoodMenuComponent implements OnInit {
+  private stateService = inject(SupabaseStateService);
+  private ifoodMenuService = inject(IfoodMenuService);
+  private notificationService = inject(NotificationService);
+  private recipeDataService = inject(RecipeDataService);
 
-    isLoading = signal(true);
-    ifoodCategories = signal<IfoodCategory[]>([]);
-    
-    companyProfile = this.stateService.companyProfile;
-    ifoodMerchantId = computed(() => this.companyProfile()?.ifood_merchant_id);
-    
-    syncDataMap = computed(() => new Map(this.stateService.ifoodMenuSync().map(s => [s.recipe_id, s])));
+  isLoading = signal(true);
+  view = signal<'sync' | 'unsellable' | 'live'>('sync');
 
-    chefosMenu = computed<ChefosCategory[]>(() => {
-        const categories = this.stateService.categories();
-        const recipes = this.stateService.recipes().filter(r => r.is_available && !r.is_sub_recipe);
+  // iFood Data
+  ifoodCatalogs = signal<IfoodCatalog[]>([]);
+  selectedCatalogId = signal<string | null>(null);
+  ifoodCategories = signal<IfoodCategory[]>([]);
+  unsellableCategories = signal<UnsellableCategory[]>([]);
+  ifoodItemsByExternalCode = computed(() => {
+    const map = new Map<string, IfoodItem>();
+    for (const category of this.ifoodCategories()) {
+      for (const item of category.items) {
+        if (item.externalCode) {
+           map.set(item.externalCode, item);
+        }
+      }
+    }
+    return map;
+  });
+
+  // Local Data & Sync State
+  ifoodSyncData = this.stateService.ifoodMenuSync;
+  syncDataMap = computed(() => new Map(this.ifoodSyncData().map(s => [s.recipe_id, s])));
+  syncingItems = signal<Set<string>>(new Set());
+
+  localCategories = this.stateService.categories;
+  localCategoriesMap = computed(() => new Map(this.localCategories().map(c => [c.id, c.name])));
+  localRecipesByExternalCode = computed(() => {
+    const map = new Map<string, Recipe>();
+    this.stateService.recipes().forEach(r => {
+      if (r.external_code) {
+        map.set(r.external_code, r);
+      }
+    });
+    return map;
+  });
+  
+  // Modal states for live editing
+  isPriceModalOpen = signal(false);
+  editingPriceItem = signal<IfoodItem | null>(null);
+  newPrice = signal<number>(0);
+  isChangingPrice = signal(false);
+
+  isStatusModalOpen = signal(false);
+  editingStatusItem = signal<IfoodItem | null>(null);
+  newStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
+  isChangingStatus = signal(false);
+  
+  isCategoryModalOpen = signal(false);
+  newCategoryName = signal('');
+  isCreatingCategory = signal(false);
+
+  // Modal for editing recipe details
+  isEditRecipeModalOpen = signal(false);
+  editingRecipeForm = signal<Partial<Recipe>>({});
+
+  isUploadingImage = signal<string | null>(null); // Use item.id to track
+
+
+  private createSyncHash(recipe: Recipe): string {
+    return `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}`;
+  }
+
+  private localItemsWithSyncStatus = computed<MappedLocalItem[]>(() => {
+    const localRecipes = this.stateService.recipes().filter(r => !r.is_sub_recipe && r.is_available);
+    const categoriesMap = this.localCategoriesMap();
+    const syncMap = this.syncDataMap();
+    const syncing = this.syncingItems();
+
+    return localRecipes.map(recipe => {
+        let status: SyncStatus = 'unsynced';
         
-        return categories.map(cat => ({
-            ...cat,
-            recipes: recipes.filter(r => r.category_id === cat.id)
-        })).filter(cat => cat.recipes.length > 0);
-    });
-    
-    ifoodMenu = computed<IfoodCategoryWithSync[]>(() => {
-        const categories = this.ifoodCategories();
-        const syncMap = this.syncDataMap();
-
-        const ifoodProductIdToRecipeIdMap = new Map<string, string>();
-        for (const sync of syncMap.values()) {
-            ifoodProductIdToRecipeIdMap.set(sync.ifood_product_id, sync.recipe_id);
-        }
-
-        return categories.map(cat => {
-            const products = (cat.items || []).map(prod => ({
-                ...prod,
-                chefosRecipeId: ifoodProductIdToRecipeIdMap.get(prod.id) || null
-            }));
-
-            const chefosCatMatch = this.stateService.categories().find(c => c.id === cat.externalCode);
-
-            return {
-                ...cat,
-                products: products,
-                isSynced: !!chefosCatMatch,
-                chefosCategoryId: chefosCatMatch?.id || null
-            };
-        });
-    });
-
-    constructor() {
-        this.loadIfoodMenu();
-    }
-    
-    getUnsyncedRecipesForCategory(ifoodCategory: IfoodCategoryWithSync): Recipe[] {
-        if (!ifoodCategory.isSynced || !ifoodCategory.chefosCategoryId) {
-            return [];
-        }
-        const chefosCategory = this.chefosMenu().find(c => c.id === ifoodCategory.chefosCategoryId);
-        if (!chefosCategory) {
-            return [];
-        }
-        return chefosCategory.recipes.filter(recipe => !this.isRecipeSyncedToCategory(recipe, ifoodCategory));
-    }
-
-    async loadIfoodMenu() {
-        this.isLoading.set(true);
-        const merchantId = this.ifoodMerchantId();
-        if (!merchantId) {
-            this.notificationService.show('iFood Merchant ID não configurado em Configurações > Empresa.', 'warning');
-            this.isLoading.set(false);
-            return;
-        }
-
-        try {
-            const categories = await this.ifoodMenuService.getCategories(merchantId);
-            this.ifoodCategories.set(categories || []);
-        } catch (error) {
-            // Service already shows a toast
-        } finally {
-            this.isLoading.set(false);
-        }
-    }
-
-    async syncCategory(category: ChefosCategory) {
-        const merchantId = this.ifoodMerchantId();
-        if (!merchantId) return;
-
-        this.isLoading.set(true);
-        try {
-            await this.ifoodMenuService.upsertCategory(merchantId, {
-                name: category.name,
-                externalCode: category.id,
-                sequence: 0
-            });
-            this.notificationService.show(`Categoria "${category.name}" sincronizada.`, 'success');
-            await this.loadIfoodMenu();
-        } finally {
-            this.isLoading.set(false);
-        }
-    }
-
-    async syncRecipe(recipe: Recipe, ifoodCategory: IfoodCategoryWithSync) {
-        const merchantId = this.ifoodMerchantId();
-        if (!merchantId) return;
-
-        this.isLoading.set(true);
-        try {
-            const productPayload = {
-                name: recipe.name,
-                description: recipe.description || recipe.name,
-                externalCode: recipe.id,
-                price: {
-                    value: Math.round(recipe.price * 100)
-                },
-                sequence: 0
-            };
-            await this.ifoodMenuService.upsertProduct(merchantId, productPayload);
-            
-            const upsertedProduct = await this.ifoodMenuService.getProductByExternalCode(merchantId, recipe.id);
-            if (!upsertedProduct) {
-                throw new Error('Falha ao recuperar o produto sincronizado do iFood.');
+        if (syncing.has(recipe.id)) {
+            status = 'syncing';
+        } else {
+            const syncInfo = syncMap.get(recipe.id);
+            if (syncInfo) {
+                const currentHash = this.createSyncHash(recipe);
+                if (currentHash === syncInfo.last_sync_hash) {
+                    status = 'synced';
+                } else {
+                    status = 'modified';
+                }
             }
-
-            await this.ifoodMenuService.linkProductToCategory(merchantId, ifoodCategory.id, upsertedProduct.id, 0, productPayload.price.value);
-            
-            const syncRecord: IfoodMenuSync = {
-                recipe_id: recipe.id,
-                user_id: this.stateService.currentUser()!.id,
-                ifood_item_id: 'unknown',
-                ifood_product_id: upsertedProduct.id,
-                ifood_category_id: ifoodCategory.id,
-                last_synced_at: new Date().toISOString(),
-                last_sync_hash: '',
-                created_at: new Date().toISOString()
-            };
-
-            await this.saveSyncRecord(syncRecord);
-            
-            this.notificationService.show(`Produto "${recipe.name}" sincronizado.`, 'success');
-            await this.loadIfoodMenu();
-        } catch(error) {
-            this.notificationService.show(`Erro ao sincronizar produto: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
-        } finally {
-            this.isLoading.set(false);
         }
+
+        return {
+            recipe,
+            categoryName: categoriesMap.get(recipe.category_id) || 'Sem Categoria',
+            status: status,
+        };
+    });
+  });
+
+  localItemsToSync = computed<MappedLocalItem[]>(() => 
+    this.localItemsWithSyncStatus().filter(item => !!item.recipe.external_code)
+  );
+  
+  unsyncableLocalItems = computed<MappedLocalItem[]>(() => 
+    this.localItemsWithSyncStatus().filter(item => !item.recipe.external_code)
+  );
+
+  ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  async loadInitialData() {
+    this.isLoading.set(true);
+    try {
+      const catalogs = await this.ifoodMenuService.getCatalogs();
+      this.ifoodCatalogs.set(catalogs);
+
+      if (catalogs.length > 0) {
+        const defaultCatalog = catalogs.find(c => c.context.includes('DEFAULT')) || catalogs[0];
+        this.selectedCatalogId.set(defaultCatalog.catalogId);
+        await this.loadCatalogData(defaultCatalog.catalogId);
+      } else {
+         this.notificationService.show('Nenhum catálogo iFood encontrado.', 'warning');
+      }
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao buscar catálogos iFood: ${error.message}`, 'error');
+    } finally {
+      this.isLoading.set(false);
     }
+  }
 
-    async unlinkRecipe(recipeId: string, ifoodCategory: IfoodCategoryWithSync) {
-        const merchantId = this.ifoodMerchantId();
-        const syncInfo = this.syncDataMap().get(recipeId);
-        if (!merchantId || !syncInfo) return;
+  async loadCatalogData(catalogId: string) {
+    this.isLoading.set(true);
+    try {
+        const [categories, unsellable] = await Promise.all([
+            this.ifoodMenuService.getCategories(catalogId),
+            this.ifoodMenuService.getUnsellableItems(catalogId)
+        ]);
+        this.ifoodCategories.set(categories);
+        this.unsellableCategories.set(unsellable.categories);
+    } catch (error: any) {
+        this.notificationService.show(`Erro ao buscar dados do catálogo: ${error.message}`, 'error');
+    } finally {
+        this.isLoading.set(false);
+    }
+  }
 
-        this.isLoading.set(true);
-        try {
-            await this.ifoodMenuService.unlinkProductFromCategory(merchantId, ifoodCategory.id, syncInfo.ifood_product_id);
-            await this.deleteSyncRecord(recipeId);
-            this.notificationService.show(`Produto desvinculado.`, 'success');
-            await this.loadIfoodMenu();
-        } finally {
-            this.isLoading.set(false);
-        }
+  async syncItem(item: MappedLocalItem) {
+    const catalogId = this.selectedCatalogId();
+    if (!catalogId) {
+      this.notificationService.show('Nenhum catálogo selecionado.', 'error');
+      return;
     }
     
-    private async saveSyncRecord(record: IfoodMenuSync) {
-        const { error } = await supabase
-            .from('ifood_menu_sync')
-            .upsert(record, { onConflict: 'recipe_id, user_id' });
-        if (error) {
-            this.notificationService.show(`Erro ao salvar status da sincronização: ${error.message}`, 'error');
-        } else {
-            // Manually trigger a refetch of sync data
-            await this.stateService.refetchSimpleTable('ifood_menu_sync', '*', this.stateService.ifoodMenuSync);
+    this.syncingItems.update(s => new Set(s).add(item.recipe.id));
+
+    try {
+      const recipe = item.recipe;
+      const categoryName = item.categoryName;
+      if (!categoryName || categoryName === 'Sem Categoria') {
+        throw new Error('Receita sem categoria válida no ChefOS.');
+      }
+      
+      let ifoodCategoryId = this.ifoodCategories().find(c => c.name.toLowerCase() === categoryName.toLowerCase())?.id;
+      
+      if (!ifoodCategoryId) {
+        const maxSequence = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.sequence), -1);
+        const nextSequence = maxSequence + 1;
+        const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName, nextSequence);
+        ifoodCategoryId = newCategory.id;
+        await this.refreshCatalogData();
+      }
+      
+      const payload = this.mapRecipeToIfoodPayload(recipe, ifoodCategoryId);
+      const syncHash = this.createSyncHash(recipe);
+      await this.ifoodMenuService.syncItem(payload, recipe, syncHash);
+      
+      this.notificationService.show(`'${recipe.name}' sincronizado com sucesso!`, 'success');
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao sincronizar '${item.recipe.name}': ${error.message}`, 'error');
+    } finally {
+        this.syncingItems.update(s => {
+            const newSet = new Set(s);
+            newSet.delete(item.recipe.id);
+            return newSet;
+        });
+    }
+  }
+  
+  private mapRecipeToIfoodPayload(recipe: Recipe, categoryId: string): any {
+    const externalCode = recipe.external_code!;
+    const syncInfo = this.syncDataMap().get(recipe.id);
+    
+    // Generate deterministic UUIDs from the recipe ID for idempotency, if no sync info exists.
+    const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
+    const itemId = syncInfo?.ifood_item_id || `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
+    
+    return {
+      item: {
+        id: itemId,
+        type: "DEFAULT",
+        categoryId: categoryId,
+        status: "AVAILABLE",
+        price: {
+          value: recipe.price,
+          originalValue: recipe.price 
+        },
+        externalCode: externalCode,
+        index: 0,
+        productId: productId,
+      },
+      products: [
+        {
+          id: productId,
+          externalCode: externalCode,
+          name: recipe.name,
+          description: recipe.description || '',
         }
+      ],
+      optionGroups: [],
+      options: []
+    };
+  }
+  
+  // --- Live Editing Methods ---
+  openPriceModal(item: IfoodItem) {
+    this.editingPriceItem.set(item);
+    this.newPrice.set(item.price.value);
+    this.isPriceModalOpen.set(true);
+  }
+  closePriceModal() { this.isPriceModalOpen.set(false); }
+
+  async savePrice() {
+    const item = this.editingPriceItem();
+    if (!item || !item.externalCode) {
+        this.notificationService.show('Item inválido ou sem código externo.', 'error');
+        return;
     }
 
-    private async deleteSyncRecord(recipeId: string) {
-        const { error } = await supabase
-            .from('ifood_menu_sync')
-            .delete()
-            .eq('recipe_id', recipeId);
-        if (error) {
-            this.notificationService.show(`Erro ao remover status da sincronização: ${error.message}`, 'error');
-        } else {
-            await this.stateService.refetchSimpleTable('ifood_menu_sync', '*', this.stateService.ifoodMenuSync);
-        }
+    this.isChangingPrice.set(true);
+    try {
+      await this.ifoodMenuService.patchItemPrice(item.externalCode, this.newPrice());
+      this.notificationService.show('Solicitação de alteração de preço enviada!', 'success');
+      setTimeout(() => this.refreshCatalogData(), 2000);
+      this.closePriceModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao alterar preço: ${error.message}`, 'error');
+    } finally {
+      this.isChangingPrice.set(false);
+    }
+  }
+  
+  openStatusModal(item: IfoodItem) {
+    this.editingStatusItem.set(item);
+    this.newStatus.set(item.status as 'AVAILABLE' | 'UNAVAILABLE');
+    this.isStatusModalOpen.set(true);
+  }
+  closeStatusModal() { this.isStatusModalOpen.set(false); }
+  
+  async saveStatus() {
+    const item = this.editingStatusItem();
+    if (!item || !item.externalCode) {
+        this.notificationService.show('Item inválido ou sem código externo.', 'error');
+        return;
     }
 
-    isRecipeSyncedToCategory(recipe: Recipe, ifoodCategory: IfoodCategoryWithSync): boolean {
-        const syncInfo = this.syncDataMap().get(recipe.id);
-        if (!syncInfo) return false;
-        return ifoodCategory.products.some(p => p.id === syncInfo.ifood_product_id);
+    this.isChangingStatus.set(true);
+    try {
+      await this.ifoodMenuService.patchItemStatus(item.externalCode, this.newStatus());
+      this.notificationService.show('Solicitação de alteração de status enviada!', 'success');
+      setTimeout(() => this.refreshCatalogData(), 2000);
+      this.closeStatusModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao alterar status: ${error.message}`, 'error');
+    } finally {
+      this.isChangingStatus.set(false);
     }
+  }
+  
+  openCategoryModal() {
+    this.newCategoryName.set('');
+    this.isCategoryModalOpen.set(true);
+  }
+  closeCategoryModal() { this.isCategoryModalOpen.set(false); }
+
+  async saveNewCategory() {
+    // FIX: Called .trim() on the signal's value, not the signal itself.
+    const name = this.newCategoryName().trim();
+    const catalogId = this.selectedCatalogId();
+    if (!name || !catalogId) return;
+
+    this.isCreatingCategory.set(true);
+    try {
+      const maxSequence = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.sequence), -1);
+      const nextSequence = maxSequence + 1;
+      await this.ifoodMenuService.createCategory(catalogId, name, nextSequence);
+      this.notificationService.show('Categoria criada com sucesso no iFood!', 'success');
+      await this.refreshCatalogData();
+      this.closeCategoryModal();
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao criar categoria: ${error.message}`, 'error');
+    } finally {
+      this.isCreatingCategory.set(false);
+    }
+  }
+
+  triggerImageUpload(item: IfoodItem) {
+    const input = document.getElementById(`image-input-${item.id}`) as HTMLInputElement;
+    if (input) {
+        input.click();
+    }
+  }
+
+  async onImageSelected(event: Event, item: IfoodItem) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file || !item.externalCode) return;
+    
+    const recipe = this.localRecipesByExternalCode().get(item.externalCode);
+    if (!recipe) {
+        this.notificationService.show('Receita local correspondente não encontrada.', 'error');
+        return;
+    }
+
+    this.isUploadingImage.set(item.id);
+    
+    try {
+        // 1. Convert file to base64 for iFood
+        const base64Image = await this.fileToBase64(file);
+
+        // 2. Update image in Supabase and get the new URL for our own recipe
+        await this.recipeDataService.updateRecipeImage(recipe.id, file);
+
+        // 3. Prepare payload for iFood
+        const category = this.ifoodCategories().find(c => c.items.some(i => i.id === item.id));
+        if (!category) {
+          throw new Error("Categoria iFood não encontrada para o item.");
+        }
+        
+        // Refetch recipe to ensure we have the latest data after image upload
+        const updatedRecipe = { ...recipe, image_url: 'temp' }; // Placeholder, actual URL is in DB
+        const payload = this.mapRecipeToIfoodPayload(updatedRecipe, category.id);
+        
+        // Add the image to the product payload
+        payload.products[0].image = base64Image;
+
+        // 4. Send updated item with image to iFood
+        await this.ifoodMenuService.updateItemImage(payload, updatedRecipe, this.createSyncHash(updatedRecipe));
+        
+        this.notificationService.show(`Imagem de '${item.name}' atualizada com sucesso no iFood!`, 'success');
+
+        // 5. Refresh data to show new image from iFood
+        await this.refreshCatalogData();
+
+    } catch (error: any) {
+        this.notificationService.show(`Erro ao atualizar imagem: ${error.message}`, 'error');
+    } finally {
+        this.isUploadingImage.set(null);
+        // Reset file input value to allow re-uploading the same file
+        (event.target as HTMLInputElement).value = '';
+    }
+  }
+
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]); // Return only the base64 part
+        reader.onerror = error => reject(error);
+    });
+  }
+
+  private async refreshCatalogData() {
+    const catalogId = this.selectedCatalogId();
+    if (catalogId) {
+        await this.loadCatalogData(catalogId);
+    }
+  }
+  
+  // --- Recipe Edit Modal Methods ---
+  openRecipeEditModal(recipe: Recipe) {
+    this.editingRecipeForm.set({ ...recipe });
+    this.isEditRecipeModalOpen.set(true);
+  }
+
+  closeRecipeEditModal() {
+    this.isEditRecipeModalOpen.set(false);
+  }
+
+  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) {
+    this.editingRecipeForm.update(form => ({
+        ...form,
+        [field]: (field === 'price' || field === 'prep_time_in_minutes') ? +value : value
+    }));
+  }
+
+  async saveRecipeDetails() {
+    const formValue = this.editingRecipeForm();
+    if (!formValue || !formValue.id) return;
+    
+    if (!formValue.name?.trim() || !formValue.external_code?.trim()) {
+      this.notificationService.alert('Nome e Código Externo são obrigatórios.');
+      return;
+    }
+
+    const { success, error } = await this.recipeDataService.updateRecipeDetails(formValue.id, formValue);
+
+    if (success) {
+      this.notificationService.show('Detalhes da receita atualizados!', 'success');
+      this.closeRecipeEditModal();
+    } else {
+      this.notificationService.alert(`Erro ao salvar: ${error.message}`);
+    }
+  }
+
+
+  getStatusClass(status: SyncStatus): string {
+    switch(status) {
+      case 'synced': return 'bg-green-500';
+      case 'unsynced': return 'bg-blue-500';
+      case 'modified': return 'bg-yellow-500';
+      case 'error': return 'bg-red-500';
+      case 'syncing': return 'bg-gray-500 animate-pulse';
+      default: return 'bg-gray-400';
+    }
+  }
 }
