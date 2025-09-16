@@ -1,4 +1,3 @@
-
 import { inject, Injectable, signal } from '@angular/core';
 import { SupabaseStateService } from './supabase-state.service';
 import { NotificationService } from './notification.service';
@@ -151,13 +150,13 @@ export class IfoodMenuService {
 
   async patchItemPrice(itemId: string, catalogId: string, newPrice: number): Promise<void> {
     const endpoint = `/catalog/v2.0/merchants/{merchantId}/items/price`;
-    const payload = {
+    const payload = [{
         itemId: itemId,
         price: {
             value: newPrice,
             originalValue: newPrice
         }
-    };
+    }];
     await this.proxyRequest<void>('PATCH', endpoint, payload);
   }
 
