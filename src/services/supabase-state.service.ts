@@ -78,6 +78,12 @@ export class SupabaseStateService {
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
   openOrders = computed(() => this.orders().filter(o => o.status === 'OPEN'));
   
+  hasActiveSubscription = computed(() => {
+    const subs = this.subscriptions();
+    if (subs.length === 0) return false; 
+    return subs.some(s => s.status === 'active' || s.status === 'trialing');
+  });
+
   recipeCosts = computed(() => {
     const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
     const recipeIngredients = this.recipeIngredients();
@@ -256,6 +262,7 @@ export class SupabaseStateService {
             break;
         case 'subscriptions':
             this.refetchSubscriptionPermissions(userId);
+            this.refetchSimpleTable('subscriptions', '*', this.subscriptions);
             break;
         case 'ifood_webhook_logs':
             this.refetchIfoodLogs();
@@ -474,6 +481,7 @@ export class SupabaseStateService {
       supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
       supabase.from('ifood_menu_sync').select('*').eq('user_id', userId),
+      supabase.from('subscriptions').select('*').eq('user_id', userId),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -497,6 +505,7 @@ export class SupabaseStateService {
     this.inventoryLots.set(results[26].data || []);
     this.ifoodWebhookLogs.set(results[27].data as IfoodWebhookLog[] || []);
     this.ifoodMenuSync.set(results[28].data || []);
+    this.subscriptions.set(results[29].data as Subscription[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

@@ -21,6 +21,9 @@ export class AppComponent {
   operationalAuthService = inject(OperationalAuthService);
   supabaseStateService = inject(SupabaseStateService);
 
+  hasActiveSubscription = this.supabaseStateService.hasActiveSubscription;
+  isDataLoaded = this.supabaseStateService.isDataLoaded;
+
   isFullLayoutVisible = computed(() => {
     return this.authService.currentUser() && this.operationalAuthService.activeEmployee();
   });
