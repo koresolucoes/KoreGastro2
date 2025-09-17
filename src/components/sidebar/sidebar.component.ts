@@ -7,13 +7,15 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 export interface NavLink {
   name: string;
   path: string;
-  icon: string;
+  icon?: string;
+  imageUrl?: string;
   roles: string[];
 }
 
 export interface NavGroup {
   name: string;
-  icon: string;
+  icon?: string;
+  imageUrl?: string;
   children: NavLink[];
 }
 
@@ -38,6 +40,7 @@ export class SidebarComponent {
   isSidebarOpen = signal(true);
   expandedGroups = signal<Record<string, boolean>>({
     'Vendas': true,
+    'iFood': true,
   });
 
   allNavLinks: CombinedNavItem[] = [
@@ -47,10 +50,16 @@ export class SidebarComponent {
       children: [
         { name: 'PDV', path: '/pos', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', roles: ['Gerente', 'Caixa', 'Garçom'] },
         { name: 'Caixa', path: '/cashier', icon: 'M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zM8.25 6h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0', roles: ['Gerente', 'Caixa'] },
-        { name: 'iFood / Delivery', path: '/ifood-kds', icon: 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 003.375-3.375h1.5a1.125 1.125 0 011.125 1.125v1.5a3.375 3.375 0 00-3.375 3.375H3.375z', roles: ['Gerente', 'Caixa'] },
-        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75', roles: ['Gerente'] },
         { name: 'Reservas', path: '/reservations', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', roles: ['Gerente', 'Caixa', 'Garçom'] },
         { name: 'Clientes', path: '/customers', icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', roles: ['Gerente', 'Caixa'] },
+      ]
+    },
+    {
+      name: 'iFood',
+      imageUrl: 'https://i.imgur.com/NzlCBGX.png',
+      children: [
+        { name: 'KDS Delivery', path: '/ifood-kds', icon: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375', roles: ['Gerente', 'Caixa'] },
+        { name: 'Gerenciar Cardápio', path: '/ifood-menu', icon: 'M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75', roles: ['Gerente'] },
       ]
     },
     {

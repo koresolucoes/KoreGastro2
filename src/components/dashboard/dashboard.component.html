@@ -1,5 +1,4 @@
 
-
 <div class="container mx-auto">
   @if (isLoading()) {
     <div class="flex items-center justify-center h-[calc(100vh-10rem)]">
@@ -11,58 +10,90 @@
   } @else {
     <h1 class="text-3xl font-bold text-white mb-6">Dashboard</h1>
     
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
       @for (stat of stats(); track stat.label) {
-        <div class="bg-gray-800 rounded-lg p-6 flex items-start space-x-4">
-          <div class="bg-blue-600/20 text-blue-400 p-3 rounded-lg">
-            <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bg-gray-800 rounded-lg p-4 flex items-start space-x-3">
+          <div class="bg-blue-600/20 text-blue-400 p-2 rounded-lg">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="stat.icon" />
             </svg>
           </div>
           <div>
-            <p class="text-gray-400 text-sm font-medium">{{ stat.label }}</p>
-            <p class="text-3xl font-bold text-white">{{ stat.value }}</p>
+            <p class="text-gray-400 text-xs font-medium">{{ stat.label }}</p>
+            <p class="text-2xl font-bold text-white">{{ stat.value }}</p>
           </div>
         </div>
       }
     </div>
 
-    <!-- Sales vs COGS Chart -->
-    <div class="mt-8 bg-gray-800 rounded-lg p-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <div>
-          <h2 class="text-xl font-semibold text-white">Vendas vs. CMV</h2>
-          <p class="text-sm text-gray-400">Análise de faturamento bruto contra o custo dos produtos vendidos.</p>
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+      <div class="lg:col-span-3 bg-gray-800 rounded-lg p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-semibold text-white">Vendas vs. CMV</h2>
+            <p class="text-sm text-gray-400">Análise de faturamento e custo dos produtos vendidos.</p>
+          </div>
+          <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
+            <button (click)="setChartPeriod(7)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 7">7d</button>
+            <button (click)="setChartPeriod(30)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 30">30d</button>
+          </div>
         </div>
-        <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
-          <button (click)="setChartPeriod(7)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 7" [class.text-white]="chartPeriod() === 7">Últimos 7 dias</button>
-          <button (click)="setChartPeriod(30)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 30" [class.text-white]="chartPeriod() === 30">Últimos 30 dias</button>
+        <div class="h-80">
+          @if (isChartLoading()) {
+            <div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
+          } @else {
+            <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
+          }
         </div>
       </div>
-      <div class="h-80">
-        @if (isChartLoading()) {
-          <div class="flex items-center justify-center h-full">
-             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        } @else {
-          <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
-        }
+      <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-white">Vendas por Hora (Hoje)</h2>
+        <p class="text-sm text-gray-400 mb-4">Distribuição de vendas para identificar horários de pico.</p>
+        <div class="h-80">
+          @if (isHourlyChartLoading()) {
+            <div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
+          } @else {
+            <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
+          }
+        </div>
       </div>
     </div>
 
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6 flex flex-col">
-        <h2 class="text-xl font-semibold text-white mb-4">Vendas Recentes</h2>
+    <!-- Operational Lists -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
+        <h2 class="text-xl font-semibold text-white mb-4">Próximas Reservas (Hoje)</h2>
         <div class="flex-1 overflow-y-auto pr-2">
-          @if (recentTransactions().length > 0) {
+          @if (upcomingReservations().length > 0) {
             <ul class="space-y-4">
-              @for (transaction of recentTransactions(); track transaction.id) {
+              @for (res of upcomingReservations(); track res.id) {
                 <li class="flex justify-between items-center text-sm">
                   <div>
-                    <p class="font-medium text-white">{{ transaction.description }}</p>
-                    <p class="text-gray-400">{{ transaction.date | date:'HH:mm' }}</p>
+                    <p class="font-medium text-white">{{ res.customer_name }}</p>
+                    <p class="text-xs text-gray-400">{{ res.party_size }} pessoa(s)</p>
                   </div>
-                  <span class="font-semibold text-green-400">{{ transaction.amount | currency:'BRL' }}</span>
+                  <span class="font-semibold text-blue-400 font-mono text-base">{{ res.reservation_time | date:'HH:mm' }}</span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="flex items-center justify-center h-full text-center text-gray-500">
+              <p>Nenhuma reserva futura para hoje.</p>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
+        <h2 class="text-xl font-semibold text-white mb-4">Top 3 Vendedores (Hoje)</h2>
+        <div class="flex-1 overflow-y-auto pr-2">
+          @if (topEmployeesToday().length > 0) {
+            <ul class="space-y-4">
+              @for (emp of topEmployeesToday(); track emp.name) {
+                <li class="flex justify-between items-center">
+                  <p class="font-medium text-white">{{ emp.name }}</p>
+                  <span class="font-semibold text-green-400">{{ emp.sales | currency:'BRL' }}</span>
                 </li>
               }
             </ul>
@@ -73,30 +104,40 @@
           }
         </div>
       </div>
-      <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
-        <h2 class="text-xl font-semibold text-white mb-4">Itens Mais Vendidos (Hoje)</h2>
-        @if (bestSellingItems().length > 0) {
-          <ul class="space-y-4">
-            @for (item of bestSellingItems(); track item.name) {
-              <li class="flex justify-between items-center">
-                <div>
-                  <span class="font-medium text-white">{{ item.name }}</span>
-                  <span class="text-xs text-gray-400 block">{{ item.quantity }} vendidos</span>
-                </div>
-                <div class="text-right">
-                  <span class="font-semibold text-white">{{ item.revenue | currency:'BRL' }}</span>
-                   <span class="text-xs font-bold block" [class.text-green-400]="item.profitMargin > 50" [class.text-yellow-400]="item.profitMargin <= 50 && item.profitMargin > 0" [class.text-red-400]="item.profitMargin <= 0">
-                    {{ item.profitMargin | number:'1.0-0' }}% margem
-                  </span>
-                </div>
-              </li>
+       <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
+        <h2 class="text-xl font-semibold text-white mb-4">Alertas e Informações</h2>
+        <div class="flex-1 space-y-4">
+          <div>
+            <h3 class="font-semibold text-yellow-400 text-sm mb-2">Estoque Baixo</h3>
+             @if (lowStockItemsList().length > 0) {
+              <ul class="space-y-2 text-sm">
+                @for(item of lowStockItemsList(); track item.id) {
+                  <li class="flex justify-between items-center">
+                    <span class="text-gray-300">{{item.name}}</span>
+                    <span class="font-mono text-yellow-300">{{item.stock}} {{item.unit}}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-sm text-gray-500">Nenhum item com estoque baixo.</p>
             }
-          </ul>
-        } @else {
-          <div class="flex-1 flex items-center justify-center text-center text-gray-500">
-            <p>Nenhuma venda registrada hoje.</p>
           </div>
-        }
+           <div class="pt-4 border-t border-gray-700">
+            <h3 class="font-semibold text-red-400 text-sm mb-2">Funcionários Ausentes (Hoje)</h3>
+             @if (employeesOnLeaveToday().length > 0) {
+              <ul class="space-y-2 text-sm">
+                 @for(req of employeesOnLeaveToday(); track req.id) {
+                  <li class="flex justify-between items-center">
+                    <span class="text-gray-300">{{ req.employees?.name }}</span>
+                    <span class="text-xs font-semibold px-2 py-1 bg-red-900/50 text-red-300 rounded-full">{{req.request_type}}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-sm text-gray-500">Nenhum funcionário ausente hoje.</p>
+            }
+          </div>
+        </div>
       </div>
     </div>
   }

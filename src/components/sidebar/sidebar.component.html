@@ -24,9 +24,13 @@
                     [class.justify-center]="!isSidebarOpen()"
                     [class.bg-gray-700]="isGroupActive(item)">
               <div class="flex items-center space-x-4 flex-1 min-w-0">
-                <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-                </svg>
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 flex-shrink-0 object-contain">
+                } @else if (item.icon) {
+                  <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
+                  </svg>
+                }
                 <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
               </div>
               @if(isSidebarOpen()) {
@@ -54,9 +58,13 @@
             <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" 
               class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200"
               [class.justify-center]="!isSidebarOpen()">
-              <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-              </svg>
+              @if (item.imageUrl) {
+                <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 flex-shrink-0 object-contain">
+              } @else if (item.icon) {
+                <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
+                </svg>
+              }
               <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
             </a>
           }

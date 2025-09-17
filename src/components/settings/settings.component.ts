@@ -73,10 +73,15 @@ export class SettingsComponent {
       permissions: [
         { key: '/pos', label: 'PDV' },
         { key: '/cashier', label: 'Caixa' },
-        { key: '/ifood-kds', label: 'iFood / Delivery' },
-        { key: '/ifood-menu', label: 'Cardápio iFood' },
         { key: '/reservations', label: 'Reservas' },
         { key: '/customers', label: 'Clientes' }
+      ]
+    },
+    {
+      name: 'iFood',
+      permissions: [
+        { key: '/ifood-kds', label: 'KDS Delivery' },
+        { key: '/ifood-menu', label: 'Cardápio iFood' },
       ]
     },
     {

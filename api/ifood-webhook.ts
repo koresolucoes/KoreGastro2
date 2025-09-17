@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api.js';
 import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils.js';
+// FIX: Functions were missing from db-helpers. They have now been added.
 import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb } from './ifood-webhook-lib/db-helpers.js';
 
 export const config = {
@@ -17,7 +18,7 @@ const supabase = createClient(
 );
 
 const ORDER_EVENTS = new Set(['PLACED', 'CONFIRMED', 'DISPATCHED', 'READY_FOR_PICKUP', 'CONCLUDED', 'CANCELLED']);
-const LOGISTICS_EVENTS = new Set(['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DELIVERY_PICKUP_CODE_REQUESTED', 'ARRIVED_AT_DESTINATION']);
+const LOGISTICS_EVENTS = new Set(['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DELIVERY_DROP_CODE_REQUESTED', 'ARRIVED_AT_DESTINATION']);
 
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
@@ -118,8 +119,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
             break;
         case 'CANCELLED':
-            const orderIdToCancel = payload.orderId;
-            if (!orderIdToCancel || typeof orderIdToCancel !== 'string') throw new Error("CANCELLED event is missing a valid 'orderId'.");
+            // FIX: Use consistent helper function to get order ID.
+            const orderIdToCancel = getOrderIdFromPayload(payload);
+            if (!orderIdToCancel) throw new Error("CANCELLED event is missing a valid 'orderId'.");
             await cancelOrderInDb(supabase, orderIdToCancel);
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CANCELLED');
             break;

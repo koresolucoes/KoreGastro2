@@ -34,9 +34,9 @@ export class SalesCogsChartComponent {
     d3.select(containerEl).select('svg').remove();
     d3.select(containerEl).select('div').remove(); // Remove potential error message div
 
-    if (data.length === 0) {
+    if (data.length === 0 || data.every(d => d.sales === 0 && d.cogs === 0)) {
         d3.select(containerEl).append('div')
-            .attr('class', 'flex items-center justify-center h-full text-gray-500')
+            .attr('class', 'flex items-center justify-center h-full text-gray-500 text-sm')
             .text('Nenhum dado de vendas no período para exibir o gráfico.');
         return;
     }

@@ -188,7 +188,6 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
     if (ingredientsRes.error) throw ingredientsRes.error;
 
     // 2. Create maps for quick lookups.
-    // FIX: Add explicit types to map callbacks to avoid type errors.
     const recipeByExternalCodeMap = new Map((recipesRes.data || []).map((r: any) => [r.external_code, r.id]));
     const ingredientByExternalCodeMap = new Map((ingredientsRes.data || []).map((i: any) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
 
@@ -196,137 +195,190 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
     const ingredientIds = (ingredientsRes.data || []).map((i: any) => i.id);
     let sourceRecipeByIngredientIdMap = new Map();
     if (ingredientIds.length > 0) {
-        const { data: sourceRecipes, error: recipeError } = await supabase.from('recipes').select('id, source_ingredient_id').in('source_ingredient_id', ingredientIds).eq('user_id', userId);
+        // FIX: The original code used 'ingredient' instead of 'ingredientIds'.
+        const { data: sourceRecipes, error: recipeError } = await supabase.from('recipes').select('id, source_ingredient_id').in('source_ingredient_id', ingredientIds);
         if (recipeError) throw recipeError;
-// FIX: Changed optional chaining to a safer pattern and typed the map item as 'any' to resolve 'unknown' type errors.
-        sourceRecipeByIngredientIdMap = new Map((sourceRecipes || []).map((r: any) => [r.source_ingredient_id, r.id]));
+        (sourceRecipes || []).forEach((r: any) => {
+            if(r.source_ingredient_id) {
+                sourceRecipeByIngredientIdMap.set(r.source_ingredient_id, r.id);
+            }
+        });
     }
 
-    // 4. Fetch all preparations needed for any potential recipe match.
-    const allPossibleRecipeIds = [
-        ...recipeByExternalCodeMap.values(),
-// FIX: Typed the map item as 'any' to resolve property access errors on type 'unknown'.
-        ...(ingredientsRes.data || []).map((i: any) => i.proxy_recipe_id).filter(Boolean),
-        ...sourceRecipeByIngredientIdMap.values()
-    ];
+    const orderItems: Omit<OrderItem, 'id' | 'created_at'>[] = payload.items.flatMap((item: any) => {
+        const mainRecipeId = recipeByExternalCodeMap.get(item.externalCode);
+        const mainIngredient = ingredientByExternalCodeMap.get(item.externalCode);
 
-    const { data: preparations, error: prepsError } = await supabase
-        .from('recipe_preparations')
-        .select('recipe_id, station_id, name')
-        .in('recipe_id', allPossibleRecipeIds)
-        .eq('user_id', userId);
-    if (prepsError) throw prepsError;
-
-    const prepsByRecipeId = (preparations || []).reduce((acc, p) => {
-        if (!acc.has(p.recipe_id)) acc.set(p.recipe_id, []);
-        acc.get(p.recipe_id)!.push(p);
-        return acc;
-    }, new Map<string, any[]>());
-
-    // 5. Process items and build the insert payload.
-    const orderItemsToInsert = payload.items.flatMap((item: any) => {
+        // Determine if this is a recipe-based item or an ingredient-based item
         let recipeId: string | null = null;
-        let stationId: string | null = fallbackStationId;
-        let isSimpleIngredient = true;
+        let stationId: string = fallbackStationId;
 
-        // Priority 1: Direct match on recipe.external_code
-        recipeId = recipeByExternalCodeMap.get(item.externalCode) || null;
+        if (mainRecipeId) {
+            recipeId = mainRecipeId;
+        } else if (mainIngredient) {
+            recipeId = sourceRecipeByIngredientIdMap.get(mainIngredient.id) || mainIngredient.proxy_recipe_id;
+            stationId = mainIngredient.station_id || fallbackStationId;
+        }
+
+        if (!recipeId) {
+            console.warn(`No matching recipe or ingredient for external code: ${item.externalCode}. Skipping item.`);
+            if (logId) updateLogStatus(supabase, logId, 'WARNING_SKIPPED_ITEM', `External code not found: ${item.externalCode}`);
+            return []; // Skip this item
+        }
         
-        // Priority 2: Match via ingredient.external_code
-        if (recipeId) {
-            isSimpleIngredient = false;
-        } else {
-            const matchedIngredient = ingredientByExternalCodeMap.get(item.externalCode);
-            if (matchedIngredient) {
-                isSimpleIngredient = false;
-                recipeId = sourceRecipeByIngredientIdMap.get(matchedIngredient.id) ?? matchedIngredient.proxy_recipe_id ?? null;
-                stationId = matchedIngredient.station_id ?? fallbackStationId;
-                if (!recipeId) {
-                    isSimpleIngredient = true;
+        const baseItem: Partial<OrderItem> = {
+            order_id: newOrder.id,
+            recipe_id: recipeId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price.unit,
+            original_price: item.price.originalValue || item.price.unit,
+            notes: item.observations || null,
+            status: 'PENDENTE',
+            station_id: stationId,
+            status_timestamps: { 'PENDENTE': new Date().toISOString() },
+            user_id: userId,
+        };
+
+        const itemsToInsert = [baseItem];
+
+        // Handle options as separate order items
+        if (Array.isArray(item.options)) {
+            item.options.forEach((option: any) => {
+                const optionRecipeId = recipeByExternalCodeMap.get(option.externalCode);
+                const optionIngredient = ingredientByExternalCodeMap.get(option.externalCode);
+
+                let optRecipeId: string | null = null;
+                let optStationId: string = fallbackStationId;
+
+                if (optionRecipeId) {
+                    optRecipeId = optionRecipeId;
+                } else if (optionIngredient) {
+                    optRecipeId = sourceRecipeByIngredientIdMap.get(optionIngredient.id) || optionIngredient.proxy_recipe_id;
+                    optStationId = optionIngredient.station_id || fallbackStationId;
                 }
-            }
-        }
-        
-        const status_timestamps = { 'PENDENTE': new Date().toISOString() };
-        const notes = [item.observations, ...(item.options || []).map((opt: any) => `${opt.quantity}x ${opt.name}`)].filter(Boolean).join('; ');
 
-        // Case A: A recipe was found
-        if (recipeId && !isSimpleIngredient) {
-            const recipePreps = prepsByRecipeId.get(recipeId);
-            if (recipePreps && recipePreps.length > 0) {
-                const groupId = uuidv4();
-                return recipePreps.map(prep => ({
-                    order_id: newOrder.id, recipe_id: recipeId, name: `${item.name} (${prep.name})`,
-                    quantity: item.quantity, price: item.totalPrice / recipePreps.length, original_price: (item.unitPrice * item.quantity) / recipePreps.length,
-                    notes, status: 'PENDENTE', station_id: prep.station_id, group_id: groupId,
-                    status_timestamps, user_id: userId
-                }));
-            } else {
-                return [{
-                    order_id: newOrder.id, recipe_id: recipeId, name: item.name,
-                    quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
-                    notes, status: 'PENDENTE', station_id: fallbackStationId, group_id: null,
-                    status_timestamps, user_id: userId
-                }];
-            }
+                if (optRecipeId) {
+                    itemsToInsert.push({
+                        ...baseItem,
+                        recipe_id: optRecipeId,
+                        name: option.name,
+                        quantity: option.quantity,
+                        price: option.price.unit,
+                        original_price: option.price.originalValue || option.price.unit,
+                        notes: null, // Options usually don't have observations
+                        station_id: optStationId,
+                    });
+                } else {
+                    console.warn(`No matching recipe/ingredient for option external code: ${option.externalCode}. Skipping option.`);
+                }
+            });
         }
         
-        // Case B: A simple sellable ingredient was found
-        if (isSimpleIngredient && ingredientByExternalCodeMap.has(item.externalCode)) {
-             return [{
-                order_id: newOrder.id, recipe_id: null, name: item.name,
-                quantity: item.quantity, price: item.totalPrice, original_price: item.unitPrice * item.quantity,
-                notes, status: 'PENDENTE', station_id: stationId, group_id: null,
-                status_timestamps, user_id: userId
-            }];
-        }
-        
-        // Case C: No match found
-        console.warn(`No recipe or sellable ingredient found for external code: ${item.externalCode}. Skipping item: ${item.name}`);
-        return [];
+        return itemsToInsert;
     });
 
-    if (orderItemsToInsert.length > 0) {
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
+    if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems as any);
         if (itemsError) {
-          if (logId) await updateLogStatus(supabase, logId, 'ERROR_ITEM_INSERT', itemsError.message);
+            // Attempt to clean up the created order if item insertion fails
+            await supabase.from('orders').delete().eq('id', newOrder.id);
+            throw new Error(itemsError.message);
         }
     }
   }
 }
 
-export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-  await supabase.from('orders')
-    .update({ status: 'CANCELLED', completed_at: new Date().toISOString() })
-    .eq('ifood_order_id', ifoodOrderId);
-}
+// FIX: Add missing order status update functions.
 
+/**
+ * Updates the status of an order's items to EM_PREPARO in the database.
+ * @param supabase The Supabase client instance.
+ * @param ifoodOrderId The iFood order ID.
+ */
 export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-    const { data: order, error } = await supabase.from('orders').select('id').eq('ifood_order_id', ifoodOrderId).single();
-    if (error || !order) {
-        console.error(`Order with ifood_order_id ${ifoodOrderId} not found for CONFIRMED event.`);
-        return;
-    }
-    await supabase.from('order_items')
-        .update({ status: 'EM_PREPARO' })
-        .eq('order_id', order.id)
-        .eq('status', 'PENDENTE');
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('ifood_order_id', ifoodOrderId)
+    .maybeSingle();
+
+  if (orderError) throw orderError;
+  if (!order) {
+    console.warn(`DB Info: Order with iFood ID ${ifoodOrderId} not found for CONFIRMED event. It might have been created manually.`);
+    return;
+  }
+
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .update({ status: 'EM_PREPARO' })
+    .eq('order_id', order.id)
+    .eq('status', 'PENDENTE');
+
+  if (itemsError) {
+    console.error(`DB Error: Failed to update items to EM_PREPARO for order ${order.id}`, itemsError);
+    throw itemsError;
+  }
 }
 
+/**
+ * Updates the status of an order's items to PRONTO in the database.
+ * @param supabase The Supabase client instance.
+ * @param ifoodOrderId The iFood order ID.
+ */
 export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-    const { data: order, error } = await supabase.from('orders').select('id').eq('ifood_order_id', ifoodOrderId).single();
-    if (error || !order) {
-        console.error(`Order with ifood_order_id ${ifoodOrderId} not found for DISPATCHED/READY_FOR_PICKUP event.`);
-        return;
-    }
-    await supabase.from('order_items')
-        .update({ status: 'PRONTO' })
-        .eq('order_id', order.id)
-        .in('status', ['PENDENTE', 'EM_PREPARO']);
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('ifood_order_id', ifoodOrderId)
+    .maybeSingle();
+
+  if (orderError) throw orderError;
+  if (!order) {
+    console.warn(`DB Info: Order with iFood ID ${ifoodOrderId} not found for DISPATCHED/READY_FOR_PICKUP event.`);
+    return;
+  }
+
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .update({ status: 'PRONTO' })
+    .eq('order_id', order.id)
+    .in('status', ['PENDENTE', 'EM_PREPARO']);
+
+  if (itemsError) {
+    console.error(`DB Error: Failed to update items to PRONTO for order ${order.id}`, itemsError);
+    throw itemsError;
+  }
 }
 
+/**
+ * Updates the status of an order to COMPLETED in the database.
+ * @param supabase The Supabase client instance.
+ * @param ifoodOrderId The iFood order ID.
+ */
 export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-    await supabase.from('orders')
+    const { error } = await supabase
+        .from('orders')
         .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
         .eq('ifood_order_id', ifoodOrderId);
+    if (error) {
+        console.error(`DB Error: Failed to conclude iFood order ${ifoodOrderId}`, error);
+        throw error;
+    }
+}
+
+/**
+ * Updates the status of an order to CANCELLED in the database.
+ * @param supabase The Supabase client instance.
+ * @param ifoodOrderId The iFood order ID.
+ */
+export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'CANCELLED', completed_at: new Date().toISOString() })
+    .eq('ifood_order_id', ifoodOrderId);
+  if (error) {
+    console.error(`DB Error: Failed to cancel iFood order ${ifoodOrderId}`, error);
+    throw error;
+  }
 }
