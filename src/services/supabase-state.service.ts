@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog, IfoodMenuSync } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog, IfoodMenuSync, Subscription } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -59,6 +59,10 @@ export class SupabaseStateService {
   // New signal for iFood logs
   ifoodWebhookLogs = signal<IfoodWebhookLog[]>([]);
   ifoodMenuSync = signal<IfoodMenuSync[]>([]);
+
+  // Subscription plan signals
+  subscriptions = signal<Subscription[]>([]);
+  activeUserPermissions = signal<Set<string>>(new Set());
 
   completedOrders = signal<Order[]>([]);
   transactions = signal<Transaction[]>([]);
@@ -230,12 +234,28 @@ export class SupabaseStateService {
       });
   }
 
+  private async refetchSubscriptionPermissions(userId: string) {
+    const { data: permissions, error } = await supabase.rpc('get_user_active_permissions', { p_user_id: userId });
+    if (!error && permissions) {
+        this.activeUserPermissions.set(new Set(permissions.map((p: any) => p.permission_key)));
+    } else if (error) {
+        console.error('Error refetching subscription permissions:', error);
+        this.activeUserPermissions.set(new Set()); // Clear permissions on error
+    }
+  }
+
   private handleChanges(payload: any) {
     console.log('Realtime change received:', payload);
+    const userId = this.currentUser()?.id;
+    if (!userId) return;
+
     switch (payload.table) {
         case 'orders':
         case 'order_items':
             this.refetchOrders();
+            break;
+        case 'subscriptions':
+            this.refetchSubscriptionPermissions(userId);
             break;
         case 'ifood_webhook_logs':
             this.refetchIfoodLogs();
@@ -397,6 +417,8 @@ export class SupabaseStateService {
     this.inventoryLots.set([]);
     this.ifoodWebhookLogs.set([]);
     this.ifoodMenuSync.set([]);
+    this.subscriptions.set([]);
+    this.activeUserPermissions.set(new Set());
     // FIX: Clear customers data on logout.
     this.customers.set([]);
     // FIX: Clear roles and permissions data on logout.
@@ -410,7 +432,10 @@ export class SupabaseStateService {
 
   private async loadInitialData(userId: string) {
     this.isDataLoaded.set(false);
-    try { await this.refreshData(userId); } 
+    try { 
+      await this.refetchSubscriptionPermissions(userId);
+      await this.refreshData(userId); 
+    } 
     catch (error) { this.clearAllData(); } 
     finally { this.isDataLoaded.set(true); }
   }

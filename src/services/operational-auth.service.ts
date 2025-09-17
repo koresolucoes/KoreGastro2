@@ -165,13 +165,20 @@ export class OperationalAuthService {
     const employee = this.activeEmployee();
     if (!employee || !employee.role_id) return false;
 
-    // Use the database-driven permissions from SupabaseStateService
     // Strip query parameters from the URL to get the base path for permission checking.
     const pathOnly = url.split('?')[0];
     const routeKey = '/' + pathOnly.split('/')[1];
     
-    const permissions = this.stateService.rolePermissions();
-    return permissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+    // Condition 1: Does the employee's role have permission?
+    const rolePermissions = this.stateService.rolePermissions();
+    const hasRolePermission = rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+
+    // Condition 2: Does the account's subscription plan have permission?
+    const subscriptionPermissions = this.stateService.activeUserPermissions();
+    const hasSubscriptionPermission = subscriptionPermissions.has(routeKey);
+    
+    // Access is granted only if BOTH conditions are true.
+    return hasRolePermission && hasSubscriptionPermission;
   }
 
   getDefaultRoute(): string {

@@ -14,6 +14,7 @@ export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free
 export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 
 
 // --- New Types for Settings ---
@@ -504,4 +505,27 @@ export interface IfoodWebhookLog {
   raw_payload: any; // jsonb
   processing_status: string | null;
   error_message: string | null;
+}
+
+// --- Subscription Plan Models ---
+export interface Plan {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
+export interface PlanPermission {
+  plan_id: string;
+  permission_key: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
 }
