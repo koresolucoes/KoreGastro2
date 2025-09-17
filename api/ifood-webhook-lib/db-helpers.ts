@@ -188,12 +188,16 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
     if (ingredientsRes.error) throw ingredientsRes.error;
 
     // 2. Create maps for quick lookups.
-    const recipeByExternalCodeMap = new Map((recipesRes.data || []).map((r: any) => [r.external_code, r.id]));
-    const ingredientByExternalCodeMap = new Map((ingredientsRes.data || []).map((i: any) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
+    // FIX: Add explicit types to maps to ensure type safety.
+    const recipeByExternalCodeMap = new Map<string, string>((recipesRes.data || []).map((r: any) => [r.external_code, r.id]));
+    
+    type IngredientMapValue = { id: string; proxy_recipe_id: string | null; station_id: string | null };
+    const ingredientByExternalCodeMap = new Map<string, IngredientMapValue>((ingredientsRes.data || []).map((i: any) => [i.external_code, { id: i.id, proxy_recipe_id: i.proxy_recipe_id, station_id: i.station_id }]));
 
     // 3. For ingredients that are linked to sub-recipes, create a map for that.
     const ingredientIds = (ingredientsRes.data || []).map((i: any) => i.id);
-    let sourceRecipeByIngredientIdMap = new Map();
+    // FIX: Explicitly type the map to ensure type safety.
+    let sourceRecipeByIngredientIdMap = new Map<string, string>();
     if (ingredientIds.length > 0) {
         // FIX: The original code used 'ingredient' instead of 'ingredientIds'.
         const { data: sourceRecipes, error: recipeError } = await supabase.from('recipes').select('id, source_ingredient_id').in('source_ingredient_id', ingredientIds);
@@ -216,7 +220,8 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
         if (mainRecipeId) {
             recipeId = mainRecipeId;
         } else if (mainIngredient) {
-            recipeId = sourceRecipeByIngredientIdMap.get(mainIngredient.id) || mainIngredient.proxy_recipe_id;
+            // FIX: Use nullish coalescing to handle potential undefined from map.get() and ensure type safety.
+            recipeId = sourceRecipeByIngredientIdMap.get(mainIngredient.id) ?? mainIngredient.proxy_recipe_id;
             stationId = mainIngredient.station_id || fallbackStationId;
         }
 
@@ -254,7 +259,8 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
                 if (optionRecipeId) {
                     optRecipeId = optionRecipeId;
                 } else if (optionIngredient) {
-                    optRecipeId = sourceRecipeByIngredientIdMap.get(optionIngredient.id) || optionIngredient.proxy_recipe_id;
+                    // FIX: Use nullish coalescing to handle potential undefined from map.get() and ensure type safety.
+                    optRecipeId = sourceRecipeByIngredientIdMap.get(optionIngredient.id) ?? optionIngredient.proxy_recipe_id;
                     optStationId = optionIngredient.station_id || fallbackStationId;
                 }
 
