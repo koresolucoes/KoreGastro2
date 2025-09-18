@@ -43,6 +43,8 @@ export class SettingsComponent {
   rolePermissions = this.stateService.rolePermissions;
   loyaltySettings = this.stateService.loyaltySettings;
   loyaltyRewards = this.stateService.loyaltyRewards;
+  subscription = this.stateService.subscription;
+  currentPlan = this.stateService.currentPlan;
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];

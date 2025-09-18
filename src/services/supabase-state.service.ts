@@ -85,6 +85,13 @@ export class SupabaseStateService {
   });
 
   subscription = computed(() => this.subscriptions()[0] ?? null);
+  
+  currentPlan = computed(() => {
+    const sub = this.subscription();
+    const plans = this.plans();
+    if (!sub) return null;
+    return plans.find(p => p.id === sub.plan_id) ?? null;
+  });
 
   isTrialing = computed(() => {
     const subs = this.subscriptions();

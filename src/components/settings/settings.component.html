@@ -42,45 +42,65 @@
   <!-- Tab Content -->
   @switch (activeTab()) {
     @case ('empresa') {
-      <!-- Panel: Company Profile -->
-      <div class="bg-gray-800 rounded-lg p-6 max-w-3xl mx-auto">
-        <h2 class="text-xl font-semibold text-white mb-4">Dados da Empresa</h2>
-        <div class="space-y-4">
-          <div class="flex flex-col items-center gap-4">
-            <label for="logo-upload" class="cursor-pointer">
-              @if(logoPreviewUrl()) {
-                <img [src]="logoPreviewUrl()" alt="Logo preview" class="h-24 w-24 rounded-full object-cover border-2 border-gray-600 hover:opacity-80">
-              } @else {
-               <div class="h-24 w-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600">
-                  <span class="text-5xl font-extrabold text-gray-800">
-                    <span>C</span><span class="text-blue-600">OS</span>
-                  </span>
-               </div>
-            }
-            </label>
-            <input id="logo-upload" type="file" class="hidden" (change)="handleLogoFileChange($event)" accept="image/png, image/jpeg, image/webp">
-            <p class="text-xs text-gray-400">Clique na imagem para alterar o logo</p>
+      <div class="max-w-3xl mx-auto space-y-6">
+        <!-- Panel: Company Profile -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h2 class="text-xl font-semibold text-white mb-4">Dados da Empresa</h2>
+          <div class="space-y-4">
+            <div class="flex flex-col items-center gap-4">
+              <label for="logo-upload" class="cursor-pointer">
+                @if(logoPreviewUrl()) {
+                  <img [src]="logoPreviewUrl()" alt="Logo preview" class="h-24 w-24 rounded-full object-cover border-2 border-gray-600 hover:opacity-80">
+                } @else {
+                 <div class="h-24 w-24 rounded-full bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600">
+                    <span class="text-5xl font-extrabold text-gray-800">
+                      <span>C</span><span class="text-blue-600">OS</span>
+                    </span>
+                 </div>
+              }
+              </label>
+              <input id="logo-upload" type="file" class="hidden" (change)="handleLogoFileChange($event)" accept="image/png, image/jpeg, image/webp">
+              <p class="text-xs text-gray-400">Clique na imagem para alterar o logo</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Empresa</label>
+              <input type="text" [value]="companyProfileForm().company_name || ''" (input)="updateCompanyProfileField('company_name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
+              <input type="text" [value]="companyProfileForm().cnpj || ''" (input)="updateCompanyProfileField('cnpj', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
+              <input type="text" [value]="companyProfileForm().address || ''" (input)="updateCompanyProfileField('address', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Telefone de Contato</label>
+              <input type="tel" [value]="companyProfileForm().phone || ''" (input)="updateCompanyProfileField('phone', $any($event.target).value)" placeholder="(XX) XXXXX-XXXX" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Empresa</label>
-            <input type="text" [value]="companyProfileForm().company_name || ''" (input)="updateCompanyProfileField('company_name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
-            <input type="text" [value]="companyProfileForm().cnpj || ''" (input)="updateCompanyProfileField('cnpj', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
-            <input type="text" [value]="companyProfileForm().address || ''" (input)="updateCompanyProfileField('address', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Telefone de Contato</label>
-            <input type="tel" [value]="companyProfileForm().phone || ''" (input)="updateCompanyProfileField('phone', $any($event.target).value)" placeholder="(XX) XXXXX-XXXX" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          <div class="mt-6">
+            <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Dados da Empresa</button>
           </div>
         </div>
-        <div class="mt-6">
-          <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Dados da Empresa</button>
-        </div>
+         <!-- Panel: Subscription Details -->
+        @if (subscription(); as sub) {
+          <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">Detalhes da Assinatura</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+              <div class="flex flex-col"><dt class="text-gray-400">Plano Atual</dt><dd class="text-white font-bold text-lg">{{ currentPlan()?.name || 'N/A' }}</dd></div>
+              <div class="flex flex-col"><dt class="text-gray-400">Valor</dt><dd class="text-white font-bold text-lg">{{ (currentPlan()?.price | currency:'BRL') || 'N/A' }}</dd></div>
+              <div class="flex flex-col"><dt class="text-gray-400">Status</dt><dd class="font-semibold capitalize" [class.text-green-400]="sub.status === 'active' || sub.status === 'trialing'" [class.text-red-400]="sub.status !== 'active' && sub.status !== 'trialing'">{{ sub.status }}</dd></div>
+              <div class="flex flex-col"><dt class="text-gray-400">Recorrente</dt><dd class="text-white font-medium">{{ sub.recurrent ? 'Sim' : 'Não' }}</dd></div>
+              <div class="flex flex-col sm:col-span-2"><dt class="text-gray-400">Vencimento / Próxima Cobrança</dt><dd class="text-white font-medium">{{ (sub.current_period_end | date:'dd/MM/yyyy') || 'N/A' }}</dd></div>
+            </div>
+             <div class="mt-4 pt-4 border-t border-gray-700">
+                <a href="https://chefos.koresolucoes.com.br/#/auth/portal" target="_blank" class="w-full text-center block bg-blue-600/80 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
+                    Gerenciar Assinatura
+                </a>
+            </div>
+          </div>
+        }
       </div>
     }
     @case ('operacao') {

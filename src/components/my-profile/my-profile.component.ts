@@ -29,6 +29,12 @@ export class MyProfileComponent implements OnInit {
   timeEntriesThisMonth = signal<TimeClockEntry[]>([]);
   transactionsThisMonth = signal<Transaction[]>([]);
   scheduleThisWeek = signal<Schedule | null>(null);
+
+  // Subscription data
+  currentPlan = this.stateService.currentPlan;
+  subscription = this.stateService.subscription;
+  trialDaysRemaining = this.stateService.trialDaysRemaining;
+  isPlanModalOpen = signal(false);
   
   myLeaveRequests = computed(() => {
     const empId = this.activeEmployee()?.id;

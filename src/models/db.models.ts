@@ -70,6 +70,7 @@ export interface Employee {
   rg?: string | null;
   address?: string | null;
   phone?: string | null;
+  email?: string | null;
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   hire_date?: string | null;
@@ -513,6 +514,7 @@ export interface Plan {
   id: string;
   name: string;
   slug: string;
+  price: number | null;
   trial_period_days: number | null;
   created_at: string;
 }
