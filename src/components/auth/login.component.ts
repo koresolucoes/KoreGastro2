@@ -46,20 +46,4 @@ export class LoginComponent {
       this.authState.set('error');
     }
   }
-
-  async handleGoogleLogin() {
-    this.authState.set('loading');
-    this.errorMessage.set('');
-
-    try {
-        const { error } = await this.authService.signInWithGoogle();
-        if (error) {
-            throw error;
-        }
-        // No need to navigate here. Supabase handles the redirect.
-    } catch (error: any) {
-        this.errorMessage.set('Falha ao autenticar com o Google.');
-        this.authState.set('error');
-    }
-  }
 }

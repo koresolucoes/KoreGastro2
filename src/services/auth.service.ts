@@ -39,16 +39,6 @@ export class AuthService {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   }
-  
-  /**
-   * Signs in the user using Google OAuth.
-   */
-  async signInWithGoogle(): Promise<{ error: any }> {
-    const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-    });
-    return { error };
-  }
 
   /**
    * Signs out the current user.
