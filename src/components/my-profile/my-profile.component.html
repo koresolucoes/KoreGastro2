@@ -1,0 +1,111 @@
+<div class="container mx-auto">
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-[calc(100vh-10rem)]">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+        <p class="text-gray-400">Carregando seus dados...</p>
+      </div>
+    </div>
+  } @else if (activeEmployee(); as employee) {
+    <!-- Profile Header -->
+    <div class="flex flex-col sm:flex-row items-center gap-6 mb-8">
+      @if (employee.photo_url) {
+        <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-24 h-24 rounded-full object-cover border-4 border-gray-700">
+      } @else {
+        <div class="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600">
+          <svg class="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        </div>
+      }
+      <div>
+        <h1 class="text-3xl font-bold text-white text-center sm:text-left">{{ employee.name }}</h1>
+        <p class="text-lg text-gray-400 text-center sm:text-left">{{ employee.role }}</p>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left Column -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Personal Details -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Meus Dados</h2>
+          <dl class="space-y-3 text-sm">
+            <div class="flex flex-col"><dt class="text-gray-400">Telefone</dt><dd class="text-white font-medium">{{ employee.phone || 'Não informado' }}</dd></div>
+            <div class="flex flex-col"><dt class="text-gray-400">Data de Contratação</dt><dd class="text-white font-medium">{{ employee.hire_date ? (employee.hire_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
+            <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ employee.cpf || 'Não informado' }}</dd></div>
+          </dl>
+        </div>
+      </div>
+      
+      <!-- Center Column -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Work Summary -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Resumo do Mês</h2>
+          <div class="space-y-4">
+            <div class="bg-gray-700/50 p-3 rounded-lg"><p class="text-sm text-gray-400">Horas Trabalhadas</p><p class="text-2xl font-bold text-blue-300">{{ workedHoursSummary().workedHours | number:'1.1-1' }}h</p></div>
+            <div class="bg-gray-700/50 p-3 rounded-lg"><p class="text-sm text-gray-400">Gorjetas Recebidas</p><p class="text-2xl font-bold text-green-400">{{ paymentSummary().totalTips | currency:'BRL' }}</p></div>
+          </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Minha Escala (Esta Semana)</h2>
+          @if (scheduleThisWeek() && shiftsThisWeek().length > 0) {
+            <ul class="space-y-3">
+              @for (shift of shiftsThisWeek(); track shift.id) {
+                <li class="bg-gray-700/50 p-3 rounded-lg">
+                  <p class="font-semibold text-white">{{ shift.start_time | date:'EEEE, dd/MM' }}</p>
+                  @if (shift.is_day_off) {
+                    <p class="text-sm text-gray-300 font-bold">Folga</p>
+                  } @else {
+                    <p class="text-sm text-gray-300">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="text-center text-gray-500 py-8">Nenhuma escala publicada para esta semana.</p>
+          }
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Leave Requests -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Minhas Ausências</h2>
+          <div class="flex flex-col gap-4">
+             @if (myLeaveRequests().length > 0) {
+              @for(request of myLeaveRequests(); track request.id) {
+                <div class="bg-gray-700/50 p-3 rounded-lg">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <p class="font-semibold text-white">{{ request.request_type }}</p>
+                      <p class="text-xs text-gray-400">{{ request.start_date | date:'dd/MM/yy' }} - {{ request.end_date | date:'dd/MM/yy' }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getLeaveStatusClass(request.status)">
+                      {{ request.status }}
+                    </span>
+                  </div>
+                </div>
+              }
+            } @else {
+               <p class="text-center text-gray-500 py-8">Nenhuma solicitação de ausência encontrada.</p>
+            }
+            <a routerLink="/my-leave" class="w-full text-center block bg-blue-600/50 text-blue-300 font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 hover:text-white transition-colors">
+              Ver Todas e Solicitar
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="text-center py-20">
+      <h2 class="text-2xl font-bold text-white">Funcionário não encontrado</h2>
+      <p class="text-gray-400 mt-2">Não foi possível carregar seus dados. Por favor, tente selecionar seu usuário novamente.</p>
+      <a routerLink="/employee-selection" class="mt-4 inline-block text-blue-400 hover:underline">Voltar para a seleção</a>
+    </div>
+  }
+</div>

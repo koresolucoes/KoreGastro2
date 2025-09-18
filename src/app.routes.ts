@@ -1,5 +1,3 @@
-
-
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -31,12 +29,14 @@ import { CustomersComponent } from './components/customers/customers.component';
 import { InventoryAuditComponent } from './components/inventory/inventory-audit/inventory-audit.component';
 import { IfoodKdsComponent } from './components/ifood-kds/ifood-kds.component';
 import { IfoodMenuComponent } from './components/ifood-menu/ifood-menu.component';
+import { MyProfileComponent } from './components/my-profile/my-profile.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'employee-selection', component: EmployeeSelectionComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [roleGuard] },
+  { path: 'my-profile', component: MyProfileComponent, canActivate: [roleGuard] },
   { path: 'pos', component: PosComponent, canActivate: [roleGuard] },
   { path: 'kds', component: KdsComponent, canActivate: [roleGuard] },
   { path: 'ifood-kds', component: IfoodKdsComponent, canActivate: [roleGuard] },

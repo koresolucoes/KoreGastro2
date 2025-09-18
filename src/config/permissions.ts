@@ -16,6 +16,7 @@ export const ALL_PERMISSION_KEYS = [
   '/employees',
   '/schedules',
   '/my-leave',
+  '/my-profile',
   '/payroll',
   '/settings',
   '/reservations',

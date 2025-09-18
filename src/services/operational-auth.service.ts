@@ -165,25 +165,31 @@ export class OperationalAuthService {
     const employee = this.activeEmployee();
     if (!employee || !employee.role_id) return false;
 
-    // Strip query parameters from the URL to get the base path for permission checking.
     const pathOnly = url.split('?')[0];
     const routeKey = '/' + pathOnly.split('/')[1];
-    
-    // Condition 1: Does the employee's role have permission?
-    const rolePermissions = this.stateService.rolePermissions();
-    const hasRolePermission = rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
 
-    // Special case for tutorials: bypass subscription check if they have role permission
+    // Special case for tutorials: bypass subscription check, only role permission matters.
     if (routeKey === '/tutorials') {
-        return hasRolePermission;
+        const rolePermissions = this.stateService.rolePermissions();
+        return rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+    }
+    
+    // For all other routes, an active subscription is a prerequisite.
+    const hasActiveSub = this.stateService.hasActiveSubscription();
+    if (!hasActiveSub) {
+        return false;
     }
 
-    // Condition 2: Does the account's subscription plan have permission?
-    const subscriptionPermissions = this.stateService.activeUserPermissions();
-    const hasSubscriptionPermission = subscriptionPermissions.has(routeKey);
+    // Special case for /my-profile: if subscription is active, access is granted.
+    if (routeKey === '/my-profile') {
+        return true; 
+    }
+
+    // For all other regular routes, both plan and role permissions are required.
+    const hasPlanPermission = this.stateService.activeUserPermissions().has(routeKey);
+    const hasRolePermission = this.stateService.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     
-    // Access is granted only if BOTH conditions are true.
-    return hasRolePermission && hasSubscriptionPermission;
+    return hasPlanPermission && hasRolePermission;
   }
 
   getDefaultRoute(): string {
