@@ -26,6 +26,9 @@ export class AppComponent {
 
   hasActiveSubscription = this.supabaseStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
+  isTrialing = this.supabaseStateService.isTrialing;
+  subscription = this.supabaseStateService.subscription;
+  trialDaysRemaining = this.supabaseStateService.trialDaysRemaining;
 
   isTutorialsRoute = toSignal(
     this.router.events.pipe(

@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 // FIX: The Realtime types are not directly exported in some versions of the Supabase client. Using 'any' for compatibility.
 // FIX: Add Customer to the model imports
-import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog, IfoodMenuSync, Subscription } from '../models/db.models';
+import { Hall, Table, Category, Recipe, Order, OrderItem, Ingredient, Station, Transaction, IngredientCategory, Supplier, RecipeIngredient, RecipePreparation, CashierClosing, Employee, Promotion, PromotionRecipe, RecipeSubRecipe, PurchaseOrder, ProductionPlan, Reservation, ReservationSettings, TimeClockEntry, Schedule, LeaveRequest, CompanyProfile, Role, RolePermission, Customer, LoyaltySettings, LoyaltyReward, InventoryLot, IfoodWebhookLog, IfoodMenuSync, Subscription, Plan } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -56,11 +56,11 @@ export class SupabaseStateService {
   loyaltySettings = signal<LoyaltySettings | null>(null);
   loyaltyRewards = signal<LoyaltyReward[]>([]);
 
-  // New signal for iFood logs
   ifoodWebhookLogs = signal<IfoodWebhookLog[]>([]);
   ifoodMenuSync = signal<IfoodMenuSync[]>([]);
 
   // Subscription plan signals
+  plans = signal<Plan[]>([]);
   subscriptions = signal<Subscription[]>([]);
   activeUserPermissions = signal<Set<string>>(new Set());
 
@@ -82,6 +82,70 @@ export class SupabaseStateService {
     const subs = this.subscriptions();
     if (subs.length === 0) return false; 
     return subs.some(s => s.status === 'active' || s.status === 'trialing');
+  });
+
+  subscription = computed(() => this.subscriptions()[0] ?? null);
+
+  isTrialing = computed(() => {
+    const subs = this.subscriptions();
+    if (subs.length === 0) return false;
+
+    const userSub = subs[0];
+    if (!userSub) return false;
+
+    // Standard check, which is probably what Supabase/Stripe sets.
+    if (userSub.status === 'trialing') {
+      return true;
+    }
+    
+    // User's custom logic.
+    const plansMap = new Map(this.plans().map(p => [p.id, p]));
+    const subPlan = plansMap.get(userSub.plan_id);
+    
+    if (subPlan && subPlan.trial_period_days && subPlan.trial_period_days > 0 && userSub.recurrent === false) {
+      const createdAt = new Date(userSub.created_at);
+      const trialEndDate = new Date(createdAt);
+      trialEndDate.setDate(trialEndDate.getDate() + subPlan.trial_period_days);
+      
+      return new Date() < trialEndDate;
+    }
+    
+    return false;
+  });
+
+  trialDaysRemaining = computed(() => {
+    const sub = this.subscription();
+    if (!this.isTrialing() || !sub) {
+        return null;
+    }
+
+    // Standard trial logic
+    if (sub.status === 'trialing' && sub.current_period_end) {
+        const endDate = new Date(sub.current_period_end);
+        const now = new Date();
+        const diffTime = endDate.getTime() - now.getTime();
+        if (diffTime < 0) return 0;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    }
+    
+    // User's custom logic for trial
+    const plansMap = new Map(this.plans().map(p => [p.id, p]));
+    const subPlan = plansMap.get(sub.plan_id);
+
+    if (subPlan && subPlan.trial_period_days && sub.recurrent === false) {
+      const createdAt = new Date(sub.created_at);
+      const trialEndDate = new Date(createdAt);
+      trialEndDate.setDate(trialEndDate.getDate() + subPlan.trial_period_days);
+      
+      const now = new Date();
+      const diffTime = trialEndDate.getTime() - now.getTime();
+      if (diffTime < 0) return 0;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    }
+
+    return 0; // Fallback
   });
 
   recipeCosts = computed(() => {
@@ -261,8 +325,10 @@ export class SupabaseStateService {
             this.refetchOrders();
             break;
         case 'subscriptions':
+        case 'plans':
             this.refetchSubscriptionPermissions(userId);
             this.refetchSimpleTable('subscriptions', '*', this.subscriptions);
+            this.refetchSimpleTable('plans', '*', this.plans);
             break;
         case 'ifood_webhook_logs':
             this.refetchIfoodLogs();
@@ -370,7 +436,10 @@ export class SupabaseStateService {
 
   private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>) {
     const userId = this.currentUser()?.id; if (!userId) return;
-    let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
+    let query = supabase.from(tableName).select(selectQuery);
+    if (tableName !== 'plans') { // Plans are not user-specific
+      query = query.eq('user_id', userId);
+    }
     // FIX: Add customers to the list of tables ordered by creation date.
     if (tableName === 'halls' || tableName === 'reservations' || tableName === 'customers' || tableName === 'loyalty_rewards' || tableName === 'inventory_lots') {
       query = query.order('created_at', { ascending: true });
@@ -425,6 +494,7 @@ export class SupabaseStateService {
     this.ifoodWebhookLogs.set([]);
     this.ifoodMenuSync.set([]);
     this.subscriptions.set([]);
+    this.plans.set([]);
     this.activeUserPermissions.set(new Set());
     // FIX: Clear customers data on logout.
     this.customers.set([]);
@@ -482,6 +552,7 @@ export class SupabaseStateService {
       supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
       supabase.from('ifood_menu_sync').select('*').eq('user_id', userId),
       supabase.from('subscriptions').select('*').eq('user_id', userId),
+      supabase.from('plans').select('*'),
     ]);
     this.halls.set(results[0].data || []); this.tables.set(results[1].data || []); this.stations.set(results[2].data as Station[] || []);
     this.categories.set(results[3].data || []); this.setOrdersWithPrices(results[4].data || []);
@@ -506,6 +577,7 @@ export class SupabaseStateService {
     this.ifoodWebhookLogs.set(results[27].data as IfoodWebhookLog[] || []);
     this.ifoodMenuSync.set(results[28].data || []);
     this.subscriptions.set(results[29].data as Subscription[] || []);
+    this.plans.set(results[30].data as Plan[] || []);
     await this.refreshDashboardAndCashierData();
   }
   

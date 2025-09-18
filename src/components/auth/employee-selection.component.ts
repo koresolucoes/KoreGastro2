@@ -24,6 +24,8 @@ export class EmployeeSelectionComponent {
 
   hasActiveSubscription = this.stateService.hasActiveSubscription;
   isDataLoaded = this.stateService.isDataLoaded;
+  isTrialing = this.stateService.isTrialing;
+  trialDaysRemaining = this.stateService.trialDaysRemaining;
 
   employees = computed(() => {
     const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));

@@ -8,6 +8,18 @@
     <main class="flex-1 flex flex-col overflow-hidden">
       <!-- Add padding-bottom on mobile to make space for the nav bar -->
       <div class="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-y-auto">
+        @if (isTrialing() && trialDaysRemaining() !== null) {
+          <div class="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong class="font-bold">Período de Teste!</strong>
+            @if(trialDaysRemaining()! > 0) {
+              <span class="block sm:inline ml-2">Você tem {{ trialDaysRemaining() }} {{ trialDaysRemaining() === 1 ? 'dia restante' : 'dias restantes' }} para testar o ChefOS.</span>
+            } @else {
+              <span class="block sm:inline ml-2">Seu período de teste acaba hoje.</span>
+            }
+            <a href="https://chefos.koresolucoes.com.br" target="_blank" class="font-bold underline ml-2 hover:text-white">Assine um plano</a> para não perder acesso.
+          </div>
+        }
+
         @if (!isDataLoaded()) {
           <div class="flex items-center justify-center h-full">
             <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>

@@ -513,6 +513,7 @@ export interface Plan {
   id: string;
   name: string;
   slug: string;
+  trial_period_days: number | null;
   created_at: string;
 }
 
@@ -526,6 +527,7 @@ export interface Subscription {
   user_id: string;
   plan_id: string;
   status: SubscriptionStatus;
+  recurrent: boolean;
   current_period_end: string | null;
   created_at: string;
   updated_at: string;
