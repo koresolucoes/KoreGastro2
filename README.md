@@ -1,16 +1,25 @@
-# ChefOS - Sistema de Gestão de Restaurantes
+# ChefOS - Sistema de Gestão para Restaurantes
 
-**ChefOS** é um sistema de gestão para restaurantes completo, moderno e integrado. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque, gestão de RH, reservas e análise de desempenho, tudo sincronizado em tempo real.
+**ChefOS** é uma plataforma de gestão para restaurantes completa, moderna e integrada. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque, gestão de RH, reservas e análise de desempenho, tudo sincronizado em tempo real.
 
 O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando inteligência artificial para auxiliar em tarefas complexas como a criação de fichas técnicas e a previsão de compras.
 
 ---
 
-## 🚀 Acesso à Versão de Testes
+## 🚀 Acesso e Instalação
 
-**O ChefOS está atualmente em uma fase exclusiva de testes.** Para explorar a plataforma e todas as suas funcionalidades, é necessário solicitar credenciais de acesso.
+ChefOS é uma plataforma de gestão completa, com versões disponíveis para **Web**, **Windows** e **Android**, garantindo que você possa gerenciar seu negócio de qualquer lugar.
 
-**Entre em contato para receber seu login de avaliação e testar o sistema.**
+Para começar a usar, testar o sistema ou baixar os aplicativos, acesse nosso site oficial:
+
+**[https://chefos.koresolucoes.com.br](https://chefos.koresolucoes.com.br)**
+
+### Como Começar:
+
+- **Cadastro Gratuito:** O registro na plataforma é totalmente gratuito e permite que você explore as funcionalidades do sistema.
+- **Planos Disponíveis:** Para utilizar todos os recursos de forma contínua e gerenciar seu restaurante, é necessário assinar um dos nossos planos flexíveis. Confira os detalhes no site.
+- **Seja um Beta Tester:** Quer ter acesso antecipado às novas funcionalidades e nos ajudar a moldar o futuro do ChefOS? Inscreva-se em nosso programa de beta testers através do site!
+- **Download dos Aplicativos:** Encontre os links para download das versões para desktop (Windows) e mobile (Android) diretamente na nossa página oficial.
 
 ---
 
@@ -71,7 +80,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Ordens de Compra:** Crie, gerencie e receba ordens de compra. A IA pode gerar uma ordem de compra sugerida automaticamente. Ao receber um pedido, o sistema atualiza o estoque e também o **custo médio** do insumo.
 
 ### 📋 **Fichas Técnicas**
-- **Custeio de Pratos (CMV):** Associe ingredientes e sub-receitas aos seus pratos para calcular o custo exato de cada um em tempo real.
+- **Custeio Preciso de Pratos (CMV):** Saiba exatamente quanto custa cada item do seu menu. Associe ingredientes e sub-receitas para ter um cálculo de CMV em tempo real e garantir sua margem de lucro.
 - **Baixa Automática de Estoque:** Ao vender um prato, o sistema deduz automaticamente os ingredientes do estoque com base na ficha técnica.
 - **Vincular Sub-receitas ao Estoque:** Transforme uma sub-receita (ex: "Molho de Tomate") em um item de estoque controlável, permitindo a gestão da produção intermediária.
 - **Otimização com IA (Gemini):** Descreva um prato e deixe a IA gerar uma sugestão de ficha técnica. Para receitas já prontas, a IA pode fornecer **dicas de otimização de mise en place** para agilizar o preparo.
@@ -190,42 +199,9 @@ Este projeto foi construído com uma stack moderna e performática:
 
 ---
 
-## ⚙️ Instalação e Configuração
-
-Para executar este projeto, você precisa de credenciais para o Supabase e para a API do Google Gemini.
-
-1.  **Crie um Projeto no Supabase:**
-    - Vá para [supabase.com](https://supabase.com/) e crie um novo projeto.
-    - No seu projeto, vá para `Project Settings` > `API`.
-    - Copie a **URL** e a **chave anônima (`anon key`)**.
-
-2.  **Obtenha uma Chave da API Gemini:**
-    - Vá para o [Google AI Studio](https://aistudio.google.com/).
-    - Clique em "Get API key" e copie sua chave.
-
-3.  **Configure as Variáveis de Ambiente:**
-    - Abra o arquivo `src/config/environment.ts`.
-    - Substitua os valores placeholders pelas suas credenciais:
-
-    ```typescript
-    export const environment = {
-      supabaseUrl: 'SUA_URL_DO_SUPABASE',
-      supabaseAnonKey: 'SUA_CHAVE_ANONIMA_DO_SUPABASE',
-      geminiApiKey: 'SUA_API_KEY_DO_GEMINI',
-    };
-    ```
-
-4.  **Estrutura do Banco de Dados:**
-    - O sistema espera uma estrutura de banco de dados específica. Utilize o schema SQL fornecido no projeto (se aplicável) para configurar suas tabelas no Supabase.
-
-5.  **Execute o Projeto:**
-    - Após configurar as credenciais, o projeto está pronto para ser executado. Sirva o arquivo `index.html` em um servidor web.
-
----
-
 ## 📁 Estrutura do Projeto
 
-```
+` ``
 /src
 |-- /app.component.*         # Componente Raiz
 |-- /app.routes.ts           # Definição das rotas
@@ -261,7 +237,7 @@ Para executar este projeto, você precisa de credenciais para o Supabase e para 
 |   |-- supabase-state.service.ts # Gerenciamento de estado e Realtime
 |   |-- ai-recipe.service.ts # Integração com Gemini API
 |   |-- ... e outros
-```
+` ``
 
 ---
 
