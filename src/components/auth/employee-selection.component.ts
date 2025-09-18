@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,12 +6,12 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-employee-selection',
   standalone: true,
-  imports: [CommonModule, FormsModule], // Add FormsModule
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './employee-selection.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -22,6 +21,9 @@ export class EmployeeSelectionComponent {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
+
+  hasActiveSubscription = this.stateService.hasActiveSubscription;
+  isDataLoaded = this.stateService.isDataLoaded;
 
   employees = computed(() => {
     const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));

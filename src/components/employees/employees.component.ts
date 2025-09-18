@@ -35,6 +35,10 @@ export class EmployeesComponent {
   employeeForm = signal<Partial<Employee>>({});
   employeePendingDeletion = signal<(Employee & { role: string }) | null>(null);
   
+  // Photo upload state
+  photoFile = signal<File | null>(null);
+  photoPreviewUrl = signal<string | null>(null);
+
   // State for details modal
   isDetailsModalOpen = signal(false);
   selectedEmployeeForDetails = signal<(Employee & { role: string }) | null>(null);
@@ -53,6 +57,8 @@ export class EmployeesComponent {
   openAddModal() {
     this.employeeForm.set({ role_id: this.roles()[0]?.id || null, pin: '', bank_details: {} });
     this.editingEmployee.set(null);
+    this.photoFile.set(null);
+    this.photoPreviewUrl.set(null);
     this.isModalOpen.set(true);
   }
 
@@ -60,11 +66,25 @@ export class EmployeesComponent {
     this.editingEmployee.set(e);
     // Ensure bank_details is an object to avoid errors on the template
     this.employeeForm.set({ ...e, bank_details: e.bank_details || {} });
+    this.photoFile.set(null);
+    this.photoPreviewUrl.set(e.photo_url || null);
     this.isModalOpen.set(true);
   }
 
   closeModal() {
     this.isModalOpen.set(false);
+    this.photoFile.set(null);
+    this.photoPreviewUrl.set(null);
+  }
+
+  handlePhotoFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.photoFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.photoPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   }
 
   updateEmployeeFormField(field: keyof Omit<Employee, 'id' | 'created_at' | 'bank_details' | 'roles'>, value: string) {
@@ -109,9 +129,9 @@ export class EmployeesComponent {
 
     let res;
     if (this.editingEmployee()) {
-      res = await this.settingsDataService.updateEmployee({ ...form, id: this.editingEmployee()!.id });
+      res = await this.settingsDataService.updateEmployee({ ...form, id: this.editingEmployee()!.id }, this.photoFile());
     } else {
-      res = await this.settingsDataService.addEmployee(form as any);
+      res = await this.settingsDataService.addEmployee(form as any, this.photoFile());
     }
     if (res.success) {
       this.closeModal();

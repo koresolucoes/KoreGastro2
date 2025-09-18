@@ -34,7 +34,16 @@
           <tbody>
             @for (employee of filteredEmployees(); track employee.id) {
               <tr (click)="openDetailsModal(employee)" class="border-b border-gray-700 hover:bg-gray-700/40 cursor-pointer">
-                <td class="px-6 py-4 font-medium text-white">{{ employee.name }}</td>
+                <td class="px-6 py-4 font-medium text-white flex items-center gap-3">
+                  @if (employee.photo_url) {
+                    <img [src]="employee.photo_url" alt="Foto" class="w-10 h-10 rounded-full object-cover">
+                  } @else {
+                    <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                  }
+                  <span>{{ employee.name }}</span>
+                </td>
                 <td class="px-6 py-4 text-gray-300">{{ employee.role }}</td>
                 <td class="px-6 py-4 text-gray-300">{{ employee.phone || 'Não informado' }}</td>
                 <td class="px-6 py-4 text-center">
@@ -62,9 +71,18 @@
         @for (employee of filteredEmployees(); track employee.id) {
           <div (click)="openDetailsModal(employee)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent">
             <div class="flex justify-between items-start">
-              <div>
-                <p class="font-semibold text-white text-lg">{{ employee.name }}</p>
-                <p class="text-sm text-gray-400">{{ employee.role }}</p>
+              <div class="flex items-center gap-3">
+                 @if (employee.photo_url) {
+                    <img [src]="employee.photo_url" alt="Foto" class="w-12 h-12 rounded-full object-cover">
+                  } @else {
+                    <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                  }
+                <div>
+                  <p class="font-semibold text-white text-lg">{{ employee.name }}</p>
+                  <p class="text-sm text-gray-400">{{ employee.role }}</p>
+                </div>
               </div>
             </div>
             
@@ -103,16 +121,36 @@
         <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-        <!-- Personal Data -->
-        <section>
-            <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-4">Dados Pessoais</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label class="block text-sm text-gray-300 mb-1">Nome Completo *</label><input type="text" [value]="employeeForm().name || ''" (input)="updateEmployeeFormField('name', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
-              <div><label class="block text-sm text-gray-300 mb-1">Data de Nascimento</label><input type="date" [value]="employeeForm().birth_date || ''" (input)="updateEmployeeFormField('birth_date', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
-              <div><label class="block text-sm text-gray-300 mb-1">CPF</label><input type="text" [value]="employeeForm().cpf || ''" (input)="updateEmployeeFormField('cpf', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
-              <div><label class="block text-sm text-gray-300 mb-1">RG</label><input type="text" [value]="employeeForm().rg || ''" (input)="updateEmployeeFormField('rg', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
-            </div>
-        </section>
+        <div class="flex flex-col md:flex-row gap-6">
+          <!-- Photo Upload -->
+          <div class="flex flex-col items-center md:items-start">
+            <label for="photo-upload" class="cursor-pointer group relative">
+              @if (photoPreviewUrl()) {
+                <img [src]="photoPreviewUrl()" alt="Pré-visualização da foto" class="w-32 h-32 rounded-full object-cover border-4 border-gray-600 group-hover:opacity-70 transition-opacity">
+              } @else {
+                <div class="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center border-4 border-gray-600 group-hover:bg-gray-600 transition-colors">
+                  <svg class="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+              }
+              <div class="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="text-white text-sm font-semibold">Alterar Foto</span>
+              </div>
+            </label>
+            <input id="photo-upload" type="file" (change)="handlePhotoFileChange($event)" accept="image/*" class="hidden">
+          </div>
+          <!-- Form Fields -->
+          <div class="flex-1 space-y-4">
+              <!-- Personal Data -->
+              <section>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm text-gray-300 mb-1">Nome Completo *</label><input type="text" [value]="employeeForm().name || ''" (input)="updateEmployeeFormField('name', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+                    <div><label class="block text-sm text-gray-300 mb-1">Data de Nascimento</label><input type="date" [value]="employeeForm().birth_date || ''" (input)="updateEmployeeFormField('birth_date', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+                    <div><label class="block text-sm text-gray-300 mb-1">CPF</label><input type="text" [value]="employeeForm().cpf || ''" (input)="updateEmployeeFormField('cpf', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+                    <div><label class="block text-sm text-gray-300 mb-1">RG</label><input type="text" [value]="employeeForm().rg || ''" (input)="updateEmployeeFormField('rg', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+                  </div>
+              </section>
+          </div>
+        </div>
 
         <!-- Contact Info -->
         <section>

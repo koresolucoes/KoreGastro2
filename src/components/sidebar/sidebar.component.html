@@ -78,7 +78,11 @@
     @if(activeEmployee(); as employee) {
         <div class="flex items-center space-x-3" [class.justify-center]="!isSidebarOpen()">
             <div class="flex-shrink-0">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              @if (employee.photo_url) {
+                <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
+              } @else {
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              }
             </div>
             <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
               <p class="font-semibold text-white truncate text-sm" [title]="employee.name">{{ employee.name }}</p>

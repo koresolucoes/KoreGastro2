@@ -50,15 +50,52 @@ export class SettingsDataService {
     return { success: !error, error };
   }
 
-  async addEmployee(employee: Partial<Employee>): Promise<{ success: boolean, error: any, data?: Employee }> {
+  async addEmployee(employee: Partial<Employee>, photoFile?: File | null): Promise<{ success: boolean, error: any, data?: Employee }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    const { data, error } = await supabase.from('employees').insert({ ...employee, user_id: userId }).select().single();
-    return { success: !error, error, data };
+    
+    // Insert employee without photo URL first to get the ID
+    const { photo_url, ...employeeData } = employee;
+    const { data: newEmployee, error } = await supabase.from('employees').insert({ ...employeeData, user_id: userId }).select().single();
+    if (error) return { success: false, error, data: undefined };
+
+    // If there's a photo, upload it and update the employee record
+    if (photoFile) {
+      const fileExt = photoFile.name.split('.').pop();
+      const path = `public/employee_photos/${newEmployee.id}.${fileExt}`;
+      const { publicUrl, error: uploadError } = await this.uploadAsset(photoFile, path);
+
+      if (uploadError) {
+        // Log error but don't fail the whole operation, user can re-upload
+        console.error('Employee created, but photo upload failed:', uploadError);
+        return { success: true, error: null, data: newEmployee };
+      }
+
+      // Update the employee with the photo URL
+      const { data: updatedEmployee, error: updateError } = await supabase.from('employees').update({ photo_url: publicUrl }).eq('id', newEmployee.id).select().single();
+      if (updateError) {
+        console.error('Employee created and photo uploaded, but updating record failed:', updateError);
+        return { success: true, error: null, data: newEmployee };
+      }
+      return { success: true, error: null, data: updatedEmployee };
+    }
+
+    return { success: true, error: null, data: newEmployee };
   }
 
-  async updateEmployee(employee: Partial<Employee>): Promise<{ success: boolean, error: any }> {
+  async updateEmployee(employee: Partial<Employee>, photoFile?: File | null): Promise<{ success: boolean, error: any }> {
     const { id, ...updateData } = employee;
+
+    if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop();
+        const path = `public/employee_photos/${id}.${fileExt}`;
+        const { publicUrl, error: uploadError } = await this.uploadAsset(photoFile, path);
+        if (uploadError) {
+            return { success: false, error: uploadError };
+        }
+        updateData.photo_url = publicUrl;
+    }
+
     const { error } = await supabase.from('employees').update(updateData).eq('id', id!);
     return { success: !error, error };
   }

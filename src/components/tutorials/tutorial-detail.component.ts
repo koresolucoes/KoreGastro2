@@ -20,7 +20,11 @@ export class TutorialDetailComponent {
 
   tutorial = computed(() => {
     const id = this.tutorialId();
-    if (!id) return null;
-    return this.tutorialService.getTutorialById(id);
+    // FIX: Changed the check to be more explicit with `typeof` to satisfy the TypeScript compiler,
+    // ensuring that the `id` passed to the service is definitely a string.
+    if (typeof id === 'string') {
+      return this.tutorialService.getTutorialById(id);
+    }
+    return null;
   });
 }

@@ -1,5 +1,16 @@
 <div class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
   <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 border border-gray-700">
+    <!-- Inactive Subscription Warning -->
+    @if (!hasActiveSubscription() && isDataLoaded()) {
+      <div class="bg-red-900/50 border-l-4 border-red-500 text-red-200 p-4 rounded-lg mb-6 text-sm">
+        <h3 class="font-bold text-red-300">Plano Inativo ou Expirado</h3>
+        <p class="mt-1">Sua assinatura não está ativa. Você só pode acessar os <a routerLink="/tutorials" class="font-semibold underline hover:text-red-100">tutoriais</a>.</p>
+        <p class="mt-2">Para reativar seu plano, entre em contato com nosso suporte: 
+          <a href="mailto:suporte@koresolucoes.com.br" class="font-semibold underline hover:text-red-100">suporte@koresolucoes.com.br</a>
+        </p>
+      </div>
+    }
+
     @if (employees().length > 0) {
       @if (!selectedEmployee() && !confirmationEmployee()) {
         <!-- Step 1: Employee Grid Selection -->
@@ -10,9 +21,13 @@
                @if (employee.current_clock_in_id) {
                 <div class="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-700" title="Turno iniciado"></div>
                }
-              <div class="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center mb-2">
-                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-              </div>
+              @if (employee.photo_url) {
+                <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-16 h-16 rounded-full object-cover mb-2">
+              } @else {
+                <div class="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center mb-2">
+                  <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+              }
               <span class="font-semibold text-white text-center">{{ employee.name }}</span>
                <span class="text-xs text-gray-400 text-center">{{ employee.role }}</span>
             </button>
@@ -20,9 +35,16 @@
         </div>
       } @else if (selectedEmployee(); as employee) {
         <!-- Step 2: PIN Entry Modal -->
-        <div class="w-full max-w-sm mx-auto">
-          <h2 class="text-2xl font-bold text-white text-center mb-2">Bem-vindo, {{ employee.name }}</h2>
-          <p class="text-center text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
+        <div class="w-full max-w-sm mx-auto text-center">
+          @if (employee.photo_url) {
+            <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-24 h-24 rounded-full object-cover mb-4 mx-auto">
+          } @else {
+            <div class="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center mb-4 mx-auto">
+              <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </div>
+          }
+          <h2 class="text-2xl font-bold text-white mb-2">Bem-vindo, {{ employee.name }}</h2>
+          <p class="text-gray-400 mb-6">Digite seu PIN de 4 dígitos</p>
           <div class="flex justify-center items-center gap-4 h-12 mb-4 text-4xl tracking-[1em]" [class.animate-pulse]="loginError()" [class.text-red-400]="loginError()" [class.text-white]="!loginError()">
             {{ pinDisplay() }}
           </div>
@@ -39,9 +61,13 @@
         <!-- Step 3: Clock-In Confirmation -->
         <div class="w-full max-w-sm mx-auto text-center">
             <h2 class="text-2xl font-bold text-white mb-4">Olá, {{ employee.name }}</h2>
-            <div class="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center mb-4 mx-auto">
-                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
+             @if (employee.photo_url) {
+                <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-24 h-24 rounded-full object-cover mb-4 mx-auto">
+            } @else {
+                <div class="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center mb-4 mx-auto">
+                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </div>
+            }
             <p class="text-gray-300 text-lg mb-6">Pronto para começar?</p>
             <div class="flex flex-col gap-3">
                 <button (click)="confirmClockIn()" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-500 transition-colors text-lg">
@@ -106,5 +132,15 @@
         </form>
       </div>
     }
+
+    <!-- Official Website Link -->
+    <div class="text-center mt-6 pt-4 border-t border-gray-700/50">
+      <p class="text-sm text-gray-400">
+        Conheça o ChefOS -
+        <a href="https://chefos.koresolucoes.com.br" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-400 hover:text-blue-300">
+          Visite nossa página oficial
+        </a>
+      </p>
+    </div>
   </div>
 </div>

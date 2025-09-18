@@ -173,6 +173,11 @@ export class OperationalAuthService {
     const rolePermissions = this.stateService.rolePermissions();
     const hasRolePermission = rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
 
+    // Special case for tutorials: bypass subscription check if they have role permission
+    if (routeKey === '/tutorials') {
+        return hasRolePermission;
+    }
+
     // Condition 2: Does the account's subscription plan have permission?
     const subscriptionPermissions = this.stateService.activeUserPermissions();
     const hasSubscriptionPermission = subscriptionPermissions.has(routeKey);

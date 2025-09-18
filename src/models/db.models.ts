@@ -75,6 +75,7 @@ export interface Employee {
   hire_date?: string | null;
   termination_date?: string | null;
   bank_details?: { bank?: string; agency?: string; account?: string; pix?: string } | null;
+  photo_url?: string | null;
   roles?: { id: string, name: string }; // Relation
 }
 
