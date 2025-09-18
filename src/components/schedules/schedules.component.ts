@@ -136,7 +136,7 @@ export class SchedulesComponent {
 
       if (!isDataLoaded) {
         this.isLoading.set(true);
-        return;
+        return; // Wait for initial data load
       }
       
       if (this.isManager()) {
@@ -145,6 +145,8 @@ export class SchedulesComponent {
           if (error) {
             this.notificationService.alert(`Erro ao carregar ou criar escala: ${error.message}`);
           }
+          // The creation will trigger a realtime event which updates the stateService.productionPlans signal.
+          // Our `activePlan` computed will then pick it up. We just need to stop loading.
           this.isLoading.set(false);
         });
       } else {
@@ -210,7 +212,19 @@ export class SchedulesComponent {
   }
 
   updateShiftFormField(field: keyof Omit<Shift, 'id' | 'created_at' | 'user_id' | 'schedule_id' | 'start_time' | 'end_time' | 'is_day_off'>, value: string | boolean) {
-      this.shiftForm.update(form => ({ ...form, [field]: value }));
+      this.shiftForm.update(form => {
+        const newForm = { ...form, [field]: value };
+        
+        // If the employee is changed, automatically update the assigned role.
+        if (field === 'employee_id') {
+            const employee = this.allEmployees().find(e => e.id === value);
+            const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+            const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
+            newForm.role_assigned = employeeRoleName;
+        }
+
+        return newForm;
+      });
   }
 
   updateShiftFormDateTime(field: 'start_time' | 'end_time', value: string) {

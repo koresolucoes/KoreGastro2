@@ -147,9 +147,7 @@
           </div>
            <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Cargo no Turno</label>
-            <select [value]="shiftForm().role_assigned" (change)="updateShiftFormField('role_assigned', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-               @for(role of availableRoles; track role) { <option [value]="role">{{ role }}</option> }
-            </select>
+            <input type="text" [value]="shiftForm().role_assigned || 'Selecione um funcionário'" disabled class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
