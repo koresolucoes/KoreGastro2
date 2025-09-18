@@ -1,10 +1,15 @@
 <div class="bg-gray-100 text-gray-900 min-h-screen font-sans flex flex-col items-center justify-center p-4">
     <div class="w-full max-w-lg">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
-                <span>Chef</span><span class="text-blue-600">OS</span>
-            </h1>
-            <p class="mt-2 text-lg text-gray-600">Faça sua Reserva</p>
+        <header class="text-center mb-6 flex flex-col items-center gap-4">
+            @if(companyProfile()?.logo_url; as logo) {
+              <img [src]="logo" [alt]="'Logo de ' + (companyProfile()?.company_name || 'Restaurante')" class="h-24 w-24 rounded-full object-cover shadow-md border-4 border-white">
+            }
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">{{ companyProfile()?.company_name || 'Faça sua Reserva' }}</h1>
+                @if (companyProfile()?.company_name) {
+                    <p class="mt-1 text-lg text-gray-600">Faça sua Reserva</p>
+                }
+            </div>
         </header>
 
         <main class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">

@@ -3,10 +3,11 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, O
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReservationDataService } from '../../services/reservation-data.service';
-import { Reservation, ReservationSettings } from '../../models/db.models';
+import { CompanyProfile, Reservation, ReservationSettings } from '../../models/db.models';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { NotificationService } from '../../services/notification.service';
+import { PublicDataService } from '../../services/public-data.service';
 
 interface TimeSlot {
   time: string; // "HH:mm"
@@ -25,6 +26,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   router = inject(Router);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
+  publicDataService = inject(PublicDataService);
   private routeSub: Subscription | undefined;
 
   // View state
@@ -34,6 +36,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   // Data
   userId = signal<string | null>(null);
   settings = signal<ReservationSettings | null>(null);
+  companyProfile = signal<Partial<CompanyProfile> | null>(null);
   existingReservations = signal<Reservation[]>([]);
 
   // Form state
@@ -73,7 +76,10 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
 
   async loadInitialData(userId: string) {
     this.viewState.set('loading');
-    const settings = await this.reservationDataService.getPublicReservationSettings(userId);
+    const [settings, profile] = await Promise.all([
+        this.reservationDataService.getPublicReservationSettings(userId),
+        this.publicDataService.getPublicCompanyProfile(userId)
+    ]);
 
     if (!settings) {
       this.viewState.set('error');
@@ -82,6 +88,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
     }
 
     this.settings.set(settings);
+    this.companyProfile.set(profile);
     
     // Clamp the initial party size to be within the allowed range
     this.partySize.set(Math.max(settings.min_party_size, Math.min(this.partySize(), settings.max_party_size)));
