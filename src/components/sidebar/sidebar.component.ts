@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 export interface NavLink {
   name: string;
@@ -31,11 +32,13 @@ export type CombinedNavItem = NavLink | NavGroup;
 export class SidebarComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
+  stateService = inject(SupabaseStateService);
   router = inject(Router);
   
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
   shiftButtonState = this.operationalAuthService.shiftButtonState;
+  companyProfile = this.stateService.companyProfile;
   
   isSidebarOpen = signal(true);
   expandedGroups = signal<Record<string, boolean>>({
@@ -155,6 +158,10 @@ export class SidebarComponent {
   async signOut() {
     await this.authService.signOut();
     this.router.navigate(['/login']);
+  }
+  
+  switchEmployee() {
+    this.operationalAuthService.switchEmployee();
   }
 
   async handleShiftAction() {

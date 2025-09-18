@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 // Re-using the same structure as the sidebar for consistency
 export interface NavLink {
@@ -33,11 +34,13 @@ export type CombinedNavItem = NavLink | NavGroup;
 export class BottomNavComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
+  stateService = inject(SupabaseStateService);
   router = inject(Router);
 
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
   shiftButtonState = this.operationalAuthService.shiftButtonState;
+  companyProfile = this.stateService.companyProfile;
   
   isOffCanvasOpen = signal(false);
   activeGroup = signal<NavGroup | null>(null);
@@ -160,6 +163,11 @@ export class BottomNavComponent {
     this.isOffCanvasOpen.set(false);
     await this.authService.signOut();
     this.router.navigate(['/login']);
+  }
+  
+  switchEmployee() {
+    this.isOffCanvasOpen.set(false);
+    this.operationalAuthService.switchEmployee();
   }
 
   async handleShiftAction() {

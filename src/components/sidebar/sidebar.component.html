@@ -76,27 +76,38 @@
   <div class="p-4 border-t border-gray-700 space-y-4">
     <!-- Active Operator -->
     @if(activeEmployee(); as employee) {
-        <a routerLink="/my-profile" class="flex items-center space-x-3 group hover:bg-gray-700/50 p-2 rounded-lg" [class.justify-center]="!isSidebarOpen()">
-            <div class="flex-shrink-0">
-              @if (employee.photo_url) {
-                <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
-              } @else {
-                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-              }
+        <div class="p-2 rounded-lg" [class.hover:bg-gray-700/50]="isSidebarOpen()">
+            <a routerLink="/my-profile" class="flex items-center space-x-3 group" [class.justify-center]="!isSidebarOpen()">
+                <div class="flex-shrink-0">
+                  @if (employee.photo_url) {
+                    <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
+                  } @else {
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  }
+                </div>
+                <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
+                  <p class="font-semibold text-white truncate text-sm group-hover:text-blue-400" [title]="employee.name">{{ employee.name }}</p>
+                </div>
+            </a>
+            <div [class.hidden]="!isSidebarOpen()" class="mt-2 flex items-center justify-around text-xs">
+                <button (click)="handleShiftAction(); $event.stopPropagation()" class="flex-1 hover:underline text-center" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+                  {{ shiftButtonState().text }}
+                </button>
+                 <button (click)="switchEmployee()" class="flex-1 text-gray-300 hover:text-white hover:underline text-center">
+                  Trocar Operador
+                </button>
             </div>
-            <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
-              <p class="font-semibold text-white truncate text-sm group-hover:text-blue-400" [title]="employee.name">{{ employee.name }}</p>
-              <button (click)="handleShiftAction(); $event.preventDefault()" class="text-xs hover:underline" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
-                {{ shiftButtonState().text }}
-              </button>
-            </div>
-        </a>
+        </div>
     }
 
     <!-- System User -->
     <div class="flex items-center space-x-3 p-2" [class.justify-center]="!isSidebarOpen()">
         <div class="flex-shrink-0">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          @if (companyProfile()?.logo_url; as logoUrl) {
+            <img [src]="logoUrl" alt="Logo da Empresa" class="w-8 h-8 rounded-full object-cover">
+          } @else {
+            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          }
         </div>
         <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
           <p class="font-semibold text-white truncate text-sm" [title]="currentUser()?.email">{{ currentUser()?.email }}</p>

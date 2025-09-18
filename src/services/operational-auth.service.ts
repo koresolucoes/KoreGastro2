@@ -111,7 +111,7 @@ export class OperationalAuthService {
       const employee = this.activeEmployee();
       if (!employee || !employee.current_clock_in_id) {
           // If for some reason they are logged in without a clock-in record, just log them out.
-          this.logout();
+          this.switchEmployee();
           return { success: true, error: null };
       }
   
@@ -137,7 +137,7 @@ export class OperationalAuthService {
        this.stateService.employees.update(employees => 
           employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
       );
-      this.logout(); // Clears session and navigates
+      this.switchEmployee(); // Clears session and navigates
       return { success: true, error: null };
   }
 
@@ -154,7 +154,7 @@ export class OperationalAuthService {
     this.loadActiveShift(employeeWithRole);
   }
 
-  logout() {
+  switchEmployee() {
     this.activeEmployee.set(null);
     this.activeShift.set(null);
     sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
