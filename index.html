@@ -87,6 +87,25 @@
         page-break-inside: avoid; /* Avoid breaking a single payslip across pages */
       }
     }
+    
+    /* Animated Gradient Background for Login */
+    .animated-gradient-background {
+      background: linear-gradient(-45deg, #1e40af, #111827, #374151, #1e40af);
+      background-size: 400% 400%;
+      animation: gradient 20s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
   </style>
 <script type="importmap">
 {
