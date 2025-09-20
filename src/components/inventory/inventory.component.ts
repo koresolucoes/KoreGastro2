@@ -344,7 +344,7 @@ export class InventoryComponent {
                 const aiResult = await this.aiService.callGeminiForPrediction(prompt);
 
                 // Step 2b: Update map with AI predictions
-                aiResult.forEach((p: any) => {
+                aiResult.forEach((p: { ingredientId: string; predictedUsage: number; }) => {
                     const prediction = predictionsMap.get(p.ingredientId);
                     if (prediction) {
                         const suggestedPurchase = Math.max(0, p.predictedUsage - prediction.currentStock);

@@ -1,6 +1,5 @@
 
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType, IfoodOrderStatus } from '../../models/db.models';
@@ -68,7 +67,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     selectedStation = signal<Station | null>(null);
     viewMode = signal<'station' | 'expo'>('station');
 
-    private timerInterval: any;
+    private timerInterval: ReturnType<typeof setInterval> | undefined;
     currentTime = signal(Date.now());
     
     updatingItems = signal<Set<string>>(new Set());
@@ -409,7 +408,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    getStatusHistory(timestamps: any): { status: string; time: string }[] {
+    getStatusHistory(timestamps: Record<string, string> | null | undefined): { status: string; time: string }[] {
         if (!timestamps) return [];
         return Object.entries(timestamps)
             .map(([status, time]) => ({ status, time: time as string }))

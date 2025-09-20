@@ -157,7 +157,7 @@ export class MiseEnPlaceComponent {
   groupedTasksByStation = computed(() => {
     const tasks = this.filteredTasks();
     const allStations = this.stations();
-    const stationsMap = new Map<string, { id: string, name: string, tasks: any[] }>();
+    const stationsMap = new Map<string, { id: string, name: string, tasks: ProductionTask[] }>();
     
     for (const station of allStations) {
       stationsMap.set(station.id, { id: station.id, name: station.name, tasks: [] });
@@ -185,7 +185,7 @@ export class MiseEnPlaceComponent {
     this.selectedDate.set(newDate);
   }
 
-  openTaskModal(task: any | null = null) { // Use any to handle joined data
+  openTaskModal(task: ProductionTask | null = null) {
     if (task) {
       this.editingTask.set(task as ProductionTask);
       this.taskForm.set({

@@ -39,6 +39,13 @@ export interface IfoodOrderDelivery {
     }
 }
 
+export interface PaymentSummary {
+  method: string;
+  total: number;
+  count: number;
+}
+
+
 // --- Main Entities ---
 
 export interface Role {
@@ -234,7 +241,7 @@ export interface OrderItem {
   status: OrderItemStatus;
   station_id: string;
   group_id: string | null;
-  status_timestamps: any;
+  status_timestamps: Record<string, string> | null;
   redeemed_reward_id?: string | null;
   created_at: string;
   user_id: string;
@@ -308,7 +315,7 @@ export interface CashierClosing {
   expected_cash_in_drawer: number;
   counted_cash: number;
   difference: number;
-  payment_summary: any[];
+  payment_summary: PaymentSummary[] | null;
   notes: string | null;
   user_id: string;
 }

@@ -1,5 +1,5 @@
 
-import '@angular/compiler';
+
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withHashLocation } from '@angular/router';
 import { provideZonelessChangeDetection, LOCALE_ID } from '@angular/core';

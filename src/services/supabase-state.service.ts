@@ -314,7 +314,7 @@ export class SupabaseStateService {
   private async refetchSubscriptionPermissions(userId: string) {
     const { data: permissions, error } = await supabase.rpc('get_user_active_permissions', { p_user_id: userId });
     if (!error && permissions) {
-        this.activeUserPermissions.set(new Set(permissions.map((p: any) => p.permission_key)));
+        this.activeUserPermissions.set(new Set((permissions as { permission_key: string }[]).map(p => p.permission_key)));
     } else if (error) {
         console.error('Error refetching subscription permissions:', error);
         this.activeUserPermissions.set(new Set()); // Clear permissions on error
