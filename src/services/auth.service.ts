@@ -22,12 +22,10 @@ export class AuthService {
 
     // Listen to authentication state changes
     supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          // When the user follows the password recovery link, Supabase redirects
-          // them back to the app with a special session. This event is fired,
-          // and we can redirect them to the password reset component.
-          this.router.navigate(['/reset-password']);
-        }
+        // The Supabase client automatically handles the session from the URL fragment
+        // when a password recovery link is used. Navigating here would prematurely
+        // clear the URL fragment, invalidating the session before the user can
+        // update their password. The routing is already handled by the redirectTo URL.
         this.currentUser.set(session?.user ?? null);
     });
   }
