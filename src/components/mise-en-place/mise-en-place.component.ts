@@ -41,7 +41,7 @@ export class MiseEnPlaceComponent {
     const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);
     return this.hrState.employees().filter(e => {
         // FIX: Explicitly cast the result of rolesMap.get to string | undefined.
-        const roleName = e.role_id ? rolesMap.get(e.role_id) as (string | undefined) : undefined;
+        const roleName = e.role_id ? rolesMap.get(e.role_id) : undefined;
         return roleName ? allowedRoles.has(roleName) : false;
     });
   });
@@ -82,8 +82,10 @@ export class MiseEnPlaceComponent {
     const allPreparations = this.recipeState.recipePreparations();
     const allIngredients = this.recipeState.recipeIngredients();
     const allSubRecipes = this.recipeState.recipeSubRecipes();
-    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
-    const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
+    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
+    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
+    const recipesMap = new Map<string, Recipe>(allRecipes.map(r => [r.id, r]));
 
     const recipePreps = allPreparations
       .filter(p => p.recipe_id === recipe.id)

@@ -1,6 +1,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -304,7 +306,8 @@ export class InventoryComponent {
         this.isAnalyzingStock.set(true);
         this.stockPrediction.set(null);
         try {
-            const ingredientsById = new Map(this.ingredients().map(i => [i.id, i]));
+            // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
+            const ingredientsById = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
             
             // Step 1: Initialize predictions for ALL ingredients
             const predictionsMap = new Map<string, StockPrediction>();
