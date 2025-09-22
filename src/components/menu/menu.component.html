@@ -14,20 +14,45 @@
         
         <!-- Case 1: Cover Page -->
         @case ('cover') {
-          <div class="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-            @if(companyProfile()?.logo_url; as logo) {
-              <img [src]="logo" alt="Logo" class="h-32 w-32 rounded-full object-cover mb-4 shadow-lg">
-            } @else {
-               <div class="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 shadow-lg">
-                  <span class="text-5xl font-extrabold text-gray-800">
-                    <span>C</span><span class="text-blue-600">OS</span>
-                  </span>
-               </div>
-            }
-            <h1 class="text-4xl font-bold text-gray-900">{{ companyProfile()?.company_name || 'Bem-vindo!' }}</h1>
-            <div class="mt-8 space-y-4 w-full max-w-xs">
-                <button (click)="setView('menu')" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors text-lg shadow-md">Ver Cardápio</button>
-                <button (click)="setView('info')" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors text-lg">Informações & Reservas</button>
+          <div class="w-full min-h-screen flex flex-col bg-white">
+            <!-- Hero Section -->
+            <div class="relative h-[50vh] md:h-[60vh] bg-cover bg-center" style="background-image: url('https://picsum.photos/1280/720?restaurant,food');">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+              <div class="absolute inset-0 flex flex-col justify-end p-6 md:p-12">
+                <div class="flex items-center gap-6">
+                  @if(companyProfile()?.logo_url; as logo) {
+                    <img [src]="logo" alt="Logo" class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg">
+                  } @else {
+                      <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg flex-shrink-0">
+                          <span class="text-4xl font-extrabold text-gray-800">
+                              <span>C</span><span class="text-blue-600">OS</span>
+                          </span>
+                      </div>
+                  }
+                  <h1 class="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg">{{ companyProfile()?.company_name || 'Bem-vindo!' }}</h1>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Content Section -->
+            <div class="flex-1 p-6 md:p-8">
+              <!-- Category Carousel -->
+              <h2 class="text-2xl font-bold text-gray-800 mb-4">Navegue por Categorias</h2>
+              <div class="flex overflow-x-auto space-x-4 pb-4 -mx-6 px-6 hide-scrollbar">
+                @for(group of baseMenu(); track group.category.id) {
+                  <div (click)="setSelectedCategory(createSlug(group.category.name)); setView('menu')" class="group flex-shrink-0 w-32 h-40 rounded-lg overflow-hidden relative cursor-pointer shadow-md transform hover:-translate-y-1 transition-transform">
+                    <img [src]="group.category.image_url || 'https://picsum.photos/200/300?food,'+group.category.name" [alt]="group.category.name" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors"></div>
+                    <span class="absolute bottom-2 left-2 text-white font-bold text-sm drop-shadow-md">{{ group.category.name }}</span>
+                  </div>
+                }
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="mt-8 space-y-4 w-full max-w-md mx-auto">
+                  <button (click)="setView('menu')" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors text-lg shadow-md">Ver Cardápio Completo</button>
+                  <button (click)="setView('info')" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors text-lg">Informações & Reservas</button>
+              </div>
             </div>
           </div>
         }
@@ -36,7 +61,7 @@
         @case ('menu') {
           <div class="max-w-4xl mx-auto">
               <header class="relative rounded-b-2xl overflow-hidden mb-6 shadow-lg">
-                <img src="https://picsum.photos/1200/400?food" alt="Imagem de fundo do restaurante" class="w-full h-40 object-cover">
+                <img src="https://picsum.photos/1280/720?restaurant,food" alt="Imagem de fundo do restaurante" class="w-full h-40 object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20"></div>
                 <div class="absolute inset-0 p-4 flex flex-col justify-between">
                     <!-- Top navigation buttons -->
@@ -52,6 +77,12 @@
                     <div class="flex items-center gap-4">
                         @if(companyProfile()?.logo_url; as logo) {
                             <img [src]="logo" [alt]="'Logo de ' + (companyProfile()?.company_name || 'Restaurante')" class="h-16 w-16 rounded-full object-cover border-2 border-white shadow-md">
+                        } @else {
+                            <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white shadow-md flex-shrink-0">
+                                <span class="text-2xl font-extrabold text-gray-800">
+                                  <span>C</span><span class="text-blue-600">OS</span>
+                                </span>
+                             </div>
                         }
                         <h1 class="text-3xl font-bold text-white drop-shadow-md">{{ companyProfile()?.company_name }}</h1>
                     </div>
