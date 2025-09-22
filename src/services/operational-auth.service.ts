@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
 import { supabase } from './supabase-client';
+// FIX: Inject modular state services
 import { HrStateService } from './hr-state.service';
 import { SubscriptionStateService } from './subscription-state.service';
 import { SupabaseStateService } from './supabase-state.service';
@@ -18,6 +19,7 @@ type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'e
 })
 export class OperationalAuthService {
   private router = inject(Router);
+  // Keep SupabaseStateService for its methods, but inject others for direct state access
   private stateService = inject(SupabaseStateService);
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
@@ -29,15 +31,15 @@ export class OperationalAuthService {
 
   constructor() {
     try {
-        const storedEmployee = localStorage.getItem(EMPLOYEE_STORAGE_KEY);
+        const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
         if (storedEmployee) {
           const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
           this.activeEmployee.set(employee);
           this.loadActiveShift(employee);
         }
     } catch (e) {
-        console.error("Failed to initialize operator auth from localStorage", e);
-        localStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+        console.error("Failed to initialize operator auth from sessionStorage", e);
+        sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
         this.activeEmployee.set(null);
     } finally {
         this.operatorAuthInitialized.set(true);
@@ -85,11 +87,7 @@ export class OperationalAuthService {
 
   shiftButtonState = computed<ShiftButtonState>(() => {
     if (this.demoService.isDemoMode()) {
-        const shift = this.activeShift();
-        if (!shift) return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400' };
-        if (!shift.break_start_time) return { text: 'Iniciar Pausa', action: 'start_break', disabled: false, className: 'text-blue-400 hover:text-blue-300' };
-        if (!shift.break_end_time) return { text: 'Encerrar Pausa', action: 'end_break', disabled: false, className: 'text-green-400 hover:text-green-300' };
-        return { text: 'Encerrar Turno', action: 'end_shift', disabled: false, className: 'text-yellow-400 hover:text-yellow-300' };
+        return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400' };
     }
     const shift = this.activeShift();
     if (!shift) {
@@ -105,24 +103,7 @@ export class OperationalAuthService {
   });
 
   async handleShiftAction() {
-      if (this.demoService.isDemoMode()) {
-          const shift = this.activeShift();
-          if (!shift) return;
-          const state = this.shiftButtonState().action;
-          switch (state) {
-              case 'start_break':
-                  this.activeShift.update(s => s ? { ...s, break_start_time: new Date().toISOString() } : s);
-                  break;
-              case 'end_break':
-                  this.activeShift.update(s => s ? { ...s, break_end_time: new Date().toISOString() } : s);
-                  break;
-              case 'end_shift':
-                  this.clockOut();
-                  break;
-          }
-          return;
-      }
-
+      if (this.demoService.isDemoMode()) return;
       const shift = this.activeShift();
       const employee = this.activeEmployee();
       if (!shift || !employee) return;
@@ -146,27 +127,6 @@ export class OperationalAuthService {
   }
 
   async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
-    if (this.demoService.isDemoMode()) {
-      const newEntry: TimeClockEntry = {
-        id: `demo-clock-${Date.now()}`,
-        user_id: 'demo-user',
-        employee_id: employee.id,
-        clock_in_time: new Date().toISOString(),
-        clock_out_time: null,
-        break_start_time: null,
-        break_end_time: null,
-        notes: null,
-        created_at: new Date().toISOString(),
-      };
-      const updatedEmployee = { ...employee, current_clock_in_id: newEntry.id };
-      this.hrState.employees.update(employees => 
-          employees.map(e => e.id === employee.id ? updatedEmployee : e)
-      );
-      this.activeShift.set(newEntry);
-      this.login(updatedEmployee);
-      return { success: true, error: null };
-    }
-
     const { data: newEntry, error } = await supabase
         .from('time_clock_entries')
         .insert({ employee_id: employee.id }) // user_id will be set by the DB default
@@ -188,6 +148,7 @@ export class OperationalAuthService {
     
     // Manually update the state to reflect the change immediately
     const updatedEmployee = { ...employee, current_clock_in_id: newEntry.id };
+    // FIX: Access employees from hrState
     this.hrState.employees.update(employees => 
         employees.map(e => e.id === employee.id ? updatedEmployee : e)
     );
@@ -196,17 +157,6 @@ export class OperationalAuthService {
   }
 
   async clockOut(): Promise<{ success: boolean; error: any }> {
-      if (this.demoService.isDemoMode()) {
-          const employee = this.activeEmployee();
-          if (employee) {
-              this.hrState.employees.update(employees => 
-                  employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
-              );
-          }
-          this.switchEmployee();
-          return { success: true, error: null };
-      }
-
       const employee = this.activeEmployee();
       if (!employee || !employee.current_clock_in_id) {
           // If for some reason they are logged in without a clock-in record, just log them out.
@@ -232,6 +182,8 @@ export class OperationalAuthService {
           return { success: false, error: empError };
       }
       
+      // Manually update state
+      // FIX: Access employees from hrState
        this.hrState.employees.update(employees => 
           employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
       );
@@ -240,12 +192,12 @@ export class OperationalAuthService {
   }
 
   login(employee: Employee) {
-    let roleName = 'Sem Cargo';
+    let roleName: string = 'Sem Cargo';
     if (this.demoService.isDemoMode()) {
-        const rolesMap = new Map<string, string>(MOCK_ROLES.map(r => [r.id, r.name]));
+        const rolesMap = new Map(MOCK_ROLES.map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     } else {
-        const rolesMap = new Map<string, string>(this.hrState.roles().map(r => [r.id, r.name]));
+        const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     }
 
@@ -255,7 +207,7 @@ export class OperationalAuthService {
     };
 
     this.activeEmployee.set(employeeWithRole);
-    localStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employeeWithRole));
+    sessionStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employeeWithRole));
     this.loadActiveShift(employeeWithRole);
   }
 
@@ -263,7 +215,7 @@ export class OperationalAuthService {
     this.demoService.disableDemoMode();
     this.activeEmployee.set(null);
     this.activeShift.set(null);
-    localStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+    sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
     this.router.navigate(['/employee-selection']);
   }
 
@@ -276,11 +228,13 @@ export class OperationalAuthService {
 
     // Special case for tutorials: bypass subscription check, only role permission matters.
     if (routeKey === '/tutorials') {
+        // FIX: Access rolePermissions from hrState
         const rolePermissions = this.hrState.rolePermissions();
         return rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     }
     
     // For all other routes, an active subscription is a prerequisite.
+    // FIX: Access hasActiveSubscription from subscriptionState
     const hasActiveSub = this.subscriptionState.hasActiveSubscription();
     if (!hasActiveSub) {
         return false;
@@ -292,7 +246,9 @@ export class OperationalAuthService {
     }
 
     // For all other regular routes, both plan and role permissions are required.
+    // FIX: Access activeUserPermissions from subscriptionState
     const hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
+    // FIX: Access rolePermissions from hrState
     const hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     
     return hasPlanPermission && hasRolePermission;

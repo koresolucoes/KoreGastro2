@@ -6,7 +6,6 @@ import { Observable, map, of, combineLatest } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { DemoService } from '../services/demo.service';
 import { filter, take, timeout, catchError } from 'rxjs/operators';
-import { SupabaseStateService } from '../services/supabase-state.service';
 
 export const roleGuard: CanActivateFn = (
     route: ActivatedRouteSnapshot,
@@ -16,7 +15,6 @@ export const roleGuard: CanActivateFn = (
   const operationalAuthService = inject(OperationalAuthService);
   const router = inject(Router);
   const demoService = inject(DemoService);
-  const supabaseStateService = inject(SupabaseStateService);
 
   if (demoService.isDemoMode()) {
     if (operationalAuthService.activeEmployee()) {
@@ -38,12 +36,11 @@ export const roleGuard: CanActivateFn = (
     );
   }
 
-  // Wait for auth services to be initialized AND for Supabase data to be loaded.
-  // This ensures all permissions, roles, and subscriptions are available before checking access.
+  // Wait for BOTH the main auth service and the operator auth service to be initialized.
+  // This is the definitive fix for the reload race condition.
   return combineLatest([
     toObservable(authService.authInitialized).pipe(filter(init => init), take(1)),
-    toObservable(operationalAuthService.operatorAuthInitialized).pipe(filter(init => init), take(1)),
-    toObservable(supabaseStateService.isDataLoaded).pipe(filter(loaded => loaded), take(1))
+    toObservable(operationalAuthService.operatorAuthInitialized).pipe(filter(init => init), take(1))
   ]).pipe(
     map(() => {
       const user = authService.currentUser();
