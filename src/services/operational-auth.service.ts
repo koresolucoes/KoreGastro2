@@ -29,15 +29,15 @@ export class OperationalAuthService {
 
   constructor() {
     try {
-        const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
+        const storedEmployee = localStorage.getItem(EMPLOYEE_STORAGE_KEY);
         if (storedEmployee) {
           const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
           this.activeEmployee.set(employee);
           this.loadActiveShift(employee);
         }
     } catch (e) {
-        console.error("Failed to initialize operator auth from sessionStorage", e);
-        sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+        console.error("Failed to initialize operator auth from localStorage", e);
+        localStorage.removeItem(EMPLOYEE_STORAGE_KEY);
         this.activeEmployee.set(null);
     } finally {
         this.operatorAuthInitialized.set(true);
@@ -242,11 +242,9 @@ export class OperationalAuthService {
   login(employee: Employee) {
     let roleName = 'Sem Cargo';
     if (this.demoService.isDemoMode()) {
-        // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
         const rolesMap = new Map<string, string>(MOCK_ROLES.map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     } else {
-        // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
         const rolesMap = new Map<string, string>(this.hrState.roles().map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     }
@@ -257,7 +255,7 @@ export class OperationalAuthService {
     };
 
     this.activeEmployee.set(employeeWithRole);
-    sessionStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employeeWithRole));
+    localStorage.setItem(EMPLOYEE_STORAGE_KEY, JSON.stringify(employeeWithRole));
     this.loadActiveShift(employeeWithRole);
   }
 
@@ -265,7 +263,7 @@ export class OperationalAuthService {
     this.demoService.disableDemoMode();
     this.activeEmployee.set(null);
     this.activeShift.set(null);
-    sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+    localStorage.removeItem(EMPLOYEE_STORAGE_KEY);
     this.router.navigate(['/employee-selection']);
   }
 
