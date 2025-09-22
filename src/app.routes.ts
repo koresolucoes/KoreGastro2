@@ -36,6 +36,7 @@ import { DemoAccessComponent } from './components/demo/demo-access.component';
 import { loginGuard } from './guards/login.guard';
 
 export const APP_ROUTES: Routes = [
+  { path: 'LOGIN', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'demo', component: DemoAccessComponent },
