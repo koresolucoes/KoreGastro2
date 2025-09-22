@@ -1,3 +1,4 @@
+
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -31,9 +32,11 @@ import { IfoodKdsComponent } from './components/ifood-kds/ifood-kds.component';
 import { IfoodMenuComponent } from './components/ifood-menu/ifood-menu.component';
 import { MyProfileComponent } from './components/my-profile/my-profile.component';
 import { SuppliersComponent } from './components/suppliers/suppliers.component';
+import { ResetPasswordComponent } from './components/auth/reset-password.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'employee-selection', component: EmployeeSelectionComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [roleGuard] },
