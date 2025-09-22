@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe, Ingredient } from '../../models/db.models';
+import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.service';
 import { NotificationService } from '../../services/notification.service';
@@ -40,8 +40,8 @@ export class MiseEnPlaceComponent {
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
     const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);
     return this.hrState.employees().filter(e => {
-        // FIX: Explicitly typing the variable helps the compiler with type inference inside complex computed signals.
-        const roleName: string | undefined = e.role_id ? rolesMap.get(e.role_id) : undefined;
+        // FIX: Explicitly cast the result of rolesMap.get to string | undefined.
+        const roleName = e.role_id ? rolesMap.get(e.role_id) as (string | undefined) : undefined;
         return roleName ? allowedRoles.has(roleName) : false;
     });
   });
@@ -82,10 +82,8 @@ export class MiseEnPlaceComponent {
     const allPreparations = this.recipeState.recipePreparations();
     const allIngredients = this.recipeState.recipeIngredients();
     const allSubRecipes = this.recipeState.recipeSubRecipes();
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const recipesMap = new Map<string, Recipe>(allRecipes.map(r => [r.id, r]));
+    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
+    const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
 
     const recipePreps = allPreparations
       .filter(p => p.recipe_id === recipe.id)

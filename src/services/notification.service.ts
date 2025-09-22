@@ -49,12 +49,9 @@ export class NotificationService {
    * @deprecated Use `show()` for non-blocking feedback or `confirm()` for user decisions. This is for critical, blocking alerts.
    */
   alert(message: string, title: string = 'Aviso'): Promise<void> {
-    // Check if the message indicates a common backend error and replace it with a more user-friendly message.
-    const userFriendlyMessage = this.translateErrorMessage(message);
-    
     this.notificationState.set({
       isOpen: true,
-      message: userFriendlyMessage,
+      message,
       title,
       type: 'alert',
       confirmText: 'OK',
@@ -105,17 +102,6 @@ export class NotificationService {
         resolve({ confirmed, value: confirmed ? this.promptInputValue() : null });
       };
     });
-  }
-
-  private translateErrorMessage(message: string): string {
-      if (message.includes('User not authenticated')) {
-          return 'Sua sessão expirou ou você não tem permissão para realizar esta ação. Por favor, tente fazer login novamente.';
-      }
-      if (message.includes('invalid input syntax for type uuid')) {
-          return 'Ocorreu um erro ao processar a solicitação. O identificador fornecido é inválido. Por favor, recarregue a página e tente novamente.';
-      }
-      // Add more translations for other common errors here
-      return message;
   }
 
   private close(): void {

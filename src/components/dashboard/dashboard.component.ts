@@ -1,6 +1,5 @@
 
 
-
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -130,15 +129,14 @@ export class DashboardComponent implements OnInit {
   
   topEmployeesToday = computed(() => {
       const salesByEmployee = new Map<string, { name: string, sales: number }>();
-      // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-      const employeeMap = new Map<string, string>(this.hrState.employees().map(e => [e.id, e.name]));
+      const employeeMap = new Map(this.hrState.employees().map(e => [e.id, e.name]));
 
       this.dashboardState.dashboardTransactions()
           .filter(t => t.type === 'Receita' && t.employee_id)
           .forEach(t => {
               const employeeId = t.employee_id!;
               // FIX: Explicitly type 'name' as string to resolve compiler type inference issue.
-              const name = employeeMap.get(employeeId) || 'Desconhecido';
+              const name: string = employeeMap.get(employeeId) || 'Desconhecido';
               const current = salesByEmployee.get(employeeId) || { name: name, sales: 0 };
               current.sales += t.amount;
               salesByEmployee.set(employeeId, current);

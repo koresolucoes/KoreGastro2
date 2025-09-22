@@ -222,8 +222,7 @@ export class OrderPanelComponent {
   });
 
   private hasEnoughStockFor(recipe: Recipe): boolean {
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
     const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
     const reserved = this.reservedIngredients();
 

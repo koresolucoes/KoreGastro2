@@ -150,8 +150,7 @@ export class TechnicalSheetsComponent {
   formTotalCost = computed(() => {
     const form = this.recipeForm();
     let total = 0;
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
+    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
     const subRecipeCostMap = this.recipeCosts();
 
     for (const item of form.ingredients) {
@@ -472,8 +471,7 @@ export class TechnicalSheetsComponent {
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
+    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
     const ingredientsToSave = form.ingredients.map(formIngredient => {
         const baseIngredient = ingredientsMap.get(formIngredient.ingredient_id);
         if (!baseIngredient) return null;

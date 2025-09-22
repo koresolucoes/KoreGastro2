@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Recipe, Category, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Promotion, PromotionRecipe, Ingredient } from '../models/db.models';
+import { Recipe, Category, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Promotion, PromotionRecipe } from '../models/db.models';
 import { InventoryStateService } from './inventory-state.service';
 
 @Injectable({ providedIn: 'root' })
@@ -19,8 +19,7 @@ export class RecipeStateService {
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
 
   recipeCosts = computed(() => {
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
     const recipeIngredients = this.recipeIngredients();
     const recipeSubRecipes = this.recipeSubRecipes();
     const recipes = this.recipes();
@@ -75,8 +74,7 @@ export class RecipeStateService {
     const recipes = this.recipes();
     const recipeIngredients = this.recipeIngredients();
     const recipeSubRecipes = this.recipeSubRecipes();
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const recipesMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]));
+    const recipesMap = new Map(recipes.map(r => [r.id, r]));
 
     const compositionMap = new Map<string, { directIngredients: { ingredientId: string, quantity: number }[], subRecipeIngredients: { ingredientId: string, quantity: number }[] }>();
 
@@ -91,7 +89,7 @@ export class RecipeStateService {
                 // FIX: Add a guard to ensure childRecipe is not undefined.
                 const childRecipe = recipesMap.get(rsr.child_recipe_id);
                 // The ingredient to deduct is the one linked to the sub-recipe via source_ingredient_id
-                return childRecipe?.source_ingredient_id
+                return childRecipe?.source_ingredient_id 
                     ? { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity }
                     : null;
             })
@@ -103,8 +101,7 @@ export class RecipeStateService {
   });
 
   recipesWithStockStatus = computed(() => {
-    // FIX: Explicitly typing the Map generic types resolves compiler type inference issues.
-    const ingredientsStockMap = new Map<string, number>(this.inventoryState.ingredients().map(i => [i.id, i.stock]));
+    const ingredientsStockMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i.stock]));
     const directCompositions = this.recipeDirectComposition();
     const allRecipes = this.recipes();
 
@@ -123,7 +120,7 @@ export class RecipeStateService {
 
       for (const ing of composition.directIngredients) {
         // FIX: Explicitly cast the map get result to number to satisfy the compiler.
-        if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) < ing.quantity) {
+        if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) < ing.quantity) {
           memoCanProduce.set(recipeId, false);
           return false;
         }
@@ -147,7 +144,7 @@ export class RecipeStateService {
 
       if (composition) {
         for (const ing of composition.directIngredients) {
-          if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) <= 0) {
+          if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) <= 0) {
             hasStock = false;
             break;
           }
@@ -155,7 +152,7 @@ export class RecipeStateService {
         if (!hasStock) return { ...recipe, hasStock };
 
         for (const sub of composition.subRecipeIngredients) {
-          const subRecipeStock = ingredientsStockMap.get(sub.ingredientId) ?? 0;
+          const subRecipeStock = (ingredientsStockMap.get(sub.ingredientId) as number | undefined) ?? 0;
           
           if (subRecipeStock > 0) {
             continue;
