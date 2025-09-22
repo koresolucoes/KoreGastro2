@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer } from '../../../models/db.models';
@@ -173,16 +174,133 @@ export class OrderPanelComponent {
   });
 
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
-  
-  addToCart(recipe: Recipe & { hasStock: boolean }) {
-    if (!recipe.is_available || !recipe.hasStock) {
-        return;
+
+  private reservedIngredients = computed(() => {
+    const reserved = new Map<string, number>();
+    const recipeCompositions = this.stateService.recipeDirectComposition();
+    const order = this.currentOrder();
+    const cart = this.shoppingCart();
+
+    const accumulate = (recipeId: string, quantity: number) => {
+        const composition = recipeCompositions.get(recipeId);
+        if (composition) {
+            composition.directIngredients.forEach(ing => {
+                const totalUsed = ing.quantity * quantity;
+                reserved.set(ing.ingredientId, (reserved.get(ing.ingredientId) || 0) + totalUsed);
+            });
+            composition.subRecipeIngredients.forEach(subIng => {
+                const totalUsed = subIng.quantity * quantity;
+                reserved.set(subIng.ingredientId, (reserved.get(subIng.ingredientId) || 0) + totalUsed);
+            });
+        }
+    };
+
+    // 1. Ingredients already sent to kitchen
+    if (order) {
+        const processedGroupIds = new Set<string>();
+        for (const item of order.order_items) {
+            if (item.group_id) {
+                if (processedGroupIds.has(item.group_id)) continue;
+                processedGroupIds.add(item.group_id);
+                const representativeItem = order.order_items.find(i => i.group_id === item.group_id);
+                if(representativeItem) {
+                    accumulate(representativeItem.recipe_id, representativeItem.quantity);
+                }
+            } else {
+                accumulate(item.recipe_id, item.quantity);
+            }
+        }
     }
-    this.shoppingCart.update(cart => [...cart, { id: uuidv4(), recipe, quantity: 1, notes: '' }]);
+
+    // 2. Ingredients in the current shopping cart
+    for (const item of cart) {
+        accumulate(item.recipe.id, item.quantity);
+    }
+
+    return reserved;
+  });
+
+  private hasEnoughStockFor(recipe: Recipe): boolean {
+    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.id, i]));
+    const composition = this.stateService.recipeDirectComposition().get(recipe.id);
+    const reserved = this.reservedIngredients();
+
+    if (!composition) {
+      return true; // Assume true for recipes with no ingredients
+    }
+
+    // Check direct raw ingredients
+    for (const ing of composition.directIngredients) {
+      const ingredient = ingredientsMap.get(ing.ingredientId);
+      if (!ingredient) {
+        this.notificationService.show(`Ingrediente de "${recipe.name}" não encontrado.`, 'error');
+        return false;
+      }
+      const availableStock = ingredient.stock;
+      const alreadyReserved = reserved.get(ing.ingredientId) || 0;
+      
+      if (availableStock < alreadyReserved + ing.quantity) {
+        this.notificationService.show(`Estoque insuficiente de "${ingredient.name}" para adicionar mais "${recipe.name}".`, 'error');
+        return false;
+      }
+    }
+
+    // Check sub-recipe stock items
+    for (const subIng of composition.subRecipeIngredients) {
+      const ingredient = ingredientsMap.get(subIng.ingredientId);
+      if (!ingredient) {
+        this.notificationService.show(`Item de estoque para sub-receita em "${recipe.name}" não encontrado.`, 'error');
+        return false;
+      }
+      const availableStock = ingredient.stock;
+      const alreadyReserved = reserved.get(subIng.ingredientId) || 0;
+
+      if (availableStock < alreadyReserved + subIng.quantity) {
+        this.notificationService.show(`Estoque insuficiente da sub-receita pronta "${ingredient.name}".`, 'error');
+        return false;
+      }
+    }
+
+    return true;
   }
 
+  addToCart(recipe: Recipe & { hasStock: boolean }) {
+    if (!recipe.is_available) {
+        this.notificationService.show(`"${recipe.name}" não está disponível no cardápio.`, 'warning');
+        return;
+    }
+
+    // Find an existing item in the cart to increment. We'll only increment items that have no notes.
+    const existingCartItem = this.shoppingCart().find(item => item.recipe.id === recipe.id && !item.notes);
+    
+    // Perform stock check before adding or incrementing
+    if (!this.hasEnoughStockFor(recipe)) {
+        return; // The hasEnoughStockFor method shows the notification
+    }
+
+    if (existingCartItem) {
+        this.shoppingCart.update(cart => 
+            cart.map(item => item.id === existingCartItem.id ? { ...item, quantity: item.quantity + 1 } : item)
+        );
+    } else {
+        this.shoppingCart.update(cart => [...cart, { id: uuidv4(), recipe, quantity: 1, notes: '' }]);
+    }
+  }
+  
   updateCartItemQuantity(itemId: string, change: -1 | 1) {
-    this.shoppingCart.update(cart => cart.map(item => item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item).filter(item => item.quantity > 0));
+    const itemToUpdate = this.shoppingCart().find(item => item.id === itemId);
+    if (!itemToUpdate) return;
+    
+    if (change === 1) { // Only check stock when increasing quantity
+        if (!this.hasEnoughStockFor(itemToUpdate.recipe)) {
+            return; // Notification is handled inside the check function
+        }
+    }
+
+    this.shoppingCart.update(cart => 
+        cart.map(item => item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item)
+            .filter(item => item.quantity > 0)
+    );
   }
 
   removeFromCart(itemId: string) {

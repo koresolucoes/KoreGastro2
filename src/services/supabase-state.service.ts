@@ -243,18 +243,73 @@ export class SupabaseStateService {
 
   recipesWithStockStatus = computed(() => {
     const ingredientsStockMap = new Map(this.ingredients().map(i => [i.id, i.stock]));
-    const recipeCosts = this.recipeCosts(); // This has the flattened raw ingredients
+    const directCompositions = this.recipeDirectComposition();
+    const allRecipes = this.recipes();
 
-    return this.recipes().map(recipe => {
-      const recipeComposition = recipeCosts.get(recipe.id);
-      
+    // Memoization map to avoid re-calculating if a sub-recipe can be produced.
+    const memoCanProduce = new Map<string, boolean>();
+
+    // Recursive function to check if a recipe can be produced from scratch, ignoring its own final stock.
+    const canProduce = (recipeId: string): boolean => {
+      if (memoCanProduce.has(recipeId)) {
+        return memoCanProduce.get(recipeId)!;
+      }
+
+      const composition = directCompositions.get(recipeId);
+      if (!composition) {
+        memoCanProduce.set(recipeId, true); // No ingredients needed, can be "produced".
+        return true;
+      }
+
+      // Check direct raw ingredients for production.
+      for (const ing of composition.directIngredients) {
+        if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) < ing.quantity) {
+          memoCanProduce.set(recipeId, false);
+          return false; // Not enough raw material.
+        }
+      }
+
+      // Check if sub-recipes needed for production can themselves be produced.
+      for (const sub of composition.subRecipeIngredients) {
+        const subRecipe = allRecipes.find(r => r.source_ingredient_id === sub.ingredientId);
+        if (!subRecipe || !canProduce(subRecipe.id)) {
+          memoCanProduce.set(recipeId, false);
+          return false; // Required sub-recipe cannot be produced.
+        }
+      }
+
+      memoCanProduce.set(recipeId, true);
+      return true;
+    };
+
+    return allRecipes.map(recipe => {
+      const composition = directCompositions.get(recipe.id);
       let hasStock = true;
-      if (recipeComposition && recipeComposition.rawIngredients.size > 0) {
-        for (const ingredientId of recipeComposition.rawIngredients.keys()) {
-          const availableStock = ingredientsStockMap.get(ingredientId);
-          if (availableStock === undefined || availableStock <= 0) {
+
+      if (composition) {
+        // 1. Check direct raw ingredients.
+        for (const ing of composition.directIngredients) {
+          if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) <= 0) {
             hasStock = false;
             break;
+          }
+        }
+        if (!hasStock) return { ...recipe, hasStock };
+
+        // 2. Check sub-recipe components.
+        for (const sub of composition.subRecipeIngredients) {
+          const subRecipeStock = ingredientsStockMap.get(sub.ingredientId) ?? 0;
+          
+          if (subRecipeStock > 0) {
+            // Priority 1: We have the finished sub-recipe in stock. Continue.
+            continue;
+          } else {
+            // Priority 2: Stock is 0. Can we produce it from raw materials?
+            const subRecipe = allRecipes.find(r => r.source_ingredient_id === sub.ingredientId);
+            if (!subRecipe || !canProduce(subRecipe.id)) {
+              hasStock = false; // Cannot be produced.
+              break;
+            }
           }
         }
       }
