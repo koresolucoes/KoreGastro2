@@ -17,6 +17,7 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
+import { DemoService } from '../../services/demo.service';
 
 type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
@@ -46,6 +47,7 @@ export class SettingsComponent {
   private settingsState = inject(SettingsStateService);
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
+  private demoService = inject(DemoService);
 
   // Data Signals from new services
   stations = this.posState.stations;
@@ -187,20 +189,20 @@ export class SettingsComponent {
   sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
 
   qrCodeUrl = computed(() => {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
     if (!userId) return '';
     const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
 
   publicMenuUrl = computed(() => {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
     if (!userId) return '';
     return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
   });
 
   publicBookingUrl = computed(() => {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
     if (!userId) return '';
     return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
   });

@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { DemoService } from '../../services/demo.service';
 
 // Import new state services
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -33,6 +34,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private publicDataService = inject(PublicDataService);
   private authService = inject(AuthService);
+  private demoService = inject(DemoService);
   private routeSub: Subscription | undefined;
 
   // View state
@@ -208,7 +210,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   });
 
   publicBookingUrl = computed(() => {
-    const userId = this.isPublicView() ? this.route.snapshot.paramMap.get('userId') : this.authService.currentUser()?.id;
+    const userId = this.isPublicView() 
+        ? this.route.snapshot.paramMap.get('userId') 
+        : (this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id);
     if (!userId) return '#';
     return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
   });
