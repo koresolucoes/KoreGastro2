@@ -2,6 +2,9 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
 import { supabase } from './supabase-client';
+// FIX: Inject modular state services
+import { HrStateService } from './hr-state.service';
+import { SubscriptionStateService } from './subscription-state.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 
@@ -14,14 +17,19 @@ type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'e
 })
 export class OperationalAuthService {
   private router = inject(Router);
+  // Keep SupabaseStateService for its methods, but inject others for direct state access
   private stateService = inject(SupabaseStateService);
+  private hrState = inject(HrStateService);
+  private subscriptionState = inject(SubscriptionStateService);
+  
   activeEmployee = signal<(Employee & { role?: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
 
   constructor() {
     const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
     if (storedEmployee) {
-      const employee = JSON.parse(storedEmployee);
+      // FIX: Add type assertion for parsed JSON
+      const employee = JSON.parse(storedEmployee) as (Employee & { role?: string });
       this.activeEmployee.set(employee);
       this.loadActiveShift(employee);
     }
@@ -100,7 +108,8 @@ export class OperationalAuthService {
     
     // Manually update the state to reflect the change immediately
     const updatedEmployee = { ...employee, current_clock_in_id: newEntry.id };
-    this.stateService.employees.update(employees => 
+    // FIX: Access employees from hrState
+    this.hrState.employees.update(employees => 
         employees.map(e => e.id === employee.id ? updatedEmployee : e)
     );
     this.login(updatedEmployee); // Sets the active employee
@@ -134,7 +143,8 @@ export class OperationalAuthService {
       }
       
       // Manually update state
-       this.stateService.employees.update(employees => 
+      // FIX: Access employees from hrState
+       this.hrState.employees.update(employees => 
           employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
       );
       this.switchEmployee(); // Clears session and navigates
@@ -142,9 +152,11 @@ export class OperationalAuthService {
   }
 
   login(employee: Employee) {
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
-    const roleName = employee.role_id ? rolesMap.get(employee.role_id) : undefined;
-    const employeeWithRole = {
+    // FIX: Access roles from hrState
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+    // FIX: Ensure roleName is string | undefined
+    const roleName: string | undefined = employee.role_id ? rolesMap.get(employee.role_id) : undefined;
+    const employeeWithRole: (Employee & { role?: string }) = {
       ...employee,
       role: roleName,
     };
@@ -170,12 +182,14 @@ export class OperationalAuthService {
 
     // Special case for tutorials: bypass subscription check, only role permission matters.
     if (routeKey === '/tutorials') {
-        const rolePermissions = this.stateService.rolePermissions();
+        // FIX: Access rolePermissions from hrState
+        const rolePermissions = this.hrState.rolePermissions();
         return rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     }
     
     // For all other routes, an active subscription is a prerequisite.
-    const hasActiveSub = this.stateService.hasActiveSubscription();
+    // FIX: Access hasActiveSubscription from subscriptionState
+    const hasActiveSub = this.subscriptionState.hasActiveSubscription();
     if (!hasActiveSub) {
         return false;
     }
@@ -186,8 +200,10 @@ export class OperationalAuthService {
     }
 
     // For all other regular routes, both plan and role permissions are required.
-    const hasPlanPermission = this.stateService.activeUserPermissions().has(routeKey);
-    const hasRolePermission = this.stateService.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+    // FIX: Access activeUserPermissions from subscriptionState
+    const hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
+    // FIX: Access rolePermissions from hrState
+    const hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     
     return hasPlanPermission && hasRolePermission;
   }

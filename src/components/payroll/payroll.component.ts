@@ -1,7 +1,9 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { Employee, Schedule, Shift, TimeClockEntry, CompanyProfile } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import feature-specific state services
+import { SettingsStateService } from '../../services/settings-state.service';
+import { HrStateService } from '../../services/hr-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { TimeClockService } from '../../services/time-clock.service';
 import { PrintingService } from '../../services/printing.service';
@@ -44,7 +46,9 @@ function calculateDurationInMs(entry: TimeClockEntry): number {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PayrollComponent {
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject feature-specific state services
+  private settingsState = inject(SettingsStateService);
+  private hrState = inject(HrStateService);
   private timeClockService = inject(TimeClockService);
   private notificationService = inject(NotificationService);
   private printingService = inject(PrintingService);
@@ -58,7 +62,8 @@ export class PayrollComponent {
   // Data state
   timeEntriesForPeriod = signal<TimeClockEntry[]>([]);
   schedulesForPeriod = signal<Schedule[]>([]);
-  companyProfile = this.stateService.companyProfile;
+  // FIX: Access state from the correct feature-specific service
+  companyProfile = this.settingsState.companyProfile;
   
   // Payslip Modal State
   employeeForPayslip = signal<PayrollData | null>(null);
@@ -99,7 +104,8 @@ export class PayrollComponent {
       this.timeEntriesForPeriod.set(entries || []);
     }
 
-    const allSchedules = this.stateService.schedules();
+    // FIX: Access schedules from the correct state service
+    const allSchedules = this.hrState.schedules();
     const periodSchedules = allSchedules.filter(s => {
         const scheduleDate = new Date(s.week_start_date + 'T00:00:00');
         return scheduleDate.getFullYear() === year && scheduleDate.getMonth() === month;
@@ -110,10 +116,11 @@ export class PayrollComponent {
   }
 
   payrollData = computed<PayrollData[]>(() => {
-    const employees = this.stateService.employees();
+    // FIX: Access employees and roles from the correct state service
+    const employees = this.hrState.employees();
     const timeEntries = this.timeEntriesForPeriod();
     const schedules = this.schedulesForPeriod();
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
 
     // Helper to get a unique week identifier (e.g., 202423 for 23rd week of 2024)
     const getWeekNumber = (d: Date): number => {

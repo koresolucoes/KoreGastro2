@@ -6,6 +6,14 @@ import { CashierDataService, DailySalesCogs, PeakHoursData } from '../../service
 import { SalesCogsChartComponent } from './sales-cogs-chart/sales-cogs-chart.component';
 import { HourlySalesChartComponent } from './hourly-sales-chart/hourly-sales-chart.component';
 
+// Import new state services
+import { DashboardStateService } from '../../services/dashboard-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { PosStateService } from '../../services/pos-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -15,10 +23,18 @@ import { HourlySalesChartComponent } from './hourly-sales-chart/hourly-sales-cha
   providers: [DatePipe]
 })
 export class DashboardComponent implements OnInit {
-  private stateService = inject(SupabaseStateService);
+  private supabaseStateService = inject(SupabaseStateService);
   private cashierDataService = inject(CashierDataService);
   
-  isLoading = computed(() => !this.stateService.isDataLoaded());
+  // Inject new state services
+  private dashboardState = inject(DashboardStateService);
+  private recipeState = inject(RecipeStateService);
+  private posState = inject(PosStateService);
+  private settingsState = inject(SettingsStateService);
+  private hrState = inject(HrStateService);
+  private inventoryState = inject(InventoryStateService);
+  
+  isLoading = computed(() => !this.supabaseStateService.isDataLoaded());
 
   // Chart state
   isChartLoading = signal(true);
@@ -59,14 +75,14 @@ export class DashboardComponent implements OnInit {
   }
 
   totalSales = computed(() => {
-    return this.stateService.dashboardTransactions()
+    return this.dashboardState.dashboardTransactions()
         .filter(t => t.type === 'Receita')
         .reduce((sum, item) => sum + item.amount, 0);
   });
   
   cogsToday = computed(() => {
-    const recipeCosts = this.stateService.recipeCosts();
-    return this.stateService.dashboardCompletedOrders()
+    const recipeCosts = this.recipeState.recipeCosts();
+    return this.dashboardState.dashboardCompletedOrders()
       .flatMap(o => o.order_items)
       .reduce((sum, item) => {
         const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
@@ -77,17 +93,17 @@ export class DashboardComponent implements OnInit {
   grossProfitToday = computed(() => this.totalSales() - this.cogsToday());
 
   averageTicketToday = computed(() => {
-      const totalOrders = this.stateService.dashboardCompletedOrders().length;
+      const totalOrders = this.dashboardState.dashboardCompletedOrders().length;
       return totalOrders > 0 ? this.totalSales() / totalOrders : 0;
   });
   
-  totalOrdersToday = computed(() => this.stateService.dashboardCompletedOrders().length);
+  totalOrdersToday = computed(() => this.dashboardState.dashboardCompletedOrders().length);
 
-  openIfoodOrders = computed(() => this.stateService.openOrders().filter(o => o.order_type.startsWith('iFood')).length);
+  openIfoodOrders = computed(() => this.posState.openOrders().filter(o => o.order_type.startsWith('iFood')).length);
 
   reservationsToday = computed(() => {
     const todayStr = new Date().toISOString().split('T')[0];
-    return this.stateService.reservations().filter(r => {
+    return this.settingsState.reservations().filter(r => {
         const resDate = new Date(r.reservation_time).toISOString().split('T')[0];
         return resDate === todayStr && r.status === 'CONFIRMED';
     });
@@ -112,9 +128,9 @@ export class DashboardComponent implements OnInit {
   
   topEmployeesToday = computed(() => {
       const salesByEmployee = new Map<string, { name: string, sales: number }>();
-      const employeeMap = new Map(this.stateService.employees().map(e => [e.id, e.name]));
+      const employeeMap = new Map(this.hrState.employees().map(e => [e.id, e.name]));
 
-      this.stateService.dashboardTransactions()
+      this.dashboardState.dashboardTransactions()
           .filter(t => t.type === 'Receita' && t.employee_id)
           .forEach(t => {
               const employeeId = t.employee_id!;
@@ -130,7 +146,7 @@ export class DashboardComponent implements OnInit {
   });
 
   lowStockItemsList = computed(() => 
-    this.stateService.ingredients()
+    this.inventoryState.ingredients()
       .filter(i => i.stock < i.min_stock)
       .slice(0, 5)
   );
@@ -140,7 +156,7 @@ export class DashboardComponent implements OnInit {
     today.setHours(0,0,0,0);
     const todayStr = today.toISOString().split('T')[0];
     
-    return this.stateService.leaveRequests()
+    return this.hrState.leaveRequests()
       .filter(r => r.status === 'Aprovada' && r.start_date <= todayStr && r.end_date >= todayStr);
   });
 }

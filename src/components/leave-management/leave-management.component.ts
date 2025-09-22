@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Employee, LeaveRequest, LeaveRequestStatus, LeaveRequestType } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import HrStateService to access HR-related data
+import { HrStateService } from '../../services/hr-state.service';
 import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -16,14 +17,16 @@ type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' |
   providers: [DatePipe]
 })
 export class LeaveManagementComponent {
-  stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService
+  hrState = inject(HrStateService);
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
   datePipe = inject(DatePipe);
 
   // Data
-  leaveRequests = this.stateService.leaveRequests;
-  employees = this.stateService.employees;
+  // FIX: Access state from the correct feature-specific service
+  leaveRequests = this.hrState.leaveRequests;
+  employees = this.hrState.employees;
 
   // View State
   activeTab = signal<LeaveRequestStatus>('Pendente');

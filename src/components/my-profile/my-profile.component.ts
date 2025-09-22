@@ -2,6 +2,9 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule, DatePipe } from '@angular/common';
 import { TimeClockEntry, Transaction, Schedule, Shift, LeaveRequest, CompanyProfile } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
+import { HrStateService } from '../../services/hr-state.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { supabase } from '../../services/supabase-client';
 import { NotificationService } from '../../services/notification.service';
@@ -17,13 +20,16 @@ import { RouterLink } from '@angular/router';
 export class MyProfileComponent implements OnInit {
   private operationalAuthService = inject(OperationalAuthService);
   private stateService = inject(SupabaseStateService);
+  private settingsState = inject(SettingsStateService);
+  private subscriptionState = inject(SubscriptionStateService);
+  private hrState = inject(HrStateService);
   private notificationService = inject(NotificationService);
   
   isLoading = signal(true);
   
   // Static data from state
   activeEmployee = this.operationalAuthService.activeEmployee;
-  companyProfile = this.stateService.companyProfile;
+  companyProfile = this.settingsState.companyProfile;
   
   // Dynamic data fetched for this page
   timeEntriesThisMonth = signal<TimeClockEntry[]>([]);
@@ -31,15 +37,15 @@ export class MyProfileComponent implements OnInit {
   scheduleThisWeek = signal<Schedule | null>(null);
 
   // Subscription data
-  currentPlan = this.stateService.currentPlan;
-  subscription = this.stateService.subscription;
-  trialDaysRemaining = this.stateService.trialDaysRemaining;
+  currentPlan = this.subscriptionState.currentPlan;
+  subscription = this.subscriptionState.subscription;
+  trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
   isPlanModalOpen = signal(false);
   
   myLeaveRequests = computed(() => {
     const empId = this.activeEmployee()?.id;
     if (!empId) return [];
-    return this.stateService.leaveRequests()
+    return this.hrState.leaveRequests()
       .filter(r => r.employee_id === empId)
       .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5); // Show last 5 requests

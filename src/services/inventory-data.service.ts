@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
-import { SupabaseStateService } from './supabase-state.service';
+import { RecipeStateService } from './recipe-state.service';
 import { RecipeDataService } from './recipe-data.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 })
 export class InventoryDataService {
   private authService = inject(AuthService);
-  private stateService = inject(SupabaseStateService);
+  private recipeState = inject(RecipeStateService);
   private recipeDataService = inject(RecipeDataService);
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
@@ -236,7 +236,7 @@ export class InventoryDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const recipeComposition = this.stateService.recipeCosts().get(subRecipeId);
+    const recipeComposition = this.recipeState.recipeCosts().get(subRecipeId);
     if (!recipeComposition) {
       return { success: false, error: { message: `Recipe composition not found for ${subRecipeId}` } };
     }
@@ -266,6 +266,18 @@ export class InventoryDataService {
       });
       if (!success) throw error;
       
+      // 3. Update the cost of the source ingredient based on the production cost.
+      const newUnitCost = recipeComposition.totalCost;
+      const { error: costUpdateError } = await supabase
+        .from('ingredients')
+        .update({ cost: newUnitCost })
+        .eq('id', sourceIngredientId);
+      
+      if (costUpdateError) {
+        // Log the error but don't fail the entire transaction, as the stock is already updated.
+        console.error(`Production stock updated, but failed to update cost for ingredient ${sourceIngredientId}:`, costUpdateError);
+      }
+      
       return { success: true, error: null };
     } catch (error) {
       console.error("Stock adjustment for production failed.", error);
@@ -277,7 +289,7 @@ export class InventoryDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const recipeCompositions = this.stateService.recipeDirectComposition();
+    const recipeCompositions = this.recipeState.recipeDirectComposition();
     const deductions = new Map<string, number>();
     const processedGroupIds = new Set<string>();
 
@@ -344,7 +356,7 @@ export class InventoryDataService {
       return new Map();
     }
 
-    const recipeCosts = this.stateService.recipeCosts();
+    const recipeCosts = this.recipeState.recipeCosts();
     const usageMap = new Map<string, number>();
     
     for (const order of orders) {

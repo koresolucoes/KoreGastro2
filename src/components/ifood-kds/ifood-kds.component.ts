@@ -1,11 +1,14 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, untracked, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { IfoodStateService } from '../../services/ifood-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus, IfoodWebhookLog } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
+// FIX: Import SupabaseStateService to access its methods
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 interface ProcessedIfoodOrder extends Order {
   elapsedTime: number;
@@ -26,11 +29,14 @@ type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARR
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IfoodKdsComponent implements OnInit, OnDestroy {
-  stateService = inject(SupabaseStateService);
+  ifoodState = inject(IfoodStateService);
+  posState = inject(PosStateService);
   ifoodDataService = inject(IfoodDataService);
   posDataService = inject(PosDataService);
   notificationService = inject(NotificationService);
   soundNotificationService = inject(SoundNotificationService);
+  // FIX: Inject SupabaseStateService
+  supabaseStateService = inject(SupabaseStateService);
 
   private timerInterval: any;
   currentTime = signal(Date.now());
@@ -40,7 +46,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   // State for webhook logs
   isLogVisible = signal(false);
   webhookLogs = computed(() => 
-    this.stateService.ifoodWebhookLogs()
+    this.ifoodState.ifoodWebhookLogs()
       .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   );
   selectedLogForDetail = signal<IfoodWebhookLog | null>(null);
@@ -143,7 +149,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     const now = this.currentTime();
     const allLogs = this.webhookLogs();
 
-    return this.stateService.openOrders()
+    return this.posState.openOrders()
       .filter(o => o.order_type === 'iFood-Delivery' || o.order_type === 'iFood-Takeout')
       .map(order => {
         const startTime = new Date(order.timestamp || order.created_at).getTime();
@@ -337,7 +343,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       const { success, error } = await this.ifoodDataService.sendLogisticsAction(ifoodOrderId, action, details);
       if (!success) throw error;
       // Manually refetch logs to update the UI state
-      await this.stateService.refetchIfoodLogs(); 
+      // FIX: Call refetchIfoodLogs from the correct service
+      await this.supabaseStateService.refetchIfoodLogs(); 
     } catch (error: any) {
       this.notificationService.show(`Erro na ação de logística: ${error.message}`, 'error');
     } finally {

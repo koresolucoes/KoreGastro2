@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { Reservation, ReservationStatus } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
@@ -15,7 +15,7 @@ import { ReservationModalComponent } from './reservation-modal.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationsComponent {
-  stateService = inject(SupabaseStateService);
+  settingsState = inject(SettingsStateService);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
@@ -33,7 +33,7 @@ export class ReservationsComponent {
   });
 
   reservationsForDay = computed(() => {
-    const allReservations = this.stateService.reservations();
+    const allReservations = this.settingsState.reservations();
     const selected = this.selectedDate();
     const startOfDay = new Date(selected);
     startOfDay.setUTCHours(0,0,0,0);
@@ -51,7 +51,7 @@ export class ReservationsComponent {
   completedOrCancelledReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED'));
   
   groupedOverviewReservations = computed(() => {
-    const allReservations = this.stateService.reservations();
+    const allReservations = this.settingsState.reservations();
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);

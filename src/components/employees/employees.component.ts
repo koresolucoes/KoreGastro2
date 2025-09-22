@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import HrStateService to access HR-related data
+import { HrStateService } from '../../services/hr-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { FormsModule } from '@angular/forms';
@@ -15,19 +16,23 @@ import { EmployeeDetailsModalComponent } from './employee-details-modal/employee
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmployeesComponent {
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService
+  private hrState = inject(HrStateService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
 
   employees = computed(() => {
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
-    return this.stateService.employees().map(e => ({
+    // FIX: Access roles from the correct state service
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+    // FIX: Access employees from the correct state service
+    return this.hrState.employees().map(e => ({
       ...e,
       role: e.role_id ? rolesMap.get(e.role_id) || 'Cargo Excluído' : 'Sem Cargo'
     }));
   });
   
-  roles = this.stateService.roles;
+  // FIX: Access roles from the correct state service
+  roles = this.hrState.roles;
   employeeSearchTerm = signal('');
 
   isModalOpen = signal(false);

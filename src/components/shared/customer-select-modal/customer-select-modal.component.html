@@ -25,7 +25,7 @@
           type="text" 
           [value]="searchTerm()" 
           (input)="searchTerm.set($any($event.target).value)" 
-          placeholder="Buscar por nome, telefone ou email..." 
+          placeholder="Buscar por nome, telefone, email ou CPF..." 
           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white mb-4">
         
         <div class="flex-1 overflow-y-auto pr-2">
@@ -65,6 +65,10 @@
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
                 <input type="email" [(ngModel)]="newCustomerForm().email" name="email" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">CPF</label>
+                <input type="text" [(ngModel)]="newCustomerForm().cpf" name="cpf" class="w-full bg-gray-700 rounded p-2 text-white">
             </div>
         </div>
         <div class="p-4 bg-gray-700/50 flex justify-end gap-3">

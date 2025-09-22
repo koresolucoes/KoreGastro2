@@ -1,7 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
+// FIX: Inject modular state services
 import { SupabaseStateService } from './supabase-state.service';
+import { RecipeStateService } from './recipe-state.service';
+import { PosStateService } from './pos-state.service';
+import { HrStateService } from './hr-state.service';
 import { InventoryDataService } from './inventory-data.service';
 import { PricingService } from './pricing.service';
 import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus, DiscountType } from '../models/db.models';
@@ -87,6 +91,10 @@ export class CashierDataService {
   private stateService = inject(SupabaseStateService);
   private inventoryDataService = inject(InventoryDataService);
   private pricingService = inject(PricingService);
+  // FIX: Inject modular state services
+  private recipeState = inject(RecipeStateService);
+  private posState = inject(PosStateService);
+  private hrState = inject(HrStateService);
 
   async getTransactionsForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Transaction[] | null; error: any }> {
     const userId = this.authService.currentUser()?.id;
@@ -125,7 +133,8 @@ export class CashierDataService {
     if (error) throw error;
     if (!orders) return {};
     
-    const recipeCosts = this.stateService.recipeCosts();
+    // FIX: Access recipeCosts from recipeState
+    const recipeCosts = this.recipeState.recipeCosts();
 
     const calculateCOGS = (orderList: Order[]): number => {
         return orderList
@@ -334,7 +343,8 @@ export class CashierDataService {
     
     if (orderError) return { success: false, error: orderError };
 
-    const stations = this.stateService.stations();
+    // FIX: Access stations from posState
+    const stations = this.posState.stations();
     if (stations.length === 0) {
         await supabase.from('orders').delete().eq('id', order.id); // Rollback order
         return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
@@ -402,8 +412,9 @@ export class CashierDataService {
         return { success: false, error: itemsError };
     }
 
-    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
-    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
+    // FIX: Access roles and employees from hrState
+    const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
     const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
       description: `Receita Pedido #${order.id.slice(0, 8)} (${p.method})`,
@@ -451,7 +462,8 @@ export class CashierDataService {
     if (orderError) return { success: false, error: orderError };
     
     // 2. Create order items
-    const stations = this.stateService.stations();
+    // FIX: Access stations from posState
+    const stations = this.posState.stations();
     if (stations.length === 0) return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
     const fallbackStationId = stations[0].id;
     
@@ -518,8 +530,9 @@ export class CashierDataService {
 
     if (orderError) return { success: false, error: orderError };
 
-    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
-    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
+    // FIX: Access roles and employees from hrState
+    const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
     const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
         description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
@@ -550,8 +563,9 @@ export class CashierDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const cashierRoleId = this.stateService.roles().find(r => r.name === 'Caixa')?.id;
-    const cashierEmployeeId = this.stateService.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
+    // FIX: Access roles and employees from hrState
+    const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
+    const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
     const { error } = await supabase.from('transactions').insert({
         description,
@@ -613,7 +627,8 @@ export class CashierDataService {
         return [];
     }
     
-    const recipeCosts = this.stateService.recipeCosts();
+    // FIX: Access recipeCosts from recipeState
+    const recipeCosts = this.recipeState.recipeCosts();
     const dailyData = new Map<string, { sales: number; cogs: number }>();
 
     // Initialize map for all days in the period
@@ -673,7 +688,8 @@ export class CashierDataService {
     const { data, error } = await query;
     if (error) throw error;
     
-    const availableColumnsMap = new Map(this.stateService.employees().map(e => [e.id, e.name]));
+    // FIX: Access employees from hrState
+    const availableColumnsMap = new Map(this.hrState.employees().map(e => [e.id, e.name]));
 
     const mappedData = data.map(d => ({
         ...d,

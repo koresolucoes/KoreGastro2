@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
+import { PosStateService } from './pos-state.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { PrintingService } from './printing.service';
 import { PricingService } from './pricing.service';
@@ -19,9 +20,10 @@ export class PosDataService {
   private printingService = inject(PrintingService);
   private pricingService = inject(PricingService);
   private inventoryDataService = inject(InventoryDataService);
+  private posState = inject(PosStateService);
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {
-    return this.stateService.openOrders().find(o => o.table_number === tableNumber);
+    return this.posState.openOrders().find(o => o.table_number === tableNumber);
   }
 
   async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
@@ -36,7 +38,7 @@ export class PosDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const stations = this.stateService.stations();
+    const stations = this.posState.stations();
     if (stations.length === 0) return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
     const fallbackStationId = stations[0].id;
     
@@ -356,7 +358,7 @@ export class PosDataService {
       .eq('id', tableId);
     if (tableError) return { success: false, error: tableError };
 
-    const tableEmployeeId = this.stateService.tables().find(t => t.id === tableId)?.employee_id;
+    const tableEmployeeId = this.posState.tables().find(t => t.id === tableId)?.employee_id;
 
     const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
       description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,

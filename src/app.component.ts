@@ -9,6 +9,7 @@ import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component
 import { ToastContainerComponent } from './components/shared/toast-container/toast-container.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
+import { SubscriptionStateService } from './services/subscription-state.service';
 
 @Component({
   selector: 'app-root',
@@ -22,13 +23,14 @@ export class AppComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
   supabaseStateService = inject(SupabaseStateService);
+  subscriptionStateService = inject(SubscriptionStateService);
   router = inject(Router);
 
-  hasActiveSubscription = this.supabaseStateService.hasActiveSubscription;
+  hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
-  isTrialing = this.supabaseStateService.isTrialing;
-  subscription = this.supabaseStateService.subscription;
-  trialDaysRemaining = this.supabaseStateService.trialDaysRemaining;
+  isTrialing = this.subscriptionStateService.isTrialing;
+  subscription = this.subscriptionStateService.subscription;
+  trialDaysRemaining = this.subscriptionStateService.trialDaysRemaining;
 
   isTutorialsRoute = toSignal(
     this.router.events.pipe(

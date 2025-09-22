@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PurchaseOrder, PurchaseOrderStatus, Supplier, Ingredient, PurchaseOrderItem } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
 import { PurchasingDataService } from '../../services/purchasing-data.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -25,14 +25,14 @@ type FormItem = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PurchasingComponent implements OnInit {
-    stateService = inject(SupabaseStateService);
+    inventoryState = inject(InventoryStateService);
     purchasingDataService = inject(PurchasingDataService);
     router = inject(Router);
     notificationService = inject(NotificationService);
 
-    purchaseOrders = this.stateService.purchaseOrders;
-    suppliers = this.stateService.suppliers;
-    ingredients = this.stateService.ingredients;
+    purchaseOrders = this.inventoryState.purchaseOrders;
+    suppliers = this.inventoryState.suppliers;
+    ingredients = this.inventoryState.ingredients;
 
     isModalOpen = signal(false);
     editingOrder = signal<Partial<PurchaseOrder> | null>(null);
@@ -43,7 +43,7 @@ export class PurchasingComponent implements OnInit {
     orderPendingDeletion = signal<PurchaseOrder | null>(null);
 
     purchaseOrdersWithDetails = computed(() => {
-        return this.stateService.purchaseOrders().map(order => ({
+        return this.purchaseOrders().map(order => ({
             ...order,
             total: order.purchase_order_items?.reduce((sum, item) => sum + (item.quantity * item.cost), 0) ?? 0,
             itemCount: order.purchase_order_items?.length ?? 0

@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { LeaveRequest, LeaveRequestStatus, LeaveRequestType } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import HrStateService to access HR-related data
+import { HrStateService } from '../../services/hr-state.service';
 import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -17,7 +18,8 @@ type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' |
   providers: [DatePipe]
 })
 export class MyLeaveComponent {
-  stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService
+  hrState = inject(HrStateService);
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
@@ -35,7 +37,8 @@ export class MyLeaveComponent {
   myLeaveRequests = computed(() => {
     const employeeId = this.activeEmployee()?.id;
     if (!employeeId) return [];
-    return this.stateService.leaveRequests()
+    // FIX: Access leaveRequests from the correct state service
+    return this.hrState.leaveRequests()
       .filter(r => r.employee_id === employeeId)
       .sort((a,b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
   });

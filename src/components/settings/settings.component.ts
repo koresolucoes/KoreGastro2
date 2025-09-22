@@ -1,8 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-// FIX: Add OperatingHours to the model imports to support the weekly schedule feature.
-import { Station, IngredientCategory, Supplier, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
@@ -11,6 +9,14 @@ import { AuthService } from '../../services/auth.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { ALL_PERMISSION_KEYS } from '../../config/permissions';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+
+// Import new state services
+import { PosStateService } from '../../services/pos-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
 
 type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
@@ -22,29 +28,39 @@ type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
-  private stateService = inject(SupabaseStateService);
+  // Data services
   private settingsDataService = inject(SettingsDataService);
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
+  private reservationDataService = inject(ReservationDataService);
+  
+  // Auth & Notification services
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
-  private reservationDataService = inject(ReservationDataService);
   private operationalAuthService = inject(OperationalAuthService);
 
-  // Data Signals from Service
-  stations = this.stateService.stations;
-  categories = this.stateService.ingredientCategories;
-  recipeCategories = this.stateService.categories;
-  recipes = this.stateService.recipes;
-  suppliers = this.stateService.suppliers;
-  reservationSettings = this.stateService.reservationSettings;
-  companyProfile = this.stateService.companyProfile;
-  roles = this.stateService.roles;
-  rolePermissions = this.stateService.rolePermissions;
-  loyaltySettings = this.stateService.loyaltySettings;
-  loyaltyRewards = this.stateService.loyaltyRewards;
-  subscription = this.stateService.subscription;
-  currentPlan = this.stateService.currentPlan;
+  // New state services
+  private posState = inject(PosStateService);
+  private inventoryState = inject(InventoryStateService);
+  private recipeState = inject(RecipeStateService);
+  private settingsState = inject(SettingsStateService);
+  private hrState = inject(HrStateService);
+  private subscriptionState = inject(SubscriptionStateService);
+
+  // Data Signals from new services
+  stations = this.posState.stations;
+  categories = this.inventoryState.ingredientCategories;
+  suppliers = this.inventoryState.suppliers;
+  recipeCategories = this.recipeState.categories;
+  recipes = this.recipeState.recipes;
+  reservationSettings = this.settingsState.reservationSettings;
+  companyProfile = this.settingsState.companyProfile;
+  roles = this.hrState.roles;
+  rolePermissions = this.hrState.rolePermissions;
+  loyaltySettings = this.settingsState.loyaltySettings;
+  loyaltyRewards = this.settingsState.loyaltyRewards;
+  subscription = this.subscriptionState.subscription;
+  currentPlan = this.subscriptionState.currentPlan;
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -100,6 +116,7 @@ export class SettingsComponent {
         { key: '/dashboard', label: 'Dashboard' },
         { key: '/inventory', label: 'Estoque' },
         { key: '/purchasing', label: 'Compras' },
+        { key: '/suppliers', label: 'Fornecedores' },
         { key: '/performance', label: 'Desempenho' },
         { key: '/reports', label: 'Relatórios' }
       ]
@@ -139,13 +156,10 @@ export class SettingsComponent {
   permissionGroups = computed(() => {
     const isGerente = this.operationalAuthService.activeEmployee()?.role === 'Gerente';
     
-    // A manager sees all possible permissions. The security check is in the service layer.
-    // This allows a manager to self-assign newly available permissions.
     if (isGerente) {
       return this.allPermissionGroups;
     }
 
-    // For non-managers (future-proofing), filter what they can see/edit based on their own permissions.
     const available = this.userAvailablePermissions();
     return this.allPermissionGroups.map(group => ({
         ...group,
@@ -171,7 +185,6 @@ export class SettingsComponent {
   qrCodeUrl = computed(() => {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return '';
-    // Construct the full URL including the hash for the router
     const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
@@ -192,7 +205,6 @@ export class SettingsComponent {
     effect(() => {
         const settings = this.reservationSettings();
         if (settings) {
-            // Ensure weekly_hours is a full 7-day array
             const weeklyHours = settings.weekly_hours || [];
             const fullWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => {
                 const existing = weeklyHours.find(h => h.day_of_week === i);
@@ -206,10 +218,10 @@ export class SettingsComponent {
             this.reservationForm.set({ ...settings, weekly_hours: fullWeeklyHours });
         } else {
             const defaultWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => ({
-                day_of_week: i, // 0=Sun, 1=Mon, ..., 6=Sat
+                day_of_week: i,
                 opening_time: '18:00',
                 closing_time: '23:00',
-                is_closed: i === 1, // Default Monday as closed
+                is_closed: i === 1,
             }));
             this.reservationForm.set({
                 is_enabled: false,
@@ -263,15 +275,6 @@ export class SettingsComponent {
     const term = this.recipeCategorySearchTerm().toLowerCase();
     if (!term) return this.recipeCategories();
     return this.recipeCategories().filter(c => c.name.toLowerCase().includes(term));
-  });
-
-  filteredSuppliers = computed(() => {
-    const term = this.supplierSearchTerm().toLowerCase();
-    if (!term) return this.suppliers();
-    return this.suppliers().filter(s =>
-      s.name.toLowerCase().includes(term) ||
-      s.contact_person?.toLowerCase().includes(term)
-    );
   });
   
   // --- Station Management ---
@@ -332,6 +335,75 @@ export class SettingsComponent {
     const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
     if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
     this.categoryPendingDeletion.set(null);
+  }
+  
+  // --- Supplier Management ---
+  isSupplierModalOpen = signal(false);
+  editingSupplier = signal<Partial<Supplier> | null>(null);
+  supplierForm = signal<Partial<Supplier>>({});
+  supplierPendingDeletion = signal<Supplier | null>(null);
+
+  filteredSuppliers = computed(() => {
+    const term = this.supplierSearchTerm().toLowerCase();
+    if (!term) return this.suppliers();
+    return this.suppliers().filter(s => s.name.toLowerCase().includes(term));
+  });
+
+  openAddSupplierModal() {
+    this.supplierForm.set({});
+    this.editingSupplier.set(null);
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  openEditSupplierModal(s: Supplier) {
+    this.editingSupplier.set(s);
+    this.supplierForm.set({ ...s });
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  closeSupplierModal() {
+    this.isSupplierModalOpen.set(false);
+  }
+
+  updateSupplierFormField(field: keyof Omit<Supplier, 'id' | 'created_at' | 'user_id'>, value: string) {
+    this.supplierForm.update(form => ({ ...form, [field]: value }));
+  }
+
+  async saveSupplier() {
+    const form = this.supplierForm();
+    if (!form.name?.trim()) {
+      await this.notificationService.alert('Nome é obrigatório');
+      return;
+    }
+    let res;
+    if (this.editingSupplier()) {
+      res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
+    } else {
+      res = await this.inventoryDataService.addSupplier(form as any);
+    }
+    if (res.success) {
+      this.closeSupplierModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${res.error?.message}`);
+    }
+  }
+
+  requestDeleteSupplier(s: Supplier) {
+    this.supplierPendingDeletion.set(s);
+  }
+  
+  cancelDeleteSupplier() {
+    this.supplierPendingDeletion.set(null);
+  }
+  
+  async confirmDeleteSupplier() {
+    const supplier = this.supplierPendingDeletion();
+    if (!supplier) return;
+    const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
+    if (!success) {
+      await this.notificationService.alert(`Falha: ${error?.message}`);
+    }
+    this.supplierPendingDeletion.set(null);
   }
 
   // --- Recipe Category Management ---
@@ -402,40 +474,6 @@ export class SettingsComponent {
     const { success, error } = await this.recipeDataService.deleteRecipeCategory(category.id);
     if (!success) { await this.notificationService.alert(`Falha ao deletar. Erro: ${error?.message}`); }
     this.recipeCategoryPendingDeletion.set(null);
-  }
-
-  // --- Supplier Management ---
-  isSupplierModalOpen = signal(false);
-  editingSupplier = signal<Partial<Supplier> | null>(null);
-  supplierForm = signal<Partial<Supplier>>({});
-  supplierPendingDeletion = signal<Supplier | null>(null);
-
-  openAddSupplierModal() { this.supplierForm.set({}); this.editingSupplier.set(null); this.isSupplierModalOpen.set(true); }
-  openEditSupplierModal(s: Supplier) { this.editingSupplier.set(s); this.supplierForm.set({ ...s }); this.isSupplierModalOpen.set(true); }
-  closeSupplierModal() { this.isSupplierModalOpen.set(false); }
-  updateSupplierFormField(field: keyof Omit<Supplier, 'id' | 'created_at'>, value: string) {
-    this.supplierForm.update(form => ({ ...form, [field]: value }));
-  }
-  async saveSupplier() {
-    const form = this.supplierForm(); if (!form.name?.trim()) {
-      await this.notificationService.alert('Nome é obrigatório');
-      return;
-    }
-    let res;
-    if (this.editingSupplier()) {
-      res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
-    } else {
-      res = await this.inventoryDataService.addSupplier(form as any);
-    }
-    if (res.success) { this.closeSupplierModal(); } else { await this.notificationService.alert(`Falha: ${res.error?.message}`); }
-  }
-  requestDeleteSupplier(s: Supplier) { this.supplierPendingDeletion.set(s); }
-  cancelDeleteSupplier() { this.supplierPendingDeletion.set(null); }
-  async confirmDeleteSupplier() {
-    const supplier = this.supplierPendingDeletion(); if (!supplier) return;
-    const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
-    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
-    this.supplierPendingDeletion.set(null);
   }
 
   // --- Reservation Settings ---

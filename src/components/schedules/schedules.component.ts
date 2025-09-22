@@ -1,10 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee, LeaveRequest, Schedule, Shift } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import HrStateService to access HR-related data
+import { HrStateService } from '../../services/hr-state.service';
 import { ScheduleDataService } from '../../services/schedule-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+// FIX: Import SupabaseStateService to check data load status
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 // Helper to format ISO string to datetime-local input value
 function formatISOToInput(isoString: string | null | undefined): string {
@@ -28,13 +31,16 @@ function parseInputToISO(inputString: string | null | undefined): string | null 
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulesComponent {
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService instead of SupabaseStateService for HR data
+  private hrState = inject(HrStateService);
   private scheduleDataService = inject(ScheduleDataService);
   private notificationService = inject(NotificationService);
   private operationalAuthService = inject(OperationalAuthService);
+  private supabaseStateService = inject(SupabaseStateService);
 
   // Data
-  allEmployees = this.stateService.employees;
+  // FIX: Access employees from the correct state service
+  allEmployees = this.hrState.employees;
   availableRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
 
   // View State
@@ -57,7 +63,8 @@ export class SchedulesComponent {
   });
 
   activeSchedule = computed(() => {
-    const schedule = this.stateService.schedules().find(s => s.week_start_date === this.weekStartDate());
+    // FIX: Access schedules from the correct state service
+    const schedule = this.hrState.schedules().find(s => s.week_start_date === this.weekStartDate());
     if (this.isManager()) {
         return schedule; // Manager sees published and drafts
     }
@@ -76,7 +83,8 @@ export class SchedulesComponent {
 
   approvedLeaveByDateAndEmployee = computed(() => {
     const map = new Map<string, Map<string, LeaveRequest>>();
-    const approved = this.stateService.leaveRequests().filter(r => r.status === 'Aprovada');
+    // FIX: Access leaveRequests from the correct state service
+    const approved = this.hrState.leaveRequests().filter(r => r.status === 'Aprovada');
     for (const req of approved) {
       let currentDate = new Date(req.start_date + 'T00:00:00');
       const endDate = new Date(req.end_date + 'T00:00:00');
@@ -132,7 +140,8 @@ export class SchedulesComponent {
   constructor() {
     effect(() => {
       const date = this.weekStartDate();
-      const isDataLoaded = this.stateService.isDataLoaded();
+      // FIX: Check if data is loaded using the injected service property.
+      const isDataLoaded = this.supabaseStateService.isDataLoaded();
 
       if (!isDataLoaded) {
         this.isLoading.set(true);
@@ -194,7 +203,8 @@ export class SchedulesComponent {
       endTime.setHours(17, 0, 0, 0);
       const employee = this.allEmployees().find(e => e.id === employeeId);
       
-      const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+      const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+      // FIX: Ensure role_id is a string before using it as a map key
       const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
 
       this.shiftForm.set({
@@ -218,7 +228,8 @@ export class SchedulesComponent {
         // If the employee is changed, automatically update the assigned role.
         if (field === 'employee_id') {
             const employee = this.allEmployees().find(e => e.id === value);
-            const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+            const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+            // FIX: Ensure role_id is a string before using it as a map key
             const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
             newForm.role_assigned = employeeRoleName;
         }

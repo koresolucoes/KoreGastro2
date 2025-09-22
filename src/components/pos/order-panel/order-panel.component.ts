@@ -1,12 +1,10 @@
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer } from '../../../models/db.models';
+import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient } from '../../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { RecipeStateService } from '../../../services/recipe-state.service';
+import { InventoryStateService } from '../../../services/inventory-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -46,7 +44,8 @@ type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderPanelComponent {
-  stateService = inject(SupabaseStateService);
+  recipeState = inject(RecipeStateService);
+  inventoryState = inject(InventoryStateService);
   posDataService = inject(PosDataService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
@@ -68,8 +67,8 @@ export class OrderPanelComponent {
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);
-  categories = this.stateService.categories;
-  recipes = this.stateService.recipesWithStockStatus;
+  categories = this.recipeState.categories;
+  recipes = this.recipeState.recipesWithStockStatus;
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
@@ -129,7 +128,7 @@ export class OrderPanelComponent {
     const items = order.order_items;
     const grouped = new Map<string, GroupedOrderItem>();
     const singles: SingleOrderItem[] = [];
-    const recipesMap = this.stateService.recipesById();
+    const recipesMap = this.recipeState.recipesById();
 
     for (const item of items) {
       if (item.group_id) {
@@ -177,7 +176,7 @@ export class OrderPanelComponent {
 
   private reservedIngredients = computed(() => {
     const reserved = new Map<string, number>();
-    const recipeCompositions = this.stateService.recipeDirectComposition();
+    const recipeCompositions = this.recipeState.recipeDirectComposition();
     const order = this.currentOrder();
     const cart = this.shoppingCart();
 
@@ -204,10 +203,12 @@ export class OrderPanelComponent {
                 processedGroupIds.add(item.group_id);
                 const representativeItem = order.order_items.find(i => i.group_id === item.group_id);
                 if(representativeItem) {
-                    accumulate(representativeItem.recipe_id, representativeItem.quantity);
+                    accumulate(representativeItem.recipe_id!, representativeItem.quantity);
                 }
             } else {
-                accumulate(item.recipe_id, item.quantity);
+                if (item.recipe_id) {
+                    accumulate(item.recipe_id, item.quantity);
+                }
             }
         }
     }
@@ -221,8 +222,8 @@ export class OrderPanelComponent {
   });
 
   private hasEnoughStockFor(recipe: Recipe): boolean {
-    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.id, i]));
-    const composition = this.stateService.recipeDirectComposition().get(recipe.id);
+    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
+    const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
     const reserved = this.reservedIngredients();
 
     if (!composition) {
@@ -264,7 +265,7 @@ export class OrderPanelComponent {
     return true;
   }
 
-  addToCart(recipe: Recipe & { hasStock: boolean }) {
+  addToCart(recipe: Recipe & { hasStock?: boolean }) {
     if (!recipe.is_available) {
         this.notificationService.show(`"${recipe.name}" não está disponível no cardápio.`, 'warning');
         return;

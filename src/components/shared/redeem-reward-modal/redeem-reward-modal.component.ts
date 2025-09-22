@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Customer, LoyaltyReward, Recipe } from '../../../models/db.models';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { SettingsStateService } from '../../../services/settings-state.service';
+import { RecipeStateService } from '../../../services/recipe-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -13,7 +14,8 @@ import { NotificationService } from '../../../services/notification.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RedeemRewardModalComponent {
-  private stateService = inject(SupabaseStateService);
+  private settingsState = inject(SettingsStateService);
+  private recipeState = inject(RecipeStateService);
   private posDataService = inject(PosDataService);
   private notificationService = inject(NotificationService);
   
@@ -24,8 +26,8 @@ export class RedeemRewardModalComponent {
 
   isRedeeming = signal<string | null>(null); // holds rewardId being redeemed
 
-  availableRewards = this.stateService.loyaltyRewards;
-  recipesById = this.stateService.recipesById;
+  availableRewards = this.settingsState.loyaltyRewards;
+  recipesById = this.recipeState.recipesById;
 
   redeemableRewards = computed(() => {
     const cust = this.customer();

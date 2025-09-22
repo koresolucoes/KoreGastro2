@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, input, InputSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CashierDataService, CustomReportConfig, CustomReportData } from '../../../services/cashier-data.service';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+// FIX: Import HrStateService to access employee data
+import { HrStateService } from '../../../services/hr-state.service';
 import { NotificationService } from '../../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 
@@ -14,7 +15,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class ReportBuilderComponent {
   private cashierDataService = inject(CashierDataService);
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService
+  private hrState = inject(HrStateService);
   private notificationService = inject(NotificationService);
 
   startDate: InputSignal<string> = input.required<string>();
@@ -36,7 +38,8 @@ export class ReportBuilderComponent {
   filterStartDate = signal('');
   filterEndDate = signal('');
 
-  employees = this.stateService.employees;
+  // FIX: Access employees from the correct state service
+  employees = this.hrState.employees;
   
   availableColumns = computed(() => {
     switch(this.config().dataSource) {

@@ -11,6 +11,12 @@ import { NotificationService } from '../../services/notification.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 
+// Import new state services
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { CashierStateService } from '../../services/cashier-state.service';
+import { PosStateService } from '../../services/pos-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
 type CashDrawerView = 'movement' | 'closing';
 
@@ -38,19 +44,25 @@ interface PaymentSummary {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CashierComponent {
-  stateService = inject(SupabaseStateService);
+  supabaseStateService = inject(SupabaseStateService);
   cashierDataService = inject(CashierDataService);
   posDataService = inject(PosDataService);
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
 
+  // Inject new state services
+  recipeState = inject(RecipeStateService);
+  cashierState = inject(CashierStateService);
+  posState = inject(PosStateService);
+  hrState = inject(HrStateService);
+
   view: WritableSignal<CashierView> = signal('payingTables');
-  isLoading = computed(() => !this.stateService.isDataLoaded());
+  isLoading = computed(() => !this.supabaseStateService.isDataLoaded());
 
   // --- Quick Sale Signals ---
-  categories = this.stateService.categories;
-  recipes = this.stateService.recipesWithStockStatus;
+  categories = this.recipeState.categories;
+  recipes = this.recipeState.recipesWithStockStatus;
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
   quickSaleCart = signal<CartItem[]>([]);
@@ -71,16 +83,16 @@ export class CashierComponent {
   newExpenseAmount = signal<number | null>(null);
 
   // --- Data Signals for Views ---
-  completedOrders = this.stateService.completedOrders;
-  transactions = this.stateService.transactions;
+  completedOrders = this.cashierState.completedOrders;
+  transactions = this.cashierState.transactions;
   
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<Order | null>(null);
 
   // --- Paying Tables Signals ---
-  tablesForPayment = computed(() => this.stateService.tables().filter(t => t.status === 'PAGANDO'));
-  openOrders = this.stateService.openOrders;
+  tablesForPayment = computed(() => this.posState.tables().filter(t => t.status === 'PAGANDO'));
+  openOrders = this.posState.openOrders;
   isTablePaymentModalOpen = signal(false);
   selectedOrderForPayment = signal<Order | null>(null);
   selectedTableForPayment = signal<Table | null>(null);
@@ -102,7 +114,7 @@ export class CashierComponent {
 
   // --- Quick Sale Computeds & Methods ---
   quickSalesForPayment = computed(() => {
-    return this.stateService.openOrders().filter(o => o.order_type === 'QuickSale');
+    return this.posState.openOrders().filter(o => o.order_type === 'QuickSale');
   });
 
   filteredRecipes = computed(() => {
@@ -288,7 +300,7 @@ export class CashierComponent {
   }
   
   openPaymentForQuickSale(order: Order) {
-    const recipesMap = this.stateService.recipesById();
+    const recipesMap = this.recipeState.recipesById();
     
     // This logic assumes quick sale items sent to kitchen are not grouped.
     // Reconstructs the simple cart from the order items.
@@ -456,10 +468,10 @@ export class CashierComponent {
   async confirmAndCloseCashier() {
     const counted = this.countedCash();
     if (counted === null || counted < 0) {
-        await this.notificationService.alert('Por favor, insira o valor contado em caixa.');
-        return;
+      await this.notificationService.alert('Por favor, insira o valor contado em caixa.');
+      return;
     }
-    
+
     const closingData = {
         opening_balance: this.openingBalance(),
         total_revenue: this.totalRevenue(),
@@ -468,42 +480,45 @@ export class CashierComponent {
         counted_cash: counted,
         difference: this.cashDifference(),
         payment_summary: this.revenueSummary(),
-        notes: this.closingNotes().trim()
+        notes: this.closingNotes().trim() || null,
     };
     
-    const { success, error, data: savedClosing } = await this.cashierDataService.closeCashier(closingData as any);
-    
-    if (success && savedClosing) {
-        this.printClosingReport(savedClosing);
-        this.closeClosingModal();
+    const { success, error, data: closingReport } = await this.cashierDataService.closeCashier(closingData);
+
+    if (success && closingReport) {
         await this.notificationService.alert('Caixa fechado com sucesso!', 'Sucesso');
+        this.printingService.printCashierClosingReport(closingReport, this.expenseTransactions());
+        this.closeClosingModal();
+        // The state will be updated via realtime subscription.
     } else {
-        await this.notificationService.alert(`Falha ao fechar o caixa. Erro: ${error?.message}`);
+        await this.notificationService.alert(`Falha ao fechar o caixa: ${error?.message}`);
     }
   }
-  
-  printClosingReport(closingData: CashierClosing) {
-    this.printingService.printCashierClosingReport(closingData, this.expenseTransactions());
+
+  // --- Helper methods for display ---
+
+  getOrderOrigin(order: Order): string {
+    if (order.order_type === 'QuickSale') return 'Venda Rápida';
+    if (order.order_type.startsWith('iFood')) return 'iFood';
+    return `Mesa ${order.table_number}`;
   }
 
-  // --- Reprint Methods ---
   getOrderTotal(order: Order): number {
     return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 
-  getPaymentsForOrder(orderId: string): Payment[] {
-    const orderIdShort = orderId.slice(0, 8);
+  getPaymentsForOrder(orderId: string): { method: string, amount: number }[] {
+    const paymentTransactions = this.transactions()
+      .filter(t => t.type === 'Receita' && t.description.includes(orderId.slice(0, 8)));
+    
     const paymentMethodRegex = /\(([^)]+)\)/;
-
-    return this.transactions()
-      .filter(t => t.description.includes(`Pedido #${orderIdShort}`))
-      .map(t => {
-        const match = t.description.match(paymentMethodRegex);
-        return {
-          method: (match ? match[1] : 'Desconhecido') as PaymentMethod,
-          amount: t.amount,
-        };
-      });
+    return paymentTransactions.map(t => {
+      const match = t.description.match(paymentMethodRegex);
+      return {
+        method: match ? match[1] : 'Desconhecido',
+        amount: t.amount
+      };
+    });
   }
 
   reprintReceipt(order: Order) {
@@ -518,11 +533,5 @@ export class CashierComponent {
 
   closeDetailsModal() {
     this.isDetailsModalOpen.set(false);
-    this.selectedOrderForDetails.set(null);
-  }
-
-  getOrderOrigin(order: Order): string {
-    if (order.order_type === 'QuickSale') return 'Balcão';
-    return `Mesa ${order.table_number}`;
   }
 }

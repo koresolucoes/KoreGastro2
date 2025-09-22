@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Customer } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { CustomerDetailsModalComponent } from './customer-details-modal/customer-details-modal.component';
@@ -15,11 +15,11 @@ import { CustomerDetailsModalComponent } from './customer-details-modal/customer
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomersComponent {
-  private stateService = inject(SupabaseStateService);
+  private posState = inject(PosStateService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
 
-  customers = this.stateService.customers;
+  customers = this.posState.customers;
   searchTerm = signal('');
 
   isModalOpen = signal(false);

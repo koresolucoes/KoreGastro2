@@ -1,9 +1,10 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { IfoodStateService } from '../../services/ifood-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
 import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCategory } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
-import { Recipe, Category } from '../../models/db.models';
+import { Recipe, Category, IfoodMenuSync } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { FormsModule } from '@angular/forms';
@@ -25,7 +26,8 @@ interface MappedLocalItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IfoodMenuComponent implements OnInit {
-  private stateService = inject(SupabaseStateService);
+  private ifoodState = inject(IfoodStateService);
+  private recipeState = inject(RecipeStateService);
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
   private recipeDataService = inject(RecipeDataService);
@@ -51,15 +53,15 @@ export class IfoodMenuComponent implements OnInit {
   });
 
   // Local Data & Sync State
-  ifoodSyncData = this.stateService.ifoodMenuSync;
+  ifoodSyncData = this.ifoodState.ifoodMenuSync;
   syncDataMap = computed(() => new Map(this.ifoodSyncData().map(s => [s.recipe_id, s])));
   syncingItems = signal<Set<string>>(new Set());
 
-  localCategories = this.stateService.categories;
+  localCategories = this.recipeState.categories;
   localCategoriesMap = computed(() => new Map(this.localCategories().map(c => [c.id, c.name])));
   localRecipesByExternalCode = computed(() => {
     const map = new Map<string, Recipe>();
-    this.stateService.recipes().forEach(r => {
+    this.recipeState.recipes().forEach(r => {
       if (r.external_code) {
         map.set(r.external_code, r);
       }
@@ -94,7 +96,7 @@ export class IfoodMenuComponent implements OnInit {
   }
 
   private localItemsWithSyncStatus = computed<MappedLocalItem[]>(() => {
-    const localRecipes = this.stateService.recipes().filter(r => !r.is_sub_recipe && r.is_available);
+    const localRecipes = this.recipeState.recipes().filter(r => !r.is_sub_recipe && r.is_available);
     const categoriesMap = this.localCategoriesMap();
     const syncMap = this.syncDataMap();
     const syncing = this.syncingItems();
@@ -105,7 +107,7 @@ export class IfoodMenuComponent implements OnInit {
         if (syncing.has(recipe.id)) {
             status = 'syncing';
         } else {
-            const syncInfo = syncMap.get(recipe.id);
+            const syncInfo: IfoodMenuSync | undefined = syncMap.get(recipe.id);
             if (syncInfo) {
                 const currentHash = this.createSyncHash(recipe);
                 if (currentHash === syncInfo.last_sync_hash) {
@@ -216,7 +218,7 @@ export class IfoodMenuComponent implements OnInit {
   
   private mapRecipeToIfoodPayload(recipe: Recipe, categoryId: string): any {
     const externalCode = recipe.external_code!;
-    const syncInfo = this.syncDataMap().get(recipe.id);
+    const syncInfo: IfoodMenuSync | undefined = this.syncDataMap().get(recipe.id);
     
     // Generate deterministic UUIDs from the recipe ID for idempotency, if no sync info exists.
     const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
@@ -311,7 +313,6 @@ export class IfoodMenuComponent implements OnInit {
   closeCategoryModal() { this.isCategoryModalOpen.set(false); }
 
   async saveNewCategory() {
-    // FIX: Called .trim() on the signal's value, not the signal itself.
     const name = this.newCategoryName().trim();
     const catalogId = this.selectedCatalogId();
     if (!name || !catalogId) return;

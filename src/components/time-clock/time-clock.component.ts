@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Employee, TimeClockEntry } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+// FIX: Import HrStateService to access employee data
+import { HrStateService } from '../../services/hr-state.service';
 import { TimeClockService } from '../../services/time-clock.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -29,12 +30,14 @@ function parseInputToISO(inputString: string | null | undefined): string | null 
   providers: [DatePipe]
 })
 export class TimeClockComponent {
-    private stateService = inject(SupabaseStateService);
+    // FIX: Inject HrStateService
+    private hrState = inject(HrStateService);
     private timeClockService = inject(TimeClockService);
     private notificationService = inject(NotificationService);
 
     // Data signals
-    employees = this.stateService.employees;
+    // FIX: Access employees from the correct state service
+    employees = this.hrState.employees;
     isLoading = signal(true);
     filteredEntries = signal<TimeClockEntry[]>([]);
 

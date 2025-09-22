@@ -3,7 +3,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 
 export interface NavLink {
   name: string;
@@ -32,13 +32,13 @@ export type CombinedNavItem = NavLink | NavGroup;
 export class SidebarComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
-  stateService = inject(SupabaseStateService);
+  settingsState = inject(SettingsStateService);
   router = inject(Router);
   
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
   shiftButtonState = this.operationalAuthService.shiftButtonState;
-  companyProfile = this.stateService.companyProfile;
+  companyProfile = this.settingsState.companyProfile;
   
   isSidebarOpen = signal(true);
   expandedGroups = signal<Record<string, boolean>>({
@@ -81,6 +81,7 @@ export class SidebarComponent {
         { name: 'Dashboard', path: '/dashboard', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', roles: ['Gerente'] },
         { name: 'Estoque', path: '/inventory', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', roles: ['Gerente'] },
         { name: 'Compras', path: '/purchasing', icon: 'M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.117 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.117 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z', roles: ['Gerente'] },
+        { name: 'Fornecedores', path: '/suppliers', icon: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375M9 12h6.375M9 17.25h6.375', roles: ['Gerente'] },
         { name: 'Desempenho', path: '/performance', icon: 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', roles: ['Gerente'] },
         { name: 'Relatórios', path: '/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2z', roles: ['Gerente'] },
       ]

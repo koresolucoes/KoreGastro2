@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { SupabaseStateService } from './supabase-state.service';
+import { SettingsStateService } from './settings-state.service';
 import { NotificationService } from './notification.service';
 import { Recipe } from '../models/db.models';
 import { supabase } from './supabase-client';
@@ -51,11 +51,11 @@ export interface UnsellableCategory {
   providedIn: 'root'
 })
 export class IfoodMenuService {
-  private stateService = inject(SupabaseStateService);
+  private settingsState = inject(SettingsStateService);
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
 
-  private companyProfile = this.stateService.companyProfile;
+  private companyProfile = this.settingsState.companyProfile;
 
   private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH', endpoint: string, body: any = null): Promise<T> {
     const merchantId = this.companyProfile()?.ifood_merchant_id;

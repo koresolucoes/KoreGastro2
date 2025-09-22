@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@a
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Ingredient, IngredientCategory } from '../../../models/db.models';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { InventoryStateService } from '../../../services/inventory-state.service';
 import { InventoryDataService } from '../../../services/inventory-data.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -19,14 +19,14 @@ interface CountedIngredient extends Ingredient {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventoryAuditComponent {
-  private stateService = inject(SupabaseStateService);
+  private inventoryState = inject(InventoryStateService);
   private inventoryDataService = inject(InventoryDataService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
   // Data signals
-  ingredients = this.stateService.ingredients;
-  categories = this.stateService.ingredientCategories;
+  ingredients = this.inventoryState.ingredients;
+  categories = this.inventoryState.ingredientCategories;
 
   // State signals
   counts = signal<Map<string, number>>(new Map());

@@ -1,8 +1,10 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee, Order, ProductionPlan } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { DashboardStateService } from '../../services/dashboard-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+import { PosStateService } from '../../services/pos-state.service';
+import { SupabaseStateService } from '../../services/supabase-state.service'; // Keep for fetch trigger
 
 type ReportPeriod = 'day' | 'week' | 'month';
 type PerformanceView = 'sales' | 'kitchen';
@@ -16,6 +18,19 @@ interface EmployeePerformance {
   tipPercentage: number;
 }
 
+interface EmployeePerfData {
+  employee: Employee;
+  totalSales: number;
+  totalTips: number;
+  attendedOrderIds: Set<string>;
+}
+
+interface MiseEnPlacePerfData {
+  employee: Employee;
+  completedTasks: number;
+}
+
+
 @Component({
   selector: 'app-performance',
   standalone: true,
@@ -24,16 +39,19 @@ interface EmployeePerformance {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PerformanceComponent implements OnInit {
-    private stateService = inject(SupabaseStateService);
+    private supabaseStateService = inject(SupabaseStateService);
+    private dashboardState = inject(DashboardStateService);
+    private hrState = inject(HrStateService);
+    private posState = inject(PosStateService);
 
     period = signal<ReportPeriod>('day');
     performanceView = signal<PerformanceView>('sales');
     isLoading = signal(true);
     
-    performanceTransactions = this.stateService.performanceTransactions;
-    employees = this.stateService.employees;
-    performanceProductionPlans = this.stateService.performanceProductionPlans;
-    performanceCompletedOrders = this.stateService.performanceCompletedOrders;
+    performanceTransactions = this.dashboardState.performanceTransactions;
+    employees = this.hrState.employees;
+    performanceProductionPlans = this.dashboardState.performanceProductionPlans;
+    performanceCompletedOrders = this.dashboardState.performanceCompletedOrders;
 
     ngOnInit() {
         this.loadData();
@@ -48,7 +66,7 @@ export class PerformanceComponent implements OnInit {
         this.isLoading.set(true);
         try {
             const { startDate, endDate } = this.getDateRange();
-            await this.stateService.fetchPerformanceDataForPeriod(startDate, endDate);
+            await this.supabaseStateService.fetchPerformanceDataForPeriod(startDate, endDate);
         } catch (error) {
             console.error("Error loading performance data", error);
         } finally {
@@ -111,7 +129,7 @@ export class PerformanceComponent implements OnInit {
     });
     
     employeePerformance = computed((): EmployeePerformance[] => {
-        const employeesMap = new Map(this.employees().map(e => [e.id, { 
+        const employeesMap = new Map<string, EmployeePerfData>(this.employees().map(e => [e.id, { 
             employee: e,
             totalSales: 0,
             totalTips: 0,
@@ -175,7 +193,7 @@ export class PerformanceComponent implements OnInit {
     ]);
 
     miseEnPlacePerformance = computed((): { employee: Employee, completedTasks: number }[] => {
-      const employeesMap = new Map(this.employees().map(e => [e.id, { employee: e, completedTasks: 0 }]));
+      const employeesMap = new Map<string, MiseEnPlacePerfData>(this.employees().map(e => [e.id, { employee: e, completedTasks: 0 }]));
       const tasks = this.performanceProductionPlans().flatMap(plan => plan.production_tasks || []);
       for (const task of tasks) {
         if (task.status === 'Concluído' && task.employee_id && employeesMap.has(task.employee_id)) {
@@ -201,7 +219,7 @@ export class PerformanceComponent implements OnInit {
 
     stationPerformance = computed(() => {
       const stationsMap = new Map<string, { name: string, totalPrepTime: number, itemCount: number }>();
-      const allStations = this.stateService.stations();
+      const allStations = this.posState.stations();
       allStations.forEach(s => stationsMap.set(s.id, { name: s.name, totalPrepTime: 0, itemCount: 0 }));
 
       const items = this.performanceCompletedOrders().flatMap(o => o.order_items || []);

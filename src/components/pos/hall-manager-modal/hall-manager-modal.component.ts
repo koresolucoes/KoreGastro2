@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall } from '../../../models/db.models';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { PosStateService } from '../../../services/pos-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { output, OutputEmitterRef } from '@angular/core';
 
@@ -13,12 +13,12 @@ import { output, OutputEmitterRef } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HallManagerModalComponent {
-  stateService = inject(SupabaseStateService);
+  posState = inject(PosStateService);
   posDataService = inject(PosDataService);
 
   closeModal: OutputEmitterRef<void> = output<void>();
 
-  halls = this.stateService.halls;
+  halls = this.posState.halls;
   newHallName = signal('');
   editingHall = signal<Hall | null>(null);
   hallPendingDeletion = signal<Hall | null>(null);

@@ -2,11 +2,15 @@ import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, O
 import { CommonModule } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
-import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+
+// Import new state services
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 
 interface MenuGroup {
   category: Category;
@@ -21,7 +25,9 @@ interface MenuGroup {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuComponent implements OnInit, OnDestroy {
-  private stateService = inject(SupabaseStateService);
+  private supabaseStateService = inject(SupabaseStateService);
+  private recipeState = inject(RecipeStateService);
+  private settingsState = inject(SettingsStateService);
   private pricingService = inject(PricingService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -61,7 +67,7 @@ export class MenuComponent implements OnInit, OnDestroy {
         // Internal View
         this.isPublicView.set(false);
         this.view.set('menu'); // Start directly on the menu for internal
-        this.isLoading.set(this.stateService.isDataLoaded() === false);
+        this.isLoading.set(this.supabaseStateService.isDataLoaded() === false);
       }
     });
   }
@@ -110,9 +116,9 @@ export class MenuComponent implements OnInit, OnDestroy {
       recipesSource = this.publicRecipes();
       categoriesSource = this.publicCategories();
     } else {
-      recipesSource = this.stateService.recipesWithStockStatus()
+      recipesSource = this.recipeState.recipesWithStockStatus()
         .filter(recipe => recipe.is_available && recipe.hasStock && !recipe.is_sub_recipe);
-      categoriesSource = this.stateService.categories();
+      categoriesSource = this.recipeState.categories();
     }
 
     const recipesWithPrice = recipesSource.map(recipe => ({
@@ -187,11 +193,11 @@ export class MenuComponent implements OnInit, OnDestroy {
   });
 
   companyProfile = computed(() => {
-    return this.isPublicView() ? this.publicCompanyProfile() : this.stateService.companyProfile();
+    return this.isPublicView() ? this.publicCompanyProfile() : this.settingsState.companyProfile();
   });
 
   reservationSettings = computed(() => {
-    return this.isPublicView() ? this.publicReservationSettings() : this.stateService.reservationSettings();
+    return this.isPublicView() ? this.publicReservationSettings() : this.settingsState.reservationSettings();
   });
 
   sortedWeeklyHours = computed(() => {

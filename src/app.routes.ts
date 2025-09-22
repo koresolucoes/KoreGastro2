@@ -30,6 +30,7 @@ import { InventoryAuditComponent } from './components/inventory/inventory-audit/
 import { IfoodKdsComponent } from './components/ifood-kds/ifood-kds.component';
 import { IfoodMenuComponent } from './components/ifood-menu/ifood-menu.component';
 import { MyProfileComponent } from './components/my-profile/my-profile.component';
+import { SuppliersComponent } from './components/suppliers/suppliers.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent },
@@ -44,6 +45,7 @@ export const APP_ROUTES: Routes = [
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
   { path: 'inventory/audit', component: InventoryAuditComponent, canActivate: [roleGuard] },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard] },
+  { path: 'suppliers', component: SuppliersComponent, canActivate: [roleGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [roleGuard] },
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route

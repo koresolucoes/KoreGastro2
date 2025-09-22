@@ -12,7 +12,8 @@ import { RedeemRewardModalComponent } from '../shared/redeem-reward-modal/redeem
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { PosStateService } from '../../services/pos-state.service';
+import { HrStateService } from '../../services/hr-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { PrintingService } from '../../services/printing.service';
 import { NotificationService } from '../../services/notification.service';
@@ -34,7 +35,8 @@ import { NotificationService } from '../../services/notification.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PosComponent {
-  stateService = inject(SupabaseStateService);
+  posState = inject(PosStateService);
+  hrState = inject(HrStateService);
   posDataService = inject(PosDataService);
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
@@ -42,9 +44,9 @@ export class PosComponent {
   notificationService = inject(NotificationService);
   
   // Data Signals from State Service
-  halls = this.stateService.halls;
-  tables = this.stateService.tables;
-  employees = this.stateService.employees;
+  halls = this.posState.halls;
+  tables = this.posState.tables;
+  employees = this.hrState.employees;
 
   // Component State
   activeEmployee = this.operationalAuthService.activeEmployee;
@@ -129,7 +131,7 @@ export class PosComponent {
         return;
       }
       // Manually add the new order to the state to avoid waiting for refetch
-      this.stateService.orders.update(orders => [...orders, result.data!]);
+      this.posState.orders.update(orders => [...orders, result.data!]);
     }
     
     this.isOrderPanelOpen.set(true);

@@ -119,7 +119,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
             break;
         case 'CANCELLED':
-            // FIX: Use consistent helper function to get order ID.
+            // FIX: Use consistent helper function to get order ID and add a null check.
             const orderIdToCancel = getOrderIdFromPayload(payload);
             if (!orderIdToCancel) throw new Error("CANCELLED event is missing a valid 'orderId'.");
             await cancelOrderInDb(supabase, orderIdToCancel);

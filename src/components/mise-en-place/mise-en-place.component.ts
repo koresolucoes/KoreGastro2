@@ -6,6 +6,11 @@ import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.servic
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { MiseEnPlaceRecipeModalComponent } from './mise-en-place-recipe-modal/mise-en-place-recipe-modal.component';
+// FIX: Import new state services
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { PosStateService } from '../../services/pos-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
 
 type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user_id'>> & { task_type: 'recipe' | 'custom' };
 
@@ -21,25 +26,32 @@ export class MiseEnPlaceComponent {
   dataService = inject(MiseEnPlaceDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
+  // FIX: Inject feature-specific state services
+  private recipeState = inject(RecipeStateService);
+  private posState = inject(PosStateService);
+  private hrState = inject(HrStateService);
+  private inventoryState = inject(InventoryStateService);
 
   // Data Signals
-  subRecipes = computed(() => this.stateService.recipes().filter(r => r.is_sub_recipe));
-  stations = this.stateService.stations;
+  // FIX: Access state from the correct feature-specific services
+  subRecipes = computed(() => this.recipeState.recipes().filter(r => r.is_sub_recipe));
+  stations = this.posState.stations;
   employees = computed(() => {
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
     const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);
-    return this.stateService.employees().filter(e => {
+    return this.hrState.employees().filter(e => {
         const roleName = e.role_id ? rolesMap.get(e.role_id) : undefined;
         return roleName ? allowedRoles.has(roleName) : false;
     });
   });
   activeEmployee = this.operationalAuthService.activeEmployee;
-  recipeCosts = this.stateService.recipeCosts;
+  recipeCosts = this.recipeState.recipeCosts;
 
   // View State
   selectedDate = signal(new Date().toISOString().split('T')[0]);
   activePlan = computed(() => {
-    const plans = this.stateService.productionPlans();
+    // FIX: Access state from the correct feature-specific service
+    const plans = this.inventoryState.productionPlans();
     const date = this.selectedDate();
     return plans.find(p => p.plan_date === date) ?? null;
   });
@@ -61,14 +73,15 @@ export class MiseEnPlaceComponent {
     const task = this.selectedTaskForRecipe();
     if (!task || !task.sub_recipe_id) return null;
 
-    const allRecipes = this.stateService.recipes();
+    // FIX: Access state from the correct feature-specific services
+    const allRecipes = this.recipeState.recipes();
     const recipe = allRecipes.find(r => r.id === task.sub_recipe_id);
     if (!recipe) return null;
 
-    const allPreparations = this.stateService.recipePreparations();
-    const allIngredients = this.stateService.recipeIngredients();
-    const allSubRecipes = this.stateService.recipeSubRecipes();
-    const ingredientsMap = new Map(this.stateService.ingredients().map(i => [i.id, i]));
+    const allPreparations = this.recipeState.recipePreparations();
+    const allIngredients = this.recipeState.recipeIngredients();
+    const allSubRecipes = this.recipeState.recipeSubRecipes();
+    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
     const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
 
     const recipePreps = allPreparations
@@ -126,7 +139,8 @@ export class MiseEnPlaceComponent {
       }
 
       // Check if a plan for this date is already loaded in the global state.
-      const planExists = this.stateService.productionPlans().some(p => p.plan_date === date);
+      // FIX: Access state from the correct feature-specific service
+      const planExists = this.inventoryState.productionPlans().some(p => p.plan_date === date);
 
       if (planExists) {
           this.isLoading.set(false);

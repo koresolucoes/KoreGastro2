@@ -4,12 +4,16 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, O
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType, IfoodOrderStatus } from '../../models/db.models';
 import { PrintingService } from '../../services/printing.service';
-import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
+
+// Import new state services
+import { PosStateService } from '../../services/pos-state.service';
+import { HrStateService } from '../../services/hr-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
 
 interface BaseTicket {
   orderId: string;
@@ -51,7 +55,9 @@ type ProcessedOrderItem = OrderItem & {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KdsComponent implements OnInit, OnDestroy {
-    stateService = inject(SupabaseStateService);
+    posState = inject(PosStateService);
+    hrState = inject(HrStateService);
+    recipeState = inject(RecipeStateService);
     posDataService = inject(PosDataService);
     settingsDataService = inject(SettingsDataService);
     printingService = inject(PrintingService);
@@ -59,9 +65,9 @@ export class KdsComponent implements OnInit, OnDestroy {
     soundNotificationService = inject(SoundNotificationService);
     ifoodDataService = inject(IfoodDataService);
     
-    stations = this.stateService.stations;
-    employees = this.stateService.employees;
-    recipesById = this.stateService.recipesById;
+    stations = this.posState.stations;
+    employees = this.hrState.employees;
+    recipesById = this.recipeState.recipesById;
     stationsById = computed(() => new Map(this.stations().map(s => [s.id, s.name])));
 
     selectedStation = signal<Station | null>(null);
@@ -150,7 +156,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const itemsByOrder = new Map<string, ProcessedOrderItem[]>();
 
         // 1. Group all relevant items by their order ID and process them
-        for (const order of this.stateService.openOrders()) {
+        for (const order of this.posState.openOrders()) {
             if (!itemsByOrder.has(order.id)) itemsByOrder.set(order.id, []);
             const orderItems = itemsByOrder.get(order.id)!;
 
@@ -220,7 +226,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            const allOrderItems = this.stateService.openOrders().find(o => o.id === ticket.orderId)?.order_items ?? [];
+            const allOrderItems = this.posState.openOrders().find(o => o.id === ticket.orderId)?.order_items ?? [];
             const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO');
             return { ...ticket, isReadyForPickup };
         });
@@ -241,7 +247,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         for (const [orderId, orderItems] of itemsByOrderId.entries()) {
             if (orderItems.length === 0) continue;
             
-            const order = this.stateService.openOrders().find(o => o.id === orderId);
+            const order = this.posState.openOrders().find(o => o.id === orderId);
             if (!order) continue;
 
             orderItems.sort((a, b) => b.prepTime - a.prepTime);
@@ -345,7 +351,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     async markOrderAsServed(ticket: ExpoTicket) {
         if (this.updatingTickets().has(ticket.orderId)) return;
     
-        const order = this.stateService.openOrders().find(o => o.id === ticket.orderId);
+        const order = this.posState.openOrders().find(o => o.id === ticket.orderId);
         if (!order) {
             await this.notificationService.alert('Erro: Pedido não encontrado.');
             return;

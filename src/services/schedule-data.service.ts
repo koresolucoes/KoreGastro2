@@ -2,21 +2,24 @@ import { Injectable, inject } from '@angular/core';
 import { Schedule, Shift } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
-import { SupabaseStateService } from './supabase-state.service';
+// FIX: Import and inject HrStateService to access schedule data
+import { HrStateService } from './hr-state.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ScheduleDataService {
   private authService = inject(AuthService);
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService instead of SupabaseStateService
+  private hrState = inject(HrStateService);
 
   async getOrCreateScheduleForDate(weekStartDate: string): Promise<{ data: Schedule | null; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { data: null, error: { message: 'User not authenticated' } };
 
     // Check if it exists in local state first
-    const existingSchedule = this.stateService.schedules().find(s => s.week_start_date === weekStartDate);
+    // FIX: Access schedules from the correct state service
+    const existingSchedule = this.hrState.schedules().find(s => s.week_start_date === weekStartDate);
     if (existingSchedule) {
       return { data: existingSchedule, error: null };
     }
@@ -36,7 +39,8 @@ export class ScheduleDataService {
     
     if (data) {
       // Manually add to state if it was missing
-      this.stateService.schedules.update(schedules => [...schedules, data as Schedule]);
+      // FIX: Update schedules in the correct state service
+      this.hrState.schedules.update(schedules => [...schedules, data as Schedule]);
       return { data: data as Schedule, error: null };
     }
 
@@ -53,7 +57,8 @@ export class ScheduleDataService {
     
     const scheduleWithShifts: Schedule = { ...newSchedule, shifts: [] };
     // Add the newly created schedule to the state so the UI updates immediately
-    this.stateService.schedules.update(schedules => [...schedules, scheduleWithShifts]);
+    // FIX: Update schedules in the correct state service
+    this.hrState.schedules.update(schedules => [...schedules, scheduleWithShifts]);
 
     return { data: scheduleWithShifts, error: null };
   }

@@ -12,6 +12,10 @@ import { InventoryDataService } from '../../services/inventory-data.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
+// FIX: Import new state services
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 
 const EMPTY_RECIPE_FORM: RecipeForm = {
   recipe: {
@@ -54,18 +58,23 @@ export class TechnicalSheetsComponent {
   private notificationService = inject(NotificationService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  // FIX: Inject feature-specific state services
+  private recipeState = inject(RecipeStateService);
+  private inventoryState = inject(InventoryStateService);
+  private posState = inject(PosStateService);
 
   // Data from state
-  allRecipes = this.stateService.recipes;
-  categories = this.stateService.categories;
-  ingredients = this.stateService.ingredients;
-  stations = this.stateService.stations;
-  recipeCosts = this.stateService.recipeCosts;
-  recipeIngredients = this.stateService.recipeIngredients;
-  recipePreparations = this.stateService.recipePreparations;
-  recipeSubRecipes = this.stateService.recipeSubRecipes;
-  ingredientCategories = this.stateService.ingredientCategories;
-  suppliers = this.stateService.suppliers;
+  // FIX: Access state from the correct feature-specific services
+  allRecipes = this.recipeState.recipes;
+  categories = this.recipeState.categories;
+  ingredients = this.inventoryState.ingredients;
+  stations = this.posState.stations;
+  recipeCosts = this.recipeState.recipeCosts;
+  recipeIngredients = this.recipeState.recipeIngredients;
+  recipePreparations = this.recipeState.recipePreparations;
+  recipeSubRecipes = this.recipeState.recipeSubRecipes;
+  ingredientCategories = this.inventoryState.ingredientCategories;
+  suppliers = this.inventoryState.suppliers;
 
   // Component state
   viewMode = signal<'list' | 'edit'>('list');

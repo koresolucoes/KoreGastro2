@@ -3,7 +3,9 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
-import { SupabaseStateService } from '../../services/supabase-state.service';
+import { InventoryStateService } from '../../services/inventory-state.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
 import { Router, RouterLink } from '@angular/router';
@@ -46,17 +48,19 @@ interface StockPrediction {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InventoryComponent {
-    stateService = inject(SupabaseStateService);
+    inventoryState = inject(InventoryStateService);
+    recipeState = inject(RecipeStateService);
+    posState = inject(PosStateService);
     inventoryDataService = inject(InventoryDataService);
     aiService = inject(AiRecipeService);
     router = inject(Router);
     notificationService = inject(NotificationService);
     
-    ingredients = this.stateService.ingredients;
-    categories = this.stateService.ingredientCategories;
-    suppliers = this.stateService.suppliers;
-    recipeCategories = this.stateService.categories;
-    stations = this.stateService.stations;
+    ingredients = this.inventoryState.ingredients;
+    categories = this.inventoryState.ingredientCategories;
+    suppliers = this.inventoryState.suppliers;
+    recipeCategories = this.recipeState.categories;
+    stations = this.posState.stations;
     
     isModalOpen = signal(false);
     editingIngredient = signal<Partial<Ingredient> | null>(null);
@@ -135,7 +139,7 @@ export class InventoryComponent {
     lotsForSelectedIngredient = computed(() => {
       const ingredient = this.selectedIngredientForDetails();
       if (!ingredient) return [];
-      return this.stateService.inventoryLots()
+      return this.inventoryState.inventoryLots()
         .filter(lot => lot.ingredient_id === ingredient.id && lot.quantity > 0)
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
@@ -143,7 +147,7 @@ export class InventoryComponent {
     lotsForAdjustmentModal = computed(() => {
       const ingredient = this.adjustmentIngredient();
       if (!ingredient) return [];
-      return this.stateService.inventoryLots()
+      return this.inventoryState.inventoryLots()
         .filter(lot => lot.ingredient_id === ingredient.id && lot.quantity > 0)
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });

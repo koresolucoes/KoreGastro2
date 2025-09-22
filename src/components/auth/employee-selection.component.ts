@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Employee } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
+import { HrStateService } from '../../services/hr-state.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
@@ -21,15 +23,19 @@ export class EmployeeSelectionComponent {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
+  private subscriptionState = inject(SubscriptionStateService);
+  private hrState = inject(HrStateService);
 
-  hasActiveSubscription = this.stateService.hasActiveSubscription;
+  hasActiveSubscription = this.subscriptionState.hasActiveSubscription;
   isDataLoaded = this.stateService.isDataLoaded;
-  isTrialing = this.stateService.isTrialing;
-  trialDaysRemaining = this.stateService.trialDaysRemaining;
+  isTrialing = this.subscriptionState.isTrialing;
+  trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
 
   employees = computed(() => {
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
-    return this.stateService.employees().map(e => ({
+    // FIX: Access roles from the correct state service
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+    // FIX: Access employees from the correct state service
+    return this.hrState.employees().map(e => ({
       ...e,
       role: e.role_id ? rolesMap.get(e.role_id) || 'Sem Cargo' : 'Sem Cargo'
     }));
@@ -144,7 +150,8 @@ export class EmployeeSelectionComponent {
 
     this.isCreatingManager.set(true);
     
-    let gerenteRole = this.stateService.roles().find(r => r.name === 'Gerente');
+    // FIX: Access roles from the correct state service
+    let gerenteRole = this.hrState.roles().find(r => r.name === 'Gerente');
     if (!gerenteRole) {
         const { data: newRole, error: roleError } = await this.settingsDataService.addRole('Gerente');
         if (roleError || !newRole) {
@@ -152,7 +159,7 @@ export class EmployeeSelectionComponent {
             this.isCreatingManager.set(false);
             return;
         }
-        this.stateService.roles.update(roles => [...roles, newRole]);
+        this.hrState.roles.update(roles => [...roles, newRole]);
         gerenteRole = newRole;
 
         // Seed all permissions for the new manager role to ensure they are a super-admin

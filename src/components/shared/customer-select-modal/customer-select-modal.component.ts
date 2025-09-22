@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, output, O
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Customer } from '../../../models/db.models';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+import { PosStateService } from '../../../services/pos-state.service';
 import { SettingsDataService } from '../../../services/settings-data.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -14,7 +14,7 @@ import { NotificationService } from '../../../services/notification.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomerSelectModalComponent {
-  private stateService = inject(SupabaseStateService);
+  private posState = inject(PosStateService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
 
@@ -23,16 +23,17 @@ export class CustomerSelectModalComponent {
 
   searchTerm = signal('');
   isCreatingNew = signal(false);
-  newCustomerForm = signal({ name: '', phone: '', email: '' });
+  newCustomerForm = signal({ name: '', phone: '', email: '', cpf: '' });
   isSaving = signal(false);
 
   filteredCustomers = computed(() => {
-    const term = this.searchTerm().toLowerCase();
-    if (!term) return this.stateService.customers();
-    return this.stateService.customers().filter(c => 
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) return this.posState.customers();
+    return this.posState.customers().filter(c => 
       c.name.toLowerCase().includes(term) ||
       c.phone?.includes(term) ||
-      c.email?.toLowerCase().includes(term)
+      c.email?.toLowerCase().includes(term) ||
+      c.cpf?.includes(term)
     );
   });
 
@@ -52,6 +53,7 @@ export class CustomerSelectModalComponent {
       name: form.name.trim(),
       phone: form.phone.trim() || null,
       email: form.email.trim() || null,
+      cpf: form.cpf.trim() || null
     });
     this.isSaving.set(false);
 
@@ -65,7 +67,7 @@ export class CustomerSelectModalComponent {
 
   startCreateNew() {
     this.isCreatingNew.set(true);
-    this.newCustomerForm.set({ name: '', phone: '', email: '' });
+    this.newCustomerForm.set({ name: '', phone: '', email: '', cpf: '' });
   }
 
   cancelCreateNew() {

@@ -4,7 +4,8 @@ import { Employee, TimeClockEntry, Transaction } from '../../../models/db.models
 import { TimeClockService } from '../../../services/time-clock.service';
 import { supabase } from '../../../services/supabase-client';
 import { AuthService } from '../../../services/auth.service';
-import { SupabaseStateService } from '../../../services/supabase-state.service';
+// FIX: Import HrStateService to access HR-related data
+import { HrStateService } from '../../../services/hr-state.service';
 
 interface EmployeeStats {
   totalSales: number;
@@ -30,7 +31,8 @@ export class EmployeeDetailsModalComponent {
 
   private timeClockService = inject(TimeClockService);
   private authService = inject(AuthService);
-  private stateService = inject(SupabaseStateService);
+  // FIX: Inject HrStateService
+  private hrState = inject(HrStateService);
 
   activeTab = signal<'performance' | 'details'>('performance');
   period = signal<'7d' | '30d'>('7d');
@@ -40,7 +42,8 @@ export class EmployeeDetailsModalComponent {
   employeeRole = computed(() => {
     const emp = this.employee();
     if (!emp || !emp.role_id) return 'Sem Cargo';
-    const rolesMap = new Map(this.stateService.roles().map(r => [r.id, r.name]));
+    // FIX: Access roles from the correct state service
+    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
     return rolesMap.get(emp.role_id) || 'Cargo Excluído';
   });
 
