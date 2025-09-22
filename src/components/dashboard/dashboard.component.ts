@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -134,8 +135,9 @@ export class DashboardComponent implements OnInit {
           .filter(t => t.type === 'Receita' && t.employee_id)
           .forEach(t => {
               const employeeId = t.employee_id!;
-              const name = employeeMap.get(employeeId) || 'Desconhecido';
-              const current = salesByEmployee.get(employeeId) || { name, sales: 0 };
+              // FIX: Explicitly type 'name' as string to resolve compiler type inference issue.
+              const name: string = employeeMap.get(employeeId) || 'Desconhecido';
+              const current = salesByEmployee.get(employeeId) || { name: name, sales: 0 };
               current.sales += t.amount;
               salesByEmployee.set(employeeId, current);
           });

@@ -1,14 +1,15 @@
-
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
+import { DemoService } from './demo.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   private router = inject(Router);
+  private demoService = inject(DemoService);
   // Use a signal to hold the current user state
   currentUser = signal<Session['user'] | null>(null);
 
@@ -73,6 +74,7 @@ export class AuthService {
    * Signs out the current user.
    */
   async signOut(): Promise<{ error: any }> {
+    this.demoService.disableDemoMode();
     const { error } = await supabase.auth.signOut();
     return { error };
   }

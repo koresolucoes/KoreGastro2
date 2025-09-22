@@ -6,7 +6,6 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
 
-// Re-using the same structure as the sidebar for consistency
 export interface NavLink {
   name: string;
   path: string;
@@ -24,31 +23,32 @@ export interface NavGroup {
 
 export type CombinedNavItem = NavLink | NavGroup;
 
-
 @Component({
-  selector: 'app-bottom-nav',
+  selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
-  templateUrl: './bottom-nav.component.html',
+  templateUrl: './sidebar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BottomNavComponent {
+export class SidebarComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
   settingsState = inject(SettingsStateService);
   demoService = inject(DemoService);
   router = inject(Router);
-
+  
   isDemoMode = this.demoService.isDemoMode;
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
   shiftButtonState = this.operationalAuthService.shiftButtonState;
   companyProfile = this.settingsState.companyProfile;
   
-  isOffCanvasOpen = signal(false);
-  activeGroup = signal<NavGroup | null>(null);
-  expandedGroups = signal<Record<string, boolean>>({});
-  
+  isSidebarOpen = signal(true);
+  expandedGroups = signal<Record<string, boolean>>({
+    'Vendas': true,
+    'iFood': true,
+  });
+
   allNavLinks: CombinedNavItem[] = [
     {
       name: 'Vendas',
@@ -84,6 +84,7 @@ export class BottomNavComponent {
         { name: 'Dashboard', path: '/dashboard', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', roles: ['Gerente'] },
         { name: 'Estoque', path: '/inventory', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', roles: ['Gerente'] },
         { name: 'Compras', path: '/purchasing', icon: 'M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.117 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.117 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z', roles: ['Gerente'] },
+        { name: 'Fornecedores', path: '/suppliers', icon: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375M9 12h6.375M9 17.25h6.375', roles: ['Gerente'] },
         { name: 'Desempenho', path: '/performance', icon: 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', roles: ['Gerente'] },
         { name: 'Relatórios', path: '/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2z', roles: ['Gerente'] },
       ]
@@ -108,7 +109,7 @@ export class BottomNavComponent {
   navItems = computed(() => {
     const employee = this.activeEmployee();
     if (!employee) return [];
-    
+
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão'];
     const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory'];
@@ -124,7 +125,7 @@ export class BottomNavComponent {
 
     for (const item of this.allNavLinks) {
       if (this.isNavGroup(item)) {
-         if (isDemo && !demoAllowedGroups.includes(item.name)) {
+        if (isDemo && !demoAllowedGroups.includes(item.name)) {
           continue;
         }
         const visibleChildren = item.children.filter(filterLink);
@@ -144,46 +145,39 @@ export class BottomNavComponent {
     return 'children' in item;
   }
 
-  toggleGroup(group: NavGroup) {
-    if (this.activeGroup()?.name === group.name) {
-      this.activeGroup.set(null); // Close if already open
+  isGroupActive(group: NavGroup): boolean {
+    return group.children.some(child => this.router.isActive(child.path, false));
+  }
+
+  toggleGroup(groupName: string) {
+    if (!this.isSidebarOpen()) {
+      this.isSidebarOpen.set(true);
+      // Ensure the group is open after the sidebar expands
+      setTimeout(() => {
+        this.expandedGroups.update(groups => ({ ...groups, [groupName]: true }));
+      }, 300); // Match sidebar transition duration
     } else {
-      this.activeGroup.set(group);
+      this.expandedGroups.update(groups => ({
+        ...groups,
+        [groupName]: !groups[groupName]
+      }));
     }
   }
 
-  handleLinkClick() {
-    this.activeGroup.set(null); // Close any open group when navigating
-  }
-  
-  toggleGroupOffCanvas(groupName: string) {
-    this.expandedGroups.update(groups => ({
-      ...groups,
-      [groupName]: !groups[groupName]
-    }));
-  }
-
-  handleOffCanvasLinkClick() {
-    this.isOffCanvasOpen.set(false);
-  }
-
-  toggleOffCanvas() {
-    this.isOffCanvasOpen.update(value => !value);
+  toggleSidebar() {
+    this.isSidebarOpen.update(value => !value);
   }
   
   async signOut() {
-    this.isOffCanvasOpen.set(false);
     await this.authService.signOut();
     this.router.navigate(['/login']);
   }
   
   switchEmployee() {
-    this.isOffCanvasOpen.set(false);
     this.operationalAuthService.switchEmployee();
   }
 
   async handleShiftAction() {
-    this.isOffCanvasOpen.set(false);
     await this.operationalAuthService.handleShiftAction();
   }
 }

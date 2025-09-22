@@ -35,6 +35,7 @@ export class RecipeStateService {
         
         const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
         for (const ri of directIngredients) {
+            // FIX: Add a guard to ensure ingredient exists before accessing its properties.
             const ingredient = ingredientsMap.get(ri.ingredient_id);
             if (ingredient) {
                 totalCost += (ingredient.cost || 0) * ri.quantity;
@@ -85,6 +86,7 @@ export class RecipeStateService {
         const subRecipeIngredients = recipeSubRecipes
             .filter(rsr => rsr.parent_recipe_id === recipe.id)
             .map(rsr => {
+                // FIX: Add a guard to ensure childRecipe is not undefined.
                 const childRecipe = recipesMap.get(rsr.child_recipe_id);
                 // The ingredient to deduct is the one linked to the sub-recipe via source_ingredient_id
                 return childRecipe?.source_ingredient_id 
@@ -117,7 +119,8 @@ export class RecipeStateService {
       }
 
       for (const ing of composition.directIngredients) {
-        if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) < ing.quantity) {
+        // FIX: Explicitly cast the map get result to number to satisfy the compiler.
+        if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) < ing.quantity) {
           memoCanProduce.set(recipeId, false);
           return false;
         }
@@ -141,7 +144,7 @@ export class RecipeStateService {
 
       if (composition) {
         for (const ing of composition.directIngredients) {
-          if ((ingredientsStockMap.get(ing.ingredientId) ?? 0) <= 0) {
+          if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) <= 0) {
             hasStock = false;
             break;
           }
@@ -149,7 +152,7 @@ export class RecipeStateService {
         if (!hasStock) return { ...recipe, hasStock };
 
         for (const sub of composition.subRecipeIngredients) {
-          const subRecipeStock = ingredientsStockMap.get(sub.ingredientId) ?? 0;
+          const subRecipeStock = (ingredientsStockMap.get(sub.ingredientId) as number | undefined) ?? 0;
           
           if (subRecipeStock > 0) {
             continue;

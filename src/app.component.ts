@@ -10,6 +10,7 @@ import { ToastContainerComponent } from './components/shared/toast-container/toa
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
+import { DemoService } from './services/demo.service';
 
 @Component({
   selector: 'app-root',
@@ -24,8 +25,10 @@ export class AppComponent {
   operationalAuthService = inject(OperationalAuthService);
   supabaseStateService = inject(SupabaseStateService);
   subscriptionStateService = inject(SubscriptionStateService);
+  demoService = inject(DemoService);
   router = inject(Router);
 
+  isDemoMode = this.demoService.isDemoMode;
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
   isTrialing = this.subscriptionStateService.isTrialing;
@@ -45,6 +48,6 @@ export class AppComponent {
   });
 
   isFullLayoutVisible = computed(() => {
-    return this.authService.currentUser() && this.operationalAuthService.activeEmployee();
+    return (this.authService.currentUser() || this.isDemoMode()) && this.operationalAuthService.activeEmployee();
   });
 }

@@ -154,6 +154,7 @@ export class TechnicalSheetsComponent {
     const subRecipeCostMap = this.recipeCosts();
 
     for (const item of form.ingredients) {
+      // FIX: Add check for ingredient existence to satisfy compiler.
       const ingredient = ingredientsMap.get(item.ingredient_id);
       if (ingredient) {
         let convertedQuantity = item.quantity;
@@ -362,7 +363,8 @@ export class TechnicalSheetsComponent {
 
   // --- Data Lookups for Template ---
   getIngredientName(id: string): string { return this.ingredients().find(i => i.id === id)?.name ?? '?'; }
-  getIngredientUnit(id: string): IngredientUnit { return this.ingredients().find(i => i.id === id)?.unit ?? 'un'; }
+  // FIX: Explicitly type the result of find to satisfy the compiler.
+  getIngredientUnit(id: string): IngredientUnit { const ingredient: Ingredient | undefined = this.ingredients().find(i => i.id === id); return ingredient?.unit ?? 'un'; }
   getSubRecipeName(id: string): string { return this.allRecipes().find(r => r.id === id)?.name ?? '?'; }
 
   getCompatibleUnits(baseUnit: IngredientUnit): IngredientUnit[] {

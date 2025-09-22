@@ -54,7 +54,7 @@ export class OrderPanelComponent {
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
   currentOrder: InputSignal<Order | null> = input.required<Order | null>();
   orderError: InputSignal<string | null> = input.required<string | null>();
-  activeEmployee: InputSignal<Employee | null> = input.required<Employee | null>();
+  activeEmployee: InputSignal<(Employee & { role: string }) | null> = input.required<(Employee & { role: string }) | null>();
 
   closePanel: OutputEmitterRef<void> = output<void>();
   checkoutStarted: OutputEmitterRef<void> = output<void>();
@@ -232,32 +232,36 @@ export class OrderPanelComponent {
 
     // Check direct raw ingredients
     for (const ing of composition.directIngredients) {
+      // FIX: Add a guard to ensure ingredient exists before accessing its properties.
       const ingredient = ingredientsMap.get(ing.ingredientId);
-      if (!ingredient) {
+      if (ingredient) {
+        const availableStock = ingredient.stock;
+        const alreadyReserved = reserved.get(ing.ingredientId) || 0;
+        
+        if (availableStock < alreadyReserved + ing.quantity) {
+          this.notificationService.show(`Estoque insuficiente de "${ingredient.name}" para adicionar mais "${recipe.name}".`, 'error');
+          return false;
+        }
+      } else {
         this.notificationService.show(`Ingrediente de "${recipe.name}" não encontrado.`, 'error');
-        return false;
-      }
-      const availableStock = ingredient.stock;
-      const alreadyReserved = reserved.get(ing.ingredientId) || 0;
-      
-      if (availableStock < alreadyReserved + ing.quantity) {
-        this.notificationService.show(`Estoque insuficiente de "${ingredient.name}" para adicionar mais "${recipe.name}".`, 'error');
         return false;
       }
     }
 
     // Check sub-recipe stock items
     for (const subIng of composition.subRecipeIngredients) {
+      // FIX: Add a guard to ensure ingredient exists before accessing its properties.
       const ingredient = ingredientsMap.get(subIng.ingredientId);
-      if (!ingredient) {
-        this.notificationService.show(`Item de estoque para sub-receita em "${recipe.name}" não encontrado.`, 'error');
-        return false;
-      }
-      const availableStock = ingredient.stock;
-      const alreadyReserved = reserved.get(subIng.ingredientId) || 0;
+      if (ingredient) {
+        const availableStock = ingredient.stock;
+        const alreadyReserved = reserved.get(subIng.ingredientId) || 0;
 
-      if (availableStock < alreadyReserved + subIng.quantity) {
-        this.notificationService.show(`Estoque insuficiente da sub-receita pronta "${ingredient.name}".`, 'error');
+        if (availableStock < alreadyReserved + subIng.quantity) {
+          this.notificationService.show(`Estoque insuficiente da sub-receita pronta "${ingredient.name}".`, 'error');
+          return false;
+        }
+      } else {
+        this.notificationService.show(`Item de estoque para sub-receita em "${recipe.name}" não encontrado.`, 'error');
         return false;
       }
     }

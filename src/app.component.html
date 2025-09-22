@@ -6,6 +6,11 @@
     </div>
 
     <main class="flex-1 flex flex-col overflow-hidden">
+      @if (isDemoMode()) {
+        <div class="bg-blue-600 text-white text-center py-2 font-semibold no-print text-sm z-20">
+          Modo de Demonstração - Nenhuma alteração será salva.
+        </div>
+      }
       <!-- Add padding-bottom on mobile to make space for the nav bar -->
       <div class="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-y-auto">
         @if (isTrialing() && trialDaysRemaining() !== null) {

@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
 import { supabase } from './supabase-client';
@@ -7,6 +7,8 @@ import { HrStateService } from './hr-state.service';
 import { SubscriptionStateService } from './subscription-state.service';
 import { SupabaseStateService } from './supabase-state.service';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
+import { DemoService } from './demo.service';
+import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -21,21 +23,46 @@ export class OperationalAuthService {
   private stateService = inject(SupabaseStateService);
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
+  private demoService = inject(DemoService);
   
-  activeEmployee = signal<(Employee & { role?: string }) | null>(null);
+  activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
 
   constructor() {
     const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
     if (storedEmployee) {
-      // FIX: Add type assertion for parsed JSON
-      const employee = JSON.parse(storedEmployee) as (Employee & { role?: string });
+      // FIX: Add type assertion for parsed JSON to match new signal type.
+      const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
       this.activeEmployee.set(employee);
       this.loadActiveShift(employee);
     }
+
+    effect(() => {
+      if (this.demoService.isDemoMode() && !this.activeEmployee()) {
+        this.loginAsDemoUser();
+      }
+    });
   }
 
-  private async loadActiveShift(employee: (Employee & { role?: string }) | null) {
+  private loginAsDemoUser() {
+    const demoManagerRole = MOCK_ROLES.find(r => r.name === 'Gerente');
+    if (!demoManagerRole) {
+      console.error("Demo Data Error: Mock 'Gerente' role not found.");
+      return;
+    }
+    const demoManager = MOCK_EMPLOYEES.find(e => e.role_id === demoManagerRole.id);
+    if (demoManager) {
+      this.login(demoManager);
+    } else {
+      console.error("Demo Data Error: Mock 'Gerente' employee not found.");
+    }
+  }
+
+  private async loadActiveShift(employee: (Employee & { role: string }) | null) {
+      if (this.demoService.isDemoMode()) {
+        this.activeShift.set(null); // No active shift in demo mode initially
+        return;
+      }
       if (employee && employee.current_clock_in_id) {
           const { data, error } = await supabase
               .from('time_clock_entries')
@@ -50,6 +77,9 @@ export class OperationalAuthService {
   }
 
   shiftButtonState = computed<ShiftButtonState>(() => {
+    if (this.demoService.isDemoMode()) {
+        return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400' };
+    }
     const shift = this.activeShift();
     if (!shift) {
         return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400 hover:text-yellow-300' };
@@ -64,6 +94,7 @@ export class OperationalAuthService {
   });
 
   async handleShiftAction() {
+      if (this.demoService.isDemoMode()) return;
       const shift = this.activeShift();
       const employee = this.activeEmployee();
       if (!shift || !employee) return;
@@ -154,9 +185,9 @@ export class OperationalAuthService {
   login(employee: Employee) {
     // FIX: Access roles from hrState
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-    // FIX: Ensure roleName is string | undefined
-    const roleName: string | undefined = employee.role_id ? rolesMap.get(employee.role_id) : undefined;
-    const employeeWithRole: (Employee & { role?: string }) = {
+    // FIX: Provide a fallback value for roleName and update type to be non-optional.
+    const roleName: string = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    const employeeWithRole: (Employee & { role: string }) = {
       ...employee,
       role: roleName,
     };
@@ -167,6 +198,7 @@ export class OperationalAuthService {
   }
 
   switchEmployee() {
+    this.demoService.disableDemoMode();
     this.activeEmployee.set(null);
     this.activeShift.set(null);
     sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
@@ -211,6 +243,11 @@ export class OperationalAuthService {
   getDefaultRoute(): string {
     const employee = this.activeEmployee();
     if (!employee || !employee.role_id) return '/employee-selection';
+
+    // In demo mode, always go to dashboard.
+    if (this.demoService.isDemoMode()) {
+        return '/dashboard';
+    }
 
     // Find the first available route for the user based on the master list
     for (const route of ALL_PERMISSION_KEYS) {

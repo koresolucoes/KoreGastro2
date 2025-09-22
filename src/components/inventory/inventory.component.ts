@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -332,15 +333,23 @@ export class InventoryComponent {
                 );
                 
                 predictionsMap.forEach((prediction, ingredientId) => {
-                    const ingredient = ingredientsById.get(ingredientId)!;
-                    const suggestedPurchase = Math.max(0, ingredient.min_stock - ingredient.stock);
-                    prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                    // FIX: Add a check to ensure ingredient exists before accessing its properties, satisfying the compiler.
+                    const ingredient = ingredientsById.get(ingredientId);
+                    if (ingredient) {
+                      const suggestedPurchase = Math.max(0, ingredient.min_stock - ingredient.stock);
+                      prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                    }
                 });
 
             } else {
                 // Step 2: Sales data exists, call AI
                 const historicalDataString = Array.from(usageData.entries())
-                  .map(([id, quantity]) => `${ingredientsById.get(id)?.name}: ${quantity.toFixed(2)} ${ingredientsById.get(id)?.unit} por mês`)
+                  // FIX: Add a check to ensure ingredient exists before accessing its properties.
+                  .map(([id, quantity]) => {
+                    const ingredient = ingredientsById.get(id);
+                    return ingredient ? `${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês` : '';
+                  })
+                  .filter(Boolean)
                   .join(', ');
                 
                 const prompt = `Com base no consumo histórico de ingredientes de um restaurante (${historicalDataString}), preveja a necessidade de cada ingrediente para a PRÓXIMA SEMANA. Retorne um JSON array com "ingredientId", "predictedUsage".`;

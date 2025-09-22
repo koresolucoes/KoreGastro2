@@ -40,7 +40,8 @@ export class MiseEnPlaceComponent {
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
     const allowedRoles = new Set(['Gerente', 'Cozinha', 'Garçom', 'Caixa']);
     return this.hrState.employees().filter(e => {
-        const roleName = e.role_id ? rolesMap.get(e.role_id) : undefined;
+        // FIX: Explicitly cast the result of rolesMap.get to string | undefined.
+        const roleName = e.role_id ? rolesMap.get(e.role_id) as (string | undefined) : undefined;
         return roleName ? allowedRoles.has(roleName) : false;
     });
   });
@@ -90,6 +91,7 @@ export class MiseEnPlaceComponent {
         const prepIngredients = allIngredients
           .filter(i => i.preparation_id === p.id)
           .map(i => {
+            // FIX: Add a guard to ensure ingredientDetails is not undefined.
             const ingredientDetails = ingredientsMap.get(i.ingredient_id);
             const baseUnit = ingredientDetails?.unit || 'un';
             let displayUnit: IngredientUnit = baseUnit;
@@ -105,6 +107,7 @@ export class MiseEnPlaceComponent {
 
             return {
               ...i,
+              // FIX: Add a guard to ensure ingredientDetails is not undefined.
               name: ingredientDetails?.name || '?',
               unit: displayUnit,
               quantity: displayQuantity
@@ -118,6 +121,7 @@ export class MiseEnPlaceComponent {
       .filter(sr => sr.parent_recipe_id === recipe.id)
       .map(sr => ({
         ...sr,
+        // FIX: Add a guard to ensure recipe exists before accessing its properties.
         name: recipesMap.get(sr.child_recipe_id)?.name || '?'
       }));
 
