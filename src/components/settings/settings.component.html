@@ -79,6 +79,37 @@
               <input type="tel" [value]="companyProfileForm().phone || ''" (input)="updateCompanyProfileField('phone', $any($event.target).value)" placeholder="(XX) XXXXX-XXXX" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
             </div>
           </div>
+          <div class="mt-6 pt-6 border-t border-gray-700">
+              <h3 class="text-lg font-semibold text-white mb-4">Personalização do Cardápio Online</h3>
+              <div class="space-y-4">
+                  <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Imagem de Capa (Hero)</label>
+                      <label for="cover-upload" class="cursor-pointer group relative block w-full h-40 rounded-lg border-2 border-dashed border-gray-600 hover:border-blue-500 flex items-center justify-center">
+                          @if(coverPreviewUrl()) {
+                            <img [src]="coverPreviewUrl()" alt="Pré-visualização da capa" class="absolute inset-0 w-full h-full object-cover rounded-lg">
+                          }
+                          <div class="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center rounded-lg">
+                              <span class="text-white font-semibold">Alterar Imagem de Capa</span>
+                              <span class="text-xs text-gray-300">Recomendado: 1280x720 pixels</span>
+                          </div>
+                      </label>
+                      <input id="cover-upload" type="file" class="hidden" (change)="handleCoverFileChange($event)" accept="image/png, image/jpeg, image/webp">
+                  </div>
+                  <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Imagem do Cabeçalho</label>
+                      <label for="header-upload" class="cursor-pointer group relative block w-full h-24 rounded-lg border-2 border-dashed border-gray-600 hover:border-blue-500 flex items-center justify-center">
+                          @if(headerPreviewUrl()) {
+                            <img [src]="headerPreviewUrl()" alt="Pré-visualização do cabeçalho" class="absolute inset-0 w-full h-full object-cover rounded-lg">
+                          }
+                          <div class="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center rounded-lg">
+                               <span class="text-white font-semibold">Alterar Imagem do Cabeçalho</span>
+                               <span class="text-xs text-gray-300">Recomendado: 1280x400 pixels</span>
+                          </div>
+                      </label>
+                       <input id="header-upload" type="file" class="hidden" (change)="handleHeaderFileChange($event)" accept="image/png, image/jpeg, image/webp">
+                  </div>
+              </div>
+          </div>
           <div class="mt-6">
             <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Dados da Empresa</button>
           </div>

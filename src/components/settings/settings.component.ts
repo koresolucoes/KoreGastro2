@@ -75,6 +75,10 @@ export class SettingsComponent {
   companyProfileForm = signal<Partial<CompanyProfile>>({});
   logoFile = signal<File | null>(null);
   logoPreviewUrl = signal<string | null>(null);
+  coverFile = signal<File | null>(null);
+  coverPreviewUrl = signal<string | null>(null);
+  headerFile = signal<File | null>(null);
+  headerPreviewUrl = signal<string | null>(null);
 
   // Search terms
   stationSearchTerm = signal('');
@@ -239,6 +243,8 @@ export class SettingsComponent {
         if (profile) {
             this.companyProfileForm.set({ ...profile });
             this.logoPreviewUrl.set(profile.logo_url);
+            this.coverPreviewUrl.set(profile.menu_cover_url);
+            this.headerPreviewUrl.set(profile.menu_header_url);
         } else {
             this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: '', ifood_merchant_id: null});
         }
@@ -508,7 +514,7 @@ export class SettingsComponent {
   }
 
   // --- Company Profile ---
-  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url'>, value: string) {
+  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url' | 'menu_cover_url' | 'menu_header_url'>, value: string) {
       this.companyProfileForm.update(form => ({ ...form, [field]: value }));
   }
   
@@ -521,6 +527,26 @@ export class SettingsComponent {
       reader.readAsDataURL(file);
     }
   }
+
+  handleCoverFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.coverFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.coverPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  handleHeaderFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.headerFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.headerPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
   
   async saveCompanyProfile() {
       const profileForm = this.companyProfileForm();
@@ -529,11 +555,13 @@ export class SettingsComponent {
           return;
       }
       
-      const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile());
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile(), this.coverFile(), this.headerFile());
 
       if (success) {
           await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
           this.logoFile.set(null);
+          this.coverFile.set(null);
+          this.headerFile.set(null);
       } else {
           await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
       }

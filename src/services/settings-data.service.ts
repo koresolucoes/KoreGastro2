@@ -105,7 +105,7 @@ export class SettingsDataService {
     return { success: !error, error };
   }
   
-  async updateCompanyProfile(profile: Partial<CompanyProfile>, logoFile?: File | null): Promise<{ success: boolean, error: any }> {
+  async updateCompanyProfile(profile: Partial<CompanyProfile>, logoFile?: File | null, coverFile?: File | null, headerFile?: File | null): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -115,10 +115,24 @@ export class SettingsDataService {
       const fileExt = logoFile.name.split('.').pop();
       const path = `public/logos/${userId}-logo.${fileExt}`;
       const { publicUrl, error: uploadError } = await this.uploadAsset(logoFile, path);
-      if (uploadError) {
-        return { success: false, error: uploadError };
-      }
+      if (uploadError) return { success: false, error: uploadError };
       profileData.logo_url = publicUrl;
+    }
+
+    if (coverFile) {
+        const fileExt = coverFile.name.split('.').pop();
+        const path = `public/covers/${userId}-cover.${fileExt}`;
+        const { publicUrl, error: uploadError } = await this.uploadAsset(coverFile, path);
+        if (uploadError) return { success: false, error: uploadError };
+        profileData.menu_cover_url = publicUrl;
+    }
+
+    if (headerFile) {
+        const fileExt = headerFile.name.split('.').pop();
+        const path = `public/headers/${userId}-header.${fileExt}`;
+        const { publicUrl, error: uploadError } = await this.uploadAsset(headerFile, path);
+        if (uploadError) return { success: false, error: uploadError };
+        profileData.menu_header_url = publicUrl;
     }
 
     const { error } = await supabase

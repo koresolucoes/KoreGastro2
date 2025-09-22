@@ -459,6 +459,8 @@ export interface CompanyProfile {
   phone: string | null;
   logo_url: string | null;
   ifood_merchant_id: string | null;
+  menu_cover_url: string | null;
+  menu_header_url: string | null;
   created_at: string;
 }
 

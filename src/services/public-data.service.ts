@@ -87,7 +87,7 @@ export class PublicDataService {
   async getPublicCompanyProfile(userId: string): Promise<Partial<CompanyProfile> | null> {
     const { data, error } = await supabase
       .from('company_profile')
-      .select('company_name, logo_url, address, phone')
+      .select('company_name, logo_url, address, phone, menu_cover_url, menu_header_url')
       .eq('user_id', userId)
       .single();
     if (error) {
