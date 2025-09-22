@@ -14,6 +14,9 @@ import { SettingsStateService } from './settings-state.service';
 import { IfoodStateService } from './ifood-state.service';
 import { SubscriptionStateService } from './subscription-state.service';
 import { DashboardStateService } from './dashboard-state.service';
+import { DemoService } from './demo.service';
+import * as mockData from '../data/mock-data';
+import { ALL_PERMISSION_KEYS } from '../config/permissions';
 
 @Injectable({
   providedIn: 'root',
@@ -32,6 +35,7 @@ export class SupabaseStateService {
   private ifoodState = inject(IfoodStateService);
   private subscriptionState = inject(SubscriptionStateService);
   private dashboardState = inject(DashboardStateService);
+  private demoService = inject(DemoService);
 
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
@@ -41,7 +45,12 @@ export class SupabaseStateService {
   constructor() {
     effect(() => {
         const user = this.currentUser();
-        if (user) {
+        const isDemo = this.demoService.isDemoMode();
+
+        if (isDemo) {
+            this.loadMockData();
+            this.unsubscribeFromChanges(); // Ensure no realtime listeners in demo
+        } else if (user) {
             this.loadInitialData(user.id);
             this.subscribeToChanges(user.id);
         } else {
@@ -55,6 +64,85 @@ export class SupabaseStateService {
       this.pricingService.promotions.set(this.recipeState.promotions());
       this.pricingService.promotionRecipes.set(this.recipeState.promotionRecipes());
     });
+  }
+
+  private loadMockData() {
+    this.isDataLoaded.set(false);
+    try {
+        this.posState.halls.set(mockData.MOCK_HALLS);
+        this.posState.tables.set(mockData.MOCK_TABLES);
+        this.posState.stations.set(mockData.MOCK_STATIONS);
+        this.posState.orders.set(mockData.MOCK_ORDERS);
+        this.posState.customers.set(mockData.MOCK_CUSTOMERS);
+
+        this.inventoryState.ingredients.set(mockData.MOCK_INGREDIENTS);
+        this.inventoryState.ingredientCategories.set(mockData.MOCK_INGREDIENT_CATEGORIES);
+        this.inventoryState.suppliers.set(mockData.MOCK_SUPPLIERS);
+        this.inventoryState.inventoryLots.set([]);
+        this.inventoryState.purchaseOrders.set([]);
+        this.inventoryState.productionPlans.set([]);
+
+        this.recipeState.categories.set(mockData.MOCK_RECIPE_CATEGORIES);
+        this.recipeState.recipes.set(mockData.MOCK_RECIPES);
+        this.recipeState.recipeIngredients.set([]);
+        this.recipeState.recipePreparations.set([]);
+        this.recipeState.recipeSubRecipes.set([]);
+        this.recipeState.promotions.set([]);
+        this.recipeState.promotionRecipes.set([]);
+
+        this.hrState.employees.set(mockData.MOCK_EMPLOYEES);
+        this.hrState.roles.set(mockData.MOCK_ROLES);
+        this.hrState.rolePermissions.set(mockData.MOCK_ROLE_PERMISSIONS);
+        this.hrState.schedules.set([]);
+        this.hrState.leaveRequests.set([]);
+        
+        const today = new Date().toISOString().split('T')[0];
+        const transactionsToday = mockData.MOCK_TRANSACTIONS.filter(t => t.date.startsWith(today));
+        this.dashboardState.dashboardTransactions.set(transactionsToday);
+        this.dashboardState.dashboardCompletedOrders.set([]);
+        this.dashboardState.performanceTransactions.set([]);
+        this.dashboardState.performanceProductionPlans.set([]);
+        this.dashboardState.performanceCompletedOrders.set([]);
+
+        this.cashierState.transactions.set(mockData.MOCK_TRANSACTIONS);
+        this.cashierState.completedOrders.set([]);
+        this.cashierState.cashierClosings.set([]);
+
+        // Mock settings
+        // FIX: Added missing properties to the mock CompanyProfile object to match the interface.
+        this.settingsState.companyProfile.set({ 
+            company_name: 'Restaurante Demonstração', 
+            cnpj: '00.000.000/0001-00', 
+            user_id: 'demo-user', 
+            created_at: new Date().toISOString(),
+            address: null,
+            phone: null,
+            logo_url: null,
+            ifood_merchant_id: null,
+            menu_cover_url: null,
+            menu_header_url: null
+        });
+        this.settingsState.reservations.set([]);
+        this.settingsState.reservationSettings.set(null);
+        this.settingsState.loyaltySettings.set(null);
+        this.settingsState.loyaltyRewards.set([]);
+
+        // Mock subscription as fully active
+        this.subscriptionState.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
+        this.subscriptionState.subscriptions.set([]);
+        this.subscriptionState.plans.set([]);
+
+        // No iFood data in demo
+        this.ifoodState.ifoodWebhookLogs.set([]);
+        this.ifoodState.ifoodMenuSync.set([]);
+
+        console.log("Mock data loaded for demo mode.");
+    } catch (e) {
+        console.error("Failed to load mock data:", e);
+        this.clearAllData();
+    } finally {
+        this.isDataLoaded.set(true);
+    }
   }
 
   public async refetchIfoodLogs() {

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { SettingsStateService } from '../../services/settings-state.service';
+import { DemoService } from '../../services/demo.service';
 
 export interface NavLink {
   name: string;
@@ -33,8 +34,12 @@ export class SidebarComponent {
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
   settingsState = inject(SettingsStateService);
+  // FIX: Injected DemoService to handle demo mode logic
+  demoService = inject(DemoService);
   router = inject(Router);
   
+  // FIX: Added isDemoMode signal for use in computed properties
+  isDemoMode = this.demoService.isDemoMode;
   currentUser = this.authService.currentUser;
   activeEmployee = this.operationalAuthService.activeEmployee;
   shiftButtonState = this.operationalAuthService.shiftButtonState;
@@ -107,7 +112,15 @@ export class SidebarComponent {
     const employee = this.activeEmployee();
     if (!employee) return [];
     
+    // FIX: Add demo mode logic to filter nav items appropriately.
+    const isDemo = this.isDemoMode();
+    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory'];
+
     const filterLink = (link: NavLink): boolean => {
+      if (isDemo) {
+        return demoAllowedPaths.includes(link.path);
+      }
       // Use the central permission service instead of the hardcoded role list
       return this.operationalAuthService.hasPermission(link.path);
     };
@@ -116,6 +129,9 @@ export class SidebarComponent {
 
     for (const item of this.allNavLinks) {
       if (this.isNavGroup(item)) {
+        if (isDemo && !demoAllowedGroups.includes(item.name)) {
+          continue;
+        }
         const visibleChildren = item.children.filter(filterLink);
         if (visibleChildren.length > 0) {
           result.push({ ...item, children: visibleChildren });

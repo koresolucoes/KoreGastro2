@@ -183,10 +183,15 @@ export class OperationalAuthService {
   }
 
   login(employee: Employee) {
-    // FIX: Access roles from hrState
-    const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-    // FIX: Provide a fallback value for roleName and update type to be non-optional.
-    const roleName: string = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    let roleName: string = 'Sem Cargo';
+    if (this.demoService.isDemoMode()) {
+        const rolesMap = new Map(MOCK_ROLES.map(r => [r.id, r.name]));
+        roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    } else {
+        const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+        roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    }
+
     const employeeWithRole: (Employee & { role: string }) = {
       ...employee,
       role: roleName,
