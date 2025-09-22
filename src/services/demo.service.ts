@@ -9,6 +9,11 @@ export class DemoService {
   isDemoMode = signal(false);
 
   constructor() {
+    // This check is synchronous and runs on service initialization.
+    this.checkDemoMode();
+  }
+
+  private checkDemoMode(): void {
     const isDemo = sessionStorage.getItem(DEMO_MODE_KEY) === 'true';
     this.isDemoMode.set(isDemo);
   }
@@ -21,5 +26,13 @@ export class DemoService {
   disableDemoMode(): void {
     sessionStorage.removeItem(DEMO_MODE_KEY);
     this.isDemoMode.set(false);
+  }
+  
+  toggleDemoMode(): void {
+      if (this.isDemoMode()) {
+          this.disableDemoMode();
+      } else {
+          this.enableDemoMode();
+      }
   }
 }

@@ -109,14 +109,13 @@ export class SupabaseStateService {
         this.cashierState.cashierClosings.set([]);
 
         // Mock settings
-        // FIX: Added missing properties to the mock CompanyProfile object to match the interface.
         this.settingsState.companyProfile.set({ 
             company_name: 'Restaurante Demonstração', 
             cnpj: '00.000.000/0001-00', 
             user_id: 'demo-user', 
             created_at: new Date().toISOString(),
-            address: null,
-            phone: null,
+            address: 'Rua da Demonstração, 123',
+            phone: '(11) 99999-8888',
             logo_url: null,
             ifood_merchant_id: null,
             menu_cover_url: null,
