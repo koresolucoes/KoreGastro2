@@ -54,9 +54,9 @@ export class ResetPasswordComponent {
         this.resetState.set('error');
     } else {
         this.resetState.set('success');
-        await this.notificationService.alert('Sua senha foi redefinida com sucesso! Você será redirecionado para a tela de login.', 'Sucesso');
-        await this.authService.signOut(); // Log out from the recovery session
-        this.router.navigate(['/login']);
+        await this.notificationService.alert('Sua senha foi redefinida com sucesso! Você será redirecionado para a seleção de operador.', 'Sucesso');
+        // The user is now authenticated with a valid session, redirect them into the app.
+        this.router.navigate(['/employee-selection']);
     }
   }
 }

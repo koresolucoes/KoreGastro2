@@ -22,10 +22,10 @@ export class AuthService {
 
     // Listen to authentication state changes
     supabase.auth.onAuthStateChange((event, session) => {
-        // The Supabase client automatically handles the session from the URL fragment
-        // when a password recovery link is used. Navigating here would prematurely
-        // clear the URL fragment, invalidating the session before the user can
-        // update their password. The routing is already handled by the redirectTo URL.
+        // This listener handles all authentication state changes. When a user is redirected
+        // from a password recovery link, the Supabase JS client fires a SIGNED_IN event and
+        // creates a temporary session from the URL fragment. This updates the currentUser
+        // signal, allowing the user to update their password while in this temporary state.
         this.currentUser.set(session?.user ?? null);
     });
   }
