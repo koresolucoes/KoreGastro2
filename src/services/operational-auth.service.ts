@@ -27,15 +27,24 @@ export class OperationalAuthService {
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
+  operatorAuthInitialized = signal(false);
 
   constructor() {
-    const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
-    if (storedEmployee) {
-      // FIX: Add type assertion for parsed JSON to match new signal type.
-      const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
-      this.activeEmployee.set(employee);
-      this.loadActiveShift(employee);
+    try {
+        const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
+        if (storedEmployee) {
+          const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
+          this.activeEmployee.set(employee);
+          this.loadActiveShift(employee);
+        }
+    } catch (e) {
+        console.error("Failed to initialize operator auth from sessionStorage", e);
+        sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+        this.activeEmployee.set(null);
+    } finally {
+        this.operatorAuthInitialized.set(true);
     }
+
 
     effect(() => {
       if (this.demoService.isDemoMode() && !this.activeEmployee()) {

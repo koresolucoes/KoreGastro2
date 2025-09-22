@@ -33,9 +33,10 @@ import { MyProfileComponent } from './components/my-profile/my-profile.component
 import { SuppliersComponent } from './components/suppliers/suppliers.component';
 import { ResetPasswordComponent } from './components/auth/reset-password.component';
 import { DemoAccessComponent } from './components/demo/demo-access.component';
+import { loginGuard } from './guards/login.guard';
 
 export const APP_ROUTES: Routes = [
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'demo', component: DemoAccessComponent },
   { path: 'employee-selection', component: EmployeeSelectionComponent, canActivate: [authGuard] },

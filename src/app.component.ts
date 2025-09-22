@@ -43,6 +43,15 @@ export class AppComponent {
     { initialValue: this.router.url.startsWith('/tutorials') }
   );
 
+  isAuthLoading = computed(() => {
+    // In demo mode, loading is instantly finished as it's synchronous.
+    if (this.isDemoMode()) {
+      return false;
+    }
+    // Otherwise, wait for both auth services to initialize.
+    return !this.authService.authInitialized() || !this.operationalAuthService.operatorAuthInitialized();
+  });
+
   isSubscriptionActiveOrTutorials = computed(() => {
     return this.hasActiveSubscription() || this.isTutorialsRoute();
   });

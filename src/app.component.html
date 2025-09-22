@@ -1,66 +1,72 @@
-@if (isFullLayoutVisible()) {
-  <div class="flex h-screen bg-gray-900 text-gray-100">
-    <!-- Sidebar for Desktop, hidden on mobile -->
-    <div class="hidden md:flex flex-shrink-0">
-      <app-sidebar></app-sidebar>
-    </div>
-
-    <main class="flex-1 flex flex-col overflow-hidden">
-      @if (isDemoMode()) {
-        <div class="bg-blue-600 text-white text-center py-2 font-semibold no-print text-sm z-20">
-          Modo de Demonstração - Nenhuma alteração será salva.
-        </div>
-      }
-      <!-- Add padding-bottom on mobile to make space for the nav bar -->
-      <div class="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-y-auto">
-        @if (isTrialing() && trialDaysRemaining() !== null) {
-          <div class="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-3 rounded-lg relative mb-6" role="alert">
-            <strong class="font-bold">Período de Teste!</strong>
-            @if(trialDaysRemaining()! > 0) {
-              <span class="block sm:inline ml-2">Você tem {{ trialDaysRemaining() }} {{ trialDaysRemaining() === 1 ? 'dia restante' : 'dias restantes' }} para testar o ChefOS.</span>
-            } @else {
-              <span class="block sm:inline ml-2">Seu período de teste acaba hoje.</span>
-            }
-            <a href="https://chefos.koresolucoes.com.br" target="_blank" class="font-bold underline ml-2 hover:text-white">Assine um plano</a> para não perder acesso.
-          </div>
-        }
-
-        @if (!isDataLoaded()) {
-          <div class="flex items-center justify-center h-full">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-          </div>
-        } @else {
-          @if (isSubscriptionActiveOrTutorials()) {
-            <router-outlet></router-outlet>
-          } @else {
-            <!-- Inactive Subscription View -->
-            <div class="h-full flex items-center justify-center p-8 text-center">
-              <div class="bg-gray-800 p-10 rounded-lg shadow-2xl border border-red-500/50 max-w-lg">
-                <h1 class="text-3xl font-bold text-red-400 mb-4">Plano Inativo</h1>
-                <p class="text-gray-300 mb-6">
-                  Sua assinatura não está ativa. Para continuar usando o ChefOS, por favor, regularize sua situação.
-                </p>
-                <p class="text-gray-400 mb-2">
-                  Você ainda pode acessar os <a routerLink="/tutorials" class="font-semibold text-blue-400 hover:underline">tutoriais</a> para aprender mais sobre o sistema.
-                </p>
-                <p class="text-gray-400">
-                  Entre em contato com nosso suporte através do e-mail:
-                  <a href="mailto:suporte@koresolucoes.com.br" class="font-semibold text-blue-400 hover:underline">suporte@koresolucoes.com.br</a>
-                </p>
-              </div>
-            </div>
-          }
-        }
-      </div>
-    </main>
-
-    <!-- Bottom Nav for Mobile, hidden on desktop -->
-    <div class="md:hidden">
-      <app-bottom-nav></app-bottom-nav>
-    </div>
+@if (isAuthLoading()) {
+  <div class="flex items-center justify-center h-screen bg-gray-900">
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
   </div>
 } @else {
-  <router-outlet></router-outlet>
+  @if (isFullLayoutVisible()) {
+    <div class="flex h-screen bg-gray-900 text-gray-100">
+      <!-- Sidebar for Desktop, hidden on mobile -->
+      <div class="hidden md:flex flex-shrink-0">
+        <app-sidebar></app-sidebar>
+      </div>
+  
+      <main class="flex-1 flex flex-col overflow-hidden">
+        @if (isDemoMode()) {
+          <div class="bg-blue-600 text-white text-center py-2 font-semibold no-print text-sm z-20">
+            Modo de Demonstração - Nenhuma alteração será salva.
+          </div>
+        }
+        <!-- Add padding-bottom on mobile to make space for the nav bar -->
+        <div class="flex-1 p-4 pb-20 md:p-6 lg:p-8 overflow-y-auto">
+          @if (isTrialing() && trialDaysRemaining() !== null) {
+            <div class="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-3 rounded-lg relative mb-6" role="alert">
+              <strong class="font-bold">Período de Teste!</strong>
+              @if(trialDaysRemaining()! > 0) {
+                <span class="block sm:inline ml-2">Você tem {{ trialDaysRemaining() }} {{ trialDaysRemaining() === 1 ? 'dia restante' : 'dias restantes' }} para testar o ChefOS.</span>
+              } @else {
+                <span class="block sm:inline ml-2">Seu período de teste acaba hoje.</span>
+              }
+              <a href="https://chefos.koresolucoes.com.br" target="_blank" class="font-bold underline ml-2 hover:text-white">Assine um plano</a> para não perder acesso.
+            </div>
+          }
+  
+          @if (!isDataLoaded()) {
+            <div class="flex items-center justify-center h-full">
+              <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+            </div>
+          } @else {
+            @if (isSubscriptionActiveOrTutorials()) {
+              <router-outlet></router-outlet>
+            } @else {
+              <!-- Inactive Subscription View -->
+              <div class="h-full flex items-center justify-center p-8 text-center">
+                <div class="bg-gray-800 p-10 rounded-lg shadow-2xl border border-red-500/50 max-w-lg">
+                  <h1 class="text-3xl font-bold text-red-400 mb-4">Plano Inativo</h1>
+                  <p class="text-gray-300 mb-6">
+                    Sua assinatura não está ativa. Para continuar usando o ChefOS, por favor, regularize sua situação.
+                  </p>
+                  <p class="text-gray-400 mb-2">
+                    Você ainda pode acessar os <a routerLink="/tutorials" class="font-semibold text-blue-400 hover:underline">tutoriais</a> para aprender mais sobre o sistema.
+                  </p>
+                  <p class="text-gray-400">
+                    Entre em contato com nosso suporte através do e-mail:
+                    <a href="mailto:suporte@koresolucoes.com.br" class="font-semibold text-blue-400 hover:underline">suporte@koresolucoes.com.br</a>
+                  </p>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </main>
+  
+      <!-- Bottom Nav for Mobile, hidden on desktop -->
+      <div class="md:hidden">
+        <app-bottom-nav></app-bottom-nav>
+      </div>
+    </div>
+  } @else {
+    <router-outlet></router-outlet>
+  }
 }
 <app-notification-modal></app-notification-modal>
 <app-toast-container></app-toast-container>
