@@ -5,7 +5,7 @@ import { OperationalAuthService } from '../services/operational-auth.service';
 import { Observable, map, of, combineLatest } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { DemoService } from '../services/demo.service';
-import { filter, take, timeout, catchError, switchMap } from 'rxjs/operators';
+import { filter, take, timeout, catchError } from 'rxjs/operators';
 import { SupabaseStateService } from '../services/supabase-state.service';
 
 export const roleGuard: CanActivateFn = (
@@ -38,38 +38,34 @@ export const roleGuard: CanActivateFn = (
     );
   }
 
-  // Wait for auth to be initialized first
-  return toObservable(authService.authInitialized).pipe(
-    filter(initialized => initialized),
-    take(1),
-    switchMap(() => {
+  // Wait for auth services to be initialized AND for Supabase data to be loaded.
+  // This ensures all permissions, roles, and subscriptions are available before checking access.
+  return combineLatest([
+    toObservable(authService.authInitialized).pipe(filter(init => init), take(1)),
+    toObservable(operationalAuthService.operatorAuthInitialized).pipe(filter(init => init), take(1)),
+    toObservable(supabaseStateService.isDataLoaded).pipe(filter(loaded => loaded), take(1))
+  ]).pipe(
+    map(() => {
       const user = authService.currentUser();
       if (!user) {
-        // If no user, redirect to login immediately.
-        return of(router.createUrlTree(['/login']));
+        // Not logged into the system, redirect to main login
+        return router.createUrlTree(['/login']);
       }
 
-      // If user exists, wait for all their data/permissions to load.
-      return toObservable(supabaseStateService.isDataLoaded).pipe(
-        filter(loaded => loaded),
-        take(1),
-        map(() => {
-          const activeEmployee = operationalAuthService.activeEmployee();
-          if (!activeEmployee) {
-            // Logged into system, but no operator selected
-            return router.createUrlTree(['/employee-selection']);
-          }
+      const activeEmployee = operationalAuthService.activeEmployee();
+      if (!activeEmployee) {
+        // Logged into system, but no operator selected
+        return router.createUrlTree(['/employee-selection']);
+      }
 
-          if (operationalAuthService.hasPermission(state.url)) {
-            // Operator is selected and has permission
-            return true;
-          }
+      if (operationalAuthService.hasPermission(state.url)) {
+        // Operator is selected and has permission
+        return true;
+      }
 
-          // Operator is selected but doesn't have permission, redirect to their default page
-          const defaultRoute = operationalAuthService.getDefaultRoute();
-          return router.createUrlTree([defaultRoute]);
-        })
-      );
+      // Operator is selected but doesn't have permission, redirect to their default page
+      const defaultRoute = operationalAuthService.getDefaultRoute();
+      return router.createUrlTree([defaultRoute]);
     })
   );
 };
