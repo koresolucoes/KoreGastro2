@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, u
 import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
 
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService, DailySalesCogs, PeakHoursData } from '../../services/cashier-data.service';
@@ -359,5 +358,3 @@ export class DashboardComponent implements OnInit {
       .filter(r => r.status === 'Aprovada' && r.start_date <= todayStr && r.end_date >= todayStr);
   });
 }
-
-
