@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked, OnInit } from '@angular/core';
+import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
@@ -358,3 +359,5 @@ export class DashboardComponent implements OnInit {
       .filter(r => r.status === 'Aprovada' && r.start_date <= todayStr && r.end_date >= todayStr);
   });
 }
+
+

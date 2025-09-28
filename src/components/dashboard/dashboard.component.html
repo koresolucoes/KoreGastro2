@@ -1,144 +1,173 @@
 
-<div class="container mx-auto">
-  @if (isLoading()) {
-    <div class="flex items-center justify-center h-[calc(100vh-10rem)]">
-      <div class="flex flex-col items-center gap-4">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-        <p class="text-gray-400">Carregando dados...</p>
-      </div>
+<div class="p-4">
+  <!-- CabeÁalho -->
+  <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Painel de Controle</h1>
+      <p class="text-gray-600">Bem-vindo de volta! Aqui est· o resumo do seu negÛcio hoje.</p>
     </div>
-  } @else {
-    <h1 class="text-3xl font-bold text-white mb-6">Dashboard</h1>
-    
-    <!-- KPIs -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-      @for (stat of stats(); track stat.label) {
-        <div class="bg-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-start space-y-2 sm:space-y-0 sm:space-x-3">
-          <div class="bg-blue-600/20 text-blue-400 p-2 rounded-lg flex-shrink-0">
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="stat.icon" />
+    <div class="mt-4 md:mt-0">
+      <button 
+        (click)="toggleEditMode()" 
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+        [ngClass]="{
+          'bg-blue-100 text-blue-700 hover:bg-blue-200': !editMode(),
+          'bg-green-100 text-green-700 hover:bg-green-200': editMode()
+        }"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.793.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+        </svg>
+        {{ editMode() ? 'Salvar Layout' : 'Personalizar Dashboard' }}
+      </button>
+    </div>
+  </div>
+  <!-- KPIs -->
+  <div 
+    cdkDropList 
+    (cdkDropListDropped)="drop($event)" 
+    class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+  >
+    @for (stat of stats(); track stat.label) {
+      <div 
+        cdkDrag 
+        [cdkDragDisabled]="!editMode()"
+        class="group relative overflow-hidden rounded-lg transition-all hover:shadow-md"
+        [class.cursor-grab]="!editMode()"
+        [class.cursor-move]="editMode()"
+        [class.border-2]="editMode()"
+        [class.border-dashed]="editMode()"
+        [class.border-blue-400]="editMode()"
+        [routerLink]="getRouteForStat(stat.label)"
+        [class.cursor-pointer]="!editMode()"
+      >
+        @if (editMode()) {
+          <div class="absolute right-2 top-2 z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </div>
-          <div class="min-w-0">
-            <p class="text-gray-400 text-xs font-medium">{{ stat.label }}</p>
-            <p class="text-2xl font-bold text-white break-words">{{ stat.value }}</p>
+        }
+        
+        <div 
+          class="relative h-full rounded-lg p-4 text-white"
+          [ngClass]="getBgColor(stat.label)"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium opacity-90">{{ stat.label }}</p>
+              <p class="mt-1 text-2xl font-bold">{{ stat.value }}</p>
+              
+              @if (hasComparison(stat.label)) {
+                <div class="mt-2 flex items-center text-xs">
+                  @if (isPositiveComparison(stat.label)) {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-300" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M12 7a1 1 0 01.707.293l4 4a1 1 0 01-1.414 1.414L12 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4A1 1 0 0112 7z" clip-rule="evenodd" />
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M12 13a1 1 0 01-.707-.293l-4-4a1 1 0 011.414-1.414L12 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4A1 1 0 0112 13z" clip-rule="evenodd" />
+                    </svg>
+                  }
+                  <span class="ml-1">{{ getComparisonText(stat.label) }}</span>
+                </div>
+              }
+            </div>
+            
+            <div class="rounded-full bg-white bg-opacity-20 p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="stat.icon" />
+              </svg>
+            </div>
           </div>
+        </div>
+      </div>
+    }
+  </div>
+  <!-- Gr·ficos -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-lg bg-white p-4 shadow">
+      <h2 class="mb-4 text-lg font-semibold text-gray-800">Vendas (⁄ltimos {{ chartPeriod() }} dias)</h2>
+      @if (isChartLoading()) {
+        <div class="flex h-64 items-center justify-center">
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+      } @else {
+        <div class="h-64">
+          <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
         </div>
       }
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-      <div class="lg:col-span-3 bg-gray-800 rounded-lg p-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h2 class="text-xl font-semibold text-white">Vendas vs. CMV</h2>
-            <p class="text-sm text-gray-400">An√°lise de faturamento e custo dos produtos vendidos.</p>
-          </div>
-          <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
-            <button (click)="setChartPeriod(7)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 7">7d</button>
-            <button (click)="setChartPeriod(30)" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="chartPeriod() === 30">30d</button>
-          </div>
+    <div class="rounded-lg bg-white p-4 shadow">
+      <h2 class="mb-4 text-lg font-semibold text-gray-800">Vendas por Hora (Hoje)</h2>
+      @if (isHourlyChartLoading()) {
+        <div class="flex h-64 items-center justify-center">
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
-        <div class="h-80">
-          @if (isChartLoading()) {
-            <div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
-          } @else {
-            <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
-          }
+      } @else {
+        <div class="h-64">
+          <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
+        </div>
+      }
+    </div>
+  </div>
+  <!-- SeÁ„o de Alerta -->
+  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Itens com Estoque Baixo -->
+    <div class="overflow-hidden rounded-lg bg-yellow-50 shadow">
+      <div class="border-b border-yellow-200 bg-yellow-100 px-4 py-3">
+        <div class="flex items-center">
+          <svg class="mr-2 h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 class="text-sm font-medium text-yellow-800">Estoque Baixo</h3>
         </div>
       </div>
-      <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6">
-        <h2 class="text-xl font-semibold text-white">Vendas por Hora (Hoje)</h2>
-        <p class="text-sm text-gray-400 mb-4">Distribui√ß√£o de vendas para identificar hor√°rios de pico.</p>
-        <div class="h-80">
-          @if (isHourlyChartLoading()) {
-            <div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
-          } @else {
-            <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
-          }
-        </div>
+      <div class="p-4">
+        @if (lowStockItemsList().length > 0) {
+          <ul class="space-y-2">
+            @for (item of lowStockItemsList(); track item.id) {
+              <li class="flex items-center justify-between rounded-md bg-yellow-100 p-2">
+                <span class="text-sm font-medium text-yellow-800">{{ item.name }}</span>
+                <span class="rounded-full bg-yellow-200 px-2 py-1 text-xs font-medium text-yellow-800">
+                  {{ item.stock }} {{ item.unit }}
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-yellow-700">Nenhum item com estoque baixo.</p>
+        }
       </div>
     </div>
 
-    <!-- Operational Lists -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
-        <h2 class="text-xl font-semibold text-white mb-4">Pr√≥ximas Reservas (Hoje)</h2>
-        <div class="flex-1 overflow-y-auto pr-2">
-          @if (upcomingReservations().length > 0) {
-            <ul class="space-y-4">
-              @for (res of upcomingReservations(); track res.id) {
-                <li class="flex justify-between items-center text-sm">
-                  <div>
-                    <p class="font-medium text-white">{{ res.customer_name }}</p>
-                    <p class="text-xs text-gray-400">{{ res.party_size }} pessoa(s)</p>
-                  </div>
-                  <span class="font-semibold text-blue-400 font-mono text-base">{{ res.reservation_time | date:'HH:mm' }}</span>
-                </li>
-              }
-            </ul>
-          } @else {
-            <div class="flex items-center justify-center h-full text-center text-gray-500">
-              <p>Nenhuma reserva futura para hoje.</p>
-            </div>
-          }
+    <!-- Funcion·rios de FÈrias/Folga -->
+    <div class="overflow-hidden rounded-lg bg-red-50 shadow">
+      <div class="border-b border-red-200 bg-red-100 px-4 py-3">
+        <div class="flex items-center">
+          <svg class="mr-2 h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="text-sm font-medium text-red-800">Funcion·rios Ausentes (Hoje)</h3>
         </div>
       </div>
-      <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
-        <h2 class="text-xl font-semibold text-white mb-4">Top 3 Vendedores (Hoje)</h2>
-        <div class="flex-1 overflow-y-auto pr-2">
-          @if (topEmployeesToday().length > 0) {
-            <ul class="space-y-4">
-              @for (emp of topEmployeesToday(); track emp.name) {
-                <li class="flex justify-between items-center">
-                  <p class="font-medium text-white">{{ emp.name }}</p>
-                  <span class="font-semibold text-green-400">{{ emp.sales | currency:'BRL' }}</span>
-                </li>
-              }
-            </ul>
-          } @else {
-            <div class="flex items-center justify-center h-full text-center text-gray-500">
-              <p>Nenhuma venda registrada hoje.</p>
-            </div>
-          }
-        </div>
-      </div>
-       <div class="bg-gray-800 rounded-lg p-6 flex flex-col">
-        <h2 class="text-xl font-semibold text-white mb-4">Alertas e Informa√ß√µes</h2>
-        <div class="flex-1 space-y-4">
-          <div>
-            <h3 class="font-semibold text-yellow-400 text-sm mb-2">Estoque Baixo</h3>
-             @if (lowStockItemsList().length > 0) {
-              <ul class="space-y-2 text-sm">
-                @for(item of lowStockItemsList(); track item.id) {
-                  <li class="flex justify-between items-center">
-                    <span class="text-gray-300">{{item.name}}</span>
-                    <span class="font-mono text-yellow-300">{{item.stock}} {{item.unit}}</span>
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="text-sm text-gray-500">Nenhum item com estoque baixo.</p>
+      <div class="p-4">
+        @if (employeesOnLeaveToday().length > 0) {
+          <ul class="space-y-2">
+            @for (req of employeesOnLeaveToday(); track req.id) {
+              <li class="flex items-center justify-between rounded-md bg-red-100 p-2">
+                <span class="text-sm font-medium text-red-800">{{ req.employees?.name }}</span>
+                <span class="rounded-full bg-red-200 px-2 py-1 text-xs font-medium text-red-800">
+                  {{ req.request_type }}
+                </span>
+              </li>
             }
-          </div>
-           <div class="pt-4 border-t border-gray-700">
-            <h3 class="font-semibold text-red-400 text-sm mb-2">Funcion√°rios Ausentes (Hoje)</h3>
-             @if (employeesOnLeaveToday().length > 0) {
-              <ul class="space-y-2 text-sm">
-                 @for(req of employeesOnLeaveToday(); track req.id) {
-                  <li class="flex justify-between items-center">
-                    <span class="text-gray-300">{{ req.employees?.name }}</span>
-                    <span class="text-xs font-semibold px-2 py-1 bg-red-900/50 text-red-300 rounded-full">{{req.request_type}}</span>
-                  </li>
-                }
-              </ul>
-            } @else {
-              <p class="text-sm text-gray-500">Nenhum funcion√°rio ausente hoje.</p>
-            }
-          </div>
-        </div>
+          </ul>
+        } @else {
+          <p class="text-sm text-red-700">Nenhum funcion·rio de folga ou fÈrias hoje.</p>
+        }
       </div>
     </div>
-  }
+  </div>
 </div>
