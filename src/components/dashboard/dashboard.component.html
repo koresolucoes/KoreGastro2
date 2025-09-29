@@ -86,32 +86,36 @@
   </div>
   <!-- Gráficos -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <div class="rounded-lg bg-gray-50 p-4 shadow">
-      <h2 class="mb-4 text-lg font-semibold text-black-800">Vendas (últimos {{ chartPeriod() }} dias)</h2>
+    <div class="rounded-lg bg-blue-900 p-4 shadow">
+      <h2 class="mb-4 text-lg font-semibold text-white">
+        Vendas (últimos {{ chartPeriod() }} dias)
+      </h2>
       @if (isChartLoading()) {
         <div class="flex h-64 items-center justify-center">
-          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
         </div>
       } @else {
-        <div class="h-64">
+        <div class="h-64 text-white">
           <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
         </div>
       }
     </div>
-
-    <div class="rounded-lg bg-gray-50 p-4 shadow">
-      <h2 class="mb-4 text-lg font-semibold text-black-800">Vendas por Hora (Hoje)</h2>
+  
+    <div class="rounded-lg bg-blue-900 p-4 shadow">
+      <h2 class="mb-4 text-lg font-semibold text-white">
+        Vendas por Hora (Hoje)
+      </h2>
       @if (isHourlyChartLoading()) {
         <div class="flex h-64 items-center justify-center">
-          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
         </div>
       } @else {
-        <div class="h-64">
+        <div class="h-64 text-white">
           <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
         </div>
       }
     </div>
-  </div>
+  </div>  
   <!-- Seção de Alerta -->
   <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Itens com Estoque Baixo -->
