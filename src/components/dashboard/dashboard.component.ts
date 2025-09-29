@@ -76,10 +76,11 @@ export class DashboardComponent implements OnInit {
   hourlySalesData = signal<PeakHoursData[]>([]);
 
   // NOVO: Signal unificado para todos os widgets do dashboard
-  dashboardWidgets = signal<DashboardWidget[]>(this.buildWidgets());
+  dashboardWidgets = signal<DashboardWidget[]>([]);
 
   constructor() {
     // NOVO: Efeito para manter os valores dos widgets atualizados de forma reativa
+    this.dashboardWidgets.set(this.buildWidgets());
     effect(() => {
       // Este effect será re-executado sempre que um dos signals (totalSales, etc.) mudar
       const updatedData = this.buildWidgets();
