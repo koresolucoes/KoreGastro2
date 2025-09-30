@@ -14,10 +14,9 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 
-// NOVO: Interfaces para um sistema de widgets unificado
 interface KpiWidget {
   type: 'kpi';
-  id: string; // Usaremos o label como ID único para KPIs
+  id: string;
   label: string;
   value: string | number;
   icon: string;
@@ -26,13 +25,11 @@ interface KpiWidget {
 
 interface ChartWidget {
   type: 'chart_sales' | 'chart_hourly';
-  id: string; // ID único para os gráficos
+  id: string;
   title: string;
 }
 
-// NOVO: Um tipo união para qualquer widget do dashboard
 type DashboardWidget = KpiWidget | ChartWidget;
-
 
 @Component({
   selector: 'app-dashboard',
@@ -44,7 +41,7 @@ type DashboardWidget = KpiWidget | ChartWidget;
     CdkDropList,
     CdkDrag,
     DatePipe,
-    RouterLink // Adicionado para [routerLink]
+    RouterLink
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,26 +72,29 @@ export class DashboardComponent implements OnInit {
   isHourlyChartLoading = signal(true);
   hourlySalesData = signal<PeakHoursData[]>([]);
 
-  // NOVO: Signal unificado para todos os widgets do dashboard
-  dashboardWidgets = signal<DashboardWidget[]>([]);
-
+  // --- NEW STATE MANAGEMENT ---
+  // 1. Signal for the order of widget IDs. This is the source of truth for layout.
+  private widgetOrder = signal<string[]>([]);
+  
+  // 2. Computed signal for widget data. It rebuilds reactively when stats change.
+  private allWidgetsDataMap = computed(() => {
+    const widgets = this.buildWidgets();
+    return new Map(widgets.map(w => [w.id, w]));
+  });
+  
+  // 3. Final computed signal for the template, combining order and data.
+  dashboardWidgets = computed(() => {
+    const order = this.widgetOrder();
+    const dataMap = this.allWidgetsDataMap();
+    if (order.length === 0) return []; // Return empty if order isn't set yet
+    return order
+      .map(id => dataMap.get(id))
+      .filter((w): w is DashboardWidget => w !== undefined);
+  });
+  
   constructor() {
-    // NOVO: Efeito para manter os valores dos widgets atualizados de forma reativa
-    this.dashboardWidgets.set(this.buildWidgets());
+    // Effect for loading chart data when period changes. Decoupled from widget logic.
     effect(() => {
-      // Este effect será re-executado sempre que um dos signals (totalSales, etc.) mudar
-      const updatedData = this.buildWidgets();
-      
-      // Mapeia os novos dados para a ordem atual para não resetar o layout do usuário
-      this.dashboardWidgets.update(currentWidgets => {
-        const dataMap = new Map(updatedData.map(d => [d.id, d]));
-        return currentWidgets.map(widget => {
-          const newWidgetData = dataMap.get(widget.id);
-          return newWidgetData ? { ...widget, ...newWidgetData } : widget;
-        });
-      });
-
-      // Efeito para carregar dados do gráfico quando o período muda
       const period = this.chartPeriod();
       untracked(() => this.loadChartData(period));
     });
@@ -102,10 +102,10 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadHourlySalesData();
+    // Initialize the order of widgets from localStorage or defaults.
     this.loadLayout();
   }
 
-  // NOVO: Função para construir o array de widgets. Centraliza a criação de dados.
   private buildWidgets(): DashboardWidget[] {
     return [
       { 
@@ -205,53 +205,44 @@ export class DashboardComponent implements OnInit {
     }
   }
   
-  // MODIFICADO: Função drop para manipular a lista unificada de widgets
   drop(event: CdkDragDrop<DashboardWidget[]>) {
     if (event.previousIndex !== event.currentIndex) {
-      const widgets = [...this.dashboardWidgets()];
-      moveItemInArray(widgets, event.previousIndex, event.currentIndex);
-      this.dashboardWidgets.set(widgets);
+      this.widgetOrder.update(currentOrder => {
+        const newOrder = [...currentOrder];
+        moveItemInArray(newOrder, event.previousIndex, event.currentIndex);
+        return newOrder;
+      });
     }
   }
   
-  // MODIFICADO: Salva o layout com base nos IDs dos widgets
   private saveLayout() {
-    const layout = this.dashboardWidgets().map(widget => widget.id);
-    localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    localStorage.setItem('dashboardLayout', JSON.stringify(this.widgetOrder()));
   }
   
-  // MODIFICADO: Carrega o layout e reordena os widgets
   private loadLayout() {
+    const defaultOrder = this.buildWidgets().map(w => w.id);
     const savedLayout = localStorage.getItem('dashboardLayout');
+    
     if (savedLayout) {
       try {
-        const layoutOrder: string[] = JSON.parse(savedLayout);
-        const currentWidgets = [...this.dashboardWidgets()];
-        const widgetMap = new Map(currentWidgets.map(widget => [widget.id, widget]));
-        
-        const reorderedWidgets = layoutOrder
-          .map(id => widgetMap.get(id))
-          .filter((widget): widget is DashboardWidget => widget !== undefined);
-        
-        const newWidgets = currentWidgets.filter(widget => !layoutOrder.includes(widget.id));
-        
-        this.dashboardWidgets.set([...reorderedWidgets, ...newWidgets]);
+        const savedOrder: string[] = JSON.parse(savedLayout);
+        const savedOrderSet = new Set(savedOrder);
+        const newWidgetIds = defaultOrder.filter(id => !savedOrderSet.has(id));
+        this.widgetOrder.set([...savedOrder, ...newWidgetIds]);
       } catch (e) {
-        console.error('Failed to load dashboard layout', e);
+        console.error('Failed to parse dashboard layout, reverting to default.', e);
+        this.widgetOrder.set(defaultOrder);
       }
+    } else {
+      this.widgetOrder.set(defaultOrder);
     }
   }
 
-  // MODIFICADO: Função para obter a rota a partir do label do KPI
   getRouteForStat(label: string): string {
     const widget = this.dashboardWidgets().find(w => w.type === 'kpi' && w.label === label) as KpiWidget | undefined;
     return widget ? widget.route : '/dashboard';
   }
 
-  // REMOVIDO: Funções `updateStats` e `getStatValue` agora são desnecessárias
-  // O `effect` no construtor cuida das atualizações de forma reativa e mais eficiente.
-
-  // Funções de comparação (mantidas como exemplo)
   hasComparison(label: string): boolean {
     return ['Vendas Totais (Hoje)', 'Lucro Bruto (Hoje)', 'Ticket Médio (Hoje)', 'Pedidos Totais (Hoje)'].includes(label);
   }
@@ -265,7 +256,6 @@ export class DashboardComponent implements OnInit {
     return `${value}% em relação ao período anterior`; // Lógica de exemplo
   }
 
-  // Todos os computed signals permanecem os mesmos
   totalSales = computed(() => this.dashboardState.dashboardTransactions().filter(t => t.type === 'Receita').reduce((sum, item) => sum + item.amount, 0));
   
   cogsToday = computed(() => {
@@ -300,6 +290,4 @@ export class DashboardComponent implements OnInit {
     const todayStr = today.toISOString().split('T')[0];
     return this.hrState.leaveRequests().filter(r => r.status === 'Aprovada' && r.start_date <= todayStr && r.end_date >= todayStr);
   });
-
-  // REMOVIDO: A declaração inicial do `stats = signal<KpiStat[]>` foi apagada.
 }
