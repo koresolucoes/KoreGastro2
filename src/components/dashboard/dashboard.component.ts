@@ -205,7 +205,7 @@ export class DashboardComponent implements OnInit {
     }
   }
   
-  drop(event: CdkDragDrop<DashboardWidget[]>) {
+  drop(event: CdkDragDrop<string[]>) {
     if (event.previousIndex !== event.currentIndex) {
       this.widgetOrder.update(currentOrder => {
         const newOrder = [...currentOrder];
@@ -223,12 +223,17 @@ export class DashboardComponent implements OnInit {
     const defaultOrder = this.buildWidgets().map(w => w.id);
     const savedLayout = localStorage.getItem('dashboardLayout');
     
-    if (savedLayout) {
+    if (savedLayout && savedLayout !== 'undefined') {
       try {
         const savedOrder: string[] = JSON.parse(savedLayout);
-        const savedOrderSet = new Set(savedOrder);
-        const newWidgetIds = defaultOrder.filter(id => !savedOrderSet.has(id));
-        this.widgetOrder.set([...savedOrder, ...newWidgetIds]);
+        if (Array.isArray(savedOrder)) {
+          const savedOrderSet = new Set(savedOrder);
+          const newWidgetIds = defaultOrder.filter(id => !savedOrderSet.has(id));
+          this.widgetOrder.set([...savedOrder, ...newWidgetIds]);
+        } else {
+          // Handle case where saved data is not an array
+          this.widgetOrder.set(defaultOrder);
+        }
       } catch (e) {
         console.error('Failed to parse dashboard layout, reverting to default.', e);
         this.widgetOrder.set(defaultOrder);
