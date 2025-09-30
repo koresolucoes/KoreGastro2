@@ -1,11 +1,11 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { DemoService } from '../services/demo.service';
+import { AuthService } from './../services/auth.service';
+import { DemoService } from './../services/demo.service';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { filter, map, take } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
-import { OperationalAuthService } from '../services/operational-auth.service';
+import { OperationalAuthService } from './../services/operational-auth.service';
 
 export const loginGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   const authService = inject(AuthService);

@@ -1,10 +1,10 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { OperationalAuthService } from '../services/operational-auth.service';
+import { AuthService } from './../services/auth.service';
+import { OperationalAuthService } from './../services/operational-auth.service';
 import { Observable, map, of, combineLatest } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { DemoService } from '../services/demo.service';
+import { DemoService } from './../services/demo.service';
 import { filter, take, timeout, catchError } from 'rxjs/operators';
 
 export const roleGuard: CanActivateFn = (
