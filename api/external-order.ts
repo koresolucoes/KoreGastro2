@@ -132,6 +132,31 @@ export default async function handler(request: VercelRequest, response: VercelRe
           }
       }
 
+      // NEW LOGIC: Handle table existence and default to QuickSale if not found.
+      let effectiveTableNumber = body.tableNumber;
+      let effectiveOrderType: OrderType = body.tableNumber > 0 ? 'Dine-in' : 'QuickSale';
+      let tableIdToUpdate: string | null = null;
+
+      if (body.tableNumber > 0) {
+        const { data: table, error: tableError } = await supabase
+          .from('tables')
+          .select('id')
+          .eq('user_id', restaurantId)
+          .eq('number', body.tableNumber)
+          .maybeSingle();
+        
+        if (tableError) throw new Error(`Error checking for table: ${tableError.message}`);
+
+        if (!table) {
+          // Table not found, create a QuickSale order instead.
+          effectiveTableNumber = 0;
+          effectiveOrderType = 'QuickSale';
+        } else {
+          // Table found, we will update its status later.
+          tableIdToUpdate = table.id;
+        }
+      }
+
       const externalCodes = items.map(i => i.externalCode);
       const { data: recipes, error: recipeError } = await supabase
           .from('recipes')
@@ -150,8 +175,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
           .from('orders')
           .insert({
               user_id: restaurantId,
-              table_number: body.tableNumber,
-              order_type: body.tableNumber > 0 ? 'Dine-in' : 'QuickSale',
+              table_number: effectiveTableNumber, // Use effective number
+              order_type: effectiveOrderType,     // Use effective type
               status: 'OPEN',
               customer_id: customerId,
           })
@@ -220,6 +245,20 @@ export default async function handler(request: VercelRequest, response: VercelRe
       if (itemsError) {
           await supabase.from('orders').delete().eq('id', newOrder.id);
           throw new Error(`Error creating order items: ${itemsError.message}`);
+      }
+
+      // NEW LOGIC: Update table status if a valid table was found.
+      if (tableIdToUpdate) {
+        const { error: tableUpdateError } = await supabase
+          .from('tables')
+          .update({ status: 'OCUPADA' })
+          .eq('id', tableIdToUpdate);
+        
+        if (tableUpdateError) {
+          // The order was created, so we shouldn't fail the whole request.
+          // But we should log this critical error on the server.
+          console.error(`[API /external-order] CRITICAL: Order ${newOrder.id} created for table ${body.tableNumber}, but failed to update table status to OCUPADA. Error: ${tableUpdateError.message}`);
+        }
       }
 
       return response.status(201).json({

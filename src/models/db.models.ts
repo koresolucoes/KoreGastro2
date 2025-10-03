@@ -1,4 +1,10 @@
 // --- Basic Types ---
+// FIX: Add WebhookEvent type for webhook service
+export type WebhookEvent =
+  | 'order.created'
+  | 'order.updated'
+  | 'stock.updated'
+  | 'customer.created';
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
 export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO';
@@ -544,4 +550,15 @@ export interface Subscription {
   current_period_end: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// FIX: Add Webhook interface for webhook service
+export interface Webhook {
+  id: string;
+  user_id: string;
+  url: string;
+  secret: string;
+  events: WebhookEvent[];
+  is_active: boolean;
+  created_at: string;
 }
