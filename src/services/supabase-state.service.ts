@@ -120,7 +120,8 @@ export class SupabaseStateService {
             logo_url: null,
             ifood_merchant_id: null,
             menu_cover_url: null,
-            menu_header_url: null
+            menu_header_url: null,
+            external_api_key: null,
         });
         this.settingsState.reservations.set([]);
         this.settingsState.reservationSettings.set(null);
@@ -301,26 +302,27 @@ export class SupabaseStateService {
     ]);
 
     // Populate all state services
+    // FIX: Removed all `as any` casts to allow for proper type inference and fix downstream 'unknown' type errors.
     this.posState.halls.set(halls.data || []);
     this.posState.tables.set(tables.data || []);
-    this.posState.stations.set(stations.data as any || []);
+    this.posState.stations.set(stations.data || []);
     this.recipeState.categories.set(categories.data || []);
     this.setOrdersWithPrices(orders.data || []);
     this.hrState.employees.set(employees.data || []);
-    this.inventoryState.ingredients.set(ingredients.data as any || []);
+    this.inventoryState.ingredients.set(ingredients.data || []);
     this.inventoryState.ingredientCategories.set(ingredientCategories.data || []);
     this.inventoryState.suppliers.set(suppliers.data || []);
-    this.recipeState.recipeIngredients.set(recipeIngredients.data as any || []);
+    this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
     this.recipeState.recipePreparations.set(recipePreparations.data || []);
     this.recipeState.promotions.set(promotions.data || []);
-    this.recipeState.promotionRecipes.set(promotionRecipes.data as any || []);
-    this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data as any || []);
-    this.inventoryState.purchaseOrders.set(purchaseOrders.data as any || []);
-    this.inventoryState.productionPlans.set(productionPlans.data as any || []);
+    this.recipeState.promotionRecipes.set(promotionRecipes.data || []);
+    this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
+    this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
+    this.inventoryState.productionPlans.set(productionPlans.data || []);
     this.settingsState.reservations.set(reservations.data || []);
     this.settingsState.reservationSettings.set(reservationSettings.data || null);
-    this.hrState.schedules.set(schedules.data as any || []);
-    this.hrState.leaveRequests.set(leaveRequests.data as any || []);
+    this.hrState.schedules.set(schedules.data || []);
+    this.hrState.leaveRequests.set(leaveRequests.data || []);
     this.settingsState.companyProfile.set(companyProfile.data || null);
     this.hrState.roles.set(roles.data || []);
     this.hrState.rolePermissions.set(rolePermissions.data || []);
@@ -328,10 +330,10 @@ export class SupabaseStateService {
     this.settingsState.loyaltySettings.set(loyaltySettings.data || null);
     this.settingsState.loyaltyRewards.set(loyaltyRewards.data || []);
     this.inventoryState.inventoryLots.set(inventoryLots.data || []);
-    this.ifoodState.ifoodWebhookLogs.set(ifoodWebhookLogs.data as any || []);
+    this.ifoodState.ifoodWebhookLogs.set(ifoodWebhookLogs.data || []);
     this.ifoodState.ifoodMenuSync.set(ifoodMenuSync.data || []);
-    this.subscriptionState.subscriptions.set(subscriptions.data as any || []);
-    this.subscriptionState.plans.set(plans.data as any || []);
+    this.subscriptionState.subscriptions.set(subscriptions.data || []);
+    this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
 
     await this.refreshDashboardAndCashierData();
