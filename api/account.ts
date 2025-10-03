@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
@@ -83,6 +84,8 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
         return response.status(400).json({ error: { message: '`tableNumber` must be a valid number.' } });
     }
 
+    // FIX: Use order() and limit(1) to get the most recent open order for the table,
+    // preventing errors when multiple open orders exist for the same table.
     const { data: order, error } = await supabase
         .from('orders')
         .select(`
@@ -94,6 +97,8 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
         .eq('user_id', restaurantId)
         .eq('table_number', numTableNumber)
         .eq('status', 'OPEN')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
     
     if (error) {
