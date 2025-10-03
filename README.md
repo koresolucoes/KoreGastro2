@@ -598,6 +598,74 @@ Use este endpoint para alterar a disponibilidade manual de um item no cardápio 
 
 ---
 
+### 🔌 API de Relatórios e Performance
+
+A API de Relatórios permite que sistemas externos, como softwares de contabilidade ou ferramentas de BI (Business Intelligence), consumam dados de performance do restaurante.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/relatorios`
+
+Use este endpoint para obter dados de performance. Você deve especificar a ação desejada (`vendas` ou `performance_itens`) e o período.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+*   `action` (obrigatório): O tipo de relatório. Valores possíveis: `vendas`, `performance_itens`.
+*   `data_inicio` (obrigatório): A data de início do período no formato `YYYY-MM-DD`.
+*   `data_fim` (obrigatório): A data de fim do período no formato `YYYY-MM-DD`.
+
+**Exemplo de Requisição (Resumo de Vendas):**
+```
+GET https://gastro.koresolucoes.com.br/api/relatorios?restaurantId=SEU_USER_ID&action=vendas&data_inicio=2024-08-01&data_fim=2024-08-31
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (action=vendas, 200 OK):**
+```json
+{
+  "faturamento_bruto": 15230.50,
+  "custo_total_cmv": 4890.15,
+  "lucro_bruto": 10340.35,
+  "total_pedidos": 450,
+  "ticket_medio": 33.84
+}
+```
+
+**Exemplo de Requisição (Performance de Itens):**
+```
+GET https://gastro.koresolucoes.com.br/api/relatorios?restaurantId=SEU_USER_ID&action=performance_itens&data_inicio=2024-08-01&data_fim=2024-08-31
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (action=performance_itens, 200 OK):**
+```json
+[
+  {
+    "nome_item": "Hambúrguer Clássico",
+    "quantidade_vendida": 250,
+    "receita_total": 7500,
+    "custo_total": 2125,
+    "lucro_total": 5375,
+    "margem_lucro_percentual": 71.66
+  },
+  {
+    "nome_item": "Pizza Margherita",
+    "quantidade_vendida": 80,
+    "receita_total": 4000,
+    "custo_total": 1200,
+    "lucro_total": 2800,
+    "margem_lucro_percentual": 70
+  }
+]
+```
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
