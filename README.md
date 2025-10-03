@@ -295,6 +295,48 @@ Use este endpoint para criar um novo pedido.
 
 ---
 
+#### `PATCH /api/external-order`
+
+Use este endpoint para adicionar itens a um pedido existente que esteja aberto.
+
+**Corpo da Requisição (JSON):**
+
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "orderId": "uuid-do-pedido-aberto-no-chefos",
+  "items": [
+    {
+      "externalCode": "HB-CLASSICO",
+      "quantity": 1,
+      "notes": "Extra bacon."
+    },
+    {
+      "externalCode": "REFRI-LATA",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String.
+*   `orderId` (obrigatório): String. O `orderId` retornado pelo ChefOS ao criar o pedido.
+*   `items` (obrigatório): Array de objetos, com a mesma estrutura do `POST`.
+
+**Resposta (Sucesso 200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Items added to order successfully.",
+  "orderId": "uuid-do-pedido-aberto-no-chefos"
+}
+```
+
+---
+
 ### 🔌 API de Clientes
 
 O ChefOS expõe uma API para gerenciamento de clientes, permitindo a integração com sistemas de fidelidade, CRMs ou aplicativos personalizados.
@@ -762,6 +804,109 @@ Use este endpoint para solicitar que uma mesa seja movida para o status de pagam
 *   **401 Unauthorized / 403 Forbidden:** Chave de API inválida ou `restaurantId` incorreto.
 *   **404 Not Found:** A `tableNumber` especificada não foi encontrada.
 *   **500 Internal Server Error:** Ocorreu um erro no servidor.
+
+---
+
+### 🔌 API de Fidelidade (Recompensas)
+
+A API de Recompensas permite que um sistema externo consulte quais prêmios do programa de fidelidade estão disponíveis para resgate.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+---
+#### `GET /api/recompensas`
+
+Use este endpoint para listar todas as recompensas de fidelidade ativas para um restaurante.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+
+**Exemplo de Requisição:**
+```
+GET https://gastro.koresolucoes.com.br/api/recompensas?restaurantId=SEU_USER_ID_AQUI
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+[
+  {
+    "id": "uuid-da-recompensa-1",
+    "name": "Refrigerante Grátis",
+    "description": "Troque seus pontos por um refrigerante lata.",
+    "points_cost": 50,
+    "type": "free_item",
+    "value": "REFRI-LATA"
+  },
+  {
+    "id": "uuid-da-recompensa-2",
+    "name": "R$10 de Desconto",
+    "description": "Use seus pontos para ganhar R$10 de desconto na sua compra.",
+    "points_cost": 100,
+    "type": "discount_fixed",
+    "value": "10.00"
+  }
+]
+```
+**Campos da Resposta:**
+
+*   `id`: O UUID da recompensa.
+*   `name`: O nome do prêmio.
+*   `points_cost`: Quantidade de pontos necessários.
+*   `type`: O tipo de recompensa (`free_item`, `discount_fixed`, `discount_percentage`).
+*   `value`: O valor da recompensa. Para `free_item`, é o `external_code` do produto. Para descontos, é o valor numérico.
+
+---
+
+### 🔌 API de Pagamentos
+
+A API de Pagamentos permite que um sistema externo (como um totem de autoatendimento) registre pagamentos e finalize um pedido.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+---
+#### `POST /api/payments`
+
+Use este endpoint para registrar um ou mais pagamentos para um pedido aberto e finalizá-lo.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "orderId": "uuid-do-pedido-aberto-no-chefos",
+  "payments": [
+    { "method": "Cartão de Crédito", "amount": 50.00 },
+    { "method": "PIX", "amount": 33.60 }
+  ]
+}
+```
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String.
+*   `orderId` (obrigatório): String. O `orderId` do pedido aberto no ChefOS.
+*   `payments` (obrigatório): Array de objetos de pagamento.
+    *   `method` (obrigatório): String. A forma de pagamento (ex: "Cartão de Crédito", "Dinheiro", "PIX").
+    *   `amount` (obrigatório): Número. O valor pago neste método.
+
+*A soma dos valores em `payments` deve ser maior ou igual ao total do pedido.*
+
+**Resposta (Sucesso 200 OK):**
+```json
+{
+  "success": true,
+  "message": "Payment processed and order completed successfully."
+}
+```
+
+**Respostas de Erro:**
+
+*   **400 Bad Request:** Requisição inválida ou a soma dos pagamentos é insuficiente.
+*   **404 Not Found:** O `orderId` não foi encontrado ou não está mais aberto.
+*   **500 Internal Server Error:** Ocorreu um erro interno ao processar o pagamento.
 
 ---
 
