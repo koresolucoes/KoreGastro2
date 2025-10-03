@@ -5,7 +5,6 @@ import { supabase } from './supabase-client';
 import { RecipeStateService } from './recipe-state.service';
 import { RecipeDataService } from './recipe-data.service';
 import { v4 as uuidv4 } from 'uuid';
-import { WebhookService } from './webhook.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +13,6 @@ export class InventoryDataService {
   private authService = inject(AuthService);
   private recipeState = inject(RecipeStateService);
   private recipeDataService = inject(RecipeDataService);
-  private webhookService = inject(WebhookService);
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.authService.currentUser()?.id;
@@ -187,18 +185,6 @@ export class InventoryDataService {
         expirationDateForEntry = null
     } = params;
 
-    const { data: ingredientBefore, error: fetchError } = await supabase
-      .from('ingredients')
-      .select('stock, min_stock, name')
-      .eq('id', ingredientId)
-      .single();
-
-    if (fetchError) {
-      return { success: false, error: fetchError };
-    }
-
-    const stockBefore = ingredientBefore.stock;
-
     const { error } = await supabase.rpc('adjust_stock_by_lot', {
         p_ingredient_id: ingredientId,
         p_quantity_change: quantityChange,
@@ -208,24 +194,7 @@ export class InventoryDataService {
         p_lot_number_for_entry: lotNumberForEntry,
         p_expiration_date_for_entry: expirationDateForEntry,
     });
-    
-    if (error) {
-      return { success: false, error };
-    }
-
-    // Trigger webhook if stock drops below minimum
-    const stockAfter = stockBefore + quantityChange;
-    if (stockAfter < ingredientBefore.min_stock && stockBefore >= ingredientBefore.min_stock) {
-      this.webhookService.triggerWebhook('estoque.baixo', {
-        ingredient_id: ingredientId,
-        name: ingredientBefore.name,
-        current_stock: stockAfter,
-        min_stock: ingredientBefore.min_stock,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    return { success: true, error: null };
+    return { success: !error, error };
   }
 
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {

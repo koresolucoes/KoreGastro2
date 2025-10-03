@@ -127,7 +127,6 @@ export class SupabaseStateService {
         this.settingsState.reservationSettings.set(null);
         this.settingsState.loyaltySettings.set(null);
         this.settingsState.loyaltyRewards.set([]);
-        this.settingsState.webhooks.set([]);
 
         // Mock subscription as fully active
         this.subscriptionState.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
@@ -195,9 +194,6 @@ export class SupabaseStateService {
             break;
         case 'ifood_menu_sync':
             this.refetchSimpleTable('ifood_menu_sync', '*', this.ifoodState.ifoodMenuSync);
-            break;
-        case 'webhooks':
-            this.refetchSimpleTable('webhooks', '*', this.settingsState.webhooks);
             break;
         case 'tables': this.refetchSimpleTable('tables', '*', this.posState.tables); break;
         case 'halls': this.refetchSimpleTable('halls', '*', this.posState.halls); break;
@@ -269,7 +265,7 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, webhooks
+      ifoodMenuSync, subscriptions, plans, recipes
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -303,7 +299,6 @@ export class SupabaseStateService {
       supabase.from('subscriptions').select('*').eq('user_id', userId),
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
-      supabase.from('webhooks').select('*').eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -340,7 +335,6 @@ export class SupabaseStateService {
     this.subscriptionState.subscriptions.set(subscriptions.data || []);
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
-    this.settingsState.webhooks.set(webhooks.data || []);
 
     await this.refreshDashboardAndCashierData();
   }

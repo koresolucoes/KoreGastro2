@@ -2,14 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { Reservation, ReservationSettings, ReservationStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
-import { WebhookService } from './webhook.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ReservationDataService {
   private authService = inject(AuthService);
-  private webhookService = inject(WebhookService);
 
   // --- Settings ---
   async getReservationSettings(): Promise<ReservationSettings | null> {
@@ -38,17 +36,7 @@ export class ReservationDataService {
 
   // --- Reservations (Internal Management) ---
   async updateReservationStatus(reservationId: string, status: ReservationStatus): Promise<{ success: boolean; error: any }> {
-    const { data: updatedReservation, error } = await supabase
-      .from('reservations')
-      .update({ status })
-      .eq('id', reservationId)
-      .select()
-      .single();
-      
-    if (updatedReservation && status === 'CONFIRMED') {
-      this.webhookService.triggerWebhook('reserva.confirmada', updatedReservation);
-    }
-    
+    const { error } = await supabase.from('reservations').update({ status }).eq('id', reservationId);
     return { success: !error, error };
   }
 
@@ -62,15 +50,11 @@ export class ReservationDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { data: newReservation, error } = await supabase.from('reservations').insert({
+    const { error } = await supabase.from('reservations').insert({
       ...reservationData,
       user_id: userId,
       status: 'CONFIRMED', // Staff-added reservations are confirmed by default
-    }).select().single();
-    
-    if (newReservation) {
-      this.webhookService.triggerWebhook('reserva.confirmada', newReservation);
-    }
+    });
 
     return { success: !error, error };
   }
