@@ -1,45 +1,133 @@
+/* Custom scrollbar for a more modern look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1f2937; /* bg-gray-800 */
+}
+::-webkit-scrollbar-thumb {
+  background: #4b5563; /* bg-gray-600 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280; /* bg-gray-500 */
+}
+
+/* Hide scrollbar for elements with this class */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Print styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area *,
+  .payslip-printable-area, .payslip-printable-area * {
+    visibility: visible;
+  }
+  .printable-area, .payslip-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 1rem;
+    background-color: #fff !important;
+  }
+  /* Hide elements not meant for printing */
+  .no-print, .no-print * {
+    display: none !important;
+  }
+  
+  /* Force black text and visible borders on all elements within the printable area */
+  .printable-area *,
+  .payslip-printable-area * {
+    color: #000 !important;
+    background-color: transparent !important;
+    border-color: #ccc !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure tables look good on paper */
+   .printable-area table, .payslip-printable-area table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+  .printable-area th, .printable-area td,
+  .payslip-printable-area th, .payslip-printable-area td {
+      border: 1px solid #ccc !important;
+      padding: 6px;
+  }
+  .printable-area thead, .payslip-printable-area thead {
+      background-color: #f2f2f2 !important;
+  }
+  
+  /* Specific for payslip */
+  .payslip-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    page-break-inside: avoid; /* Avoid breaking a single payslip across pages */
+  }
+}
+
+/* Animated Gradient Background for Login */
+.animated-gradient-background {
+  background: linear-gradient(-45deg, #1e40af, #111827, #374151, #1e40af);
+  background-size: 400% 400%;
+  animation: gradient 20s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Estilos para o CDK Drag and Drop */
+
+/* A pré-visualização que segue o mouse. É um clone do item arrastado. */
 .cdk-drag-preview {
   box-sizing: border-box;
-  border-radius: 4px;
-  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
-              0 8px 10px 1px rgba(0, 0, 0, 0.14),
-              0 3px 14px 2px rgba(0, 0, 0, 0.12);
-  opacity: 0.9;
+  border-radius: 0.5rem; /* 8px */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  opacity: 0.8;
+  z-index: 1001; /* Garante que a pré-visualização fique acima de tudo */
 }
 
+/* O espaço vazio que indica onde o item será solto. */
 .cdk-drag-placeholder {
-  opacity: 0;
+  opacity: 0.4;
+  background: #111827; /* bg-gray-900 para contraste */
+  border: 2px dashed #34d399; /* Cor verde para indicar um local válido */
+  border-radius: 0.5rem; /* rounded-lg para combinar com os cards */
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
+/* Animação suave para os itens que se movem para dar espaço. */
 .cdk-drag-animating {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-.cdk-drop-list-dragging .cdk-drag {
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-/* Melhorias visuais para os itens arrastáveis */
-.cdk-drag {
-  cursor: move;
-  transition: transform 150ms ease;
-}
-
-.cdk-drag:active {
-  z-index: 1000;
-}
-
-/* Estilo quando está sendo arrastado */
-.cdk-drag-preview {
-  background: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Efeito de hover nos itens arrastáveis */
-.cdk-drag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+/* Estilo para o item que está sendo arrastado para dar um efeito de "elevação" */
+.cdk-drag-dragging {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: scale(1.03);
 }

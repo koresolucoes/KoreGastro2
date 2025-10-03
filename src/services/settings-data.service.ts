@@ -141,6 +141,14 @@ export class SettingsDataService {
     return { success: !error, error };
   }
 
+  async regenerateExternalApiKey(): Promise<{ success: boolean; error: any; data: { external_api_key: string } | null }> {
+    const { data, error } = await supabase.rpc('regenerate_external_api_key');
+    if (error) {
+      return { success: false, error, data: null };
+    }
+    return { success: true, error: null, data: { external_api_key: data } };
+  }
+
   // --- Roles and Permissions ---
   async addRole(name: string): Promise<{ success: boolean, error: any, data?: Role }> {
     const userId = this.authService.currentUser()?.id;

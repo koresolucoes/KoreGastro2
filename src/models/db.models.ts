@@ -225,6 +225,7 @@ export interface Order {
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
   delivery_info?: IfoodOrderDelivery | null; // Stored as JSONB
+  notes?: string | null; // For API orders
 }
 
 export interface OrderItem {
@@ -461,6 +462,7 @@ export interface CompanyProfile {
   ifood_merchant_id: string | null;
   menu_cover_url: string | null;
   menu_header_url: string | null;
+  external_api_key: string | null;
   created_at: string;
 }
 
