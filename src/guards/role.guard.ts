@@ -1,3 +1,4 @@
+
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { AuthService } from './../services/auth.service';
@@ -13,7 +14,8 @@ export const roleGuard: CanActivateFn = (
 ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree => {
   const authService = inject(AuthService);
   const operationalAuthService = inject(OperationalAuthService);
-  const router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  const router: Router = inject(Router);
   const demoService = inject(DemoService);
 
   if (demoService.isDemoMode()) {

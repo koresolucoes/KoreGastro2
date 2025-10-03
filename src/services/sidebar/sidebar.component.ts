@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -35,7 +36,8 @@ export class SidebarComponent {
   operationalAuthService = inject(OperationalAuthService);
   settingsState = inject(SettingsStateService);
   demoService = inject(DemoService);
-  router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  router: Router = inject(Router);
   
   isDemoMode = this.demoService.isDemoMode;
   currentUser = this.authService.currentUser;

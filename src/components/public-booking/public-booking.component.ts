@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -22,8 +23,10 @@ interface TimeSlot {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicBookingComponent implements OnInit, OnDestroy {
-  route = inject(ActivatedRoute);
-  router = inject(Router);
+  // FIX: Explicitly type the injected ActivatedRoute service.
+  route: ActivatedRoute = inject(ActivatedRoute);
+  // FIX: Explicitly type the injected Router service.
+  router: Router = inject(Router);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
   publicDataService = inject(PublicDataService);

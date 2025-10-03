@@ -1,3 +1,4 @@
+
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuthService } from './../services/auth.service';
@@ -8,7 +9,8 @@ import { DemoService } from './../services/demo.service';
 
 export const authGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   const authService = inject(AuthService);
-  const router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  const router: Router = inject(Router);
   const demoService = inject(DemoService);
 
   // If in demo mode, bypass all authentication checks.

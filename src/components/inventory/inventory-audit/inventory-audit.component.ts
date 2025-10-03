@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -22,7 +23,8 @@ export class InventoryAuditComponent {
   private inventoryState = inject(InventoryStateService);
   private inventoryDataService = inject(InventoryDataService);
   private notificationService = inject(NotificationService);
-  private router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  private router: Router = inject(Router);
 
   // Data signals
   ingredients = this.inventoryState.ingredients;

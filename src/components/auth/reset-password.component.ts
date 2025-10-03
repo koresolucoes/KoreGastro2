@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -16,7 +17,8 @@ type ResetState = 'idle' | 'loading' | 'error' | 'success';
 })
 export class ResetPasswordComponent implements OnInit {
   authService = inject(AuthService);
-  router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  router: Router = inject(Router);
   notificationService = inject(NotificationService);
 
   newPassword = signal('');

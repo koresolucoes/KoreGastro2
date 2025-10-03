@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -12,7 +13,8 @@ import { Tutorial, TutorialService } from '../../services/tutorial.service';
 })
 export class TutorialsListComponent {
   private tutorialService = inject(TutorialService);
-  private router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  private router: Router = inject(Router);
 
   tutorials = signal<Tutorial[]>([]);
 
