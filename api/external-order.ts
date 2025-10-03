@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, Customer, Recipe, RecipePreparation, OrderItemStatus } from '../src/models/db.models.js';
@@ -20,8 +21,9 @@ interface RequestItem {
 
 interface RequestBody {
   restaurantId: string;
-  orderTypeLabel?: string;
-  externalId?: string;
+  tableNumber: number; // For Dine-in, use 0 for QuickSale/takeout.
+  orderTypeLabel?: string; // Optional label for the origin (e.g., "Totem 1", "App de Entrega")
+  externalId?: string; // Optional ID from the external system
   customer?: {
     name: string;
     phone?: string;
@@ -90,6 +92,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
       const { items } = body;
 
       // Payload Validation for POST
+      if (body.tableNumber === undefined || body.tableNumber === null) {
+          return response.status(400).json({ error: { message: '`tableNumber` is required.' } });
+      }
       if (!items || !Array.isArray(items) || items.length === 0) {
           return response.status(400).json({ error: { message: '`items` array is required and cannot be empty.' } });
       }
@@ -145,11 +150,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
           .from('orders')
           .insert({
               user_id: restaurantId,
-              table_number: 0,
-              order_type: 'QuickSale',
+              table_number: body.tableNumber,
+              order_type: body.tableNumber > 0 ? 'Dine-in' : 'QuickSale',
               status: 'OPEN',
               customer_id: customerId,
-              notes: `Pedido externo via API. Origem: ${body.orderTypeLabel || 'Desconhecida'}. ID Externo: ${body.externalId || 'N/A'}`
           })
           .select('id')
           .single();
@@ -168,21 +172,27 @@ export default async function handler(request: VercelRequest, response: VercelRe
       });
 
       const status_timestamps = { 'PENDENTE': new Date().toISOString() };
-      const orderItemsToInsert: Partial<OrderItem>[] = body.items.flatMap(item => {
+      const orderNotes = `Pedido externo via API. Origem: ${body.orderTypeLabel || 'Desconhecida'}. ID Externo: ${body.externalId || 'N/A'}`;
+
+      const orderItemsToInsert: Partial<OrderItem>[] = body.items.flatMap((item, itemIndex) => {
           const recipe = recipesMap.get(item.externalCode)!;
           const recipePreps = prepsMap.get(recipe.id);
           const finalPrice = item.price !== undefined ? item.price : recipe.price;
 
+          const baseNotes = itemIndex === 0 
+            ? `${orderNotes}${item.notes ? `\n---\n${item.notes}` : ''}`.trim() 
+            : item.notes;
+
           if (recipePreps && recipePreps.length > 0) {
               const groupId = uuidv4();
-              return recipePreps.map(prep => ({
+              return recipePreps.map((prep, prepIndex) => ({
                   order_id: newOrder.id,
                   recipe_id: recipe.id,
                   name: `${recipe.name} (${prep.name})`,
                   quantity: item.quantity,
                   price: finalPrice / recipePreps.length,
                   original_price: recipe.price / recipePreps.length,
-                  notes: item.notes,
+                  notes: prepIndex === 0 ? baseNotes : null, // Notes only on the first item of the group
                   status: 'PENDENTE' as OrderItemStatus,
                   station_id: prep.station_id,
                   group_id: groupId,
@@ -197,7 +207,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                   quantity: item.quantity,
                   price: finalPrice,
                   original_price: recipe.price,
-                  notes: item.notes,
+                  notes: baseNotes,
                   status: 'PENDENTE' as OrderItemStatus,
                   station_id: fallbackStationId,
                   status_timestamps,

@@ -178,6 +178,123 @@ Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades 
 
 ---
 
+### 🔌 Integração via API Externa
+
+O ChefOS oferece uma API externa para que sistemas de terceiros, como totens de autoatendimento ou aplicativos de delivery próprios, possam enviar pedidos diretamente para o sistema. Os pedidos entram na fila do KDS e do Caixa como qualquer outro pedido interno.
+
+#### Autenticação
+
+A autenticação é feita através de uma chave de API Bearer. Você pode gerar e encontrar sua chave em `Configurações > Funcionalidades > API de Pedidos Externos`.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/external-order`
+
+Use este endpoint para buscar o cardápio disponível de um restaurante.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+
+**Exemplo de Requisição:**
+
+```
+GET https://gastro.koresolucoes.com.br/api/external-order?restaurantId=SEU_USER_ID_AQUI
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+
+```json
+{
+  "menu": [
+    {
+      "name": "Hambúrguer Clássico",
+      "description": "Pão, carne, queijo e salada.",
+      "price": 30.00,
+      "external_code": "HB-CLASSICO"
+    },
+    {
+      "name": "Refrigerante",
+      "description": null,
+      "price": 8.00,
+      "external_code": "REFRI-LATA"
+    }
+  ]
+}
+```
+**Importante:** Apenas itens com um **"Código Externo"** definido na Ficha Técnica serão retornados.
+
+---
+
+#### `POST /api/external-order`
+
+Use este endpoint para criar um novo pedido.
+
+**Exemplo de Corpo da Requisição (JSON):**
+
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "tableNumber": 15,
+  "orderTypeLabel": "Totem de Autoatendimento 1",
+  "externalId": "pedido-totem-xyz-123",
+  "customer": {
+    "name": "João Ninguém",
+    "phone": "11987654321"
+  },
+  "items": [
+    {
+      "externalCode": "HB-CLASSICO",
+      "quantity": 2,
+      "notes": "Um sem picles, por favor."
+    },
+    {
+      "externalCode": "REFRI-LATA",
+      "quantity": 2,
+      "price": 7.50
+    }
+  ]
+}
+```
+
+**Campos do Corpo da Requisição:**
+
+*   `restaurantId` (obrigatório): String. O ID do seu usuário no sistema ChefOS.
+*   `tableNumber` (obrigatório): Número. O número da mesa para pedidos "Dine-in". Use `0` para vendas de balcão/retirada ("QuickSale").
+*   `orderTypeLabel` (opcional): String. Um rótulo para identificar a origem do pedido (ex: "Totem 1", "App de Entrega").
+*   `externalId` (opcional): String. Um ID único do sistema de origem para referência.
+*   `customer` (opcional): Objeto. Dados do cliente. Se o nome já existir, o pedido será associado ao cliente existente; caso contrário, um novo cliente será criado.
+    *   `name` (obrigatório se `customer` for enviado): String.
+    *   `phone` (opcional): String.
+    *   `email` (opcional): String.
+*   `items` (obrigatório): Array de objetos.
+    *   `externalCode` (obrigatório): String. O código do item, conforme retornado pela API do cardápio (`GET`).
+    *   `quantity` (obrigatório): Número.
+    *   `notes` (opcional): String. Observações para a cozinha.
+    *   `price` (opcional): Número. Permite sobreescrever o preço padrão do item para este pedido específico.
+
+**Exemplo de Resposta (Sucesso 201 Created):**
+
+```json
+{
+  "success": true,
+  "message": "Order created successfully and sent to KDS.",
+  "orderId": "uuid-do-pedido-criado-no-chefos"
+}
+```
+
+**Respostas de Erro:**
+
+*   **400 Bad Request:** Erro de validação no corpo da requisição (ex: campos faltando).
+*   **401 Unauthorized / 403 Forbidden:** Chave de API inválida ou `restaurantId` incorreto.
+*   **404 Not Found:** Um ou mais `externalCode` de itens não foram encontrados no cardápio.
+*   **500 Internal Server Error:** Ocorreu um erro no servidor ao processar o pedido.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
