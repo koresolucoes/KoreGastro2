@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { CompanyProfile, Reservation, ReservationSettings, LoyaltySettings, LoyaltyReward } from '../models/db.models';
+import { CompanyProfile, Reservation, ReservationSettings, LoyaltySettings, LoyaltyReward, Webhook } from '../models/db.models';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsStateService {
@@ -8,6 +8,7 @@ export class SettingsStateService {
   reservationSettings = signal<ReservationSettings | null>(null);
   loyaltySettings = signal<LoyaltySettings | null>(null);
   loyaltyRewards = signal<LoyaltyReward[]>([]);
+  webhooks = signal<Webhook[]>([]);
 
   clearData() {
     this.companyProfile.set(null);
@@ -15,5 +16,6 @@ export class SettingsStateService {
     this.reservationSettings.set(null);
     this.loyaltySettings.set(null);
     this.loyaltyRewards.set([]);
+    this.webhooks.set([]);
   }
 }

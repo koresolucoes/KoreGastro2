@@ -11,6 +11,7 @@ import { PricingService } from './pricing.service';
 import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus, DiscountType } from '../models/db.models';
 import { Payment } from '../components/cashier/cashier.component';
 import { v4 as uuidv4 } from 'uuid';
+import { WebhookService } from './webhook.service';
 
 interface CartItem {
   recipe: Recipe;
@@ -91,6 +92,7 @@ export class CashierDataService {
   private stateService = inject(SupabaseStateService);
   private inventoryDataService = inject(InventoryDataService);
   private pricingService = inject(PricingService);
+  private webhookService = inject(WebhookService);
   // FIX: Inject modular state services
   private recipeState = inject(RecipeStateService);
   private posState = inject(PosStateService);
@@ -338,7 +340,7 @@ export class CashierDataService {
           user_id: userId,
           customer_id: customerId 
         })
-        .select()
+        .select('*, customers(*)')
         .single();
     
     if (orderError) return { success: false, error: orderError };
@@ -431,6 +433,9 @@ export class CashierDataService {
           return { success: false, error: transactionError };
       }
     }
+
+    const fullOrderItems = { ...order, order_items: orderItemsWithUserId as OrderItem[] };
+    this.webhookService.triggerWebhook('pedido.finalizado', { order: fullOrderItems, payments });
 
     const { success, error } = await this.inventoryDataService.deductStockForOrderItems(orderItemsWithUserId as OrderItem[], order.id);
     if (!success) {
@@ -525,7 +530,7 @@ export class CashierDataService {
         .from('orders')
         .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
         .eq('id', orderId)
-        .select('*, order_items(*)')
+        .select('*, order_items(*), customers(*)')
         .single();
 
     if (orderError) return { success: false, error: orderError };
@@ -547,6 +552,8 @@ export class CashierDataService {
         if (transactionError) return { success: false, error: transactionError };
     }
     
+    this.webhookService.triggerWebhook('pedido.finalizado', { order, payments });
+
     if (order.order_items) {
         const { success, error } = await this.inventoryDataService.deductStockForOrderItems(order.order_items, order.id);
         if (!success) {

@@ -15,6 +15,7 @@ export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
+export type WebhookEvent = 'pedido.finalizado' | 'estoque.baixo' | 'reserva.confirmada' | 'cliente.novo';
 
 
 // --- New Types for Settings ---
@@ -47,6 +48,16 @@ export interface PaymentSummary {
 
 
 // --- Main Entities ---
+
+export interface Webhook {
+  id: string;
+  user_id: string;
+  url: string;
+  events: WebhookEvent[];
+  secret: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 export interface Role {
   id: string;

@@ -1,15 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 // FIX: Add Customer model to imports
-import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement } from '../models/db.models';
+import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement, Webhook } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
+import { WebhookService } from './webhook.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SettingsDataService {
   private authService = inject(AuthService);
+  private webhookService = inject(WebhookService);
 
   private async uploadAsset(file: File, path: string): Promise<{ publicUrl: string | null; error: any }> {
     const { error: uploadError } = await supabase.storage
@@ -232,6 +234,9 @@ export class SettingsDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const { data, error } = await supabase.from('customers').insert({ ...customer, user_id: userId }).select().single();
+    if (data) {
+        this.webhookService.triggerWebhook('cliente.novo', data);
+    }
     return { success: !error, error, data };
   }
 
@@ -297,5 +302,24 @@ export class SettingsDataService {
       .eq('user_id', userId)
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false });
+  }
+
+  // --- Webhooks ---
+  async addWebhook(webhook: Partial<Webhook>): Promise<{ success: boolean, error: any, data?: Webhook }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: undefined };
+    const { data, error } = await supabase.from('webhooks').insert({ ...webhook, user_id: userId }).select().single();
+    return { success: !error, error, data };
+  }
+
+  async updateWebhook(id: string, webhook: Partial<Webhook>): Promise<{ success: boolean, error: any }> {
+    const { id: webhookId, created_at, user_id, ...updateData } = webhook;
+    const { error } = await supabase.from('webhooks').update(updateData).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteWebhook(id: string): Promise<{ success: boolean, error: any }> {
+    const { error } = await supabase.from('webhooks').delete().eq('id', id);
+    return { success: !error, error };
   }
 }

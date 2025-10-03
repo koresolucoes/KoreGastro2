@@ -19,7 +19,7 @@
     "@supabase/supabase-js": "2",
     "@google/genai": "latest",
     "uuid": "^11.1.0",
-    "crypto": "^1.0.1",
+    "crypto": "^3.12.0",
     "@vercel/node": "^5.3.22",
     "buffer": "^6.0.3",
     "@angular/build": "^20.1.0",
