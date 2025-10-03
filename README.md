@@ -295,6 +295,112 @@ Use este endpoint para criar um novo pedido.
 
 ---
 
+### 🔌 API de Clientes
+
+O ChefOS expõe uma API para gerenciamento de clientes, permitindo a integração com sistemas de fidelidade, CRMs ou aplicativos personalizados.
+
+A autenticação segue o mesmo padrão da API de pedidos, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/clientes`
+
+Use este endpoint para buscar clientes. Se nenhum parâmetro de busca for fornecido, todos os clientes do restaurante serão retornados.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+*   `search` (opcional): String de busca. Procura por nome, telefone, email ou CPF.
+*   `id` (opcional): O UUID de um cliente específico para buscar seus detalhes.
+
+**Exemplo de Requisição (busca):**
+```
+GET https://gastro.koresolucoes.com.br/api/clientes?restaurantId=SEU_USER_ID&search=João
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (busca, 200 OK):**
+```json
+[
+  {
+    "id": "uuid-do-cliente-123",
+    "name": "João Ninguém",
+    "phone": "11987654321",
+    "email": "joao@email.com",
+    "cpf": "111.222.333-44",
+    "notes": "Prefere mesa perto da janela.",
+    "loyalty_points": 150,
+    "user_id": "SEU_USER_ID_AQUI",
+    "created_at": "..."
+  }
+]
+```
+
+**Exemplo de Requisição (por ID):**
+```
+GET https://gastro.koresolucoes.com.br/api/clientes?restaurantId=SEU_USER_ID&id=uuid-do-cliente-123
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+**Exemplo de Resposta (por ID, 200 OK):** Retorna um único objeto de cliente, como o do array acima.
+
+---
+
+#### `POST /api/clientes`
+
+Use este endpoint para cadastrar um novo cliente.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "name": "Maria Nova",
+  "phone": "21912345678",
+  "email": "maria@email.com",
+  "cpf": "444.555.666-77",
+  "notes": "Cliente novo, primeira visita."
+}
+```
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String.
+*   `name` (obrigatório): String.
+*   `phone`, `email`, `cpf`, `notes` (opcionais): String.
+
+**Resposta (Sucesso 201 Created):** Retorna o objeto do cliente recém-criado.
+
+---
+
+#### `PATCH /api/clientes`
+
+Use este endpoint para adicionar ou remover pontos de fidelidade de um cliente. Esta operação registra a movimentação no histórico do cliente.
+
+**Query Parameters:**
+
+*   `id` (obrigatório): O UUID do cliente a ser atualizado.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "loyalty_points_change": 50,
+  "description": "Bônus por indicação"
+}
+```
+*Um valor negativo em `loyalty_points_change` remove pontos.*
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String.
+*   `loyalty_points_change` (obrigatório): Número. A quantidade de pontos a adicionar (positivo) ou remover (negativo).
+*   `description` (obrigatório): String. O motivo da movimentação (ex: "Acúmulo por compra", "Resgate de prêmio").
+
+**Resposta (Sucesso 200 OK):** Retorna o objeto completo e atualizado do cliente.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
