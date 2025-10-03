@@ -490,6 +490,114 @@ Use este endpoint para criar uma nova reserva.
 
 ---
 
+### 🔌 API de Cardápio e Estoque
+
+API aprimorada para consulta de cardápio com disponibilidade em tempo real e gerenciamento de estoque.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/cardapio-estoque`
+
+Use este endpoint para buscar o cardápio detalhado ou a lista de insumos.
+
+**Ação Padrão (Cardápio Detalhado):**
+
+Retorna o cardápio com um campo booleano `disponivel_estoque` que indica se há insumos suficientes para produzir o item.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+
+**Exemplo de Requisição:**
+```
+GET https://gastro.koresolucoes.com.br/api/cardapio-estoque?restaurantId=SEU_USER_ID_AQUI
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+[
+    {
+        "id": "uuid-da-receita",
+        "name": "Hambúrguer Clássico",
+        "description": "Pão, carne, queijo e salada.",
+        "price": 30.00,
+        "external_code": "HB-CLASSICO",
+        "image_url": "...",
+        "category_name": "Lanches",
+        "disponivel_estoque": true
+    },
+    {
+        "id": "uuid-da-receita-2",
+        "name": "Pizza Especial",
+        "description": "Molho, queijo, e ingredientes especiais.",
+        "price": 65.00,
+        "external_code": "PZ-ESPECIAL",
+        "image_url": null,
+        "category_name": "Pizzas",
+        "disponivel_estoque": false
+    }
+]
+```
+
+**Ação `insumos` (Lista de Insumos):**
+
+Retorna a lista de ingredientes do estoque.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário.
+*   `action` (obrigatório): `insumos`.
+*   `status` (opcional): `estoque_baixo` para filtrar apenas itens com estoque abaixo do mínimo.
+
+**Exemplo de Requisição:**
+```
+GET https://gastro.koresolucoes.com.br/api/cardapio-estoque?restaurantId=SEU_USER_ID&action=insumos&status=estoque_baixo
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+[
+  {
+    "id": "uuid-do-ingrediente",
+    "name": "Carne de Hambúrguer",
+    "stock": 500,
+    "min_stock": 1000,
+    "unit": "g",
+    "cost": 0.05
+  }
+]
+```
+---
+
+#### `PUT /api/cardapio-estoque`
+
+Use este endpoint para alterar a disponibilidade manual de um item no cardápio (disponível/indisponível).
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário.
+*   `external_code` (obrigatório): O código externo do item a ser atualizado.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "is_available": false
+}
+```
+
+**Campos:**
+* `is_available` (obrigatório): Booleano. `true` para tornar o item disponível, `false` para indisponível.
+
+**Resposta (Sucesso 200 OK):** Retorna o objeto completo e atualizado da receita.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
