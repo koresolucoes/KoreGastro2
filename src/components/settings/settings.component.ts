@@ -569,12 +569,32 @@ export class SettingsComponent {
       }
   }
 
-  async copyToClipboard(text: string) {
+  async copyToClipboard(text: string | null | undefined) {
+    if (!text) {
+      this.notificationService.show('Nenhum texto para copiar.', 'warning');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(text);
-      this.notificationService.show('Link copiado!', 'success');
+      this.notificationService.show('Copiado para a área de transferência!', 'success');
     } catch (err) {
-      await this.notificationService.alert('Falha ao copiar o link.');
+      await this.notificationService.alert('Falha ao copiar.');
+    }
+  }
+
+  async regenerateApiKey() {
+    const confirmed = await this.notificationService.confirm(
+      'Gerar uma nova chave de API irá invalidar permanentemente a chave atual. Qualquer sistema usando a chave antiga deixará de funcionar. Deseja continuar?',
+      'Gerar Nova Chave de API?'
+    );
+    if (confirmed) {
+      const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
+      if (success && data) {
+        this.companyProfileForm.update(form => ({ ...form, external_api_key: data.external_api_key }));
+        await this.notificationService.alert('Nova chave de API gerada com sucesso! Não se esqueça de atualizar seus sistemas integrados.', 'Sucesso');
+      } else {
+        await this.notificationService.alert(`Erro ao gerar nova chave: ${error?.message}`);
+      }
     }
   }
 
