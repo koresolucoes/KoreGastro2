@@ -1,4 +1,3 @@
-
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
@@ -19,8 +18,7 @@ type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'e
   providedIn: 'root',
 })
 export class OperationalAuthService {
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  private router: Router = inject(Router);
+  private router = inject(Router);
   // Keep SupabaseStateService for its methods, but inject others for direct state access
   private stateService = inject(SupabaseStateService);
   private hrState = inject(HrStateService);

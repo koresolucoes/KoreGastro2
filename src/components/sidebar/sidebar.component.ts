@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -37,8 +36,7 @@ export class SidebarComponent {
   settingsState = inject(SettingsStateService);
   // FIX: Injected DemoService to handle demo mode logic
   demoService = inject(DemoService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  router: Router = inject(Router);
+  router = inject(Router);
   
   // FIX: Added isDemoMode signal for use in computed properties
   isDemoMode = this.demoService.isDemoMode;

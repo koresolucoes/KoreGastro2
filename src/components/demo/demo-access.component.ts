@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { DemoService } from '../../services/demo.service';
@@ -11,8 +10,7 @@ import { DemoService } from '../../services/demo.service';
 })
 export class DemoAccessComponent {
   private demoService = inject(DemoService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  private router: Router = inject(Router);
+  private router = inject(Router);
 
   startDemo() {
     this.demoService.enableDemoMode();

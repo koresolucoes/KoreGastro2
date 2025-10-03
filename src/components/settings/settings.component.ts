@@ -19,7 +19,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { DemoService } from '../../services/demo.service';
 
-type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'integracoes' | 'seguranca';
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
 @Component({
   selector: 'app-settings',
@@ -37,7 +37,7 @@ export class SettingsComponent {
   
   // Auth & Notification services
   private notificationService = inject(NotificationService);
-  authService = inject(AuthService);
+  private authService = inject(AuthService);
   private operationalAuthService = inject(OperationalAuthService);
 
   // New state services
@@ -87,10 +87,6 @@ export class SettingsComponent {
   categorySearchTerm = signal('');
   recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
-
-  // API Key visibility
-  showApiKey = signal(false);
-  currentUser = this.authService.currentUser;
 
   // Role Management State
   allPermissions = ALL_PERMISSION_KEYS;
@@ -573,50 +569,12 @@ export class SettingsComponent {
       }
   }
 
-  async copyToClipboard(text: string | null | undefined) {
-    if (!text) {
-        this.notificationService.show('Nenhum texto para copiar.', 'warning');
-        return;
-    }
+  async copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      this.notificationService.show('Copiado para a área de transferência!', 'success');
+      this.notificationService.show('Link copiado!', 'success');
     } catch (err) {
-      await this.notificationService.alert('Falha ao copiar.');
-    }
-  }
-
-  async copyApiKey(key: string | null | undefined) {
-    if (!key) {
-        this.notificationService.show('Nenhuma chave de API para copiar.', 'warning');
-        return;
-    }
-    try {
-      await navigator.clipboard.writeText(key);
-      this.notificationService.show('Chave de API copiada!', 'success');
-    } catch (err) {
-      await this.notificationService.alert('Falha ao copiar a chave.');
-    }
-  }
-
-  async regenerateApiKey() {
-    const confirmed = await this.notificationService.confirm(
-      'Tem certeza que deseja gerar uma nova chave de API? A chave atual será invalidada imediatamente e você precisará atualizar seus sistemas externos.',
-      'Gerar Nova Chave?'
-    );
-
-    if (confirmed) {
-      const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
-      if (success && data?.external_api_key) {
-        this.companyProfileForm.update(form => ({
-          ...form,
-          external_api_key: data.external_api_key
-        }));
-        // The service automatically updates the DB, so we just show a success message.
-        await this.notificationService.alert('Nova chave de API gerada com sucesso!', 'Sucesso');
-      } else {
-        await this.notificationService.alert(`Erro ao gerar nova chave: ${error?.message}`);
-      }
+      await this.notificationService.alert('Falha ao copiar o link.');
     }
   }
 

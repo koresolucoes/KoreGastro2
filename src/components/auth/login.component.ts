@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -18,8 +17,7 @@ type AuthState = 'idle' | 'loading' | 'error';
 })
 export class LoginComponent {
   authService = inject(AuthService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  router: Router = inject(Router);
+  router = inject(Router);
   notificationService = inject(NotificationService);
 
   email = signal('');

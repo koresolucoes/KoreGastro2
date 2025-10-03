@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,8 +22,7 @@ export class EmployeeSelectionComponent {
   private operationalAuth = inject(OperationalAuthService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  private router: Router = inject(Router);
+  private router = inject(Router);
   private subscriptionState = inject(SubscriptionStateService);
   private hrState = inject(HrStateService);
 

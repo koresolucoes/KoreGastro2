@@ -1,4 +1,3 @@
-
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuthService } from './../services/auth.service';
@@ -12,8 +11,7 @@ export const loginGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   const authService = inject(AuthService);
   const demoService = inject(DemoService);
   const operationalAuthService = inject(OperationalAuthService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
-  const router: Router = inject(Router);
+  const router = inject(Router);
 
   // If the user is already in demo mode, they are "logged in".
   // Redirect to the dashboard to prevent showing the login screen.

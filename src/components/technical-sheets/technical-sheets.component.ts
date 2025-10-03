@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -57,10 +56,8 @@ export class TechnicalSheetsComponent {
   private inventoryDataService = inject(InventoryDataService);
   private aiService = inject(AiRecipeService);
   private notificationService = inject(NotificationService);
-  // FIX: Explicitly type the injected ActivatedRoute service.
-  private route: ActivatedRoute = inject(ActivatedRoute);
-  // FIX: Explicitly type the injected Router service.
-  private router: Router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   // FIX: Inject feature-specific state services
   private recipeState = inject(RecipeStateService);
   private inventoryState = inject(InventoryStateService);

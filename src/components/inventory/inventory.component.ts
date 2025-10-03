@@ -1,7 +1,6 @@
 
 
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -55,8 +54,7 @@ export class InventoryComponent {
     posState = inject(PosStateService);
     inventoryDataService = inject(InventoryDataService);
     aiService = inject(AiRecipeService);
-    // FIX: Explicitly type the injected Router to resolve property access errors.
-    router: Router = inject(Router);
+    router = inject(Router);
     notificationService = inject(NotificationService);
     
     ingredients = this.inventoryState.ingredients;
