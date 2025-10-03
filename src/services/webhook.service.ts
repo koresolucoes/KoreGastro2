@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SettingsStateService } from './settings-state.service';
 import { WebhookEvent } from '../models/db.models';
-import { createHmac } from 'crypto';
+import { createHmac } from 'crypto-browserify';
 import { Buffer } from 'buffer';
 
 @Injectable({
