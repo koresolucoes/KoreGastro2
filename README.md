@@ -666,6 +666,50 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 ---
 
+### 🔌 API de Conta
+
+A API de Conta permite que sistemas externos solicitem o fechamento da conta de uma mesa, alterando seu status para "PAGANDO".
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `POST /api/account`
+
+Use este endpoint para solicitar que uma mesa seja movida para o status de pagamento. Isso fará com que a mesa apareça na fila do Caixa.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "tableNumber": 15
+}
+```
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String. O ID do seu usuário no sistema ChefOS.
+*   `tableNumber` (obrigatório): Número. O número da mesa para a qual a conta está sendo solicitada.
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+{
+  "success": true,
+  "message": "Table #15 status updated to 'PAGANDO'."
+}
+```
+
+**Respostas de Erro:**
+
+*   **400 Bad Request:** A mesa não está no status "OCUPADA" ou faltam campos na requisição.
+*   **401 Unauthorized / 403 Forbidden:** Chave de API inválida ou `restaurantId` incorreto.
+*   **404 Not Found:** A `tableNumber` especificada não foi encontrada.
+*   **500 Internal Server Error:** Ocorreu um erro no servidor.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
