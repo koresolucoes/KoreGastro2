@@ -97,7 +97,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
         .eq('user_id', restaurantId)
         .eq('table_number', numTableNumber)
         .eq('status', 'OPEN')
-        .order('created_at', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(1)
         .single();
     
