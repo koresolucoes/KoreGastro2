@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
+import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier, Webhook, WebhookEvent } from '../../models/db.models';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
@@ -9,6 +9,7 @@ import { AuthService } from '../../services/auth.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { ALL_PERMISSION_KEYS } from '../../config/permissions';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { v4 as uuidv4 } from 'uuid';
 
 // Import new state services
 import { PosStateService } from '../../services/pos-state.service';
@@ -19,7 +20,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { DemoService } from '../../services/demo.service';
 
-type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca' | 'webhooks';
 
 @Component({
   selector: 'app-settings',
@@ -63,6 +64,7 @@ export class SettingsComponent {
   loyaltyRewards = this.settingsState.loyaltyRewards;
   subscription = this.subscriptionState.subscription;
   currentPlan = this.subscriptionState.currentPlan;
+  webhooks = this.settingsState.webhooks;
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -187,6 +189,18 @@ export class SettingsComponent {
   rewardPendingDeletion = signal<LoyaltyReward | null>(null);
   availableRewardTypes: LoyaltyRewardType[] = ['discount_fixed', 'discount_percentage', 'free_item'];
   sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
+  
+  // Webhook State
+  isWebhookModalOpen = signal(false);
+  editingWebhook = signal<Partial<Webhook> | null>(null);
+  webhookForm = signal<Partial<Webhook>>({ is_active: true, events: [] });
+  webhookPendingDeletion = signal<Webhook | null>(null);
+  availableWebhookEvents: { id: WebhookEvent; description: string }[] = [
+    { id: 'pedido.finalizado', description: 'Quando um pedido é pago e finalizado.' },
+    { id: 'estoque.baixo', description: 'Quando o estoque de um item fica abaixo do mínimo.' },
+    { id: 'reserva.confirmada', description: 'Quando uma nova reserva é confirmada.' },
+    { id: 'cliente.novo', description: 'Quando um novo cliente é cadastrado.' },
+  ];
 
   qrCodeUrl = computed(() => {
     const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
@@ -765,6 +779,84 @@ export class SettingsComponent {
         const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
         if(!success) await this.notificationService.alert(`Erro: ${error?.message}`);
         this.rewardPendingDeletion.set(null);
+    }
+  }
+  
+  // --- Webhook Methods ---
+  openAddWebhookModal() {
+    this.editingWebhook.set(null);
+    this.webhookForm.set({
+      url: '',
+      events: [],
+      secret: uuidv4(),
+      is_active: true,
+    });
+    this.isWebhookModalOpen.set(true);
+  }
+
+  openEditWebhookModal(webhook: Webhook) {
+    this.editingWebhook.set(webhook);
+    this.webhookForm.set({ ...webhook });
+    this.isWebhookModalOpen.set(true);
+  }
+
+  closeWebhookModal() {
+    this.isWebhookModalOpen.set(false);
+  }
+
+  updateWebhookFormField(field: keyof Omit<Webhook, 'id' | 'user_id' | 'created_at'>, value: any) {
+    this.webhookForm.update(form => ({ ...form, [field]: value }));
+  }
+  
+  toggleWebhookEvent(eventId: WebhookEvent) {
+    this.webhookForm.update(form => {
+      const currentEvents = new Set(form.events || []);
+      if (currentEvents.has(eventId)) {
+        currentEvents.delete(eventId);
+      } else {
+        currentEvents.add(eventId);
+      }
+      return { ...form, events: Array.from(currentEvents) };
+    });
+  }
+  
+  async saveWebhook() {
+    const form = this.webhookForm();
+    if (!form.url?.trim() || !form.url.startsWith('https://')) {
+      await this.notificationService.alert('A URL do webhook é obrigatória e deve ser um endereço HTTPS válido.');
+      return;
+    }
+
+    let result;
+    if (this.editingWebhook()) {
+      result = await this.settingsDataService.updateWebhook(this.editingWebhook()!.id!, form);
+    } else {
+      result = await this.settingsDataService.addWebhook(form);
+    }
+
+    if (result.success) {
+      this.closeWebhookModal();
+    } else {
+      await this.notificationService.alert(`Erro ao salvar webhook: ${result.error?.message}`);
+    }
+  }
+
+  requestDeleteWebhook(webhook: Webhook) {
+    this.webhookPendingDeletion.set(webhook);
+  }
+
+  cancelDeleteWebhook() {
+    this.webhookPendingDeletion.set(null);
+  }
+
+  async confirmDeleteWebhook() {
+    const webhook = this.webhookPendingDeletion();
+    if (webhook) {
+      const { success, error } = await this.settingsDataService.deleteWebhook(webhook.id);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao deletar webhook: ${error?.message}`);
+      }
+      this.webhookPendingDeletion.set(null);
     }
   }
 }
