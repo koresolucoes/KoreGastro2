@@ -19,7 +19,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { DemoService } from '../../services/demo.service';
 
-type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'integracoes' | 'seguranca';
 
 @Component({
   selector: 'app-settings',

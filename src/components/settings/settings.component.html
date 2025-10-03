@@ -28,6 +28,14 @@
               [class.text-gray-400]="activeTab() !== 'funcionalidades'">
         Funcionalidades
       </button>
+      <button (click)="setActiveTab('integracoes')"
+              class="py-3 px-1 border-b-2 text-sm font-medium"
+              [class.border-blue-500]="activeTab() === 'integracoes'"
+              [class.text-white]="activeTab() === 'integracoes'"
+              [class.border-transparent]="activeTab() !== 'integracoes'"
+              [class.text-gray-400]="activeTab() !== 'integracoes'">
+        Integrações
+      </button>
       <button (click)="setActiveTab('seguranca')"
               class="py-3 px-1 border-b-2 text-sm font-medium"
               [class.border-blue-500]="activeTab() === 'seguranca'"
@@ -319,23 +327,8 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         
         <div class="bg-gray-800 rounded-lg p-6 space-y-6">
-          <!-- iFood Integration -->
-          <div>
-            <h2 class="text-xl font-semibold text-white mb-4">Integração iFood</h2>
-             <div class="space-y-4">
-                <div>
-                  <label for="ifood-merchant-id" class="block text-sm font-medium text-gray-300 mb-1">iFood Merchant ID</label>
-                  <input type="text" id="ifood-merchant-id" [value]="companyProfileForm().ifood_merchant_id || ''" (input)="updateCompanyProfileField('ifood_merchant_id', $any($event.target).value)" placeholder="Cole seu ID do iFood aqui" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500">
-                   <p class="text-xs text-gray-400 mt-1">Este ID é necessário para que o webhook identifique seu restaurante.</p>
-                </div>
-                <div>
-                  <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Configurações iFood</button>
-                </div>
-            </div>
-          </div>
-
           <!-- Panel: Loyalty Program -->
-          <div class="pt-6 border-t border-gray-700">
+          <div>
             <h2 class="text-xl font-semibold text-white mb-4">Programa de Fidelidade</h2>
             <div class="space-y-4 bg-gray-900/50 p-4 rounded-lg">
                 <div class="flex items-center justify-between">
@@ -486,6 +479,24 @@
         </div>
       </div>
     }
+    @case ('integracoes') {
+      <div class="max-w-3xl mx-auto space-y-6">
+        <!-- Panel: iFood Integration -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h2 class="text-xl font-semibold text-white mb-4">Integração iFood</h2>
+          <div class="space-y-4">
+            <div>
+              <label for="ifood-merchant-id" class="block text-sm font-medium text-gray-300 mb-1">iFood Merchant ID</label>
+              <input type="text" id="ifood-merchant-id" [value]="companyProfileForm().ifood_merchant_id || ''" (input)="updateCompanyProfileField('ifood_merchant_id', $any($event.target).value)" placeholder="Cole seu ID do iFood aqui" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500">
+              <p class="text-xs text-gray-400 mt-1">Este ID é necessário para que o webhook identifique seu restaurante.</p>
+            </div>
+            <div>
+              <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Configurações iFood</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
     @case ('seguranca') {
       <!-- Panel: Roles and Permissions -->
       <div class="bg-gray-800 rounded-lg p-6 lg:col-span-1 xl:col-span-1 max-w-3xl mx-auto">
@@ -575,6 +586,7 @@
         <input type="text" [value]="supplierForm().contact_person || ''" (input)="updateSupplierFormField('contact_person', $any($event.target).value)" placeholder="Pessoa de Contato" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         <input type="text" [value]="supplierForm().phone || ''" (input)="updateSupplierFormField('phone', $any($event.target).value)" placeholder="Telefone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         <input type="email" [value]="supplierForm().email || ''" (input)="updateSupplierFormField('email', $any($event.target).value)" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        <input type="text" [value]="supplierForm().address || ''" (input)="updateSupplierFormField('address', $any($event.target).value)" placeholder="Endereço" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
          <button (click)="closeSupplierModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>

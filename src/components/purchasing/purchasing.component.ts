@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -27,7 +28,8 @@ type FormItem = {
 export class PurchasingComponent implements OnInit {
     inventoryState = inject(InventoryStateService);
     purchasingDataService = inject(PurchasingDataService);
-    router = inject(Router);
+    // FIX: Explicitly type the injected Router to resolve property access errors.
+    router: Router = inject(Router);
     notificationService = inject(NotificationService);
 
     purchaseOrders = this.inventoryState.purchaseOrders;

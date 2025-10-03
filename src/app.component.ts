@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -26,7 +27,8 @@ export class AppComponent {
   supabaseStateService = inject(SupabaseStateService);
   subscriptionStateService = inject(SubscriptionStateService);
   demoService = inject(DemoService);
-  router = inject(Router);
+  // FIX: Explicitly type the injected Router to resolve property access errors.
+  router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;

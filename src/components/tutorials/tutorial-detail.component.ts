@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,7 +14,8 @@ import { map } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TutorialDetailComponent {
-  private route = inject(ActivatedRoute);
+  // FIX: Explicitly type the injected ActivatedRoute service.
+  private route: ActivatedRoute = inject(ActivatedRoute);
   private tutorialService = inject(TutorialService);
 
   private tutorialId = toSignal(this.route.paramMap.pipe(map(params => params.get('id'))));

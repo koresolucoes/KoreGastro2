@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
@@ -30,8 +31,10 @@ export class MenuComponent implements OnInit, OnDestroy {
   private recipeState = inject(RecipeStateService);
   private settingsState = inject(SettingsStateService);
   private pricingService = inject(PricingService);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  // FIX: Explicitly type the injected ActivatedRoute service.
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  // FIX: Explicitly type the injected Router service.
+  private router: Router = inject(Router);
   private publicDataService = inject(PublicDataService);
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
