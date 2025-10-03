@@ -401,6 +401,95 @@ Use este endpoint para adicionar ou remover pontos de fidelidade de um cliente. 
 
 ---
 
+### 🔌 API de Reservas
+
+A API de Reservas permite a integração com sistemas externos para consulta de disponibilidade e criação de novas reservas, como o "Reservar com o Google" ou o site do restaurante.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/reservas`
+
+Use este endpoint para consultar os horários disponíveis.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+*   `action` (obrigatório): Deve ser `disponibilidade`.
+*   `data` (obrigatório): A data desejada no formato `YYYY-MM-DD`.
+*   `numero_pessoas` (obrigatório): A quantidade de pessoas para a reserva.
+
+**Exemplo de Requisição:**
+```
+GET https://gastro.koresolucoes.com.br/api/reservas?restaurantId=SEU_USER_ID&action=disponibilidade&data=2024-10-26&numero_pessoas=4
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+{
+  "availability": [
+    "19:00",
+    "19:30",
+    "20:00",
+    "21:00"
+  ]
+}
+```
+*A lista estará vazia se não houver horários disponíveis ou se o restaurante estiver fechado no dia.*
+
+---
+
+#### `POST /api/reservas`
+
+Use este endpoint para criar uma nova reserva.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "customer_name": "Ana Silva",
+  "customer_phone": "11987654321",
+  "customer_email": "ana.silva@email.com",
+  "party_size": 4,
+  "reservation_time": "2024-10-26T19:30:00.000Z",
+  "notes": "Preferência por mesa na janela."
+}
+```
+
+**Campos:**
+
+*   `restaurantId` (obrigatório): String.
+*   `customer_name` (obrigatório): String. Nome do cliente.
+*   `party_size` (obrigatório): Número. Quantidade de pessoas.
+*   `reservation_time` (obrigatório): String ISO 8601 (UTC). Data e hora exatas da reserva.
+*   `customer_phone` (opcional): String.
+*   `customer_email` (opcional): String.
+*   `notes` (opcional): String.
+
+**Resposta (Sucesso 201 Created):** Retorna o objeto completo da reserva recém-criada, com status "PENDING".
+
+```json
+{
+    "id": "uuid-da-reserva-criada",
+    "user_id": "SEU_USER_ID_AQUI",
+    "customer_name": "Ana Silva",
+    "customer_email": "ana.silva@email.com",
+    "customer_phone": "11987654321",
+    "party_size": 4,
+    "reservation_time": "2024-10-26T19:30:00+00:00",
+    "notes": "Preferência por mesa na janela.",
+    "status": "PENDING",
+    "created_at": "..."
+}
+```
+*As reservas criadas via API ficam com status "Pendente" para que a equipe do restaurante possa confirmá-las no painel do ChefOS.*
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:
