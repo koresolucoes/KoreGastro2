@@ -1,6 +1,6 @@
-import { VercelRequest } from '@vercel/node';
-import { createHmac } from 'crypto';
-import { Buffer } from 'buffer';
+import type { VercelRequest } from '@vercel/node';
+import { createHmac } from 'node:crypto';
+import { Buffer } from 'node:buffer';
 
 /**
  * Asynchronously reads the raw body from a Vercel request stream.
