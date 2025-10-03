@@ -668,11 +668,66 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 ### 🔌 API de Conta
 
-A API de Conta permite que sistemas externos solicitem o fechamento da conta de uma mesa, alterando seu status para "PAGANDO".
+A API de Conta permite que sistemas externos interajam com o status de pagamento de uma mesa.
 
 A autenticação segue o mesmo padrão, usando uma chave Bearer.
 
 **Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/account`
+
+Use este endpoint para obter um resumo completo do pedido aberto de uma mesa. Isso é ideal para que um cliente possa visualizar sua conta em um totem ou aplicativo antes de solicitar o fechamento.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+*   `tableNumber` (obrigatório): O número da mesa para a qual o resumo da conta está sendo solicitado.
+
+**Exemplo de Requisição:**
+```
+GET https://gastro.koresolucoes.com.br/api/account?restaurantId=SEU_USER_ID_AQUI&tableNumber=15
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (Sucesso 200 OK):**
+```json
+{
+  "orderId": "uuid-do-pedido-aberto",
+  "tableNumber": 15,
+  "customer": {
+    "name": "João Ninguém",
+    "phone": "11987654321"
+  },
+  "items": [
+    {
+      "name": "Hambúrguer Clássico",
+      "quantity": 2,
+      "price": 30.00,
+      "total": 60.00,
+      "notes": "Um sem picles, por favor."
+    },
+    {
+      "name": "Refrigerante",
+      "quantity": 2,
+      "price": 8.00,
+      "total": 16.00,
+      "notes": null
+    }
+  ],
+  "summary": {
+    "subtotal": 76.00,
+    "serviceFee": 7.60,
+    "total": 83.60
+  }
+}
+```
+*Se nenhum cliente estiver associado à mesa, o campo `customer` será `null`.*
+
+**Respostas de Erro:**
+
+*   **404 Not Found:** Nenhuma ordem aberta encontrada para a mesa especificada.
 
 ---
 
