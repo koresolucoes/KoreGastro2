@@ -53,16 +53,14 @@ export const MOCK_STATIONS: Station[] = [
 
 export const MOCK_ORDERS: Order[] = [
     {
-        // FIX: The `Order` type does not have a `created_at` property. It was removed.
-        id: 'order-1', table_number: 2, status: 'OPEN', order_type: 'Dine-in', user_id: 'demo-user', timestamp: new Date(Date.now() - 15 * 60000).toISOString(), customer_id: null, completed_at: null,
+        id: 'order-1', table_number: 2, status: 'OPEN', order_type: 'Dine-in', user_id: 'demo-user', created_at: new Date(Date.now() - 15 * 60000).toISOString(), timestamp: new Date(Date.now() - 15 * 60000).toISOString(), customer_id: null, completed_at: null,
         order_items: [
             { id: 'oi-1', order_id: 'order-1', recipe_id: 'recipe-1', name: 'Hambúrguer Clássico', quantity: 2, price: 30, original_price: 30, status: 'EM_PREPARO', station_id: 'station-1', notes: 'Um sem picles', group_id: null, status_timestamps: {'PENDENTE': new Date(Date.now() - 14 * 60000).toISOString(), 'EM_PREPARO': new Date(Date.now() - 5 * 60000).toISOString() }, user_id: 'demo-user', created_at: new Date(Date.now() - 14 * 60000).toISOString(), discount_type: null, discount_value: null },
             { id: 'oi-2', order_id: 'order-1', recipe_id: 'recipe-4', name: 'Refrigerante', quantity: 2, price: 8, original_price: 8, status: 'PRONTO', station_id: 'station-2', notes: null, group_id: null, status_timestamps: {'PENDENTE': new Date(Date.now() - 14 * 60000).toISOString(), 'PRONTO': new Date(Date.now() - 12 * 60000).toISOString() }, user_id: 'demo-user', created_at: new Date(Date.now() - 14 * 60000).toISOString(), discount_type: null, discount_value: null },
         ]
     },
     {
-        // FIX: The `Order` type does not have a `created_at` property. It was removed.
-        id: 'order-2', table_number: 3, status: 'OPEN', order_type: 'Dine-in', user_id: 'demo-user', timestamp: new Date(Date.now() - 30 * 60000).toISOString(), customer_id: null, completed_at: null,
+        id: 'order-2', table_number: 3, status: 'OPEN', order_type: 'Dine-in', user_id: 'demo-user', created_at: new Date(Date.now() - 30 * 60000).toISOString(), timestamp: new Date(Date.now() - 30 * 60000).toISOString(), customer_id: null, completed_at: null,
         order_items: [
              { id: 'oi-3', order_id: 'order-2', recipe_id: 'recipe-2', name: 'Pizza Margherita', quantity: 1, price: 50, original_price: 50, status: 'SERVIDO', station_id: 'station-1', notes: null, group_id: null, status_timestamps: {}, user_id: 'demo-user', created_at: new Date().toISOString(), discount_type: null, discount_value: null }
         ]

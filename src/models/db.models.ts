@@ -222,6 +222,7 @@ export interface Order {
   order_type: OrderType;
   timestamp: string;
   customer_id: string | null;
+  created_at: string;
   user_id: string;
   order_items: OrderItem[];
   customers?: Customer; // Relation

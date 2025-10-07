@@ -152,7 +152,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return this.posState.openOrders()
       .filter(o => o.order_type === 'iFood-Delivery' || o.order_type === 'iFood-Takeout')
       .map(order => {
-        const startTime = new Date(order.timestamp).getTime();
+        const startTime = new Date(order.timestamp || order.created_at).getTime();
         const elapsedTime = Math.floor((now - startTime) / 1000);
         const isLate = elapsedTime > 600; // Late after 10 minutes
 
@@ -172,7 +172,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           requiresDeliveryCode: requiresCode,
         };
       })
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .sort((a, b) => new Date(a.timestamp || a.created_at).getTime() - new Date(b.timestamp || b.created_at).getTime());
   });
 
   receivedOrders = computed(() => this.processedOrders().filter(o => o.ifoodStatus === 'RECEIVED'));
