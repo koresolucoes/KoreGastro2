@@ -809,7 +809,7 @@ Use este endpoint para solicitar que uma mesa seja movida para o status de pagam
 
 ### 🔌 API de Fidelidade (Recompensas)
 
-A API de Recompensas permite que um sistema externo gerencie os prêmios do programa de fidelidade.
+A API de Recompensas permite que um sistema externo consulte quais prêmios do programa de fidelidade estão disponíveis para resgate.
 
 A autenticação segue o mesmo padrão, usando uma chave Bearer.
 
@@ -857,58 +857,6 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 *   `points_cost`: Quantidade de pontos necessários.
 *   `type`: O tipo de recompensa (`free_item`, `discount_fixed`, `discount_percentage`).
 *   `value`: O valor da recompensa. Para `free_item`, é o `external_code` do produto. Para descontos, é o valor numérico.
-
----
-#### `POST /api/recompensas`
-
-Use este endpoint para criar uma nova recompensa de fidelidade.
-
-**Corpo da Requisição (JSON):**
-```json
-{
-  "restaurantId": "SEU_USER_ID_AQUI",
-  "name": "Sobremesa Grátis",
-  "description": "Qualquer sobremesa da casa por 120 pontos.",
-  "points_cost": 120,
-  "reward_type": "free_item",
-  "reward_value": "SKU-DA-SOBREMESA",
-  "is_active": true
-}
-```
-
-**Campos:**
-*   `restaurantId` (obrigatório): String.
-*   `name` (obrigatório): String. Nome do prêmio.
-*   `description` (opcional): String.
-*   `points_cost` (obrigatório): Número. Custo em pontos.
-*   `reward_type` (obrigatório): String. Tipo (`free_item`, `discount_fixed`, `discount_percentage`).
-*   `reward_value` (obrigatório): String. Para `free_item`, deve ser o **`external_code`** de um item do cardápio. Para os outros, o valor do desconto.
-*   `is_active` (opcional): Booleano. Padrão é `true`.
-
-**Resposta (Sucesso 201 Created):** Retorna o objeto completo da recompensa recém-criada.
-
----
-#### `PATCH /api/recompensas`
-
-Use este endpoint para atualizar uma recompensa existente.
-
-**Query Parameters:**
-*   `id` (obrigatório): O UUID da recompensa a ser atualizada.
-
-**Corpo da Requisição (JSON):**
-```json
-{
-  "restaurantId": "SEU_USER_ID_AQUI",
-  "points_cost": 150,
-  "is_active": false
-}
-```
-
-**Campos:**
-*   `restaurantId` (obrigatório): String.
-*   Todos os campos do `POST` são **opcionais** e podem ser enviados para atualização.
-
-**Resposta (Sucesso 200 OK):** Retorna o objeto completo e atualizado da recompensa.
 
 ---
 
