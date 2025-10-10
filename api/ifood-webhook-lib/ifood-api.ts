@@ -1,5 +1,7 @@
 const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
+let cachedToken: { accessToken: string; expiresAt: number; } | null = null;
+
 /**
  * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
  * This is the central function for all outgoing iFood API calls.
@@ -15,29 +17,42 @@ async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET'
     throw new Error('Server configuration error: iFood credentials missing.');
   }
 
-  // 1. Get Access Token
-  console.log('[iFood API] Requesting access token...');
-  const tokenParams = new URLSearchParams({
-    grantType: 'client_credentials',
-    clientId: clientId,
-    clientSecret: clientSecret,
-  });
+  // 1. Get Access Token (with Caching)
+  const now = Date.now();
+  let accessToken: string;
 
-  const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: tokenParams,
-  });
+  // Use token if it exists and is not expired (with a 60-second buffer for safety)
+  if (cachedToken && cachedToken.expiresAt > now + 60000) {
+    console.log('[iFood API] Using cached access token.');
+    accessToken = cachedToken.accessToken;
+  } else {
+    console.log('[iFood API] Requesting new access token...');
+    const tokenParams = new URLSearchParams({
+      grantType: 'client_credentials',
+      clientId: clientId,
+      clientSecret: clientSecret,
+    });
 
-  if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error('[iFood API] Failed to get access token:', errorText);
-    throw new Error(`iFood authentication failed: ${errorText}`);
+    const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams,
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('[iFood API] Failed to get access token:', errorText);
+      throw new Error(`iFood authentication failed: ${errorText}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    accessToken = tokenData.accessToken;
+
+    // `expiresIn` is in seconds. Convert to a future timestamp in milliseconds.
+    const expiresAt = now + (tokenData.expiresIn * 1000);
+    cachedToken = { accessToken, expiresAt };
+    console.log('[iFood API] New access token received and cached successfully.');
   }
-
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.accessToken;
-  console.log('[iFood API] Access token received successfully.');
 
   // 2. Make the authenticated API call
   const fullUrl = `${iFoodApiBaseUrl}${endpoint}`;

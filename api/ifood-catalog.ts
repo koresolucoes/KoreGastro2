@@ -2,7 +2,17 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
 
+let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+
 async function getIFoodAccessToken(): Promise<string> {
+    const now = Date.now();
+    // Use token if it exists and is not expired (with a 60-second buffer)
+    if (cachedToken && cachedToken.expiresAt > now + 60000) {
+        console.log('[iFood Catalog Proxy] Using cached access token.');
+        return cachedToken.accessToken;
+    }
+
+    console.log('[iFood Catalog Proxy] Requesting new access token...');
     const clientId = process.env.IFOOD_CLIENT_ID;
     const clientSecret = process.env.IFOOD_CLIENT_SECRET;
 
@@ -29,6 +39,16 @@ async function getIFoodAccessToken(): Promise<string> {
     }
 
     const tokenData = await tokenResponse.json();
+    
+    // `expiresIn` is in seconds. Convert to a future timestamp in milliseconds.
+    const expiresAt = now + (tokenData.expiresIn * 1000);
+
+    cachedToken = {
+        accessToken: tokenData.accessToken,
+        expiresAt: expiresAt,
+    };
+    
+    console.log('[iFood Catalog Proxy] New token cached successfully.');
     return tokenData.accessToken;
 }
 
