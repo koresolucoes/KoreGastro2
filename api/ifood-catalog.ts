@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const iFoodApiBaseUrl = 'https://merchant-api.ifood.com.br';
+const iFoodApiBaseUrl = process.env.IFOOD_API_URL || 'https://merchant-api.ifood.com.br';
 
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
