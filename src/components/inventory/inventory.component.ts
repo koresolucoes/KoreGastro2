@@ -2,6 +2,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
@@ -349,7 +350,10 @@ export class InventoryComponent {
                   // FIX: Add a check to ensure ingredient exists before accessing its properties.
                   .map(([id, quantity]) => {
                     const ingredient = ingredientsById.get(id);
-                    return ingredient ? `${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês` : '';
+                    if (ingredient) {
+                        return `${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês`;
+                    }
+                    return '';
                   })
                   .filter(Boolean)
                   .join(', ');

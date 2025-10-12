@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, untracked, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { IfoodStateService } from '../../services/ifood-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
@@ -7,10 +8,12 @@ import { PosDataService } from '../../services/pos-data.service';
 import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus, IfoodWebhookLog } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
-// FIX: Import SupabaseStateService to access its methods
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { IfoodMenuService, IfoodCancellationReason } from '../../services/ifood-menu.service';
+import { CancelIfoodOrderModalComponent } from './cancel-ifood-order-modal/cancel-ifood-order-modal.component';
 
-interface ProcessedIfoodOrder extends Order {
+
+export interface ProcessedIfoodOrder extends Order {
   elapsedTime: number;
   isLate: boolean;
   timerColor: string;
@@ -24,7 +27,7 @@ type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARR
 @Component({
   selector: 'app-ifood-kds',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CancelIfoodOrderModalComponent, FormsModule],
   templateUrl: './ifood-kds.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -35,8 +38,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   posDataService = inject(PosDataService);
   notificationService = inject(NotificationService);
   soundNotificationService = inject(SoundNotificationService);
-  // FIX: Inject SupabaseStateService
   supabaseStateService = inject(SupabaseStateService);
+  ifoodMenuService = inject(IfoodMenuService);
 
   private timerInterval: any;
   currentTime = signal(Date.now());
@@ -63,6 +66,12 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   orderForCodeModal = signal<ProcessedIfoodOrder | null>(null);
   driverForm = signal({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
   verificationCode = signal('');
+
+  // New signals for cancellation modal
+  isCancelModalOpen = signal(false);
+  orderToCancel = signal<ProcessedIfoodOrder | null>(null);
+  cancellationReasons = signal<IfoodCancellationReason[]>([]);
+  isLoadingCancellationReasons = signal(false);
 
 
   constructor() {
@@ -238,33 +247,56 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   async cancelOrder(order: ProcessedIfoodOrder) {
-      if (!order.ifood_order_id) return;
-      
-      const confirmed = await this.notificationService.confirm(`Tem certeza que deseja cancelar o pedido #${order.ifood_display_id}?`, 'Cancelar Pedido');
-      if (!confirmed) return;
+    if (!order.ifood_order_id) return;
 
-      this.updatingOrders.update(set => new Set(set).add(order.id));
-      this.soundNotificationService.playConfirmationSound();
+    this.isLoadingCancellationReasons.set(true);
+    this.updatingOrders.update(set => new Set(set).add(order.id)); // Show loading spinner on card
 
-      try {
-          const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, 'CANCELLED');
-          if (!apiSuccess) throw apiError;
-          
-          const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id);
-          if (!dbSuccess) throw dbError;
-
-          this.notificationService.show(`Pedido #${order.ifood_display_id} cancelado.`, 'success');
-          this.closeDetailModal();
-
-      } catch (error: any) {
-          this.notificationService.show(`Erro ao cancelar pedido: ${error.message}`, 'error');
-      } finally {
-          this.updatingOrders.update(set => {
-              const newSet = new Set(set);
-              newSet.delete(order.id);
-              return newSet;
-          });
+    try {
+      const reasons = await this.ifoodMenuService.getCancellationReasons(order.ifood_order_id);
+      if (reasons.length === 0) {
+        throw new Error('Não foi possível obter os motivos de cancelamento do iFood.');
       }
+      this.cancellationReasons.set(reasons);
+      this.orderToCancel.set(order);
+      this.isCancelModalOpen.set(true);
+    } catch (error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isLoadingCancellationReasons.set(false);
+      // Don't remove from updatingOrders yet, modal will take over
+    }
+  }
+
+  async handleConfirmCancellation(details: { code: string; reason: string; }) {
+    this.isCancelModalOpen.set(false);
+    const order = this.orderToCancel();
+    if (!order || !order.ifood_order_id) return;
+
+    // Spinner is already active from cancelOrder method
+    this.soundNotificationService.playConfirmationSound();
+
+    try {
+      const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, 'CANCELLED', details);
+      if (!apiSuccess) throw apiError;
+      
+      // The webhook will handle the DB update, but we can optimistically update to provide faster feedback.
+      const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id);
+      if (!dbSuccess) throw dbError;
+
+      this.notificationService.show(`Solicitação de cancelamento para #${order.ifood_display_id} enviada.`, 'success');
+      this.closeDetailModal();
+
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao cancelar pedido: ${error.message}`, 'error');
+    } finally {
+      this.updatingOrders.update(set => {
+        const newSet = new Set(set);
+        newSet.delete(order.id);
+        return newSet;
+      });
+      this.orderToCancel.set(null);
+    }
   }
 
   async deleteOrder(order: ProcessedIfoodOrder) {
@@ -343,7 +375,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       const { success, error } = await this.ifoodDataService.sendLogisticsAction(ifoodOrderId, action, details);
       if (!success) throw error;
       // Manually refetch logs to update the UI state
-      // FIX: Call refetchIfoodLogs from the correct service
       await this.supabaseStateService.refetchIfoodLogs(); 
     } catch (error: any) {
       this.notificationService.show(`Erro na ação de logística: ${error.message}`, 'error');
