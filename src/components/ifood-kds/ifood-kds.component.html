@@ -166,16 +166,6 @@
   </main>
 </div>
 
-<!-- Cancel Order Modal -->
-@if(isCancelModalOpen()) {
-  <app-cancel-ifood-order-modal
-    [order]="orderToCancel()"
-    [reasons]="cancellationReasons()"
-    (closeModal)="isCancelModalOpen.set(false)"
-    (confirmCancellation)="handleConfirmCancellation($event)">
-  </app-cancel-ifood-order-modal>
-}
-
 <!-- Log Detail Modal -->
 @if(selectedLogForDetail(); as log) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeLogDetailModal()">

@@ -93,10 +93,7 @@ export class MiseEnPlaceComponent {
           .map(i => {
             // FIX: Add a guard to ensure ingredientDetails is not undefined.
             const ingredientDetails = ingredientsMap.get(i.ingredient_id);
-            if (!ingredientDetails) {
-                return { ...i, name: 'Ingrediente Excluído', unit: 'un' as IngredientUnit, quantity: i.quantity };
-            }
-            const baseUnit = ingredientDetails.unit;
+            const baseUnit = ingredientDetails?.unit || 'un';
             let displayUnit: IngredientUnit = baseUnit;
             let displayQuantity = i.quantity;
 
@@ -111,7 +108,7 @@ export class MiseEnPlaceComponent {
             return {
               ...i,
               // FIX: Add a guard to ensure ingredientDetails is not undefined.
-              name: ingredientDetails.name,
+              name: ingredientDetails?.name || '?',
               unit: displayUnit,
               quantity: displayQuantity
             };

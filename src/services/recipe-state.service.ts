@@ -89,10 +89,9 @@ export class RecipeStateService {
                 // FIX: Add a guard to ensure childRecipe is not undefined.
                 const childRecipe = recipesMap.get(rsr.child_recipe_id);
                 // The ingredient to deduct is the one linked to the sub-recipe via source_ingredient_id
-                if (childRecipe?.source_ingredient_id) {
-                    return { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity };
-                }
-                return null;
+                return childRecipe?.source_ingredient_id 
+                    ? { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity }
+                    : null;
             })
             .filter((item): item is { ingredientId: string, quantity: number } => item !== null);
 
@@ -121,7 +120,7 @@ export class RecipeStateService {
 
       for (const ing of composition.directIngredients) {
         // FIX: Explicitly cast the map get result to number to satisfy the compiler.
-        if (((ingredientsStockMap.get(ing.ingredientId)) ?? 0) < ing.quantity) {
+        if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) < ing.quantity) {
           memoCanProduce.set(recipeId, false);
           return false;
         }
@@ -145,7 +144,7 @@ export class RecipeStateService {
 
       if (composition) {
         for (const ing of composition.directIngredients) {
-          if (((ingredientsStockMap.get(ing.ingredientId)) ?? 0) <= 0) {
+          if (((ingredientsStockMap.get(ing.ingredientId) as number | undefined) ?? 0) <= 0) {
             hasStock = false;
             break;
           }
@@ -153,7 +152,7 @@ export class RecipeStateService {
         if (!hasStock) return { ...recipe, hasStock };
 
         for (const sub of composition.subRecipeIngredients) {
-          const subRecipeStock = (ingredientsStockMap.get(sub.ingredientId)) ?? 0;
+          const subRecipeStock = (ingredientsStockMap.get(sub.ingredientId) as number | undefined) ?? 0;
           
           if (subRecipeStock > 0) {
             continue;

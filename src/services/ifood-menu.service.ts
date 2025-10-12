@@ -5,11 +5,6 @@ import { Recipe } from '../models/db.models';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
 
-export interface IfoodCancellationReason {
-  code: string;
-  description: string;
-}
-
 export interface IfoodCatalog {
   catalogId: string;
   context: string[];
@@ -117,11 +112,6 @@ export class IfoodMenuService {
      return this.proxyRequest<{categories: UnsellableCategory[]}>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/unsellableItems`);
   }
   
-  async getCancellationReasons(orderId: string): Promise<IfoodCancellationReason[]> {
-    const response = await this.proxyRequest<{ cancellationReasons: IfoodCancellationReason[] }>('GET', `/order/v1.0/orders/${orderId}/cancellationReasons`);
-    return response.cancellationReasons || [];
-  }
-
   async createCategory(catalogId: string, name: string, sequence: number): Promise<{ id: string }> {
     const payload = {
       name: name,
