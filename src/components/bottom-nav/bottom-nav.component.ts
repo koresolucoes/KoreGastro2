@@ -74,7 +74,7 @@ export class BottomNavComponent {
       name: 'Produção',
       icon: 'soup_kitchen',
       children: [
-        { name: 'Cozinha (KDS)', path: '/kds', icon: 'countertop', roles: ['Gerente', 'Cozinha'] },
+        { name: 'Cozinha (KDS)', path: '/kds', icon: 'deck', roles: ['Gerente', 'Cozinha'] },
         { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] },
         { name: 'Fichas Técnicas', path: '/technical-sheets', icon: 'list_alt', roles: ['Gerente'] },
       ]
