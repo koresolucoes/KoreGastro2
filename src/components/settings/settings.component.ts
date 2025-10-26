@@ -66,6 +66,7 @@ export class SettingsComponent {
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
 
   // Tab state
   activeTab = signal<SettingsTab>('empresa');

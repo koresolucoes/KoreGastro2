@@ -8,9 +8,7 @@
       <span>Chef</span><span class="text-blue-500">OS</span>
     </div>
     <button (click)="toggleSidebar()" class="p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-      <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-      </svg>
+      <span class="material-symbols-outlined">menu</span>
     </button>
   </div>
   
@@ -27,16 +25,12 @@
                 @if (item.imageUrl) {
                   <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 flex-shrink-0 object-contain">
                 } @else if (item.icon) {
-                  <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-                  </svg>
+                  <span class="material-symbols-outlined h-6 w-6 flex-shrink-0">{{ item.icon }}</span>
                 }
                 <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
               </div>
               @if(isSidebarOpen()) {
-                <svg class="h-5 w-5 transition-transform duration-200 flex-shrink-0" [class.rotate-90]="expandedGroups()[item.name]">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
+                <span class="material-symbols-outlined h-5 w-5 transition-transform duration-200 flex-shrink-0" [class.rotate-90]="expandedGroups()[item.name]">chevron_right</span>
               }
             </button>
             @if (expandedGroups()[item.name] && isSidebarOpen()) {
@@ -45,9 +39,7 @@
                   <li>
                     <a [routerLink]="child.path" routerLinkActive="bg-blue-600 text-white" 
                        class="flex items-center h-12 pl-12 pr-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200">
-                      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="child.icon" />
-                      </svg>
+                      <span class="material-symbols-outlined h-5 w-5">{{child.icon}}</span>
                       <span class="font-medium truncate">{{ child.name }}</span>
                     </a>
                   </li>
@@ -61,9 +53,7 @@
               @if (item.imageUrl) {
                 <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 flex-shrink-0 object-contain">
               } @else if (item.icon) {
-                <svg class="h-6 w-6 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon" />
-                </svg>
+                <span class="material-symbols-outlined h-6 w-6 flex-shrink-0">{{ item.icon }}</span>
               }
               <span class="font-medium truncate" [class.hidden]="!isSidebarOpen()">{{ item.name }}</span>
             </a>
@@ -82,7 +72,7 @@
                   @if (employee.photo_url) {
                     <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
                   } @else {
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span class="material-symbols-outlined text-4xl text-gray-400">account_circle</span>
                   }
                 </div>
                 <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">
@@ -106,7 +96,7 @@
           @if (companyProfile()?.logo_url; as logoUrl) {
             <img [src]="logoUrl" alt="Logo da Empresa" class="w-8 h-8 rounded-full object-cover">
           } @else {
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <span class="material-symbols-outlined text-4xl text-gray-400">storefront</span>
           }
         </div>
         <div [class.hidden]="!isSidebarOpen()" class="flex-1 min-w-0">

@@ -329,6 +329,16 @@
                    <p class="text-xs text-gray-400 mt-1">Este ID é necessário para que o webhook identifique seu restaurante.</p>
                 </div>
                 <div>
+                  <label for="ifood-webhook-url" class="block text-sm font-medium text-gray-300 mb-1">URL do Webhook</label>
+                  <div class="flex gap-2">
+                    <input id="ifood-webhook-url" type="text" readonly [value]="webhookUrl" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm">
+                    <button (click)="copyToClipboard(webhookUrl)" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shrink-0" title="Copiar URL">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6" /></svg>
+                    </button>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1">Copie esta URL e cole no campo "URL para eventos" no seu portal de parceiros iFood.</p>
+                </div>
+                <div>
                   <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Configurações iFood</button>
                 </div>
             </div>
@@ -493,7 +503,7 @@
                     <div class="flex gap-2">
                       <input type="text" readonly [value]="publicMenuUrl()" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm">
                       <button (click)="copyToClipboard(publicMenuUrl())" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shrink-0" title="Copiar link">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6" /></svg>
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6" /></svg>
                       </button>
                     </div>
                   </div>
@@ -594,6 +604,7 @@
         <input type="text" [value]="supplierForm().contact_person || ''" (input)="updateSupplierFormField('contact_person', $any($event.target).value)" placeholder="Pessoa de Contato" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         <input type="text" [value]="supplierForm().phone || ''" (input)="updateSupplierFormField('phone', $any($event.target).value)" placeholder="Telefone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         <input type="email" [value]="supplierForm().email || ''" (input)="updateSupplierFormField('email', $any($event.target).value)" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        <input type="text" [value]="supplierForm().address || ''" (input)="updateSupplierFormField('address', $any($event.target).value)" placeholder="Endereço" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
          <button (click)="closeSupplierModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
