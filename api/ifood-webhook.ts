@@ -61,9 +61,34 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     
     const eventCode = payload.fullCode || payload.code;
+    
     if (eventCode === 'KEEPALIVE') {
-      if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_KEEPALIVE');
-      return response.status(202).send({ message: 'Accepted' });
+      if (payload.merchantIds && Array.isArray(payload.merchantIds)) {
+        // Per-merchant heartbeat
+        console.log('[Webhook] KEEPALIVE event for merchants:', payload.merchantIds);
+        const { data: activeMerchants, error: dbError } = await supabase
+          .from('company_profile')
+          .select('ifood_merchant_id')
+          .in('ifood_merchant_id', payload.merchantIds);
+
+        if (dbError) {
+          console.error('[Webhook] DB error on KEEPALIVE merchant check:', dbError);
+          if (logId) await updateLogStatus(supabase, logId, 'ERROR_KEEPALIVE_DB_CHECK', dbError.message);
+          // Respond with 202 but an empty list to be safe.
+          return response.status(202).json({ merchantIds: [] });
+        }
+        
+        const onlineMerchantIds = (activeMerchants || []).map(m => m.ifood_merchant_id);
+        console.log(`[Webhook] Responding as online for merchants:`, onlineMerchantIds);
+        if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_KEEPALIVE_MERCHANTS');
+        return response.status(202).json({ merchantIds: onlineMerchantIds });
+
+      } else {
+        // Per-application heartbeat
+        console.log('[Webhook] KEEPALIVE event for application.');
+        if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_KEEPALIVE_APP');
+        return response.status(202).send({ message: 'Accepted' });
+      }
     }
 
     const merchantId = payload.merchant?.id || payload.merchantId;
