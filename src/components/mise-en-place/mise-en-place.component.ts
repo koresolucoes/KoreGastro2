@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe } from '../../models/db.models';
+import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe, Ingredient } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.service';
 import { NotificationService } from '../../services/notification.service';
@@ -82,8 +82,10 @@ export class MiseEnPlaceComponent {
     const allPreparations = this.recipeState.recipePreparations();
     const allIngredients = this.recipeState.recipeIngredients();
     const allSubRecipes = this.recipeState.recipeSubRecipes();
-    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
-    const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const recipesMap = new Map<string, Recipe>(allRecipes.map(r => [r.id, r]));
 
     const recipePreps = allPreparations
       .filter(p => p.recipe_id === recipe.id)

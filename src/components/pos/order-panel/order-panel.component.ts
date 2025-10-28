@@ -222,7 +222,8 @@ export class OrderPanelComponent {
   });
 
   private hasEnoughStockFor(recipe: Recipe): boolean {
-    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
     const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
     const reserved = this.reservedIngredients();
 

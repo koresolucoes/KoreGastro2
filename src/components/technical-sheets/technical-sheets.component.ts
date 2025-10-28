@@ -1,5 +1,7 @@
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -154,7 +156,8 @@ export class TechnicalSheetsComponent {
   formTotalCost = computed(() => {
     const form = this.recipeForm();
     let total = 0;
-    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
     const subRecipeCostMap = this.recipeCosts();
 
     for (const item of form.ingredients) {
@@ -209,7 +212,8 @@ export class TechnicalSheetsComponent {
     const preparations = this.recipePreparations().filter(p => p.recipe_id === recipe.id);
     const ingredients = this.recipeIngredients().filter(i => i.recipe_id === recipe.id);
     const subRecipes = this.recipeSubRecipes().filter(sr => sr.parent_recipe_id === recipe.id);
-    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
 
     this.recipeForm.set({
       recipe: { ...recipe },

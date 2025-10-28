@@ -1,4 +1,5 @@
 
+
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
@@ -199,7 +200,8 @@ export class OperationalAuthService {
         const rolesMap = new Map(MOCK_ROLES.map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     } else {
-        const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
+        // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+        const rolesMap = new Map<string, string>(this.hrState.roles().map(r => [r.id, r.name]));
         roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
     }
 

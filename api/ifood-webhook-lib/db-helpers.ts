@@ -252,7 +252,7 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
   // Fetch the order to get payment details and user_id
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, user_id, ifood_payments, order_items(price, quantity)')
+    .select('id, user_id, ifood_payments')
     .eq('ifood_order_id', ifoodOrderId)
     .single();
 
@@ -263,19 +263,22 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     return;
   }
 
-  // Calculate total from order items, as `ifood_payments` might have discounts/fees not reflected in our items
-  const total = order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+  // Calculate total from the `ifood_payments` field, which reflects the actual amount paid.
+  const total = order.ifood_payments?.reduce((sum: number, payment: any) => sum + (payment.value || 0), 0) ?? 0;
   
-  // Extract payment method name from the iFood payload.
-  // The iFood payload is an array, let's take the first method as representative.
-  const paymentMethod = order.ifood_payments?.[0]?.name || 'iFood';
+  // Extract payment method names from the iFood payload.
+  // Join multiple payment methods if they exist.
+  const paymentMethods = order.ifood_payments
+    ?.map((p: any) => p.name)
+    .filter(Boolean)
+    .join(', ') || 'iFood';
 
   // Create a transaction record only if total is greater than 0
   if (total > 0) {
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
-        description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethod})`,
+        description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethods})`,
         type: 'Receita',
         amount: total,
         user_id: order.user_id,

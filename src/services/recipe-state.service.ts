@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Recipe, Category, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Promotion, PromotionRecipe } from '../models/db.models';
+import { Recipe, Category, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Promotion, PromotionRecipe, Ingredient } from '../models/db.models';
 import { InventoryStateService } from './inventory-state.service';
 
 @Injectable({ providedIn: 'root' })
@@ -19,7 +19,8 @@ export class RecipeStateService {
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
 
   recipeCosts = computed(() => {
-    const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
     const recipeIngredients = this.recipeIngredients();
     const recipeSubRecipes = this.recipeSubRecipes();
     const recipes = this.recipes();
@@ -74,7 +75,8 @@ export class RecipeStateService {
     const recipes = this.recipes();
     const recipeIngredients = this.recipeIngredients();
     const recipeSubRecipes = this.recipeSubRecipes();
-    const recipesMap = new Map(recipes.map(r => [r.id, r]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const recipesMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]));
 
     const compositionMap = new Map<string, { directIngredients: { ingredientId: string, quantity: number }[], subRecipeIngredients: { ingredientId: string, quantity: number }[] }>();
 
@@ -102,7 +104,8 @@ export class RecipeStateService {
   });
 
   recipesWithStockStatus = computed(() => {
-    const ingredientsStockMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i.stock]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsStockMap = new Map<string, number>(this.inventoryState.ingredients().map(i => [i.id, i.stock]));
     const directCompositions = this.recipeDirectComposition();
     const allRecipes = this.recipes();
 
