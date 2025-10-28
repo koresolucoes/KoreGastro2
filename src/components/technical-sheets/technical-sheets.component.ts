@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -324,11 +317,11 @@ export class TechnicalSheetsComponent {
 
   updateFormIngredient(prepId: string, ingredientId: string, quantity: number) {
     if (isNaN(quantity) || quantity < 0) return;
-    this.recipeForm().update(form => ({ ...form, ingredients: form.ingredients.map(i => i.preparation_id === prepId && i.ingredient_id === ingredientId ? { ...i, quantity } : i ) }));
+    this.recipeForm.update(form => ({ ...form, ingredients: form.ingredients.map(i => i.preparation_id === prepId && i.ingredient_id === ingredientId ? { ...i, quantity } : i ) }));
   }
   
   updateFormIngredientUnit(prepId: string, ingredientId: string, newUnit: IngredientUnit) {
-    this.recipeForm().update(form => ({
+    this.recipeForm.update(form => ({
         ...form,
         ingredients: form.ingredients.map(i => 
             i.preparation_id === prepId && i.ingredient_id === ingredientId 
@@ -339,16 +332,16 @@ export class TechnicalSheetsComponent {
   }
 
   removeFormIngredient(prepId: string, ingredientId: string) {
-    this.recipeForm().update(form => ({ ...form, ingredients: form.ingredients.filter(i => !(i.preparation_id === prepId && i.ingredient_id === ingredientId)) }));
+    this.recipeForm.update(form => ({ ...form, ingredients: form.ingredients.filter(i => !(i.preparation_id === prepId && i.ingredient_id === ingredientId)) }));
   }
   
   updateFormSubRecipe(childRecipeId: string, quantity: number) {
     if (isNaN(quantity) || quantity < 0) return;
-    this.recipeForm().update(form => ({ ...form, subRecipes: form.subRecipes.map(sr => sr.child_recipe_id === childRecipeId ? { ...sr, quantity } : sr) }));
+    this.recipeForm.update(form => ({ ...form, subRecipes: form.subRecipes.map(sr => sr.child_recipe_id === childRecipeId ? { ...sr, quantity } : sr) }));
   }
 
   removeFormSubRecipe(childRecipeId: string) {
-    this.recipeForm().update(form => ({ ...form, subRecipes: form.subRecipes.filter(sr => sr.child_recipe_id !== childRecipeId) }));
+    this.recipeForm.update(form => ({ ...form, subRecipes: form.subRecipes.filter(sr => sr.child_recipe_id !== childRecipeId) }));
   }
 
   startAddingItem(prepId: string | null) { this.addingToPreparationId.set(prepId); this.itemSearchTerm.set(''); }
@@ -357,13 +350,13 @@ export class TechnicalSheetsComponent {
   addIngredientToPrep(ingredient: Ingredient) {
     const prepId = this.addingToPreparationId();
     if (prepId && prepId !== 'sub-recipe') {
-      this.recipeForm().update(form => ({ ...form, ingredients: [...form.ingredients, { ingredient_id: ingredient.id, quantity: 0, preparation_id: prepId, unit: ingredient.unit }] }));
+      this.recipeForm.update(form => ({ ...form, ingredients: [...form.ingredients, { ingredient_id: ingredient.id, quantity: 0, preparation_id: prepId, unit: ingredient.unit }] }));
     }
     this.stopAddingItem();
   }
 
   addSubRecipeToPrep(recipe: Recipe) {
-    this.recipeForm().update(form => ({ ...form, subRecipes: [...form.subRecipes, { child_recipe_id: recipe.id, quantity: 1 }] }));
+    this.recipeForm.update(form => ({ ...form, subRecipes: [...form.subRecipes, { child_recipe_id: recipe.id, quantity: 1 }] }));
     this.stopAddingItem();
   }
 
@@ -375,8 +368,8 @@ export class TechnicalSheetsComponent {
 
   // --- Data Lookups for Template ---
   getIngredientName(id: string): string { return this.ingredients().find(i => i.id === id)?.name ?? '?'; }
-  // FIX: Explicitly type the result of find and its callback parameter to ensure correct type inference.
-  getIngredientUnit(id: string): IngredientUnit { const ingredient: Ingredient | undefined = this.ingredients().find((i: Ingredient) => i.id === id); return ingredient?.unit ?? 'un'; }
+  // FIX: Explicitly typed the result of find and its callback parameter to ensure correct type inference for '.get()'.
+  getIngredientUnit(id: string): IngredientUnit { return this.ingredients().find((i: Ingredient) => i.id === id)?.unit ?? 'un'; }
   getSubRecipeName(id: string): string { return this.allRecipes().find(r => r.id === id)?.name ?? '?'; }
 
   getCompatibleUnits(baseUnit: IngredientUnit): IngredientUnit[] {

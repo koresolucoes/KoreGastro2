@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -40,12 +40,10 @@ type DashboardWidget = KpiWidget | ChartWidget;
     HourlySalesChartComponent,
     CdkDropList,
     CdkDrag,
-    DatePipe,
     RouterLink
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [DatePipe]
 })
 export class DashboardComponent implements OnInit {
   private supabaseStateService = inject(SupabaseStateService);
