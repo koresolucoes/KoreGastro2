@@ -136,6 +136,9 @@ export class SupabaseStateService {
         // No iFood data in demo
         this.ifoodState.ifoodWebhookLogs.set([]);
         this.ifoodState.ifoodMenuSync.set([]);
+        this.ifoodState.ifoodOptionGroups.set([]);
+        this.ifoodState.ifoodOptions.set([]);
+        this.ifoodState.recipeIfoodOptionGroups.set([]);
 
         console.log("Mock data loaded for demo mode.");
     } catch (e) {
@@ -194,6 +197,16 @@ export class SupabaseStateService {
             break;
         case 'ifood_menu_sync':
             this.refetchSimpleTable('ifood_menu_sync', '*', this.ifoodState.ifoodMenuSync);
+            break;
+        case 'ifood_option_groups':
+            this.refetchSimpleTable('ifood_option_groups', '*, ifood_options(*)', this.ifoodState.ifoodOptionGroups);
+            break;
+        case 'ifood_options':
+            // Refetch the parent group to update its nested options array
+            this.refetchSimpleTable('ifood_option_groups', '*, ifood_options(*)', this.ifoodState.ifoodOptionGroups);
+            break;
+        case 'recipe_ifood_option_groups':
+            this.refetchSimpleTable('recipe_ifood_option_groups', '*', this.ifoodState.recipeIfoodOptionGroups);
             break;
         case 'tables': this.refetchSimpleTable('tables', '*', this.posState.tables); break;
         case 'halls': this.refetchSimpleTable('halls', '*', this.posState.halls); break;
@@ -265,7 +278,8 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes
+      ifoodMenuSync, subscriptions, plans, recipes, ifoodOptionGroups, ifoodOptions,
+      recipeIfoodOptionGroups
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -299,6 +313,9 @@ export class SupabaseStateService {
       supabase.from('subscriptions').select('*').eq('user_id', userId),
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
+      supabase.from('ifood_option_groups').select('*, ifood_options(*)').eq('user_id', userId).order('sequence', { ascending: true }),
+      supabase.from('ifood_options').select('*').eq('user_id', userId).order('sequence', { ascending: true }),
+      supabase.from('recipe_ifood_option_groups').select('*').eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -335,6 +352,10 @@ export class SupabaseStateService {
     this.subscriptionState.subscriptions.set(subscriptions.data || []);
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
+    this.ifoodState.ifoodOptionGroups.set(ifoodOptionGroups.data || []);
+    this.ifoodState.ifoodOptions.set(ifoodOptions.data || []);
+    this.ifoodState.recipeIfoodOptionGroups.set(recipeIfoodOptionGroups.data || []);
+
 
     await this.refreshDashboardAndCashierData();
   }

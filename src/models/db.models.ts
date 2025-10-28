@@ -51,6 +51,39 @@ export interface PaymentSummary {
   count: number;
 }
 
+// --- iFood Option Groups ---
+export interface IfoodOptionGroup {
+  id: string;
+  user_id: string;
+  name: string;
+  external_code: string;
+  min_required: number;
+  max_options: number;
+  sequence: number;
+  created_at: string;
+  ifood_id: string | null; // From iFood API
+  ifood_options?: IfoodOption[]; // Relation
+}
+
+export interface IfoodOption {
+  id: string;
+  user_id: string;
+  ifood_option_group_id: string;
+  name: string;
+  external_code: string;
+  price: number;
+  sequence: number;
+  created_at: string;
+  ifood_product_id: string | null; // From iFood API
+  ifood_option_id: string | null; // From iFood API
+}
+
+export interface RecipeIfoodOptionGroup {
+  recipe_id: string;
+  ifood_option_group_id: string;
+  user_id: string;
+}
+
 
 // --- Main Entities ---
 
