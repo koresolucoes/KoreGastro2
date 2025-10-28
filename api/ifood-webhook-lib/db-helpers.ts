@@ -168,7 +168,14 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       user_id: userId, table_number: 0, status: 'OPEN', order_type: orderType,
       customer_id: customerId, ifood_order_id: ifoodOrderId, ifood_display_id: payload.displayId,
       delivery_info: deliveryInfo,
-      timestamp: payload.createdAt // Store
+      timestamp: payload.createdAt,
+      // New fields for homologation
+      ifood_order_timing: payload.orderTiming,
+      ifood_scheduled_at: payload.schedule?.deliveryDateTime,
+      ifood_payments: payload.payments,
+      ifood_benefits: payload.total?.benefits,
+      ifood_delivery_observations: payload.delivery?.observations,
+      ifood_pickup_code: payload.delivery?.pickupCode,
     })
     .select('id')
     .single();

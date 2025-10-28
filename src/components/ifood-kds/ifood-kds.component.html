@@ -37,7 +37,12 @@
               }
               <div class="flex justify-between items-start">
                 <div>
-                  <h3 class="font-bold text-lg text-white">#{{ order.ifood_display_id }}</h3>
+                  <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <span>#{{ order.ifood_display_id }}</span>
+                    @if(order.ifood_order_timing === 'SCHEDULED') {
+                      <span class="material-symbols-outlined text-base text-cyan-300" title="Pedido Agendado">schedule</span>
+                    }
+                  </h3>
                   <p class="text-sm text-gray-400 truncate">{{ order.customers?.name }}</p>
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
@@ -63,7 +68,12 @@
               }
               <div class="flex justify-between items-start">
                 <div>
-                  <h3 class="font-bold text-lg text-white">#{{ order.ifood_display_id }}</h3>
+                  <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <span>#{{ order.ifood_display_id }}</span>
+                    @if(order.ifood_order_timing === 'SCHEDULED') {
+                      <span class="material-symbols-outlined text-base text-cyan-300" title="Pedido Agendado">schedule</span>
+                    }
+                  </h3>
                   <p class="text-sm text-gray-400 truncate">{{ order.customers?.name }}</p>
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
@@ -93,7 +103,12 @@
               }
               <div class="flex justify-between items-start">
                 <div>
-                  <h3 class="font-bold text-lg text-white">#{{ order.ifood_display_id }}</h3>
+                  <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <span>#{{ order.ifood_display_id }}</span>
+                     @if(order.ifood_order_timing === 'SCHEDULED') {
+                      <span class="material-symbols-outlined text-base text-cyan-300" title="Pedido Agendado">schedule</span>
+                    }
+                  </h3>
                   <p class="text-sm text-gray-400 truncate">{{ order.customers?.name }}</p>
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
@@ -202,18 +217,42 @@
             <div>
               <h3 class="text-xl font-bold text-white">Detalhes do Pedido #{{ order.ifood_display_id }}</h3>
               <p class="text-gray-400 text-sm">{{ order.customers?.name }}</p>
+               @if(order.customers?.cpf) {
+                <p class="text-xs text-gray-400 font-mono mt-1">CPF: {{ order.customers.cpf }}</p>
+              }
             </div>
             <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
         </div>
       </div>
       <div class="flex-1 p-4 overflow-y-auto space-y-4">
+        @if(order.ifood_order_timing === 'SCHEDULED' && order.ifood_scheduled_at) {
+          <div class="bg-cyan-900/50 p-3 rounded-lg text-center border border-cyan-700">
+            <h4 class="font-semibold text-cyan-200 text-sm flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">schedule</span>
+              PEDIDO AGENDADO
+            </h4>
+            <p class="text-xl font-bold text-white">{{ order.ifood_scheduled_at | date:'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+        }
         @if(order.order_type === 'iFood-Delivery' && order.delivery_info) {
             <div class="bg-gray-700/50 p-3 rounded-lg">
-                <h4 class="font-semibold text-white mb-2">Endereço de Entrega</h4>
+                <h4 class="font-semibold text-white mb-2">Entrega</h4>
                 <p class="text-sm text-gray-300">{{ order.delivery_info.deliveryAddress.streetName }}, {{ order.delivery_info.deliveryAddress.streetNumber }}</p>
                 <p class="text-sm text-gray-300">{{ order.delivery_info.deliveryAddress.neighborhood }} - {{ order.delivery_info.deliveryAddress.city }}</p>
                 @if(order.delivery_info.deliveryAddress.complement) {
                     <p class="text-sm text-gray-300">Comp: {{ order.delivery_info.deliveryAddress.complement }}</p>
+                }
+                @if(order.ifood_delivery_observations) {
+                  <div class="mt-2 pt-2 border-t border-gray-600/50">
+                      <p class="text-xs text-gray-400">Observações da Entrega:</p>
+                      <p class="text-sm text-yellow-200 italic">"{{ order.ifood_delivery_observations }}"</p>
+                  </div>
+                }
+                @if(order.ifood_pickup_code) {
+                  <div class="mt-2 pt-2 border-t border-gray-600/50 text-center">
+                    <p class="text-sm text-gray-400">Código de Coleta (Entregador)</p>
+                    <p class="font-mono text-2xl font-bold tracking-widest text-white">{{ order.ifood_pickup_code }}</p>
+                  </div>
                 }
             </div>
         }
@@ -230,15 +269,60 @@
                 }
             </ul>
         </div>
+        <div>
+          <h4 class="font-semibold text-white mb-2">Pagamento</h4>
+          @if (order.ifood_payments && order.ifood_payments.length > 0) {
+            @for(payment of order.ifood_payments; track $index) {
+              <div class="bg-gray-700/50 p-3 rounded-lg space-y-2 text-sm">
+                  <div class="flex justify-between">
+                      <span class="text-gray-300">Método:</span>
+                      <span class="font-semibold text-white">{{ payment.name }}</span>
+                  </div>
+                  @if(payment.card?.brand) {
+                      <div class="flex justify-between">
+                          <span class="text-gray-300">Bandeira:</span>
+                          <span class="font-semibold text-white">{{ payment.card.brand }}</span>
+                      </div>
+                  }
+                  @if(payment.method === 'MONEY' && payment.changeFor > 0) {
+                      <div class="flex justify-between text-yellow-300 mt-2 pt-2 border-t border-gray-600/50">
+                          <span class="font-semibold">Troco para:</span>
+                          <span class="font-bold text-lg">{{ payment.changeFor | currency:'BRL' }}</span>
+                      </div>
+                  }
+              </div>
+            }
+          } @else {
+              <p class="text-sm text-gray-500">Detalhes de pagamento não disponíveis.</p>
+          }
+        </div>
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
-         <button (click)="deleteOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-red-800/80 hover:bg-red-800 text-white transition-colors">
-            Deletar Pedido
-        </button>
-         <div class="flex gap-3">
-             <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
-             <button (click)="cancelOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white">Cancelar no iFood</button>
-         </div>
+      <div class="p-4 bg-gray-900/50 flex flex-col gap-2 border-t border-gray-700">
+        <!-- Financial Summary -->
+        <div class="space-y-1 text-sm">
+            <div class="flex justify-between text-gray-300"><span>Subtotal</span><span>{{ getOrderTotal(order) | currency:'BRL' }}</span></div>
+            @if(order.ifood_benefits && order.ifood_benefits.length > 0) {
+              @for(benefit of order.ifood_benefits; track $index) {
+                <div class="flex justify-between text-yellow-300">
+                  <span>Desconto ({{ benefit.sponsorshipValues[0].name }})</span>
+                  <span class="font-semibold">- {{ benefit.value | currency:'BRL' }}</span>
+                </div>
+              }
+            }
+            <div class="flex justify-between text-white font-bold text-lg pt-1 border-t border-gray-600">
+              <span>Total Pago</span>
+              <span>{{ (getOrderTotal(order) - (order.ifood_benefits?.reduce((acc, b) => acc + b.value, 0) || 0)) | currency:'BRL' }}</span>
+            </div>
+        </div>
+         <div class="flex justify-between items-center pt-2">
+           <button (click)="deleteOrder(order)" class="px-3 py-1 text-xs font-medium rounded-md bg-red-800/80 hover:bg-red-800 text-white transition-colors">
+              Deletar Pedido
+          </button>
+           <div class="flex gap-3">
+               <button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+               <button (click)="cancelOrder(order)" class="px-4 py-2 font-medium rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white">Cancelar no iFood</button>
+           </div>
+        </div>
       </div>
     </div>
   </div>

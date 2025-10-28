@@ -419,4 +419,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     if (status.startsWith('ERROR')) return 'bg-red-600';
     return 'bg-blue-600';
   }
+
+  // Helper for template
+  getOrderTotal(order: Order): number {
+    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
 }

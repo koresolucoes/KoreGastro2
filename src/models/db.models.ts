@@ -231,6 +231,12 @@ export interface Order {
   ifood_display_id?: string | null;
   delivery_info?: IfoodOrderDelivery | null; // Stored as JSONB
   notes?: string | null; // For API orders
+  ifood_order_timing?: string | null;
+  ifood_scheduled_at?: string | null;
+  ifood_payments?: any | null; // JSONB
+  ifood_benefits?: any | null; // JSONB
+  ifood_delivery_observations?: string | null;
+  ifood_pickup_code?: string | null;
 }
 
 export interface OrderItem {
