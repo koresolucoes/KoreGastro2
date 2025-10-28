@@ -249,6 +249,46 @@ export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
 }
 
 export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+  // Fetch the order to get payment details and user_id
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, user_id, ifood_payments, order_items(price, quantity)')
+    .eq('ifood_order_id', ifoodOrderId)
+    .single();
+
+  if (error || !order) {
+    console.error(`[concludeOrderInDb] Could not find order with iFood ID ${ifoodOrderId} to create transaction.`);
+    // Still try to update the status as a fallback
+    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+    return;
+  }
+
+  // Calculate total from order items, as `ifood_payments` might have discounts/fees not reflected in our items
+  const total = order.order_items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+  
+  // Extract payment method name from the iFood payload.
+  // The iFood payload is an array, let's take the first method as representative.
+  const paymentMethod = order.ifood_payments?.[0]?.name || 'iFood';
+
+  // Create a transaction record only if total is greater than 0
+  if (total > 0) {
+    const { error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethod})`,
+        type: 'Receita',
+        amount: total,
+        user_id: order.user_id,
+        date: new Date().toISOString()
+        // employee_id is optional, we can leave it null for iFood orders.
+      });
+    
+    if (transactionError) {
+      console.error(`[concludeOrderInDb] Failed to insert transaction for order ${order.id}:`, transactionError);
+    }
+  }
+
+  // Finally, update the order status
   await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
 }
 

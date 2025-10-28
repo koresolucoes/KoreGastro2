@@ -499,7 +499,9 @@ export class CashierComponent {
 
   getOrderOrigin(order: Order): string {
     if (order.order_type === 'QuickSale') return 'Venda Rápida';
-    if (order.order_type.startsWith('iFood')) return 'iFood';
+    if (order.order_type === 'iFood-Delivery') return 'iFood (Entrega)';
+    if (order.order_type === 'iFood-Takeout') return 'iFood (Retirada)';
+    if (order.order_type.startsWith('iFood')) return 'iFood'; // Fallback
     return `Mesa ${order.table_number}`;
   }
 
