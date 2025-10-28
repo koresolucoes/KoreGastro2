@@ -311,7 +311,7 @@
             }
             <div class="flex justify-between text-white font-bold text-lg pt-1 border-t border-gray-600">
               <span>Total Pago</span>
-              <span>{{ (getOrderTotal(order) - (order.ifood_benefits?.reduce((acc, b) => acc + b.value, 0) || 0)) | currency:'BRL' }}</span>
+              <span>{{ (getOrderTotal(order) - getOrderBenefitsTotal(order)) | currency:'BRL' }}</span>
             </div>
         </div>
          <div class="flex justify-between items-center pt-2">

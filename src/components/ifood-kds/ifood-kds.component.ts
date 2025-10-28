@@ -424,4 +424,12 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   getOrderTotal(order: Order): number {
     return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
+
+  getOrderBenefitsTotal(order: ProcessedIfoodOrder): number {
+    if (!order.ifood_benefits || !Array.isArray(order.ifood_benefits)) {
+      return 0;
+    }
+    // The payload `ifood_benefits` is an array of objects like { value: number }
+    return order.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
+  }
 }
