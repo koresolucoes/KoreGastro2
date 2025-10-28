@@ -173,7 +173,7 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       ifood_order_timing: payload.orderTiming,
       ifood_scheduled_at: payload.schedule?.deliveryDateTime,
       ifood_payments: payload.payments,
-      ifood_benefits: payload.total?.benefits,
+      ifood_benefits: payload.benefits, // FIX: Store the benefits object array, not the total.
       ifood_delivery_observations: payload.delivery?.observations,
       ifood_pickup_code: payload.delivery?.pickupCode,
     })
@@ -263,13 +263,15 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     return;
   }
 
-  // Calculate total from the `ifood_payments` field, which reflects the actual amount paid.
-  const total = order.ifood_payments?.reduce((sum: number, payment: any) => sum + (payment.value || 0), 0) ?? 0;
+  // FIX: Correctly access the 'methods' array within the 'ifood_payments' JSON object.
+  const paymentsData = order.ifood_payments as { methods?: { value: number; method: string }[] };
+
+  // Calculate total from the `methods` array.
+  const total = paymentsData?.methods?.reduce((sum, payment) => sum + (payment.value || 0), 0) ?? 0;
   
-  // Extract payment method names from the iFood payload.
-  // Join multiple payment methods if they exist.
-  const paymentMethods = order.ifood_payments
-    ?.map((p: any) => p.name)
+  // Extract payment method names, which is `method`, not `name`.
+  const paymentMethods = paymentsData?.methods
+    ?.map((p) => p.method)
     .filter(Boolean)
     .join(', ') || 'iFood';
 
