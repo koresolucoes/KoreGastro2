@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -421,7 +423,9 @@ export class TechnicalSheetsComponent {
     this.isAddingIngredient.set(true);
   }
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
-  updateNewIngredientField(field: keyof Ingredient, value: any) {
+  // FIX: Narrowed the type of the 'field' parameter to exclude relational and read-only properties.
+  // This prevents potential type errors when dynamically updating the form signal and aligns with best practices.
+  updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
     this.newIngredientForm.update(form => ({ ...form, [field]: value }));
   }
   async saveNewIngredient() {
