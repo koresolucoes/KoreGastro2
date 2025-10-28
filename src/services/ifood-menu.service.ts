@@ -118,8 +118,12 @@ export class IfoodMenuService {
   }
   
   async getCancellationReasons(orderId: string): Promise<IfoodCancellationReason[]> {
-    const response = await this.proxyRequest<{ cancellationReasons: IfoodCancellationReason[] }>('GET', `/order/v1.0/orders/${orderId}/cancellationReasons`);
-    return response.cancellationReasons || [];
+    const response = await this.proxyRequest<any[]>('GET', `/order/v1.0/orders/${orderId}/cancellationReasons`);
+    // Map the response from iFood's 'cancelCodeId' to our internal 'code'
+    return (response || []).map(r => ({
+      code: r.cancelCodeId,
+      description: r.description
+    }));
   }
 
   async createCategory(catalogId: string, name: string, sequence: number): Promise<{ id: string }> {

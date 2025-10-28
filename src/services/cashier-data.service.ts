@@ -95,6 +95,23 @@ export class CashierDataService {
   private recipeState = inject(RecipeStateService);
   private posState = inject(PosStateService);
   private hrState = inject(HrStateService);
+  
+  async getCompletedOrdersForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Order[] | null; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+
+    return supabase
+      .from('orders')
+      .select('*, order_items(*), customers(*)')
+      .eq('user_id', userId)
+      .eq('status', 'COMPLETED')
+      .gte('completed_at', startDate.toISOString())
+      .lte('completed_at', endDate.toISOString())
+      .order('completed_at', { ascending: false });
+  }
 
   async getTransactionsForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Transaction[] | null; error: any }> {
     const userId = this.authService.currentUser()?.id;

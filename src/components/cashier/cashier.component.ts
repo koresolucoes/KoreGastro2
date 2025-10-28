@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
 import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer } from '../../models/db.models';
@@ -82,13 +82,14 @@ export class CashierComponent {
   newExpenseDescription = signal('');
   newExpenseAmount = signal<number | null>(null);
 
-  // --- Data Signals for Views ---
-  completedOrders = this.cashierState.completedOrders;
-  transactions = this.cashierState.transactions;
-  
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<Order | null>(null);
+  completedOrdersStartDate = signal('');
+  completedOrdersEndDate = signal('');
+  completedOrdersSearchTerm = signal('');
+  isFetchingCompletedOrders = signal(false);
+  completedOrdersForPeriod = signal<Order[]>([]);
 
   // --- Paying Tables Signals ---
   tablesForPayment = computed(() => this.posState.tables().filter(t => t.status === 'PAGANDO'));
@@ -103,6 +104,20 @@ export class CashierComponent {
   isPreBillModalOpen = signal(false);
   selectedOrderForPreBill = signal<Order | null>(null);
   selectedTableForPreBill = signal<Table | null>(null);
+  
+  constructor() {
+    const today = new Date().toISOString().split('T')[0];
+    this.completedOrdersStartDate.set(today);
+    this.completedOrdersEndDate.set(today);
+
+    effect(() => {
+        const startDate = this.completedOrdersStartDate();
+        const endDate = this.completedOrdersEndDate();
+        // This will automatically trigger when the component is initialized
+        // or when the date range changes.
+        this.fetchCompletedOrdersForPeriod(startDate, endDate);
+    }, { allowSignalWrites: true });
+  }
 
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
@@ -403,9 +418,9 @@ export class CashierComponent {
   }
 
   // --- Cash Drawer Computeds & Methods ---
-  openingBalance = computed(() => this.transactions().find(t => t.type === 'Abertura de Caixa')?.amount ?? 0);
-  revenueTransactions = computed(() => this.transactions().filter(t => t.type === 'Receita'));
-  expenseTransactions = computed(() => this.transactions().filter(t => t.type === 'Despesa'));
+  openingBalance = computed(() => this.cashierState.transactions().find(t => t.type === 'Abertura de Caixa')?.amount ?? 0);
+  revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita'));
+  expenseTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Despesa'));
 
   revenueSummary = computed(() => {
     const summary = new Map<string, { count: number, total: number }>();
@@ -494,6 +509,65 @@ export class CashierComponent {
         await this.notificationService.alert(`Falha ao fechar o caixa: ${error?.message}`);
     }
   }
+  
+  // --- Reprint / Details Methods ---
+
+  isTodayFilterActive = computed(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return this.completedOrdersStartDate() === today && this.completedOrdersEndDate() === today;
+  });
+
+  async fetchCompletedOrdersForPeriod(start: string, end: string) {
+    if (!start || !end || this.view() !== 'reprint') return;
+    this.isFetchingCompletedOrders.set(true);
+    const { data, error } = await this.cashierDataService.getCompletedOrdersForPeriod(start, end);
+    if (error) {
+        this.notificationService.show('Erro ao buscar vendas finalizadas.', 'error');
+        this.completedOrdersForPeriod.set([]);
+    } else {
+        this.completedOrdersForPeriod.set(data || []);
+    }
+    this.isFetchingCompletedOrders.set(false);
+  }
+
+  setCompletedOrdersPeriod(period: 'today' | 'yesterday' | 'week') {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    switch (period) {
+        case 'today':
+            // start and end are already today
+            break;
+        case 'yesterday':
+            start.setDate(today.getDate() - 1);
+            end.setDate(today.getDate() - 1);
+            break;
+        case 'week':
+            const dayOfWeek = today.getDay(); // 0 = Sunday
+            const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // adjust when day is sunday
+            start = new Date(today.setDate(diff));
+            end = new Date(); // today
+            break;
+    }
+    this.completedOrdersStartDate.set(start.toISOString().split('T')[0]);
+    this.completedOrdersEndDate.set(end.toISOString().split('T')[0]);
+  }
+
+  completedOrders = computed(() => {
+    const orders = this.completedOrdersForPeriod();
+    const term = this.completedOrdersSearchTerm().toLowerCase();
+
+    if (!term) {
+        return orders; // Already sorted by service
+    }
+
+    return orders.filter(order => 
+        order.id.slice(0, 8).includes(term) ||
+        this.getOrderOrigin(order).toLowerCase().includes(term) ||
+        order.customers?.name.toLowerCase().includes(term)
+    );
+  });
 
   // --- Helper methods for display ---
 
@@ -510,7 +584,7 @@ export class CashierComponent {
   }
 
   getPaymentsForOrder(orderId: string): { method: string, amount: number }[] {
-    const paymentTransactions = this.transactions()
+    const paymentTransactions = this.cashierState.transactions()
       .filter(t => t.type === 'Receita' && t.description.includes(orderId.slice(0, 8)));
     
     const paymentMethodRegex = /\(([^)]+)\)/;

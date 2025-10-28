@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
     <h1 class="text-3xl font-bold text-white">Caixa</h1>
     <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
       <button (click)="view.set('payingTables')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'">Mesas p/ Pagar</button>
@@ -182,7 +182,7 @@
         @case ('cashDrawer') {
           <!-- Mobile Tabbed View -->
           <div class="lg:hidden flex flex-col h-full">
-            <div class="flex-shrink-0 flex space-x-1 bg-gray-700 p-1 rounded-lg mb-4">
+            <div class="flex-shrink-0 flex space-x-1 bg-gray-700 p-1 rounded-lg mb-4 no-print">
               <button (click)="cashDrawerView.set('movement')" class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="cashDrawerView() === 'movement'" [class.text-white]="cashDrawerView() === 'movement'">Movimentação</button>
               <button (click)="cashDrawerView.set('closing')" class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="cashDrawerView() === 'closing'" [class.text-white]="cashDrawerView() === 'closing'">Fechamento</button>
             </div>
@@ -240,17 +240,21 @@
                     @for(summary of revenueSummary(); track summary.method) {<div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Vendas em {{ summary.method }}</span><span class="font-semibold text-green-400">+ {{ summary.total | currency:'BRL' }}</span></div>}
                     <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Total de Despesas</span><span class="font-semibold text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
                 </div>
-                <div class="flex flex-col flex-1">
-                    <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
-                    <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                      <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                      <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                      <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
+                <div class="flex flex-col flex-1 min-h-0">
+                    <div>
+                      <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
+                      <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                        <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
+                      </div>
                     </div>
-                     <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
-                     <div class="flex-1 overflow-y-auto -mr-2 pr-2">
-                        @if(expenseTransactions().length > 0) {<ul class="space-y-2">@for(expense of expenseTransactions(); track expense.id) {<li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm"><span class="text-gray-300">{{ expense.description }}</span><span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span></li>}</ul>} @else {<p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>}
-                     </div>
+                     <div class="flex flex-col flex-1 min-h-0">
+                       <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
+                       <div class="flex-1 overflow-y-auto -mr-2 pr-2">
+                          @if(expenseTransactions().length > 0) {<ul class="space-y-2">@for(expense of expenseTransactions(); track expense.id) {<li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm"><span class="text-gray-300">{{ expense.description }}</span><span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span></li>}</ul>} @else {<p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>}
+                       </div>
+                    </div>
                 </div>
             </div>
             <div class="bg-gray-800 p-6 rounded-lg flex flex-col justify-between">
@@ -268,12 +272,29 @@
         }
         @case ('reprint') {
           <div class="bg-gray-800 rounded-lg h-full flex flex-col">
-            <div class="p-6 border-b border-gray-700 flex-shrink-0">
-              <h2 class="text-xl font-semibold text-white">Vendas Finalizadas (Hoje)</h2>
+            <div class="p-4 border-b border-gray-700 flex-shrink-0 no-print">
+              <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <h2 class="text-xl font-semibold text-white">Vendas Finalizadas</h2>
+                <div class="flex gap-1 bg-gray-900/50 p-1 rounded-lg">
+                  <button (click)="setCompletedOrdersPeriod('today')" class="px-3 py-1 text-xs rounded-md" [class.bg-blue-600]="isTodayFilterActive()">Hoje</button>
+                  <button (click)="setCompletedOrdersPeriod('yesterday')" class="px-3 py-1 text-xs rounded-md">Ontem</button>
+                  <button (click)="setCompletedOrdersPeriod('week')" class="px-3 py-1 text-xs rounded-md">Esta Semana</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="text" [value]="completedOrdersSearchTerm()" (input)="completedOrdersSearchTerm.set($any($event.target).value)" placeholder="Buscar por cliente, origem, ID..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+              </div>
             </div>
-            @if (completedOrders().length === 0) {
+            
+            @if(isFetchingCompletedOrders()) {
               <div class="flex-1 flex items-center justify-center">
-                <p class="text-center text-gray-500 py-16">Nenhuma venda finalizada hoje.</p>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            } @else if (completedOrders().length === 0) {
+              <div class="flex-1 flex items-center justify-center">
+                <p class="text-center text-gray-500 py-16">Nenhuma venda finalizada encontrada para o período selecionado.</p>
               </div>
             } @else {
               <!-- Mobile Card View -->
@@ -284,7 +305,7 @@
                       <div>
                         <p class="font-mono text-xs text-gray-400">#{{ order.id.slice(0, 8) }}</p>
                         <p class="font-medium text-white">{{ getOrderOrigin(order) }}</p>
-                        <p class="text-sm text-gray-300">{{ order.completed_at | date:'HH:mm:ss' }}</p>
+                        <p class="text-sm text-gray-300">{{ order.completed_at | date:'dd/MM/yy HH:mm' }}</p>
                          @if(order.customers) { <p class="text-sm text-blue-300">{{ order.customers.name }}</p> }
                       </div>
                       <p class="text-xl font-semibold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</p>
@@ -315,7 +336,7 @@
                         <td class="px-6 py-4 font-mono text-xs text-white">#{{ order.id.slice(0, 8) }}</td>
                         <td class="px-6 py-4 font-medium text-white">{{ getOrderOrigin(order) }}</td>
                         <td class="px-6 py-4 text-gray-300">{{ order.customers?.name || 'N/A' }}</td>
-                        <td class="px-6 py-4">{{ order.completed_at | date:'HH:mm:ss' }}</td>
+                        <td class="px-6 py-4">{{ order.completed_at | date:'dd/MM/yy HH:mm' }}</td>
                         <td class="px-6 py-4 text-right font-semibold">{{ getOrderTotal(order) | currency:'BRL' }}</td>
                         <td class="px-6 py-4 text-center">
                           <div class="flex justify-center items-center gap-2">
