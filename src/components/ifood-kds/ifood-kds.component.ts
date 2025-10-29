@@ -24,6 +24,7 @@ export interface ProcessedIfoodOrder extends Order {
   logisticsStatus: LogisticsStatus | null;
   requiresDeliveryCode: boolean;
   paymentMethod?: string;
+  changeDue?: number;
 }
 
 type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARRIVED_AT_ORIGIN' | 'DISPATCHED_TO_CUSTOMER' | 'ARRIVED_AT_DESTINATION';
@@ -170,10 +171,13 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private getPaymentMethodText(order: Order): string {
+  private getPaymentDetails(order: Order): { paymentMethod: string; changeDue: number } {
     const payments = order.ifood_payments as any;
+    let paymentMethod = 'Não informado';
+    let changeDue = 0;
+
     if (!payments) {
-      return 'Não informado';
+      return { paymentMethod, changeDue };
     }
 
     let paymentMethodsSource: any[] = [];
@@ -194,20 +198,26 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
                 case 'FOOD_VOUCHER': return 'Vale Alimentação';
                 case 'PIX': return 'PIX';
                 case 'CASH': return 'Dinheiro';
-                default: return name; // Return original name if not in map
+                default: return name;
             }
         }).filter((m): m is string => !!m);
 
         if (methodNames.length > 0) {
-            return methodNames.join(', ');
+            paymentMethod = methodNames.join(', ');
         }
         
         if (paymentMethodsSource.some(p => p.prepaid === true)) {
-            return 'Pago Online';
+            paymentMethod = 'Pago Online';
+        }
+
+        // Check for change due on cash payments
+        const cashPayment = paymentMethodsSource.find(p => p.method === 'CASH');
+        if (cashPayment && cashPayment.cash?.changeFor) {
+            changeDue = cashPayment.cash.changeFor;
         }
     }
 
-    return 'Não informado';
+    return { paymentMethod, changeDue };
   }
 
   processedOrders = computed<ProcessedIfoodOrder[]>(() => {
@@ -226,6 +236,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         if (isLate) timerColor = 'text-red-300';
 
         const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
+        
+        const paymentDetails = this.getPaymentDetails(order);
 
         return {
           ...order,
@@ -235,7 +247,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           ifoodStatus: this.getIfoodStatus(order),
           logisticsStatus: this.getLogisticsStatus(order, allLogs),
           requiresDeliveryCode: requiresCode,
-          paymentMethod: this.getPaymentMethodText(order),
+          paymentMethod: paymentDetails.paymentMethod,
+          changeDue: paymentDetails.changeDue,
         };
       })
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

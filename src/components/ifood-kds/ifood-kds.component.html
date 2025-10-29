@@ -301,6 +301,12 @@
                   <span class="text-gray-300">Método:</span>
                   <span class="font-semibold" [class.text-green-300]="order.paymentMethod === 'Pago Online'">{{ order.paymentMethod }}</span>
               </div>
+              @if(order.changeDue && order.changeDue > 0) {
+                <div class="flex justify-between mt-1">
+                  <span class="text-gray-300">Troco para:</span>
+                  <span class="font-semibold text-yellow-300">{{ order.changeDue | currency:'BRL' }}</span>
+                </div>
+              }
           </div>
         </div>
         <!-- Action Buttons Section -->
