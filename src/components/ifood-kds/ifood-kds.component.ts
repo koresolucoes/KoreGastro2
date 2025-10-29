@@ -23,6 +23,7 @@ export interface ProcessedIfoodOrder extends Order {
   ifoodStatus: IfoodOrderStatus;
   logisticsStatus: LogisticsStatus | null;
   requiresDeliveryCode: boolean;
+  paymentMethod?: string;
 }
 
 type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARRIVED_AT_ORIGIN' | 'DISPATCHED_TO_CUSTOMER' | 'ARRIVED_AT_DESTINATION';
@@ -169,6 +170,46 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private getPaymentMethodText(order: Order): string {
+    const payments = order.ifood_payments as any;
+    if (!payments) {
+      return 'Não informado';
+    }
+
+    let paymentMethodsSource: any[] = [];
+    if (payments && Array.isArray(payments.methods)) {
+        paymentMethodsSource = payments.methods;
+    } else if (Array.isArray(payments)) {
+        paymentMethodsSource = payments;
+    }
+
+    if (paymentMethodsSource.length > 0) {
+        const methodNames = paymentMethodsSource.map(p => {
+            const name = p.name || p.method || p.code;
+            if (!name) return null;
+            switch(name.toUpperCase()) {
+                case 'CREDIT': return 'Crédito';
+                case 'DEBIT': return 'Débito';
+                case 'MEAL_VOUCHER': return 'Vale Refeição';
+                case 'FOOD_VOUCHER': return 'Vale Alimentação';
+                case 'PIX': return 'PIX';
+                case 'CASH': return 'Dinheiro';
+                default: return name; // Return original name if not in map
+            }
+        }).filter((m): m is string => !!m);
+
+        if (methodNames.length > 0) {
+            return methodNames.join(', ');
+        }
+        
+        if (paymentMethodsSource.some(p => p.prepaid === true)) {
+            return 'Pago Online';
+        }
+    }
+
+    return 'Não informado';
+  }
+
   processedOrders = computed<ProcessedIfoodOrder[]>(() => {
     const now = this.currentTime();
     const allLogs = this.webhookLogs();
@@ -194,6 +235,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           ifoodStatus: this.getIfoodStatus(order),
           logisticsStatus: this.getLogisticsStatus(order, allLogs),
           requiresDeliveryCode: requiresCode,
+          paymentMethod: this.getPaymentMethodText(order),
         };
       })
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

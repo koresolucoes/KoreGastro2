@@ -86,6 +86,56 @@ export interface IfoodOptionGroup {
   options: IfoodOption[];
 }
 
+// New interfaces for Merchant Management
+export interface IfoodMerchant {
+  id: string;
+  name: string;
+  corporateName: string;
+}
+
+export interface IfoodMerchantDetails {
+  id: string;
+  name: string;
+  corporateName: string;
+  description: string;
+  averageTicket: number;
+  exclusive: boolean;
+  type: string;
+  status: string;
+  createdAt: string;
+  address: {
+    country: string;
+    state: string;
+    city: string;
+    postalCode: string;
+    district: string;
+    street: string;
+    number: string;
+    latitude: number;
+    longitude: number;
+  };
+}
+
+
+export interface IfoodMerchantStatus {
+  state: 'OPEN' | 'CLOSED' | 'INTERRUPTED';
+  message: string;
+  details?: any;
+}
+
+export interface IfoodInterruption {
+  id: string;
+  start: string; // ISO Date
+  end: string;   // ISO Date
+  description: string;
+}
+
+export interface IfoodOpeningHours {
+  dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  openingTime: string; // "HH:mm"
+  closingTime: string; // "HH:mm"
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -99,11 +149,15 @@ export class IfoodMenuService {
 
   private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', endpoint: string, body: any = null): Promise<T> {
     const merchantId = this.companyProfile()?.ifood_merchant_id;
-    if (!merchantId) {
-      throw new Error('O iFood Merchant ID não está configurado.');
-    }
+    let fullEndpoint = endpoint;
 
-    const fullEndpoint = endpoint.replace('{merchantId}', merchantId);
+    // Only try to replace {merchantId} if it's actually in the endpoint string
+    if (endpoint.includes('{merchantId}')) {
+        if (!merchantId) {
+            throw new Error('O iFood Merchant ID precisa ser configurado para esta operação.');
+        }
+        fullEndpoint = endpoint.replace('{merchantId}', merchantId);
+    }
 
     try {
       const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-catalog', {
@@ -138,6 +192,46 @@ export class IfoodMenuService {
       throw error;
     }
   }
+
+  // --- Merchant Management ---
+  
+  async getMerchants(): Promise<IfoodMerchant[]> {
+    return this.proxyRequest<IfoodMerchant[]>('GET', '/merchant/v1.0/merchants');
+  }
+
+  async getMerchantDetails(): Promise<IfoodMerchantDetails> {
+    return this.proxyRequest<IfoodMerchantDetails>('GET', '/merchant/v1.0/merchants/{merchantId}');
+  }
+
+  async getMerchantStatus(): Promise<IfoodMerchantStatus> {
+    const statuses = await this.proxyRequest<IfoodMerchantStatus[]>('GET', '/merchant/v1.0/merchants/{merchantId}/status');
+    if (!statuses || statuses.length === 0) {
+      throw new Error('Não foi possível obter o status da loja do iFood.');
+    }
+    return statuses[0];
+  }
+
+  async getInterruptions(): Promise<IfoodInterruption[]> {
+    return this.proxyRequest<IfoodInterruption[]>('GET', '/merchant/v1.0/merchants/{merchantId}/interruptions');
+  }
+
+  async createInterruption(interruption: { start: string; end: string; description: string }): Promise<IfoodInterruption> {
+    return this.proxyRequest<IfoodInterruption>('POST', '/merchant/v1.0/merchants/{merchantId}/interruptions', interruption);
+  }
+
+  async deleteInterruption(interruptionId: string): Promise<void> {
+    await this.proxyRequest<void>('DELETE', `/merchant/v1.0/merchants/{merchantId}/interruptions/${interruptionId}`);
+  }
+
+  async getOpeningHours(): Promise<IfoodOpeningHours[]> {
+    return this.proxyRequest<IfoodOpeningHours[]>('GET', '/catalog/v2.0/merchants/{merchantId}/opening-hours');
+  }
+
+  async updateOpeningHours(openingHours: IfoodOpeningHours[]): Promise<void> {
+    await this.proxyRequest<void>('PUT', '/catalog/v2.0/merchants/{merchantId}/opening-hours', { shifts: openingHours });
+  }
+  
+  // --- Catalog Management ---
 
   async getCatalogs(): Promise<IfoodCatalog[]> {
     return this.proxyRequest<IfoodCatalog[]>('GET', '/catalog/v2.0/merchants/{merchantId}/catalogs');

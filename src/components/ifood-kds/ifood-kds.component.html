@@ -47,8 +47,16 @@
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
               </div>
-              <p class="text-xs font-mono" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">{{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}</p>
-              <div class="text-sm border-t border-gray-700 pt-2 mt-auto">
+              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-700/50">
+                <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
+                  {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
+                </span>
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                  <span class="material-symbols-outlined text-sm">payments</span>
+                  <span class="font-semibold">{{ order.paymentMethod }}</span>
+                </span>
+              </div>
+              <div class="text-sm pt-2 mt-auto">
                   <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-md transition-colors">Confirmar e Iniciar Preparo</button>
               </div>
             </div>
@@ -77,6 +85,15 @@
                   <p class="text-sm text-gray-400 truncate">{{ order.customers?.name }}</p>
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
+              </div>
+              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-700/50">
+                <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
+                  {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
+                </span>
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                  <span class="material-symbols-outlined text-sm">payments</span>
+                  <span class="font-semibold">{{ order.paymentMethod }}</span>
+                </span>
               </div>
               <div class="text-xs my-2 max-h-40 overflow-y-auto pr-1">
                 @for(item of order.order_items; track item.id) {
@@ -113,9 +130,17 @@
                 </div>
                 <div class="font-bold text-xl" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</div>
               </div>
-
+              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-700/50">
+                <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
+                  {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
+                </span>
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                  <span class="material-symbols-outlined text-sm">payments</span>
+                  <span class="font-semibold">{{ order.paymentMethod }}</span>
+                </span>
+              </div>
               @if (order.order_type === 'iFood-Delivery') {
-                <div class="text-xs space-y-2 border-t border-gray-700 pt-2 mt-2">
+                <div class="text-xs space-y-2 mt-2">
                     <p class="font-semibold text-purple-300">Status da Entrega:</p>
                     @switch (order.logisticsStatus) {
                         @case ('AWAITING_DRIVER') { <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Alocar Entregador</button> }
@@ -271,30 +296,12 @@
         </div>
         <div>
           <h4 class="font-semibold text-white mb-2">Pagamento</h4>
-          @if (order.ifood_payments && order.ifood_payments.length > 0) {
-            @for(payment of order.ifood_payments; track $index) {
-              <div class="bg-gray-700/50 p-3 rounded-lg space-y-2 text-sm">
-                  <div class="flex justify-between">
-                      <span class="text-gray-300">Método:</span>
-                      <span class="font-semibold text-white">{{ payment.name }}</span>
-                  </div>
-                  @if(payment.card?.brand) {
-                      <div class="flex justify-between">
-                          <span class="text-gray-300">Bandeira:</span>
-                          <span class="font-semibold text-white">{{ payment.card.brand }}</span>
-                      </div>
-                  }
-                  @if(payment.method === 'MONEY' && payment.changeFor > 0) {
-                      <div class="flex justify-between text-yellow-300 mt-2 pt-2 border-t border-gray-600/50">
-                          <span class="font-semibold">Troco para:</span>
-                          <span class="font-bold text-lg">{{ payment.changeFor | currency:'BRL' }}</span>
-                      </div>
-                  }
+          <div class="bg-gray-700/50 p-3 rounded-lg space-y-2 text-sm">
+              <div class="flex justify-between">
+                  <span class="text-gray-300">Método:</span>
+                  <span class="font-semibold" [class.text-green-300]="order.paymentMethod === 'Pago Online'">{{ order.paymentMethod }}</span>
               </div>
-            }
-          } @else {
-              <p class="text-sm text-gray-500">Detalhes de pagamento não disponíveis.</p>
-          }
+          </div>
         </div>
         <!-- Action Buttons Section -->
         <div class="pt-4 mt-4 border-t border-gray-600 space-y-3">
