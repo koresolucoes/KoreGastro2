@@ -297,29 +297,50 @@ export class IfoodMenuService {
     await this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/products/status`, [{ externalCode, status, resources: ["ITEM"] }]);
   }
 
-  async uploadAndLinkImage(item: IfoodItem, base64Image: string, file: File): Promise<void> {
-    // Step 1: Upload Image via proxy
-    const uploadResponse = await this.proxyRequest<{ id: string }>(
-        'POST',
-        '/catalog/v2.0/merchants/{merchantId}/images',
-        { 
-            image_base64: base64Image,
-            filename: file.name,
-            mimeType: file.type,
-        },
-        true // isImageUpload flag
-    );
+  private async getFlatItem(itemId: string): Promise<any> {
+    return this.proxyRequest<any>('GET', `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/flat`);
+  }
 
-    if (!uploadResponse || !uploadResponse.id) {
-        throw new Error('Falha no upload da imagem para o iFood. Resposta inválida do proxy.');
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+  }
+
+  async handleImageUpdate(item: IfoodItem, recipe: Recipe, file: File): Promise<void> {
+    // 1. Upload the image to iFood's generic endpoint.
+    const base64Image = await this.fileToBase64(file);
+    const uploadResponse = await this.proxyRequest<{ filename: string }>(
+      'POST',
+      '/merchants/{merchantId}/image/upload',
+      { image_base64: base64Image, filename: file.name, mimeType: file.type },
+      true
+    );
+    
+    if (!uploadResponse?.filename) {
+      throw new Error('O iFood não retornou um caminho para a imagem após o upload.');
+    }
+    const imagePath = uploadResponse.filename;
+
+    // 2. Get the current full item structure from iFood.
+    const fullItemPayload = await this.getFlatItem(item.id);
+    if (!fullItemPayload || !fullItemPayload.products) {
+      throw new Error('Não foi possível buscar os dados atuais do item no iFood para atualização.');
     }
 
-    // Step 2: Link Image via proxy
-    await this.proxyRequest(
-        'POST',
-        `/catalog/v2.0/merchants/{merchantId}/products/${item.productId}/image`,
-        { imageId: uploadResponse.id }
-    );
+    // 3. Modify the payload with the new imagePath.
+    const productIndex = fullItemPayload.products.findIndex((p: any) => p.id === item.productId);
+    if (productIndex === -1) {
+      throw new Error('Produto correspondente não encontrado na estrutura do item do iFood.');
+    }
+    fullItemPayload.products[productIndex].imagePath = imagePath;
+
+    // 4. Send the complete, updated structure back to iFood.
+    const syncHash = `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}|${imagePath}`;
+    await this.syncItem(fullItemPayload, recipe, syncHash);
   }
 
   async trackOrder(orderId: string): Promise<IfoodTrackingData> {

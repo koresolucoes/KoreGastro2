@@ -359,12 +359,7 @@ export class IfoodMenuComponent implements OnInit {
 
     this.isUploadingImage.set(item.id);
     try {
-      // 1. Update our own DB/storage for the internal menu
-      await this.recipeDataService.updateRecipeImage(localItem.recipe.id, file);
-
-      // 2. Upload to iFood via the new, correct flow
-      const base64Image = await this.fileToBase64(file);
-      await this.ifoodMenuService.uploadAndLinkImage(item, base64Image, file);
+      await this.ifoodMenuService.handleImageUpdate(item, localItem.recipe, file);
 
       this.notificationService.show(`Imagem de '${item.name}' atualizada no iFood!`, 'success');
       await this.refreshData(); // Refresh to show the new image URL from iFood
@@ -374,15 +369,6 @@ export class IfoodMenuComponent implements OnInit {
       this.isUploadingImage.set(null);
       (event.target as HTMLInputElement).value = ''; // Reset file input
     }
-  }
-
-  private fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = error => reject(error);
-    });
   }
   
   openRecipeEditModal(recipe: Recipe) { this.editingRecipeForm.set({ ...recipe }); this.isEditRecipeModalOpen.set(true); }

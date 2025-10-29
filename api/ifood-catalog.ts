@@ -56,8 +56,8 @@ async function getIFoodAccessToken(): Promise<string> {
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     // Set CORS headers for all responses
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET, PUT, PATCH, DELETE');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     // Handle preflight OPTIONS request
     if (request.method === 'OPTIONS') {
@@ -65,7 +65,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     if (request.method !== 'POST') {
-        return response.status(405).json({ message: 'Only POST requests are allowed' });
+        return response.status(405).json({ message: 'Only POST requests are allowed to the proxy' });
     }
 
     try {
