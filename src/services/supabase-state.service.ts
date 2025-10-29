@@ -198,16 +198,6 @@ export class SupabaseStateService {
         case 'ifood_menu_sync':
             this.refetchSimpleTable('ifood_menu_sync', '*', this.ifoodState.ifoodMenuSync);
             break;
-        case 'ifood_option_groups':
-            this.refetchSimpleTable('ifood_option_groups', '*, ifood_options(*)', this.ifoodState.ifoodOptionGroups);
-            break;
-        case 'ifood_options':
-            // Refetch the parent group to update its nested options array
-            this.refetchSimpleTable('ifood_option_groups', '*, ifood_options(*)', this.ifoodState.ifoodOptionGroups);
-            break;
-        case 'recipe_ifood_option_groups':
-            this.refetchSimpleTable('recipe_ifood_option_groups', '*', this.ifoodState.recipeIfoodOptionGroups);
-            break;
         case 'tables': this.refetchSimpleTable('tables', '*', this.posState.tables); break;
         case 'halls': this.refetchSimpleTable('halls', '*', this.posState.halls); break;
         case 'stations': this.refetchSimpleTable('stations', '*, employees(*)', this.posState.stations); break;
@@ -233,7 +223,7 @@ export class SupabaseStateService {
             break;
         case 'production_plans':
         case 'production_tasks':
-            this.refetchSimpleTable('production_plans', '*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))', this.inventoryState.productionPlans, true);
+            this.refetchSimpleTable('production_plans', '*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))', this.inventoryState.productionPlans, true);
             break;
         case 'schedules':
         case 'shifts':
@@ -278,8 +268,7 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, ifoodOptionGroups, ifoodOptions,
-      recipeIfoodOptionGroups
+      ifoodMenuSync, subscriptions, plans, recipes
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -296,7 +285,7 @@ export class SupabaseStateService {
       supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
       supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
       supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('production_plans').select('*, production_tasks(*, recipes!sub_recipe_id(name), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }),
+      supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }),
       supabase.from('reservations').select('*').eq('user_id', userId).order('reservation_time', { ascending: true }),
       supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }),
@@ -313,9 +302,6 @@ export class SupabaseStateService {
       supabase.from('subscriptions').select('*').eq('user_id', userId),
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
-      supabase.from('ifood_option_groups').select('*, ifood_options(*)').eq('user_id', userId).order('sequence', { ascending: true }),
-      supabase.from('ifood_options').select('*').eq('user_id', userId).order('sequence', { ascending: true }),
-      supabase.from('recipe_ifood_option_groups').select('*').eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -352,9 +338,6 @@ export class SupabaseStateService {
     this.subscriptionState.subscriptions.set(subscriptions.data || []);
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
-    this.ifoodState.ifoodOptionGroups.set(ifoodOptionGroups.data || []);
-    this.ifoodState.ifoodOptions.set(ifoodOptions.data || []);
-    this.ifoodState.recipeIfoodOptionGroups.set(recipeIfoodOptionGroups.data || []);
 
 
     await this.refreshDashboardAndCashierData();

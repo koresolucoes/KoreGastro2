@@ -20,7 +20,7 @@ export class MiseEnPlaceDataService {
     // First, try to find an existing plan
     let { data: existingPlan, error: findError } = await supabase
       .from('production_plans')
-      .select('*, production_tasks(*, recipes!sub_recipe_id(name, source_ingredient_id), stations(name), employees(name))')
+      .select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))')
       .eq('user_id', userId)
       .eq('plan_date', date)
       .single();
