@@ -200,4 +200,25 @@ export class IfoodMenuService {
     const userId = this.authService.currentUser()?.id;
     if (!userId || !item) throw new Error("User not found or invalid iFood response");
 
+    const syncRecord = {
+      recipe_id: recipe.id,
+      user_id: userId,
+      ifood_item_id: item.id,
+      ifood_product_id: products[0].id,
+      ifood_category_id: item.categoryId,
+      last_sync_hash: syncHash,
+      last_synced_at: new Date().toISOString(),
+    };
     
+    const { error } = await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
+    
+    if (error) {
+        console.error("Failed to save sync status to DB after image update", error);
+        this.notificationService.show(`Imagem sincronizada com iFood, mas falha ao salvar estado local.`, 'warning');
+    }
+  }
+
+  async trackOrder(orderId: string): Promise<IfoodTrackingData> {
+    return this.proxyRequest<IfoodTrackingData>('GET', `/logistics/v1.0/orders/${orderId}/tracking`);
+  }
+}
