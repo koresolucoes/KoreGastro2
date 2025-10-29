@@ -18,7 +18,6 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { DemoService } from '../../services/demo.service';
-import { IfoodMenuService, IfoodInterruption, IfoodMerchantStatus, IfoodOpeningHours, IfoodMerchant, IfoodMerchantDetails } from '../../services/ifood-menu.service';
 
 type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
@@ -35,7 +34,6 @@ export class SettingsComponent {
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
   private reservationDataService = inject(ReservationDataService);
-  private ifoodMenuService = inject(IfoodMenuService);
   
   // Auth & Notification services
   private notificationService = inject(NotificationService);
@@ -67,8 +65,7 @@ export class SettingsComponent {
   currentPlan = this.subscriptionState.currentPlan;
 
   // For template display
-  daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-  ifoodDaysOfWeek: IfoodOpeningHours['dayOfWeek'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
   webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
 
   // Tab state
@@ -91,17 +88,6 @@ export class SettingsComponent {
   categorySearchTerm = signal('');
   recipeCategorySearchTerm = signal('');
   supplierSearchTerm = signal('');
-
-  // iFood Management State
-  isLoadingIfoodData = signal(false);
-  ifoodMerchants = signal<IfoodMerchant[]>([]);
-  selectedIfoodMerchantDetails = signal<IfoodMerchantDetails | null>(null);
-  ifoodStatus = signal<IfoodMerchantStatus | null>(null);
-  ifoodInterruptions = signal<IfoodInterruption[]>([]);
-  ifoodOpeningHoursForm = signal<OperatingHours[]>([]);
-  isInterruptionModalOpen = signal(false);
-  newInterruptionForm = signal({ start: '', end: '', description: '' });
-  isSavingInterruption = signal(false);
 
   // Role Management State
   allPermissions = ALL_PERMISSION_KEYS;
@@ -279,139 +265,6 @@ export class SettingsComponent {
 
   setActiveTab(tab: SettingsTab) {
     this.activeTab.set(tab);
-    if (tab === 'funcionalidades') {
-        this.loadIfoodData();
-    }
-  }
-
-  // --- iFood Management ---
-  async loadIfoodData() {
-    this.isLoadingIfoodData.set(true);
-    // Reset states
-    this.ifoodMerchants.set([]);
-    this.selectedIfoodMerchantDetails.set(null);
-    this.ifoodStatus.set(null);
-    this.ifoodInterruptions.set([]);
-
-    try {
-        // This can be called without a merchant ID
-        const merchants = await this.ifoodMenuService.getMerchants();
-        this.ifoodMerchants.set(merchants);
-
-        const configuredMerchantId = this.companyProfileForm().ifood_merchant_id;
-        
-        if (configuredMerchantId && merchants.some(m => m.id === configuredMerchantId)) {
-            // A merchant is configured, fetch all its details
-            const [details, status, interruptions, openingHours] = await Promise.all([
-                this.ifoodMenuService.getMerchantDetails(),
-                this.ifoodMenuService.getMerchantStatus(),
-                this.ifoodMenuService.getInterruptions(),
-                this.ifoodMenuService.getOpeningHours()
-            ]);
-            this.selectedIfoodMerchantDetails.set(details);
-            this.ifoodStatus.set(status);
-            this.ifoodInterruptions.set(interruptions);
-            
-            const hoursMap = new Map(openingHours.map(h => [h.dayOfWeek, h]));
-            const formHours: OperatingHours[] = this.ifoodDaysOfWeek.map((dayName, index) => {
-                const ifoodDay = hoursMap.get(dayName);
-                return {
-                    day_of_week: index,
-                    opening_time: ifoodDay?.openingTime?.substring(0, 5) || '00:00',
-                    closing_time: ifoodDay?.closingTime?.substring(0, 5) || '00:00',
-                    is_closed: !ifoodDay,
-                };
-            });
-            this.ifoodOpeningHoursForm.set(formHours);
-        }
-    } catch (error: any) {
-        this.notificationService.show(`Erro ao buscar dados do iFood: ${error.message}`, 'error');
-        // If there's an error (e.g., wrong ID), clear the details so the user can pick a new one.
-        this.selectedIfoodMerchantDetails.set(null);
-    } finally {
-        this.isLoadingIfoodData.set(false);
-    }
-  }
-
-  async selectAndSaveMerchant(merchantId: string) {
-    this.updateCompanyProfileField('ifood_merchant_id', merchantId);
-    await this.saveCompanyProfile(false); // Save without showing success message yet
-    await this.loadIfoodData(); // Reload all data for the newly selected merchant
-    const merchantName = this.ifoodMerchants().find(m => m.id === merchantId)?.name;
-    this.notificationService.show(`Loja "${merchantName}" selecionada e salva!`, 'success');
-  }
-  
-  async changeMerchant() {
-    this.updateCompanyProfileField('ifood_merchant_id', '');
-    await this.saveCompanyProfile();
-    await this.loadIfoodData();
-  }
-
-  async saveNewInterruption() {
-    const form = this.newInterruptionForm();
-    if (!form.start || !form.end || !form.description) {
-        this.notificationService.show('Preencha todos os campos para criar a pausa.', 'warning');
-        return;
-    }
-    this.isSavingInterruption.set(true);
-    try {
-        const start = new Date(form.start).toISOString();
-        const end = new Date(form.end).toISOString();
-        await this.ifoodMenuService.createInterruption({ start, end, description: form.description });
-        this.notificationService.show('Pausa agendada com sucesso!', 'success');
-        this.isInterruptionModalOpen.set(false);
-        this.loadIfoodData();
-    } catch (error: any) {
-        this.notificationService.show(`Erro: ${error.message}`, 'error');
-    } finally {
-        this.isSavingInterruption.set(false);
-    }
-  }
-
-  async deleteInterruption(interruptionId: string) {
-    const confirmed = await this.notificationService.confirm('Tem certeza que deseja remover esta pausa?');
-    if (!confirmed) return;
-    this.isLoadingIfoodData.set(true);
-    try {
-        await this.ifoodMenuService.deleteInterruption(interruptionId);
-        this.notificationService.show('Pausa removida.', 'success');
-        this.loadIfoodData();
-    } catch (error: any) {
-        this.notificationService.show(`Erro: ${error.message}`, 'error');
-    } finally {
-        this.isLoadingIfoodData.set(false);
-    }
-  }
-  
-  updateIfoodWeeklyHours(dayIndex: number, field: 'opening_time' | 'closing_time' | 'is_closed', value: string | boolean) {
-    this.ifoodOpeningHoursForm.update(form => {
-        const newHours = [...form];
-        const day = { ...newHours[dayIndex], [field]: value };
-        newHours[dayIndex] = day;
-        return newHours;
-    });
-  }
-
-  async saveOpeningHours() {
-      const form = this.ifoodOpeningHoursForm();
-      const payload: IfoodOpeningHours[] = form
-        .filter(day => !day.is_closed)
-        .map(day => ({
-            dayOfWeek: this.ifoodDaysOfWeek[day.day_of_week],
-            openingTime: day.opening_time,
-            closingTime: day.closing_time,
-        }));
-      
-      this.isLoadingIfoodData.set(true);
-      try {
-          await this.ifoodMenuService.updateOpeningHours(payload);
-          this.notificationService.show('Horários de funcionamento atualizados no iFood!', 'success');
-          this.loadIfoodData();
-      } catch (error: any) {
-          this.notificationService.show(`Erro ao salvar horários: ${error.message}`, 'error');
-      } finally {
-          this.isLoadingIfoodData.set(false);
-      }
   }
 
   // Filtered lists
@@ -698,22 +551,22 @@ export class SettingsComponent {
     }
   }
   
-  async saveCompanyProfile(showNotification = true) {
+  async saveCompanyProfile() {
       const profileForm = this.companyProfileForm();
       if (!profileForm.company_name || !profileForm.cnpj) {
-          if (showNotification) await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
+          await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
           return;
       }
       
       const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile(), this.coverFile(), this.headerFile());
 
       if (success) {
-          if (showNotification) await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
+          await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
           this.logoFile.set(null);
           this.coverFile.set(null);
           this.headerFile.set(null);
       } else {
-          if (showNotification) await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
+          await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
       }
   }
 
