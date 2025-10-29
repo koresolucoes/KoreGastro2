@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { SettingsStateService } from './settings-state.service';
 import { NotificationService } from './notification.service';
 import { Recipe } from '../models/db.models';
@@ -18,23 +18,6 @@ export interface IfoodCatalog {
   groupId?: string;
 }
 
-export interface IfoodProduct {
-  id: string;
-  name: string;
-  description?: string;
-  additionalInformation?: string;
-  externalCode: string;
-  image?: string; // base64 for upload
-  imagePath?: string; // for display/update
-  serving?: 'SERVES_1' | 'SERVES_2' | 'SERVES_3' | 'SERVES_4' | 'SERVES_5' | 'SERVES_MORE';
-  dietaryRestrictions?: ('ORGANIC' | 'VEGAN' | 'GLUTEN_FREE' | 'LACTOSE_FREE')[];
-  ean?: string;
-  weight?: {
-    quantity: number;
-    unit: 'kg' | 'g';
-  };
-}
-
 export interface IfoodItem {
   id: string;
   name: string;
@@ -49,7 +32,7 @@ export interface IfoodItem {
   };
   hasOptionGroups: boolean;
   imagePath?: string;
-  image?: string; // Client-side property to hold full URL
+  image?: string;
 }
 
 export interface UnsellableItem {
@@ -63,18 +46,15 @@ export interface UnsellableCategory {
   status: string;
   restrictions: string[];
   unsellableItems: UnsellableItem[];
-  template?: string;
-  unsellablePizzaItems?: any;
 }
 
-// New interface for tracking data
 export interface IfoodTrackingData {
   deliveryEtaEnd: number;
-  expectedDelivery: string; // ISO date string
+  expectedDelivery: string;
   latitude: number;
   longitude: number;
   pickupEtaStart: number;
-  trackDate: number; // timestamp
+  trackDate: number;
 }
 
 export interface IfoodCategory {
@@ -83,6 +63,27 @@ export interface IfoodCategory {
   status: string;
   index: number;
   items: IfoodItem[];
+}
+
+export interface IfoodOption {
+  id: string;
+  name: string;
+  description: string;
+  externalCode: string;
+  price: { value: number, originalValue: number };
+  status: string;
+  index: number;
+  productId: string;
+}
+
+export interface IfoodOptionGroup {
+  id: string;
+  name: string;
+  externalCode: string;
+  status: string;
+  index: number;
+  optionGroupType: string;
+  options: IfoodOption[];
 }
 
 
@@ -116,16 +117,16 @@ export class IfoodMenuService {
       if (!response.ok) {
         let errorMessage = `Proxy error (${response.status})`;
         if (responseText) {
-            try {
-                const errorJson = JSON.parse(responseText);
-                errorMessage = errorJson.message || JSON.stringify(errorJson.details || errorJson.error || responseText);
-            } catch(e) {
-                errorMessage = responseText; // Use raw text if it's not JSON
-            }
+          try {
+            const errorJson = JSON.parse(responseText);
+            errorMessage = errorJson.message || JSON.stringify(errorJson.details || errorJson.error || responseText);
+          } catch (e) {
+            errorMessage = responseText;
+          }
         }
         throw new Error(errorMessage);
       }
-      
+
       if (response.status === 202 || response.status === 204) {
         return null as T;
       }
@@ -144,8 +145,6 @@ export class IfoodMenuService {
 
   async getCategories(catalogId: string): Promise<IfoodCategory[]> {
     const categories = await this.proxyRequest<any[]>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories?includeItems=true`);
-
-    // Map raw API response to our simplified model
     return (categories || []).map(category => ({
       id: category.id,
       name: category.name,
@@ -159,121 +158,76 @@ export class IfoodMenuService {
         status: item.status,
         productId: item.productId,
         index: item.index,
-        price: item.price, // price object { value, originalValue }
+        price: item.price,
         hasOptionGroups: item.hasOptionGroups,
         imagePath: item.imagePath,
         image: item.imagePath ? `https://static-images.ifood.com.br/image/upload/t_medium/pratos/${item.imagePath}` : undefined,
       })),
     }));
   }
-  
-  async getUnsellableItems(catalogId: string): Promise<{categories: UnsellableCategory[]}> {
-     return this.proxyRequest<{categories: UnsellableCategory[]}>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/unsellableItems`);
+
+  async getUnsellableItems(catalogId: string): Promise<{ categories: UnsellableCategory[] }> {
+    return this.proxyRequest<{ categories: UnsellableCategory[] }>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/unsellableItems`);
   }
-  
+
   async getCancellationReasons(orderId: string): Promise<IfoodCancellationReason[]> {
     const response = await this.proxyRequest<any[]>('GET', `/order/v1.0/orders/${orderId}/cancellationReasons`);
-    // Map the response from iFood's 'cancelCodeId' to our internal 'code'
-    return (response || []).map(r => ({
-      code: r.cancelCodeId,
-      description: r.description
-    }));
+    return (response || []).map(r => ({ code: r.cancelCodeId, description: r.description }));
   }
 
   async createCategory(catalogId: string, name: string, index: number): Promise<{ id: string }> {
-    const payload = {
-      name: name,
-      status: 'AVAILABLE',
-      template: 'DEFAULT',
-      index: index
-    };
-    return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, payload);
+    return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, { name, status: 'AVAILABLE', template: 'DEFAULT', index });
   }
 
   async syncItem(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
-    const { item, products } = await this.proxyRequest<{item: any, products: any[]}>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
-    
-    // After successful sync, save to our DB
+    const { item, products } = await this.proxyRequest<{ item: any, products: any[] }>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
     const userId = this.authService.currentUser()?.id;
     if (!userId || !item) throw new Error("User not found or invalid iFood response");
-
     const syncRecord = {
-      recipe_id: recipe.id,
-      user_id: userId,
-      ifood_item_id: item.id,
-      ifood_product_id: products[0].id,
-      ifood_category_id: item.categoryId,
-      last_sync_hash: syncHash,
-      last_synced_at: new Date().toISOString(),
+      recipe_id: recipe.id, user_id: userId, ifood_item_id: item.id, ifood_product_id: products[0].id,
+      ifood_category_id: item.categoryId, last_sync_hash: syncHash, last_synced_at: new Date().toISOString(),
     };
-    
     const { error } = await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
-    
-    if (error) {
-        console.error("Failed to save sync status to DB", error);
-        this.notificationService.show(`Item sincronizado com iFood, mas falha ao salvar estado local.`, 'warning');
-    }
+    if (error) this.notificationService.show(`Item sincronizado, mas falha ao salvar estado.`, 'warning');
   }
 
   async patchItemPrice(externalCode: string, newPrice: number): Promise<void> {
-    const endpoint = `/catalog/v2.0/merchants/{merchantId}/products/price`;
-    const payload = [{
-        externalCode: externalCode,
-        price: {
-            value: newPrice,
-            originalValue: newPrice
-        },
-        resources: ["ITEM"]
-    }];
-    await this.proxyRequest<any>('PATCH', endpoint, payload);
+    await this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/products/price`, [{ externalCode, price: { value: newPrice, originalValue: newPrice }, resources: ["ITEM"] }]);
   }
 
   async patchItemStatus(externalCode: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
-      const endpoint = `/catalog/v2.0/merchants/{merchantId}/products/status`;
-      const payload = [{
-          externalCode: externalCode,
-          status: status,
-          resources: ["ITEM"]
-      }];
-      await this.proxyRequest<any>('PATCH', endpoint, payload);
+    await this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/products/status`, [{ externalCode, status, resources: ["ITEM"] }]);
   }
-  
-  async updateItemImage(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
-    const { item, products } = await this.proxyRequest<{item: any, products: any[]}>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
-    
-    const userId = this.authService.currentUser()?.id;
-    if (!userId || !item) throw new Error("User not found or invalid iFood response");
 
-    const syncRecord = {
-      recipe_id: recipe.id,
-      user_id: userId,
-      ifood_item_id: item.id,
-      ifood_product_id: products[0].id,
-      ifood_category_id: item.categoryId,
-      last_sync_hash: syncHash,
-      last_synced_at: new Date().toISOString(),
-    };
-    
-    const { error } = await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
-    
-    if (error) {
-        console.error("Failed to save sync status to DB after image update", error);
-        this.notificationService.show(`Imagem sincronizada com iFood, mas falha ao salvar estado local.`, 'warning');
-    }
+  async updateItemImage(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
+    // This re-uses the syncItem logic but is called when an image is part of the payload
+    await this.syncItem(itemPayload, recipe, syncHash);
   }
 
   async trackOrder(orderId: string): Promise<IfoodTrackingData> {
     return this.proxyRequest<IfoodTrackingData>('GET', `/logistics/v1.0/orders/${orderId}/tracking`);
   }
 
-  // --- Option Group Management ---
-  async getOptionGroups(includeOptions = false): Promise<any[]> {
-    return this.proxyRequest<any[]>('GET', `/catalog/v2.0/merchants/{merchantId}/optionGroups?includeOptions=${includeOptions}`);
+  // Option Group Management
+  async getOptionGroups(includeOptions = true): Promise<IfoodOptionGroup[]> {
+    const groups = await this.proxyRequest<any[]>('GET', `/catalog/v2.0/merchants/{merchantId}/optionGroups?includeOptions=${includeOptions}`);
+    return (groups || []).map(group => ({
+      ...group,
+      options: (group.options || []).map((opt: any) => ({
+        id: opt.id,
+        name: opt.name,
+        description: opt.description,
+        externalCode: opt.externalCode,
+        price: opt.price,
+        status: opt.status,
+        index: opt.index,
+        productId: opt.productId
+      }))
+    }));
   }
 
   async updateOptionGroup(optionGroupId: string, name: string): Promise<any> {
-    const payload = { name };
-    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}`, payload);
+    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}`, { name });
   }
 
   async deleteOptionGroup(optionGroupId: string): Promise<void> {
@@ -281,32 +235,33 @@ export class IfoodMenuService {
   }
 
   async updateOptionGroupStatus(optionGroupId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
-    const payload = { status };
-    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/status`, payload);
+    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/status`, { status });
   }
 
-  // --- Option Management ---
-  async createOption(optionGroupId: string, optionData: any): Promise<any> {
-    return this.proxyRequest<any>('POST', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/options`, optionData);
+  // Option Management
+  async createOption(optionGroupId: string, optionData: { name: string, externalCode: string, price: number }): Promise<any> {
+    const payload = {
+      status: "AVAILABLE",
+      product: {
+        name: optionData.name,
+        externalCode: optionData.externalCode,
+      },
+      externalCode: optionData.externalCode,
+      price: { value: optionData.price, originalValue: optionData.price },
+      index: 0
+    };
+    return this.proxyRequest<any>('POST', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/options`, payload);
   }
-  
+
   async deleteOption(optionGroupId: string, productId: string): Promise<void> {
     await this.proxyRequest<void>('DELETE', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/products/${productId}/option`);
   }
 
-  async updateOptionPrice(optionId: string, price: number, originalValue?: number): Promise<any> {
-    const payload = {
-      optionId,
-      price: {
-        value: price,
-        originalValue: originalValue ?? price
-      }
-    };
-    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/price`, payload);
+  async updateOptionPrice(optionId: string, price: number): Promise<any> {
+    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/price`, { optionId, price: { value: price, originalValue: price } });
   }
 
   async updateOptionStatus(optionId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
-    const payload = { optionId, status };
-    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/status`, payload);
+    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/status`, { optionId, status });
   }
 }

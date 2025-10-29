@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule } from '@angular/common';
 import { IfoodStateService } from '../../services/ifood-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
-import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCategory } from '../../services/ifood-menu.service';
+import { IfoodMenuService, IfoodCatalog, IfoodCategory, IfoodItem, UnsellableCategory, IfoodOptionGroup, IfoodOption } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
 import { Recipe, Category, IfoodMenuSync } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
@@ -33,13 +33,14 @@ export class IfoodMenuComponent implements OnInit {
   private recipeDataService = inject(RecipeDataService);
 
   isLoading = signal(true);
-  view = signal<'sync' | 'unsellable' | 'live'>('sync');
+  view = signal<'sync' | 'live' | 'unsellable' | 'optionGroups'>('sync');
 
   // iFood Data
   ifoodCatalogs = signal<IfoodCatalog[]>([]);
   selectedCatalogId = signal<string | null>(null);
   ifoodCategories = signal<IfoodCategory[]>([]);
   unsellableCategories = signal<UnsellableCategory[]>([]);
+  ifoodOptionGroups = signal<IfoodOptionGroup[]>([]);
   ifoodItemsByExternalCode = computed(() => {
     const map = new Map<string, IfoodItem>();
     for (const category of this.ifoodCategories()) {
@@ -69,21 +70,27 @@ export class IfoodMenuComponent implements OnInit {
     return map;
   });
   
-  // Modal states for live editing
+  // Modals for live item editing
   isPriceModalOpen = signal(false);
   editingPriceItem = signal<IfoodItem | null>(null);
   newPrice = signal<number>(0);
   isChangingPrice = signal(false);
-
   isStatusModalOpen = signal(false);
   editingStatusItem = signal<IfoodItem | null>(null);
   newStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
   isChangingStatus = signal(false);
-  
   isCategoryModalOpen = signal(false);
   newCategoryName = signal('');
   isCreatingCategory = signal(false);
 
+  // Modals for option groups & options
+  isOptionModalOpen = signal(false);
+  parentGroupForOption = signal<IfoodOptionGroup | null>(null);
+  editingOption = signal<IfoodOption | null>(null);
+  optionForm = signal({ name: '', externalCode: '', price: 0 });
+  newOptionStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
+  isSavingOption = signal(false);
+  
   // Modal for editing recipe details
   isEditRecipeModalOpen = signal(false);
   editingRecipeForm = signal<Partial<Recipe>>({});
@@ -161,16 +168,25 @@ export class IfoodMenuComponent implements OnInit {
   async loadCatalogData(catalogId: string) {
     this.isLoading.set(true);
     try {
-        const [categories, unsellable] = await Promise.all([
+        const [categories, unsellable, optionGroups] = await Promise.all([
             this.ifoodMenuService.getCategories(catalogId),
-            this.ifoodMenuService.getUnsellableItems(catalogId)
+            this.ifoodMenuService.getUnsellableItems(catalogId),
+            this.ifoodMenuService.getOptionGroups(true)
         ]);
         this.ifoodCategories.set(categories);
         this.unsellableCategories.set(unsellable.categories);
+        this.ifoodOptionGroups.set(optionGroups);
     } catch (error: any) {
         this.notificationService.show(`Erro ao buscar dados do catálogo: ${error.message}`, 'error');
     } finally {
         this.isLoading.set(false);
+    }
+  }
+
+  async refreshData() {
+    const catalogId = this.selectedCatalogId();
+    if(catalogId) {
+      await this.loadCatalogData(catalogId);
     }
   }
 
@@ -194,10 +210,9 @@ export class IfoodMenuComponent implements OnInit {
       
       if (!ifoodCategoryId) {
         const maxIndex = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.index), -1);
-        const nextIndex = maxIndex + 1;
-        const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName, nextIndex);
+        const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName, maxIndex + 1);
         ifoodCategoryId = newCategory.id;
-        await this.refreshCatalogData();
+        await this.refreshData();
       }
       
       const payload = this.mapRecipeToIfoodPayload(recipe, ifoodCategoryId);
@@ -219,36 +234,13 @@ export class IfoodMenuComponent implements OnInit {
   private mapRecipeToIfoodPayload(recipe: Recipe, categoryId: string): any {
     const externalCode = recipe.external_code!;
     const syncInfo: IfoodMenuSync | undefined = this.syncDataMap().get(recipe.id);
-    
-    // Generate deterministic UUIDs from the recipe ID for idempotency, if no sync info exists.
     const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     const itemId = syncInfo?.ifood_item_id || `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     
     return {
-      item: {
-        id: itemId,
-        type: "DEFAULT",
-        categoryId: categoryId,
-        status: "AVAILABLE",
-        price: {
-          value: recipe.price,
-          originalValue: recipe.price 
-        },
-        externalCode: externalCode,
-        index: 0,
-        productId: productId,
-      },
-      products: [
-        {
-          id: productId,
-          externalCode: externalCode,
-          name: recipe.name,
-          description: recipe.description || '',
-          serving: 'SERVES_1', // Add default serving size
-        }
-      ],
-      optionGroups: [],
-      options: []
+      item: { id: itemId, type: "DEFAULT", categoryId, status: "AVAILABLE", price: { value: recipe.price, originalValue: recipe.price }, externalCode, index: 0, productId },
+      products: [ { id: productId, externalCode, name: recipe.name, description: recipe.description || '', serving: 'SERVES_1' } ],
+      optionGroups: [], options: []
     };
   }
   
@@ -262,19 +254,15 @@ export class IfoodMenuComponent implements OnInit {
 
   async savePrice() {
     const item = this.editingPriceItem();
-    if (!item || !item.externalCode) {
-        this.notificationService.show('Item inválido ou sem código externo.', 'error');
-        return;
-    }
-
+    if (!item || !item.externalCode) return;
     this.isChangingPrice.set(true);
     try {
       await this.ifoodMenuService.patchItemPrice(item.externalCode, this.newPrice());
-      this.notificationService.show('Solicitação de alteração de preço enviada!', 'success');
-      setTimeout(() => this.refreshCatalogData(), 2000);
+      this.notificationService.show('Preço atualizado!', 'success');
+      await this.refreshData();
       this.closePriceModal();
     } catch (error: any) {
-      this.notificationService.show(`Erro ao alterar preço: ${error.message}`, 'error');
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
     } finally {
       this.isChangingPrice.set(false);
     }
@@ -289,103 +277,59 @@ export class IfoodMenuComponent implements OnInit {
   
   async saveStatus() {
     const item = this.editingStatusItem();
-    if (!item || !item.externalCode) {
-        this.notificationService.show('Item inválido ou sem código externo.', 'error');
-        return;
-    }
-
+    if (!item || !item.externalCode) return;
     this.isChangingStatus.set(true);
     try {
       await this.ifoodMenuService.patchItemStatus(item.externalCode, this.newStatus());
-      this.notificationService.show('Solicitação de alteração de status enviada!', 'success');
-      setTimeout(() => this.refreshCatalogData(), 2000);
+      this.notificationService.show('Status atualizado!', 'success');
+      await this.refreshData();
       this.closeStatusModal();
     } catch (error: any) {
-      this.notificationService.show(`Erro ao alterar status: ${error.message}`, 'error');
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
     } finally {
       this.isChangingStatus.set(false);
     }
   }
   
-  openCategoryModal() {
-    this.newCategoryName.set('');
-    this.isCategoryModalOpen.set(true);
-  }
+  openCategoryModal() { this.newCategoryName.set(''); this.isCategoryModalOpen.set(true); }
   closeCategoryModal() { this.isCategoryModalOpen.set(false); }
 
   async saveNewCategory() {
-    const name = this.newCategoryName().trim();
-    const catalogId = this.selectedCatalogId();
-    if (!name || !catalogId) return;
-
+    const name = this.newCategoryName().trim(); const catalogId = this.selectedCatalogId(); if (!name || !catalogId) return;
     this.isCreatingCategory.set(true);
     try {
       const maxIndex = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.index), -1);
-      const nextIndex = maxIndex + 1;
-      await this.ifoodMenuService.createCategory(catalogId, name, nextIndex);
-      this.notificationService.show('Categoria criada com sucesso no iFood!', 'success');
-      await this.refreshCatalogData();
+      await this.ifoodMenuService.createCategory(catalogId, name, maxIndex + 1);
+      this.notificationService.show('Categoria criada!', 'success');
+      await this.refreshData();
       this.closeCategoryModal();
     } catch (error: any) {
-      this.notificationService.show(`Erro ao criar categoria: ${error.message}`, 'error');
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
     } finally {
       this.isCreatingCategory.set(false);
     }
   }
 
-  triggerImageUpload(item: IfoodItem) {
-    const input = document.getElementById(`image-input-${item.id}`) as HTMLInputElement;
-    if (input) {
-        input.click();
-    }
-  }
+  triggerImageUpload(item: IfoodItem) { document.getElementById(`image-input-${item.id}`)?.click(); }
 
   async onImageSelected(event: Event, item: IfoodItem) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file || !item.externalCode) return;
-    
-    const recipe = this.localRecipesByExternalCode().get(item.externalCode);
-    if (!recipe) {
-        this.notificationService.show('Receita local correspondente não encontrada.', 'error');
-        return;
-    }
-
+    const file = (event.target as HTMLInputElement).files?.[0]; if (!file || !item.externalCode) return;
+    const recipe = this.localRecipesByExternalCode().get(item.externalCode); if (!recipe) { this.notificationService.show('Receita local não encontrada.', 'error'); return; }
     this.isUploadingImage.set(item.id);
-    
     try {
-        // 1. Convert file to base64 for iFood
-        const base64Image = await this.fileToBase64(file);
-
-        // 2. Update image in Supabase and get the new URL for our own recipe
-        await this.recipeDataService.updateRecipeImage(recipe.id, file);
-
-        // 3. Prepare payload for iFood
-        const category = this.ifoodCategories().find(c => c.items.some(i => i.id === item.id));
-        if (!category) {
-          throw new Error("Categoria iFood não encontrada para o item.");
-        }
-        
-        // Refetch recipe to ensure we have the latest data after image upload
-        const updatedRecipe = { ...recipe, image_url: 'temp' }; // Placeholder, actual URL is in DB
-        const payload = this.mapRecipeToIfoodPayload(updatedRecipe, category.id);
-        
-        // Add the image to the product payload
-        payload.products[0].image = base64Image;
-
-        // 4. Send updated item with image to iFood
-        await this.ifoodMenuService.updateItemImage(payload, updatedRecipe, this.createSyncHash(updatedRecipe));
-        
-        this.notificationService.show(`Imagem de '${item.name}' atualizada com sucesso no iFood!`, 'success');
-
-        // 5. Refresh data to show new image from iFood
-        await this.refreshCatalogData();
-
+      const base64Image = await this.fileToBase64(file);
+      await this.recipeDataService.updateRecipeImage(recipe.id, file);
+      const category = this.ifoodCategories().find(c => c.items.some(i => i.id === item.id)); if (!category) throw new Error("Categoria iFood não encontrada.");
+      const updatedRecipe = { ...recipe, image_url: 'temp' };
+      const payload = this.mapRecipeToIfoodPayload(updatedRecipe, category.id);
+      payload.products[0].image = base64Image;
+      await this.ifoodMenuService.updateItemImage(payload, updatedRecipe, this.createSyncHash(updatedRecipe));
+      this.notificationService.show(`Imagem de '${item.name}' atualizada!`, 'success');
+      await this.refreshData();
     } catch (error: any) {
-        this.notificationService.show(`Erro ao atualizar imagem: ${error.message}`, 'error');
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
     } finally {
-        this.isUploadingImage.set(null);
-        // Reset file input value to allow re-uploading the same file
-        (event.target as HTMLInputElement).value = '';
+      this.isUploadingImage.set(null); (event.target as HTMLInputElement).value = '';
     }
   }
 
@@ -393,63 +337,93 @@ export class IfoodMenuComponent implements OnInit {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]); // Return only the base64 part
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
         reader.onerror = error => reject(error);
     });
   }
-
-  private async refreshCatalogData() {
-    const catalogId = this.selectedCatalogId();
-    if (catalogId) {
-        await this.loadCatalogData(catalogId);
-    }
-  }
   
-  // --- Recipe Edit Modal Methods ---
-  openRecipeEditModal(recipe: Recipe) {
-    this.editingRecipeForm.set({ ...recipe });
-    this.isEditRecipeModalOpen.set(true);
-  }
-
-  closeRecipeEditModal() {
-    this.isEditRecipeModalOpen.set(false);
-  }
-
-  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) {
-    this.editingRecipeForm.update(form => ({
-        ...form,
-        [field]: (field === 'price' || field === 'prep_time_in_minutes') ? +value : value
-    }));
-  }
-
+  // Recipe Edit Modal Methods
+  openRecipeEditModal(recipe: Recipe) { this.editingRecipeForm.set({ ...recipe }); this.isEditRecipeModalOpen.set(true); }
+  closeRecipeEditModal() { this.isEditRecipeModalOpen.set(false); }
+  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) { this.editingRecipeForm.update(form => ({ ...form, [field]: (field === 'price' || field === 'prep_time_in_minutes') ? +value : value })); }
   async saveRecipeDetails() {
-    const formValue = this.editingRecipeForm();
-    if (!formValue || !formValue.id) return;
-    
-    if (!formValue.name?.trim() || !formValue.external_code?.trim()) {
-      this.notificationService.alert('Nome e Código Externo são obrigatórios.');
-      return;
-    }
-
+    const formValue = this.editingRecipeForm(); if (!formValue || !formValue.id) return;
+    if (!formValue.name?.trim() || !formValue.external_code?.trim()) { this.notificationService.alert('Nome e Código Externo são obrigatórios.'); return; }
     const { success, error } = await this.recipeDataService.updateRecipeDetails(formValue.id, formValue);
-
-    if (success) {
-      this.notificationService.show('Detalhes da receita atualizados!', 'success');
-      this.closeRecipeEditModal();
-    } else {
-      this.notificationService.alert(`Erro ao salvar: ${error.message}`);
-    }
+    if (success) { this.notificationService.show('Detalhes atualizados!', 'success'); this.closeRecipeEditModal(); } 
+    else { this.notificationService.alert(`Erro: ${error.message}`); }
   }
-
 
   getStatusClass(status: SyncStatus): string {
-    switch(status) {
-      case 'synced': return 'bg-green-500';
-      case 'unsynced': return 'bg-blue-500';
-      case 'modified': return 'bg-yellow-500';
-      case 'error': return 'bg-red-500';
-      case 'syncing': return 'bg-gray-500 animate-pulse';
-      default: return 'bg-gray-400';
+    return { 'synced': 'bg-green-500', 'unsynced': 'bg-blue-500', 'modified': 'bg-yellow-500', 'error': 'bg-red-500', 'syncing': 'bg-gray-500 animate-pulse' }[status] || 'bg-gray-400';
+  }
+
+  // Option Group & Option Methods
+  openAddOptionModal(group: IfoodOptionGroup) {
+    this.parentGroupForOption.set(group);
+    this.editingOption.set(null);
+    this.optionForm.set({ name: '', externalCode: '', price: 0 });
+    this.isOptionModalOpen.set(true);
+  }
+
+  openEditOptionModal(option: IfoodOption, group: IfoodOptionGroup) {
+    this.parentGroupForOption.set(group);
+    this.editingOption.set(option);
+    this.optionForm.set({ name: option.name, externalCode: option.externalCode, price: option.price.value });
+    this.newOptionStatus.set(option.status as 'AVAILABLE' | 'UNAVAILABLE');
+    this.isOptionModalOpen.set(true);
+  }
+  
+  closeOptionModal() { this.isOptionModalOpen.set(false); }
+
+  async saveOption() {
+    this.isSavingOption.set(true);
+    try {
+      const form = this.optionForm();
+      if (!form.name || !form.externalCode) throw new Error("Nome e Código Externo são obrigatórios.");
+      
+      const editing = this.editingOption();
+      if (editing) {
+        // Update existing option
+        if (editing.price.value !== form.price) {
+          await this.ifoodMenuService.updateOptionPrice(editing.id, form.price);
+        }
+        if (editing.status !== this.newOptionStatus()) {
+          await this.ifoodMenuService.updateOptionStatus(editing.id, this.newOptionStatus());
+        }
+        // Note: iFood API doesn't seem to support updating name/externalCode of options directly.
+      } else {
+        // Create new option
+        const parentGroup = this.parentGroupForOption();
+        if (!parentGroup) throw new Error("Grupo de complemento não encontrado.");
+        await this.ifoodMenuService.createOption(parentGroup.id, form);
+      }
+      this.notificationService.show("Complemento salvo com sucesso!", 'success');
+      await this.refreshData();
+      this.closeOptionModal();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isSavingOption.set(false);
+    }
+  }
+
+  async deleteOption(option: IfoodOption) {
+    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja remover o complemento "${option.name}"?`);
+    if (!confirmed) return;
+
+    this.isSavingOption.set(true);
+    try {
+      const parentGroup = this.ifoodOptionGroups().find(g => g.options.some(o => o.id === option.id));
+      if (!parentGroup) throw new Error("Grupo pai não encontrado.");
+      await this.ifoodMenuService.deleteOption(parentGroup.id, option.productId);
+      this.notificationService.show("Complemento removido.", 'success');
+      await this.refreshData();
+      this.closeOptionModal();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isSavingOption.set(false);
     }
   }
 }

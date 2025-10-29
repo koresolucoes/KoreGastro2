@@ -11,8 +11,11 @@
       <button (click)="view.set('sync')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'sync'" [class.text-white]="view() === 'sync'" [class.border-transparent]="view() !== 'sync'" [class.text-gray-400]="view() !== 'sync'">
         Sincronização
       </button>
-       <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'live'" [class.text-white]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-gray-400]="view() !== 'live'">
+      <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'live'" [class.text-white]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-gray-400]="view() !== 'live'">
         Cardápio no iFood
+      </button>
+      <button (click)="view.set('optionGroups')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'optionGroups'" [class.text-white]="view() === 'optionGroups'" [class.border-transparent]="view() !== 'optionGroups'" [class.text-gray-400]="view() !== 'optionGroups'">
+        Grupos de Complementos
       </button>
       <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'unsellable'" [class.text-white]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-gray-400]="view() !== 'unsellable'">
         Itens Não Vendáveis
@@ -245,6 +248,52 @@
           </div>
         </div>
       }
+      @case('optionGroups') {
+        <div class="bg-gray-800 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-white">Grupos de Complementos</h2>
+                <p class="text-sm text-gray-400">A criação de novos grupos é feita ao sincronizar um item com complementos.</p>
+            </div>
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                @for(group of ifoodOptionGroups(); track group.id) {
+                    <details class="bg-gray-700/50 rounded-lg">
+                        <summary class="p-4 cursor-pointer flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold text-white">{{ group.name }}</p>
+                                <p class="text-xs text-gray-400 font-mono">{{ group.externalCode }}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                               <span class="px-2 py-1 text-xs font-semibold rounded-full" [class.bg-green-500/20]="group.status === 'AVAILABLE'" [class.text-green-300]="group.status === 'AVAILABLE'" [class.bg-red-500/20]="group.status !== 'AVAILABLE'" [class.text-red-300]="group.status !== 'AVAILABLE'">{{ group.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                               <span class="material-symbols-outlined text-gray-400">expand_more</span>
+                            </div>
+                        </summary>
+                        <div class="px-4 pb-4 border-t border-gray-600/50">
+                            <div class="mt-4 space-y-2">
+                                @for(option of group.options; track option.id) {
+                                    <div class="bg-gray-800/50 p-3 rounded-md flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                                        <div>
+                                            <p class="text-white font-medium">{{option.name}}</p>
+                                            <p class="text-xs text-gray-400 font-mono">{{option.externalCode}}</p>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <span class="font-semibold text-green-300">{{option.price.value | currency:'BRL'}}</span>
+                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full" [class.bg-green-500/20]="option.status === 'AVAILABLE'" [class.text-green-300]="option.status === 'AVAILABLE'" [class.bg-red-500/20]="option.status !== 'AVAILABLE'" [class.text-red-300]="option.status !== 'AVAILABLE'">{{ option.status === 'AVAILABLE' ? 'Disp.' : 'Indisp.' }}</span>
+                                            <button (click)="openEditOptionModal(option, group)" class="text-blue-400 hover:text-blue-300 p-1" title="Editar Complemento"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <button (click)="openAddOptionModal(group)" class="mt-3 w-full text-center py-2 px-3 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 rounded-lg font-semibold text-sm transition-colors">
+                                + Adicionar Complemento
+                            </button>
+                        </div>
+                    </details>
+                } @empty {
+                    <p class="text-center text-gray-500 py-10">Nenhum grupo de complementos encontrado.</p>
+                }
+            </div>
+        </div>
+      }
       @case ('unsellable') {
         <div class="bg-gray-800 rounded-lg p-6">
             <h2 class="text-xl font-semibold text-white mb-4">Itens Não Vendáveis no iFood</h2>
@@ -381,6 +430,56 @@
          <button (click)="saveRecipeDetails()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar</button>
       </div>
 
+    </div>
+  </div>
+}
+
+<!-- Option Modal -->
+@if(isOptionModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="closeOptionModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingOption() ? 'Editar Complemento' : 'Novo Complemento' }}</h3>
+        <p class="text-sm text-gray-400">para o grupo: {{ parentGroupForOption()?.name }}</p>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome *</label>
+          <input type="text" [(ngModel)]="optionForm().name" name="optionName" class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Preço Adicional (R$)</label>
+            <input type="number" step="0.01" [(ngModel)]="optionForm().price" name="optionPrice" class="w-full bg-gray-700 rounded p-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Código Externo *</label>
+            <input type="text" [(ngModel)]="optionForm().externalCode" name="optionExternalCode" class="w-full bg-gray-700 rounded p-2 text-white">
+          </div>
+        </div>
+        @if (editingOption()) {
+           <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+            <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
+                <button (click)="newOptionStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newOptionStatus() === 'AVAILABLE'">Disponível</button>
+                <button (click)="newOptionStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newOptionStatus() === 'UNAVAILABLE'">Indisponível</button>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-between items-center">
+        @if(editingOption(); as option) {
+            <button (click)="deleteOption(option)" class="px-4 py-2 font-medium rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">Excluir</button>
+        } @else {
+            <div></div>
+        }
+        <div class="flex gap-3">
+            <button (click)="closeOptionModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+            <button (click)="saveOption()" [disabled]="isSavingOption()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+                {{ isSavingOption() ? 'Salvando...' : 'Salvar' }}
+            </button>
+        </div>
+      </div>
     </div>
   </div>
 }
