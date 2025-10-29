@@ -257,6 +257,31 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   receivedOrders = computed(() => this.processedOrders().filter(o => o.ifoodStatus === 'RECEIVED'));
   inPreparationOrders = computed(() => this.processedOrders().filter(o => o.ifoodStatus === 'IN_PREPARATION'));
   readyOrders = computed(() => this.processedOrders().filter(o => o.ifoodStatus === 'DISPATCHED' || o.ifoodStatus === 'READY_FOR_PICKUP'));
+  
+  finishedOrders = computed<ProcessedIfoodOrder[]>(() => {
+    const now = this.currentTime();
+    return this.ifoodState.recentlyFinishedIfoodOrders()
+      .map(order => {
+        const completedTime = new Date(order.completed_at!).getTime();
+        const elapsedTime = Math.floor((now - completedTime) / 1000); // Time since finished
+        
+        const paymentDetails = this.getPaymentDetails(order);
+
+        return {
+          ...order,
+          elapsedTime,
+          isLate: false, // Not applicable
+          timerColor: order.status === 'CANCELLED' ? 'text-red-400' : 'text-gray-400',
+          ifoodStatus: order.status as IfoodOrderStatus,
+          logisticsStatus: null, // Not relevant
+          requiresDeliveryCode: false,
+          paymentMethod: paymentDetails.paymentMethod,
+          changeDue: paymentDetails.changeDue,
+        };
+      })
+      .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
+  });
+
 
   async confirmOrderAndPrepare(order: ProcessedIfoodOrder) {
     if (!order.ifood_order_id) return;

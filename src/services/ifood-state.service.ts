@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { IfoodWebhookLog, IfoodMenuSync, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup } from '../models/db.models';
+import { IfoodWebhookLog, IfoodMenuSync, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup, Order } from '../models/db.models';
 
 @Injectable({ providedIn: 'root' })
 export class IfoodStateService {
@@ -8,6 +8,7 @@ export class IfoodStateService {
   ifoodOptionGroups = signal<IfoodOptionGroup[]>([]);
   ifoodOptions = signal<IfoodOption[]>([]);
   recipeIfoodOptionGroups = signal<RecipeIfoodOptionGroup[]>([]);
+  recentlyFinishedIfoodOrders = signal<Order[]>([]);
 
   clearData() {
     this.ifoodWebhookLogs.set([]);
@@ -15,5 +16,6 @@ export class IfoodStateService {
     this.ifoodOptionGroups.set([]);
     this.ifoodOptions.set([]);
     this.recipeIfoodOptionGroups.set([]);
+    this.recentlyFinishedIfoodOrders.set([]);
   }
 }

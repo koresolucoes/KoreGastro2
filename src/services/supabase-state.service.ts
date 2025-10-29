@@ -175,6 +175,30 @@ export class SupabaseStateService {
         if (status === 'TIMED_OUT') console.warn('Realtime subscription timed out.');
       });
   }
+  
+  private async refetchOrdersAndFinished() {
+    const userId = this.currentUser()?.id;
+    if (!userId) return;
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+
+    const [openOrdersRes, finishedIfoodOrdersRes] = await Promise.all([
+        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId),
+        supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId)
+    ]);
+
+    if (!openOrdersRes.error) {
+        this.setOrdersWithPrices(openOrdersRes.data || []);
+    } else {
+        console.error('Error refetching open orders:', openOrdersRes.error);
+    }
+
+    if (!finishedIfoodOrdersRes.error) {
+        this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrdersRes.data || []));
+    } else {
+        console.error('Error refetching finished iFood orders:', finishedIfoodOrdersRes.error);
+    }
+  }
+
 
   private handleChanges(payload: any) {
     console.log('Realtime change received:', payload);
@@ -184,7 +208,7 @@ export class SupabaseStateService {
     switch (payload.table) {
         case 'orders':
         case 'order_items':
-            this.refetchOrders();
+            this.refetchOrdersAndFinished();
             break;
         case 'subscriptions':
         case 'plans':
@@ -262,13 +286,14 @@ export class SupabaseStateService {
   }
 
   private async refreshData(userId: string) {
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
     const [
       halls, tables, stations, categories, orders, employees, ingredients,
       ingredientCategories, suppliers, recipeIngredients, recipePreparations, promotions,
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes
+      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -302,6 +327,7 @@ export class SupabaseStateService {
       supabase.from('subscriptions').select('*').eq('user_id', userId),
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
+      supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -338,6 +364,7 @@ export class SupabaseStateService {
     this.subscriptionState.subscriptions.set(subscriptions.data || []);
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
+    this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
 
 
     await this.refreshDashboardAndCashierData();

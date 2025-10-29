@@ -18,12 +18,12 @@
   
   <!-- KDS Board -->
   <main class="flex-1 flex gap-4 overflow-x-auto p-1">
-    @if (processedOrders().length === 0 && !isLogVisible()) {
+    @if (processedOrders().length === 0 && finishedOrders().length === 0 && !isLogVisible()) {
         <div class="w-full h-full flex items-center justify-center">
             <p class="text-gray-500 text-2xl">Nenhum pedido do iFood ativo.</p>
         </div>
     }
-    @if(processedOrders().length > 0 || !isLogVisible()) {
+    @if(processedOrders().length > 0 || finishedOrders().length > 0 || !isLogVisible()) {
       <!-- Coluna Recebidos -->
       <div class="bg-gray-800 rounded-lg w-80 flex-shrink-0 flex flex-col">
         <h2 class="text-lg font-bold p-3 border-b border-gray-700 text-blue-300 sticky top-0 bg-gray-800 z-10">Recebidos ({{ receivedOrders().length }})</h2>
@@ -162,6 +162,32 @@
                     <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'pickup')" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-md">Validar Retirada</button>
                 </div>
               }
+            </div>
+          }
+        </div>
+      </div>
+      <!-- Coluna Finalizados -->
+      <div class="bg-gray-800 rounded-lg w-80 flex-shrink-0 flex flex-col">
+        <h2 class="text-lg font-bold p-3 border-b border-gray-700 text-gray-400 sticky top-0 bg-gray-800 z-10">Finalizados / Histórico ({{ finishedOrders().length }})</h2>
+        <div class="p-2 space-y-2 overflow-y-auto">
+          @for(order of finishedOrders(); track order.id) {
+            <div (click)="openDetailModal(order)" class="bg-gray-900/80 rounded-lg p-3 flex flex-col gap-2 border-l-4 cursor-pointer" [class.border-green-700]="order.status === 'COMPLETED'" [class.border-red-700]="order.status === 'CANCELLED'">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="font-bold text-lg text-white">#{{ order.ifood_display_id }}</h3>
+                  <p class="text-sm text-gray-400 truncate">{{ order.customers?.name }}</p>
+                </div>
+                <div class="text-sm" [class]="order.timerColor">
+                  <span class="font-semibold">{{ order.status === 'COMPLETED' ? 'Finalizado' : 'Cancelado' }}</span>
+                  <p class="font-mono text-right">há {{ formatTime(order.elapsedTime) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-700/50">
+                <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
+                  {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
+                </span>
+                <span class="font-semibold">{{ getOrderTotal(order) | currency:'BRL' }}</span>
+              </div>
             </div>
           }
         </div>
