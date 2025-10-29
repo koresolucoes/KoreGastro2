@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Buffer } from 'buffer';
 
 const iFoodApiBaseUrl = process.env.IFOOD_API_URL || 'https://merchant-api.ifood.com.br';
 
@@ -68,22 +69,43 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { method, endpoint, payload } = request.body;
+        const { method, endpoint, payload, isImageUpload } = request.body;
         
         if (!method || !endpoint) {
             return response.status(400).json({ message: 'Missing "method" or "endpoint" in request body' });
         }
 
         const accessToken = await getIFoodAccessToken();
+        const fullUrl = `${iFoodApiBaseUrl}${endpoint}`;
+        let apiResponse;
         
-        const apiResponse = await fetch(`${iFoodApiBaseUrl}${endpoint}`, {
-            method,
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: payload ? JSON.stringify(payload) : null,
-        });
+        if (isImageUpload) {
+            // Logic for image upload using multipart/form-data
+            if (!payload || !payload.image_base64 || !payload.filename) {
+                return response.status(400).json({ message: 'Missing image_base64 or filename for image upload.' });
+            }
+
+            const imageBuffer = Buffer.from(payload.image_base64, 'base64');
+            const formData = new FormData();
+            const imageBlob = new Blob([imageBuffer], { type: payload.mimeType || 'image/jpeg' });
+            formData.append('file', imageBlob, payload.filename);
+            
+            apiResponse = await fetch(fullUrl, {
+                method: 'POST', // Image upload is always POST
+                headers: { 'Authorization': `Bearer ${accessToken}` }, // Do NOT set Content-Type; fetch does it automatically for FormData
+                body: formData,
+            });
+        } else {
+            // Original logic for JSON payloads
+            apiResponse = await fetch(fullUrl, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: payload ? JSON.stringify(payload) : null,
+            });
+        }
 
         const responseBodyText = await apiResponse.text();
 

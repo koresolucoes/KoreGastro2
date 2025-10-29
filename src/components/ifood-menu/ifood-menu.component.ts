@@ -191,7 +191,7 @@ export class IfoodMenuComponent implements OnInit {
         this.unsellableCategories.set(unsellable.categories);
         this.ifoodOptionGroups.set(optionGroups);
     } catch (error: any) {
-        this.notificationService.show(`Erro ao buscar dados do catálogo: ${error.message}`, 'error');
+        this.notificationService.show(`Erro ao buscar dados do catálogo: ${error.message}`);
     } finally {
         this.isLoading.set(false);
     }
@@ -348,23 +348,31 @@ export class IfoodMenuComponent implements OnInit {
   triggerImageUpload(item: IfoodItem) { document.getElementById(`image-input-${item.id}`)?.click(); }
 
   async onImageSelected(event: Event, item: IfoodItem) {
-    const file = (event.target as HTMLInputElement).files?.[0]; if (!file || !item.externalCode) return;
-    const recipe = this.localRecipesByExternalCode().get(item.externalCode); if (!recipe) { this.notificationService.show('Receita local não encontrada.', 'error'); return; }
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file || !item.externalCode) return;
+
+    const localItem = this.ifoodItemsWithLocalEquivalent().get(item.externalCode);
+    if (!localItem) {
+      this.notificationService.show('Receita local não encontrada para associar a imagem.', 'error');
+      return;
+    }
+
     this.isUploadingImage.set(item.id);
     try {
+      // 1. Update our own DB/storage for the internal menu
+      await this.recipeDataService.updateRecipeImage(localItem.recipe.id, file);
+
+      // 2. Upload to iFood via the new, correct flow
       const base64Image = await this.fileToBase64(file);
-      await this.recipeDataService.updateRecipeImage(recipe.id, file);
-      const category = this.ifoodCategories().find(c => c.items.some(i => i.id === item.id)); if (!category) throw new Error("Categoria iFood não encontrada.");
-      const updatedRecipe = { ...recipe, image_url: 'temp' };
-      const payload = this.mapRecipeToIfoodPayload(updatedRecipe, category.id);
-      payload.products[0].image = base64Image;
-      await this.ifoodMenuService.updateItemImage(payload, updatedRecipe, this.createSyncHash(updatedRecipe));
-      this.notificationService.show(`Imagem de '${item.name}' atualizada!`, 'success');
-      await this.refreshData();
+      await this.ifoodMenuService.uploadAndLinkImage(item, base64Image, file);
+
+      this.notificationService.show(`Imagem de '${item.name}' atualizada no iFood!`, 'success');
+      await this.refreshData(); // Refresh to show the new image URL from iFood
     } catch (error: any) {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
+      this.notificationService.show(`Erro ao enviar imagem para o iFood: ${error.message}`, 'error');
     } finally {
-      this.isUploadingImage.set(null); (event.target as HTMLInputElement).value = '';
+      this.isUploadingImage.set(null);
+      (event.target as HTMLInputElement).value = ''; // Reset file input
     }
   }
 

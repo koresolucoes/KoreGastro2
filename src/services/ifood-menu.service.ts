@@ -147,7 +147,7 @@ export class IfoodMenuService {
 
   private companyProfile = this.settingsState.companyProfile;
 
-  private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', endpoint: string, body: any = null): Promise<T> {
+  private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', endpoint: string, body: any = null, isImageUpload = false): Promise<T> {
     const merchantId = this.companyProfile()?.ifood_merchant_id;
     let fullEndpoint = endpoint;
 
@@ -163,7 +163,7 @@ export class IfoodMenuService {
       const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-catalog', {
         method: 'POST', // The proxy itself is always called with POST
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body })
+        body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body, isImageUpload })
       });
 
       const responseText = await response.text();
@@ -297,9 +297,29 @@ export class IfoodMenuService {
     await this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/products/status`, [{ externalCode, status, resources: ["ITEM"] }]);
   }
 
-  async updateItemImage(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
-    // This re-uses the syncItem logic but is called when an image is part of the payload
-    await this.syncItem(itemPayload, recipe, syncHash);
+  async uploadAndLinkImage(item: IfoodItem, base64Image: string, file: File): Promise<void> {
+    // Step 1: Upload Image via proxy
+    const uploadResponse = await this.proxyRequest<{ id: string }>(
+        'POST',
+        '/catalog/v2.0/merchants/{merchantId}/images',
+        { 
+            image_base64: base64Image,
+            filename: file.name,
+            mimeType: file.type,
+        },
+        true // isImageUpload flag
+    );
+
+    if (!uploadResponse || !uploadResponse.id) {
+        throw new Error('Falha no upload da imagem para o iFood. Resposta inválida do proxy.');
+    }
+
+    // Step 2: Link Image via proxy
+    await this.proxyRequest(
+        'POST',
+        `/catalog/v2.0/merchants/{merchantId}/products/${item.productId}/image`,
+        { imageId: uploadResponse.id }
+    );
   }
 
   async trackOrder(orderId: string): Promise<IfoodTrackingData> {
