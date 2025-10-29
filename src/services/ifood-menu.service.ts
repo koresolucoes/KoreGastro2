@@ -301,29 +301,29 @@ export class IfoodMenuService {
     return this.proxyRequest<any>('GET', `/catalog/v2.0/merchants/{merchantId}/items/${itemId}/flat`);
   }
 
-  private fileToBase64(file: File): Promise<string> {
+  private fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onload = () => resolve(reader.result as string);
         reader.onerror = error => reject(error);
     });
   }
 
   async handleImageUpdate(item: IfoodItem, recipe: Recipe, file: File): Promise<void> {
-    // 1. Upload the image to iFood's generic endpoint.
-    const base64Image = await this.fileToBase64(file);
-    const uploadResponse = await this.proxyRequest<{ filename: string }>(
+    // 1. Upload the image to iFood's catalog image endpoint.
+    const dataUrl = await this.fileToDataUrl(file);
+    const uploadResponse = await this.proxyRequest<{ imagePath: string }>(
       'POST',
-      '/merchants/{merchantId}/image/upload',
-      { image_base64: base64Image, filename: file.name, mimeType: file.type },
-      true
+      '/catalog/v2.0/merchants/{merchantId}/image/upload',
+      { image: dataUrl },
+      true // This now triggers the JSON-based upload in the proxy
     );
     
-    if (!uploadResponse?.filename) {
+    if (!uploadResponse?.imagePath) {
       throw new Error('O iFood não retornou um caminho para a imagem após o upload.');
     }
-    const imagePath = uploadResponse.filename;
+    const imagePath = uploadResponse.imagePath;
 
     // 2. Get the current full item structure from iFood.
     const fullItemPayload = await this.getFlatItem(item.id);

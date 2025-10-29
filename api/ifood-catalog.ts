@@ -80,20 +80,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
         let apiResponse;
         
         if (isImageUpload) {
-            // Logic for image upload using multipart/form-data
-            if (!payload || !payload.image_base64 || !payload.filename) {
-                return response.status(400).json({ message: 'Missing image_base64 or filename for image upload.' });
+            // Logic for image upload using application/json (iFood Catalog API v2.0)
+            if (!payload || !payload.image) {
+                return response.status(400).json({ message: 'Missing "image" (data URL) for image upload.' });
             }
-
-            const imageBuffer = Buffer.from(payload.image_base64, 'base64');
-            const formData = new FormData();
-            const imageBlob = new Blob([imageBuffer], { type: payload.mimeType || 'image/jpeg' });
-            formData.append('file', imageBlob, payload.filename);
             
             apiResponse = await fetch(fullUrl, {
                 method: 'POST', // Image upload is always POST
-                headers: { 'Authorization': `Bearer ${accessToken}` }, // Do NOT set Content-Type; fetch does it automatically for FormData
-                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
             });
         } else {
             // Original logic for JSON payloads
