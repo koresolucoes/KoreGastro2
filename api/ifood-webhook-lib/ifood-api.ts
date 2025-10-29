@@ -75,8 +75,15 @@ async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET'
 
   console.log(`[iFood API] Call to ${endpoint} successful with status ${apiResponse.status}.`);
   
-  if (apiResponse.status === 202 || apiResponse.status === 204) {
-    return null; // No JSON body to parse for these success statuses
+  if (apiResponse.status === 201 || apiResponse.status === 202 || apiResponse.status === 204) {
+    // Return an empty object for 201 Created to signify success, 
+    // as some dispute actions return this status with a body we might parse later if needed.
+    // For 202 and 204, there's no body.
+    try {
+        return await apiResponse.json();
+    } catch (e) {
+        return null; // No JSON body to parse
+    }
   }
   
   return await apiResponse.json();
@@ -136,14 +143,33 @@ export async function sendIFoodLogisticsAction(orderId: string, action: string, 
         assignDriver: `/logistics/v1.0/orders/${orderId}/assignDriver`,
         goingToOrigin: `/logistics/v1.0/orders/${orderId}/goingToOrigin`,
         arrivedAtOrigin: `/logistics/v1.0/orders/${orderId}/arrivedAtOrigin`,
-        dispatch: `/logistics/v1.0/orders/${orderId}/dispatch`, // Note: This is a logistics dispatch, separate from order status dispatch
+        dispatch: `/logistics/v1.0/orders/${orderId}/dispatch`,
         arrivedAtDestination: `/logistics/v1.0/orders/${orderId}/arrivedAtDestination`,
-        verifyDeliveryCode: `/logistics/v1.0/orders/${orderId}/verifyDeliveryCode`
+        verifyDeliveryCode: `/logistics/v1.0/orders/${orderId}/verifyDeliveryCode`,
+        // ADDED: Endpoint for validating pickup code, assuming it follows a similar path structure.
+        validatePickupCode: `/order/v1.0/orders/${orderId}/validatePickupCode`,
     };
 
     const endpoint = endpointMap[action];
     if (!endpoint) {
         throw new Error(`Invalid iFood logistics action: ${action}`);
+    }
+
+    return makeIFoodApiCall(endpoint, 'POST', body);
+}
+
+/**
+ * Sends a dispute action for a given dispute ID to the iFood Handshake API.
+ */
+export async function sendIFoodDisputeAction(disputeId: string, action: 'accept' | 'reject', body: any = null): Promise<any> {
+    const endpointMap: { [key: string]: string } = {
+        accept: `/disputes/${disputeId}/accept`,
+        reject: `/disputes/${disputeId}/reject`,
+    };
+
+    const endpoint = endpointMap[action];
+    if (!endpoint) {
+        throw new Error(`Invalid iFood dispute action: ${action}`);
     }
 
     return makeIFoodApiCall(endpoint, 'POST', body);

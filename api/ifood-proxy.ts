@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendIFoodOrderAction, sendIFoodLogisticsAction } from './ifood-webhook-lib/ifood-api.js';
+import { sendIFoodOrderAction, sendIFoodLogisticsAction, sendIFoodDisputeAction } from './ifood-webhook-lib/ifood-api.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   // Set CORS headers for all responses
@@ -19,20 +19,55 @@ export default async function handler(request: VercelRequest, response: VercelRe
   console.log('[Proxy] Received iFood action request from frontend.');
 
   try {
-    const { action, orderId, details, isLogistics } = request.body;
+    const { action, orderId, details, isLogistics, isDispute, disputeId } = request.body;
 
-    if (!action || !orderId) {
-      return response.status(400).json({ message: 'Missing "action" or "orderId" in request body' });
+    if (!action) {
+      return response.status(400).json({ message: 'Missing "action" in request body' });
     }
     
+    // --- Dispute/Handshake Logic ---
+    if (isDispute) {
+      if (!disputeId) return response.status(400).json({ message: 'Missing "disputeId" for dispute action' });
+      
+      let disputeApiAction: 'accept' | 'reject' | null = null;
+      let body: any = null;
+      
+      switch(action) {
+        case 'acceptDispute':
+          disputeApiAction = 'accept';
+          break;
+        case 'rejectDispute':
+          disputeApiAction = 'reject';
+          body = { reason: details?.reason || 'Rejeitado pelo restaurante.' };
+          break;
+        default:
+          return response.status(400).json({ message: `Invalid dispute action provided: ${action}` });
+      }
+      
+      if (!disputeApiAction) {
+         return response.status(400).json({ message: `Dispute action '${action}' could not be mapped.` });
+      }
+      
+      console.log(`[Proxy] Forwarding DISPUTE action '${disputeApiAction}' for dispute '${disputeId}'.`);
+      const apiResponse = await sendIFoodDisputeAction(disputeId, disputeApiAction, body);
+      console.log(`[Proxy] Dispute action for dispute '${disputeId}' processed successfully.`);
+      return response.status(201).json(apiResponse || { message: 'Dispute action processed successfully by iFood.' });
+    }
+
+    // --- Logistics Logic ---
     if (isLogistics) {
+      if (!orderId) return response.status(400).json({ message: 'Missing "orderId" for logistics action' });
       console.log(`[Proxy] Forwarding LOGISTICS action '${action}' for order '${orderId}' to iFood API.`);
-      await sendIFoodLogisticsAction(orderId, action, details);
+      const apiResponse = await sendIFoodLogisticsAction(orderId, action, details);
       console.log(`[Proxy] Logistics action for order '${orderId}' processed successfully.`);
-      return response.status(202).json({ message: 'Logistics action processed successfully by iFood.' });
+      return response.status(200).json(apiResponse || { message: 'Logistics action processed successfully by iFood.' });
     }
 
     // --- Original Order Status Logic ---
+    if (!orderId) {
+      return response.status(400).json({ message: 'Missing "orderId" for order action' });
+    }
+
     let apiAction: 'confirm' | 'dispatch' | 'readyToPickup' | 'requestCancellation' | null = null;
     let body: any = null;
 

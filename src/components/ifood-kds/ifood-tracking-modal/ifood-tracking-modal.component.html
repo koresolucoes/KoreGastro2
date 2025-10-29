@@ -1,0 +1,42 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">Rastreio do Pedido #{{ order()?.ifood_display_id }}</h3>
+    </div>
+    <div class="p-6">
+      @if (isLoading()) {
+        <div class="flex flex-col items-center justify-center h-48">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <p class="mt-4 text-gray-400">Buscando informações de rastreio...</p>
+        </div>
+      } @else if (trackingData(); as data) {
+        <div class="space-y-4">
+            <div class="bg-gray-700/50 p-4 rounded-lg">
+                <h4 class="text-sm font-semibold text-gray-400">Previsão de Entrega</h4>
+                <p class="text-2xl font-bold text-white">{{ data.expectedDelivery | date:'HH:mm' }}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-700/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-semibold text-gray-400">Latitude</h4>
+                    <p class="text-lg font-mono text-white">{{ data.latitude }}</p>
+                </div>
+                 <div class="bg-gray-700/50 p-4 rounded-lg">
+                    <h4 class="text-sm font-semibold text-gray-400">Longitude</h4>
+                    <p class="text-lg font-mono text-white">{{ data.longitude }}</p>
+                </div>
+            </div>
+             <div class="mt-4 text-center">
+                <p class="text-xs text-gray-500">A exibição do mapa não está disponível.</p>
+             </div>
+        </div>
+      } @else {
+        <div class="text-center py-10">
+          <p class="text-gray-500">Não foi possível obter os dados de rastreio.</p>
+        </div>
+      }
+    </div>
+    <div class="p-4 bg-gray-700/50 flex justify-end">
+       <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    </div>
+  </div>
+</div>

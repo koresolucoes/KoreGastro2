@@ -75,7 +75,7 @@ export class IfoodDataService {
     }
   }
 
-  async sendLogisticsAction(ifoodOrderId: string, action: string, details?: any): Promise<{ success: boolean; error: any }> {
+  async sendLogisticsAction(ifoodOrderId: string, action: string, details?: any): Promise<{ success: boolean; error: any, data?: any }> {
     try {
        const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
         method: 'POST',
@@ -90,15 +90,43 @@ export class IfoodDataService {
         })
       });
 
+      const responseBody = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseBody.message || `Proxy error (${response.status})`);
+      }
+      
+      console.log(`Successfully sent logistics action '${action}' for order ${ifoodOrderId}.`);
+      return { success: true, error: null, data: responseBody };
+    } catch (error) {
+       console.error(`Error sending iFood logistics action '${action}' for order ${ifoodOrderId}:`, error);
+      return { success: false, error };
+    }
+  }
+
+  async sendDisputeAction(disputeId: string, action: 'acceptDispute' | 'rejectDispute', details?: any): Promise<{ success: boolean; error: any }> {
+    try {
+      const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          disputeId,
+          isDispute: true,
+          details
+        })
+      });
+
       if (!response.ok) {
         const errorBody = await response.json();
         throw new Error(errorBody.message || `Proxy error (${response.status})`);
       }
-      
-      console.log(`Successfully sent logistics action '${action}' for order ${ifoodOrderId}.`);
+
+      console.log(`Successfully sent dispute action '${action}' for dispute ${disputeId}.`);
       return { success: true, error: null };
+
     } catch (error) {
-       console.error(`Error sending iFood logistics action '${action}' for order ${ifoodOrderId}:`, error);
+      console.error(`Error sending iFood dispute action '${action}' for dispute ${disputeId}:`, error);
       return { success: false, error };
     }
   }

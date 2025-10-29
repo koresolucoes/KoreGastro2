@@ -9,8 +9,11 @@ import { Order, OrderItem, IfoodOrderStatus, OrderItemStatus, OrderStatus, Ifood
 import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
-import { IfoodMenuService, IfoodCancellationReason } from '../../services/ifood-menu.service';
+import { IfoodMenuService, IfoodCancellationReason, IfoodTrackingData } from '../../services/ifood-menu.service';
 import { CancelIfoodOrderModalComponent } from './cancel-ifood-order-modal/cancel-ifood-order-modal.component';
+import { IfoodTrackingModalComponent } from './ifood-tracking-modal/ifood-tracking-modal.component';
+import { RejectDisputeModalComponent } from './reject-dispute-modal/reject-dispute-modal.component';
+import { VerifyCodeModalComponent } from './verify-code-modal/verify-code-modal.component';
 
 
 export interface ProcessedIfoodOrder extends Order {
@@ -27,7 +30,7 @@ type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARR
 @Component({
   selector: 'app-ifood-kds',
   standalone: true,
-  imports: [CommonModule, CancelIfoodOrderModalComponent, FormsModule],
+  imports: [CommonModule, CancelIfoodOrderModalComponent, FormsModule, IfoodTrackingModalComponent, RejectDisputeModalComponent, VerifyCodeModalComponent],
   templateUrl: './ifood-kds.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -61,17 +64,29 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
 
   // New state for logistics modals
   isAssignDriverModalOpen = signal(false);
-  isVerifyCodeModalOpen = signal(false);
   orderForDriverModal = signal<ProcessedIfoodOrder | null>(null);
-  orderForCodeModal = signal<ProcessedIfoodOrder | null>(null);
   driverForm = signal({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
-  verificationCode = signal('');
-
-  // New signals for cancellation modal
+  
+  // New state for cancellation modal
   isCancelModalOpen = signal(false);
   orderToCancel = signal<ProcessedIfoodOrder | null>(null);
   cancellationReasons = signal<IfoodCancellationReason[]>([]);
   isLoadingCancellationReasons = signal(false);
+
+  // New state for dispute modal
+  isRejectDisputeModalOpen = signal(false);
+  orderToReject = signal<ProcessedIfoodOrder | null>(null);
+
+  // New state for code verification modal
+  isVerifyCodeModalOpen = signal(false);
+  orderForCodeModal = signal<ProcessedIfoodOrder | null>(null);
+  codeTypeForModal = signal<'pickup' | 'delivery' | null>(null);
+
+  // Tracking Modal State
+  isTrackingModalOpen = signal(false);
+  isLoadingTracking = signal(false);
+  trackingData = signal<IfoodTrackingData | null>(null);
+  orderForTracking = signal<ProcessedIfoodOrder | null>(null);
 
 
   constructor() {
@@ -351,24 +366,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     await this.handleLogisticsAction(order.id, order.ifood_order_id, action);
   }
 
-  openVerifyCodeModal(order: ProcessedIfoodOrder) {
-    this.orderForCodeModal.set(order);
-    this.verificationCode.set('');
-    this.isVerifyCodeModalOpen.set(true);
-  }
-  closeVerifyCodeModal() { this.isVerifyCodeModalOpen.set(false); }
-  
-  async submitVerificationCode() {
-    const order = this.orderForCodeModal();
-    const code = this.verificationCode();
-    if (!order || !order.ifood_order_id || !code || code.length !== 4) {
-      this.notificationService.show('O código de verificação deve ter 4 dígitos.', 'warning');
-      return;
-    }
-    await this.handleLogisticsAction(order.id, order.ifood_order_id, 'verifyDeliveryCode', { code });
-    this.closeVerifyCodeModal();
-  }
-
   private async handleLogisticsAction(orderId: string, ifoodOrderId: string, action: string, details?: any) {
     this.updatingOrders.update(set => new Set(set).add(orderId));
     try {
@@ -386,7 +383,78 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         });
     }
   }
+  
+  // --- Dispute Methods ---
+  async handleAcceptDispute(order: ProcessedIfoodOrder) {
+    if (!order.ifood_dispute_id) return;
+    this.updatingOrders.update(set => new Set(set).add(order.id));
+    try {
+      const { success, error } = await this.ifoodDataService.sendDisputeAction(order.ifood_dispute_id, 'acceptDispute');
+      if (!success) throw error;
+      this.notificationService.show('Disputa aceita com sucesso.', 'success');
+      // Here you might want to optimistically update the order state or refetch it.
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao aceitar disputa: ${error.message}`, 'error');
+    } finally {
+      this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+    }
+  }
 
+  openRejectDisputeModal(order: ProcessedIfoodOrder) {
+    this.orderToReject.set(order);
+    this.isRejectDisputeModalOpen.set(true);
+  }
+
+  async handleConfirmRejection(reason: string) {
+    this.isRejectDisputeModalOpen.set(false);
+    const order = this.orderToReject();
+    if (!order || !order.ifood_dispute_id) return;
+    this.updatingOrders.update(set => new Set(set).add(order.id));
+    try {
+      const { success, error } = await this.ifoodDataService.sendDisputeAction(order.ifood_dispute_id, 'rejectDispute', { reason });
+      if (!success) throw error;
+      this.notificationService.show('Disputa rejeitada com sucesso.', 'success');
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao rejeitar disputa: ${error.message}`, 'error');
+    } finally {
+      this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+      this.orderToReject.set(null);
+    }
+  }
+
+  // --- Code Verification Methods ---
+  openVerifyCodeModal(order: ProcessedIfoodOrder, type: 'pickup' | 'delivery') {
+    this.orderForCodeModal.set(order);
+    this.codeTypeForModal.set(type);
+    this.isVerifyCodeModalOpen.set(true);
+  }
+
+  async handleConfirmVerification(code: string) {
+    this.isVerifyCodeModalOpen.set(false);
+    const order = this.orderForCodeModal();
+    const type = this.codeTypeForModal();
+    if (!order || !order.ifood_order_id || !code || !type) return;
+
+    const action = type === 'pickup' ? 'validatePickupCode' : 'verifyDeliveryCode';
+    this.updatingOrders.update(set => new Set(set).add(order.id));
+
+    try {
+      const { success, error, data } = await this.ifoodDataService.sendLogisticsAction(order.ifood_order_id, action, { code });
+      if (!success) throw error;
+
+      if (data?.success) {
+        this.notificationService.show('Código validado com sucesso!', 'success');
+      } else {
+        this.notificationService.show('Código de verificação inválido.', 'error');
+      }
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao verificar código: ${error.message}`, 'error');
+    } finally {
+      this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+      this.orderForCodeModal.set(null);
+      this.codeTypeForModal.set(null);
+    }
+  }
   
   formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) return '00:00';
@@ -431,5 +499,32 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     }
     // The payload `ifood_benefits` is an array of objects like { value: number }
     return order.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
+  }
+
+  async openTrackingModal(order: ProcessedIfoodOrder) {
+    if (!order.ifood_order_id) {
+      this.notificationService.show('Este pedido não tem um ID iFood para rastreio.', 'warning');
+      return;
+    }
+    this.isLoadingTracking.set(true);
+    this.orderForTracking.set(order);
+    this.isTrackingModalOpen.set(true);
+    this.closeDetailModal(); // Close detail modal if open
+
+    try {
+      const data = await this.ifoodMenuService.trackOrder(order.ifood_order_id);
+      this.trackingData.set(data);
+    } catch (error: any) {
+      this.notificationService.show(`Erro ao buscar rastreio: ${error.message}`, 'error');
+      this.isTrackingModalOpen.set(false); // Close modal on error
+    } finally {
+      this.isLoadingTracking.set(false);
+    }
+  }
+
+  closeTrackingModal() {
+    this.isTrackingModalOpen.set(false);
+    this.trackingData.set(null);
+    this.orderForTracking.set(null);
   }
 }

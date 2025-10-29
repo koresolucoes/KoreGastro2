@@ -270,6 +270,8 @@ export interface Order {
   ifood_benefits?: any | null; // JSONB
   ifood_delivery_observations?: string | null;
   ifood_pickup_code?: string | null;
+  ifood_dispute_id?: string | null;
+  ifood_dispute_details?: any | null;
 }
 
 export interface OrderItem {
