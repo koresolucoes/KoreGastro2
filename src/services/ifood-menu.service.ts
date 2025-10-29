@@ -96,7 +96,7 @@ export class IfoodMenuService {
 
   private companyProfile = this.settingsState.companyProfile;
 
-  private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH', endpoint: string, body: any = null): Promise<T> {
+  private async proxyRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', endpoint: string, body: any = null): Promise<T> {
     const merchantId = this.companyProfile()?.ifood_merchant_id;
     if (!merchantId) {
       throw new Error('O iFood Merchant ID não está configurado.');
@@ -264,5 +264,49 @@ export class IfoodMenuService {
 
   async trackOrder(orderId: string): Promise<IfoodTrackingData> {
     return this.proxyRequest<IfoodTrackingData>('GET', `/logistics/v1.0/orders/${orderId}/tracking`);
+  }
+
+  // --- Option Group Management ---
+  async getOptionGroups(includeOptions = false): Promise<any[]> {
+    return this.proxyRequest<any[]>('GET', `/catalog/v2.0/merchants/{merchantId}/optionGroups?includeOptions=${includeOptions}`);
+  }
+
+  async updateOptionGroup(optionGroupId: string, name: string): Promise<any> {
+    const payload = { name };
+    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}`, payload);
+  }
+
+  async deleteOptionGroup(optionGroupId: string): Promise<void> {
+    await this.proxyRequest<void>('DELETE', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}`);
+  }
+
+  async updateOptionGroupStatus(optionGroupId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
+    const payload = { status };
+    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/status`, payload);
+  }
+
+  // --- Option Management ---
+  async createOption(optionGroupId: string, optionData: any): Promise<any> {
+    return this.proxyRequest<any>('POST', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/options`, optionData);
+  }
+  
+  async deleteOption(optionGroupId: string, productId: string): Promise<void> {
+    await this.proxyRequest<void>('DELETE', `/catalog/v2.0/merchants/{merchantId}/optionGroups/${optionGroupId}/products/${productId}/option`);
+  }
+
+  async updateOptionPrice(optionId: string, price: number, originalValue?: number): Promise<any> {
+    const payload = {
+      optionId,
+      price: {
+        value: price,
+        originalValue: originalValue ?? price
+      }
+    };
+    return this.proxyRequest<any>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/price`, payload);
+  }
+
+  async updateOptionStatus(optionId: string, status: 'AVAILABLE' | 'UNAVAILABLE'): Promise<void> {
+    const payload = { optionId, status };
+    await this.proxyRequest<void>('PATCH', `/catalog/v2.0/merchants/{merchantId}/options/status`, payload);
   }
 }
