@@ -14,6 +14,8 @@ export interface IfoodCatalog {
   catalogId: string;
   context: string[];
   status: string;
+  modifiedAt?: string;
+  groupId?: string;
 }
 
 export interface IfoodItem {
@@ -34,7 +36,7 @@ export interface IfoodCategory {
   id: string;
   name: string;
   status: string;
-  sequence: number;
+  index: number;
   items: IfoodItem[];
 }
 
@@ -49,6 +51,8 @@ export interface UnsellableCategory {
   status: string;
   restrictions: string[];
   unsellableItems: UnsellableItem[];
+  template?: string;
+  unsellablePizzaItems?: any;
 }
 
 // New interface for tracking data
@@ -119,8 +123,25 @@ export class IfoodMenuService {
   }
 
   async getCategories(catalogId: string): Promise<IfoodCategory[]> {
-    // The include_items=true parameter is crucial for fetching items nested in categories.
-    return this.proxyRequest<IfoodCategory[]>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories?includeItems=true`);
+    const categories = await this.proxyRequest<any[]>('GET', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories?includeItems=true`);
+
+    // Map raw API response to our simplified model
+    return (categories || []).map(category => ({
+      id: category.id,
+      name: category.name,
+      status: category.status,
+      index: category.index,
+      items: (category.items || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        externalCode: item.externalCode,
+        status: item.status,
+        price: item.price, // price object { value, originalValue }
+        hasOptionGroups: item.hasOptionGroups,
+        image: item.imagePath ? `https://static-images.ifood.com.br/image/upload/t_medium/pratos/${item.imagePath}` : undefined,
+      })),
+    }));
   }
   
   async getUnsellableItems(catalogId: string): Promise<{categories: UnsellableCategory[]}> {
@@ -136,12 +157,12 @@ export class IfoodMenuService {
     }));
   }
 
-  async createCategory(catalogId: string, name: string, sequence: number): Promise<{ id: string }> {
+  async createCategory(catalogId: string, name: string, index: number): Promise<{ id: string }> {
     const payload = {
       name: name,
       status: 'AVAILABLE',
       template: 'DEFAULT',
-      sequence: sequence
+      index: index
     };
     return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, payload);
   }

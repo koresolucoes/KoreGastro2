@@ -193,9 +193,9 @@ export class IfoodMenuComponent implements OnInit {
       let ifoodCategoryId = this.ifoodCategories().find(c => c.name.toLowerCase() === categoryName.toLowerCase())?.id;
       
       if (!ifoodCategoryId) {
-        const maxSequence = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.sequence), -1);
-        const nextSequence = maxSequence + 1;
-        const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName, nextSequence);
+        const maxIndex = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.index), -1);
+        const nextIndex = maxIndex + 1;
+        const newCategory = await this.ifoodMenuService.createCategory(catalogId, categoryName, nextIndex);
         ifoodCategoryId = newCategory.id;
         await this.refreshCatalogData();
       }
@@ -319,9 +319,9 @@ export class IfoodMenuComponent implements OnInit {
 
     this.isCreatingCategory.set(true);
     try {
-      const maxSequence = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.sequence), -1);
-      const nextSequence = maxSequence + 1;
-      await this.ifoodMenuService.createCategory(catalogId, name, nextSequence);
+      const maxIndex = this.ifoodCategories().reduce((max, cat) => Math.max(max, cat.index), -1);
+      const nextIndex = maxIndex + 1;
+      await this.ifoodMenuService.createCategory(catalogId, name, nextIndex);
       this.notificationService.show('Categoria criada com sucesso no iFood!', 'success');
       await this.refreshCatalogData();
       this.closeCategoryModal();
