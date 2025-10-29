@@ -8,9 +8,6 @@
 
   <div class="mb-4 border-b border-gray-700">
     <nav class="-mb-px flex space-x-6">
-      <button (click)="view.set('sync')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'sync'" [class.text-white]="view() === 'sync'" [class.border-transparent]="view() !== 'sync'" [class.text-gray-400]="view() !== 'sync'">
-        Sincronização
-      </button>
       <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'live'" [class.text-white]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-gray-400]="view() !== 'live'">
         Cardápio no iFood
       </button>
@@ -32,213 +29,81 @@
     </div>
   } @else {
     @switch (view()) {
-      @case ('sync') {
-        <div class="space-y-6">
-          <!-- Items to Sync -->
-          <div class="bg-gray-800 rounded-lg">
-              <div class="p-4 border-b border-gray-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                  <h2 class="text-xl font-semibold text-white">Itens do Cardápio para Sincronizar</h2>
-                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                      <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-green-500"></div><span>Sincronizado</span></div>
-                      <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-yellow-500"></div><span>Modificado</span></div>
-                      <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-blue-500"></div><span>Não Sincronizado</span></div>
-                  </div>
-              </div>
-               @if (localItemsToSync().length === 0) {
-                  <div class="p-16 text-center text-gray-500">
-                      <p>Nenhum item com "Código Externo" configurado para sincronização.</p>
-                      <p class="text-xs mt-1">Vá para as Fichas Técnicas para adicionar o código.</p>
-                  </div>
-              } @else {
-                  <div class="max-h-[60vh] overflow-y-auto">
-                      <!-- Desktop Table -->
-                      <div class="hidden md:block">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-3 w-12">Status</th>
-                                    <th class="px-6 py-3">Item</th>
-                                    <th class="px-6 py-3">Cód. Externo</th>
-                                    <th class="px-6 py-3 text-right">Preço ChefOS</th>
-                                    <th class="px-6 py-3 text-right">Preço iFood</th>
-                                    <th class="px-6 py-3 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for(item of localItemsToSync(); track item.recipe.id) {
-                                    <tr class="border-b border-gray-700" [attr.data-recipe-id]="item.recipe.id">
-                                        <td class="px-6 py-4">
-                                            <div class="h-3 w-3 rounded-full" [class]="getStatusClass(item.status)" [title]="item.status"></div>
-                                        </td>
-                                        <td class="px-6 py-4 font-medium text-white">
-                                          <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: item.recipe.id }" class="hover:underline hover:text-blue-400" title="Editar Ficha Técnica">
-                                            {{ item.recipe.name }}
-                                          </a>
-                                        </td>
-                                        <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ item.recipe.external_code }}</td>
-                                        <td class="px-6 py-4 text-right text-white font-semibold">{{ item.recipe.price | currency:'BRL' }}</td>
-                                        <td class="px-6 py-4 text-right text-gray-300">
-                                            {{ (ifoodItemsByExternalCode().get(item.recipe.external_code!)?.price.value | currency:'BRL') || '-' }}
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            @if(item.status !== 'synced') {
-                                                <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
-                                                    {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
-                                                </button>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                      </div>
-                      <!-- Mobile Cards -->
-                      <div class="block md:hidden p-4 space-y-4">
-                        @for(item of localItemsToSync(); track item.recipe.id) {
-                            <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
-                                <!-- Top row: Status and Name -->
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: item.recipe.id }" class="font-medium text-white hover:underline hover:text-blue-400" title="Editar Ficha Técnica">
-                                          {{ item.recipe.name }}
-                                        </a>
-                                        <p class="text-xs text-gray-400 font-mono">{{ item.recipe.external_code }}</p>
-                                    </div>
-                                    <div class="h-4 w-4 rounded-full flex-shrink-0 ml-2" [class]="getStatusClass(item.status)" [title]="item.status"></div>
-                                </div>
-                        
-                                <!-- Middle: Prices Grid -->
-                                <div class="grid grid-cols-2 gap-4 text-sm pt-3 border-t border-gray-600/50">
-                                    <div>
-                                        <p class="text-gray-400 text-xs">Preço ChefOS</p>
-                                        <p class="text-white font-semibold">{{ item.recipe.price | currency:'BRL' }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-gray-400 text-xs">Preço iFood</p>
-                                        <p class="text-white font-semibold">{{ (ifoodItemsByExternalCode().get(item.recipe.external_code!)?.price.value | currency:'BRL') || '-' }}</p>
-                                    </div>
-                                </div>
-                        
-                                <!-- Bottom: Action -->
-                                @if(item.status !== 'synced') {
-                                    <div class="pt-3 border-t border-gray-600/50">
-                                        <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
-                                            {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
-                                        </button>
-                                    </div>
-                                }
-                            </div>
-                        }
-                      </div>
-                  </div>
-              }
-          </div>
-          <!-- Unsyncable Items -->
-          <div class="bg-gray-800 rounded-lg">
-             <div class="p-4 border-b border-gray-700">
-                <h2 class="text-xl font-semibold text-white">Itens Sem Código Externo</h2>
-                <p class="text-sm text-gray-400">Estes itens não podem ser sincronizados até que um "Código Externo" seja definido.</p>
-             </div>
-              @if (unsyncableLocalItems().length > 0) {
-                 <div class="max-h-60 overflow-y-auto">
-                    <!-- Desktop Table -->
-                    <div class="hidden md:block">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-                                <tr><th class="px-6 py-3">Item</th><th class="px-6 py-3">Categoria</th><th class="px-6 py-3 text-right">Ação</th></tr>
-                            </thead>
-                            <tbody>
-                                @for(item of unsyncableLocalItems(); track item.recipe.id) {
-                                    <tr class="border-b border-gray-700">
-                                        <td class="px-6 py-4 font-medium text-white">{{ item.recipe.name }}</td>
-                                        <td class="px-6 py-4 text-gray-400">{{ item.categoryName }}</td>
-                                        <td class="px-6 py-4 text-right">
-                                            <button (click)="openRecipeEditModal(item.recipe)" class="text-blue-400 hover:underline text-sm font-semibold">Configurar</button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Mobile Cards -->
-                    <div class="block md:hidden p-4 space-y-3">
-                         @for(item of unsyncableLocalItems(); track item.recipe.id) {
-                            <div class="bg-gray-700/50 p-4 rounded-lg flex justify-between items-center">
-                                <div>
-                                    <p class="font-semibold text-white">{{ item.recipe.name }}</p>
-                                    <p class="text-sm text-gray-400">{{ item.categoryName }}</p>
-                                </div>
-                                <button (click)="openRecipeEditModal(item.recipe)" class="text-blue-400 hover:underline text-sm font-semibold flex-shrink-0 ml-2">Configurar</button>
-                            </div>
-                        }
-                    </div>
-                 </div>
-              }
-          </div>
-        </div>
-      }
       @case('live') {
         <div class="bg-gray-800 rounded-lg p-4">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
             <h2 class="text-xl font-semibold text-white">Seu Cardápio Ativo no iFood</h2>
-            <button (click)="openCategoryModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 text-sm">Nova Categoria</button>
+            <div class="flex gap-2">
+              <button (click)="openCategoryModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Nova Categoria</button>
+              <button (click)="openSyncModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Sincronizar / Criar Itens</button>
+            </div>
           </div>
           
           <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
             @for(category of ifoodCategories(); track category.id) {
               <section>
-                <h3 class="text-lg font-bold text-blue-300 border-b border-gray-700 pb-2 mb-3">{{ category.name }}</h3>
+                <div class="flex items-center gap-2 border-b border-gray-700 pb-2 mb-3">
+                  <h3 class="text-lg font-bold text-blue-300">{{ category.name }}</h3>
+                   <button (click)="deleteCategory(category)" class="text-red-400 hover:text-red-300 p-1" title="Deletar categoria">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                   </button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for(item of category.items; track item.id) {
-                    <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col gap-3">
-                      <div class="flex gap-4">
-                        <div class="flex-shrink-0 relative">
-                          <input type="file" [id]="'image-input-' + item.id" (change)="onImageSelected($event, item)" accept="image/png, image/jpeg" class="hidden">
-                          <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1 disabled:cursor-wait overflow-hidden group">
-                            @if(isUploadingImage() === item.id) {
-                                <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            } @else if (item.image) {
-                                <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span class="text-white text-xs font-semibold">Alterar</span>
-                                </div>
-                            } @else {
-                                <span>Adicionar Imagem</span>
-                            }
-                          </button>
-                        </div>
-                        <div class="flex-1">
-                          <p class="font-semibold text-white">{{ item.name }}</p>
-                          <p class="text-xs text-gray-400">{{ item.description }}</p>
-                        </div>
-                      </div>
-                      <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-600/50">
-                        <div class="p-2 bg-gray-800/50 rounded-md">
-                            <div class="flex items-center justify-between text-gray-400 text-xs">
-                              <span>Preço iFood</span>
-                              <button (click)="openPriceModal(item)" class="text-blue-400 hover:text-blue-300" title="Editar Preço">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                              </button>
-                            </div>
-                            <p class="font-bold text-lg text-green-400">{{ item.price.value | currency:'BRL' }}</p>
-                        </div>
-                        <div class="p-2 bg-gray-800/50 rounded-md">
-                            <p class="text-gray-400 text-xs">Preço ChefOS</p>
-                             @if(localRecipesByExternalCode().has(item.externalCode)) {
-                                <p class="font-bold text-lg text-white">{{ localRecipesByExternalCode().get(item.externalCode)!.price | currency:'BRL' }}</p>
-                            } @else {
-                                <p class="text-xs text-gray-500 mt-2">Não vinculado</p>
-                            }
-                        </div>
-                      </div>
-                      <button (click)="openStatusModal(item)" class="cursor-pointer w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
-                          <div class="flex items-center gap-2">
-                            <div class="h-3 w-3 rounded-full" [class.bg-green-500]="item.status === 'AVAILABLE'" [class.bg-red-500]="item.status !== 'AVAILABLE'"></div>
-                            <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                    @if(ifoodItemsWithLocalEquivalent().get(item.externalCode); as localItem) {
+                      <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col gap-3">
+                        <div class="flex gap-4">
+                          <div class="flex-shrink-0 relative">
+                            <input type="file" [id]="'image-input-' + item.id" (change)="onImageSelected($event, item)" accept="image/png, image/jpeg" class="hidden">
+                            <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1 disabled:cursor-wait overflow-hidden group">
+                              @if(isUploadingImage() === item.id) {
+                                  <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                              } @else if (item.image) {
+                                  <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover">
+                                  <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span class="text-white text-xs font-semibold">Alterar</span>
+                                  </div>
+                              } @else {
+                                  <span>Adicionar Imagem</span>
+                              }
+                            </button>
                           </div>
-                          <span class="text-xs text-gray-400">Alterar</span>
-                      </button>
-                    </div>
+                          <div class="flex-1">
+                            <p class="font-semibold text-white">{{ item.name }}</p>
+                            <p class="text-xs text-gray-400">{{ item.description }}</p>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-600/50">
+                          <div class="p-2 bg-gray-800/50 rounded-md">
+                              <div class="flex items-center justify-between text-gray-400 text-xs">
+                                <span>Preço iFood</span>
+                                <button (click)="openPriceModal(item)" class="text-blue-400 hover:text-blue-300" title="Editar Preço">
+                                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                                </button>
+                              </div>
+                              <p class="font-bold text-lg text-green-400">{{ item.price.value | currency:'BRL' }}</p>
+                          </div>
+                          <div class="p-2 bg-gray-800/50 rounded-md">
+                              <p class="text-gray-400 text-xs">Preço ChefOS</p>
+                               @if(localRecipesByExternalCode().has(item.externalCode)) {
+                                  <p class="font-bold text-lg text-white">{{ localRecipesByExternalCode().get(item.externalCode)!.price | currency:'BRL' }}</p>
+                              } @else {
+                                  <p class="text-xs text-gray-500 mt-2">Não vinculado</p>
+                              }
+                          </div>
+                        </div>
+                        <button (click)="openStatusModal(item)" class="cursor-pointer w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
+                            <div class="flex items-center gap-2">
+                              <div class="h-3 w-3 rounded-full" [class.bg-green-500]="item.status === 'AVAILABLE'" [class.bg-red-500]="item.status !== 'AVAILABLE'"></div>
+                              <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                            </div>
+                            <span class="text-xs text-gray-400">Alterar</span>
+                        </button>
+                         <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: localItem.recipe.id }" class="w-full text-center py-2 px-3 bg-gray-600/50 hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-colors">
+                            Editar no ChefOS
+                        </a>
+                      </div>
+                    }
                   } @empty {
                     <p class="text-sm text-gray-500 italic col-span-full">Nenhum item nesta categoria.</p>
                   }
@@ -264,7 +129,9 @@
                             </div>
                             <div class="flex items-center gap-4">
                                <span class="px-2 py-1 text-xs font-semibold rounded-full" [class.bg-green-500/20]="group.status === 'AVAILABLE'" [class.text-green-300]="group.status === 'AVAILABLE'" [class.bg-red-500/20]="group.status !== 'AVAILABLE'" [class.text-red-300]="group.status !== 'AVAILABLE'">{{ group.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
-                               <span class="material-symbols-outlined text-gray-400">expand_more</span>
+                                <button (click)="$event.preventDefault(); openEditGroupModal(group)" class="p-1 text-blue-400 hover:text-white"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                                <button (click)="$event.preventDefault(); deleteOptionGroup(group)" class="p-1 text-red-400 hover:text-white"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                <span class="material-symbols-outlined text-gray-400">expand_more</span>
                             </div>
                         </summary>
                         <div class="px-4 pb-4 border-t border-gray-600/50">
@@ -318,6 +185,60 @@
     }
   }
 </div>
+
+<!-- Sync/Create Modal -->
+@if(isSyncModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeSyncModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">Sincronizar Itens com iFood</h3>
+        <button (click)="closeSyncModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-4 flex-1 overflow-y-auto">
+        @if (itemsToCreateOnIfood().length === 0) {
+          <div class="p-16 text-center text-gray-500">
+            <p>Nenhum item novo para sincronizar.</p>
+            <p class="text-xs mt-1">Vá para as Fichas Técnicas para adicionar um "Código Externo" aos seus pratos.</p>
+          </div>
+        } @else {
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
+            <h2 class="text-lg font-semibold text-white">Itens para Criar/Atualizar no iFood</h2>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-yellow-500"></div><span>Modificado</span></div>
+              <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-blue-500"></div><span>Novo</span></div>
+            </div>
+          </div>
+          <table class="w-full text-left">
+            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
+              <tr>
+                <th class="px-6 py-3 w-12">Status</th>
+                <th class="px-6 py-3">Item</th>
+                <th class="px-6 py-3 text-right">Preço</th>
+                <th class="px-6 py-3 text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(item of itemsToCreateOnIfood(); track item.recipe.id) {
+                <tr class="border-b border-gray-700">
+                  <td class="px-6 py-4">
+                    <div class="h-3 w-3 rounded-full" [class]="getStatusClass(item.status)" [title]="item.status"></div>
+                  </td>
+                  <td class="px-6 py-4 font-medium text-white">{{ item.recipe.name }}</td>
+                  <td class="px-6 py-4 text-right font-semibold">{{ item.recipe.price | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-center">
+                    <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
+                      {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Price Edit Modal -->
 @if(isPriceModalOpen() && editingPriceItem(); as item) {
@@ -384,7 +305,7 @@
   </div>
 }
 
-<!-- Edit Recipe Modal -->
+<!-- Edit Recipe Modal (Quick Edit) -->
 @if(isEditRecipeModalOpen() && editingRecipeForm(); as form) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeRecipeEditModal()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
@@ -400,28 +321,6 @@
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Código Externo (SKU) *</label>
           <input type="text" [value]="form.external_code || ''" (input)="updateEditingRecipeField('external_code', $any($event.target).value)" placeholder="Ex: PRATO-001" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Item *</label>
-          <input type="text" [value]="form.name || ''" (input)="updateEditingRecipeField('name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
-          <textarea [value]="form.description || ''" (input)="updateEditingRecipeField('description', $any($event.target).value)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
-            <input type="number" [value]="form.price ?? 0" (input)="updateEditingRecipeField('price', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Categoria no PDV</label>
-            <select [value]="form.category_id" (change)="updateEditingRecipeField('category_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                @for(category of localCategories(); track category.id) {
-                    <option [value]="category.id">{{ category.name }}</option>
-                }
-            </select>
-          </div>
         </div>
       </div>
       
@@ -479,6 +378,36 @@
                 {{ isSavingOption() ? 'Salvando...' : 'Salvar' }}
             </button>
         </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Edit Option Group Modal -->
+@if(isEditGroupModalOpen() && editingGroup(); as group) {
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="closeEditGroupModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">Editar Grupo de Complementos</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Grupo</label>
+          <input type="text" [(ngModel)]="editingGroupName" name="groupName" class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+          <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
+              <button (click)="newGroupStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newGroupStatus() === 'AVAILABLE'">Disponível</button>
+              <button (click)="newGroupStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newGroupStatus() === 'UNAVAILABLE'">Indisponível</button>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+          <button (click)="closeEditGroupModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+          <button (click)="saveGroupChanges()" [disabled]="isSavingOption()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+              {{ isSavingOption() ? 'Salvando...' : 'Salvar' }}
+          </button>
       </div>
     </div>
   </div>

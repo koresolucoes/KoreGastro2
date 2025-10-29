@@ -33,7 +33,7 @@ export class IfoodMenuComponent implements OnInit {
   private recipeDataService = inject(RecipeDataService);
 
   isLoading = signal(true);
-  view = signal<'sync' | 'live' | 'unsellable' | 'optionGroups'>('sync');
+  view = signal<'live' | 'unsellable' | 'optionGroups'>('live');
 
   // iFood Data
   ifoodCatalogs = signal<IfoodCatalog[]>([]);
@@ -71,6 +71,7 @@ export class IfoodMenuComponent implements OnInit {
   });
   
   // Modals for live item editing
+  isSyncModalOpen = signal(false);
   isPriceModalOpen = signal(false);
   editingPriceItem = signal<IfoodItem | null>(null);
   newPrice = signal<number>(0);
@@ -85,6 +86,10 @@ export class IfoodMenuComponent implements OnInit {
 
   // Modals for option groups & options
   isOptionModalOpen = signal(false);
+  isEditGroupModalOpen = signal(false);
+  editingGroup = signal<IfoodOptionGroup | null>(null);
+  editingGroupName = signal('');
+  newGroupStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
   parentGroupForOption = signal<IfoodOptionGroup | null>(null);
   editingOption = signal<IfoodOption | null>(null);
   optionForm = signal({ name: '', externalCode: '', price: 0 });
@@ -133,9 +138,18 @@ export class IfoodMenuComponent implements OnInit {
     });
   });
 
-  localItemsToSync = computed<MappedLocalItem[]>(() => 
-    this.localItemsWithSyncStatus().filter(item => !!item.recipe.external_code)
+  itemsToCreateOnIfood = computed<MappedLocalItem[]>(() => 
+    this.localItemsWithSyncStatus().filter(item => !!item.recipe.external_code && item.status !== 'synced')
   );
+
+  ifoodItemsWithLocalEquivalent = computed(() => {
+    const map = new Map<string, MappedLocalItem>();
+    const localItems = this.localItemsWithSyncStatus().filter(item => !!item.recipe.external_code);
+    for(const item of localItems) {
+      map.set(item.recipe.external_code!, item);
+    }
+    return map;
+  });
   
   unsyncableLocalItems = computed<MappedLocalItem[]>(() => 
     this.localItemsWithSyncStatus().filter(item => !item.recipe.external_code)
@@ -189,6 +203,9 @@ export class IfoodMenuComponent implements OnInit {
       await this.loadCatalogData(catalogId);
     }
   }
+
+  openSyncModal() { this.isSyncModalOpen.set(true); }
+  closeSyncModal() { this.isSyncModalOpen.set(false); }
 
   async syncItem(item: MappedLocalItem) {
     const catalogId = this.selectedCatalogId();
@@ -310,6 +327,24 @@ export class IfoodMenuComponent implements OnInit {
     }
   }
 
+  async deleteCategory(category: IfoodCategory) {
+    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir a categoria "${category.name}"? Todos os itens dentro dela também serão removidos do iFood.`);
+    if (!confirmed) return;
+
+    this.isLoading.set(true);
+    try {
+      const catalogId = this.selectedCatalogId();
+      if (!catalogId) throw new Error("Catálogo não encontrado.");
+      await this.ifoodMenuService.deleteCategory(catalogId, category.id);
+      this.notificationService.show("Categoria excluída.", 'success');
+      await this.refreshData();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   triggerImageUpload(item: IfoodItem) { document.getElementById(`image-input-${item.id}`)?.click(); }
 
   async onImageSelected(event: Event, item: IfoodItem) {
@@ -342,10 +377,9 @@ export class IfoodMenuComponent implements OnInit {
     });
   }
   
-  // Recipe Edit Modal Methods
   openRecipeEditModal(recipe: Recipe) { this.editingRecipeForm.set({ ...recipe }); this.isEditRecipeModalOpen.set(true); }
   closeRecipeEditModal() { this.isEditRecipeModalOpen.set(false); }
-  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) { this.editingRecipeForm.update(form => ({ ...form, [field]: (field === 'price' || field === 'prep_time_in_minutes') ? +value : value })); }
+  updateEditingRecipeField(field: keyof Omit<Recipe, 'id' | 'created_at' | 'hasStock'>, value: any) { this.editingRecipeForm.update(form => ({ ...form, [field]: value })); }
   async saveRecipeDetails() {
     const formValue = this.editingRecipeForm(); if (!formValue || !formValue.id) return;
     if (!formValue.name?.trim() || !formValue.external_code?.trim()) { this.notificationService.alert('Nome e Código Externo são obrigatórios.'); return; }
@@ -358,7 +392,7 @@ export class IfoodMenuComponent implements OnInit {
     return { 'synced': 'bg-green-500', 'unsynced': 'bg-blue-500', 'modified': 'bg-yellow-500', 'error': 'bg-red-500', 'syncing': 'bg-gray-500 animate-pulse' }[status] || 'bg-gray-400';
   }
 
-  // Option Group & Option Methods
+  // --- Option Group & Option Methods ---
   openAddOptionModal(group: IfoodOptionGroup) {
     this.parentGroupForOption.set(group);
     this.editingOption.set(null);
@@ -376,6 +410,41 @@ export class IfoodMenuComponent implements OnInit {
   
   closeOptionModal() { this.isOptionModalOpen.set(false); }
 
+  openEditGroupModal(group: IfoodOptionGroup) {
+    this.editingGroup.set(group);
+    this.editingGroupName.set(group.name);
+    this.newGroupStatus.set(group.status as 'AVAILABLE' | 'UNAVAILABLE');
+    this.isEditGroupModalOpen.set(true);
+  }
+  closeEditGroupModal() { this.isEditGroupModalOpen.set(false); }
+
+  async saveGroupChanges() {
+    const group = this.editingGroup();
+    if (!group) return;
+
+    this.isSavingOption.set(true);
+    try {
+      let changed = false;
+      if (group.name !== this.editingGroupName()) {
+        await this.ifoodMenuService.updateOptionGroup(group.id, this.editingGroupName());
+        changed = true;
+      }
+      if (group.status !== this.newGroupStatus()) {
+        await this.ifoodMenuService.updateOptionGroupStatus(group.id, this.newGroupStatus());
+        changed = true;
+      }
+      if (changed) {
+        this.notificationService.show("Grupo atualizado!", "success");
+        await this.refreshData();
+      }
+      this.closeEditGroupModal();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isSavingOption.set(false);
+    }
+  }
+
   async saveOption() {
     this.isSavingOption.set(true);
     try {
@@ -385,20 +454,23 @@ export class IfoodMenuComponent implements OnInit {
       const editing = this.editingOption();
       if (editing) {
         // Update existing option
+        let changed = false;
         if (editing.price.value !== form.price) {
           await this.ifoodMenuService.updateOptionPrice(editing.id, form.price);
+          changed = true;
         }
         if (editing.status !== this.newOptionStatus()) {
           await this.ifoodMenuService.updateOptionStatus(editing.id, this.newOptionStatus());
+          changed = true;
         }
-        // Note: iFood API doesn't seem to support updating name/externalCode of options directly.
+        if (changed) this.notificationService.show("Complemento salvo com sucesso!", 'success');
       } else {
         // Create new option
         const parentGroup = this.parentGroupForOption();
         if (!parentGroup) throw new Error("Grupo de complemento não encontrado.");
         await this.ifoodMenuService.createOption(parentGroup.id, form);
+        this.notificationService.show("Complemento salvo com sucesso!", 'success');
       }
-      this.notificationService.show("Complemento salvo com sucesso!", 'success');
       await this.refreshData();
       this.closeOptionModal();
     } catch(error: any) {
@@ -424,6 +496,22 @@ export class IfoodMenuComponent implements OnInit {
       this.notificationService.show(`Erro: ${error.message}`, 'error');
     } finally {
       this.isSavingOption.set(false);
+    }
+  }
+
+  async deleteOptionGroup(group: IfoodOptionGroup) {
+    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja remover o grupo "${group.name}" e todos os seus complementos?`);
+    if (!confirmed) return;
+
+    this.isLoading.set(true);
+    try {
+      await this.ifoodMenuService.deleteOptionGroup(group.id);
+      this.notificationService.show("Grupo de complementos removido.", 'success');
+      await this.refreshData();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isLoading.set(false);
     }
   }
 }

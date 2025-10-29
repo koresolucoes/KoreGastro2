@@ -179,6 +179,10 @@ export class IfoodMenuService {
     return this.proxyRequest<{ id: string }>('POST', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories`, { name, status: 'AVAILABLE', template: 'DEFAULT', index });
   }
 
+  async deleteCategory(catalogId: string, categoryId: string): Promise<void> {
+    await this.proxyRequest<void>('DELETE', `/catalog/v2.0/merchants/{merchantId}/catalogs/${catalogId}/categories/${categoryId}`);
+  }
+
   async syncItem(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
     const { item, products } = await this.proxyRequest<{ item: any, products: any[] }>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
     const userId = this.authService.currentUser()?.id;
