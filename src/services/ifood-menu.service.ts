@@ -18,26 +18,38 @@ export interface IfoodCatalog {
   groupId?: string;
 }
 
+export interface IfoodProduct {
+  id: string;
+  name: string;
+  description?: string;
+  additionalInformation?: string;
+  externalCode: string;
+  image?: string; // base64 for upload
+  imagePath?: string; // for display/update
+  serving?: 'SERVES_1' | 'SERVES_2' | 'SERVES_3' | 'SERVES_4' | 'SERVES_5' | 'SERVES_MORE';
+  dietaryRestrictions?: ('ORGANIC' | 'VEGAN' | 'GLUTEN_FREE' | 'LACTOSE_FREE')[];
+  ean?: string;
+  weight?: {
+    quantity: number;
+    unit: 'kg' | 'g';
+  };
+}
+
 export interface IfoodItem {
   id: string;
   name: string;
   description: string;
   externalCode: string;
   status: string;
+  productId: string;
+  index: number;
   price: {
     value: number;
     originalValue?: number;
   };
   hasOptionGroups: boolean;
-  image?: string;
-}
-
-export interface IfoodCategory {
-  id: string;
-  name: string;
-  status: string;
-  index: number;
-  items: IfoodItem[];
+  imagePath?: string;
+  image?: string; // Client-side property to hold full URL
 }
 
 export interface UnsellableItem {
@@ -63,6 +75,14 @@ export interface IfoodTrackingData {
   longitude: number;
   pickupEtaStart: number;
   trackDate: number; // timestamp
+}
+
+export interface IfoodCategory {
+  id: string;
+  name: string;
+  status: string;
+  index: number;
+  items: IfoodItem[];
 }
 
 
@@ -137,8 +157,11 @@ export class IfoodMenuService {
         description: item.description,
         externalCode: item.externalCode,
         status: item.status,
+        productId: item.productId,
+        index: item.index,
         price: item.price, // price object { value, originalValue }
         hasOptionGroups: item.hasOptionGroups,
+        imagePath: item.imagePath,
         image: item.imagePath ? `https://static-images.ifood.com.br/image/upload/t_medium/pratos/${item.imagePath}` : undefined,
       })),
     }));

@@ -244,6 +244,7 @@ export class IfoodMenuComponent implements OnInit {
           externalCode: externalCode,
           name: recipe.name,
           description: recipe.description || '',
+          serving: 'SERVES_1', // Add default serving size
         }
       ],
       optionGroups: [],
