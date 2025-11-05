@@ -2,7 +2,8 @@ import { Component, ChangeDetectionStrategy, inject, signal, input, output, Inpu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IfoodCancellationReason } from '../../../services/ifood-menu.service';
-import { ProcessedIfoodOrder } from '../ifood-kds.component';
+// FIX: Changed import path for ProcessedIfoodOrder to the correct model file.
+import { ProcessedIfoodOrder } from '../../../models/app.models';
 
 @Component({
   selector: 'app-cancel-ifood-order-modal',

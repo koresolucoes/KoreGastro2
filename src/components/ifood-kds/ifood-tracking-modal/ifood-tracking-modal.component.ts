@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProcessedIfoodOrder } from '../ifood-kds.component';
+// FIX: Changed import path for ProcessedIfoodOrder to the correct model file.
+import { ProcessedIfoodOrder } from '../../../models/app.models';
 import { IfoodTrackingData } from '../../../services/ifood-menu.service';
 
 @Component({

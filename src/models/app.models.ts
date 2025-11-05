@@ -1,4 +1,4 @@
-import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit } from './db.models';
+import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit, Order, IfoodOrderStatus } from './db.models';
 
 // Represents the data structure for the technical sheet form
 export interface RecipeForm {
@@ -15,4 +15,18 @@ export interface FullRecipe extends Recipe {
     ingredients: (RecipeIngredient & { name: string; unit: string; cost: number })[];
     subRecipes: (RecipeSubRecipe & { name: string; cost: number })[];
     cost: { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> };
+}
+
+// New types for iFood KDS
+export type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARRIVED_AT_ORIGIN' | 'DISPATCHED_TO_CUSTOMER' | 'ARRIVED_AT_DESTINATION';
+
+export interface ProcessedIfoodOrder extends Order {
+  elapsedTime: number;
+  isLate: boolean;
+  timerColor: string;
+  ifoodStatus: IfoodOrderStatus;
+  logisticsStatus: LogisticsStatus | null;
+  requiresDeliveryCode: boolean;
+  paymentMethod?: string;
+  changeDue?: number;
 }

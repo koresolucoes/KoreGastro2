@@ -17,20 +17,8 @@ import { VerifyCodeModalComponent } from './verify-code-modal/verify-code-modal.
 import { OrderDetailsModalComponent } from './order-details-modal/order-details-modal.component';
 import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-modal.component';
 import { ProposeRefundModalComponent } from './propose-refund-modal/propose-refund-modal.component';
+import { ProcessedIfoodOrder, LogisticsStatus } from '../../models/app.models';
 
-
-export interface ProcessedIfoodOrder extends Order {
-  elapsedTime: number;
-  isLate: boolean;
-  timerColor: string;
-  ifoodStatus: IfoodOrderStatus;
-  logisticsStatus: LogisticsStatus | null;
-  requiresDeliveryCode: boolean;
-  paymentMethod?: string;
-  changeDue?: number;
-}
-
-type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARRIVED_AT_ORIGIN' | 'DISPATCHED_TO_CUSTOMER' | 'ARRIVED_AT_DESTINATION';
 
 @Component({
   selector: 'app-ifood-kds',

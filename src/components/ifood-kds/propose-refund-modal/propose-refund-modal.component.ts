@@ -1,7 +1,8 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ProcessedIfoodOrder } from '../ifood-kds.component';
+// FIX: Changed import path for ProcessedIfoodOrder to the correct model file.
+import { ProcessedIfoodOrder } from '../../../models/app.models';
 
 @Component({
   selector: 'app-propose-refund-modal',

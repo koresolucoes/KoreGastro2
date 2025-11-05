@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, input, output, computed, InputSignal, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProcessedIfoodOrder } from '../ifood-kds.component';
+import { ProcessedIfoodOrder } from '../../../models/app.models';
+import { PrintingService } from '../../../services/printing.service';
 
 @Component({
   selector: 'app-order-details-modal',
@@ -12,6 +13,7 @@ import { ProcessedIfoodOrder } from '../ifood-kds.component';
 export class OrderDetailsModalComponent {
   order: InputSignal<ProcessedIfoodOrder | null> = input.required<ProcessedIfoodOrder | null>();
   closeModal: OutputEmitterRef<void> = output<void>();
+  private printingService = inject(PrintingService);
 
   orderTotal = computed(() => {
     const currentOrder = this.order();
@@ -55,5 +57,12 @@ export class OrderDetailsModalComponent {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  printIfoodOrder() {
+    const orderToPrint = this.order();
+    if (orderToPrint) {
+      this.printingService.printIfoodReceipt(orderToPrint);
+    }
   }
 }

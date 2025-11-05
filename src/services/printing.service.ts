@@ -3,6 +3,7 @@ import { Order, OrderItem, Station } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
 import { NotificationService } from './notification.service';
+import { ProcessedIfoodOrder } from '../models/app.models';
 
 interface PreBillOptions {
   includeServiceFee: boolean;
@@ -176,6 +177,112 @@ export class PrintingService {
     }, 500); 
   }
 
+  async printIfoodReceipt(order: ProcessedIfoodOrder) {
+    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    if (!printWindow) {
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      return;
+    }
+    printWindow.document.title = `Pedido iFood #${order.ifood_display_id}`;
+    const receiptHtml = this.generateIfoodReceiptHtml(order);
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  }
+
+  private generateIfoodReceiptHtml(order: ProcessedIfoodOrder): string {
+    const date = this.datePipe.transform(order.timestamp, 'dd/MM/yyyy HH:mm');
+    const orderType = order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA';
+    
+    const itemsHtml = order.order_items.map(item => {
+        const notesHtml = item.notes ? `<div style="font-size: 11px; margin-left: 10px; font-style: italic;">Obs: ${item.notes}</div>` : '';
+        return `
+            <div style="margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>${item.quantity}x ${item.name}</span>
+                    <span>${this.currencyPipe.transform(item.price * item.quantity, 'BRL', 'R$')}</span>
+                </div>
+                ${notesHtml}
+            </div>
+        `;
+    }).join('');
+
+    const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const benefits = order.ifood_benefits?.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0) ?? 0;
+    const total = subtotal - benefits;
+
+    let addressHtml = '';
+    if (order.order_type === 'iFood-Delivery' && order.delivery_info?.deliveryAddress) {
+        const addr = order.delivery_info.deliveryAddress;
+        addressHtml = `
+            <div class="section-title">Endereço de Entrega</div>
+            <div>${addr.streetName}, ${addr.streetNumber}</div>
+            <div>${addr.neighborhood} - ${addr.city}/${addr.state}</div>
+            ${addr.complement ? `<div>${addr.complement}</div>` : ''}
+            ${addr.reference ? `<div>Ref: ${addr.reference}</div>` : ''}
+            <div class="divider"></div>
+        `;
+    }
+    
+    let pickupCodeHtml = '';
+    if (order.order_type === 'iFood-Takeout' && order.ifood_pickup_code) {
+        pickupCodeHtml = `
+            <div class="section-title center" style="font-size: 16px;">CÓDIGO DE RETIRADA</div>
+            <div class="center" style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${order.ifood_pickup_code}</div>
+            <div class="divider"></div>
+        `;
+    }
+
+    let paymentHtml = `
+        <div class="section-title">Pagamento</div>
+        <div class="line"><span>Subtotal</span><span>${this.currencyPipe.transform(subtotal, 'BRL', 'R$')}</span></div>
+        ${benefits > 0 ? `<div class="line"><span>Descontos iFood</span><span>-${this.currencyPipe.transform(benefits, 'BRL', 'R$')}</span></div>` : ''}
+        <div class="divider"></div>
+        <div class="line total"><span>TOTAL</span><span>${this.currencyPipe.transform(total, 'BRL', 'R$')}</span></div>
+        <div style="font-weight: bold; margin-top: 5px;">${order.paymentMethod}</div>
+        ${order.changeDue && order.changeDue > 0 ? `<div style="font-style: italic;">Troco para: ${this.currencyPipe.transform(order.changeDue, 'BRL', 'R$')}</div>` : ''}
+    `;
+
+    return `
+      <html>
+        <head>
+          <title>Pedido iFood #${order.ifood_display_id}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; }
+            .center { text-align: center; }
+            .header { font-size: 20px; font-weight: bold; }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .line { display: flex; justify-content: space-between; margin-bottom: 2px; }
+            .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
+            .total { font-weight: bold; font-size: 14px; }
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0.5cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center header">PEDIDO IFOOD</div>
+          <div class="center" style="font-size: 16px; font-weight: bold;">#${order.ifood_display_id}</div>
+          <div class="center" style="font-size: 14px; font-weight: bold;">${orderType}</div>
+          <div class="divider"></div>
+          <div>Data: ${date}</div>
+          <div>Cliente: ${order.customers?.name || 'Não informado'}</div>
+          <div class="divider"></div>
+          ${addressHtml}
+          ${pickupCodeHtml}
+          <div class="section-title">Itens</div>
+          ${itemsHtml}
+          <div class="divider"></div>
+          ${paymentHtml}
+        </body>
+      </html>
+    `;
+  }
 
   private generateTicketHtml(order: Order, items: OrderItem[], station: Station): string {
     const formattedTimestamp = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
