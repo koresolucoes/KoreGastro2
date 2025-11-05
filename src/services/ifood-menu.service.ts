@@ -118,9 +118,21 @@ export interface IfoodMerchantDetails {
 
 
 export interface IfoodMerchantStatus {
-  state: 'OPEN' | 'CLOSED' | 'INTERRUPTED';
-  message: string;
-  details?: any;
+  operation: string;
+  salesChannel: string;
+  available: boolean;
+  state: 'OK' | 'WARNING' | 'ERROR' | 'CLOSED';
+  reopenable?: {
+    identifier: string;
+    type: string;
+    reopenable: boolean;
+  };
+  validations?: any[];
+  message: {
+    title: string;
+    subtitle: string;
+    description: string;
+  };
 }
 
 export interface IfoodInterruption {
@@ -203,12 +215,8 @@ export class IfoodMenuService {
     return this.proxyRequest<IfoodMerchantDetails>('GET', '/merchant/v1.0/merchants/{merchantId}');
   }
 
-  async getMerchantStatus(): Promise<IfoodMerchantStatus> {
-    const statuses = await this.proxyRequest<IfoodMerchantStatus[]>('GET', '/merchant/v1.0/merchants/{merchantId}/status');
-    if (!statuses || statuses.length === 0) {
-      throw new Error('Não foi possível obter o status da loja do iFood.');
-    }
-    return statuses[0];
+  async getMerchantStatus(): Promise<IfoodMerchantStatus[]> {
+    return this.proxyRequest<IfoodMerchantStatus[]>('GET', '/merchant/v1.0/merchants/{merchantId}/status');
   }
 
   async getInterruptions(): Promise<IfoodInterruption[]> {

@@ -28,7 +28,7 @@ export class IfoodStoreManagerComponent implements OnInit {
   isLoadingHours = signal(true);
   isSaving = signal(false);
 
-  status = signal<IfoodMerchantStatus | null>(null);
+  status = signal<IfoodMerchantStatus[] | null>(null);
   interruptions = signal<IfoodInterruption[]>([]);
   
   isInterruptionModalOpen = signal(false);
@@ -42,18 +42,28 @@ export class IfoodStoreManagerComponent implements OnInit {
   isLoading = computed(() => this.isLoadingStatus() || this.isLoadingInterruptions() || this.isLoadingHours());
 
   storeState = computed(() => {
-    const s = this.status();
-    if (!s) return { state: 'DESCONHECIDO', message: 'Carregando...', color: 'bg-gray-500' };
+    const statuses = this.status();
+    if (!statuses || statuses.length === 0) {
+      return { state: 'DESCONHECIDO', message: 'Carregando...', color: 'bg-gray-500' };
+    }
+    
+    // Assume the first status in the array is the primary one for the store.
+    const mainStatus = statuses[0];
 
-    switch (s.state) {
-      case 'OPEN':
-        return { state: 'ABERTA', message: s.message || 'Loja aberta e recebendo pedidos.', color: 'bg-green-500' };
-      case 'INTERRUPTED':
-        return { state: 'INTERROMPIDA', message: s.message || 'Loja fechada temporariamente.', color: 'bg-yellow-500' };
+    // Use the title from the API message object for a more user-friendly status.
+    const message = mainStatus.message.title || 'Status não informado.';
+
+    switch (mainStatus.state) {
+      case 'OK':
+        return { state: 'ABERTA', message: message, color: 'bg-green-500' };
+      case 'WARNING':
+        return { state: 'ALERTA', message: message, color: 'bg-yellow-500' };
+      case 'ERROR':
+        return { state: 'FECHADA (ERRO)', message: message, color: 'bg-red-500' };
       case 'CLOSED':
-        return { state: 'FECHADA', message: s.message || 'Loja fechada.', color: 'bg-red-500' };
+        return { state: 'FECHADA', message: message, color: 'bg-gray-500' };
       default:
-        return { state: 'DESCONHECIDO', message: s.message || 'Status desconhecido.', color: 'bg-gray-500' };
+        return { state: 'DESCONHECIDO', message: message, color: 'bg-gray-500' };
     }
   });
 
