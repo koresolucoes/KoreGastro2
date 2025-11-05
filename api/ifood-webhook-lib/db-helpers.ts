@@ -220,8 +220,7 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
   if (itemsToUpdate.length > 0) {
     console.log(`[DB Helper] Found ${itemsToUpdate.length} 'PENDENTE' items to move to 'EM_PREPARO' for order ${order.id}.`);
     const now = new Date().toISOString();
-    const updates = itemsToUpdate.map((item: any) => ({
-        ...item,
+    const updates = itemsToUpdate.map((item: { id: string, status_timestamps: any }) => ({
         id: item.id,
         status: 'EM_PREPARO',
         status_timestamps: { ...(item.status_timestamps || {}), 'EM_PREPARO': now }
@@ -251,8 +250,7 @@ export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
   if (itemsToUpdate.length > 0) {
     console.log(`[DB Helper] Found ${itemsToUpdate.length} items to move to 'PRONTO' for order ${order.id}.`);
     const now = new Date().toISOString();
-    const updates = itemsToUpdate.map((item: any) => ({
-        ...item,
+    const updates = itemsToUpdate.map((item: { id: string, status_timestamps: any }) => ({
         id: item.id,
         status: 'PRONTO',
         status_timestamps: { ...(item.status_timestamps || {}), 'PRONTO': now }
