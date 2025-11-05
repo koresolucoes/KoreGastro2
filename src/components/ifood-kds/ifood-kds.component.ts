@@ -139,6 +139,19 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.timerInterval) clearInterval(this.timerInterval);
   }
+  
+  // Helper functions for the template to avoid complex logic
+  hasRefundAlternative(order: ProcessedIfoodOrder): boolean {
+    return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'REFUND');
+  }
+
+  getRefundAlternative(order: ProcessedIfoodOrder): any | undefined {
+    return order.ifood_dispute_details?.alternatives?.find((alt: any) => alt.type === 'REFUND');
+  }
+
+  hasAdditionalTimeAlternative(order: ProcessedIfoodOrder): boolean {
+    return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'ADDITIONAL_TIME');
+  }
 
   private getIfoodStatus(order: Order): IfoodOrderStatus {
     // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes.
