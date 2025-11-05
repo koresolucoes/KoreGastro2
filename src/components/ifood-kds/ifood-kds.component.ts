@@ -14,6 +14,9 @@ import { CancelIfoodOrderModalComponent } from './cancel-ifood-order-modal/cance
 import { IfoodTrackingModalComponent } from './ifood-tracking-modal/ifood-tracking-modal.component';
 import { RejectDisputeModalComponent } from './reject-dispute-modal/reject-dispute-modal.component';
 import { VerifyCodeModalComponent } from './verify-code-modal/verify-code-modal.component';
+import { OrderDetailsModalComponent } from './order-details-modal/order-details-modal.component';
+import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-modal.component';
+import { ProposeRefundModalComponent } from './propose-refund-modal/propose-refund-modal.component';
 
 
 export interface ProcessedIfoodOrder extends Order {
@@ -32,7 +35,7 @@ type LogisticsStatus = 'AWAITING_DRIVER' | 'ASSIGNED' | 'GOING_TO_ORIGIN' | 'ARR
 @Component({
   selector: 'app-ifood-kds',
   standalone: true,
-  imports: [CommonModule, CancelIfoodOrderModalComponent, FormsModule, IfoodTrackingModalComponent, RejectDisputeModalComponent, VerifyCodeModalComponent],
+  imports: [CommonModule, CancelIfoodOrderModalComponent, FormsModule, IfoodTrackingModalComponent, RejectDisputeModalComponent, VerifyCodeModalComponent, OrderDetailsModalComponent, AssignDriverModalComponent, ProposeRefundModalComponent],
   templateUrl: './ifood-kds.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -419,6 +422,18 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       // Don't remove from updatingOrders yet, modal will take over
     }
   }
+  
+  handleCancelModalClose() {
+    this.isCancelModalOpen.set(false);
+    const order = this.orderToCancel();
+    if (order) {
+      this.updatingOrders.update(s => {
+        const newSet = new Set(s);
+        newSet.delete(order.id);
+        return newSet;
+      });
+    }
+  }
 
   async handleConfirmCancellation(details: { code: string; reason: string; }) {
     this.isCancelModalOpen.set(false);
@@ -706,5 +721,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     this.isTrackingModalOpen.set(false);
     this.trackingData.set(null);
     this.orderForTracking.set(null);
+  }
+  
+  formatLogisticsStatus(status: LogisticsStatus | null): string {
+    if (!status) return '';
+    return status.replace(/_/g, ' ');
   }
 }

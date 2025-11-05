@@ -143,8 +143,8 @@
             <div class="p-3 space-y-3">
               <p class="font-semibold text-white">{{ order.customers?.name }}</p>
               @if (order.logisticsStatus) {
-                <div class="px-2 py-1 text-xs font-semibold rounded-full inline-block" [class.bg-blue-900/50]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.text-blue-300]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.bg-yellow-900/50]="order.logisticsStatus === 'AWAITING_DRIVER'" [class.text-yellow-300]="order.logisticsStatus === 'AWAITING_DRIVER'">
-                    {{ order.logisticsStatus.replace(/_/g, ' ') }}
+                <div class="px-2 py-1 text-xs font-semibold rounded-full inline-block capitalize" [class.bg-blue-900/50]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.text-blue-300]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.bg-yellow-900/50]="order.logisticsStatus === 'AWAITING_DRIVER'" [class.text-yellow-300]="order.logisticsStatus === 'AWAITING_DRIVER'">
+                    {{ formatLogisticsStatus(order.logisticsStatus) }}
                 </div>
               }
               <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
@@ -248,7 +248,7 @@
   <!-- Modals -->
   @if(isDetailModalOpen() && selectedOrderForDetail(); as order) { <app-order-details-modal [order]="order" (closeModal)="closeDetailModal()"></app-order-details-modal> }
   @if(isAssignDriverModalOpen()) { <app-assign-driver-modal (closeModal)="closeAssignDriverModal()" (assignDriver)="assignDriver()"></app-assign-driver-modal> }
-  @if(isCancelModalOpen()) { <app-cancel-ifood-order-modal [order]="orderToCancel()" [reasons]="cancellationReasons()" (closeModal)="isCancelModalOpen.set(false); updatingOrders.update(s => {const n = new Set(s); n.delete(orderToCancel()!.id); return n;})" (confirmCancellation)="handleConfirmCancellation($event)"></app-cancel-ifood-order-modal> }
+  @if(isCancelModalOpen()) { <app-cancel-ifood-order-modal [order]="orderToCancel()" [reasons]="cancellationReasons()" (closeModal)="handleCancelModalClose()" (confirmCancellation)="handleConfirmCancellation($event)"></app-cancel-ifood-order-modal> }
   @if(isRejectDisputeModalOpen()) { <app-reject-dispute-modal [order]="orderToReject()" (closeModal)="isRejectDisputeModalOpen.set(false)" (confirmRejection)="handleConfirmRejection($event)"></app-reject-dispute-modal> }
   @if(isProposeRefundModalOpen()) { <app-propose-refund-modal [order]="orderToProposeRefund()" (closeModal)="isProposeRefundModalOpen.set(false)" (confirmRefund)="handleConfirmRefund($event)"></app-propose-refund-modal> }
   @if(isVerifyCodeModalOpen()) { <app-verify-code-modal [order]="orderForCodeModal()" [codeType]="codeTypeForModal()" (closeModal)="isVerifyCodeModalOpen.set(false)" (confirmVerification)="handleConfirmVerification($event)"></app-verify-code-modal> }
