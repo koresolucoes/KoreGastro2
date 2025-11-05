@@ -1,1 +1,139 @@
-full contents of src/components/ifood-store-manager/ifood-store-manager.component.html
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestor de Loja iFood</h1>
+      <p class="text-gray-400 mt-1">Gerencie a disponibilidade e o horário de funcionamento da sua loja no iFood.</p>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    </div>
+  } @else {
+    <!-- Main grid for layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left Column: Status & Interruptions -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Status Card -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h2 class="text-xl font-semibold text-white mb-4">Status da Loja</h2>
+          <div class="p-4 rounded-lg flex items-center gap-4" [class]="storeState().color">
+            <div class="flex-shrink-0">
+              <span class="material-symbols-outlined text-4xl text-white">
+                @switch (storeState().state) {
+                  @case ('ABERTA') { storefront }
+                  @case ('FECHADA') { door_sliding }
+                  @default { warning }
+                }
+              </span>
+            </div>
+            <div>
+              <p class="font-bold text-lg text-white">{{ storeState().state }}</p>
+              <p class="text-sm text-white/90">{{ storeState().message }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interruptions Card -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Pausas Agendadas</h2>
+            <button (click)="openInterruptionModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-3 rounded-lg text-sm">Agendar Pausa</button>
+          </div>
+          @if (interruptions().length === 0) {
+            <p class="text-center text-gray-500 py-8">Nenhuma pausa agendada.</p>
+          } @else {
+            <ul class="space-y-3 max-h-60 overflow-y-auto pr-2">
+              @for (interruption of interruptions(); track interruption.id) {
+                <li class="bg-gray-700/50 p-3 rounded-lg">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-semibold text-white">{{ interruption.description || 'Pausa na operação' }}</p>
+                      <p class="text-xs text-gray-400 font-mono">{{ interruption.start | date:'dd/MM HH:mm' }} - {{ interruption.end | date:'dd/MM HH:mm' }}</p>
+                    </div>
+                    <button (click)="deleteInterruption(interruption.id)" [disabled]="isSaving()" class="p-1 text-red-400 hover:text-red-300 disabled:opacity-50">
+                      <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+
+      <!-- Right Column: Opening Hours -->
+      <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-white mb-4">Horário de Funcionamento</h2>
+        <div class="space-y-4">
+          @for (day of weeklyHoursForm(); track day.dayOfWeek; let i = $index) {
+            <div class="bg-gray-700/50 p-4 rounded-lg">
+              <div class="flex items-center justify-between">
+                <label [for]="'closed-' + i" class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" [id]="'closed-' + i" [checked]="!day.is_closed" (change)="updateWeeklyHours(i, 'is_closed', !$any($event.target).checked)" class="h-5 w-5 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+                  <span class="text-lg font-bold text-white">{{ day.dayName }}</span>
+                </label>
+                @if (day.is_closed) {
+                  <span class="text-sm font-semibold text-red-400">FECHADO</span>
+                }
+              </div>
+              @if (!day.is_closed) {
+                <div class="mt-3 pt-3 border-t border-gray-600/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">Abre às</label>
+                    <input type="time" [value]="day.openingTime" (input)="updateWeeklyHours(i, 'openingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">Fecha às</label>
+                    <input type="time" [value]="day.closingTime" (input)="updateWeeklyHours(i, 'closingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="mt-6">
+          <button (click)="saveOpeningHours()" [disabled]="isSaving()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-wait">
+            @if(isSaving()) { <span>Salvando...</span> } @else { <span>Salvar Horários</span> }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Interruption Modal -->
+@if(isInterruptionModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeInterruptionModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">Agendar Pausa na Operação</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Início *</label>
+            <input type="datetime-local" [(ngModel)]="editingInterruption().start" name="start" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Fim *</label>
+            <input type="datetime-local" [(ngModel)]="editingInterruption().end" name="end" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Descrição (Opcional)</label>
+          <input type="text" [(ngModel)]="editingInterruption().description" name="description" placeholder="Ex: Manutenção da cozinha" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeInterruptionModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveInterruption()" [disabled]="isSaving()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500 disabled:cursor-not-allowed">
+          {{ isSaving() ? 'Salvando...' : 'Salvar Pausa' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
