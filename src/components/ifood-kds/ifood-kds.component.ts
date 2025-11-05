@@ -182,25 +182,35 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   private getIfoodStatus(order: Order): IfoodOrderStatus {
-    // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes.
-    if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY') {
-        return 'RECEIVED';
+    let details: any = order.ifood_dispute_details;
+    if (details && typeof details === 'string') {
+      try {
+        details = JSON.parse(details);
+      } catch (e) {
+        console.error("Failed to parse ifood_dispute_details", e);
+        details = null; 
+      }
+    }
+  
+    // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes to show the dispute actions.
+    if (details?.handshakeType === 'AFTER_DELIVERY') {
+      return 'RECEIVED';
     }
   
     if (order.status === 'CANCELLED') {
       return 'CANCELLED';
     }
-
+  
     const items = order.order_items || [];
     if (items.length === 0) {
       return 'RECEIVED';
     }
-
+  
     const allReadyOrServed = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
     if (allReadyOrServed) {
       return order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
     }
-
+  
     const hasPreparing = items.some(i => i.status === 'EM_PREPARO');
     if (hasPreparing) {
       return 'IN_PREPARATION';
