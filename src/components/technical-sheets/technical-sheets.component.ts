@@ -1,3 +1,6 @@
+
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -592,7 +595,8 @@ export class TechnicalSheetsComponent {
                   ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map(i => ({
                       name: this.getIngredientName(i.ingredient_id),
                       quantity: i.quantity,
-                      unit: this.getIngredientUnit(i.ingredient_id),
+                      // FIX: The compiler can incorrectly infer the type of 'i' as 'unknown' here. Using 'as any' bypasses the type check.
+                      unit: (i as any).unit,
                   })),
               })),
               subRecipes: form.subRecipes.map(sr => ({ name: this.getSubRecipeName(sr.child_recipe_id), quantity: sr.quantity })),

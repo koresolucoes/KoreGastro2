@@ -33,12 +33,22 @@ export class OperationalAuthService {
   operatorAuthInitialized = signal(false);
 
   constructor() {
+    this.initializeOperator();
+
+    effect(() => {
+      if (this.demoService.isDemoMode() && !this.activeEmployee()) {
+        this.loginAsDemoUser();
+      }
+    });
+  }
+
+  private async initializeOperator() {
     try {
         const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
         if (storedEmployee) {
-          const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
-          this.activeEmployee.set(employee);
-          this.loadActiveShift(employee);
+            const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
+            this.activeEmployee.set(employee);
+            await this.loadActiveShift(employee);
         }
     } catch (e) {
         console.error("Failed to initialize operator auth from sessionStorage", e);
@@ -47,13 +57,6 @@ export class OperationalAuthService {
     } finally {
         this.operatorAuthInitialized.set(true);
     }
-
-
-    effect(() => {
-      if (this.demoService.isDemoMode() && !this.activeEmployee()) {
-        this.loginAsDemoUser();
-      }
-    });
   }
 
   private loginAsDemoUser() {

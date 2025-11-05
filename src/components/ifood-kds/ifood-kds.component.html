@@ -80,7 +80,7 @@
                 </div>
               } @else {
                 <div class="pt-3 border-t border-gray-600">
-                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id) || order.isScheduledAndHeld" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
+                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
                     Confirmar e Iniciar Preparo
                   </button>
                 </div>

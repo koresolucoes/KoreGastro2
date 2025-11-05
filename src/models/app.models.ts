@@ -1,4 +1,4 @@
-import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit, Order, IfoodOrderStatus } from './db.models';
+import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit, Order, IfoodOrderStatus, OrderItem } from './db.models';
 
 // Represents the data structure for the technical sheet form
 export interface RecipeForm {
@@ -31,4 +31,5 @@ export interface ProcessedIfoodOrder extends Order {
   changeDue?: number;
   isScheduledAndHeld?: boolean;
   timeToPrepare?: number; // seconds
+  holdReason?: 'schedule' | 'stagger';
 }
