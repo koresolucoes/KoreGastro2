@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -432,7 +434,10 @@ export class TechnicalSheetsComponent {
         (newForm as any)[field] = isNaN(numValue) ? null : numValue;
       } else if (field === 'is_sellable') {
         (newForm as any)[field] = value as boolean;
+      } else if (field === 'name' || field === 'unit') {
+        (newForm as any)[field] = value;
       } else {
+        // for nullable string fields
         (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
       }
       
