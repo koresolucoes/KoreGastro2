@@ -51,7 +51,7 @@
                 <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
                   {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
                 </span>
-                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod?.startsWith('Pago Online')">
                   <span class="material-symbols-outlined text-sm">payments</span>
                   <span class="font-semibold">{{ order.paymentMethod }}</span>
                 </span>
@@ -104,7 +104,7 @@
                 <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
                   {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
                 </span>
-                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod?.startsWith('Pago Online')">
                   <span class="material-symbols-outlined text-sm">payments</span>
                   <span class="font-semibold">{{ order.paymentMethod }}</span>
                 </span>
@@ -162,7 +162,7 @@
                 <span class="font-mono font-semibold" [class.text-blue-400]="order.order_type === 'iFood-Delivery'" [class.text-green-400]="order.order_type === 'iFood-Takeout'">
                   {{ order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA' }}
                 </span>
-                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod === 'Pago Online'">
+                <span class="flex items-center gap-1 text-gray-300" [class.text-green-300]="order.paymentMethod?.startsWith('Pago Online')">
                   <span class="material-symbols-outlined text-sm">payments</span>
                   <span class="font-semibold">{{ order.paymentMethod }}</span>
                 </span>
@@ -367,7 +367,7 @@
           <div class="bg-gray-700/50 p-3 rounded-lg space-y-2 text-sm">
               <div class="flex justify-between">
                   <span class="text-gray-300">Método:</span>
-                  <span class="font-semibold" [class.text-green-300]="order.paymentMethod === 'Pago Online'">{{ order.paymentMethod }}</span>
+                  <span class="font-semibold" [class.text-green-300]="order.paymentMethod?.startsWith('Pago Online')">{{ order.paymentMethod }}</span>
               </div>
               @if(order.changeDue && order.changeDue > 0) {
                 <div class="flex justify-between mt-1">

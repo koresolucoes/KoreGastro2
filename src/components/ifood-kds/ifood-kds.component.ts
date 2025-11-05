@@ -194,48 +194,52 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     const payments = order.ifood_payments as any;
     let paymentMethod = 'Não informado';
     let changeDue = 0;
-
+  
     if (!payments) {
       return { paymentMethod, changeDue };
     }
-
+  
     let paymentMethodsSource: any[] = [];
     if (payments && Array.isArray(payments.methods)) {
-        paymentMethodsSource = payments.methods;
+      paymentMethodsSource = payments.methods;
     } else if (Array.isArray(payments)) {
-        paymentMethodsSource = payments;
+      paymentMethodsSource = payments;
     }
-
+  
     if (paymentMethodsSource.length > 0) {
+      if (paymentMethodsSource.some(p => p.prepaid === true)) {
+        paymentMethod = 'Pago Online';
+        const cardPayment = paymentMethodsSource.find(p => p.card?.brand);
+        if (cardPayment) {
+          paymentMethod += ` (${cardPayment.card.brand})`;
+        }
+      } else {
         const methodNames = paymentMethodsSource.map(p => {
-            const name = p.name || p.method || p.code;
-            if (!name) return null;
-            switch(name.toUpperCase()) {
-                case 'CREDIT': return 'Crédito';
-                case 'DEBIT': return 'Débito';
-                case 'MEAL_VOUCHER': return 'Vale Refeição';
-                case 'FOOD_VOUCHER': return 'Vale Alimentação';
-                case 'PIX': return 'PIX';
-                case 'CASH': return 'Dinheiro';
-                default: return name;
-            }
+          const name = p.name || p.method || p.code;
+          if (!name) return null;
+          switch (name.toUpperCase()) {
+            case 'CREDIT': return 'Crédito';
+            case 'DEBIT': return 'Débito';
+            case 'MEAL_VOUCHER': return 'Vale Refeição';
+            case 'FOOD_VOUCHER': return 'Vale Alimentação';
+            case 'PIX': return 'PIX';
+            case 'CASH': return 'Dinheiro';
+            default: return name;
+          }
         }).filter((m): m is string => !!m);
-
+  
         if (methodNames.length > 0) {
-            paymentMethod = methodNames.join(', ');
+          paymentMethod = methodNames.join(', ');
         }
-        
-        if (paymentMethodsSource.some(p => p.prepaid === true)) {
-            paymentMethod = 'Pago Online';
-        }
-
-        // Check for change due on cash payments
-        const cashPayment = paymentMethodsSource.find(p => p.method === 'CASH');
-        if (cashPayment && cashPayment.cash?.changeFor) {
-            changeDue = cashPayment.cash.changeFor;
-        }
+      }
+  
+      // Check for change due on cash payments
+      const cashPayment = paymentMethodsSource.find(p => p.method === 'CASH');
+      if (cashPayment && cashPayment.cash?.changeFor) {
+        changeDue = cashPayment.cash.changeFor;
+      }
     }
-
+  
     return { paymentMethod, changeDue };
   }
 

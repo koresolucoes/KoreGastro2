@@ -173,7 +173,7 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       ifood_order_timing: payload.orderTiming,
       ifood_scheduled_at: payload.schedule?.deliveryDateTime,
       ifood_payments: payload.payments,
-      ifood_benefits: payload.benefits, // FIX: Store the benefits object array, not the total.
+      ifood_benefits: payload.benefits,
       ifood_delivery_observations: payload.delivery?.observations,
       ifood_pickup_code: payload.delivery?.pickupCode,
     })
@@ -207,7 +207,6 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
   }
 }
 
-// FIX: Add missing functions for order status updates
 export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
   const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(id, status, status_timestamps)').eq('ifood_order_id', ifoodOrderId).single();
   if (orderError || !order) {
@@ -263,7 +262,6 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     return;
   }
 
-  // FIX: Correctly access the 'methods' array within the 'ifood_payments' JSON object.
   const paymentsData = order.ifood_payments as { methods?: { value: number; method: string }[] };
 
   // Calculate total from the `methods` array.
@@ -285,7 +283,6 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
         amount: total,
         user_id: order.user_id,
         date: new Date().toISOString()
-        // employee_id is optional, we can leave it null for iFood orders.
       });
     
     if (transactionError) {
