@@ -215,17 +215,30 @@ export class PrintingService {
         `;
     }).join('');
 
-    const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = order.subTotal ?? 0;
+    const deliveryFee = order.deliveryFee ?? 0;
+    const additionalFees = order.additionalFees ?? 0;
     const benefitsArray = (order.ifood_benefits || []) as any[];
     const totalBenefits = benefitsArray.reduce((acc, benefit) => acc + (benefit.value || 0), 0);
-    
-    const benefitsHtml = totalBenefits > 0 ? `
+    const total = order.totalAmount ?? 0;
+
+    const deliveryFeeHtml = deliveryFee > 0 ? `
         <div class="line">
-            <span>Desconto (IFOOD / LOJA)</span>
-            <span>- ${this.currencyPipe.transform(totalBenefits, 'BRL')}</span>
+            <span>Taxa de Entrega</span>
+            <span>+ ${this.currencyPipe.transform(deliveryFee, 'BRL')}</span>
+        </div>` : '';
+
+    const additionalFeesHtml = additionalFees > 0 ? `
+        <div class="line">
+            <span>Taxa de Serviço</span>
+            <span>+ ${this.currencyPipe.transform(additionalFees, 'BRL')}</span>
         </div>` : '';
         
-    const total = subtotal - totalBenefits;
+    const benefitsHtml = totalBenefits > 0 ? `
+        <div class="line">
+            <span>Descontos</span>
+            <span>- ${this.currencyPipe.transform(totalBenefits, 'BRL')}</span>
+        </div>` : '';
 
     let paymentHtml = `<div class="line"><span>${order.paymentMethod}</span><span>${this.currencyPipe.transform(total, 'BRL')}</span></div>`;
     if (order.changeDue && order.changeDue > 0) {
@@ -307,7 +320,9 @@ export class PrintingService {
           <div class="divider"></div>
 
           <div class="section-title">TOTAL</div>
-          <div class="line"><span>Valor total dos itens</span><span>${this.currencyPipe.transform(subtotal, 'BRL')}</span></div>
+          <div class="line"><span>Subtotal dos Itens</span><span>${this.currencyPipe.transform(subtotal, 'BRL')}</span></div>
+          ${deliveryFeeHtml}
+          ${additionalFeesHtml}
           ${benefitsHtml}
           <div class="line total"><span>VALOR TOTAL</span><span>${this.currencyPipe.transform(total, 'BRL')}</span></div>
           <div class="divider"></div>
