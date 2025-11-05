@@ -232,17 +232,18 @@ export class IfoodMenuService {
   }
 
   async getOpeningHours(): Promise<IfoodOpeningHours[]> {
-    const response = await this.proxyRequest<[{ shifts: IfoodOpeningHours[] }]>('GET', '/merchant/v1.0/merchants/{merchantId}/opening-hours');
+    const response = await this.proxyRequest<{ shifts: IfoodOpeningHours[] }>('GET', '/merchant/v1.0/merchants/{merchantId}/opening-hours');
     
     // Log the raw payload for debugging
     console.log('Raw opening hours payload from iFood:', JSON.stringify(response, null, 2));
 
-    // The response is an array containing a single object with a "shifts" property
-    if (Array.isArray(response) && response.length > 0 && response[0] && Array.isArray(response[0].shifts)) {
-      return response[0].shifts;
+    // The response is an object with a "shifts" property which is an array
+    if (response && Array.isArray(response.shifts)) {
+      return response.shifts;
     }
     
-    // Return an empty array if the structure is not what we expect, preventing crashes.
+    // Handle cases where the merchant has NO opening hours set. The API might return 404 or an empty object/array.
+    // If response is null (from a 204/404) or doesn't have the shifts array, return empty.
     return [];
   }
 
