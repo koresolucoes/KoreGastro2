@@ -298,5 +298,10 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
 }
 
 export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
-  await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+  await supabase.from('orders').update({ 
+    status: 'CANCELLED', 
+    completed_at: new Date().toISOString(),
+    ifood_dispute_id: null,
+    ifood_dispute_details: null
+  }).eq('ifood_order_id', ifoodOrderId);
 }

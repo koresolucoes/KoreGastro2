@@ -154,6 +154,30 @@ export default async function handler(request: VercelRequest, response: VercelRe
     } else if (LOGISTICS_EVENTS.has(eventCode)) {
         // For logistics events, we just log them. The frontend will react to the log entry.
         if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
+    } else if (eventCode === 'HANDSHAKE_DISPUTE') {
+        const orderIdToUpdate = getOrderIdFromPayload(payload);
+        const disputeId = payload.metadata?.disputeId;
+    
+        if (!orderIdToUpdate || !disputeId) {
+            if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_PAYLOAD', 'HANDSHAKE_DISPUTE event is missing orderId or disputeId.');
+            throw new Error("HANDSHAKE_DISPUTE event is missing a valid 'orderId' or 'disputeId'.");
+        }
+    
+        const { error: updateError } = await supabase
+            .from('orders')
+            .update({ 
+                ifood_dispute_id: disputeId, 
+                ifood_dispute_details: payload.metadata 
+            })
+            .eq('ifood_order_id', orderIdToUpdate)
+            .eq('user_id', userId);
+    
+        if (updateError) {
+            if (logId) await updateLogStatus(supabase, logId, 'ERROR_DB_UPDATE', updateError.message);
+            throw new Error(`Failed to update order for dispute: ${updateError.message}`);
+        }
+        
+        if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_HANDSHAKE_RECEIVED');
     } else {
         // For other events we don't handle explicitly
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_UNHANDLED_EVENT');
