@@ -483,7 +483,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       this.updatingOrders.update(set => new Set(set).add(order.id));
       this.soundNotificationService.playConfirmationSound();
       
-      const targetStatus: IfoodOrderStatus = order.delivery_info?.deliveredBy === 'IFOOD' ? 'READY_FOR_PICKUP' : 'DISPATCHED';
+      let targetStatus: IfoodOrderStatus = 'DISPATCHED'; // Default for merchant delivery
+      if (order.order_type === 'iFood-Takeout' || order.delivery_info?.deliveredBy === 'IFOOD') {
+        targetStatus = 'READY_FOR_PICKUP';
+      }
 
       try {
           const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
