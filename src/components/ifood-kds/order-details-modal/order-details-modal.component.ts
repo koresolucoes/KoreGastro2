@@ -110,7 +110,7 @@ export class OrderDetailsModalComponent {
       return null;
     }
     
-    let details = order.ifood_dispute_details;
+    let details = order.ifood_dispute_details as any;
     
     if (typeof details === 'string') {
       try {
@@ -121,8 +121,16 @@ export class OrderDetailsModalComponent {
       }
     }
     
-    if (details && typeof details === 'object' && 'message' in details && details.message) {
-      return details.message;
+    if (details && typeof details === 'object') {
+        // For full cancellation disputes
+        if ('message' in details && details.message) {
+          return details.message as string;
+        }
+
+        // For partial cancellation disputes from HANDSHAKE_DISPUTE (reason is nested)
+        if (details.metadata && Array.isArray(details.metadata.items) && details.metadata.items.length > 0) {
+            return details.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
+        }
     }
     
     return null;

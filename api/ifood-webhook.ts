@@ -205,7 +205,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             };
             
             // If it was an after-delivery dispute that was rejected, set status back to COMPLETED.
-            if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY') {
+            if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' || order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY') {
                 updatePayload.status = 'COMPLETED';
                 updatePayload.completed_at = new Date().toISOString();
             }
@@ -237,8 +237,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
             ifood_dispute_details: payload.metadata 
         };
 
-        // If it's an after-delivery dispute, re-open the order to make it visible in the KDS.
-        if (handshakeType === 'AFTER_DELIVERY') {
+        // If it's an after-delivery dispute (full or partial), re-open the order to make it visible in the KDS.
+        if (handshakeType === 'AFTER_DELIVERY' || handshakeType === 'AFTER_DELIVERY_PARTIALLY') {
             updatePayload.status = 'OPEN';
             updatePayload.completed_at = null;
         }

@@ -165,7 +165,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       return null;
     }
     
-    let details = order.ifood_dispute_details;
+    let details = order.ifood_dispute_details as any;
     
     if (typeof details === 'string') {
       try {
@@ -176,9 +176,16 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       }
     }
     
-    // Check if it's an object and has a truthy 'message' property
-    if (details && typeof details === 'object' && 'message' in details && details.message) {
-      return details.message;
+    if (details && typeof details === 'object') {
+        // For full cancellation disputes
+        if ('message' in details && details.message) {
+          return details.message as string;
+        }
+
+        // For partial cancellation disputes (reason is nested)
+        if (details.metadata && Array.isArray(details.metadata.items) && details.metadata.items.length > 0) {
+            return details.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
+        }
     }
     
     return null;
@@ -196,7 +203,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     }
   
     // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes to show the dispute actions.
-    if (details?.handshakeType === 'AFTER_DELIVERY') {
+    if (details?.handshakeType === 'AFTER_DELIVERY' || details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY') {
       return 'RECEIVED';
     }
   
