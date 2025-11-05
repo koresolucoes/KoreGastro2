@@ -453,10 +453,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
 
   async cancelOrder(order: ProcessedIfoodOrder) {
     if (!order.ifood_order_id) return;
-
+  
     this.isLoadingCancellationReasons.set(true);
-    this.updatingOrders.update(set => new Set(set).add(order.id)); // Show loading spinner on card
-
+    this.updatingOrders.update(set => new Set(set).add(order.id));
+  
     try {
       const reasons = await this.ifoodMenuService.getCancellationReasons(order.ifood_order_id);
       if (reasons.length === 0) {
@@ -467,9 +467,15 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       this.isCancelModalOpen.set(true);
     } catch (error: any) {
       this.notificationService.show(`Erro: ${error.message}`, 'error');
+      // On failure, remove the loading state from the order.
+      this.updatingOrders.update(s => {
+        const newSet = new Set(s);
+        newSet.delete(order.id);
+        return newSet;
+      });
     } finally {
       this.isLoadingCancellationReasons.set(false);
-      // Don't remove from updatingOrders yet, modal will take over
+      // If modal opens, loading state is handled by modal close/confirm actions.
     }
   }
   
@@ -483,6 +489,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         return newSet;
       });
     }
+    this.orderToCancel.set(null);
   }
 
   async handleConfirmCancellation(details: { code: string; reason: string; }) {

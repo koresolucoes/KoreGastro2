@@ -79,9 +79,12 @@
                     </div>
                 </div>
               } @else {
-                <div class="pt-3 border-t border-gray-600">
+                <div class="pt-3 border-t border-gray-600 flex flex-col gap-2">
                   <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
                     Confirmar e Iniciar Preparo
+                  </button>
+                   <button (click)="$event.stopPropagation(); cancelOrder(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-xs disabled:bg-gray-500 disabled:cursor-not-allowed">
+                    Cancelar Pedido
                   </button>
                 </div>
               }
@@ -138,9 +141,12 @@
                       </div>
                   </div>
                 } @else {
-                  <div class="pt-3 border-t border-gray-600">
+                  <div class="pt-3 border-t border-gray-600 flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id) || order.isScheduledAndHeld" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
                       Pronto para Entrega/Retirada
+                    </button>
+                    <button (click)="$event.stopPropagation(); cancelOrder(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-xs disabled:bg-gray-500 disabled:cursor-not-allowed">
+                      Cancelar Pedido
                     </button>
                   </div>
                 }
