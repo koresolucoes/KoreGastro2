@@ -183,8 +183,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         }
 
         // For partial cancellation disputes (reason is nested)
-        if (details.metadata?.metadata && Array.isArray(details.metadata.metadata.items) && details.metadata.metadata.items.length > 0) {
-            return details.metadata.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
+        if (details.metadata?.items && Array.isArray(details.metadata.items) && details.metadata.items.length > 0) {
+            return details.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
         }
     }
     
@@ -240,7 +240,17 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     const latestStatusLog = relevantLogs.find(log => 
-        ['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DISPATCHED', 'ARRIVED_AT_DESTINATION'].includes(log.event_code!)
+        ['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'COLLECTED',
+        'DELIVERY_DRIVER_DEALLOCATED',
+        'DELIVERY_RETURNING_TO_ORIGIN',
+        'DELIVERY_RETURNED_TO_ORIGIN',
+        'DELIVERY_CANCELLATION_REQUESTED',
+        'DELIVERY_DROP_CODE_REQUESTED', 
+        'DELIVERY_DROP_CODE_VALIDATION_SUCCESS',
+        'DELIVERY_RETURN_CODE_REQUESTED',
+        'DELIVERY_PICKUP_CODE_REQUESTED',
+        'DELIVERY_PICKUP_CODE_VALIDATION_SUCCESS',
+        'ARRIVED_AT_DESTINATION'].includes(log.event_code!)
     );
 
     if (latestStatusLog) {
@@ -248,7 +258,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
             case 'ASSIGNED_DRIVER': return 'ASSIGNED';
             case 'GOING_TO_ORIGIN': return 'GOING_TO_ORIGIN';
             case 'ARRIVED_AT_ORIGIN': return 'ARRIVED_AT_ORIGIN';
-            case 'DISPATCHED': return 'DISPATCHED_TO_CUSTOMER';
+            case 'DISPATCHED_TO_CUSTOMER':
+            case 'COLLECTED': return 'DISPATCHED_TO_CUSTOMER';
             case 'ARRIVED_AT_DESTINATION': return 'ARRIVED_AT_DESTINATION';
         }
     }
@@ -390,7 +401,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const additionalFees = totalInfo?.additionalFees ?? 0;
 
         const disputeDetails = order.ifood_dispute_details as any;
-        const disputeEvidences = disputeDetails?.metadata?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
+        const disputeEvidences = disputeDetails?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
 
 
         return {
