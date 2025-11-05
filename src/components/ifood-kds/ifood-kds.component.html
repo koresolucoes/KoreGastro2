@@ -39,8 +39,9 @@
                @if(order.isScheduledAndHeld) {
                 <div class="bg-cyan-900/50 text-cyan-200 p-3 rounded-lg text-center">
                   <h4 class="font-bold text-lg">PEDIDO AGENDADO</h4>
-                  <p class="text-sm">Iniciar preparo às <strong>{{ order.ifood_scheduled_at | date:'HH:mm' }}</strong></p>
-                  <p class="font-mono text-2xl font-bold mt-1">{{ formatTime(order.timeToPrepare) }}</p>
+                  <p class="text-sm">Entrega: <strong>{{ order.ifood_scheduled_at | date:'dd/MM, HH:mm' }}</strong></p>
+                  <p class="text-xs text-cyan-300/80 mt-1">Início do preparo em:</p>
+                  <p class="font-mono text-2xl font-bold">{{ formatTime(order.timeToPrepare) }}</p>
                 </div>
               }
               <p class="font-semibold text-white">{{ order.customers?.name }}</p>
@@ -55,6 +56,11 @@
                   <li>{{ item.quantity }}x {{ item.name }}</li>
                 }
               </ul>
+
+              <div class="mt-2 pt-2 border-t border-gray-600/50 flex justify-between items-center">
+                  <span class="font-semibold text-gray-300">Total</span>
+                  <span class="font-bold text-lg text-green-400">{{ order.totalAmount | currency:'BRL' }}</span>
+              </div>
 
               @if (order.ifood_dispute_id) {
                 <div class="pt-3 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700' : 'border-yellow-700'">
@@ -118,12 +124,18 @@
               @if(order.isScheduledAndHeld) {
                 <div class="bg-cyan-900/50 text-cyan-200 p-3 rounded-lg text-center">
                   <h4 class="font-bold text-lg">PEDIDO AGENDADO</h4>
-                  <p class="text-sm">Iniciar preparo às <strong>{{ order.ifood_scheduled_at | date:'HH:mm' }}</strong></p>
-                  <p class="font-mono text-2xl font-bold mt-1">{{ formatTime(order.timeToPrepare) }}</p>
+                  <p class="text-sm">Entrega: <strong>{{ order.ifood_scheduled_at | date:'dd/MM, HH:mm' }}</strong></p>
+                  <p class="text-xs text-cyan-300/80 mt-1">Início do preparo em:</p>
+                  <p class="font-mono text-2xl font-bold">{{ formatTime(order.timeToPrepare) }}</p>
                 </div>
               }
               <p class="font-semibold text-white">{{ order.customers?.name }}</p>
               <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+
+              <div class="mt-2 pt-2 border-t border-gray-600/50 flex justify-between items-center">
+                  <span class="font-semibold text-gray-300">Total</span>
+                  <span class="font-bold text-lg text-green-400">{{ order.totalAmount | currency:'BRL' }}</span>
+              </div>
 
                @if (order.ifood_dispute_id) {
                   <div class="pt-3 border-t border-yellow-700 space-y-2">
@@ -176,6 +188,10 @@
                 </div>
               }
               <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+               <div class="mt-2 pt-2 border-t border-gray-600/50 flex justify-between items-center">
+                  <span class="font-semibold text-gray-300">Total</span>
+                  <span class="font-bold text-lg text-green-400">{{ order.totalAmount | currency:'BRL' }}</span>
+              </div>
               <div class="pt-3 border-t border-gray-600 flex flex-col gap-2">
                  @if(order.delivery_info?.deliveredBy === 'MERCHANT') {
                     @if(!order.logisticsStatus) {
@@ -222,6 +238,10 @@
                 <div class="p-3 space-y-3">
                      <p class="font-semibold text-white">{{ order.customers?.name }}</p>
                      <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+                      <div class="mt-2 pt-2 border-t border-gray-600/50 flex justify-between items-center">
+                          <span class="font-semibold text-gray-300">Total</span>
+                          <span class="font-bold text-lg text-green-400">{{ order.totalAmount | currency:'BRL' }}</span>
+                      </div>
                      <div class="pt-3 border-t border-gray-600">
                         <button (click)="$event.stopPropagation(); deleteOrder(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-xs">
                           Deletar

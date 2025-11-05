@@ -208,7 +208,7 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
 
 export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
   console.log(`[DB Helper] Processing CONFIRMED event for iFood order ${ifoodOrderId}.`);
-  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(id, status, status_timestamps)').eq('ifood_order_id', ifoodOrderId).single();
+  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).single();
   if (orderError || !order) {
     console.error(`[DB Helper] Could not find order to confirm with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
@@ -220,8 +220,8 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
   if (itemsToUpdate.length > 0) {
     console.log(`[DB Helper] Found ${itemsToUpdate.length} 'PENDENTE' items to move to 'EM_PREPARO' for order ${order.id}.`);
     const now = new Date().toISOString();
-    const updates = itemsToUpdate.map((item: { id: string, status_timestamps: any }) => ({
-        id: item.id,
+    const updates = itemsToUpdate.map((item: any) => ({
+        ...item,
         status: 'EM_PREPARO',
         status_timestamps: { ...(item.status_timestamps || {}), 'EM_PREPARO': now }
     }));
@@ -238,7 +238,7 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
 
 export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
   console.log(`[DB Helper] Processing DISPATCHED event for iFood order ${ifoodOrderId}.`);
-  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(id, status, status_timestamps)').eq('ifood_order_id', ifoodOrderId).single();
+  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).single();
   if (orderError || !order) {
     console.error(`[DB Helper] Could not find order to dispatch with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
@@ -250,8 +250,8 @@ export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
   if (itemsToUpdate.length > 0) {
     console.log(`[DB Helper] Found ${itemsToUpdate.length} items to move to 'PRONTO' for order ${order.id}.`);
     const now = new Date().toISOString();
-    const updates = itemsToUpdate.map((item: { id: string, status_timestamps: any }) => ({
-        id: item.id,
+    const updates = itemsToUpdate.map((item: any) => ({
+        ...item,
         status: 'PRONTO',
         status_timestamps: { ...(item.status_timestamps || {}), 'PRONTO': now }
     }));

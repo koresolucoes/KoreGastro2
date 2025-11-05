@@ -32,4 +32,5 @@ export interface ProcessedIfoodOrder extends Order {
   isScheduledAndHeld?: boolean;
   timeToPrepare?: number; // seconds
   holdReason?: 'schedule' | 'stagger';
+  totalAmount?: number;
 }

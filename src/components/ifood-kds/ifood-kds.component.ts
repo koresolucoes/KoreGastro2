@@ -307,6 +307,23 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return { paymentMethod, changeDue };
   }
 
+  private getOrderTotalAmount(order: Order): number {
+    const payments = order.ifood_payments as any;
+    if (!payments) {
+        return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+    
+    if (payments.prepaid && typeof payments.prepaid === 'number' && payments.prepaid > 0) {
+        return payments.prepaid;
+    }
+
+    if (payments.methods && Array.isArray(payments.methods) && payments.methods.length > 0) {
+        return payments.methods.reduce((sum: number, method: any) => sum + (method.value || 0), 0);
+    }
+    
+    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
   processedOrders = computed<ProcessedIfoodOrder[]>(() => {
     const now = this.currentTime();
     const allLogs = this.webhookLogs();
@@ -342,6 +359,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
         
         const paymentDetails = this.getPaymentDetails(order);
+        const totalAmount = this.getOrderTotalAmount(order);
 
         return {
           ...order,
@@ -355,6 +373,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           changeDue: paymentDetails.changeDue,
           isScheduledAndHeld,
           timeToPrepare,
+          totalAmount,
         };
       })
       .sort((a, b) => {
@@ -376,6 +395,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const elapsedTime = Math.floor((now - completedTime) / 1000); // Time since finished
         
         const paymentDetails = this.getPaymentDetails(order);
+        const totalAmount = this.getOrderTotalAmount(order);
 
         return {
           ...order,
@@ -387,6 +407,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           requiresDeliveryCode: false,
           paymentMethod: paymentDetails.paymentMethod,
           changeDue: paymentDetails.changeDue,
+          totalAmount,
         };
       })
       .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
