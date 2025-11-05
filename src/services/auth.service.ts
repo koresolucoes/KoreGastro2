@@ -1,7 +1,5 @@
-
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
-// FIX: The `Session` type is not exported in the version of Supabase JS being used. Replaced with `User` to correctly type the user object.
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
 import { DemoService } from './demo.service';
@@ -24,21 +22,24 @@ export class AuthService {
     this.checkSession();
 
     // Listen to authentication state changes
-    // FIX: The `onAuthStateChange` method is fundamental and should exist.
-    // The reported error is likely due to incorrect type definitions in an older library version.
-    // The implementation remains correct for handling auth state.
     supabase.auth.onAuthStateChange((event, session) => {
         // This listener handles all authentication state changes. When a user is redirected
         // from a password recovery link, the Supabase JS client fires a SIGNED_IN event and
         // creates a temporary session from the URL fragment. This updates the currentUser
         // signal, allowing the user to update their password while in this temporary state.
         this.currentUser.set(session?.user ?? null);
+        
+        // This is important for flows like password reset where the session
+        // is established via URL fragment after the initial `getSession` check.
+        if (!this.authInitialized()) {
+            this.authInitialized.set(true);
+        }
     });
   }
 
-  private checkSession() {
-    // FIX: Replaced async `getSession()` with the synchronous `session()` method from older Supabase JS versions to resolve the error.
-    const session = supabase.auth.session();
+  private async checkSession() {
+    // In Supabase v2, getSession is async and returns the session in a data object
+    const { data: { session } } = await supabase.auth.getSession();
     this.currentUser.set(session?.user ?? null);
     this.authInitialized.set(true); // Signal that the initial check is done
   }
@@ -49,8 +50,8 @@ export class AuthService {
    * @param password The user's password.
    */
   async signInWithPassword(email: string, password: string): Promise<{ error: any }> {
-    // FIX: Replaced `signInWithPassword` with the older `signIn` method for compatibility.
-    const { error } = await supabase.auth.signIn({ email, password });
+    // Supabase v2 method
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   }
 
@@ -60,8 +61,8 @@ export class AuthService {
    * @param email The user's email address.
    */
   async sendPasswordResetEmail(email: string): Promise<{ error: any }> {
-    // FIX: Used the older `supabase.auth.api.resetPasswordForEmail` method for compatibility.
-    const { error } = await supabase.auth.api.resetPasswordForEmail(email, {
+    // Supabase v2 method
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/#/reset-password`,
     });
     return { error };
@@ -73,8 +74,8 @@ export class AuthService {
    * @param password The new password.
    */
   async updateUserPassword(password: string): Promise<{ error: any }> {
-    // FIX: Replaced `updateUser` with the older `update` method.
-    const { error } = await supabase.auth.update({ password });
+    // Supabase v2 method
+    const { error } = await supabase.auth.updateUser({ password });
     return { error };
   }
 
@@ -84,7 +85,7 @@ export class AuthService {
    */
   async signOut(): Promise<{ error: any }> {
     this.demoService.disableDemoMode();
-    // FIX: The `signOut` method call is correct; the reported error likely stems from an incompatible Supabase client version.
+    // The `signOut` method call is correct for v2.
     const { error } = await supabase.auth.signOut();
     return { error };
   }
