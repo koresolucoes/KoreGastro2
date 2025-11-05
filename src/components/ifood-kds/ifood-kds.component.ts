@@ -156,14 +156,28 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'ADDITIONAL_TIME');
   }
   
-  getDisputeMessage(order: ProcessedIfoodOrder): string | null {
-    if (!order.ifood_dispute_details) {
+  getDisputeMessage(order: ProcessedIfoodOrder | null): string | null {
+    if (!order || !order.ifood_dispute_details) {
       return null;
     }
-    // The message is consistently at the top level of the metadata object.
-    if (order.ifood_dispute_details.message) {
-      return order.ifood_dispute_details.message;
+    
+    let details = order.ifood_dispute_details;
+    
+    // Handle cases where the data might be a stringified JSON
+    if (typeof details === 'string') {
+      try {
+        details = JSON.parse(details);
+      } catch (e) {
+        console.error('Could not parse ifood_dispute_details string:', e);
+        return null;
+      }
     }
+    
+    // Check if it's an object and has a truthy 'message' property
+    if (details && typeof details === 'object' && 'message' in details && details.message) {
+      return details.message;
+    }
+    
     return null;
   }
 
@@ -725,6 +739,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   
   formatLogisticsStatus(status: LogisticsStatus | null): string {
     if (!status) return '';
-    return status.replace(/_/g, ' ');
+    return status.replace(/_/g, ' ').toLowerCase();
   }
 }

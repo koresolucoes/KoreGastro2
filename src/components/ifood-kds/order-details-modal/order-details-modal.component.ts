@@ -27,6 +27,29 @@ export class OrderDetailsModalComponent {
     return currentOrder.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
   });
 
+  getDisputeMessage(order: ProcessedIfoodOrder | null): string | null {
+    if (!order || !order.ifood_dispute_details) {
+      return null;
+    }
+    
+    let details = order.ifood_dispute_details;
+    
+    if (typeof details === 'string') {
+      try {
+        details = JSON.parse(details);
+      } catch (e) {
+        console.error('Could not parse ifood_dispute_details string:', e);
+        return null;
+      }
+    }
+    
+    if (details && typeof details === 'object' && 'message' in details && details.message) {
+      return details.message;
+    }
+    
+    return null;
+  }
+
   formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) return '00:00';
     const mins = Math.floor(seconds / 60);

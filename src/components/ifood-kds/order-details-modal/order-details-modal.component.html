@@ -78,7 +78,11 @@
           <div>
             <h4 class="font-semibold text-white mb-2">Disputa Aberta</h4>
             <div class="p-3 rounded-lg" [class]="o.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-900/40' : 'bg-yellow-900/40'">
-              <p class="text-sm italic text-white">"{{ o.ifood_dispute_details?.message }}"</p>
+              @if(getDisputeMessage(o); as message) {
+                <p class="text-sm italic text-white">"{{ message }}"</p>
+              } @else {
+                <p class="text-sm italic text-gray-400">(Motivo não informado na disputa)</p>
+              }
             </div>
           </div>
         }
