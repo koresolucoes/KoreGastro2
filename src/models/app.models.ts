@@ -27,7 +27,7 @@ export interface ProcessedIfoodOrder extends Order {
   ifoodStatus: IfoodOrderStatus;
   logisticsStatus: LogisticsStatus | null;
   requiresDeliveryCode: boolean;
-  paymentMethod?: string;
+  paymentDetails: string;
   changeDue?: number;
   isScheduledAndHeld?: boolean;
   timeToPrepare?: number; // seconds

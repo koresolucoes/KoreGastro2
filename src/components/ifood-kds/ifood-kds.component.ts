@@ -254,59 +254,59 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private getPaymentDetails(order: Order): { paymentMethod: string; changeDue: number } {
+  private getPaymentDetails(order: Order): { paymentDetails: string; changeDue: number } {
     const paymentData = order.ifood_payments as any;
-    // Handle both old structure (just payments object) and new structure ({ payments: ..., total: ... })
-    const payments = paymentData?.payments || paymentData;
-    let paymentMethod = 'Não informado';
+    let paymentDetails = '';
     let changeDue = 0;
   
-    if (!payments) {
-      return { paymentMethod, changeDue };
+    if (!paymentData) {
+      return { paymentDetails: 'Não informado', changeDue };
     }
   
+    // Handle both old structure (just payments object) and new structure ({ payments: ..., total: ... })
+    const payments = paymentData?.payments || paymentData;
+    const isPrepaid = payments?.methods?.some((p: any) => p.prepaid === true) || false;
+
+    paymentDetails = isPrepaid ? 'Pago Online' : 'Pago na Entrega';
+    
     let paymentMethodsSource: any[] = [];
     if (payments && Array.isArray(payments.methods)) {
       paymentMethodsSource = payments.methods;
-    } else if (Array.isArray(payments)) {
+    } else if (Array.isArray(payments)) { // Fallback for older structures that were just an array
       paymentMethodsSource = payments;
     }
   
     if (paymentMethodsSource.length > 0) {
-      if (paymentMethodsSource.some(p => p.prepaid === true)) {
-        paymentMethod = 'Pago Online';
-        const cardPayment = paymentMethodsSource.find(p => p.card?.brand);
-        if (cardPayment) {
-          paymentMethod += ` (${cardPayment.card.brand})`;
+      const methodDescriptions = paymentMethodsSource.map(p => {
+        const methodType = p.method || p.name || 'OUTRO';
+        let description = '';
+        switch (methodType.toUpperCase()) {
+          case 'CREDIT': description = 'Crédito'; break;
+          case 'DEBIT': description = 'Débito'; break;
+          case 'CASH': description = 'Dinheiro'; break;
+          case 'MEAL_VOUCHER': description = 'Vale Refeição'; break;
+          case 'FOOD_VOUCHER': description = 'Vale Alimentação'; break;
+          case 'PIX': description = 'PIX'; break;
+          default: description = methodType;
         }
-      } else {
-        const methodNames = paymentMethodsSource.map(p => {
-          const name = p.name || p.method || p.code;
-          if (!name) return null;
-          switch (name.toUpperCase()) {
-            case 'CREDIT': return 'Crédito';
-            case 'DEBIT': return 'Débito';
-            case 'MEAL_VOUCHER': return 'Vale Refeição';
-            case 'FOOD_VOUCHER': return 'Vale Alimentação';
-            case 'PIX': return 'PIX';
-            case 'CASH': return 'Dinheiro';
-            default: return name;
-          }
-        }).filter((m): m is string => !!m);
-  
-        if (methodNames.length > 0) {
-          paymentMethod = methodNames.join(', ');
+
+        if (p.card && p.card.brand) {
+          description += ` (${p.card.brand})`;
         }
+        return description;
+      }).filter(Boolean); // Filter out any null/undefined descriptions
+
+      if (methodDescriptions.length > 0) {
+        paymentDetails += ` - ${methodDescriptions.join(', ')}`;
       }
-  
-      // Check for change due on cash payments
+
       const cashPayment = paymentMethodsSource.find(p => p.method === 'CASH');
       if (cashPayment && cashPayment.cash?.changeFor) {
         changeDue = cashPayment.cash.changeFor;
       }
     }
   
-    return { paymentMethod, changeDue };
+    return { paymentDetails, changeDue };
   }
 
   private getOrderTotalAmount(order: Order): number {
@@ -391,7 +391,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           ifoodStatus: this.getIfoodStatus(order),
           logisticsStatus: this.getLogisticsStatus(order, allLogs),
           requiresDeliveryCode: requiresCode,
-          paymentMethod: paymentDetails.paymentMethod,
+          paymentDetails: paymentDetails.paymentDetails,
           changeDue: paymentDetails.changeDue,
           isScheduledAndHeld,
           timeToPrepare,
@@ -436,7 +436,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           ifoodStatus: order.status as IfoodOrderStatus,
           logisticsStatus: null, // Not relevant
           requiresDeliveryCode: false,
-          paymentMethod: paymentDetails.paymentMethod,
+          paymentDetails: paymentDetails.paymentDetails,
           changeDue: paymentDetails.changeDue,
           totalAmount,
           subTotal,

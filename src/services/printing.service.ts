@@ -240,7 +240,7 @@ export class PrintingService {
             <span>- ${this.currencyPipe.transform(totalBenefits, 'BRL')}</span>
         </div>` : '';
 
-    let paymentHtml = `<div class="line"><span>${order.paymentMethod}</span><span>${this.currencyPipe.transform(total, 'BRL')}</span></div>`;
+    let paymentHtml = `<div class="line"><span>${order.paymentDetails}</span><span></span></div>`;
     if (order.changeDue && order.changeDue > 0) {
         paymentHtml += `<div class="line"><span>Troco para</span><span>${this.currencyPipe.transform(order.changeDue, 'BRL')}</span></div>`;
     }
