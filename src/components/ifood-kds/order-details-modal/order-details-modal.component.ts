@@ -15,10 +15,16 @@ export class OrderDetailsModalComponent {
   closeModal: OutputEmitterRef<void> = output<void>();
   private printingService = inject(PrintingService);
 
-  orderTotal = computed(() => {
+  subTotal = computed(() => {
     const currentOrder = this.order();
     if (!currentOrder) return 0;
-    return currentOrder.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return currentOrder.subTotal ?? 0;
+  });
+
+  totalFees = computed(() => {
+    const o = this.order();
+    if (!o) return 0;
+    return (o.deliveryFee ?? 0) + (o.additionalFees ?? 0);
   });
 
   orderBenefitsTotal = computed(() => {
@@ -26,8 +32,16 @@ export class OrderDetailsModalComponent {
     if (!currentOrder?.ifood_benefits || !Array.isArray(currentOrder.ifood_benefits)) {
       return 0;
     }
+    // The payload `ifood_benefits` is an array of objects like { value: number }
     return currentOrder.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
   });
+  
+  finalTotal = computed(() => {
+    const currentOrder = this.order();
+    if (!currentOrder) return 0;
+    return currentOrder.totalAmount ?? 0;
+  });
+
 
   orderBenefits = computed(() => {
     const o = this.order();

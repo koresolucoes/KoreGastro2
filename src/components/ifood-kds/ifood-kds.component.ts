@@ -255,7 +255,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   private getPaymentDetails(order: Order): { paymentMethod: string; changeDue: number } {
-    const payments = order.ifood_payments as any;
+    const paymentData = order.ifood_payments as any;
+    // Handle both old structure (just payments object) and new structure ({ payments: ..., total: ... })
+    const payments = paymentData?.payments || paymentData;
     let paymentMethod = 'Não informado';
     let changeDue = 0;
   
@@ -308,19 +310,32 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   private getOrderTotalAmount(order: Order): number {
-    const payments = order.ifood_payments as any;
+    const paymentData = order.ifood_payments as any;
+
+    // Prioritize the reliable `orderAmount` from the new structure
+    if (paymentData && paymentData.total && typeof paymentData.total.orderAmount === 'number') {
+        return paymentData.total.orderAmount;
+    }
+
+    // Fallback for old data structure or if `total` object is missing
+    const payments = paymentData?.payments || paymentData; 
+    
     if (!payments) {
+        // Fallback to item sum if no payment info exists at all
         return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     }
     
+    // For prepaid orders, this is often the most reliable total in the old structure
     if (payments.prepaid && typeof payments.prepaid === 'number' && payments.prepaid > 0) {
         return payments.prepaid;
     }
 
+    // Fallback to summing methods if `prepaid` isn't available
     if (payments.methods && Array.isArray(payments.methods) && payments.methods.length > 0) {
         return payments.methods.reduce((sum: number, method: any) => sum + (method.value || 0), 0);
     }
     
+    // Final fallback
     return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 
@@ -359,7 +374,14 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
         
         const paymentDetails = this.getPaymentDetails(order);
+        const paymentData = order.ifood_payments as any;
+        const totalInfo = paymentData?.total;
+
         const totalAmount = this.getOrderTotalAmount(order);
+        const subTotal = totalInfo?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const deliveryFee = totalInfo?.deliveryFee ?? 0;
+        const additionalFees = totalInfo?.additionalFees ?? 0;
+
 
         return {
           ...order,
@@ -374,6 +396,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           isScheduledAndHeld,
           timeToPrepare,
           totalAmount,
+          subTotal,
+          deliveryFee,
+          additionalFees,
         };
       })
       .sort((a, b) => {
@@ -395,7 +420,13 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const elapsedTime = Math.floor((now - completedTime) / 1000); // Time since finished
         
         const paymentDetails = this.getPaymentDetails(order);
+        const paymentData = order.ifood_payments as any;
+        const totalInfo = paymentData?.total;
+        
         const totalAmount = this.getOrderTotalAmount(order);
+        const subTotal = totalInfo?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const deliveryFee = totalInfo?.deliveryFee ?? 0;
+        const additionalFees = totalInfo?.additionalFees ?? 0;
 
         return {
           ...order,
@@ -408,6 +439,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           paymentMethod: paymentDetails.paymentMethod,
           changeDue: paymentDetails.changeDue,
           totalAmount,
+          subTotal,
+          deliveryFee,
+          additionalFees,
         };
       })
       .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());

@@ -162,6 +162,13 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       deliveryAddress: payload.delivery.deliveryAddress
   } : null;
 
+  const paymentInfoForDb = (payload.payments || payload.total) 
+    ? {
+        payments: payload.payments,
+        total: payload.total
+      } 
+    : null;
+
   const { data: newOrder, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -171,7 +178,7 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       timestamp: payload.createdAt,
       ifood_order_timing: payload.orderTiming,
       ifood_scheduled_at: payload.preparationStartDateTime || payload.schedule?.deliveryDateTimeStart,
-      ifood_payments: payload.payments,
+      ifood_payments: paymentInfoForDb,
       ifood_benefits: payload.total?.benefits > 0 ? payload.benefits : null,
       ifood_delivery_observations: payload.delivery?.observations,
       ifood_pickup_code: payload.takeout?.pickupCode,
@@ -281,14 +288,17 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     return;
   }
 
-  const paymentsData = order.ifood_payments as { methods?: { value: number; method: string }[] };
-
-  // Calculate total from the `methods` array.
-  const total = paymentsData?.methods?.reduce((sum, payment) => sum + (payment.value || 0), 0) ?? 0;
+  const paymentData = order.ifood_payments as any;
   
-  // Extract payment method names, which is `method`, not `name`.
-  const paymentMethods = paymentsData?.methods
-    ?.map((p) => p.method)
+  // Handle both old structure (just payments object) and new structure ({ payments: ..., total: ... })
+  const payments = paymentData?.payments || paymentData;
+  const totalInfo = paymentData?.total;
+
+  // Use the reliable orderAmount from the total object if it exists. Fallback to summing methods.
+  const total = totalInfo?.orderAmount ?? payments?.methods?.reduce((sum: number, payment: any) => sum + (payment.value || 0), 0) ?? 0;
+  
+  const paymentMethods = payments?.methods
+    ?.map((p: any) => p.method)
     .filter(Boolean)
     .join(', ') || 'iFood';
 

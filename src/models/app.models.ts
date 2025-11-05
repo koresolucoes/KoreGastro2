@@ -33,4 +33,7 @@ export interface ProcessedIfoodOrder extends Order {
   timeToPrepare?: number; // seconds
   holdReason?: 'schedule' | 'stagger';
   totalAmount?: number;
+  subTotal?: number;
+  deliveryFee?: number;
+  additionalFees?: number;
 }
