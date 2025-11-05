@@ -183,8 +183,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         }
 
         // For partial cancellation disputes (reason is nested)
-        if (details.metadata && Array.isArray(details.metadata.items) && details.metadata.items.length > 0) {
-            return details.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
+        if (details.metadata?.metadata && Array.isArray(details.metadata.metadata.items) && details.metadata.metadata.items.length > 0) {
+            return details.metadata.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
         }
     }
     
@@ -390,7 +390,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const additionalFees = totalInfo?.additionalFees ?? 0;
 
         const disputeDetails = order.ifood_dispute_details as any;
-        const disputeEvidences = disputeDetails?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
+        const disputeEvidences = disputeDetails?.metadata?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
 
 
         return {
@@ -496,10 +496,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       
       let targetStatus: IfoodOrderStatus = 'DISPATCHED'; // Default for merchant delivery
       if (order.order_type === 'iFood-Takeout') {
-        // FIX: Use 'READY_FOR_PICKUP' instead of the incorrect 'READY_TO_PICKUP' to match the type definition.
         targetStatus = 'READY_FOR_PICKUP';
       } else if (order.delivery_info?.deliveredBy === 'IFOOD') {
-        // FIX: Use 'READY_FOR_PICKUP' instead of the incorrect 'READY_TO_PICKUP' to match the type definition.
         targetStatus = 'READY_FOR_PICKUP';
       }
 
