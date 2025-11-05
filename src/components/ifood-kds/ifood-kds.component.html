@@ -99,12 +99,26 @@
       </div>
        <div class="p-2 space-y-2 overflow-y-auto flex-1">
         @for (order of inPreparationOrders(); track order.id) {
-          <div (click)="openDetailModal(order)" class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer" [class.border-yellow-500]="order.ifood_dispute_id" [class.border-gray-700]="!order.ifood_dispute_id">
-            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_id ? 'bg-yellow-600' : 'bg-blue-600'">
+          <div (click)="openDetailModal(order)" 
+               class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer" 
+               [class.border-yellow-500]="order.ifood_dispute_id"
+               [class.border-cyan-500]="order.isScheduledAndHeld"
+               [class.border-gray-700]="!order.ifood_dispute_id && !order.isScheduledAndHeld">
+            <div class="p-3 text-white font-bold flex justify-between items-center" 
+                 [class]="order.ifood_dispute_id ? 'bg-yellow-600' : (order.isScheduledAndHeld ? 'bg-cyan-600' : 'bg-blue-600')">
               <span>#{{ order.ifood_display_id }}</span>
-              <span class="font-mono text-lg" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
+              <span class="font-mono text-lg" [class]="order.timerColor">
+                {{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}
+              </span>
             </div>
             <div class="p-3 space-y-3">
+              @if(order.isScheduledAndHeld) {
+                <div class="bg-cyan-900/50 text-cyan-200 p-3 rounded-lg text-center">
+                  <h4 class="font-bold text-lg">PEDIDO AGENDADO</h4>
+                  <p class="text-sm">Iniciar preparo às <strong>{{ order.ifood_scheduled_at | date:'HH:mm' }}</strong></p>
+                  <p class="font-mono text-2xl font-bold mt-1">{{ formatTime(order.timeToPrepare) }}</p>
+                </div>
+              }
               <p class="font-semibold text-white">{{ order.customers?.name }}</p>
               <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
 
@@ -125,7 +139,7 @@
                   </div>
                 } @else {
                   <div class="pt-3 border-t border-gray-600">
-                    <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500">
+                    <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id) || order.isScheduledAndHeld" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
                       Pronto para Entrega/Retirada
                     </button>
                   </div>
