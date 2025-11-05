@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
@@ -156,7 +157,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
     } else if (eventCode === 'HANDSHAKE_SETTLEMENT') {
         const orderIdToUpdate = getOrderIdFromPayload(payload);
-        const disputeId = payload.metadata?.disputeId;
         const status = payload.metadata?.status;
 
         if (!orderIdToUpdate) {
@@ -168,14 +168,34 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (status === 'ACCEPTED') {
              await cancelOrderInDb(supabase, orderIdToUpdate);
              if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_HANDSHAKE_ACCEPTED');
-        } else {
-             // If rejected or expired, we clear the dispute details so the KDS UI goes back to normal.
+        } else { // REJECTED or EXPIRED
+             // Fetch the order to check its dispute type
+            const { data: order, error: fetchError } = await supabase
+                .from('orders')
+                .select('ifood_dispute_details')
+                .eq('ifood_order_id', orderIdToUpdate)
+                .eq('user_id', userId)
+                .single();
+            
+            if (fetchError) {
+                if (logId) await updateLogStatus(supabase, logId, 'ERROR_DB_FETCH', fetchError.message);
+                throw new Error(`Failed to fetch order to settle dispute: ${fetchError.message}`);
+            }
+
+            const updatePayload: { [key: string]: any } = {
+                ifood_dispute_id: null,
+                ifood_dispute_details: null,
+            };
+            
+            // If it was an after-delivery dispute that was rejected, set status back to COMPLETED.
+            if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY') {
+                updatePayload.status = 'COMPLETED';
+                updatePayload.completed_at = new Date().toISOString();
+            }
+            
             const { error: updateError } = await supabase
                 .from('orders')
-                .update({ 
-                    ifood_dispute_id: null, 
-                    ifood_dispute_details: null 
-                })
+                .update(updatePayload)
                 .eq('ifood_order_id', orderIdToUpdate)
                 .eq('user_id', userId);
             
@@ -188,18 +208,27 @@ export default async function handler(request: VercelRequest, response: VercelRe
     } else if (eventCode === 'HANDSHAKE_DISPUTE') {
         const orderIdToUpdate = getOrderIdFromPayload(payload);
         const disputeId = payload.metadata?.disputeId;
+        const handshakeType = payload.metadata?.handshakeType;
     
         if (!orderIdToUpdate || !disputeId) {
             if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_PAYLOAD', 'HANDSHAKE_DISPUTE event is missing orderId or disputeId.');
             throw new Error("HANDSHAKE_DISPUTE event is missing a valid 'orderId' or 'disputeId'.");
         }
     
+        const updatePayload: { [key: string]: any } = {
+            ifood_dispute_id: disputeId, 
+            ifood_dispute_details: payload.metadata 
+        };
+
+        // If it's an after-delivery dispute, re-open the order to make it visible in the KDS.
+        if (handshakeType === 'AFTER_DELIVERY') {
+            updatePayload.status = 'OPEN';
+            updatePayload.completed_at = null;
+        }
+
         const { error: updateError } = await supabase
             .from('orders')
-            .update({ 
-                ifood_dispute_id: disputeId, 
-                ifood_dispute_details: payload.metadata 
-            })
+            .update(updatePayload)
             .eq('ifood_order_id', orderIdToUpdate)
             .eq('user_id', userId);
     
