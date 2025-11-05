@@ -175,7 +175,7 @@ export class IfoodMenuService {
       const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-catalog', {
         method: 'POST', // The proxy itself is always called with POST
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body, isImageUpload })
+        body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body, isImageUpload, isImageRequest: body?.isImageRequest })
       });
 
       const responseText = await response.text();
@@ -193,6 +193,11 @@ export class IfoodMenuService {
         throw new Error(errorMessage);
       }
 
+      // For image requests, the body is JSON, so this is fine.
+      if (body?.isImageRequest) {
+          return JSON.parse(responseText) as T;
+      }
+      
       if (response.status === 201 || response.status === 202 || response.status === 204) {
         return null as T;
       }
@@ -372,6 +377,14 @@ export class IfoodMenuService {
 
   async trackOrder(orderId: string): Promise<IfoodTrackingData> {
     return this.proxyRequest<IfoodTrackingData>('GET', `/logistics/v1.0/orders/${orderId}/tracking`);
+  }
+
+  async getEvidenceImage(imageUrl: string): Promise<{ base64Image: string; contentType: string; }> {
+    return this.proxyRequest<{ base64Image: string; contentType: string; }>(
+        'GET',
+        imageUrl,
+        { isImageRequest: true } 
+    );
   }
 
   // Option Group Management

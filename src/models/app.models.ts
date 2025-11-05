@@ -36,4 +36,5 @@ export interface ProcessedIfoodOrder extends Order {
   subTotal?: number;
   deliveryFee?: number;
   additionalFees?: number;
+  disputeEvidences?: string[];
 }

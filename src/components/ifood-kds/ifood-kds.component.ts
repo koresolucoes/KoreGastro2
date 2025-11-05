@@ -382,6 +382,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const deliveryFee = totalInfo?.deliveryFee ?? 0;
         const additionalFees = totalInfo?.additionalFees ?? 0;
 
+        const disputeDetails = order.ifood_dispute_details as any;
+        const disputeEvidences = disputeDetails?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
+
 
         return {
           ...order,
@@ -399,6 +402,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           subTotal,
           deliveryFee,
           additionalFees,
+          disputeEvidences,
         };
       })
       .sort((a, b) => {
@@ -484,9 +488,14 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       this.soundNotificationService.playConfirmationSound();
       
       let targetStatus: IfoodOrderStatus = 'DISPATCHED'; // Default for merchant delivery
-      if (order.order_type === 'iFood-Takeout' || order.delivery_info?.deliveredBy === 'IFOOD') {
+      if (order.order_type === 'iFood-Takeout') {
+        // FIX: Use 'READY_FOR_PICKUP' instead of the incorrect 'READY_TO_PICKUP' to match the type definition.
+        targetStatus = 'READY_FOR_PICKUP';
+      } else if (order.delivery_info?.deliveredBy === 'IFOOD') {
+        // FIX: Use 'READY_FOR_PICKUP' instead of the incorrect 'READY_TO_PICKUP' to match the type definition.
         targetStatus = 'READY_FOR_PICKUP';
       }
+
 
       try {
           const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
@@ -719,7 +728,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         if (!success) throw error;
         this.notificationService.show('Contraproposta de reembolso enviada.', 'success');
     } catch (error: any) {
-        this.notificationService.show(`Erro ao enviar contraproposta: ${error.message}`, 'error');
+        this.notificationService.show(`Erro ao enviar contraproposta: ${error.message}`);
     } finally {
         this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
         this.orderToProposeRefund.set(null);

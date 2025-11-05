@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, input, output, computed, InputSignal, OutputEmitterRef, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, InputSignal, OutputEmitterRef, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProcessedIfoodOrder } from '../../../models/app.models';
 import { PrintingService } from '../../../services/printing.service';
+import { IfoodMenuService } from '../../../services/ifood-menu.service';
 
 @Component({
   selector: 'app-order-details-modal',
@@ -14,6 +15,49 @@ export class OrderDetailsModalComponent {
   order: InputSignal<ProcessedIfoodOrder | null> = input.required<ProcessedIfoodOrder | null>();
   closeModal: OutputEmitterRef<void> = output<void>();
   private printingService = inject(PrintingService);
+  private ifoodMenuService = inject(IfoodMenuService);
+
+  evidenceImages = signal<{src: string, loading: boolean, error: boolean}[]>([]);
+
+  constructor() {
+    effect(() => {
+        const o = this.order();
+        if (o?.disputeEvidences && o.disputeEvidences.length > 0) {
+            this.loadEvidenceImages(o.disputeEvidences);
+        } else {
+            this.evidenceImages.set([]);
+        }
+    });
+  }
+
+  private async loadEvidenceImages(urls: string[]) {
+    this.evidenceImages.set(urls.map(url => ({ src: url, loading: true, error: false })));
+
+    for (const [index, url] of urls.entries()) {
+        try {
+            const result = await this.ifoodMenuService.getEvidenceImage(url);
+            this.evidenceImages.update(images => {
+                const newImages = [...images];
+                newImages[index] = { 
+                    src: `data:${result.contentType};base64,${result.base64Image}`, 
+                    loading: false, 
+                    error: false 
+                };
+                return newImages;
+            });
+        } catch (e) {
+            console.error(`Failed to load evidence image from ${url}`, e);
+            this.evidenceImages.update(images => {
+                const newImages = [...images];
+                if (newImages[index]) {
+                    newImages[index].loading = false;
+                    newImages[index].error = true;
+                }
+                return newImages;
+            });
+        }
+    }
+  }
 
   subTotal = computed(() => {
     const currentOrder = this.order();

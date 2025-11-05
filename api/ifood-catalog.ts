@@ -70,15 +70,35 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     try {
         const { method, endpoint, payload, isImageUpload } = request.body;
+        const isImageRequest = payload?.isImageRequest;
         
         if (!method || !endpoint) {
             return response.status(400).json({ message: 'Missing "method" or "endpoint" in request body' });
         }
 
         const accessToken = await getIFoodAccessToken();
-        const fullUrl = `${iFoodApiBaseUrl}${endpoint}`;
-        let apiResponse;
+        const fullUrl = endpoint.startsWith('http') ? endpoint : `${iFoodApiBaseUrl}${endpoint}`;
         
+        if (isImageRequest) {
+            const imageApiResponse = await fetch(fullUrl, {
+                method: 'GET', // Evidences are always GET
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+            });
+
+            if (!imageApiResponse.ok) {
+                const errorText = await imageApiResponse.text();
+                console.error(`[iFood Catalog Proxy] Image fetch from ${fullUrl} failed with status ${imageApiResponse.status}:`, errorText);
+                return response.status(imageApiResponse.status).json({ message: `iFood image fetch failed: ${errorText}` });
+            }
+
+            const imageBuffer = await imageApiResponse.arrayBuffer();
+            const base64Image = Buffer.from(imageBuffer).toString('base64');
+            const contentType = imageApiResponse.headers.get('content-type') || 'image/jpeg';
+            
+            return response.status(200).json({ base64Image, contentType });
+        }
+        
+        let apiResponse;
         if (isImageUpload) {
             // Logic for image upload using application/json (iFood Catalog API v2.0)
             if (!payload || !payload.image) {
