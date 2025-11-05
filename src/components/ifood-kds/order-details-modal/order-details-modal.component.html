@@ -18,10 +18,14 @@
             <p class="font-semibold text-white">{{ o.customers?.name || 'Não informado' }}</p>
           </div>
           <div>
+            <p class="text-gray-400">CPF na Nota</p>
+            <p class="font-semibold text-white">{{ o.customers?.cpf || 'Não solicitado' }}</p>
+          </div>
+          <div>
             <p class="text-gray-400">Recebido às</p>
             <p class="font-semibold text-white">{{ o.timestamp | date:'dd/MM/yy HH:mm:ss' }}</p>
           </div>
-          <div>
+           <div>
             <p class="text-gray-400">Tempo Decorrido</p>
             <p class="font-semibold font-mono" [class]="o.timerColor">{{ formatTime(o.elapsedTime) }}</p>
           </div>
@@ -52,15 +56,25 @@
         <!-- Payment -->
         <div>
           <h4 class="font-semibold text-white mb-2">Pagamento</h4>
-          <div class="space-y-1 text-sm bg-gray-700/50 p-3 rounded-lg">
+          <div class="space-y-2 text-sm bg-gray-700/50 p-3 rounded-lg">
             <div class="flex justify-between">
               <span class="text-gray-300">Subtotal</span>
               <span class="font-semibold text-white">{{ orderTotal() | currency:'BRL' }}</span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-gray-300">Benefícios iFood</span>
-              <span class="font-semibold text-red-400">- {{ orderBenefitsTotal() | currency:'BRL' }}</span>
-            </div>
+            @if (orderBenefitsTotal() > 0) {
+              <div>
+                <div class="flex justify-between">
+                  <span class="text-gray-300">Descontos</span>
+                  <span class="font-semibold text-red-400">- {{ orderBenefitsTotal() | currency:'BRL' }}</span>
+                </div>
+                @for(benefit of orderBenefits(); track $index) {
+                  <div class="flex justify-between text-xs pl-4">
+                    <span class="text-gray-400">↳ {{ benefit.sponsor }}</span>
+                    <span class="text-gray-400">- {{ benefit.value | currency:'BRL' }}</span>
+                  </div>
+                }
+              </div>
+            }
             <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-600">
               <span class="text-white">Total a Pagar</span>
               <span class="text-green-400">{{ (orderTotal() - orderBenefitsTotal()) | currency:'BRL' }}</span>

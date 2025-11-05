@@ -247,6 +247,8 @@ export class PrintingService {
         ${order.changeDue && order.changeDue > 0 ? `<div style="font-style: italic;">Troco para: ${this.currencyPipe.transform(order.changeDue, 'BRL', 'R$')}</div>` : ''}
     `;
 
+    const customerCpfHtml = order.customers?.cpf ? `<div>CPF: ${order.customers.cpf}</div>` : '';
+
     return `
       <html>
         <head>
@@ -272,6 +274,7 @@ export class PrintingService {
           <div class="divider"></div>
           <div>Data: ${date}</div>
           <div>Cliente: ${order.customers?.name || 'Não informado'}</div>
+          ${customerCpfHtml}
           <div class="divider"></div>
           ${addressHtml}
           ${pickupCodeHtml}

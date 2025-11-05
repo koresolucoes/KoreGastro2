@@ -29,6 +29,20 @@ export class OrderDetailsModalComponent {
     return currentOrder.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
   });
 
+  orderBenefits = computed(() => {
+    const o = this.order();
+    if (!o?.ifood_benefits || !Array.isArray(o.ifood_benefits)) {
+      return [];
+    }
+    
+    return o.ifood_benefits.flatMap((benefit: any) => 
+      (benefit?.sponsorshipValues || []).map((sponsor: any) => ({
+        sponsor: sponsor.name === 'MERCHANT' ? 'Loja' : (sponsor.name || 'Desconhecido'),
+        value: sponsor.value || 0
+      }))
+    ).filter((b: any) => b.value > 0);
+  });
+
   getDisputeMessage(order: ProcessedIfoodOrder | null): string | null {
     if (!order || !order.ifood_dispute_details) {
       return null;
