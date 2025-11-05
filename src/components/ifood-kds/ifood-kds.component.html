@@ -29,7 +29,7 @@
         <h2 class="text-lg font-bold p-3 border-b border-gray-700 text-blue-300 sticky top-0 bg-gray-800 z-10">Recebidos ({{ receivedOrders().length }})</h2>
         <div class="p-2 space-y-2 overflow-y-auto">
           @for(order of receivedOrders(); track order.id) {
-            <div (click)="openDetailModal(order)" class="bg-gray-900/50 rounded-lg p-3 flex flex-col gap-2 border-l-4 border-blue-500 cursor-pointer relative">
+            <div (click)="openDetailModal(order)" class="bg-gray-900/50 rounded-lg p-3 flex flex-col gap-2 border-l-4 cursor-pointer relative" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-500' : 'border-blue-500'">
                @if(updatingOrders().has(order.id)) {
                 <div class="absolute inset-0 bg-gray-900/70 flex items-center justify-center rounded-lg z-20">
                   <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -57,7 +57,23 @@
                 </span>
               </div>
 
-              @if(order.ifood_dispute_id) {
+              @if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY') {
+                <div class="mt-2 pt-2 border-t border-orange-700/50 bg-orange-900/30 rounded-md p-2 space-y-2">
+                  <h4 class="text-sm font-bold text-orange-300 text-center animate-pulse">Disputa Pós-Entrega</h4>
+                  @if (order.ifood_dispute_details?.message) {
+                    <p class="text-xs text-center text-orange-200 italic">Motivo: "{{ order.ifood_dispute_details.message }}"</p>
+                  }
+                  <div class="flex flex-col gap-2">
+                    <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar Cancelamento Total</button>
+                    @if(order.ifood_dispute_details.alternatives?.[0]?.type === 'REFUND') {
+                      <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1.5 rounded-md text-xs">
+                        Propor Reembolso Parcial (até {{ (order.ifood_dispute_details.alternatives[0].maxAmount.value / 100) | currency:'BRL' }})
+                      </button>
+                    }
+                    <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar Disputa</button>
+                  </div>
+                </div>
+              } @else if(order.ifood_dispute_id) {
                 <div class="mt-2 pt-2 border-t border-yellow-700/50 bg-yellow-900/30 rounded-md p-2 space-y-2">
                   <h4 class="text-sm font-bold text-yellow-300 text-center animate-pulse">Disputa de Cancelamento</h4>
                   @if (order.ifood_dispute_details?.message) {
@@ -68,11 +84,11 @@
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
                   </div>
                 </div>
+              } @else {
+                <div class="text-sm pt-2 mt-auto">
+                    <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-md transition-colors">Confirmar e Iniciar Preparo</button>
+                </div>
               }
-
-              <div class="text-sm pt-2 mt-auto">
-                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-md transition-colors">Confirmar e Iniciar Preparo</button>
-              </div>
             </div>
           }
         </div>
@@ -126,11 +142,11 @@
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
                   </div>
                 </div>
+              } @else {
+                <div class="text-sm mt-auto">
+                  <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 rounded-md transition-colors">Pedido Pronto</button>
+                </div>
               }
-
-              <div class="text-sm mt-auto">
-                <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 rounded-md transition-colors">Pedido Pronto</button>
-              </div>
             </div>
           }
         </div>
@@ -179,30 +195,30 @@
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
                   </div>
                 </div>
-              }
-
-              @if (order.order_type === 'iFood-Delivery') {
-                <div class="text-xs space-y-2 mt-2">
-                    <p class="font-semibold text-purple-300">Status da Entrega:</p>
-                    @switch (order.logisticsStatus) {
-                        @case ('AWAITING_DRIVER') { <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Alocar Entregador</button> }
-                        @case ('ASSIGNED') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'goingToOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">A Caminho da Loja</button> }
-                        @case ('GOING_TO_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou na Loja</button> }
-                        @case ('ARRIVED_AT_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'dispatch')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Saiu para Entrega</button> }
-                        @case ('DISPATCHED_TO_CUSTOMER') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtDestination')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou ao Destino</button> }
-                        @case ('ARRIVED_AT_DESTINATION') {
-                           @if (order.requiresDeliveryCode) {
-                             <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'delivery')" class="w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-md">Confirmar Entrega</button>
-                           } @else {
-                              <div class="text-center p-2 bg-gray-700 rounded-md text-sm text-gray-300">Aguardando confirmação final...</div>
-                           }
-                        }
-                    }
-                </div>
               } @else {
-                 <div class="text-sm mt-auto">
-                    <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'pickup')" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-md">Validar Retirada</button>
-                </div>
+                @if (order.order_type === 'iFood-Delivery') {
+                  <div class="text-xs space-y-2 mt-2">
+                      <p class="font-semibold text-purple-300">Status da Entrega:</p>
+                      @switch (order.logisticsStatus) {
+                          @case ('AWAITING_DRIVER') { <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Alocar Entregador</button> }
+                          @case ('ASSIGNED') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'goingToOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">A Caminho da Loja</button> }
+                          @case ('GOING_TO_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtOrigin')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou na Loja</button> }
+                          @case ('ARRIVED_AT_ORIGIN') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'dispatch')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Saiu para Entrega</button> }
+                          @case ('DISPATCHED_TO_CUSTOMER') { <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtDestination')" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 rounded-md">Chegou ao Destino</button> }
+                          @case ('ARRIVED_AT_DESTINATION') {
+                            @if (order.requiresDeliveryCode) {
+                              <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'delivery')" class="w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-md">Confirmar Entrega</button>
+                            } @else {
+                                <div class="text-center p-2 bg-gray-700 rounded-md text-sm text-gray-300">Aguardando confirmação final...</div>
+                            }
+                          }
+                      }
+                  </div>
+                } @else {
+                  <div class="text-sm mt-auto">
+                      <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'pickup')" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-md">Validar Retirada</button>
+                  </div>
+                }
               }
             </div>
           }
@@ -273,6 +289,44 @@
     }
   </main>
 </div>
+
+<!-- Propose Refund Modal -->
+@if(isProposeRefundModalOpen() && orderToProposeRefund(); as order) {
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="isProposeRefundModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+          <h3 class="text-xl font-bold text-white">Propor Reembolso - Pedido #{{ order.ifood_display_id }}</h3>
+      </div>
+      @if (order.ifood_dispute_details.alternatives?.[0]; as alternative) {
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-gray-300">O cliente solicitou o cancelamento. Você pode oferecer um reembolso parcial para tentar manter a venda.</p>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Valor do Reembolso (BRL)</label>
+            <input 
+              type="number"
+              step="0.01"
+              [value]="refundAmount()"
+              (input)="refundAmount.set(+$any($event.target).value)"
+              name="refundAmount"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-lg">
+            <p class="text-xs text-gray-400 mt-1">Valor máximo permitido: {{ (alternative.maxAmount.value / 100) | currency:'BRL' }}</p>
+          </div>
+        </div>
+        <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+          <button (click)="isProposeRefundModalOpen.set(false)" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+          <button (click)="handleConfirmRefund({amount: refundAmount()})" [disabled]="refundAmount() <= 0 || refundAmount() > (alternative.maxAmount.value / 100)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500 disabled:cursor-not-allowed">
+            Enviar Proposta
+          </button>
+        </div>
+      } @else {
+        <div class="p-6 text-center text-gray-400">
+          <p>Detalhes da alternativa de reembolso não encontrados.</p>
+        </div>
+      }
+    </div>
+  </div>
+}
+
 
 <!-- Cancel Order Modal -->
 @if(isCancelModalOpen()) {

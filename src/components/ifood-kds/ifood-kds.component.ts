@@ -91,6 +91,11 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   trackingData = signal<IfoodTrackingData | null>(null);
   orderForTracking = signal<ProcessedIfoodOrder | null>(null);
 
+  // Propose Refund Modal State
+  isProposeRefundModalOpen = signal(false);
+  orderToProposeRefund = signal<ProcessedIfoodOrder | null>(null);
+  refundAmount = signal(0);
+
 
   constructor() {
     effect(() => {
@@ -136,6 +141,11 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   private getIfoodStatus(order: Order): IfoodOrderStatus {
+    // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes.
+    if (order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY') {
+        return 'RECEIVED';
+    }
+  
     if (order.status === 'CANCELLED') {
       return 'CANCELLED';
     }
@@ -522,6 +532,45 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     } finally {
       this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
       this.orderToReject.set(null);
+    }
+  }
+
+  openProposeRefundModal(order: ProcessedIfoodOrder) {
+    this.orderToProposeRefund.set(order);
+    this.refundAmount.set(0);
+    this.isProposeRefundModalOpen.set(true);
+  }
+
+  async handleConfirmRefund(details: { amount: number }) {
+    this.isProposeRefundModalOpen.set(false);
+    const order = this.orderToProposeRefund();
+    if (!order || !order.ifood_dispute_id || !order.ifood_dispute_details.alternatives?.[0]?.id) return;
+
+    const alternativeId = order.ifood_dispute_details.alternatives[0].id;
+    const amountInCents = Math.round(details.amount * 100);
+
+    this.updatingOrders.update(set => new Set(set).add(order.id));
+    try {
+        const { success, error } = await this.ifoodDataService.proposeDisputeAlternative(
+            order.ifood_dispute_id,
+            alternativeId,
+            {
+                type: "REFUND",
+                metadata: {
+                    amount: {
+                        value: String(amountInCents),
+                        currency: "BRL"
+                    }
+                }
+            }
+        );
+        if (!success) throw error;
+        this.notificationService.show('Contraproposta de reembolso enviada.', 'success');
+    } catch (error: any) {
+        this.notificationService.show(`Erro ao enviar contraproposta: ${error.message}`, 'error');
+    } finally {
+        this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+        this.orderToProposeRefund.set(null);
     }
   }
 
