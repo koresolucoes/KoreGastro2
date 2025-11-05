@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -428,24 +417,25 @@ export class TechnicalSheetsComponent {
     this.isAddingIngredient.set(true);
   }
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
-  // FIX: Replacing the simple implementation with a more robust one that handles type conversions for numeric and nullable fields. This prevents type mismatches when updating the form signal from string-based input events and resolves the likely cause of the reported error.
+  
   updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
     this.newIngredientForm.update(form => {
       const newForm: Partial<Ingredient> = { ...form };
-      const numericFields: (keyof Ingredient)[] = ['stock', 'cost', 'min_stock', 'price'];
-
-      if (numericFields.includes(field as keyof Ingredient)) {
-        const numValue = parseFloat(value);
-        (newForm as any)[field] = isNaN(numValue) ? null : numValue;
+      
+      if (field === 'stock' || field === 'cost' || field === 'min_stock') {
+          const numValue = parseFloat(value);
+          (newForm as any)[field] = isNaN(numValue) ? 0 : numValue;
+      } else if (field === 'price') {
+          const numValue = parseFloat(value);
+          (newForm as any)[field] = isNaN(numValue) ? null : numValue;
       } else if (field === 'is_sellable') {
-        (newForm as any)[field] = value as boolean;
+          newForm[field] = value as boolean;
       } else if (field === 'name' || field === 'unit') {
-        (newForm as any)[field] = value;
+        newForm[field] = value;
       } else {
-        // for nullable string fields
         (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
       }
-      
+
       return newForm;
     });
   }
@@ -460,11 +450,7 @@ export class TechnicalSheetsComponent {
       // Re-open the add popover and add the new item automatically
       const prepId = this.addingToPreparationId();
       if (prepId) {
-        // FIX: Explicitly cast `newIngredient` to `any`.
-        // This resolves a TypeScript error where `newIngredient` was being inferred as `unknown`,
-        // likely due to complex type flows from the data service, causing a compile-time failure
-        // when accessing its properties.
-        this.addIngredientToPrep(newIngredient as any);
+        this.addIngredientToPrep(newIngredient as Ingredient);
       }
       this.closeAddIngredientModal();
     } else {
