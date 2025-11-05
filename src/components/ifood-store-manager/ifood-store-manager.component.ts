@@ -89,13 +89,33 @@ export class IfoodStoreManagerComponent implements OnInit {
     const hoursMap = new Map(apiHours.map(h => [h.dayOfWeek, h]));
     const form = this.dayOfWeekApiMap.map((day, index) => {
       const existing = hoursMap.get(day);
-      return {
-        dayOfWeek: day,
-        dayName: this.daysOfWeekMap[index],
-        openingTime: existing ? existing.openingTime.slice(0, 5) : '00:00',
-        closingTime: existing ? existing.closingTime.slice(0, 5) : '00:00',
-        is_closed: !existing
-      };
+      if (existing) {
+        const [h, m] = existing.start.split(':').map(Number);
+        
+        // Use a base date for time calculations, avoiding timezone issues by using UTC methods
+        const startDate = new Date(0);
+        startDate.setUTCHours(h, m, 0, 0);
+
+        const endDate = new Date(startDate.getTime() + existing.duration * 60000); // duration is in minutes
+        
+        const closingTime = `${String(endDate.getUTCHours()).padStart(2, '0')}:${String(endDate.getUTCMinutes()).padStart(2, '0')}`;
+
+        return {
+          dayOfWeek: day,
+          dayName: this.daysOfWeekMap[index],
+          openingTime: existing.start.slice(0, 5), // Keep HH:mm format for input
+          closingTime: closingTime,
+          is_closed: false
+        };
+      } else {
+        return {
+          dayOfWeek: day,
+          dayName: this.daysOfWeekMap[index],
+          openingTime: '09:00', // Sensible default
+          closingTime: '22:00', // Sensible default
+          is_closed: true
+        };
+      }
     });
     this.weeklyHoursForm.set(form);
   }
@@ -116,11 +136,29 @@ export class IfoodStoreManagerComponent implements OnInit {
       const formValue = this.weeklyHoursForm();
       const shiftsToSave: IfoodOpeningHours[] = formValue
         .filter(day => !day.is_closed)
-        .map(day => ({
-          dayOfWeek: day.dayOfWeek,
-          openingTime: day.openingTime,
-          closingTime: day.closingTime,
-        }));
+        .map(day => {
+          const [openH, openM] = day.openingTime.split(':').map(Number);
+          const [closeH, closeM] = day.closingTime.split(':').map(Number);
+
+          const openDate = new Date(0);
+          openDate.setUTCHours(openH, openM, 0, 0);
+
+          const closeDate = new Date(0);
+          closeDate.setUTCHours(closeH, closeM, 0, 0);
+          
+          // Handle cases where closing time is on the next day (e.g., 22:00 to 02:00)
+          if (closeDate <= openDate) {
+            closeDate.setUTCDate(closeDate.getUTCDate() + 1);
+          }
+
+          const durationInMinutes = (closeDate.getTime() - openDate.getTime()) / 60000;
+
+          return {
+            dayOfWeek: day.dayOfWeek,
+            start: `${day.openingTime}:00`, // Format as HH:mm:ss
+            duration: durationInMinutes,
+          };
+        });
 
       await this.ifoodMenuService.updateOpeningHours(shiftsToSave);
       this.notificationService.show('Horário de funcionamento atualizado com sucesso!', 'success');

@@ -132,8 +132,8 @@ export interface IfoodInterruption {
 
 export interface IfoodOpeningHours {
   dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
-  openingTime: string; // "HH:mm"
-  closingTime: string; // "HH:mm"
+  start: string; // "HH:mm:ss"
+  duration: number; // minutes
 }
 
 
@@ -181,7 +181,7 @@ export class IfoodMenuService {
         throw new Error(errorMessage);
       }
 
-      if (response.status === 202 || response.status === 204) {
+      if (response.status === 201 || response.status === 202 || response.status === 204) {
         return null as T;
       }
 
@@ -224,11 +224,20 @@ export class IfoodMenuService {
   }
 
   async getOpeningHours(): Promise<IfoodOpeningHours[]> {
-    return this.proxyRequest<IfoodOpeningHours[]>('GET', '/catalog/v2.0/merchants/{merchantId}/opening-hours');
+    // The response is an array containing a single object with a "shifts" property
+    const response = await this.proxyRequest<[{ shifts: IfoodOpeningHours[] }]>('GET', '/merchant/v1.0/merchants/{merchantId}/opening-hours');
+    return response?.[0]?.shifts || [];
   }
 
   async updateOpeningHours(openingHours: IfoodOpeningHours[]): Promise<void> {
-    await this.proxyRequest<void>('PUT', '/catalog/v2.0/merchants/{merchantId}/opening-hours', { shifts: openingHours });
+    const merchantId = this.companyProfile()?.ifood_merchant_id;
+    if (!merchantId) {
+      throw new Error('O iFood Merchant ID precisa ser configurado para esta operação.');
+    }
+    await this.proxyRequest<void>('PUT', '/merchant/v1.0/merchants/{merchantId}/opening-hours', { 
+      storeId: merchantId,
+      shifts: openingHours 
+    });
   }
   
   // --- Catalog Management ---
