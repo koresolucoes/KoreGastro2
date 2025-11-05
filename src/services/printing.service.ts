@@ -4,6 +4,7 @@ import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
 import { NotificationService } from './notification.service';
 import { ProcessedIfoodOrder } from '../models/app.models';
+import { SettingsStateService } from './settings-state.service';
 
 interface PreBillOptions {
   includeServiceFee: boolean;
@@ -19,6 +20,7 @@ export class PrintingService {
   private currencyPipe: CurrencyPipe;
   private decimalPipe: DecimalPipe;
   private notificationService = inject(NotificationService);
+  private settingsState = inject(SettingsStateService);
 
   constructor() {
     const locale = inject(LOCALE_ID);
@@ -195,16 +197,18 @@ export class PrintingService {
   }
 
   private generateIfoodReceiptHtml(order: ProcessedIfoodOrder): string {
-    const date = this.datePipe.transform(order.timestamp, 'dd/MM/yyyy HH:mm');
-    const orderType = order.order_type === 'iFood-Delivery' ? 'ENTREGA' : 'RETIRADA';
+    const companyName = this.settingsState.companyProfile()?.company_name || 'Seu Restaurante';
+    const date = this.datePipe.transform(order.timestamp, 'dd/MM/yyyy HH:mm:ss');
+    const deliveryDate = this.datePipe.transform(order.ifood_scheduled_at || order.timestamp, 'dd/MM/yyyy HH:mm:ss');
+    const orderType = order.order_type === 'iFood-Delivery' ? 'Delivery' : 'Pra Retirar';
     
     const itemsHtml = order.order_items.map(item => {
-        const notesHtml = item.notes ? `<div style="font-size: 11px; margin-left: 10px; font-style: italic;">Obs: ${item.notes}</div>` : '';
+        const notesHtml = item.notes ? `<div class="obs">Obs: ${item.notes}</div>` : '';
         return `
-            <div style="margin-bottom: 5px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <span>${item.quantity}x ${item.name}</span>
-                    <span>${this.currencyPipe.transform(item.price * item.quantity, 'BRL', 'R$')}</span>
+            <div class="item">
+                <div class="line">
+                    <span class="item-name">${item.quantity} UN ${item.name}</span>
+                    <span>${this.currencyPipe.transform(item.price * item.quantity, 'BRL')}</span>
                 </div>
                 ${notesHtml}
             </div>
@@ -212,18 +216,37 @@ export class PrintingService {
     }).join('');
 
     const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const benefits = order.ifood_benefits?.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0) ?? 0;
-    const total = subtotal - benefits;
+    const benefitsArray = (order.ifood_benefits || []) as any[];
+    const totalBenefits = benefitsArray.reduce((acc, benefit) => acc + (benefit.value || 0), 0);
+    
+    const benefitsHtml = totalBenefits > 0 ? `
+        <div class="line">
+            <span>Desconto (IFOOD / LOJA)</span>
+            <span>- ${this.currencyPipe.transform(totalBenefits, 'BRL')}</span>
+        </div>` : '';
+        
+    const total = subtotal - totalBenefits;
+
+    let paymentHtml = `<div class="line"><span>${order.paymentMethod}</span><span>${this.currencyPipe.transform(total, 'BRL')}</span></div>`;
+    if (order.changeDue && order.changeDue > 0) {
+        paymentHtml += `<div class="line"><span>Troco para</span><span>${this.currencyPipe.transform(order.changeDue, 'BRL')}</span></div>`;
+    }
 
     let addressHtml = '';
     if (order.order_type === 'iFood-Delivery' && order.delivery_info?.deliveryAddress) {
         const addr = order.delivery_info.deliveryAddress;
+        const deliveredBy = order.delivery_info.deliveredBy === 'IFOOD' ? 'PARCEIRO IFOOD' : 'LOJA';
         addressHtml = `
-            <div class="section-title">Endereço de Entrega</div>
-            <div>${addr.streetName}, ${addr.streetNumber}</div>
-            <div>${addr.neighborhood} - ${addr.city}/${addr.state}</div>
-            ${addr.complement ? `<div>${addr.complement}</div>` : ''}
+            <div class="section-title">ENTREGA PEDIDO #${order.ifood_display_id}</div>
+            <div>Entregue por: ${deliveredBy}</div>
+            <div>Horário da Entrega: ${deliveryDate}</div>
+            <div>Cliente: ${order.customers?.name || 'Não informado'}</div>
+            <div>Endereço: ${addr.streetName}, ${addr.streetNumber}</div>
+            ${addr.complement ? `<div>Comp: ${addr.complement}</div>` : ''}
             ${addr.reference ? `<div>Ref: ${addr.reference}</div>` : ''}
+            <div>Bairro: ${addr.neighborhood}</div>
+            <div>Cidade: ${addr.city} - ${addr.state}</div>
+            <div>CEP: ${addr.postalCode}</div>
             <div class="divider"></div>
         `;
     }
@@ -231,36 +254,36 @@ export class PrintingService {
     let pickupCodeHtml = '';
     if (order.order_type === 'iFood-Takeout' && order.ifood_pickup_code) {
         pickupCodeHtml = `
-            <div class="section-title center" style="font-size: 16px;">CÓDIGO DE RETIRADA</div>
-            <div class="center" style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${order.ifood_pickup_code}</div>
+            <div class="section-title center">CÓDIGO DE COLETA DO PEDIDO</div>
+            <div class="center code">${order.ifood_pickup_code}</div>
             <div class="divider"></div>
         `;
     }
 
-    let paymentHtml = `
-        <div class="section-title">Pagamento</div>
-        <div class="line"><span>Subtotal</span><span>${this.currencyPipe.transform(subtotal, 'BRL', 'R$')}</span></div>
-        ${benefits > 0 ? `<div class="line"><span>Descontos iFood</span><span>-${this.currencyPipe.transform(benefits, 'BRL', 'R$')}</span></div>` : ''}
-        <div class="divider"></div>
-        <div class="line total"><span>TOTAL</span><span>${this.currencyPipe.transform(total, 'BRL', 'R$')}</span></div>
-        <div style="font-weight: bold; margin-top: 5px;">${order.paymentMethod}</div>
-        ${order.changeDue && order.changeDue > 0 ? `<div style="font-style: italic;">Troco para: ${this.currencyPipe.transform(order.changeDue, 'BRL', 'R$')}</div>` : ''}
-    `;
-
-    const customerCpfHtml = order.customers?.cpf ? `<div>CPF: ${order.customers.cpf}</div>` : '';
+    const customerCpfHtml = order.customers?.cpf ? `
+      <div class="section-title">Informações Adicionais</div>
+      <div>Incluir CPF na nota fiscal:</div>
+      <div>${order.customers.cpf}</div>
+      <div class="divider"></div>
+    ` : '';
 
     return `
       <html>
         <head>
           <title>Pedido iFood #${order.ifood_display_id}</title>
           <style>
-            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; }
+            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; line-height: 1.4; }
             .center { text-align: center; }
-            .header { font-size: 20px; font-weight: bold; }
+            .header { font-size: 16px; font-weight: bold; }
             .divider { border-top: 1px dashed #000; margin: 8px 0; }
             .line { display: flex; justify-content: space-between; margin-bottom: 2px; }
             .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
             .total { font-weight: bold; font-size: 14px; }
+            .item { margin-bottom: 5px; }
+            .item-name { max-width: 200px; }
+            .obs { font-size: 11px; margin-left: 10px; font-style: italic; }
+            .code { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+            .footer { font-size: 10px; margin-top: 10px; }
             @media print {
               @page { margin: 0; }
               body { margin: 0.5cm; }
@@ -268,20 +291,38 @@ export class PrintingService {
           </style>
         </head>
         <body>
-          <div class="center header">PEDIDO IFOOD</div>
-          <div class="center" style="font-size: 16px; font-weight: bold;">#${order.ifood_display_id}</div>
-          <div class="center" style="font-size: 14px; font-weight: bold;">${orderType}</div>
+          <div class="center header">**** PEDIDO #${order.ifood_display_id} ****</div>
+          <div class="center">${orderType}</div>
           <div class="divider"></div>
-          <div>Data: ${date}</div>
+          <div class="center section-title">${companyName}</div>
+          <div class="divider"></div>
+          <div>Data do Pedido: ${date}</div>
+          <div>Data de Entrega: ${deliveryDate}</div>
           <div>Cliente: ${order.customers?.name || 'Não informado'}</div>
-          ${customerCpfHtml}
+          <div>Telefone: ${order.customers?.phone || 'Não informado'}</div>
           <div class="divider"></div>
-          ${addressHtml}
-          ${pickupCodeHtml}
-          <div class="section-title">Itens</div>
+
+          <div class="section-title">ITENS DO PEDIDO</div>
           ${itemsHtml}
           <div class="divider"></div>
+
+          <div class="section-title">TOTAL</div>
+          <div class="line"><span>Valor total dos itens</span><span>${this.currencyPipe.transform(subtotal, 'BRL')}</span></div>
+          ${benefitsHtml}
+          <div class="line total"><span>VALOR TOTAL</span><span>${this.currencyPipe.transform(total, 'BRL')}</span></div>
+          <div class="divider"></div>
+
+          <div class="section-title">FORMAS DE PAGAMENTO</div>
           ${paymentHtml}
+          <div class="divider"></div>
+
+          ${customerCpfHtml}
+
+          ${addressHtml}
+          
+          ${pickupCodeHtml}
+
+          <div class="center footer">Impresso por: ChefOS</div>
         </body>
       </html>
     `;
@@ -474,6 +515,9 @@ export class PrintingService {
         <span>${this.currencyPipe.transform(p.amount, 'BRL', 'R$', '1.2-2')}</span>
       </div>
     `).join('');
+    
+    // FIX: Include customer CPF if available on the order
+    const customerCpfHtml = order.customers?.cpf ? `<div>CPF: ${order.customers.cpf}</div>` : '';
 
     return `
       <html>
@@ -501,6 +545,7 @@ export class PrintingService {
           <div>Pedido: #${order.id.slice(0, 8)}</div>
           <div>Data: ${date}</div>
           <div>Origem: ${orderOrigin}</div>
+          ${customerCpfHtml}
           <div class="divider"></div>
           <table>
               <thead>
