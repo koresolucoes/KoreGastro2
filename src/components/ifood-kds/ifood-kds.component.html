@@ -18,7 +18,7 @@
 
   <div class="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-hidden">
     <!-- Column: Recebidos -->
-    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+    <div class="bg-gray-900/50 rounded-lg flex flex-col overflow-hidden">
       <div class="p-3 text-yellow-300 font-bold border-b-2 border-yellow-500 flex justify-between items-center flex-shrink-0">
         <h2>RECEBIDOS ({{ receivedOrders().length }})</h2>
       </div>
@@ -93,7 +93,7 @@
     </div>
     
     <!-- Column: Em Preparo -->
-    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+    <div class="bg-gray-900/50 rounded-lg flex flex-col overflow-hidden">
       <div class="p-3 text-blue-300 font-bold border-b-2 border-blue-500 flex justify-between items-center flex-shrink-0">
         <h2>EM PREPARO ({{ inPreparationOrders().length }})</h2>
       </div>
@@ -137,7 +137,7 @@
     </div>
     
     <!-- Column: Pronto -->
-    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+    <div class="bg-gray-900/50 rounded-lg flex flex-col overflow-hidden">
       <div class="p-3 text-green-300 font-bold border-b-2 border-green-500 flex justify-between items-center flex-shrink-0">
         <h2>PRONTO ({{ readyOrders().length }})</h2>
       </div>
@@ -188,7 +188,7 @@
     </div>
     
     <!-- Column: Finalizados -->
-    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+    <div class="bg-gray-900/50 rounded-lg flex flex-col overflow-hidden">
       <div class="p-3 text-gray-400 font-bold border-b-2 border-gray-600 flex justify-between items-center flex-shrink-0">
         <h2>FINALIZADOS / CANCELADOS</h2>
       </div>
