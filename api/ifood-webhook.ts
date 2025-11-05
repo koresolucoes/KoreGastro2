@@ -154,6 +154,37 @@ export default async function handler(request: VercelRequest, response: VercelRe
     } else if (LOGISTICS_EVENTS.has(eventCode)) {
         // For logistics events, we just log them. The frontend will react to the log entry.
         if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
+    } else if (eventCode === 'HANDSHAKE_SETTLEMENT') {
+        const orderIdToUpdate = getOrderIdFromPayload(payload);
+        const disputeId = payload.metadata?.disputeId;
+        const status = payload.metadata?.status;
+
+        if (!orderIdToUpdate) {
+            if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_PAYLOAD', 'HANDSHAKE_SETTLEMENT event is missing orderId.');
+            throw new Error("HANDSHAKE_SETTLEMENT event is missing a valid 'orderId'.");
+        }
+        
+        // If cancellation is accepted by merchant OR customer, we cancel the order in our system.
+        if (status === 'ACCEPTED') {
+             await cancelOrderInDb(supabase, orderIdToUpdate);
+             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_HANDSHAKE_ACCEPTED');
+        } else {
+             // If rejected or expired, we clear the dispute details so the KDS UI goes back to normal.
+            const { error: updateError } = await supabase
+                .from('orders')
+                .update({ 
+                    ifood_dispute_id: null, 
+                    ifood_dispute_details: null 
+                })
+                .eq('ifood_order_id', orderIdToUpdate)
+                .eq('user_id', userId);
+            
+            if (updateError) {
+                if (logId) await updateLogStatus(supabase, logId, 'ERROR_DB_UPDATE', updateError.message);
+                throw new Error(`Failed to clear dispute on order: ${updateError.message}`);
+            }
+             if (logId) await updateLogStatus(supabase, logId, `SUCCESS_HANDSHAKE_${status}`);
+        }
     } else if (eventCode === 'HANDSHAKE_DISPUTE') {
         const orderIdToUpdate = getOrderIdFromPayload(payload);
         const disputeId = payload.metadata?.disputeId;

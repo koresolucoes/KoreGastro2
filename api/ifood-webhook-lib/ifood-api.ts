@@ -174,3 +174,11 @@ export async function sendIFoodDisputeAction(disputeId: string, action: 'accept'
 
     return makeIFoodApiCall(endpoint, 'POST', body);
 }
+
+/**
+ * Sends a dispute alternative proposal for a given dispute ID to the iFood Handshake API.
+ */
+export async function sendIFoodDisputeAlternativeAction(disputeId: string, alternativeId: string, body: any = null): Promise<any> {
+    const endpoint = `/order/v1.0/disputes/${disputeId}/alternatives/${alternativeId}`;
+    return makeIFoodApiCall(endpoint, 'POST', body);
+}

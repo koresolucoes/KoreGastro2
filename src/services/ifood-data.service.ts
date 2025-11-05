@@ -130,4 +130,32 @@ export class IfoodDataService {
       return { success: false, error };
     }
   }
+
+  async proposeDisputeAlternative(disputeId: string, alternativeId: string, body: any): Promise<{ success: boolean; error: any }> {
+    try {
+      const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'proposeAlternative',
+          disputeId,
+          isDispute: true,
+          details: {
+            alternativeId,
+            body
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.message || `Proxy error (${response.status})`);
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error(`Error proposing dispute alternative for dispute ${disputeId}:`, error);
+      return { success: false, error };
+    }
+  }
 }
