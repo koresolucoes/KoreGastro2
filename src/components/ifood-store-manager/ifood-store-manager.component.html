@@ -81,15 +81,27 @@
                 }
               </div>
               @if (!day.is_closed) {
-                <div class="mt-3 pt-3 border-t border-gray-600/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Abre às</label>
-                    <input type="time" [value]="day.openingTime" (input)="updateWeeklyHours(i, 'openingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                  </div>
-                  <div>
-                    <label class="block text-xs text-gray-400 mb-1">Fecha às</label>
-                    <input type="time" [value]="day.closingTime" (input)="updateWeeklyHours(i, 'closingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                  </div>
+                <div class="mt-3 pt-3 border-t border-gray-600/50 space-y-3">
+                  @for (shift of day.shifts; track shift.id; let shiftIndex = $index) {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Turno {{ shiftIndex + 1 }}: Abre às</label>
+                        <input type="time" [value]="shift.openingTime" (input)="updateShiftTime(i, shift.id, 'openingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                      </div>
+                      <div class="flex items-end gap-2">
+                        <div class="flex-1">
+                          <label class="block text-xs text-gray-400 mb-1">Fecha às</label>
+                          <input type="time" [value]="shift.closingTime" (input)="updateShiftTime(i, shift.id, 'closingTime', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                        </div>
+                        <button (click)="removeShift(i, shift.id)" class="h-10 w-10 flex items-center justify-center bg-red-500/20 text-red-400 hover:bg-red-500/40 rounded-lg" title="Remover turno">
+                          <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                  <button (click)="addShift(i)" class="w-full mt-3 text-center py-2 text-sm font-semibold text-blue-400 border-2 border-dashed border-gray-600 hover:border-blue-500 hover:text-blue-300 rounded-lg transition-colors">
+                    + Adicionar Turno
+                  </button>
                 </div>
               }
             </div>

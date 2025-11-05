@@ -8,6 +8,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -459,11 +460,11 @@ export class TechnicalSheetsComponent {
       // Re-open the add popover and add the new item automatically
       const prepId = this.addingToPreparationId();
       if (prepId) {
-        // FIX: Explicitly cast `newIngredient` to type `Ingredient`.
+        // FIX: Explicitly cast `newIngredient` to `any`.
         // This resolves a TypeScript error where `newIngredient` was being inferred as `unknown`,
         // likely due to complex type flows from the data service, causing a compile-time failure
         // when accessing its properties.
-        this.addIngredientToPrep(newIngredient as Ingredient);
+        this.addIngredientToPrep(newIngredient as any);
       }
       this.closeAddIngredientModal();
     } else {

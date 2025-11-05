@@ -4,12 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { IfoodMenuService, IfoodMerchantStatus, IfoodInterruption, IfoodOpeningHours } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
 
+interface ShiftForm {
+  id: string; // A temporary ID for Angular's trackBy
+  openingTime: string;
+  closingTime: string;
+}
+
 interface WeeklyHoursForm {
   dayOfWeek: IfoodOpeningHours['dayOfWeek'];
   dayName: string;
-  openingTime: string; // HH:mm
-  closingTime: string; // HH:mm
   is_closed: boolean;
+  shifts: ShiftForm[];
 }
 
 @Component({
@@ -96,46 +101,87 @@ export class IfoodStoreManagerComponent implements OnInit {
   }
 
   initializeHoursForm(apiHours: IfoodOpeningHours[]) {
-    const hoursMap = new Map(apiHours.map(h => [h.dayOfWeek, h]));
-    const form = this.dayOfWeekApiMap.map((day, index) => {
-      const existing = hoursMap.get(day);
-      if (existing) {
-        const [h, m] = existing.start.split(':').map(Number);
-        
-        // Use a base date for time calculations, avoiding timezone issues by using UTC methods
-        const startDate = new Date(0);
-        startDate.setUTCHours(h, m, 0, 0);
+    // Group shifts by day
+    const hoursByDay = new Map<IfoodOpeningHours['dayOfWeek'], IfoodOpeningHours[]>();
+    for (const shift of apiHours) {
+      if (!hoursByDay.has(shift.dayOfWeek)) {
+        hoursByDay.set(shift.dayOfWeek, []);
+      }
+      hoursByDay.get(shift.dayOfWeek)!.push(shift);
+    }
 
-        const endDate = new Date(startDate.getTime() + existing.duration * 60000); // duration is in minutes
-        
-        const closingTime = `${String(endDate.getUTCHours()).padStart(2, '0')}:${String(endDate.getUTCMinutes()).padStart(2, '0')}`;
+    const form = this.dayOfWeekApiMap.map((day, index) => {
+      const existingShifts = hoursByDay.get(day);
+      if (existingShifts && existingShifts.length > 0) {
+        const shifts: ShiftForm[] = existingShifts.map((s, shiftIndex) => {
+          const [h, m] = s.start.split(':').map(Number);
+          const startDate = new Date(0);
+          startDate.setUTCHours(h, m, 0, 0);
+          const endDate = new Date(startDate.getTime() + s.duration * 60000); // duration is in minutes
+          const closingTime = `${String(endDate.getUTCHours()).padStart(2, '0')}:${String(endDate.getUTCMinutes()).padStart(2, '0')}`;
+          return {
+            id: `shift-${day}-${shiftIndex}-${Date.now()}`,
+            openingTime: s.start.slice(0, 5),
+            closingTime: closingTime,
+          };
+        });
 
         return {
           dayOfWeek: day,
           dayName: this.daysOfWeekMap[index],
-          openingTime: existing.start.slice(0, 5), // Keep HH:mm format for input
-          closingTime: closingTime,
-          is_closed: false
+          is_closed: false,
+          shifts: shifts,
         };
       } else {
         return {
           dayOfWeek: day,
           dayName: this.daysOfWeekMap[index],
-          openingTime: '09:00', // Sensible default
-          closingTime: '22:00', // Sensible default
-          is_closed: true
+          is_closed: true,
+          shifts: [],
         };
       }
     });
     this.weeklyHoursForm.set(form);
   }
 
-  updateWeeklyHours(index: number, field: 'openingTime' | 'closingTime' | 'is_closed', value: any) {
+  updateWeeklyHours(index: number, field: 'is_closed', value: boolean) {
     this.weeklyHoursForm.update(currentForm => {
       const newForm = [...currentForm];
       const dayToUpdate = { ...newForm[index] };
-      (dayToUpdate as any)[field] = value;
+      dayToUpdate.is_closed = value;
+
+      // If opening a day that has no shifts, add one by default
+      if (!value && dayToUpdate.shifts.length === 0) {
+        dayToUpdate.shifts.push({ id: `new-shift-${Date.now()}`, openingTime: '09:00', closingTime: '18:00' });
+      }
+      
       newForm[index] = dayToUpdate;
+      return newForm;
+    });
+  }
+
+  addShift(dayIndex: number) {
+    this.weeklyHoursForm.update(currentForm => {
+      const newForm = [...currentForm];
+      newForm[dayIndex].shifts.push({ id: `new-shift-${Date.now()}`, openingTime: '09:00', closingTime: '18:00' });
+      return newForm;
+    });
+  }
+
+  removeShift(dayIndex: number, shiftId: string) {
+    this.weeklyHoursForm.update(currentForm => {
+      const newForm = [...currentForm];
+      newForm[dayIndex].shifts = newForm[dayIndex].shifts.filter(s => s.id !== shiftId);
+      return newForm;
+    });
+  }
+
+  updateShiftTime(dayIndex: number, shiftId: string, field: 'openingTime' | 'closingTime', value: string) {
+    this.weeklyHoursForm.update(currentForm => {
+      const newForm = [...currentForm];
+      newForm[dayIndex].shifts = newForm[dayIndex].shifts.map(s => 
+        s.id === shiftId ? { ...s, [field]: value } : s
+      );
       return newForm;
     });
   }
@@ -146,29 +192,30 @@ export class IfoodStoreManagerComponent implements OnInit {
       const formValue = this.weeklyHoursForm();
       const shiftsToSave: IfoodOpeningHours[] = formValue
         .filter(day => !day.is_closed)
-        .map(day => {
-          const [openH, openM] = day.openingTime.split(':').map(Number);
-          const [closeH, closeM] = day.closingTime.split(':').map(Number);
+        .flatMap(day => 
+          day.shifts.map(shift => {
+            const [openH, openM] = shift.openingTime.split(':').map(Number);
+            const [closeH, closeM] = shift.closingTime.split(':').map(Number);
 
-          const openDate = new Date(0);
-          openDate.setUTCHours(openH, openM, 0, 0);
+            const openDate = new Date(0);
+            openDate.setUTCHours(openH, openM, 0, 0);
 
-          const closeDate = new Date(0);
-          closeDate.setUTCHours(closeH, closeM, 0, 0);
-          
-          // Handle cases where closing time is on the next day (e.g., 22:00 to 02:00)
-          if (closeDate <= openDate) {
-            closeDate.setUTCDate(closeDate.getUTCDate() + 1);
-          }
+            const closeDate = new Date(0);
+            closeDate.setUTCHours(closeH, closeM, 0, 0);
+            
+            if (closeDate <= openDate) {
+              closeDate.setUTCDate(closeDate.getUTCDate() + 1);
+            }
 
-          const durationInMinutes = (closeDate.getTime() - openDate.getTime()) / 60000;
+            const durationInMinutes = (closeDate.getTime() - openDate.getTime()) / 60000;
 
-          return {
-            dayOfWeek: day.dayOfWeek,
-            start: `${day.openingTime}:00`, // Format as HH:mm:ss
-            duration: durationInMinutes,
-          };
-        });
+            return {
+              dayOfWeek: day.dayOfWeek,
+              start: `${shift.openingTime}:00`,
+              duration: durationInMinutes,
+            };
+          })
+        );
 
       await this.ifoodMenuService.updateOpeningHours(shiftsToSave);
       this.notificationService.show('Horário de funcionamento atualizado com sucesso!', 'success');
