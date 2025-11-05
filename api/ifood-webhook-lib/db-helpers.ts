@@ -170,7 +170,7 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       delivery_info: deliveryInfo,
       timestamp: payload.createdAt,
       ifood_order_timing: payload.orderTiming,
-      ifood_scheduled_at: payload.schedule?.deliveryDateTime,
+      ifood_scheduled_at: payload.preparationStartDateTime || payload.schedule?.deliveryDateTimeStart,
       ifood_payments: payload.payments,
       ifood_benefits: payload.total?.benefits > 0 ? payload.benefits : null,
       ifood_delivery_observations: payload.delivery?.observations,

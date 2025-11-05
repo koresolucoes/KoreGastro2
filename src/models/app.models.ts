@@ -29,4 +29,6 @@ export interface ProcessedIfoodOrder extends Order {
   requiresDeliveryCode: boolean;
   paymentMethod?: string;
   changeDue?: number;
+  isScheduledAndHeld?: boolean;
+  timeToPrepare?: number; // seconds
 }

@@ -42,6 +42,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   
   private processedNewOrders = signal<Set<string>>(new Set());
   private processedDisputeIds = signal<Set<string>>(new Set());
+  private alertedForPrep = signal<Set<string>>(new Set());
   
   // State for webhook logs
   isLogVisible = signal(false);
@@ -95,12 +96,28 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         
         untracked(() => {
             const previouslyProcessed = this.processedNewOrders();
+            const previouslyAlertedForPrep = this.alertedForPrep();
+            const now = Date.now();
+
             for(const order of orders) {
-                if (!previouslyProcessed.has(order.id) && order.ifoodStatus === 'RECEIVED') {
+                // New order sound (only if not a future scheduled order)
+                if (!previouslyProcessed.has(order.id) && order.ifoodStatus === 'RECEIVED' && !order.isScheduledAndHeld) {
                     this.soundNotificationService.playNewOrderSound();
+                }
+                
+                // Time to prepare sound
+                if (order.ifood_order_timing === 'SCHEDULED' && order.ifood_scheduled_at && !previouslyAlertedForPrep.has(order.id)) {
+                    const prepTime = new Date(order.ifood_scheduled_at).getTime();
+                    // Alert 1 minute before prep time until 1 minute after
+                    if (now >= (prepTime - 60000) && now < (prepTime + 60000)) {
+                        this.soundNotificationService.playAllergyAlertSound(); // Use an urgent sound
+                        this.notificationService.show(`Hora de preparar o pedido agendado #${order.ifood_display_id}!`, 'info', 10000);
+                        previouslyAlertedForPrep.add(order.id);
+                    }
                 }
             }
             this.processedNewOrders.set(currentOrderIds);
+            this.alertedForPrep.set(previouslyAlertedForPrep);
         });
     });
 
@@ -151,7 +168,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     
     let details = order.ifood_dispute_details;
     
-    // Handle cases where the data might be a stringified JSON
     if (typeof details === 'string') {
       try {
         details = JSON.parse(details);
@@ -299,13 +315,30 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     return this.posState.openOrders()
       .filter(o => o.order_type === 'iFood-Delivery' || o.order_type === 'iFood-Takeout')
       .map(order => {
-        const startTime = new Date(order.timestamp).getTime();
-        const elapsedTime = Math.floor((now - startTime) / 1000);
+        let isScheduledAndHeld = false;
+        let timeToPrepare = 0;
+        let startTime = new Date(order.timestamp).getTime();
+
+        if (order.ifood_order_timing === 'SCHEDULED' && order.ifood_scheduled_at) {
+          const prepStartTime = new Date(order.ifood_scheduled_at).getTime();
+
+          if (now < prepStartTime) {
+            isScheduledAndHeld = true;
+            timeToPrepare = Math.floor((prepStartTime - now) / 1000);
+          } else {
+            startTime = prepStartTime;
+          }
+        }
+        
+        const elapsedTime = isScheduledAndHeld ? 0 : Math.floor((now - startTime) / 1000);
         const isLate = elapsedTime > 600; // Late after 10 minutes
 
         let timerColor = 'text-green-300';
         if (elapsedTime > 300) timerColor = 'text-yellow-300'; // 5 mins
         if (isLate) timerColor = 'text-red-300';
+        if (isScheduledAndHeld) {
+          timerColor = 'text-cyan-300';
+        }
 
         const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
         
@@ -321,9 +354,15 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
           requiresDeliveryCode: requiresCode,
           paymentMethod: paymentDetails.paymentMethod,
           changeDue: paymentDetails.changeDue,
+          isScheduledAndHeld,
+          timeToPrepare,
         };
       })
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .sort((a, b) => {
+        if (a.isScheduledAndHeld && !b.isScheduledAndHeld) return 1;
+        if (!a.isScheduledAndHeld && b.isScheduledAndHeld) return -1;
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      });
   });
 
   receivedOrders = computed(() => this.processedOrders().filter(o => o.ifoodStatus === 'RECEIVED'));
@@ -665,6 +704,14 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   
   formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) return '00:00';
+
+    if (seconds >= 3600) {
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;

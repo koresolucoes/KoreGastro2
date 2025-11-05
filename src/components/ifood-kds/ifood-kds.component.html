@@ -29,12 +29,20 @@
             class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer"
             [class.border-orange-500]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY'"
             [class.border-yellow-500]="order.ifood_dispute_id && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY'"
-            [class.border-gray-700]="!order.ifood_dispute_id">
-            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-600' : (order.ifood_dispute_id ? 'bg-yellow-600' : 'bg-gray-700')">
+            [class.border-cyan-500]="order.isScheduledAndHeld"
+            [class.border-gray-700]="!order.ifood_dispute_id && !order.isScheduledAndHeld">
+            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-600' : (order.ifood_dispute_id ? 'bg-yellow-600' : (order.isScheduledAndHeld ? 'bg-cyan-600' : 'bg-gray-700'))">
               <span>#{{ order.ifood_display_id }}</span>
-              <span class="font-mono text-lg" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
+              <span class="font-mono text-lg" [class]="order.timerColor">{{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}</span>
             </div>
             <div class="p-3 space-y-3">
+               @if(order.isScheduledAndHeld) {
+                <div class="bg-cyan-900/50 text-cyan-200 p-3 rounded-lg text-center">
+                  <h4 class="font-bold text-lg">PEDIDO AGENDADO</h4>
+                  <p class="text-sm">Iniciar preparo às <strong>{{ order.ifood_scheduled_at | date:'HH:mm' }}</strong></p>
+                  <p class="font-mono text-2xl font-bold mt-1">{{ formatTime(order.timeToPrepare) }}</p>
+                </div>
+              }
               <p class="font-semibold text-white">{{ order.customers?.name }}</p>
               @if(order.delivery_info?.deliveryAddress; as address) {
                 <div class="text-xs text-gray-400">
@@ -72,7 +80,7 @@
                 </div>
               } @else {
                 <div class="pt-3 border-t border-gray-600">
-                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500">
+                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id) || order.isScheduledAndHeld" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">
                     Confirmar e Iniciar Preparo
                   </button>
                 </div>
