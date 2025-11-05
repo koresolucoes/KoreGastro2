@@ -17,7 +17,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const ORDER_EVENTS = new Set(['PLACED', 'CONFIRMED', 'DISPATCHED', 'READY_FOR_PICKUP', 'CONCLUDED', 'CANCELLED']);
+const ORDER_EVENTS = new Set(['PLACED', 'CONFIRMED', 'DISPATCHED', 'READY_TO_PICKUP', 'CONCLUDED', 'CANCELLED']);
 const LOGISTICS_EVENTS = new Set([
     'ASSIGNED_DRIVER', 
     'GOING_TO_ORIGIN', 
@@ -146,9 +146,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONFIRMED');
             break;
         case 'DISPATCHED':
-        case 'READY_FOR_PICKUP':
+        case 'READY_TO_PICKUP':
             const orderIdToDispatch = getOrderIdFromPayload(payload);
-            if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_FOR_PICKUP event is missing a valid 'orderId'.");
+            if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_TO_PICKUP event is missing a valid 'orderId'.");
             await dispatchOrderInDb(supabase, orderIdToDispatch);
             if (logId) await updateLogStatus(supabase, logId, `SUCCESS_${eventCode}`);
             break;
