@@ -3,6 +3,9 @@
 
 
 
+
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -434,9 +437,12 @@ export class TechnicalSheetsComponent {
           const numValue = parseFloat(value);
           (newForm as any)[field] = isNaN(numValue) ? null : numValue;
       } else if (field === 'is_sellable') {
-          newForm[field] = value as boolean;
-      } else if (field === 'name' || field === 'unit') {
-        newForm[field] = value;
+          newForm.is_sellable = value as boolean;
+      // FIX: Separated the logic for `name` and `unit` to ensure type safety.
+      } else if (field === 'name') {
+        newForm.name = value;
+      } else if (field === 'unit') {
+        newForm.unit = value as IngredientUnit;
       } else {
         (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
       }
