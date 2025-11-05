@@ -60,6 +60,9 @@
               @if(order.ifood_dispute_id) {
                 <div class="mt-2 pt-2 border-t border-yellow-700/50 bg-yellow-900/30 rounded-md p-2 space-y-2">
                   <h4 class="text-sm font-bold text-yellow-300 text-center animate-pulse">Disputa de Cancelamento</h4>
+                  @if (order.ifood_dispute_details?.details) {
+                    <p class="text-xs text-center text-yellow-200 italic">Motivo: "{{ order.ifood_dispute_details.details }}"</p>
+                  }
                   <div class="flex gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar</button>
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
@@ -115,6 +118,9 @@
               @if(order.ifood_dispute_id) {
                 <div class="mt-2 pt-2 border-t border-yellow-700/50 bg-yellow-900/30 rounded-md p-2 space-y-2">
                   <h4 class="text-sm font-bold text-yellow-300 text-center animate-pulse">Disputa de Cancelamento</h4>
+                  @if (order.ifood_dispute_details?.details) {
+                    <p class="text-xs text-center text-yellow-200 italic">Motivo: "{{ order.ifood_dispute_details.details }}"</p>
+                  }
                   <div class="flex gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar</button>
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
@@ -165,6 +171,9 @@
               @if(order.ifood_dispute_id) {
                 <div class="mt-2 pt-2 border-t border-yellow-700/50 bg-yellow-900/30 rounded-md p-2 space-y-2">
                   <h4 class="text-sm font-bold text-yellow-300 text-center animate-pulse">Disputa de Cancelamento</h4>
+                  @if (order.ifood_dispute_details?.details) {
+                    <p class="text-xs text-center text-yellow-200 italic">Motivo: "{{ order.ifood_dispute_details.details }}"</p>
+                  }
                   <div class="flex gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar</button>
                     <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-1.5 rounded-md text-xs">Rejeitar</button>
@@ -373,6 +382,9 @@
             @if(order.ifood_dispute_id) {
               <div class="bg-yellow-900/50 p-3 rounded-lg border border-yellow-700">
                 <h4 class="font-semibold text-yellow-300 mb-2">Disputa Aberta</h4>
+                @if (order.ifood_dispute_details?.details) {
+                  <p class="text-sm text-center text-yellow-200 italic mb-3">Motivo: "{{ order.ifood_dispute_details.details }}"</p>
+                }
                 <div class="flex gap-2">
                   <button (click)="handleAcceptDispute(order)" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 rounded-md">Aceitar</button>
                   <button (click)="openRejectDisputeModal(order)" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 rounded-md">Rejeitar</button>
