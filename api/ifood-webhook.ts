@@ -1,11 +1,10 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api.js';
 import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils.js';
 // FIX: Functions were missing from db-helpers. They have now been added.
-import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb } from './ifood-webhook-lib/db-helpers.js';
+import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb, updateOrderLogisticsMetadata } from './ifood-webhook-lib/db-helpers.js';
 
 export const config = {
   api: {
@@ -19,7 +18,22 @@ const supabase = createClient(
 );
 
 const ORDER_EVENTS = new Set(['PLACED', 'CONFIRMED', 'DISPATCHED', 'READY_FOR_PICKUP', 'CONCLUDED', 'CANCELLED']);
-const LOGISTICS_EVENTS = new Set(['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'DELIVERY_DROP_CODE_REQUESTED', 'ARRIVED_AT_DESTINATION']);
+const LOGISTICS_EVENTS = new Set([
+    'ASSIGNED_DRIVER', 
+    'GOING_TO_ORIGIN', 
+    'ARRIVED_AT_ORIGIN', 
+    'COLLECTED',
+    'DELIVERY_DRIVER_DEALLOCATED',
+    'DELIVERY_RETURNING_TO_ORIGIN',
+    'DELIVERY_RETURNED_TO_ORIGIN',
+    'DELIVERY_CANCELLATION_REQUESTED',
+    'DELIVERY_DROP_CODE_REQUESTED', 
+    'DELIVERY_DROP_CODE_VALIDATION_SUCCESS',
+    'DELIVERY_RETURN_CODE_REQUESTED',
+    'DELIVERY_PICKUP_CODE_REQUESTED',
+    'DELIVERY_PICKUP_CODE_VALIDATION_SUCCESS',
+    'ARRIVED_AT_DESTINATION'
+]);
 
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
@@ -153,7 +167,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
             break;
       }
     } else if (LOGISTICS_EVENTS.has(eventCode)) {
-        // For logistics events, we just log them. The frontend will react to the log entry.
+        const orderId = getOrderIdFromPayload(payload);
+        if (orderId && payload.metadata) {
+            await updateOrderLogisticsMetadata(supabase, orderId, payload.metadata);
+        }
         if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
     } else if (eventCode === 'HANDSHAKE_SETTLEMENT') {
         const orderIdToUpdate = getOrderIdFromPayload(payload);

@@ -301,3 +301,33 @@ export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: st
     ifood_dispute_details: null
   }).eq('ifood_order_id', ifoodOrderId);
 }
+// FIX: Added missing updateOrderLogisticsMetadata function.
+export async function updateOrderLogisticsMetadata(supabase: SupabaseClient, ifoodOrderId: string, metadata: any) {
+  // Fetches the order to get the current delivery_info
+  const { data: order, error: fetchError } = await supabase
+    .from('orders')
+    .select('id, delivery_info')
+    .eq('ifood_order_id', ifoodOrderId)
+    .single();
+
+  if (fetchError || !order) {
+    console.warn(`[DB Helper] Could not find order with iFood ID ${ifoodOrderId} to update logistics metadata.`, fetchError);
+    return;
+  }
+
+  // Merge the new logistics metadata with any existing delivery_info
+  // This preserves the original address while adding new tracking info.
+  const updatedDeliveryInfo = {
+    ...(order.delivery_info as object || {}),
+    ...metadata, // The metadata from the webhook event (e.g., driver info)
+  };
+
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({ delivery_info: updatedDeliveryInfo })
+    .eq('id', order.id);
+  
+  if (updateError) {
+    console.error(`[DB Helper] Failed to update logistics metadata for iFood order ${ifoodOrderId}.`, updateError);
+  }
+}
