@@ -210,7 +210,7 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
   console.log(`[DB Helper] Processing CONFIRMED event for iFood order ${ifoodOrderId}.`);
   const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(id, status, status_timestamps)').eq('ifood_order_id', ifoodOrderId).single();
   if (orderError || !order) {
-    console.error(`[DB Helper] Could not find order to confirm with iFood ID ${ifoodOrderId}`, orderError);
+    console.error(`[DB Helper] Could not find order to confirm with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
   }
 
@@ -218,7 +218,7 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
 
   const itemsToUpdate = (order.order_items || []).filter((i: any) => i.status === 'PENDENTE');
   if (itemsToUpdate.length > 0) {
-    console.log(`[DB Helper] Found ${itemsToUpdate.length} PENDENTE items to move to EM_PREPARO.`);
+    console.log(`[DB Helper] Found ${itemsToUpdate.length} 'PENDENTE' items to move to 'EM_PREPARO' for order ${order.id}.`);
     const now = new Date().toISOString();
     const updates = itemsToUpdate.map((item: any) => ({
         ...item,
@@ -228,24 +228,28 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
     }));
     const { error: updateError } = await supabase.from('order_items').upsert(updates);
     if (updateError) {
-        console.error(`[DB Helper] Error updating items to EM_PREPARO for order ${order.id}:`, updateError);
+        console.error(`[DB Helper] Error updating items to 'EM_PREPARO' for order ${order.id}:`, updateError);
     } else {
-        console.log(`[DB Helper] Successfully moved ${itemsToUpdate.length} items to EM_PREPARO for order ${order.id}.`);
+        console.log(`[DB Helper] Successfully moved ${itemsToUpdate.length} items to 'EM_PREPARO' for order ${order.id}.`);
     }
   } else {
-    console.log(`[DB Helper] No PENDENTE items found for order ${order.id}. No status change needed.`);
+    console.log(`[DB Helper] No 'PENDENTE' items found for order ${order.id}. No status change needed.`);
   }
 }
 
 export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+  console.log(`[DB Helper] Processing DISPATCHED event for iFood order ${ifoodOrderId}.`);
   const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(id, status, status_timestamps)').eq('ifood_order_id', ifoodOrderId).single();
   if (orderError || !order) {
-    console.error(`[DB Helper] Could not find order to dispatch with iFood ID ${ifoodOrderId}`, orderError);
+    console.error(`[DB Helper] Could not find order to dispatch with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
   }
 
+  console.log(`[DB Helper] Found internal order ${order.id} for iFood order ${ifoodOrderId}.`);
+  
   const itemsToUpdate = (order.order_items || []).filter((i: any) => i.status === 'PENDENTE' || i.status === 'EM_PREPARO');
   if (itemsToUpdate.length > 0) {
+    console.log(`[DB Helper] Found ${itemsToUpdate.length} items to move to 'PRONTO' for order ${order.id}.`);
     const now = new Date().toISOString();
     const updates = itemsToUpdate.map((item: any) => ({
         ...item,
@@ -253,7 +257,14 @@ export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
         status: 'PRONTO',
         status_timestamps: { ...(item.status_timestamps || {}), 'PRONTO': now }
     }));
-    await supabase.from('order_items').upsert(updates);
+    const { error: updateError } = await supabase.from('order_items').upsert(updates);
+    if (updateError) {
+        console.error(`[DB Helper] Error updating items to 'PRONTO' for order ${order.id}:`, updateError);
+    } else {
+        console.log(`[DB Helper] Successfully moved ${itemsToUpdate.length} items to 'PRONTO' for order ${order.id}.`);
+    }
+  } else {
+    console.log(`[DB Helper] No items in 'PENDENTE' or 'EM_PREPARO' state found for order ${order.id}. No status change needed.`);
   }
 }
 
