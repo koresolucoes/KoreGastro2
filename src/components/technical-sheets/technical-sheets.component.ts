@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -420,8 +421,23 @@ export class TechnicalSheetsComponent {
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
   // FIX: Narrowed the type of the 'field' parameter to exclude relational and read-only properties.
   // This prevents potential type errors when dynamically updating the form signal and aligns with best practices.
+  // FIX: Replacing the simple implementation with a more robust one that handles type conversions for numeric and nullable fields. This prevents type mismatches when updating the form signal from string-based input events and resolves the likely cause of the reported error.
   updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
-    this.newIngredientForm.update(form => ({ ...form, [field]: value }));
+    this.newIngredientForm.update(form => {
+      const newForm: Partial<Ingredient> = { ...form };
+      const numericFields: (keyof Ingredient)[] = ['stock', 'cost', 'min_stock', 'price'];
+
+      if (numericFields.includes(field)) {
+        const numValue = parseFloat(value);
+        (newForm as any)[field] = isNaN(numValue) ? null : numValue;
+      } else if (field === 'is_sellable') {
+        (newForm as any)[field] = value as boolean;
+      } else {
+        (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
+      }
+      
+      return newForm;
+    });
   }
   async saveNewIngredient() {
     const form = this.newIngredientForm();

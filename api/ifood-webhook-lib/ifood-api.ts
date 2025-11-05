@@ -163,8 +163,8 @@ export async function sendIFoodLogisticsAction(orderId: string, action: string, 
  */
 export async function sendIFoodDisputeAction(disputeId: string, action: 'accept' | 'reject', body: any = null): Promise<any> {
     const endpointMap: { [key: string]: string } = {
-        accept: `/disputes/${disputeId}/accept`,
-        reject: `/disputes/${disputeId}/reject`,
+        accept: `/handshake/v1.0/disputes/${disputeId}/accept`,
+        reject: `/handshake/v1.0/disputes/${disputeId}/reject`,
     };
 
     const endpoint = endpointMap[action];
