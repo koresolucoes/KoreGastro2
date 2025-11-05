@@ -573,6 +573,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         this.orderToProposeRefund.set(null);
     }
   }
+  
+  openNegotiateTimeModal(order: ProcessedIfoodOrder) {
+    this.notificationService.alert('A funcionalidade de negociar atraso ainda não foi implementada.', 'Em Breve');
+  }
 
   // --- Code Verification Methods ---
   openVerifyCodeModal(order: ProcessedIfoodOrder, type: 'pickup' | 'delivery') {
