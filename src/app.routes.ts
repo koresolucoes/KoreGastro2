@@ -34,6 +34,7 @@ import { SuppliersComponent } from './components/suppliers/suppliers.component';
 import { ResetPasswordComponent } from './components/auth/reset-password.component';
 import { DemoAccessComponent } from './components/demo/demo-access.component';
 import { loginGuard } from './guards/login.guard';
+import { IfoodStoreManagerComponent } from './components/ifood-store-manager/ifood-store-manager.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
@@ -55,6 +56,7 @@ export const APP_ROUTES: Routes = [
   { path: 'menu', component: MenuComponent, canActivate: [roleGuard] },
   { path: 'menu/:userId', component: MenuComponent }, // Public menu route
   { path: 'ifood-menu', component: IfoodMenuComponent, canActivate: [roleGuard] },
+  { path: 'ifood-store-manager', component: IfoodStoreManagerComponent, canActivate: [roleGuard] },
   { path: 'book/:userId', component: PublicBookingComponent }, // Public booking route
   { path: 'technical-sheets', component: TechnicalSheetsComponent, canActivate: [roleGuard] },
   { path: 'mise-en-place', component: MiseEnPlaceComponent, canActivate: [roleGuard] },
