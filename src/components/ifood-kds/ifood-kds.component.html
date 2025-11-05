@@ -1,1 +1,256 @@
-full contents of src/components/ifood-kds/ifood-kds.component.html
+<div class="h-full flex flex-col no-print">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+    <h1 class="text-2xl font-bold text-white">iFood KDS</h1>
+    <div class="flex items-center gap-4">
+      <button (click)="soundNotificationService.toggleMute()" class="p-2 rounded-lg text-white transition-colors" [class.bg-red-600]="soundNotificationService.isMuted()" [class.hover:bg-red-500]="soundNotificationService.isMuted()" [class.bg-gray-700]="!soundNotificationService.isMuted()" [class.hover:bg-gray-600]="!soundNotificationService.isMuted()" [title]="soundNotificationService.isMuted() ? 'Ativar Som' : 'Silenciar'">
+        @if (soundNotificationService.isMuted()) {
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
+        } @else {
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
+        }
+      </button>
+      <button (click)="isLogVisible.set(!isLogVisible())" class="p-2 rounded-lg text-white bg-gray-700 hover:bg-gray-600 transition-colors" title="Ver Logs do Webhook">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6.226c0-1.632 1.343-2.956 2.976-2.956h10.548c1.633 0 2.976 1.324 2.976 2.956v3.55M4.5 19.5h15" /></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 overflow-hidden">
+    <!-- Column: Recebidos -->
+    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+      <div class="p-3 text-yellow-300 font-bold border-b-2 border-yellow-500 flex justify-between items-center">
+        <h2>RECEBIDOS ({{ receivedOrders().length }})</h2>
+      </div>
+      <div class="p-2 space-y-2 overflow-y-auto">
+        @for (order of receivedOrders(); track order.id) {
+          <div 
+            (click)="openDetailModal(order)"
+            class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer"
+            [class.border-orange-500]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY'"
+            [class.border-yellow-500]="order.ifood_dispute_id && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY'"
+            [class.border-gray-700]="!order.ifood_dispute_id">
+            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-600' : (order.ifood_dispute_id ? 'bg-yellow-600' : 'bg-gray-700')">
+              <span>#{{ order.ifood_display_id }}</span>
+              <span class="font-mono text-lg" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
+            </div>
+            <div class="p-3 space-y-3">
+              <p class="font-semibold text-white">{{ order.customers?.name }}</p>
+              @if(order.delivery_info?.deliveryAddress; as address) {
+                <div class="text-xs text-gray-400">
+                  <p>{{ address.streetName }}, {{ address.streetNumber }}</p>
+                  <p>{{ address.neighborhood }} - {{ address.city }}</p>
+                </div>
+              }
+              <ul class="text-sm text-gray-300 space-y-1">
+                @for(item of order.order_items; track item.id) {
+                  <li>{{ item.quantity }}x {{ item.name }}</li>
+                }
+              </ul>
+
+              @if (order.ifood_dispute_id) {
+                <div class="pt-3 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700' : 'border-yellow-700'">
+                    <h4 class="font-bold text-lg" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-300' : 'text-yellow-300'">
+                      {{ order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'Disputa Pós-Entrega' : 'Disputa Aberta' }}
+                    </h4>
+                    @if(getDisputeMessage(order); as message) {
+                      <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
+                    }
+                    <div class="flex flex-col gap-2">
+                        <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">Aceitar Cancelamento Total</button>
+                        @if (hasRefundAlternative(order)) {
+                          @let refundAlternative = getRefundAlternative(order);
+                          <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">
+                              Propor Reembolso Parcial (até {{ (refundAlternative.metadata?.maxAmount?.value / 100) | currency:'BRL' }})
+                          </button>
+                        }
+                        @if (hasAdditionalTimeAlternative(order)) {
+                          <button (click)="$event.stopPropagation(); openNegotiateTimeModal(order)" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Negociar Atraso</button>
+                        }
+                        <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Rejeitar Disputa</button>
+                    </div>
+                </div>
+              } @else {
+                <div class="pt-3 border-t border-gray-600">
+                  <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500">
+                    Confirmar e Iniciar Preparo
+                  </button>
+                </div>
+              }
+
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Column: Em Preparo -->
+    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+      <div class="p-3 text-blue-300 font-bold border-b-2 border-blue-500 flex justify-between items-center">
+        <h2>EM PREPARO ({{ inPreparationOrders().length }})</h2>
+      </div>
+       <div class="p-2 space-y-2 overflow-y-auto">
+        @for (order of inPreparationOrders(); track order.id) {
+          <div (click)="openDetailModal(order)" class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer" [class.border-yellow-500]="order.ifood_dispute_id" [class.border-gray-700]="!order.ifood_dispute_id">
+            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_id ? 'bg-yellow-600' : 'bg-blue-600'">
+              <span>#{{ order.ifood_display_id }}</span>
+              <span class="font-mono text-lg" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
+            </div>
+            <div class="p-3 space-y-3">
+              <p class="font-semibold text-white">{{ order.customers?.name }}</p>
+              <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+
+               @if (order.ifood_dispute_id) {
+                  <div class="pt-3 border-t border-yellow-700 space-y-2">
+                      <h4 class="font-bold text-lg text-yellow-300">Disputa Aberta</h4>
+                      @if(getDisputeMessage(order); as message) {
+                        <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
+                      }
+                      <div class="flex flex-col gap-2">
+                          <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">Aceitar Cancelamento</button>
+                           @if (hasRefundAlternative(order)) {
+                              @let refundAlternative = getRefundAlternative(order);
+                              <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Propor Reembolso</button>
+                            }
+                           <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Rejeitar Disputa</button>
+                      </div>
+                  </div>
+                } @else {
+                  <div class="pt-3 border-t border-gray-600">
+                    <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500">
+                      Pronto para Entrega/Retirada
+                    </button>
+                  </div>
+                }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Column: Pronto -->
+    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+      <div class="p-3 text-green-300 font-bold border-b-2 border-green-500 flex justify-between items-center">
+        <h2>PRONTO ({{ readyOrders().length }})</h2>
+      </div>
+       <div class="p-2 space-y-2 overflow-y-auto">
+        @for (order of readyOrders(); track order.id) {
+          <div (click)="openDetailModal(order)" class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col cursor-pointer">
+            <div class="p-3 text-white font-bold flex justify-between items-center bg-green-600">
+              <span>#{{ order.ifood_display_id }}</span>
+              <span class="font-mono text-lg" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
+            </div>
+            <div class="p-3 space-y-3">
+              <p class="font-semibold text-white">{{ order.customers?.name }}</p>
+              @if (order.logisticsStatus) {
+                <div class="px-2 py-1 text-xs font-semibold rounded-full inline-block" [class.bg-blue-900/50]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.text-blue-300]="order.logisticsStatus !== 'AWAITING_DRIVER'" [class.bg-yellow-900/50]="order.logisticsStatus === 'AWAITING_DRIVER'" [class.text-yellow-300]="order.logisticsStatus === 'AWAITING_DRIVER'">
+                    {{ order.logisticsStatus.replace(/_/g, ' ') }}
+                </div>
+              }
+              <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+              <div class="pt-3 border-t border-gray-600 flex flex-col gap-2">
+                 @if(order.delivery_info?.deliveredBy === 'MERCHANT') {
+                    @if(!order.logisticsStatus) {
+                      <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Atribuir Entregador</button>
+                    }
+                    @if(order.logisticsStatus === 'ASSIGNED') {
+                       <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'goingToOrigin')" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">A Caminho da Loja</button>
+                    }
+                    @if(order.logisticsStatus === 'GOING_TO_ORIGIN') {
+                       <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtOrigin')" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Chegou na Loja</button>
+                    }
+                     @if(order.logisticsStatus === 'ARRIVED_AT_ORIGIN') {
+                       <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'dispatch')" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Despachar Pedido</button>
+                    }
+                 }
+                 @if(order.delivery_info?.deliveredBy === 'IFOOD') {
+                    <button (click)="$event.stopPropagation(); openTrackingModal(order)" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Rastrear Entrega</button>
+                 }
+                 @if(order.requiresDeliveryCode) {
+                    <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'delivery')" class="w-full text-center py-2 px-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-semibold text-sm">Confirmar Cód. Entrega</button>
+                 }
+                 @if(order.ifood_pickup_code) {
+                   <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'pickup')" class="w-full text-center py-2 px-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-semibold text-sm">Validar Cód. Retirada</button>
+                 }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    
+    <!-- Column: Finalizados -->
+    <div class="bg-gray-900/50 rounded-lg flex flex-col">
+      <div class="p-3 text-gray-400 font-bold border-b-2 border-gray-600 flex justify-between items-center">
+        <h2>FINALIZADOS / CANCELADOS</h2>
+      </div>
+       <div class="p-2 space-y-2 overflow-y-auto">
+        @for(order of finishedOrders(); track order.id) {
+            <div (click)="openDetailModal(order)" class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col cursor-pointer opacity-80">
+                <div class="p-3 text-white font-bold flex justify-between items-center" [class.bg-red-700]="order.ifoodStatus === 'CANCELLED'" [class.bg-gray-600]="order.ifoodStatus !== 'CANCELLED'">
+                    <span>#{{ order.ifood_display_id }}</span>
+                    <span class="font-mono text-lg" [class]="order.timerColor">{{ order.ifoodStatus === 'CANCELLED' ? 'CANCELADO' : formatTime(order.elapsedTime) }}</span>
+                </div>
+                <div class="p-3 space-y-3">
+                     <p class="font-semibold text-white">{{ order.customers?.name }}</p>
+                     <ul class="text-sm text-gray-300 space-y-1">@for(item of order.order_items; track item.id) {<li>{{ item.quantity }}x {{ item.name }}</li>}</ul>
+                     <div class="pt-3 border-t border-gray-600">
+                        <button (click)="$event.stopPropagation(); deleteOrder(order)" [disabled]="updatingOrders().has(order.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-xs">
+                          Deletar
+                        </button>
+                      </div>
+                </div>
+            </div>
+        }
+       </div>
+    </div>
+  </div>
+
+  <!-- Webhook Log Modal -->
+  @if(isLogVisible()) {
+    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isLogVisible.set(false)">
+      <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col" (click)="$event.stopPropagation()">
+        <div class="flex justify-between items-center p-4 border-b border-gray-700">
+          <h3 class="text-xl font-bold text-white">Logs de Eventos iFood (Webhook)</h3>
+          <button (click)="isLogVisible.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <table class="w-full text-left">
+            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0"><tr><th class="px-6 py-3">Horário</th><th class="px-6 py-3">Evento</th><th class="px-6 py-3">Pedido iFood</th><th class="px-6 py-3">Status</th><th class="px-6 py-3"></th></tr></thead>
+            <tbody>
+              @for(log of webhookLogs(); track log.id) {
+                <tr class="border-b border-gray-700">
+                  <td class="px-6 py-4 font-mono text-xs">{{ log.created_at | date:'dd/MM/yy HH:mm:ss' }}</td>
+                  <td class="px-6 py-4 font-semibold">{{ log.event_code }}</td>
+                  <td class="px-6 py-4 font-mono text-xs">{{ log.ifood_order_id || 'N/A' }}</td>
+                  <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full" [class]="getLogStatusClass(log.processing_status)">{{ log.processing_status }}</span></td>
+                  <td class="px-6 py-4"><button (click)="openLogDetailModal(log)" class="text-blue-400 hover:underline text-sm">Ver</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+  
+  @if(selectedLogForDetail(); as log) {
+    <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeLogDetailModal()">
+       <div class="bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+          <div class="p-4 border-b border-gray-700 flex justify-between items-center"><h3 class="text-lg font-bold text-white">Detalhes do Log</h3><button (click)="closeLogDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+          <div class="flex-1 p-4 overflow-auto"><pre class="text-xs text-gray-300 whitespace-pre-wrap">{{ log.raw_payload | json }}</pre></div>
+       </div>
+    </div>
+  }
+
+  <!-- Modals -->
+  @if(isDetailModalOpen() && selectedOrderForDetail(); as order) { <app-order-details-modal [order]="order" (closeModal)="closeDetailModal()"></app-order-details-modal> }
+  @if(isAssignDriverModalOpen()) { <app-assign-driver-modal (closeModal)="closeAssignDriverModal()" (assignDriver)="assignDriver()"></app-assign-driver-modal> }
+  @if(isCancelModalOpen()) { <app-cancel-ifood-order-modal [order]="orderToCancel()" [reasons]="cancellationReasons()" (closeModal)="isCancelModalOpen.set(false); updatingOrders.update(s => {const n = new Set(s); n.delete(orderToCancel()!.id); return n;})" (confirmCancellation)="handleConfirmCancellation($event)"></app-cancel-ifood-order-modal> }
+  @if(isRejectDisputeModalOpen()) { <app-reject-dispute-modal [order]="orderToReject()" (closeModal)="isRejectDisputeModalOpen.set(false)" (confirmRejection)="handleConfirmRejection($event)"></app-reject-dispute-modal> }
+  @if(isProposeRefundModalOpen()) { <app-propose-refund-modal [order]="orderToProposeRefund()" (closeModal)="isProposeRefundModalOpen.set(false)" (confirmRefund)="handleConfirmRefund($event)"></app-propose-refund-modal> }
+  @if(isVerifyCodeModalOpen()) { <app-verify-code-modal [order]="orderForCodeModal()" [codeType]="codeTypeForModal()" (closeModal)="isVerifyCodeModalOpen.set(false)" (confirmVerification)="handleConfirmVerification($event)"></app-verify-code-modal> }
+  @if(isTrackingModalOpen()) { <app-ifood-tracking-modal [order]="orderForTracking()" [isLoading]="isLoadingTracking()" [trackingData]="trackingData()" (closeModal)="closeTrackingModal()"></app-ifood-tracking-modal> }
+</div>
