@@ -59,12 +59,13 @@
               </div>
 
               @if(order.ifood_dispute_id) {
+                @let disputeMessage = getDisputeMessage(order);
                 <div class="mt-2 pt-2 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700/50 bg-orange-900/30 rounded-md p-2' : 'border-yellow-700/50 bg-yellow-900/30 rounded-md p-2'">
                   <h4 class="text-sm font-bold text-center animate-pulse" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-300' : 'text-yellow-300'">
                     {{ order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'Disputa Pós-Entrega' : 'Disputa de Cancelamento' }}
                   </h4>
-                  @if (order.ifood_dispute_details?.message) {
-                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ order.ifood_dispute_details.message }}"</p>
+                  @if (disputeMessage) {
+                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ disputeMessage }}"</p>
                   }
                   <div class="flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar Cancelamento</button>
@@ -133,12 +134,13 @@
               </div>
 
               @if(order.ifood_dispute_id) {
+                @let disputeMessage = getDisputeMessage(order);
                 <div class="mt-2 pt-2 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700/50 bg-orange-900/30 rounded-md p-2' : 'border-yellow-700/50 bg-yellow-900/30 rounded-md p-2'">
                   <h4 class="text-sm font-bold text-center animate-pulse" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-300' : 'text-yellow-300'">
                     {{ order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'Disputa Pós-Entrega' : 'Disputa de Cancelamento' }}
                   </h4>
-                  @if (order.ifood_dispute_details?.message) {
-                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ order.ifood_dispute_details.message }}"</p>
+                  @if (disputeMessage) {
+                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ disputeMessage }}"</p>
                   }
                   <div class="flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar Cancelamento</button>
@@ -204,12 +206,13 @@
               </div>
 
               @if(order.ifood_dispute_id) {
+                @let disputeMessage = getDisputeMessage(order);
                 <div class="mt-2 pt-2 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700/50 bg-orange-900/30 rounded-md p-2' : 'border-yellow-700/50 bg-yellow-900/30 rounded-md p-2'">
                   <h4 class="text-sm font-bold text-center animate-pulse" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-300' : 'text-yellow-300'">
                     {{ order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'Disputa Pós-Entrega' : 'Disputa de Cancelamento' }}
                   </h4>
-                  @if (order.ifood_dispute_details?.message) {
-                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ order.ifood_dispute_details.message }}"</p>
+                  @if (disputeMessage) {
+                    <p class="text-xs text-center italic" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-200' : 'text-yellow-200'">Motivo: "{{ disputeMessage }}"</p>
                   }
                   <div class="flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-xs">Aceitar Cancelamento</button>
@@ -469,11 +472,12 @@
         </div>
         <!-- Action Buttons Section -->
         <div class="pt-4 mt-4 border-t border-gray-600 space-y-3">
-            @if(order.ifood_dispute_id && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY') {
+            @if(order.ifood_dispute_id) {
+              @let disputeMessage = getDisputeMessage(order);
               <div class="bg-yellow-900/50 p-3 rounded-lg border border-yellow-700">
                 <h4 class="font-semibold text-yellow-300 mb-2">Disputa Aberta</h4>
-                @if (order.ifood_dispute_details?.message) {
-                  <p class="text-sm text-center text-yellow-200 italic mb-3">Motivo: "{{ order.ifood_dispute_details.message }}"</p>
+                @if (disputeMessage) {
+                  <p class="text-sm text-center text-yellow-200 italic mb-3">Motivo: "{{ disputeMessage }}"</p>
                 }
                 <div class="flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-1.5 rounded-md text-sm">Aceitar Cancelamento</button>

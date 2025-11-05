@@ -152,6 +152,17 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   hasAdditionalTimeAlternative(order: ProcessedIfoodOrder): boolean {
     return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'ADDITIONAL_TIME');
   }
+  
+  getDisputeMessage(order: ProcessedIfoodOrder): string | null {
+    if (!order.ifood_dispute_details) {
+      return null;
+    }
+    // The message is consistently at the top level of the metadata object.
+    if (order.ifood_dispute_details.message) {
+      return order.ifood_dispute_details.message;
+    }
+    return null;
+  }
 
   private getIfoodStatus(order: Order): IfoodOrderStatus {
     // If it's an after delivery dispute, it's always in 'RECEIVED' state for KDS purposes.
