@@ -21,10 +21,14 @@ export class OrderDetailsModalComponent {
     return currentOrder.subTotal ?? 0;
   });
 
-  totalFees = computed(() => {
+  deliveryFee = computed(() => {
     const o = this.order();
-    if (!o) return 0;
-    return (o.deliveryFee ?? 0) + (o.additionalFees ?? 0);
+    return o?.deliveryFee ?? 0;
+  });
+  
+  additionalFees = computed(() => {
+    const o = this.order();
+    return o?.additionalFees ?? 0;
   });
 
   orderBenefitsTotal = computed(() => {

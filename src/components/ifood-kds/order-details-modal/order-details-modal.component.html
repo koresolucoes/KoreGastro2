@@ -61,10 +61,16 @@
               <span class="text-gray-300">Subtotal Itens</span>
               <span class="font-semibold text-white">{{ subTotal() | currency:'BRL' }}</span>
             </div>
-            @if(totalFees() > 0) {
+            @if(deliveryFee() > 0) {
               <div class="flex justify-between">
-                <span class="text-gray-300">Taxas (entrega/serviço)</span>
-                <span class="font-semibold text-white">+ {{ totalFees() | currency:'BRL' }}</span>
+                <span class="text-gray-300">Taxa de Entrega</span>
+                <span class="font-semibold text-white">+ {{ deliveryFee() | currency:'BRL' }}</span>
+              </div>
+            }
+            @if(additionalFees() > 0) {
+              <div class="flex justify-between">
+                <span class="text-gray-300">Taxa de Serviço</span>
+                <span class="font-semibold text-white">+ {{ additionalFees() | currency:'BRL' }}</span>
               </div>
             }
             @if (orderBenefitsTotal() > 0) {
