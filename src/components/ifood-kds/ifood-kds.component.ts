@@ -60,7 +60,6 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   // New state for logistics modals
   isAssignDriverModalOpen = signal(false);
   orderForDriverModal = signal<ProcessedIfoodOrder | null>(null);
-  driverForm = signal({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
   
   // New state for cancellation modal
   isCancelModalOpen = signal(false);
@@ -544,14 +543,12 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   // --- LOGISTICS METHODS ---
   openAssignDriverModal(order: ProcessedIfoodOrder) {
     this.orderForDriverModal.set(order);
-    this.driverForm.set({ name: '', phone: '', vehicle: 'MOTORCYCLE' });
     this.isAssignDriverModalOpen.set(true);
   }
   closeAssignDriverModal() { this.isAssignDriverModalOpen.set(false); }
 
-  async assignDriver() {
+  async assignDriver(form: { name: string; phone: string; vehicle: string; }) {
     const order = this.orderForDriverModal();
-    const form = this.driverForm();
     if (!order || !order.ifood_order_id || !form.name || !form.phone) {
       this.notificationService.show('Nome e telefone do entregador são obrigatórios.', 'warning');
       return;
@@ -685,12 +682,28 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     this.updatingOrders.update(set => new Set(set).add(order.id));
 
     try {
-      const { success, error, data } = await this.ifoodDataService.sendLogisticsAction(order.ifood_order_id, action, { code });
-      if (!success) throw error;
+      const { success: serviceSuccess, error, data } = await this.ifoodDataService.sendLogisticsAction(order.ifood_order_id, action, { code });
+      
+      if (!serviceSuccess) {
+          // This catches network errors and 4xx/5xx responses that the service translates into an error.
+          // iFood's 404 for invalid delivery code will be caught here.
+          throw error;
+      }
+      
+      let isCodeValid = false;
+      if (action === 'validatePickupCode') {
+          // Pickup code returns a body with a success flag
+          isCodeValid = data?.success === true;
+      } else if (action === 'verifyDeliveryCode') {
+          // Delivery code returns 202 Accepted (no body) on success.
+          // The service call succeeding is enough to confirm validity.
+          isCodeValid = true;
+      }
 
-      if (data?.success) {
+      if (isCodeValid) {
         this.notificationService.show('Código validado com sucesso!', 'success');
       } else {
+        // This will now only catch the `success: false` from the pickup code response
         this.notificationService.show('Código de verificação inválido.', 'error');
       }
     } catch (error: any) {

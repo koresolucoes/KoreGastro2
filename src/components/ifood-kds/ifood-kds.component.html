@@ -255,7 +255,7 @@
 
   <!-- Modals -->
   @if(isDetailModalOpen() && selectedOrderForDetail(); as order) { <app-order-details-modal [order]="order" (closeModal)="closeDetailModal()"></app-order-details-modal> }
-  @if(isAssignDriverModalOpen()) { <app-assign-driver-modal (closeModal)="closeAssignDriverModal()" (assignDriver)="assignDriver()"></app-assign-driver-modal> }
+  @if(isAssignDriverModalOpen()) { <app-assign-driver-modal (closeModal)="closeAssignDriverModal()" (assignDriver)="assignDriver($event)"></app-assign-driver-modal> }
   @if(isCancelModalOpen()) { <app-cancel-ifood-order-modal [order]="orderToCancel()" [reasons]="cancellationReasons()" (closeModal)="handleCancelModalClose()" (confirmCancellation)="handleConfirmCancellation($event)"></app-cancel-ifood-order-modal> }
   @if(isRejectDisputeModalOpen()) { <app-reject-dispute-modal [order]="orderToReject()" (closeModal)="isRejectDisputeModalOpen.set(false)" (confirmRejection)="handleConfirmRejection($event)"></app-reject-dispute-modal> }
   @if(isProposeRefundModalOpen()) { <app-propose-refund-modal [order]="orderToProposeRefund()" (closeModal)="isProposeRefundModalOpen.set(false)" (confirmRefund)="handleConfirmRefund($event)"></app-propose-refund-modal> }
