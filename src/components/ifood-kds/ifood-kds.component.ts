@@ -50,6 +50,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   currentTime = signal(Date.now());
   
   private processedNewOrders = signal<Set<string>>(new Set());
+  private processedDisputeIds = signal<Set<string>>(new Set());
   
   // State for webhook logs
   isLogVisible = signal(false);
@@ -105,6 +106,24 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
             }
             this.processedNewOrders.set(currentOrderIds);
         });
+    });
+
+    effect(() => {
+      const ordersWithDisputes = this.processedOrders().filter(o => !!o.ifood_dispute_id);
+      const currentDisputeIds = new Set(ordersWithDisputes.map(o => o.ifood_dispute_id!));
+
+      untracked(() => {
+        const previouslyProcessed = this.processedDisputeIds();
+        
+        for (const disputeId of currentDisputeIds) {
+          if (!previouslyProcessed.has(disputeId)) {
+            console.log(`New dispute detected: ${disputeId}. Playing sound.`);
+            this.soundNotificationService.playAllergyAlertSound(); // Use an urgent sound
+          }
+        }
+      });
+      
+      this.processedDisputeIds.set(currentDisputeIds);
     });
   }
 
