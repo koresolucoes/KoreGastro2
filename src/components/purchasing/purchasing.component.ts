@@ -1,14 +1,15 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { PurchaseOrder, PurchaseOrderStatus, Supplier, Ingredient, PurchaseOrderItem } from '../../models/db.models';
+import { PurchaseOrder, PurchaseOrderStatus, Supplier, Ingredient, PurchaseOrderItem, IngredientUnit } from '../../models/db.models';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { PurchasingDataService } from '../../services/purchasing-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { v4 as uuidv4 } from 'uuid';
+import { InventoryDataService } from '../../services/inventory-data.service';
 
 type FormItem = {
-    id: string;
+    id: string; // Can be temp id
     ingredient_id: string;
     quantity: number;
     cost: number;
@@ -28,9 +29,9 @@ type FormItem = {
 export class PurchasingComponent implements OnInit {
     inventoryState = inject(InventoryStateService);
     purchasingDataService = inject(PurchasingDataService);
-    // FIX: Explicitly type the injected Router to resolve property access errors.
     router: Router = inject(Router);
     notificationService = inject(NotificationService);
+    inventoryDataService = inject(InventoryDataService);
 
     purchaseOrders = this.inventoryState.purchaseOrders;
     suppliers = this.inventoryState.suppliers;
@@ -43,6 +44,14 @@ export class PurchasingComponent implements OnInit {
     itemSearchTerm = signal('');
     
     orderPendingDeletion = signal<PurchaseOrder | null>(null);
+
+    // New signals for on-the-fly ingredient creation
+    isAddingIngredient = signal(false);
+    newIngredientForm = signal<Partial<Ingredient>>({});
+    availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
+
+    // For visual feedback
+    currentItemIds = computed(() => new Set(this.orderItems().map(i => i.ingredient_id)));
 
     purchaseOrdersWithDetails = computed(() => {
         return this.purchaseOrders().map(order => ({
@@ -62,16 +71,36 @@ export class PurchasingComponent implements OnInit {
     ngOnInit() {
         const navigationState = this.router.getCurrentNavigation()?.extras.state;
         if (navigationState && navigationState['newOrderItems']) {
-            this.openAddModal(navigationState['newOrderItems']);
+            const prefillItems = navigationState['newOrderItems'] as { ingredientId: string, quantity: number }[];
+            const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+            
+            const suppliersInOrder = new Map<string | null, { ingredientId: string, quantity: number }[]>();
+            
+            prefillItems.forEach(item => {
+                const ingredient = ingredientsMap.get(item.ingredientId);
+                const supplierId = ingredient?.supplier_id || null;
+                
+                if (!suppliersInOrder.has(supplierId)) {
+                    suppliersInOrder.set(supplierId, []);
+                }
+                suppliersInOrder.get(supplierId)!.push(item);
+            });
+            
+            if (suppliersInOrder.size > 0) {
+                const firstSupplierId = suppliersInOrder.keys().next().value;
+                const itemsForThisOrder = suppliersInOrder.get(firstSupplierId);
+    
+                this.openAddModal(itemsForThisOrder);
+                this.orderForm.update(form => ({ ...form, supplier_id: firstSupplierId }));
+            }
         }
     }
 
     filteredIngredients = computed(() => {
         const term = this.itemSearchTerm().toLowerCase();
         if (!term) return [];
-        const currentItemIds = new Set(this.orderItems().map(i => i.ingredient_id));
         return this.ingredients()
-            .filter(i => !currentItemIds.has(i.id) && i.name.toLowerCase().includes(term))
+            .filter(i => i.name.toLowerCase().includes(term))
             .slice(0, 5);
     });
 
@@ -137,7 +166,7 @@ export class PurchasingComponent implements OnInit {
         this.isModalOpen.set(false);
     }
     
-    addItemToOrder(ingredient: Ingredient) {
+    async addItemToOrder(ingredient: Ingredient) {
         this.orderItems.update(items => [...items, {
             id: `temp-${ingredient.id}`,
             ingredient_id: ingredient.id,
@@ -149,6 +178,21 @@ export class PurchasingComponent implements OnInit {
             expiration_date: null,
         }]);
         this.itemSearchTerm.set('');
+
+        const currentSupplierId = this.orderForm().supplier_id;
+        if (!currentSupplierId && ingredient.supplier_id) {
+            const supplierName = this.suppliers().find(s => s.id === ingredient.supplier_id)?.name;
+            if (supplierName) {
+                const confirmed = await this.notificationService.confirm(
+                    `Este item é fornecido por "${supplierName}". Deseja definir este fornecedor para a ordem inteira?`,
+                    'Sugerir Fornecedor'
+                );
+                // FIX: Add a non-null assertion (!) because the 'if' condition guarantees 'supplier_id' is not null, resolving a potential type mismatch.
+                if (confirmed) {
+                    this.updateOrderFormField('supplier_id', ingredient.supplier_id!);
+                }
+            }
+        }
     }
 
     updateItemField(itemId: string, field: 'quantity' | 'cost' | 'lot_number' | 'expiration_date', value: any) {
@@ -178,9 +222,19 @@ export class PurchasingComponent implements OnInit {
     }
 
     async markAsReceived(order: PurchaseOrder) {
-        if (order.purchase_order_items?.some(item => !item.cost || item.cost <= 0)) {
+        const items = order.purchase_order_items || [];
+        if (items.some(item => !item.cost || item.cost <= 0)) {
             await this.notificationService.alert('Atenção: Preencha o custo de todos os itens antes de receber o pedido. Edite o pedido para adicionar os custos.');
             return;
+        }
+
+        const itemsWithoutExpiration = items.filter(item => !item.expiration_date);
+        if (itemsWithoutExpiration.length > 0) {
+            const confirmedNoExp = await this.notificationService.confirm(
+                `${itemsWithoutExpiration.length} item(ns) estão sem data de validade. Deseja recebê-los mesmo assim? (Não recomendado)`,
+                'Aviso de Validade'
+            );
+            if (!confirmedNoExp) return;
         }
 
         const confirmed = await this.notificationService.confirm(`Tem certeza que deseja marcar o pedido #${order.id.slice(0, 8)} como recebido? Esta ação atualizará seu estoque.`, 'Confirmar Recebimento');
@@ -202,6 +256,78 @@ export class PurchasingComponent implements OnInit {
             const result = await this.purchasingDataService.deletePurchaseOrder(order.id);
             if (!result.success) await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
             this.orderPendingDeletion.set(null);
+        }
+    }
+    
+    // --- On-the-fly Ingredient Creation ---
+    openAddIngredientModal() {
+        this.itemSearchTerm.set(''); // Close search popover
+        this.newIngredientForm.set({ name: '', unit: 'un', cost: 0, stock: 0, min_stock: 0 });
+        this.isAddingIngredient.set(true);
+    }
+    
+    closeAddIngredientModal() {
+        this.isAddingIngredient.set(false);
+    }
+
+    updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
+        this.newIngredientForm.update(form => {
+            const newForm: Partial<Ingredient> = { ...form };
+            
+            switch (field) {
+                case 'stock':
+                case 'cost':
+                case 'min_stock': {
+                    const numValue = parseFloat(value);
+                    newForm[field] = isNaN(numValue) ? 0 : numValue;
+                    break;
+                }
+                case 'price': {
+                    const numValue = parseFloat(value);
+                    newForm[field] = isNaN(numValue) ? null : numValue;
+                    break;
+                }
+                case 'is_sellable':
+                    newForm.is_sellable = value as boolean;
+                    break;
+                case 'name':
+                    newForm.name = value;
+                    break;
+                case 'unit':
+                    newForm.unit = value as IngredientUnit;
+                    break;
+                case 'category_id':
+                case 'supplier_id':
+                case 'pos_category_id':
+                case 'station_id':
+                case 'proxy_recipe_id':
+                case 'external_code':
+                case 'expiration_date':
+                case 'last_movement_at':
+                    newForm[field] = (value === 'null' || value === '') ? null : value;
+                    break;
+                default: {
+                    const _exhaustiveCheck: never = field;
+                    break;
+                }
+            }
+
+            return newForm;
+        });
+    }
+
+    async saveNewIngredient() {
+        const form = this.newIngredientForm();
+        if (!form.name?.trim()) {
+            await this.notificationService.alert('O nome do ingrediente é obrigatório.');
+            return;
+        }
+        const { success, error, data: newIngredient } = await this.inventoryDataService.addIngredient(form);
+        if (success && newIngredient) {
+            await this.addItemToOrder(newIngredient as Ingredient);
+            this.closeAddIngredientModal();
+        } else {
+            await this.notificationService.alert(`Erro: ${error?.message}`);
         }
     }
 }

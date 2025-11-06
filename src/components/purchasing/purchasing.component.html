@@ -82,7 +82,7 @@
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
       <div class="p-4 border-b border-gray-700 flex justify-between items-center">
         <h3 class="text-xl font-bold text-white">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
-        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       <div class="p-6 flex-1 overflow-y-auto space-y-6">
         <!-- Order Details -->
@@ -175,11 +175,28 @@
               </div>
               <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Adicionar ingrediente..." class="w-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg p-2 pl-10 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
               @if(itemSearchTerm()) {
-                  <ul class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto shadow-lg">
-                      @for(ing of filteredIngredients(); track ing.id) {
-                          <li (mousedown)="addItemToOrder(ing)" class="p-3 hover:bg-gray-500 cursor-pointer text-white">{{ ing.name }}</li>
-                      }
-                  </ul>
+                  <div class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto shadow-lg">
+                      <ul>
+                        @for(ing of filteredIngredients(); track ing.id) {
+                          <li (mousedown)="!currentItemIds().has(ing.id) ? addItemToOrder(ing) : null" 
+                              class="p-3 text-sm rounded-md"
+                              [class.hover:bg-gray-700]="!currentItemIds().has(ing.id)"
+                              [class.cursor-pointer]="!currentItemIds().has(ing.id)"
+                              [class.opacity-50]="currentItemIds().has(ing.id)"
+                              [class.text-gray-500]="currentItemIds().has(ing.id)">
+                              {{ing.name}}
+                              @if(currentItemIds().has(ing.id)) {
+                                  <span class="text-xs italic"> (Já adicionado)</span>
+                              }
+                          </li>
+                        }
+                      </ul>
+                      <div class="border-t border-gray-700 p-2 text-center">
+                        <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:underline">
+                          Não encontrou? Cadastre um novo ingrediente.
+                        </button>
+                      </div>
+                  </div>
                 }
             </div>
           }
@@ -200,6 +217,28 @@
             <button (click)="saveOrder()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar Pedido</button>
           }
         </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Ingredient "On-the-fly" Modal -->
+@if (isAddingIngredient()) {
+  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeAddIngredientModal()">
+    <div class="bg-gray-700 rounded-lg w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-600"><h4 class="text-lg font-semibold text-white">Novo Ingrediente</h4></div>
+      <div class="p-6 space-y-4">
+          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome do Ingrediente" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+          <div class="grid grid-cols-2 gap-4">
+            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+                @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
+            </select>
+          </div>
+      </div>
+      <div class="p-4 bg-gray-600/50 flex justify-end gap-2">
+        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-500 hover:bg-gray-400">Cancelar</button>
+        <button (click)="saveNewIngredient()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500">Salvar Ingrediente</button>
       </div>
     </div>
   </div>
