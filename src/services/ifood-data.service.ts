@@ -158,4 +158,22 @@ export class IfoodDataService {
       return { success: false, error };
     }
   }
+  
+  async getEvidenceImage(imageUrl: string): Promise<{ base64Image: string; contentType: string; }> {
+    const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'getEvidenceImage',
+            imageUrl: imageUrl
+        })
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.message || `Proxy error (${response.status})`);
+    }
+
+    return await response.json();
+  }
 }

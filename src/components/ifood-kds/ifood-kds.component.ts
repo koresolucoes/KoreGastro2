@@ -675,6 +675,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
   
   // --- Dispute Methods ---
+  handleResendItem(order: ProcessedIfoodOrder) {
+    this.notificationService.show('A funcionalidade "Reenviar Item" é um processo manual e não possui uma ação direta na API do iFood. Por favor, coordene com o cliente via chat e, se necessário, crie um novo pedido manualmente.', 'info', 10000);
+  }
+
   async handleAcceptDispute(order: ProcessedIfoodOrder) {
     if (!order.ifood_dispute_id) return;
     this.updatingOrders.update(set => new Set(set).add(order.id));

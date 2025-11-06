@@ -6,7 +6,7 @@ let cachedToken: { accessToken: string; expiresAt: number; } | null = null;
  * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
  * This is the central function for all outgoing iFood API calls.
  */
-async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET', body: any = null) {
+async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET', body: any = null, options: { isImageRequest?: boolean } = {}) {
   console.log(`[iFood API] Initiating call to endpoint: ${endpoint}`);
 
   const clientId = process.env.IFOOD_CLIENT_ID;
@@ -74,6 +74,12 @@ async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET'
   }
 
   console.log(`[iFood API] Call to ${endpoint} successful with status ${apiResponse.status}.`);
+  
+  if (options.isImageRequest) {
+    const imageBuffer = await apiResponse.arrayBuffer();
+    const contentType = apiResponse.headers.get('content-type') || 'image/jpeg';
+    return { imageBuffer, contentType };
+  }
   
   if (apiResponse.status === 201 || apiResponse.status === 202 || apiResponse.status === 204) {
     // Return an empty object for 201 Created to signify success, 
@@ -181,4 +187,12 @@ export async function sendIFoodDisputeAction(disputeId: string, action: 'accept'
 export async function sendIFoodDisputeAlternativeAction(disputeId: string, alternativeId: string, body: any = null): Promise<any> {
     const endpoint = `/order/v1.0/disputes/${disputeId}/alternatives/${alternativeId}`;
     return makeIFoodApiCall(endpoint, 'POST', body);
+}
+
+/**
+ * Fetches an image (like a cancellation evidence) from the iFood API.
+ */
+export async function getIFoodImage(imageUrl: string): Promise<{ imageBuffer: ArrayBuffer, contentType: string }> {
+  const endpointPath = new URL(imageUrl).pathname;
+  return makeIFoodApiCall(endpointPath, 'GET', null, { isImageRequest: true });
 }

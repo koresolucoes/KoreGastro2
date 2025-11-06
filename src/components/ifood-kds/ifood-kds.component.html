@@ -84,17 +84,18 @@
                       <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
                     }
                     <div class="flex flex-col gap-2">
-                        <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">Aceitar Cancelamento Total</button>
+                        <button (click)="$event.stopPropagation(); handleResendItem(order)" class="w-full text-center py-2 px-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-semibold text-sm">Reenviar Item</button>
+                        
                         @if (hasRefundAlternative(order)) {
-                          @let refundAlternative = getRefundAlternative(order);
                           <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">
-                              Propor Reembolso Parcial (até {{ (refundAlternative.metadata?.maxAmount?.value / 100) | currency:'BRL' }})
+                              Reembolsar um Valor
                           </button>
                         }
                         @if (hasAdditionalTimeAlternative(order)) {
                           <button (click)="$event.stopPropagation(); openNegotiateTimeModal(order)" class="w-full text-center py-2 px-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-sm">Negociar Atraso</button>
                         }
-                        <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Rejeitar Disputa</button>
+                        
+                        <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Discordar</button>
                     </div>
                 </div>
               } @else {
@@ -159,20 +160,19 @@
               </div>
 
                @if (order.ifood_dispute_id) {
-                  <div class="pt-3 border-t border-yellow-700 space-y-2">
-                      <h4 class="font-bold text-lg text-yellow-300">Disputa Aberta</h4>
-                      @if(getDisputeMessage(order); as message) {
+                    <div class="pt-3 border-t border-yellow-700 space-y-2">
+                        <h4 class="font-bold text-lg text-yellow-300">Disputa Aberta</h4>
+                        @if(getDisputeMessage(order); as message) {
                         <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
-                      }
-                      <div class="flex flex-col gap-2">
-                          <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">Aceitar Cancelamento</button>
-                           @if (hasRefundAlternative(order)) {
-                              @let refundAlternative = getRefundAlternative(order);
-                              <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Propor Reembolso</button>
+                        }
+                        <div class="flex flex-col gap-2">
+                            <button (click)="$event.stopPropagation(); handleResendItem(order)" class="w-full text-center py-2 px-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-semibold text-sm">Reenviar Item</button>
+                            @if (hasRefundAlternative(order)) {
+                                <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Reembolsar um Valor</button>
                             }
-                           <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Rejeitar Disputa</button>
-                      </div>
-                  </div>
+                            <button (click)="$event.stopPropagation(); openRejectDisputeModal(order)" class="w-full text-center py-2 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Discordar</button>
+                        </div>
+                    </div>
                 } @else {
                   <div class="pt-3 border-t border-gray-600 flex flex-col gap-2">
                     <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id) || order.isScheduledAndHeld" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-not-allowed">

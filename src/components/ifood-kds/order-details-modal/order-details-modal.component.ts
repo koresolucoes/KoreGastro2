@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed, InputSigna
 import { CommonModule } from '@angular/common';
 import { ProcessedIfoodOrder } from '../../../models/app.models';
 import { PrintingService } from '../../../services/printing.service';
-import { IfoodMenuService } from '../../../services/ifood-menu.service';
+import { IfoodDataService } from '../../../services/ifood-data.service';
 
 @Component({
   selector: 'app-order-details-modal',
@@ -15,7 +15,7 @@ export class OrderDetailsModalComponent {
   order: InputSignal<ProcessedIfoodOrder | null> = input.required<ProcessedIfoodOrder | null>();
   closeModal: OutputEmitterRef<void> = output<void>();
   private printingService = inject(PrintingService);
-  private ifoodMenuService = inject(IfoodMenuService);
+  private ifoodDataService = inject(IfoodDataService);
 
   evidenceImages = signal<{src: string, loading: boolean, error: boolean}[]>([]);
 
@@ -36,7 +36,7 @@ export class OrderDetailsModalComponent {
     for (const [index, url] of urls.entries()) {
         try {
             console.log(`[OrderDetails] Fetching evidence image: ${url}`);
-            const result = await this.ifoodMenuService.getEvidenceImage(url);
+            const result = await this.ifoodDataService.getEvidenceImage(url);
             this.evidenceImages.update(images => {
                 const newImages = [...images];
                 newImages[index] = { 

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendIFoodOrderAction, sendIFoodLogisticsAction, sendIFoodDisputeAction, sendIFoodDisputeAlternativeAction } from './ifood-webhook-lib/ifood-api.js';
+import { sendIFoodOrderAction, sendIFoodLogisticsAction, sendIFoodDisputeAction, sendIFoodDisputeAlternativeAction, getIFoodImage } from './ifood-webhook-lib/ifood-api.js';
+import { Buffer } from 'buffer';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   // Set CORS headers for all responses
@@ -19,7 +20,27 @@ export default async function handler(request: VercelRequest, response: VercelRe
   console.log('[Proxy] Received iFood action request from frontend.');
 
   try {
-    const { action, orderId, details, isLogistics, isDispute, disputeId } = request.body;
+    const { action, orderId, details, isLogistics, isDispute, disputeId, imageUrl } = request.body;
+
+    // --- Image Request Logic ---
+    if (action === 'getEvidenceImage') {
+        if (!imageUrl) return response.status(400).json({ message: 'Missing "imageUrl" for image request' });
+        
+        try {
+            console.log(`[Proxy] Forwarding IMAGE request for URL: ${imageUrl}`);
+            const { imageBuffer, contentType } = await getIFoodImage(imageUrl);
+            console.log(`[Proxy] Successfully fetched image. Converting to base64.`);
+            
+            const base64Image = Buffer.from(imageBuffer).toString('base64');
+            
+            console.log(`[Proxy] Returning base64 image with content type: ${contentType}`);
+            return response.status(200).json({ base64Image, contentType });
+        } catch (error: any) {
+            console.error(`[Proxy] Failed to fetch image from iFood: ${error.message}`);
+            // Let the main handler catch and respond with 500
+            throw error;
+        }
+    }
 
     if (!action) {
       return response.status(400).json({ message: 'Missing "action" in request body' });
