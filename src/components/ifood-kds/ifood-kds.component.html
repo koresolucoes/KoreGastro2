@@ -27,11 +27,11 @@
           <div 
             (click)="openDetailModal(order)"
             class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col cursor-pointer"
-            [class.border-orange-500]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY'"
-            [class.border-yellow-500]="order.ifood_dispute_id && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY'"
+            [class.border-orange-500]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' || order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY'"
+            [class.border-yellow-500]="order.ifood_dispute_id && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY' && order.ifood_dispute_details?.handshakeType !== 'AFTER_DELIVERY_PARTIALLY'"
             [class.border-cyan-500]="order.isScheduledAndHeld"
             [class.border-gray-700]="!order.ifood_dispute_id && !order.isScheduledAndHeld">
-            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-600' : (order.ifood_dispute_id ? 'bg-yellow-600' : (order.isScheduledAndHeld ? 'bg-cyan-600' : 'bg-gray-700'))">
+            <div class="p-3 text-white font-bold flex justify-between items-center" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' || order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY' ? 'bg-orange-600' : (order.ifood_dispute_id ? 'bg-yellow-600' : (order.isScheduledAndHeld ? 'bg-cyan-600' : 'bg-gray-700'))">
               <span>#{{ order.ifood_display_id }}</span>
               <span class="font-mono text-lg" [class]="order.timerColor">{{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}</span>
             </div>
@@ -76,14 +76,17 @@
               </div>
 
               @if (order.ifood_dispute_id) {
-                <div class="pt-3 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'border-orange-700' : 'border-yellow-700'">
-                    <h4 class="font-bold text-lg" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'text-orange-300' : 'text-yellow-300'">
-                      {{ order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'Disputa Pós-Entrega' : 'Disputa Aberta' }}
+                <div class="pt-3 border-t space-y-2" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' || order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY' ? 'border-orange-700' : 'border-yellow-700'">
+                    <h4 class="font-bold text-lg" [class]="order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' || order.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY' ? 'text-orange-300' : 'text-yellow-300'">
+                      {{ order.ifood_dispute_details?.handshakeType?.includes('AFTER_DELIVERY') ? 'Disputa Pós-Entrega' : 'Disputa Aberta' }}
                     </h4>
                     @if(getDisputeMessage(order); as message) {
                       <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
                     }
                     <div class="flex flex-col gap-2">
+                        <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">
+                          Aceitar Disputa (Reembolso)
+                        </button>
                         <button (click)="$event.stopPropagation(); handleResendItem(order)" class="w-full text-center py-2 px-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-semibold text-sm">Reenviar Item</button>
                         
                         @if (hasRefundAlternative(order)) {
@@ -166,6 +169,9 @@
                         <p class="text-sm italic text-white bg-gray-700/50 p-2 rounded-md">"{{ message }}"</p>
                         }
                         <div class="flex flex-col gap-2">
+                            <button (click)="$event.stopPropagation(); handleAcceptDispute(order)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm">
+                              Aceitar Disputa (Reembolso)
+                            </button>
                             <button (click)="$event.stopPropagation(); handleResendItem(order)" class="w-full text-center py-2 px-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-semibold text-sm">Reenviar Item</button>
                             @if (hasRefundAlternative(order)) {
                                 <button (click)="$event.stopPropagation(); openProposeRefundModal(order)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Reembolsar um Valor</button>

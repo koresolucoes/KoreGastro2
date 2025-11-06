@@ -399,9 +399,19 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const subTotal = totalInfo?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const deliveryFee = totalInfo?.deliveryFee ?? 0;
         const additionalFees = totalInfo?.additionalFees ?? 0;
+        
+        let disputeDetails = order.ifood_dispute_details as any;
+        if (disputeDetails && typeof disputeDetails === 'string') {
+          try {
+            disputeDetails = JSON.parse(disputeDetails);
+          } catch (e) {
+            console.error('Failed to parse ifood_dispute_details', e);
+            disputeDetails = null;
+          }
+        }
 
-        const disputeDetails = order.ifood_dispute_details as any;
-        const disputeEvidences = disputeDetails?.metadata?.evidences?.map((e: any) => e.url).filter(Boolean) || [];
+        const evidences = disputeDetails?.metadata?.evidences;
+        const disputeEvidences = evidences?.map((e: any) => e.url).filter(Boolean) || [];
 
 
         return {
