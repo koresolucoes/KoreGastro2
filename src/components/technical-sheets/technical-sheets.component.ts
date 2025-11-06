@@ -6,6 +6,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -426,25 +428,48 @@ export class TechnicalSheetsComponent {
   }
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
   
+  // FIX: Refactor `updateNewIngredientField` to use a type-safe `switch` statement, resolving a compiler error where `newForm` was incorrectly inferred as `unknown`. This eliminates `as any` type assertions and ensures each property is updated correctly according to its type.
   updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
     this.newIngredientForm.update(form => {
       const newForm: Partial<Ingredient> = { ...form };
       
-      if (field === 'stock' || field === 'cost' || field === 'min_stock') {
+      switch (field) {
+        case 'stock':
+        case 'cost':
+        case 'min_stock': {
           const numValue = parseFloat(value);
-          (newForm as any)[field] = isNaN(numValue) ? 0 : numValue;
-      } else if (field === 'price') {
+          newForm[field] = isNaN(numValue) ? 0 : numValue;
+          break;
+        }
+        case 'price': {
           const numValue = parseFloat(value);
-          (newForm as any)[field] = isNaN(numValue) ? null : numValue;
-      } else if (field === 'is_sellable') {
+          newForm[field] = isNaN(numValue) ? null : numValue;
+          break;
+        }
+        case 'is_sellable':
           newForm.is_sellable = value as boolean;
-      // FIX: Separated the logic for `name` and `unit` to ensure type safety.
-      } else if (field === 'name') {
-        newForm.name = value;
-      } else if (field === 'unit') {
-        newForm.unit = value as IngredientUnit;
-      } else {
-        (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
+          break;
+        case 'name':
+          newForm.name = value;
+          break;
+        case 'unit':
+          newForm.unit = value as IngredientUnit;
+          break;
+        case 'category_id':
+        case 'supplier_id':
+        case 'pos_category_id':
+        case 'station_id':
+        case 'proxy_recipe_id':
+        case 'external_code':
+        case 'expiration_date':
+        case 'last_movement_at':
+          newForm[field] = (value === 'null' || value === '') ? null : value;
+          break;
+        default: {
+          // This should be unreachable if the type of `field` is correct
+          const _exhaustiveCheck: never = field;
+          break;
+        }
       }
 
       return newForm;

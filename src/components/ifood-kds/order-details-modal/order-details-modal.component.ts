@@ -35,6 +35,7 @@ export class OrderDetailsModalComponent {
 
     for (const [index, url] of urls.entries()) {
         try {
+            console.log(`[OrderDetails] Fetching evidence image: ${url}`);
             const result = await this.ifoodMenuService.getEvidenceImage(url);
             this.evidenceImages.update(images => {
                 const newImages = [...images];
@@ -45,8 +46,9 @@ export class OrderDetailsModalComponent {
                 };
                 return newImages;
             });
+             console.log(`[OrderDetails] Successfully loaded evidence image.`);
         } catch (e) {
-            console.error(`Failed to load evidence image from ${url}`, e);
+            console.error(`[OrderDetails] Failed to load evidence image from ${url}`, e);
             this.evidenceImages.update(images => {
                 const newImages = [...images];
                 if (newImages[index]) {

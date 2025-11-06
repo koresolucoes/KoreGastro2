@@ -80,6 +80,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         const fullUrl = endpoint.startsWith('http') ? endpoint : `${iFoodApiBaseUrl}${endpoint}`;
         
         if (isImageRequest) {
+            console.log(`[iFood Catalog Proxy] Received IMAGE request for URL: ${fullUrl}`);
             const imageApiResponse = await fetch(fullUrl, {
                 method: 'GET', // Evidences are always GET
                 headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -90,11 +91,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 console.error(`[iFood Catalog Proxy] Image fetch from ${fullUrl} failed with status ${imageApiResponse.status}:`, errorText);
                 return response.status(imageApiResponse.status).json({ message: `iFood image fetch failed: ${errorText}` });
             }
+            console.log(`[iFood Catalog Proxy] Successfully fetched image from ${fullUrl}`);
 
             const imageBuffer = await imageApiResponse.arrayBuffer();
             const base64Image = Buffer.from(imageBuffer).toString('base64');
             const contentType = imageApiResponse.headers.get('content-type') || 'image/jpeg';
             
+            console.log(`[iFood Catalog Proxy] Returning base64 image with content type: ${contentType}`);
             return response.status(200).json({ base64Image, contentType });
         }
         
