@@ -1,36 +1,25 @@
 
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Ingredient, IngredientUnit, IngredientCategory, Supplier, Category, Station } from '../../models/db.models';
+import { Router, RouterLink } from '@angular/router';
+import { Ingredient, IngredientUnit, IngredientCategory, Supplier, PurchaseOrder, PurchaseOrderStatus, Recipe, Ingredient as IngredientModel } from '../../models/db.models';
 import { InventoryStateService } from '../../services/inventory-state.service';
-import { RecipeStateService } from '../../services/recipe-state.service';
-import { PosStateService } from '../../services/pos-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
-import { Router, RouterLink } from '@angular/router';
 import { NotificationService } from '../../services/notification.service';
 import { IngredientDetailsModalComponent } from './ingredient-details-modal/ingredient-details-modal.component';
+import { PurchasingDataService } from '../../services/purchasing-data.service';
+import { FormsModule } from '@angular/forms';
+// FIX: Add missing imports for RecipeStateService and PosStateService.
+import { RecipeStateService } from '../../services/recipe-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
     unit: 'un',
-    stock: 0,
     cost: 0,
+    stock: 0,
     min_stock: 0,
-    category_id: null,
-    supplier_id: null,
-    expiration_date: null,
-    is_sellable: false,
-    price: null,
-    pos_category_id: null,
-    station_id: null,
-    external_code: null,
 };
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
@@ -44,11 +33,22 @@ interface StockPrediction {
   suggestedPurchase: number;
 }
 
+type FormItem = {
+    id: string; // Can be temp id
+    ingredient_id: string;
+    quantity: number;
+    cost: number;
+    name: string;
+    unit: string;
+    lot_number: string | null;
+    expiration_date: string | null;
+};
+
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink],
+  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink, FormsModule],
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,9 +58,9 @@ export class InventoryComponent {
     posState = inject(PosStateService);
     inventoryDataService = inject(InventoryDataService);
     aiService = inject(AiRecipeService);
-    // FIX: Explicitly type the injected Router to resolve property access errors.
     router: Router = inject(Router);
     notificationService = inject(NotificationService);
+    purchasingDataService = inject(PurchasingDataService);
     
     ingredients = this.inventoryState.ingredients;
     categories = this.inventoryState.ingredientCategories;
@@ -95,6 +95,13 @@ export class InventoryComponent {
     // Ingredient Details Modal State
     isDetailsModalOpen = signal(false);
     selectedIngredientForDetails = signal<Ingredient | null>(null);
+
+    // --- Purchase Order Modal State ---
+    isPurchaseOrderModalOpen = signal(false);
+    poForm = signal<{ supplier_id: string | null, status: PurchaseOrderStatus, notes: string }>({ supplier_id: null, status: 'Rascunho', notes: '' });
+    poItems = signal<FormItem[]>([]);
+    poItemSearchTerm = signal('');
+    isSavingPO = signal(false);
 
     hasItemsToOrder = computed(() => {
         const predictions = this.stockPrediction();
@@ -157,6 +164,23 @@ export class InventoryComponent {
         .filter(lot => lot.ingredient_id === ingredient.id && lot.quantity > 0)
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
+    
+    // --- Purchase Order Computeds ---
+    poFilteredIngredients = computed(() => {
+      const term = this.poItemSearchTerm().toLowerCase();
+      if (!term) return [];
+      return this.ingredients()
+        .filter(i => i.name.toLowerCase().includes(term))
+        .slice(0, 5);
+    });
+
+    poCurrentItemIds = computed(() => new Set(this.poItems().map(i => i.ingredient_id)));
+
+    poTotal = computed(() => this.poItems().reduce((sum, item) => sum + (item.quantity * item.cost), 0));
+
+    // New signals for on-the-fly ingredient creation (already exists, but might need to be available in PO modal)
+    isAddingIngredient = signal(false);
+    newIngredientForm = signal<Partial<IngredientModel>>(EMPTY_INGREDIENT);
 
     setDashboardFilter(filter: DashboardFilter) { this.activeDashboardFilter.set(filter); }
     setCategoryFilter(categoryId: string | null) { this.activeCategoryFilter.set(categoryId); }
@@ -309,10 +333,8 @@ export class InventoryComponent {
         this.isAnalyzingStock.set(true);
         this.stockPrediction.set(null);
         try {
-            // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
             const ingredientsById = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
             
-            // Step 1: Initialize predictions for ALL ingredients
             const predictionsMap = new Map<string, StockPrediction>();
             this.ingredients().forEach(ingredient => {
                 predictionsMap.set(ingredient.id, {
@@ -321,25 +343,23 @@ export class InventoryComponent {
                     currentStock: ingredient.stock,
                     unit: ingredient.unit,
                     predictedUsage: 0,
-                    suggestedPurchase: 0 // Will be calculated later
+                    suggestedPurchase: 0
                 });
             });
 
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(endDate.getDate() - 28); // last 4 weeks
+            startDate.setDate(endDate.getDate() - 28);
 
             const usageData = await this.inventoryDataService.calculateIngredientUsageForPeriod(startDate, endDate);
             
             if (usageData.size === 0) {
-                // Step 3a: No sales data, use min_stock
                 await this.notificationService.alert(
                     "Não há dados de vendas recentes para fazer uma previsão com IA. A sugestão de compra será baseada no seu estoque mínimo.",
                     "Análise de Estoque"
                 );
                 
                 predictionsMap.forEach((prediction, ingredientId) => {
-                    // FIX: Add a check to ensure ingredient exists before accessing its properties, satisfying the compiler.
                     const ingredient = ingredientsById.get(ingredientId);
                     if (ingredient) {
                       const suggestedPurchase = Math.max(0, ingredient.min_stock - ingredient.stock);
@@ -348,9 +368,7 @@ export class InventoryComponent {
                 });
 
             } else {
-                // Step 2: Sales data exists, call AI
                 const historicalDataString = Array.from(usageData.entries())
-                  // FIX: Add a check to ensure ingredient exists before accessing its properties.
                   .map(([id, quantity]) => {
                     const ingredient = ingredientsById.get(id);
                     if (ingredient) {
@@ -365,7 +383,6 @@ export class InventoryComponent {
 
                 const aiResult = await this.aiService.callGeminiForPrediction(prompt);
 
-                // Step 2b: Update map with AI predictions
                 aiResult.forEach((p: { ingredientId: string; predictedUsage: number; }) => {
                     const prediction = predictionsMap.get(p.ingredientId);
                     if (prediction) {
@@ -376,7 +393,6 @@ export class InventoryComponent {
                 });
             }
 
-            // Step 4: Finalize and set state
             const finalPredictions = Array.from(predictionsMap.values())
                 .sort((a, b) => b.suggestedPurchase - a.suggestedPurchase || b.predictedUsage - a.predictedUsage);
             
@@ -389,7 +405,7 @@ export class InventoryComponent {
         }
     }
 
-    async generatePurchaseOrder() {
+    generatePurchaseOrder() {
         const itemsToOrder = this.stockPrediction()
             ?.filter(p => p.suggestedPurchase > 0)
             .map(p => ({
@@ -398,9 +414,138 @@ export class InventoryComponent {
             }));
 
         if (itemsToOrder && itemsToOrder.length > 0) {
-            this.router.navigate(['/purchasing'], { state: { newOrderItems: itemsToOrder } });
+            this.openPurchaseOrderModal(itemsToOrder);
         } else {
-            await this.notificationService.alert("Nenhum item com sugestão de compra.");
+            this.notificationService.alert("Nenhum item com sugestão de compra.");
+        }
+    }
+
+    // --- Purchase Order Modal Methods ---
+  
+    openPurchaseOrderModal(prefillItems?: { ingredientId: string, quantity: number }[]) {
+        this.poForm.set({ supplier_id: this.suppliers()[0]?.id || null, status: 'Rascunho', notes: '' });
+        
+        if (prefillItems) {
+            const items = prefillItems.map(item => {
+                const ingredient = this.ingredients().find(i => i.id === item.ingredientId);
+                return ingredient ? {
+                    id: `temp-${ingredient.id}`,
+                    ingredient_id: ingredient.id,
+                    quantity: item.quantity,
+                    cost: ingredient.cost,
+                    name: ingredient.name,
+                    unit: ingredient.unit,
+                    lot_number: null,
+                    expiration_date: null,
+                } : null;
+            }).filter(i => i !== null) as FormItem[];
+            this.poItems.set(items);
+        } else {
+            this.poItems.set([]);
+        }
+        
+        this.isPurchaseOrderModalOpen.set(true);
+    }
+  
+    closePurchaseOrderModal() {
+        this.isPurchaseOrderModalOpen.set(false);
+    }
+
+    updatePOFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
+        this.poForm.update(f => ({
+            ...f,
+            [field]: field === 'supplier_id' ? (value === 'null' ? null : value) : value
+        }));
+    }
+  
+    async addPOItemToOrder(ingredient: Ingredient) {
+        this.poItems.update(items => [...items, {
+            id: `temp-${ingredient.id}`,
+            ingredient_id: ingredient.id,
+            quantity: 1,
+            cost: ingredient.cost,
+            name: ingredient.name,
+            unit: ingredient.unit,
+            lot_number: null,
+            expiration_date: null,
+        }]);
+        this.poItemSearchTerm.set('');
+
+        const currentSupplierId = this.poForm().supplier_id;
+        if (!currentSupplierId && ingredient.supplier_id) {
+            const supplierName = this.suppliers().find(s => s.id === ingredient.supplier_id)?.name;
+            if (supplierName) {
+                const confirmed = await this.notificationService.confirm(
+                    `Este item é fornecido por "${supplierName}". Deseja definir este fornecedor para a ordem inteira?`,
+                    'Sugerir Fornecedor'
+                );
+                if (confirmed) {
+                    this.updatePOFormField('supplier_id', ingredient.supplier_id!);
+                }
+            }
+        }
+    }
+
+    updatePOItemField(itemId: string, field: 'quantity' | 'cost' | 'lot_number' | 'expiration_date', value: any) {
+        this.poItems.update(items => items.map(item => 
+            item.id === itemId ? { ...item, [field]: value } : item
+        ));
+    }
+
+    removePOItem(itemId: string) {
+        this.poItems.update(items => items.filter(item => item.id !== itemId));
+    }
+
+    async savePurchaseOrder() {
+        const formValue = this.poForm();
+        const items = this.poItems();
+        if (items.length === 0) {
+            await this.notificationService.alert('Adicione pelo menos um item à ordem de compra.');
+            return;
+        }
+
+        this.isSavingPO.set(true);
+        const result = await this.purchasingDataService.createPurchaseOrder(formValue, items);
+        
+        if (result.success) {
+          this.notificationService.show('Ordem de Compra criada com sucesso!', 'success');
+          this.closePurchaseOrderModal();
+          this.stockPrediction.set(null); // Clear prediction after creating order
+        } else {
+          await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
+        }
+        this.isSavingPO.set(false);
+    }
+    
+    // --- On-the-fly Ingredient Creation ---
+    openAddIngredientModal() {
+        this.poItemSearchTerm.set(''); // Close search popover
+        this.newIngredientForm.set({ ...EMPTY_INGREDIENT });
+        this.isAddingIngredient.set(true);
+    }
+    
+    closeAddIngredientModal() {
+        this.isAddingIngredient.set(false);
+    }
+
+    updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
+        this.newIngredientForm.update(form => ({...form, [field]: value}));
+    }
+
+    async saveNewIngredient() {
+        const form = this.newIngredientForm();
+        if (!form.name?.trim()) {
+            await this.notificationService.alert('O nome do ingrediente é obrigatório.');
+            return;
+        }
+        const { success, error, data: newIngredient } = await this.inventoryDataService.addIngredient(form);
+        if (success && newIngredient) {
+            if (this.isPurchaseOrderModalOpen()) {
+                await this.addPOItemToOrder(newIngredient as Ingredient);
+            }
+            this.closeAddIngredientModal();
+        } else {
+            await this.notificationService.alert(`Erro: ${error?.message}`);
         }
     }
 }
