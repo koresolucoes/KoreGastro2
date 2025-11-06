@@ -30,6 +30,7 @@ interface ChartWidget {
 }
 
 type DashboardWidget = KpiWidget | ChartWidget;
+type ReportPeriod = 'day' | 'week' | 'month';
 
 @Component({
   selector: 'app-dashboard',
@@ -59,118 +60,130 @@ export class DashboardComponent implements OnInit {
   
   // UI State
   editMode = signal(false);
+  period = signal<ReportPeriod>('day');
   
-  isLoading = computed(() => !this.supabaseStateService.isDataLoaded());
-
   // Chart state
+  isLoading = signal(true);
   isChartLoading = signal(true);
-  chartPeriod = signal<7 | 30>(7);
   salesCogsData = signal<DailySalesCogs[]>([]);
   
   isHourlyChartLoading = signal(true);
   hourlySalesData = signal<PeakHoursData[]>([]);
 
   // --- NEW STATE MANAGEMENT ---
-  // 1. Signal for the order of widget IDs. This is the source of truth for layout.
   private widgetOrder = signal<string[]>([]);
   
-  // 2. Computed signal for widget data. It rebuilds reactively when stats change.
   private allWidgetsDataMap = computed(() => {
     const widgets = this.buildWidgets();
     return new Map(widgets.map(w => [w.id, w]));
   });
   
-  // 3. Final computed signal for the template, combining order and data.
   dashboardWidgets = computed(() => {
     const order = this.widgetOrder();
     const dataMap = this.allWidgetsDataMap();
-    if (order.length === 0) return []; // Return empty if order isn't set yet
+    if (order.length === 0) return [];
     return order
       .map(id => dataMap.get(id))
       .filter((w): w is DashboardWidget => w !== undefined);
   });
   
   constructor() {
-    // Effect for loading chart data when period changes. Decoupled from widget logic.
     effect(() => {
-      const period = this.chartPeriod();
-      untracked(() => this.loadChartData(period));
+      this.loadData();
     });
   }
 
   ngOnInit() {
-    this.loadHourlySalesData();
-    // Initialize the order of widgets from localStorage or defaults.
     this.loadLayout();
   }
 
+  private async loadData() {
+    this.isLoading.set(true);
+    const { startDate, endDate } = this.getDateRange();
+    try {
+        await this.supabaseStateService.fetchPerformanceDataForPeriod(startDate, endDate);
+        this.loadChartData(startDate, endDate);
+        this.loadHourlySalesData(startDate, endDate);
+    } catch (error) {
+        console.error("Error loading dashboard data", error);
+    } finally {
+        this.isLoading.set(false);
+    }
+  }
+
+  private getDateRange(): { startDate: Date, endDate: Date } {
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setHours(23, 59, 59, 999);
+    let startDate = new Date(now);
+
+    switch (this.period()) {
+        case 'day':
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'week':
+            const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // Monday=0
+            startDate = new Date(new Date().setDate(now.getDate() - dayOfWeek));
+            startDate.setHours(0, 0, 0, 0);
+            break;
+        case 'month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+    }
+    return { startDate, endDate };
+  }
+
+
   private buildWidgets(): DashboardWidget[] {
+    const periodLabel = { day: '(Hoje)', week: '(Esta Semana)', month: '(Este Mês)' }[this.period()];
+    
     return [
       { 
-        type: 'kpi',
-        id: 'Vendas Totais (Hoje)',
-        label: 'Vendas Totais (Hoje)', 
+        type: 'kpi', id: 'Vendas Totais', label: `Vendas Totais ${periodLabel}`, 
         value: this.totalSales().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01',
-        route: '/reports/sales'
+        icon: 'monetization_on', route: '/reports'
       },
       { 
-        type: 'kpi',
-        id: 'Lucro Bruto (Hoje)',
-        label: 'Lucro Bruto (Hoje)', 
-        value: this.grossProfitToday().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z',
-        route: '/reports/profit'
+        type: 'kpi', id: 'Lucro Bruto', label: `Lucro Bruto ${periodLabel}`, 
+        value: this.grossProfit().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
+        icon: 'trending_up', route: '/reports'
       },
       { 
-        type: 'kpi',
-        id: 'Ticket Médio (Hoje)',
-        label: 'Ticket Médio (Hoje)', 
-        value: this.averageTicketToday().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
-        route: '/reports/performance'
+        type: 'kpi', id: 'Ticket Médio', label: `Ticket Médio ${periodLabel}`, 
+        value: this.averageTicket().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
+        icon: 'receipt_long', route: '/performance'
       },
       { 
-        type: 'kpi',
-        id: 'Pedidos Totais (Hoje)',
-        label: 'Pedidos Totais (Hoje)', 
-        value: this.totalOrdersToday().toString(), 
-        icon: 'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12',
-        route: '/orders'
+        type: 'kpi', id: 'Pedidos Totais', label: `Pedidos Totais ${periodLabel}`, 
+        value: this.totalOrders().toString(), 
+        icon: 'list_alt', route: '/cashier'
       },
       { 
-        type: 'kpi',
-        id: 'Pedidos iFood (Abertos)',
-        label: 'Pedidos iFood (Abertos)', 
+        type: 'kpi', id: 'Pedidos iFood (Abertos)', label: 'Pedidos iFood (Abertos)', 
         value: this.openIfoodOrders().toString(), 
-        icon: 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 013.375-3.375h1.5a1.125 1.125 0 011.125 1.125v1.5a3.375 3.375 0 00-3.375 3.375H3.375z',
-        route: '/orders?source=ifood'
+        icon: 'delivery_dining', route: '/ifood-kds'
       },
       { 
-        type: 'kpi',
-        id: 'Reservas (Hoje)',
-        label: 'Reservas (Hoje)', 
+        type: 'kpi', id: 'Reservas (Hoje)', label: 'Reservas (Hoje)', 
         value: this.reservationsToday().length.toString(), 
-        icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-        route: '/reservations'
+        icon: 'event_available', route: '/reservations'
       },
       {
-        type: 'chart_sales',
-        id: 'chart_sales_1',
-        title: `Vendas (últimos ${this.chartPeriod()} dias)`
+        type: 'chart_sales', id: 'chart_sales_1',
+        title: 'Vendas vs. Custo (CMV)'
       },
       {
-        type: 'chart_hourly',
-        id: 'chart_hourly_1',
-        title: 'Vendas por Hora (Hoje)'
+        type: 'chart_hourly', id: 'chart_hourly_1',
+        title: 'Vendas por Hora'
       }
     ];
   }
 
-  async loadChartData(days: 7 | 30) {
+  async loadChartData(startDate: Date, endDate: Date) {
     this.isChartLoading.set(true);
     try {
-      const data = await this.cashierDataService.getSalesAndCogsForPeriod(days);
+      const data = await this.cashierDataService.getSalesAndCogsForPeriod(startDate, endDate);
       this.salesCogsData.set(data);
     } catch (error) {
       console.error('Error loading chart data:', error);
@@ -179,11 +192,10 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  async loadHourlySalesData() {
+  async loadHourlySalesData(startDate: Date, endDate: Date) {
     this.isHourlyChartLoading.set(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const data = await this.cashierDataService.getSalesByHourForPeriod(today, today);
+      const data = await this.cashierDataService.getSalesByHourForPeriod(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
       this.hourlySalesData.set(data);
     } catch (error) {
       console.error('Error loading hourly sales data:', error);
@@ -192,8 +204,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  setChartPeriod(days: 7 | 30) {
-    this.chartPeriod.set(days);
+  setPeriod(p: ReportPeriod) {
+    this.period.set(p);
   }
   
   toggleEditMode() {
@@ -229,7 +241,6 @@ export class DashboardComponent implements OnInit {
           const newWidgetIds = defaultOrder.filter(id => !savedOrderSet.has(id));
           this.widgetOrder.set([...savedOrder, ...newWidgetIds]);
         } else {
-          // Handle case where saved data is not an array
           this.widgetOrder.set(defaultOrder);
         }
       } catch (e) {
@@ -242,42 +253,43 @@ export class DashboardComponent implements OnInit {
   }
 
   getRouteForStat(label: string): string {
-    const widget = this.dashboardWidgets().find(w => w.type === 'kpi' && w.label === label) as KpiWidget | undefined;
+    const widget = this.allWidgetsDataMap().get(label.split(' (')[0]) as KpiWidget | undefined;
     return widget ? widget.route : '/dashboard';
   }
 
   hasComparison(label: string): boolean {
-    return ['Vendas Totais (Hoje)', 'Lucro Bruto (Hoje)', 'Ticket Médio (Hoje)', 'Pedidos Totais (Hoje)'].includes(label);
+    return false; // Comparison logic removed for simplicity, can be re-added later
   }
   
   isPositiveComparison(label: string): boolean {
-    return Math.random() > 0.5; // Lógica de exemplo
+    return true; 
   }
   
   getComparisonText(label: string): string {
-    const value = Math.floor(Math.random() * 20) + 1;
-    return `${value}% em relação ao período anterior`; // Lógica de exemplo
+    return ``; 
   }
 
-  totalSales = computed(() => this.dashboardState.dashboardTransactions().filter(t => t.type === 'Receita').reduce((sum, item) => sum + item.amount, 0));
+  // --- Computed Data Signals ---
+
+  totalSales = computed(() => this.dashboardState.performanceTransactions().filter(t => t.type === 'Receita').reduce((sum, item) => sum + item.amount, 0));
   
-  cogsToday = computed(() => {
+  cogs = computed(() => {
     const recipeCosts = this.recipeState.recipeCosts();
-    return this.dashboardState.dashboardCompletedOrders().flatMap(o => o.order_items).reduce((sum, item) => {
+    return this.dashboardState.performanceCompletedOrders().flatMap(o => o.order_items).reduce((sum, item) => {
       const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
       return sum + (cost * item.quantity);
     }, 0);
   });
 
-  grossProfitToday = computed(() => this.totalSales() - this.cogsToday());
+  grossProfit = computed(() => this.totalSales() - this.cogs());
 
-  averageTicketToday = computed(() => {
-    const totalOrders = this.dashboardState.dashboardCompletedOrders().length;
+  totalOrders = computed(() => this.dashboardState.performanceCompletedOrders().length);
+
+  averageTicket = computed(() => {
+    const totalOrders = this.totalOrders();
     return totalOrders > 0 ? this.totalSales() / totalOrders : 0;
   });
   
-  totalOrdersToday = computed(() => this.dashboardState.dashboardCompletedOrders().length);
-
   openIfoodOrders = computed(() => this.posState.openOrders().filter(o => o.order_type.startsWith('iFood')).length);
 
   reservationsToday = computed(() => {

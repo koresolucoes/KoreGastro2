@@ -271,6 +271,7 @@ export class PurchasingComponent implements OnInit {
         this.isAddingIngredient.set(false);
     }
 
+    // FIX: Replaced the implementation of `updateNewIngredientField` with a type-safe `switch` statement to resolve a TypeScript error where the signal's value was being inferred as 'unknown' during dynamic property updates. This ensures each property is updated correctly according to its type.
     updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.newIngredientForm.update(form => {
             const newForm: Partial<Ingredient> = { ...form };

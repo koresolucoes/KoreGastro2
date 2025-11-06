@@ -620,13 +620,9 @@ export class CashierDataService {
     return { success: true, error: null, data };
   }
   
-  async getSalesAndCogsForPeriod(days: 7 | 30): Promise<DailySalesCogs[]> {
+  async getSalesAndCogsForPeriod(startDate: Date, endDate: Date): Promise<DailySalesCogs[]> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return [];
-    
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days);
     
     const [ordersRes, transactionsRes] = await Promise.all([
          supabase.from('orders')
@@ -649,9 +645,13 @@ export class CashierDataService {
     const dailyData = new Map<string, { sales: number; cogs: number }>();
 
     // Initialize map for all days in the period
-    for (let i = 0; i < days; i++) {
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    for (let i = 0; i <= diffDays; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
+        if (date > endDate) break; // Ensure we don't go past the end date
         const dateString = date.toISOString().split('T')[0];
         dailyData.set(dateString, { sales: 0, cogs: 0 });
     }
