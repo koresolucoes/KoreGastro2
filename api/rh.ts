@@ -8,6 +8,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// --- CORS Wrapper ---
+const allowCors = (fn: (req: VercelRequest, res: VercelResponse) => Promise<void | VercelResponse>) => async (req: VercelRequest, res: VercelResponse) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  return await fn(req, res);
+};
+
+
 // --- Helper Functions ---
 
 function handleError(response: VercelResponse, error: any, context: string) {
@@ -41,15 +53,7 @@ const getWeekNumber = (d: Date): number => {
 
 // --- Main Handler ---
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  // CORS & Auth
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
+async function mainHandler(request: VercelRequest, response: VercelResponse) {
   try {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -364,3 +368,5 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
          return handleError(res, error, 'handleFolhaPagamento');
     }
 }
+
+export default allowCors(mainHandler);
