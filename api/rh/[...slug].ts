@@ -1,7 +1,7 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../../src/models/db.models.js';
-import { ALL_PERMISSION_KEYS } from '../../src/config/permissions.js';
+import { TimeClockEntry } from '../../src/models/db.models.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -19,10 +19,11 @@ const allowCors = (fn: (req: VercelRequest, res: VercelResponse) => Promise<void
   return await fn(req, res);
 };
 
+
 // --- Helper Functions ---
 
 function handleError(response: VercelResponse, error: any, context: string) {
-    console.error(`[API /rh] Error in ${context}:`, error);
+    console.error(`[API /api/rh/[...slug].ts] Error in ${context}:`, error);
     const statusCode = error.code === 'PGRST116' ? 404 : 500;
     const message = error.code === 'PGRST116' ? 'Resource not found.' : error.message || 'An internal server error occurred.';
     return response.status(statusCode).json({ error: { message } });
@@ -60,21 +61,26 @@ async function mainHandler(request: VercelRequest, response: VercelResponse) {
     }
     const providedApiKey = authHeader.split(' ')[1];
     const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+
     if (!restaurantId) {
       return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
     }
+
     const { data: profile, error: profileError } = await supabase
       .from('company_profile').select('external_api_key').eq('user_id', restaurantId).single();
+
     if (profileError || !profile || !profile.external_api_key || providedApiKey !== profile.external_api_key) {
       return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key.' } });
     }
 
-    // Routing
-    const url = new URL(request.url!, `https://${request.headers.host}`);
-    const pathParts = url.pathname.split('/').filter(p => p); // e.g., ['api', 'rh', 'empleados', 'some-id']
-    const resource = pathParts[2];
-    const id = pathParts[3];
-    const subResource = pathParts[4];
+    const slug = request.query.slug as string[];
+    if (!slug || slug.length === 0) {
+        return response.status(404).json({ error: { message: 'Resource not specified.' } });
+    }
+
+    const resource = slug[0];
+    const id = slug[1];
+    const subResource = slug[2];
 
     switch (resource) {
       case 'funcionarios':
@@ -83,8 +89,6 @@ async function mainHandler(request: VercelRequest, response: VercelResponse) {
       case 'cargos':
         await handleCargos(request, response, restaurantId, id, subResource);
         break;
-      case 'permissoes-disponiveis':
-        return response.status(200).json(ALL_PERMISSION_KEYS);
       case 'ponto':
         await handlePonto(request, response, restaurantId, id);
         break;
@@ -98,62 +102,47 @@ async function mainHandler(request: VercelRequest, response: VercelResponse) {
         response.status(404).json({ error: { message: 'Resource not found.' } });
     }
   } catch (error) {
-    return handleError(response, error, 'main handler');
+    return handleError(response, error, 'mainHandler in api/rh/[...slug].ts');
   }
 }
 
 // --- Resource Handlers ---
 
 async function handleFuncionarios(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
+    if (!id) return res.status(400).json({ error: { message: 'Employee ID is required.' } });
     try {
         switch (req.method) {
             case 'GET':
-                if (id) {
-                    const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('id', id).eq('user_id', restaurantId).single();
-                    if (error) throw error;
-                    return res.status(200).json(data);
-                } else {
-                    const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).order('name');
-                    if (error) throw error;
-                    return res.status(200).json(data || []);
-                }
-            case 'POST':
-                const { data: newEmp, error: postError } = await supabase.from('employees').insert({ ...req.body, user_id: restaurantId }).select().single();
-                if (postError) throw postError;
-                return res.status(201).json(newEmp);
+                const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('id', id).eq('user_id', restaurantId).single();
+                if (error) throw error;
+                return res.status(200).json(data);
             case 'PATCH':
-                if (!id) return res.status(400).json({ error: { message: 'Employee ID is required for PATCH.' } });
                 const { data: updatedEmp, error: patchError } = await supabase.from('employees').update(req.body).eq('id', id).eq('user_id', restaurantId).select().single();
                 if (patchError) throw patchError;
                 return res.status(200).json(updatedEmp);
             case 'DELETE':
-                if (!id) return res.status(400).json({ error: { message: 'Employee ID is required for DELETE.' } });
                 const { error: deleteError } = await supabase.from('employees').delete().eq('id', id).eq('user_id', restaurantId);
                 if (deleteError) throw deleteError;
                 return res.status(204).end();
             default:
-                res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+                res.setHeader('Allow', ['GET', 'PATCH', 'DELETE']);
                 res.status(405).end('Method Not Allowed');
         }
     } catch (error) {
-        return handleError(res, error, 'handleFuncionarios');
+        return handleError(res, error, 'handleFuncionarios (item)');
     }
 }
 
 async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string, subResource?: string) {
     try {
+        if (!id || subResource !== 'permissoes') return res.status(404).json({ error: { message: 'Not Found' } });
+
         if (req.method === 'GET') {
-            if (id && subResource === 'permissoes') {
-                const { data, error } = await supabase.from('role_permissions').select('permission_key').eq('role_id', id);
-                if (error) throw error;
-                return res.status(200).json((data || []).map(p => p.permission_key));
-            } else if (!id) {
-                const { data, error } = await supabase.from('roles').select('*').eq('user_id', restaurantId);
-                if (error) throw error;
-                return res.status(200).json(data || []);
-            }
+            const { data, error } = await supabase.from('role_permissions').select('permission_key').eq('role_id', id);
+            if (error) throw error;
+            return res.status(200).json((data || []).map(p => p.permission_key));
         }
-        if (req.method === 'PUT' && id && subResource === 'permissoes') {
+        if (req.method === 'PUT') {
             const { permissions } = req.body;
             if (!Array.isArray(permissions)) return res.status(400).json({ error: { message: 'Body must contain a `permissions` array.' } });
             
@@ -165,26 +154,15 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
             }
             return res.status(200).json({ success: true, message: 'Permissions updated.' });
         }
-        return res.status(404).json({ error: { message: 'Not found.' } });
+        res.setHeader('Allow', ['GET', 'PUT']);
+        res.status(405).end('Method Not Allowed');
     } catch (error) {
-        return handleError(res, error, 'handleCargos');
+        return handleError(res, error, 'handleCargos (item)');
     }
 }
 
 async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
-    const { data_inicio, data_fim, employeeId } = req.query;
-
     try {
-        if (req.method === 'GET') {
-            let query = supabase.from('time_clock_entries').select('*, employees(name)').eq('user_id', restaurantId);
-            if (data_inicio) query = query.gte('clock_in_time', `${data_inicio}T00:00:00`);
-            if (data_fim) query = query.lte('clock_in_time', `${data_fim}T23:59:59`);
-            if (employeeId) query = query.eq('employee_id', employeeId as string);
-            const { data, error } = await query.order('clock_in_time', { ascending: false });
-            if (error) throw error;
-            return res.status(200).json(data || []);
-        }
-        
         if (req.method === 'POST' && id === 'bater-ponto') {
             const { pin, employeeId } = req.body;
             if (!pin || !employeeId) return res.status(400).json({ error: { message: '`pin` and `employeeId` are required.' } });
@@ -214,12 +192,6 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
                 }
             }
         }
-
-        if (req.method === 'POST' && !id) {
-            const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ ...req.body, user_id: restaurantId }).select().single();
-            if (error) throw error;
-            return res.status(201).json(newEntry);
-        }
         
         if (req.method === 'PATCH' && id) {
              const { data: updatedEntry, error } = await supabase.from('time_clock_entries').update(req.body).eq('id', id).select().single();
@@ -229,35 +201,28 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
 
         return res.status(404).json({ error: { message: 'Not Found' } });
     } catch (error) {
-        return handleError(res, error, 'handlePonto');
+        return handleError(res, error, 'handlePonto (item)');
     }
 }
 
 async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string, subResource?: string) {
     try {
-        if (req.method === 'GET') {
-            let query = supabase.from('schedules').select('*, shifts(*)').eq('user_id', restaurantId);
-            if(req.query.data_inicio) query = query.gte('week_start_date', req.query.data_inicio as string);
-            if(req.query.data_fim) query = query.lte('week_start_date', req.query.data_fim as string);
-            const { data, error } = await query;
-            if(error) throw error;
-            return res.status(200).json(data || []);
-        }
         if (req.method === 'POST' && id && subResource === 'publicar') {
             const { publish } = req.body;
+            if (publish === undefined) return res.status(400).json({ error: { message: '`publish` (boolean) is required.' } });
             const { error } = await supabase.from('schedules').update({ is_published: !!publish }).eq('id', id);
             if (error) throw error;
             return res.status(200).json({ success: true, message: `Schedule ${id} publish state set to ${!!publish}.` });
         }
-         return res.status(404).json({ error: { message: 'Not found.' } });
+        return res.status(404).json({ error: { message: 'Not found.' } });
     } catch (error) {
-        return handleError(res, error, 'handleEscalas');
+        return handleError(res, error, 'handleEscalas (item)');
     }
 }
 
 async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
     if (req.method !== 'GET' || id !== 'resumo') {
-        return res.status(404).json({ error: { message: 'Not found. Use GET /resumo?mes=MM&ano=YYYY' } });
+        return res.status(404).json({ error: { message: 'Not found. Use GET /api/rh/folha-pagamento/resumo?mes=MM&ano=YYYY' } });
     }
     
     try {
@@ -341,11 +306,11 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
                 employeeId: employee.id,
                 name: employee.name,
                 cargo: employee.role_id ? rolesMap.get(employee.role_id) || 'N/A' : 'N/A',
-                horas_agendadas: scheduledHours,
+                horas_programadas: scheduledHours,
                 horas_trabalhadas: workedHours,
                 horas_extras: overtimeHours,
-                salario_base: basePay,
-                valor_horas_extras: overtimePay,
+                pago_base: basePay,
+                pago_extra: overtimePay,
                 total_a_pagar: basePay + overtimePay
             };
         }).filter(p => p.horas_trabalhadas > 0 || p.horas_agendadas > 0);
@@ -364,8 +329,9 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
 
         return res.status(200).json(responsePayload);
     } catch(error) {
-         return handleError(res, error, 'handleFolhaPagamento');
+         return handleError(res, error, 'handleFolhaPagamento (item)');
     }
 }
+
 
 export default allowCors(mainHandler);
