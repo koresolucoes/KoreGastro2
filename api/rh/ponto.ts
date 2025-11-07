@@ -85,55 +85,14 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { action } = req.query;
-
-    if (action === 'bater-ponto') {
-        const { employeeId, pin } = req.body;
-        if (!employeeId || !pin) {
-            return res.status(400).json({ error: { message: '`employeeId` and `pin` are required.' } });
-        }
-
-        const { data: employee, error: empError } = await supabase
-            .from('employees')
-            .select('id, name, pin, current_clock_in_id')
-            .eq('id', employeeId)
-            .single();
-        
-        if (empError || !employee) return res.status(404).json({ error: { message: 'Employee not found.' } });
-        if (employee.pin !== pin) return res.status(403).json({ error: { message: 'Invalid PIN.' } });
-
-        const now = new Date().toISOString();
-
-        if (!employee.current_clock_in_id) { // Clocking in
-            const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ employee_id: employeeId, user_id: restaurantId }).select('id').single();
-            if (insertError) throw insertError;
-            await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
-            return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name });
-        } else { // Interacting with an active shift
-            const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
-            if (entryError || !activeEntry) throw new Error('Active shift record not found despite being linked to employee.');
-
-            if (!activeEntry.break_start_time) { // Starting break
-                await supabase.from('time_clock_entries').update({ break_start_time: now }).eq('id', activeEntry.id);
-                return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name });
-            } else if (!activeEntry.break_end_time) { // Ending break
-                await supabase.from('time_clock_entries').update({ break_end_time: now }).eq('id', activeEntry.id);
-                return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name });
-            } else { // Clocking out
-                await supabase.from('time_clock_entries').update({ clock_out_time: now }).eq('id', activeEntry.id);
-                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-                return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name });
-            }
-        }
-    } else { // Manual adjustment (create)
-        const entryData: Partial<TimeClockEntry> = req.body;
-        if (!entryData.employee_id || !entryData.clock_in_time) {
-            return res.status(400).json({ error: { message: '`employee_id` and `clock_in_time` are required.' } });
-        }
-        const { data, error } = await supabase.from('time_clock_entries').insert({ ...entryData, user_id: restaurantId }).select().single();
-        if (error) throw error;
-        return res.status(201).json(data);
+    // This handler is now only for creating manual time entries.
+    const entryData: Partial<TimeClockEntry> = req.body;
+    if (!entryData.employee_id || !entryData.clock_in_time) {
+        return res.status(400).json({ error: { message: '`employee_id` and `clock_in_time` are required.' } });
     }
+    const { data, error } = await supabase.from('time_clock_entries').insert({ ...entryData, user_id: restaurantId }).select().single();
+    if (error) throw error;
+    return res.status(201).json(data);
 }
 
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {

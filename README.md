@@ -1133,12 +1133,12 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
         ]
         ```
 
-*   **`POST /api/rh/ponto?action=bater-ponto`**
+*   **`POST /api/rh/ponto/bater-ponto`**
     *   **Ação:** Registra um evento de ponto (entrada/saída/pausa) para um funcionário específico.
     *   **Segurança:** Para evitar ambiguidades com PINs duplicados, a requisição **deve** incluir o `employeeId` (obtido previamente via `GET /api/rh/funcionarios`) junto com o `pin`. O sistema valida se o PIN corresponde ao funcionário especificado.
     *   **Requisição:**
         ```json
-        POST /api/rh/ponto?action=bater-ponto&restaurantId=SEU_USER_ID
+        POST /api/rh/ponto/bater-ponto?restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
