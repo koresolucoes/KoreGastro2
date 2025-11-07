@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -617,8 +616,8 @@ export class TechnicalSheetsComponent {
               name: form.recipe.name!,
               preparations: form.preparations.map(p => ({
                   name: p.name || 'Etapa sem nome',
-                  // FIX: Remove the incomplete explicit type on the 'i' parameter to allow TypeScript to infer the correct full type, resolving the 'unknown' type error.
-                  ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map(i => ({
+                  // FIX: Explicitly type the 'i' parameter to provide the correct type information to the compiler, removing the need for 'as any'.
+                  ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map((i: { ingredient_id: string; quantity: number; unit: string; }) => ({
                       name: this.getIngredientName(i.ingredient_id),
                       quantity: i.quantity,
                       unit: i.unit,

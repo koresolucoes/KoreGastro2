@@ -346,25 +346,14 @@
            <!-- External Order API -->
           <div class="pt-6 border-t border-gray-700">
             <h2 class="text-xl font-semibold text-white mb-4">API de Pedidos Externos</h2>
-            <p class="text-sm text-gray-400 mb-4">Use estes dados para integrar sistemas de pedidos de terceiros (ex: apps de delivery próprios, totens) com o ChefOS.</p>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">ID do Restaurante (restaurantId)</label>
-                <div class="flex gap-2">
-                  <input type="text" readonly [value]="authService.currentUser()?.id" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm font-mono">
-                  <button (click)="copyToClipboard(authService.currentUser()?.id)" [disabled]="!authService.currentUser()?.id" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shrink-0" title="Copiar ID">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6"></path></svg>
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Sua Chave de API Externa</label>
-                <div class="flex gap-2">
-                  <input type="text" readonly [value]="companyProfileForm().external_api_key || 'Nenhuma chave gerada'" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm font-mono">
-                  <button (click)="copyToClipboard(companyProfileForm().external_api_key)" [disabled]="!companyProfileForm().external_api_key" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white disabled:opacity-50 shrink-0" title="Copiar chave">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6"></path></svg>
-                  </button>
-                </div>
+            <p class="text-sm text-gray-400 mb-2">Use esta chave para integrar sistemas de pedidos de terceiros (ex: apps de delivery próprios, totens) com o ChefOS.</p>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Sua Chave de API Externa</label>
+              <div class="flex gap-2">
+                <input type="text" readonly [value]="companyProfileForm().external_api_key || 'Nenhuma chave gerada'" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm">
+                <button (click)="copyToClipboard(companyProfileForm().external_api_key)" [disabled]="!companyProfileForm().external_api_key" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white disabled:opacity-50 shrink-0" title="Copiar chave">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 00-2.25 2.25v6" /></svg>
+                </button>
               </div>
             </div>
             <div class="mt-4">

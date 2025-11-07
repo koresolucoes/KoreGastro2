@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -79,8 +78,7 @@ export class PurchasingComponent implements OnInit {
             const suppliersInOrder = new Map<string | null, { ingredientId: string, quantity: number }[]>();
             
             prefillItems.forEach(item => {
-                // FIX: Add an explicit type annotation for the 'ingredient' constant to resolve a TypeScript type inference issue where it was being incorrectly treated as 'unknown'.
-                const ingredient: Ingredient | undefined = ingredientsMap.get(item.ingredientId);
+                const ingredient = ingredientsMap.get(item.ingredientId);
                 const supplierId = ingredient?.supplier_id || null;
                 
                 if (!suppliersInOrder.has(supplierId)) {

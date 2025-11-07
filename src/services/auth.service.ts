@@ -1,10 +1,8 @@
 
-
-
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
-// FIX: Remove problematic type imports. We will use 'any' as a workaround for an older/buggy library version where these types are not exported correctly.
-// import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+// FIX: Import specific types from supabase-js to resolve type inference issues.
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
 import { DemoService } from './demo.service';
 
@@ -14,8 +12,8 @@ import { DemoService } from './demo.service';
 export class AuthService {
   private router = inject(Router);
   private demoService = inject(DemoService);
-  // FIX: Use 'any' for User type since it cannot be imported from the user's version of the library.
-  currentUser = signal<any | null>(null);
+  // Use a signal to hold the current user state
+  currentUser = signal<User | null>(null);
 
   // This signal will be true once the initial session check is complete.
   // The authGuard will wait for this signal before proceeding.
@@ -26,8 +24,7 @@ export class AuthService {
     this.checkSession();
 
     // Listen to authentication state changes
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues and use 'any' for event/session types.
-    (supabase.auth as any).onAuthStateChange((_event: any, session: any | null) => {
+    supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         // This listener handles all authentication state changes. When a user is redirected
         // from a password recovery link, the Supabase JS client fires a SIGNED_IN event and
         // creates a temporary session from the URL fragment. This updates the currentUser
@@ -44,8 +41,7 @@ export class AuthService {
 
   private async checkSession() {
     // In Supabase v2, getSession is async and returns the session in a data object
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
-    const { data: { session } } = await (supabase.auth as any).getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     this.currentUser.set(session?.user ?? null);
     this.authInitialized.set(true); // Signal that the initial check is done
   }
@@ -57,8 +53,7 @@ export class AuthService {
    */
   async signInWithPassword(email: string, password: string): Promise<{ error: any }> {
     // Supabase v2 method
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
-    const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   }
 
@@ -69,8 +64,7 @@ export class AuthService {
    */
   async sendPasswordResetEmail(email: string): Promise<{ error: any }> {
     // Supabase v2 method
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues. The method name is correct for v2.
-    const { error } = await (supabase.auth as any).resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/#/reset-password`,
     });
     return { error };
@@ -83,8 +77,7 @@ export class AuthService {
    */
   async updateUserPassword(password: string): Promise<{ error: any }> {
     // Supabase v2 method
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
-    const { error } = await (supabase.auth as any).updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password });
     return { error };
   }
 
@@ -95,8 +88,7 @@ export class AuthService {
   async signOut(): Promise<{ error: any }> {
     this.demoService.disableDemoMode();
     // The `signOut` method call is correct for v2.
-    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
-    const { error } = await (supabase.auth as any).signOut();
+    const { error } = await supabase.auth.signOut();
     return { error };
   }
 }
