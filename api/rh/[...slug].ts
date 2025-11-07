@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../../src/models/db.models.js';
@@ -42,7 +43,7 @@ const getWeekNumber = (d: Date): number => {
 // --- Main Handler ---
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  // CORS & Auth
+  // CORS & Auth - Must be at the top to handle OPTIONS preflight requests
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -66,9 +67,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key.' } });
     }
 
-    // Vercel puts the dynamic part of the path in `req.query`
-    const { resource: resourceQuery } = request.query;
-    const resource = Array.isArray(resourceQuery) ? resourceQuery[0] : resourceQuery;
+    const { slug: slugQuery } = request.query;
+    const slug = Array.isArray(slugQuery) ? slugQuery : (slugQuery ? [slugQuery] : []);
+
+    if (slug.length === 0) {
+        return response.status(404).json({ error: { message: 'HR resource not specified.' } });
+    }
+
+    const resource = slug[0];
+    const action = slug[1]; 
 
     switch (resource) {
       case 'funcionarios':
@@ -80,7 +87,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       case 'permissoes-disponiveis':
         return response.status(200).json(ALL_PERMISSION_KEYS);
       case 'ponto':
-        await handlePonto(request, response, restaurantId);
+        await handlePonto(request, response, restaurantId, action);
         break;
       case 'escalas':
         await handleEscalas(request, response, restaurantId);
@@ -173,13 +180,15 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
     }
 }
 
-async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { data_inicio, data_fim, employeeId: queryEmployeeId, action } = req.query;
+async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string, actionFromPath?: string) {
+    const actionFromQuery = req.query.action as string;
+    const action = actionFromPath || actionFromQuery;
     const idQuery = req.query.id;
     const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
 
     try {
         if (req.method === 'GET') {
+            const { data_inicio, data_fim, employeeId: queryEmployeeId } = req.query;
             let query = supabase.from('time_clock_entries').select('*, employees(name)').eq('user_id', restaurantId);
             if (data_inicio) query = query.gte('clock_in_time', `${data_inicio}T00:00:00`);
             if (data_fim) query = query.lte('clock_in_time', `${data_fim}T23:59:59`);
@@ -189,40 +198,40 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
             return res.status(200).json(data || []);
         }
         
-        if (req.method === 'POST' && action === 'bater-ponto') {
-            const { pin, employeeId } = req.body;
-            if (!pin || !employeeId) return res.status(400).json({ error: { message: '`pin` and `employeeId` are required.' } });
-            
-            const { data: emp, error: pinError } = await supabase.from('employees').select('id, name, current_clock_in_id').eq('id', employeeId).eq('pin', pin).eq('user_id', restaurantId).single();
-            if (pinError || !emp) return res.status(404).json({ error: { message: 'Employee not found or PIN is incorrect.' } });
-            
-            if (!emp.current_clock_in_id) {
-                const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ employee_id: emp.id, user_id: restaurantId }).select('id').single();
-                if (error) throw error;
-                await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', emp.id);
-                return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: emp.name });
-            } else {
-                const { data: entry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', emp.current_clock_in_id).single();
-                if (entryError) throw entryError;
+        if (req.method === 'POST') {
+            if (action === 'bater-ponto') {
+                const { pin, employeeId } = req.body;
+                if (!pin || !employeeId) return res.status(400).json({ error: { message: '`pin` and `employeeId` are required.' } });
                 
-                if (!entry.break_start_time) {
-                     await supabase.from('time_clock_entries').update({ break_start_time: new Date().toISOString() }).eq('id', entry.id);
-                     return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: emp.name });
-                } else if (!entry.break_end_time) {
-                     await supabase.from('time_clock_entries').update({ break_end_time: new Date().toISOString() }).eq('id', entry.id);
-                     return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: emp.name });
+                const { data: emp, error: pinError } = await supabase.from('employees').select('id, name, current_clock_in_id').eq('id', employeeId).eq('pin', pin).eq('user_id', restaurantId).single();
+                if (pinError || !emp) return res.status(404).json({ error: { message: 'Employee not found or PIN is incorrect.' } });
+                
+                if (!emp.current_clock_in_id) {
+                    const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ employee_id: emp.id, user_id: restaurantId }).select('id').single();
+                    if (error) throw error;
+                    await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', emp.id);
+                    return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: emp.name });
                 } else {
-                     await supabase.from('time_clock_entries').update({ clock_out_time: new Date().toISOString() }).eq('id', entry.id);
-                     await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', emp.id);
-                     return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: emp.name });
+                    const { data: entry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', emp.current_clock_in_id).single();
+                    if (entryError) throw entryError;
+                    
+                    if (!entry.break_start_time) {
+                         await supabase.from('time_clock_entries').update({ break_start_time: new Date().toISOString() }).eq('id', entry.id);
+                         return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: emp.name });
+                    } else if (!entry.break_end_time) {
+                         await supabase.from('time_clock_entries').update({ break_end_time: new Date().toISOString() }).eq('id', entry.id);
+                         return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: emp.name });
+                    } else {
+                         await supabase.from('time_clock_entries').update({ clock_out_time: new Date().toISOString() }).eq('id', entry.id);
+                         await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', emp.id);
+                         return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: emp.name });
+                    }
                 }
+            } else if (!action) { // Manual adjustment POST
+                const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ ...req.body, user_id: restaurantId }).select().single();
+                if (error) throw error;
+                return res.status(201).json(newEntry);
             }
-        }
-
-        if (req.method === 'POST' && !action) {
-            const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ ...req.body, user_id: restaurantId }).select().single();
-            if (error) throw error;
-            return res.status(201).json(newEntry);
         }
         
         if (req.method === 'PATCH' && id) {
@@ -231,7 +240,8 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
              return res.status(200).json(updatedEntry);
         }
 
-        return res.status(404).json({ error: { message: 'Not Found' } });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
+        return res.status(405).json({ error: { message: `Method ${req.method} not supported or invalid action '${action}' for resource 'ponto'.` } });
     } catch (error) {
         return handleError(res, error, 'handlePonto');
     }
@@ -268,7 +278,7 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
     const { action } = req.query;
     
     if (req.method !== 'GET' || action !== 'resumo') {
-        return res.status(404).json({ error: { message: 'Not found. Use GET with resource=folha-pagamento&action=resumo&mes=MM&ano=YYYY' } });
+        return res.status(404).json({ error: { message: 'Not found. Use GET with action=resumo&mes=MM&ano=YYYY' } });
     }
     
     try {
