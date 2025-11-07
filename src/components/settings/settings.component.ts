@@ -37,7 +37,7 @@ export class SettingsComponent {
   
   // Auth & Notification services
   private notificationService = inject(NotificationService);
-  private authService = inject(AuthService);
+  authService = inject(AuthService);
   private operationalAuthService = inject(OperationalAuthService);
 
   // New state services
