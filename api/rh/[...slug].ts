@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../src/models/db.models.js';
-import { ALL_PERMISSION_KEYS } from '../src/config/permissions.js';
+import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../../src/models/db.models.js';
+import { ALL_PERMISSION_KEYS } from '../../src/config/permissions.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
