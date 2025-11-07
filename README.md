@@ -972,7 +972,7 @@ A autenticação segue o mesmo padrão das outras APIs, usando uma chave Bearer 
 
 ---
 
-#### **Recurso: Funcionários (`/api/rh/funcionarios`)**
+#### **Recurso: Funcionários (`?resource=funcionarios`)**
 
 Gerencia a informação básica dos funcionários.
 
@@ -980,7 +980,7 @@ Gerencia a informação básica dos funcionários.
     *   **Ação:** Lista todos os funcionários ativos.
     *   **Requisição:**
         ```
-        GET /api/rh/funcionarios?restaurantId=SEU_USER_ID
+        GET /api/rh?resource=funcionarios&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1002,7 +1002,7 @@ Gerencia a informação básica dos funcionários.
     *   **Ação:** Cria um novo funcionário.
     *   **Requisição:**
         ```json
-        POST /api/rh/funcionarios?restaurantId=SEU_USER_ID
+        POST /api/rh?resource=funcionarios&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1020,7 +1020,7 @@ Gerencia a informação básica dos funcionários.
     *   **Ação:** Obtém os detalhes de um funcionário específico.
     *   **Requisição:**
         ```
-        GET /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        GET /api/rh?resource=funcionarios&id=uuid-do-funcionario&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):** Retorna o objeto completo do funcionário.
@@ -1029,7 +1029,7 @@ Gerencia a informação básica dos funcionários.
     *   **Ação:** Atualiza a informação de um funcionário.
     *   **Requisição:**
         ```json
-        PATCH /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        PATCH /api/rh?resource=funcionarios&id=uuid-do-funcionario&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1043,14 +1043,14 @@ Gerencia a informação básica dos funcionários.
     *   **Ação:** Desativa (ou remove) um funcionário do sistema.
     *   **Requisição:**
         ```
-        DELETE /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        DELETE /api/rh?resource=funcionarios&id=uuid-do-funcionario&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (204 No Content):** Nenhuma resposta.
 
 ---
 
-#### **Recurso: Cargos e Permissões (`/api/rh/cargos`)**
+#### **Recurso: Cargos e Permissões (`?resource=cargos`)**
 
 Gerencia os cargos e o que cada um pode acessar.
 
@@ -1058,7 +1058,7 @@ Gerencia os cargos e o que cada um pode acessar.
     *   **Ação:** Lista todos os cargos (roles).
     *   **Requisição:**
         ```
-        GET /api/rh/cargos?restaurantId=SEU_USER_ID
+        GET /api/rh?resource=cargos&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1077,7 +1077,7 @@ Gerencia os cargos e o que cada um pode acessar.
     *   **Ação:** Lista as permissões de um cargo específico.
     *   **Requisição:**
         ```
-        GET /api/rh/cargos/uuid-do-cargo-garcom/permissoes?restaurantId=SEU_USER_ID
+        GET /api/rh?resource=cargos&id=uuid-do-cargo-garcom&subresource=permissoes&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1089,7 +1089,7 @@ Gerencia os cargos e o que cada um pode acessar.
     *   **Ação:** Define (sobrescreve) a lista completa de permissões para um cargo.
     *   **Requisição:**
         ```json
-        PUT /api/rh/cargos/uuid-do-cargo-garcom/permissoes?restaurantId=SEU_USER_ID
+        PUT /api/rh?resource=cargos&id=uuid-do-cargo-garcom&subresource=permissoes&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1101,7 +1101,7 @@ Gerencia os cargos e o que cada um pode acessar.
     *   **Ação:** Endpoint de ajuda que lista todas as chaves de permissão possíveis no sistema.
     *   **Requisição:**
         ```
-        GET /api/rh/permissoes-disponiveis?restaurantId=SEU_USER_ID
+        GET /api/rh?resource=permissoes-disponiveis&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1111,7 +1111,7 @@ Gerencia os cargos e o que cada um pode acessar.
 
 ---
 
-#### **Recurso: Controle de Ponto (`/api/rh/ponto`)**
+#### **Recurso: Controle de Ponto (`?resource=ponto`)**
 
 Ideal para integração com sistemas de relógio de ponto biométricos ou totens.
 
@@ -1119,7 +1119,7 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
     *   **Ação:** Obtém os registros de ponto (`TimeClockEntry`) para um período.
     *   **Requisição:**
         ```
-        GET /api/rh/ponto?restaurantId=SEU_USER_ID&data_inicio=2024-09-01&data_fim=2024-09-30&employeeId=uuid-do-funcionario
+        GET /api/rh?resource=ponto&restaurantId=SEU_USER_ID&data_inicio=2024-09-01&data_fim=2024-09-30&employeeId=uuid-do-funcionario
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1137,10 +1137,10 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
 
 *   **`POST /bater-ponto`**
     *   **Ação:** Registra um evento de ponto (entrada/saída/pausa) para um funcionário específico.
-    *   **Segurança:** Para evitar ambiguidades com PINs duplicados, a requisição **deve** incluir o `employeeId` (obtido previamente via `GET /api/rh/funcionarios`) junto com o `pin`. O sistema valida se o PIN corresponde ao funcionário especificado.
+    *   **Segurança:** Para evitar ambiguidades com PINs duplicados, a requisição **deve** incluir o `employeeId` (obtido previamente via `GET /api/rh?resource=funcionarios`) junto com o `pin`. O sistema valida se o PIN corresponde ao funcionário especificado.
     *   **Requisição:**
         ```json
-        POST /api/rh/ponto/bater-ponto?restaurantId=SEU_USER_ID
+        POST /api/rh?resource=ponto&id=bater-ponto&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1172,7 +1172,7 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
     *   **Ação:** Adiciona um registro de ponto manualmente (para correções).
     *   **Requisição:**
         ```json
-        POST /api/rh/ponto?restaurantId=SEU_USER_ID
+        POST /api/rh?resource=ponto&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
         
@@ -1188,7 +1188,7 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
     *   **Ação:** Corrige um registro de ponto existente.
     *   **Requisição:**
         ```json
-        PATCH /api/rh/ponto/uuid-do-registro?restaurantId=SEU_USER_ID
+        PATCH /api/rh?resource=ponto&id=uuid-do-registro&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1200,7 +1200,7 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
 
 ---
 
-#### **Recurso: Escalas (`/api/rh/escalas`)**
+#### **Recurso: Escalas (`?resource=escalas`)**
 
 Permite a consulta e publicação de escalas de trabalho.
 
@@ -1208,7 +1208,7 @@ Permite a consulta e publicação de escalas de trabalho.
     *   **Ação:** Obtém as escalas (`Schedule`) e seus turnos (`Shift`) para um período.
     *   **Requisição:**
         ```
-        GET /api/rh/escalas?restaurantId=SEU_USER_ID&data_inicio=2024-09-23&data_fim=2024-09-29
+        GET /api/rh?resource=escalas&restaurantId=SEU_USER_ID&data_inicio=2024-09-23&data_fim=2024-09-29
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Resposta (200 OK):**
@@ -1236,7 +1236,7 @@ Permite a consulta e publicação de escalas de trabalho.
     *   **Ação:** Publica uma escala (torna `is_published = true`), tornando-a visível para os funcionários.
     *   **Requisição:**
         ```json
-        POST /api/rh/escalas/uuid-da-escala/publicar?restaurantId=SEU_USER_ID
+        POST /api/rh?resource=escalas&id=uuid-da-escala&subresource=publicar&restaurantId=SEU_USER_ID
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         Content-Type: application/json
 
@@ -1248,7 +1248,7 @@ Permite a consulta e publicação de escalas de trabalho.
 
 ---
 
-#### **Recurso: Folha de Pagamento (`/api/rh/folha-pagamento`)**
+#### **Recurso: Folha de Pagamento (`?resource=folha-pagamento`)**
 
 Endpoint de apenas leitura para integração com softwares de contabilidade.
 
@@ -1256,7 +1256,7 @@ Endpoint de apenas leitura para integração com softwares de contabilidade.
     *   **Ação:** Gera um resumo da prévia da folha de pagamento para um período.
     *   **Requisição:**
         ```
-        GET /api/rh/folha-pagamento/resumo?restaurantId=SEU_USER_ID&mes=09&ano=2024
+        GET /api/rh?resource=folha-pagamento&id=resumo&restaurantId=SEU_USER_ID&mes=09&ano=2024
         Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
         ```
     *   **Lógica:** Replica os cálculos do componente de Folha de Pagamento, considerando horas trabalhadas, horas extras (acima de 9h/dia e 44h/semana), salário base e multiplicador de hora extra.

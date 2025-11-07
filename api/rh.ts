@@ -66,33 +66,30 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key.' } });
     }
 
-    // Routing
-    const url = new URL(request.url!, `https://${request.headers.host}`);
-    const pathParts = url.pathname.split('/').filter(p => p); // e.g., ['api', 'rh', 'empleados', 'some-id']
-    const resource = pathParts[2];
-    const id = pathParts[3];
-    const subResource = pathParts[4];
+    // Routing based on query parameter
+    const { resource: resourceQuery } = request.query;
+    const resource = Array.isArray(resourceQuery) ? resourceQuery[0] : resourceQuery;
 
     switch (resource) {
       case 'funcionarios':
-        await handleFuncionarios(request, response, restaurantId, id);
+        await handleFuncionarios(request, response, restaurantId);
         break;
       case 'cargos':
-        await handleCargos(request, response, restaurantId, id, subResource);
+        await handleCargos(request, response, restaurantId);
         break;
       case 'permissoes-disponiveis':
         return response.status(200).json(ALL_PERMISSION_KEYS);
       case 'ponto':
-        await handlePonto(request, response, restaurantId, id);
+        await handlePonto(request, response, restaurantId);
         break;
       case 'escalas':
-        await handleEscalas(request, response, restaurantId, id, subResource);
+        await handleEscalas(request, response, restaurantId);
         break;
       case 'folha-pagamento':
-        await handleFolhaPagamento(request, response, restaurantId, id);
+        await handleFolhaPagamento(request, response, restaurantId);
         break;
       default:
-        response.status(404).json({ error: { message: 'Resource not found.' } });
+        response.status(404).json({ error: { message: 'Resource not found or not specified. Use the `resource` query parameter.' } });
     }
   } catch (error) {
     return handleError(response, error, 'main handler');
@@ -101,7 +98,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
 // --- Resource Handlers ---
 
-async function handleFuncionarios(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
+async function handleFuncionarios(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const idQuery = req.query.id;
+    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
+    
     try {
         switch (req.method) {
             case 'GET':
@@ -137,7 +137,12 @@ async function handleFuncionarios(req: VercelRequest, res: VercelResponse, resta
     }
 }
 
-async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string, subResource?: string) {
+async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const idQuery = req.query.id;
+    const subresourceQuery = req.query.subresource;
+    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
+    const subResource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
+
     try {
         if (req.method === 'GET') {
             if (id && subResource === 'permissoes') {
@@ -168,15 +173,17 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
     }
 }
 
-async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
-    const { data_inicio, data_fim, employeeId } = req.query;
+async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const { data_inicio, data_fim, employeeId: queryEmployeeId } = req.query;
+    const idQuery = req.query.id;
+    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
 
     try {
         if (req.method === 'GET') {
             let query = supabase.from('time_clock_entries').select('*, employees(name)').eq('user_id', restaurantId);
             if (data_inicio) query = query.gte('clock_in_time', `${data_inicio}T00:00:00`);
             if (data_fim) query = query.lte('clock_in_time', `${data_fim}T23:59:59`);
-            if (employeeId) query = query.eq('employee_id', employeeId as string);
+            if (queryEmployeeId) query = query.eq('employee_id', queryEmployeeId as string);
             const { data, error } = await query.order('clock_in_time', { ascending: false });
             if (error) throw error;
             return res.status(200).json(data || []);
@@ -230,7 +237,12 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
     }
 }
 
-async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string, subResource?: string) {
+async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const idQuery = req.query.id;
+    const subresourceQuery = req.query.subresource;
+    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
+    const subResource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
+    
     try {
         if (req.method === 'GET') {
             let query = supabase.from('schedules').select('*, shifts(*)').eq('user_id', restaurantId);
@@ -252,9 +264,12 @@ async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurant
     }
 }
 
-async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
+async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const idQuery = req.query.id;
+    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
+    
     if (req.method !== 'GET' || id !== 'resumo') {
-        return res.status(404).json({ error: { message: 'Not found. Use GET /resumo?mes=MM&ano=YYYY' } });
+        return res.status(404).json({ error: { message: 'Not found. Use GET with resource=folha-pagamento&id=resumo&mes=MM&ano=YYYY' } });
     }
     
     try {
@@ -338,11 +353,11 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
                 employeeId: employee.id,
                 name: employee.name,
                 cargo: employee.role_id ? rolesMap.get(employee.role_id) || 'N/A' : 'N/A',
-                horas_agendadas: scheduledHours,
+                horas_programadas: scheduledHours,
                 horas_trabalhadas: workedHours,
                 horas_extras: overtimeHours,
-                salario_base: basePay,
-                valor_horas_extras: overtimePay,
+                pago_base: basePay,
+                pago_extra: overtimePay,
                 total_a_pagar: basePay + overtimePay
             };
         }).filter(p => p.horas_trabalhadas > 0 || p.horas_agendadas > 0);
