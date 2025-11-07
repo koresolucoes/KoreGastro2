@@ -74,13 +74,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
     const subResource = pathParts[4];
 
     switch (resource) {
-      case 'empleados':
-        await handleEmpleados(request, response, restaurantId, id);
+      case 'funcionarios':
+        await handleFuncionarios(request, response, restaurantId, id);
         break;
       case 'cargos':
         await handleCargos(request, response, restaurantId, id, subResource);
         break;
-      case 'permisos-disponibles':
+      case 'permissoes-disponiveis':
         return response.status(200).json(ALL_PERMISSION_KEYS);
       case 'ponto':
         await handlePonto(request, response, restaurantId, id);
@@ -101,7 +101,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
 // --- Resource Handlers ---
 
-async function handleEmpleados(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
+async function handleFuncionarios(req: VercelRequest, res: VercelResponse, restaurantId: string, id?: string) {
     try {
         switch (req.method) {
             case 'GET':
@@ -133,7 +133,7 @@ async function handleEmpleados(req: VercelRequest, res: VercelResponse, restaura
                 res.status(405).end('Method Not Allowed');
         }
     } catch (error) {
-        return handleError(res, error, 'handleEmpleados');
+        return handleError(res, error, 'handleFuncionarios');
     }
 }
 
@@ -183,11 +183,11 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
         }
         
         if (req.method === 'POST' && id === 'bater-ponto') {
-            const { pin } = req.body;
-            if (!pin) return res.status(400).json({ error: { message: '`pin` is required.' } });
+            const { pin, employeeId } = req.body;
+            if (!pin || !employeeId) return res.status(400).json({ error: { message: '`pin` and `employeeId` are required.' } });
             
-            const { data: emp, error: pinError } = await supabase.from('employees').select('id, name, current_clock_in_id').eq('pin', pin).eq('user_id', restaurantId).single();
-            if (pinError || !emp) return res.status(404).json({ error: { message: 'Employee with this PIN not found.' } });
+            const { data: emp, error: pinError } = await supabase.from('employees').select('id, name, current_clock_in_id').eq('id', employeeId).eq('pin', pin).eq('user_id', restaurantId).single();
+            if (pinError || !emp) return res.status(404).json({ error: { message: 'Employee not found or PIN is incorrect.' } });
             
             if (!emp.current_clock_in_id) {
                 const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ employee_id: emp.id, user_id: restaurantId }).select('id').single();
@@ -338,25 +338,25 @@ async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, res
                 employeeId: employee.id,
                 name: employee.name,
                 cargo: employee.role_id ? rolesMap.get(employee.role_id) || 'N/A' : 'N/A',
-                horas_programadas: scheduledHours,
-                horas_trabajadas: workedHours,
+                horas_agendadas: scheduledHours,
+                horas_trabalhadas: workedHours,
                 horas_extras: overtimeHours,
-                pago_base: basePay,
-                pago_extra: overtimePay,
+                salario_base: basePay,
+                valor_horas_extras: overtimePay,
                 total_a_pagar: basePay + overtimePay
             };
-        }).filter(p => p.horas_trabajadas > 0 || p.horas_programadas > 0);
+        }).filter(p => p.horas_trabalhadas > 0 || p.horas_agendadas > 0);
         
-        const totales = payrollData.reduce((acc, curr) => ({
+        const totais = payrollData.reduce((acc, curr) => ({
             total_a_pagar: acc.total_a_pagar + curr.total_a_pagar,
             total_horas_extras: acc.total_horas_extras + curr.horas_extras,
-            total_horas_trabajadas: acc.total_horas_trabajadas + curr.horas_trabajadas
-        }), { total_a_pagar: 0, total_horas_extras: 0, total_horas_trabajadas: 0 });
+            total_horas_trabalhadas: acc.total_horas_trabalhadas + curr.horas_trabalhadas
+        }), { total_a_pagar: 0, total_horas_extras: 0, total_horas_trabalhadas: 0 });
 
         const responsePayload = {
             periodo: `${new Date(year, month).toLocaleString('pt-BR', { month: 'long' })}/${year}`,
-            totales,
-            empleados: payrollData
+            totais,
+            funcionarios: payrollData
         };
 
         return res.status(200).json(responsePayload);

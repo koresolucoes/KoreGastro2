@@ -978,24 +978,74 @@ Gerencia a informação básica dos funcionários.
 
 *   **`GET /`**
     *   **Ação:** Lista todos os funcionários ativos.
-    *   **Resposta (200 OK):** Array de objetos de funcionário.
+    *   **Requisição:**
+        ```
+        GET /api/rh/funcionarios?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [
+          {
+            "id": "uuid-do-funcionario",
+            "name": "Ana Gerente",
+            "pin": "1111",
+            "role_id": "uuid-do-cargo-gerente",
+            "user_id": "SEU_USER_ID",
+            "created_at": "...",
+            "roles": { "name": "Gerente" }
+          }
+        ]
+        ```
 
 *   **`POST /`**
     *   **Ação:** Cria um novo funcionário.
-    *   **Corpo (JSON):** Objeto com os dados do funcionário (nome, cargo, PIN, etc.).
-    *   **Resposta (201 Created):** O objeto do funcionário recém-criado.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/funcionarios?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "name": "Novo Garçom",
+          "pin": "5678",
+          "role_id": "uuid-do-cargo-garcom",
+          "salary_type": "mensal",
+          "salary_rate": 2200.00
+        }
+        ```
+    *   **Resposta (201 Created):** Retorna o objeto do funcionário recém-criado.
 
 *   **`GET /{id}`**
-    *   **Ação:** Obtém os detalhes de um funcionário específico, incluindo um resumo de desempenho.
-    *   **Resposta (200 OK):** Objeto completo do funcionário.
+    *   **Ação:** Obtém os detalhes de um funcionário específico.
+    *   **Requisição:**
+        ```
+        GET /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):** Retorna o objeto completo do funcionário.
 
 *   **`PATCH /{id}`**
     *   **Ação:** Atualiza a informação de um funcionário.
-    *   **Corpo (JSON):** Objeto com os campos a serem atualizados.
-    *   **Resposta (200 OK):** O objeto do funcionário atualizado.
+    *   **Requisição:**
+        ```json
+        PATCH /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "phone": "11998877665"
+        }
+        ```
+    *   **Resposta (200 OK):** Retorna o objeto do funcionário atualizado.
 
 *   **`DELETE /{id}`**
     *   **Ação:** Desativa (ou remove) um funcionário do sistema.
+    *   **Requisição:**
+        ```
+        DELETE /api/rh/funcionarios/uuid-do-funcionario?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
     *   **Resposta (204 No Content):** Nenhuma resposta.
 
 ---
@@ -1006,20 +1056,58 @@ Gerencia os cargos e o que cada um pode acessar.
 
 *   **`GET /`**
     *   **Ação:** Lista todos os cargos (roles).
-    *   **Resposta (200 OK):** Array de objetos `Role`.
+    *   **Requisição:**
+        ```
+        GET /api/rh/cargos?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [
+          {
+            "id": "uuid-do-cargo-gerente",
+            "name": "Gerente",
+            "user_id": "SEU_USER_ID",
+            "created_at": "..."
+          }
+        ]
+        ```
 
 *   **`GET /{id}/permissoes`**
     *   **Ação:** Lista as permissões de um cargo específico.
-    *   **Resposta (200 OK):** Array de strings com as chaves de permissão (ex: `["/pos", "/kds"]`).
+    *   **Requisição:**
+        ```
+        GET /api/rh/cargos/uuid-do-cargo-garcom/permissoes?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [ "/pos", "/my-leave" ]
+        ```
 
 *   **`PUT /{id}/permissoes`**
     *   **Ação:** Define (sobrescreve) a lista completa de permissões para um cargo.
-    *   **Corpo (JSON):** `{ "permissions": ["/pos", "/cashier"] }`
-    *   **Resposta (200 OK):** Sucesso.
+    *   **Requisição:**
+        ```json
+        PUT /api/rh/cargos/uuid-do-cargo-garcom/permissoes?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        { "permissions": ["/pos", "/cashier"] }
+        ```
+    *   **Resposta (200 OK):** `{ "success": true, "message": "Permissions updated." }`
 
 *   **`GET /permissoes-disponiveis`**
     *   **Ação:** Endpoint de ajuda que lista todas as chaves de permissão possíveis no sistema.
-    *   **Resposta (200 OK):** `["/dashboard", "/pos", "/kds", ...]`
+    *   **Requisição:**
+        ```
+        GET /api/rh/permissoes-disponiveis?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [ "/dashboard", "/pos", "/kds", ... ]
+        ```
 
 ---
 
@@ -1029,23 +1117,86 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
 
 *   **`GET /`**
     *   **Ação:** Obtém os registros de ponto (`TimeClockEntry`) para um período.
-    *   **Query Params:** `data_inicio=YYYY-MM-DD`, `data_fim=YYYY-MM-DD`, `employeeId=...`
-    *   **Resposta (200 OK):** Array de `TimeClockEntry`.
+    *   **Requisição:**
+        ```
+        GET /api/rh/ponto?restaurantId=SEU_USER_ID&data_inicio=2024-09-01&data_fim=2024-09-30&employeeId=uuid-do-funcionario
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [
+          {
+            "id": "uuid-do-registro",
+            "employee_id": "uuid-do-funcionario",
+            "clock_in_time": "2024-09-25T18:00:00Z",
+            "clock_out_time": "2024-09-26T02:00:00Z",
+            // ... outros campos
+          }
+        ]
+        ```
 
 *   **`POST /bater-ponto`**
-    *   **Ação:** Simula um funcionário batendo o ponto (entrada/saída/pausa) usando seu PIN.
-    *   **Corpo (JSON):** `{ "pin": "1234" }`
-    *   **Lógica:** O sistema identifica o funcionário pelo PIN e seu estado atual (se está em turno, em pausa, etc.) e registra a ação apropriada (início de turno, início de pausa, fim de pausa ou fim de turno).
-    *   **Resposta (200 OK):** `{ "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }`
+    *   **Ação:** Registra um evento de ponto (entrada/saída/pausa) para um funcionário específico.
+    *   **Segurança:** Para evitar ambiguidades com PINs duplicados, a requisição **deve** incluir o `employeeId` (obtido previamente via `GET /api/rh/funcionarios`) junto com o `pin`. O sistema valida se o PIN corresponde ao funcionário especificado.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/ponto/bater-ponto?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "employeeId": "uuid-do-funcionario",
+          "pin": "1234" 
+        }
+        ```
+    *   **Lógica:** O sistema identifica o funcionário pelo `employeeId`, valida seu `pin` e, com base no estado atual do `TimeClockEntry` (se está em turno, em pausa, etc.), registra a ação apropriada (início de turno, início de pausa, fim de pausa ou fim de turno).
+    *   **Respostas Possíveis (200 OK):**
+        ```json
+        // Exemplo 1: Início de turno
+        { "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }
+        ```
+        ```json
+        // Exemplo 2: Início de pausa
+        { "status": "PAUSA_INICIADA", "employeeName": "Ana Gerente" }
+        ```
+        ```json
+        // Exemplo 3: Fim de pausa
+        { "status": "PAUSA_FINALIZADA", "employeeName": "Ana Gerente" }
+        ```
+        ```json
+        // Exemplo 4: Fim de turno
+        { "status": "TURNO_FINALIZADO", "employeeName": "Ana Gerente" }
+        ```
 
 *   **`POST /` (Ajuste Manual)**
     *   **Ação:** Adiciona um registro de ponto manualmente (para correções).
-    *   **Corpo (JSON):** `{ "employee_id": "...", "clock_in_time": "...", "clock_out_time": "..." }`
-    *   **Resposta (201 Created):** O novo registro criado.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/ponto?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+        
+        { 
+          "employee_id": "uuid-do-funcionario", 
+          "clock_in_time": "2024-09-25T18:00:00Z", 
+          "clock_out_time": "2024-09-26T02:00:00Z"
+        }
+        ```
+    *   **Resposta (201 Created):** Retorna o novo registro criado.
 
 *   **`PATCH /{id}` (Ajuste Manual)**
     *   **Ação:** Corrige um registro de ponto existente.
-    *   **Resposta (200 OK):** O registro atualizado.
+    *   **Requisição:**
+        ```json
+        PATCH /api/rh/ponto/uuid-do-registro?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "notes": "Ajuste manual de horário."
+        }
+        ```
+    *   **Resposta (200 OK):** Retorna o registro atualizado.
 
 ---
 
@@ -1055,12 +1206,45 @@ Permite a consulta e publicação de escalas de trabalho.
 
 *   **`GET /`**
     *   **Ação:** Obtém as escalas (`Schedule`) e seus turnos (`Shift`) para um período.
-    *   **Query Params:** `data_inicio=YYYY-MM-DD`, `data_fim=YYYY-MM-DD`
-    *   **Resposta (200 OK):** Array de `Schedule` com seus `Shifts` aninhados.
+    *   **Requisição:**
+        ```
+        GET /api/rh/escalas?restaurantId=SEU_USER_ID&data_inicio=2024-09-23&data_fim=2024-09-29
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):**
+        ```json
+        [
+          {
+            "id": "uuid-da-escala",
+            "week_start_date": "2024-09-23",
+            "is_published": true,
+            // ... outros campos da escala
+            "shifts": [
+              {
+                "id": "uuid-do-turno",
+                "employee_id": "uuid-do-funcionario",
+                "start_time": "2024-09-25T18:00:00Z",
+                "end_time": "2024-09-26T02:00:00Z",
+                "is_day_off": false
+              }
+            ]
+          }
+        ]
+        ```
 
 *   **`POST /{id}/publicar`**
     *   **Ação:** Publica uma escala (torna `is_published = true`), tornando-a visível para os funcionários.
-    *   **Resposta (200 OK):** Sucesso.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/escalas/uuid-da-escala/publicar?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "publish": true
+        }
+        ```
+    *   **Resposta (200 OK):** `{ "success": true, "message": "Schedule uuid-da-escala publish state set to true." }`
 
 ---
 
@@ -1070,28 +1254,32 @@ Endpoint de apenas leitura para integração com softwares de contabilidade.
 
 *   **`GET /resumo`**
     *   **Ação:** Gera um resumo da prévia da folha de pagamento para um período.
-    *   **Query Params:** `mes=MM`, `ano=YYYY`
+    *   **Requisição:**
+        ```
+        GET /api/rh/folha-pagamento/resumo?restaurantId=SEU_USER_ID&mes=09&ano=2024
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
     *   **Lógica:** Replica os cálculos do componente de Folha de Pagamento, considerando horas trabalhadas, horas extras (acima de 9h/dia e 44h/semana), salário base e multiplicador de hora extra.
     *   **Resposta (200 OK):** Um JSON detalhado com totais e dados por funcionário.
 
     ```json
     {
       "periodo": "Setembro/2024",
-      "totais": {
+      "totales": {
         "total_a_pagar": 12500.50,
         "total_horas_extras": 80.5,
         "total_horas_trabalhadas": 750.0
       },
-      "funcionarios": [
+      "empleados": [
         {
           "employeeId": "uuid-do-funcionario",
           "name": "Ana Gerente",
           "cargo": "Gerente",
-          "horas_agendadas": 160,
-          "horas_trabalhadas": 170.5,
+          "horas_programadas": 160,
+          "horas_trabajadas": 170.5,
           "horas_extras": 10.5,
-          "salario_base": 3000.00,
-          "valor_horas_extras": 500.75,
+          "pago_base": 3000.00,
+          "pago_extra": 500.75,
           "total_a_pagar": 3500.75
         }
       ]
