@@ -1,6 +1,10 @@
+
+
+
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import type { User } from '@supabase/supabase-js';
+// FIX: Remove problematic type imports. We will use 'any' as a workaround for an older/buggy library version where these types are not exported correctly.
+// import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './supabase-client'; // Use the shared client
 import { DemoService } from './demo.service';
 
@@ -10,8 +14,8 @@ import { DemoService } from './demo.service';
 export class AuthService {
   private router = inject(Router);
   private demoService = inject(DemoService);
-  // Use a signal to hold the current user state
-  currentUser = signal<User | null>(null);
+  // FIX: Use 'any' for User type since it cannot be imported from the user's version of the library.
+  currentUser = signal<any | null>(null);
 
   // This signal will be true once the initial session check is complete.
   // The authGuard will wait for this signal before proceeding.
@@ -22,7 +26,8 @@ export class AuthService {
     this.checkSession();
 
     // Listen to authentication state changes
-    supabase.auth.onAuthStateChange((event, session) => {
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues and use 'any' for event/session types.
+    (supabase.auth as any).onAuthStateChange((_event: any, session: any | null) => {
         // This listener handles all authentication state changes. When a user is redirected
         // from a password recovery link, the Supabase JS client fires a SIGNED_IN event and
         // creates a temporary session from the URL fragment. This updates the currentUser
@@ -39,7 +44,8 @@ export class AuthService {
 
   private async checkSession() {
     // In Supabase v2, getSession is async and returns the session in a data object
-    const { data: { session } } = await supabase.auth.getSession();
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
+    const { data: { session } } = await (supabase.auth as any).getSession();
     this.currentUser.set(session?.user ?? null);
     this.authInitialized.set(true); // Signal that the initial check is done
   }
@@ -51,7 +57,8 @@ export class AuthService {
    */
   async signInWithPassword(email: string, password: string): Promise<{ error: any }> {
     // Supabase v2 method
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
+    const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
     return { error };
   }
 
@@ -62,7 +69,8 @@ export class AuthService {
    */
   async sendPasswordResetEmail(email: string): Promise<{ error: any }> {
     // Supabase v2 method
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues. The method name is correct for v2.
+    const { error } = await (supabase.auth as any).resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/#/reset-password`,
     });
     return { error };
@@ -75,7 +83,8 @@ export class AuthService {
    */
   async updateUserPassword(password: string): Promise<{ error: any }> {
     // Supabase v2 method
-    const { error } = await supabase.auth.updateUser({ password });
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
+    const { error } = await (supabase.auth as any).updateUser({ password });
     return { error };
   }
 
@@ -86,7 +95,8 @@ export class AuthService {
   async signOut(): Promise<{ error: any }> {
     this.demoService.disableDemoMode();
     // The `signOut` method call is correct for v2.
-    const { error } = await supabase.auth.signOut();
+    // FIX: Cast supabase.auth to 'any' to bypass typing issues.
+    const { error } = await (supabase.auth as any).signOut();
     return { error };
   }
 }

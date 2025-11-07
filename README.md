@@ -962,6 +962,144 @@ Use este endpoint para registrar um ou mais pagamentos para um pedido aberto e f
 
 ---
 
+### 🔌 API de Recursos Humanos (RH)
+
+A API de RH oferece um conjunto completo de endpoints para integrar sistemas externos de gestão de pessoal, controle de ponto e contabilidade.
+
+**Base da API:** `/api/rh`
+
+A autenticação segue o mesmo padrão das outras APIs, usando uma chave Bearer e o `restaurantId`.
+
+---
+
+#### **Recurso: Funcionários (`/api/rh/funcionarios`)**
+
+Gerencia a informação básica dos funcionários.
+
+*   **`GET /`**
+    *   **Ação:** Lista todos os funcionários ativos.
+    *   **Resposta (200 OK):** Array de objetos de funcionário.
+
+*   **`POST /`**
+    *   **Ação:** Cria um novo funcionário.
+    *   **Corpo (JSON):** Objeto com os dados do funcionário (nome, cargo, PIN, etc.).
+    *   **Resposta (201 Created):** O objeto do funcionário recém-criado.
+
+*   **`GET /{id}`**
+    *   **Ação:** Obtém os detalhes de um funcionário específico, incluindo um resumo de desempenho.
+    *   **Resposta (200 OK):** Objeto completo do funcionário.
+
+*   **`PATCH /{id}`**
+    *   **Ação:** Atualiza a informação de um funcionário.
+    *   **Corpo (JSON):** Objeto com os campos a serem atualizados.
+    *   **Resposta (200 OK):** O objeto do funcionário atualizado.
+
+*   **`DELETE /{id}`**
+    *   **Ação:** Desativa (ou remove) um funcionário do sistema.
+    *   **Resposta (204 No Content):** Nenhuma resposta.
+
+---
+
+#### **Recurso: Cargos e Permissões (`/api/rh/cargos`)**
+
+Gerencia os cargos e o que cada um pode acessar.
+
+*   **`GET /`**
+    *   **Ação:** Lista todos os cargos (roles).
+    *   **Resposta (200 OK):** Array de objetos `Role`.
+
+*   **`GET /{id}/permissoes`**
+    *   **Ação:** Lista as permissões de um cargo específico.
+    *   **Resposta (200 OK):** Array de strings com as chaves de permissão (ex: `["/pos", "/kds"]`).
+
+*   **`PUT /{id}/permissoes`**
+    *   **Ação:** Define (sobrescreve) a lista completa de permissões para um cargo.
+    *   **Corpo (JSON):** `{ "permissions": ["/pos", "/cashier"] }`
+    *   **Resposta (200 OK):** Sucesso.
+
+*   **`GET /permissoes-disponiveis`**
+    *   **Ação:** Endpoint de ajuda que lista todas as chaves de permissão possíveis no sistema.
+    *   **Resposta (200 OK):** `["/dashboard", "/pos", "/kds", ...]`
+
+---
+
+#### **Recurso: Controle de Ponto (`/api/rh/ponto`)**
+
+Ideal para integração com sistemas de relógio de ponto biométricos ou totens.
+
+*   **`GET /`**
+    *   **Ação:** Obtém os registros de ponto (`TimeClockEntry`) para um período.
+    *   **Query Params:** `data_inicio=YYYY-MM-DD`, `data_fim=YYYY-MM-DD`, `employeeId=...`
+    *   **Resposta (200 OK):** Array de `TimeClockEntry`.
+
+*   **`POST /bater-ponto`**
+    *   **Ação:** Simula um funcionário batendo o ponto (entrada/saída/pausa) usando seu PIN.
+    *   **Corpo (JSON):** `{ "pin": "1234" }`
+    *   **Lógica:** O sistema identifica o funcionário pelo PIN e seu estado atual (se está em turno, em pausa, etc.) e registra a ação apropriada (início de turno, início de pausa, fim de pausa ou fim de turno).
+    *   **Resposta (200 OK):** `{ "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }`
+
+*   **`POST /` (Ajuste Manual)**
+    *   **Ação:** Adiciona um registro de ponto manualmente (para correções).
+    *   **Corpo (JSON):** `{ "employee_id": "...", "clock_in_time": "...", "clock_out_time": "..." }`
+    *   **Resposta (201 Created):** O novo registro criado.
+
+*   **`PATCH /{id}` (Ajuste Manual)**
+    *   **Ação:** Corrige um registro de ponto existente.
+    *   **Resposta (200 OK):** O registro atualizado.
+
+---
+
+#### **Recurso: Escalas (`/api/rh/escalas`)**
+
+Permite a consulta e publicação de escalas de trabalho.
+
+*   **`GET /`**
+    *   **Ação:** Obtém as escalas (`Schedule`) e seus turnos (`Shift`) para um período.
+    *   **Query Params:** `data_inicio=YYYY-MM-DD`, `data_fim=YYYY-MM-DD`
+    *   **Resposta (200 OK):** Array de `Schedule` com seus `Shifts` aninhados.
+
+*   **`POST /{id}/publicar`**
+    *   **Ação:** Publica uma escala (torna `is_published = true`), tornando-a visível para os funcionários.
+    *   **Resposta (200 OK):** Sucesso.
+
+---
+
+#### **Recurso: Folha de Pagamento (`/api/rh/folha-pagamento`)**
+
+Endpoint de apenas leitura para integração com softwares de contabilidade.
+
+*   **`GET /resumo`**
+    *   **Ação:** Gera um resumo da prévia da folha de pagamento para um período.
+    *   **Query Params:** `mes=MM`, `ano=YYYY`
+    *   **Lógica:** Replica os cálculos do componente de Folha de Pagamento, considerando horas trabalhadas, horas extras (acima de 9h/dia e 44h/semana), salário base e multiplicador de hora extra.
+    *   **Resposta (200 OK):** Um JSON detalhado com totais e dados por funcionário.
+
+    ```json
+    {
+      "periodo": "Setembro/2024",
+      "totais": {
+        "total_a_pagar": 12500.50,
+        "total_horas_extras": 80.5,
+        "total_horas_trabalhadas": 750.0
+      },
+      "funcionarios": [
+        {
+          "employeeId": "uuid-do-funcionario",
+          "name": "Ana Gerente",
+          "cargo": "Gerente",
+          "horas_agendadas": 160,
+          "horas_trabalhadas": 170.5,
+          "horas_extras": 10.5,
+          "salario_base": 3000.00,
+          "valor_horas_extras": 500.75,
+          "total_a_pagar": 3500.75
+        }
+      ]
+    }
+    ```
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 Este projeto foi construído com uma stack moderna e performática:

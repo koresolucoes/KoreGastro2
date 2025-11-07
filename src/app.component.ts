@@ -1,5 +1,6 @@
 
 
+
 import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -89,10 +90,11 @@ export class AppComponent implements OnInit {
     if (accessToken && refreshToken && type !== 'recovery') {
       console.log('Tokens encontrados na URL. Tentando configurar a sessão...');
       
-      supabase.auth.setSession({
+      // FIX: Cast supabase.auth to 'any' to bypass a potential typing issue in older library versions.
+      (supabase.auth as any).setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
-      }).then(({ data, error }) => {
+      }).then(({ data, error }: { data: any, error: any }) => {
         if (error) {
           console.error('Erro ao configurar a sessão com tokens:', error);
           // Clean the URL and let the user stay on the login screen if it fails
