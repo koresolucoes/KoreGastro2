@@ -1,8 +1,7 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../src/models/db.models.js';
-import { ALL_PERMISSION_KEYS } from '../src/config/permissions.js';
+import { Employee, TimeClockEntry, Role, RolePermission, Schedule, Shift, LeaveRequest } from '../../src/models/db.models.js';
+import { ALL_PERMISSION_KEYS } from '../../src/config/permissions.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -67,7 +66,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key.' } });
     }
 
-    // Routing based on query parameter
+    // Vercel puts the dynamic part of the path in `req.query`
     const { resource: resourceQuery } = request.query;
     const resource = Array.isArray(resourceQuery) ? resourceQuery[0] : resourceQuery;
 
@@ -90,7 +89,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         await handleFolhaPagamento(request, response, restaurantId);
         break;
       default:
-        response.status(404).json({ error: { message: 'Resource not found or not specified. Use the `resource` query parameter.' } });
+        response.status(404).json({ error: { message: `Resource '${resource}' not found.` } });
     }
   } catch (error) {
     return handleError(response, error, 'main handler');
@@ -142,11 +141,11 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
     const idQuery = req.query.id;
     const subresourceQuery = req.query.subresource;
     const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
-    const subResource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
+    const subresource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
 
     try {
         if (req.method === 'GET') {
-            if (id && subResource === 'permissoes') {
+            if (id && subresource === 'permissoes') {
                 const { data, error } = await supabase.from('role_permissions').select('permission_key').eq('role_id', id);
                 if (error) throw error;
                 return res.status(200).json((data || []).map(p => p.permission_key));
@@ -156,7 +155,7 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
                 return res.status(200).json(data || []);
             }
         }
-        if (req.method === 'PUT' && id && subResource === 'permissoes') {
+        if (req.method === 'PUT' && id && subresource === 'permissoes') {
             const { permissions } = req.body;
             if (!Array.isArray(permissions)) return res.status(400).json({ error: { message: 'Body must contain a `permissions` array.' } });
             
@@ -175,7 +174,7 @@ async function handleCargos(req: VercelRequest, res: VercelResponse, restaurantI
 }
 
 async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { data_inicio, data_fim, employeeId: queryEmployeeId } = req.query;
+    const { data_inicio, data_fim, employeeId: queryEmployeeId, action } = req.query;
     const idQuery = req.query.id;
     const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
 
@@ -190,7 +189,7 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
             return res.status(200).json(data || []);
         }
         
-        if (req.method === 'POST' && id === 'bater-ponto') {
+        if (req.method === 'POST' && action === 'bater-ponto') {
             const { pin, employeeId } = req.body;
             if (!pin || !employeeId) return res.status(400).json({ error: { message: '`pin` and `employeeId` are required.' } });
             
@@ -220,7 +219,7 @@ async function handlePonto(req: VercelRequest, res: VercelResponse, restaurantId
             }
         }
 
-        if (req.method === 'POST' && !id) {
+        if (req.method === 'POST' && !action) {
             const { data: newEntry, error } = await supabase.from('time_clock_entries').insert({ ...req.body, user_id: restaurantId }).select().single();
             if (error) throw error;
             return res.status(201).json(newEntry);
@@ -242,7 +241,7 @@ async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurant
     const idQuery = req.query.id;
     const subresourceQuery = req.query.subresource;
     const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
-    const subResource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
+    const subresource = Array.isArray(subresourceQuery) ? subresourceQuery[0] : subresourceQuery;
     
     try {
         if (req.method === 'GET') {
@@ -253,7 +252,7 @@ async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurant
             if(error) throw error;
             return res.status(200).json(data || []);
         }
-        if (req.method === 'POST' && id && subResource === 'publicar') {
+        if (req.method === 'POST' && id && subresource === 'publicar') {
             const { publish } = req.body;
             const { error } = await supabase.from('schedules').update({ is_published: !!publish }).eq('id', id);
             if (error) throw error;
@@ -266,11 +265,10 @@ async function handleEscalas(req: VercelRequest, res: VercelResponse, restaurant
 }
 
 async function handleFolhaPagamento(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const idQuery = req.query.id;
-    const id = Array.isArray(idQuery) ? idQuery[0] : idQuery;
+    const { action } = req.query;
     
-    if (req.method !== 'GET' || id !== 'resumo') {
-        return res.status(404).json({ error: { message: 'Not found. Use GET with resource=folha-pagamento&id=resumo&mes=MM&ano=YYYY' } });
+    if (req.method !== 'GET' || action !== 'resumo') {
+        return res.status(404).json({ error: { message: 'Not found. Use GET with resource=folha-pagamento&action=resumo&mes=MM&ano=YYYY' } });
     }
     
     try {
