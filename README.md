@@ -1198,6 +1198,44 @@ Ideal para integração com sistemas de relógio de ponto biométricos ou totens
 
 ---
 
+#### **Recurso: Verificação de PIN (`/verificar-pin`)**
+
+Verifica se um PIN pertence a um funcionário específico, ideal para telas de login externas.
+
+*   **`POST /api/rh/verificar-pin`**
+    *   **Ação:** Valida o PIN de um funcionário.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/verificar-pin?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "employeeId": "uuid-do-funcionario",
+          "pin": "1234" 
+        }
+        ```
+    *   **Resposta (Sucesso 200 OK):**
+        ```json
+        {
+          "success": true,
+          "message": "PIN verified successfully.",
+          "employee": {
+            "id": "uuid-do-funcionario",
+            "name": "Ana Gerente"
+          }
+        }
+        ```
+    *   **Resposta (Erro 403 Forbidden):**
+        ```json
+        {
+          "success": false,
+          "message": "Invalid employeeId or PIN."
+        }
+        ```
+        
+---
+
 #### **Recurso: Escalas (`/escalas`)**
 
 Permite a consulta e publicação de escalas de trabalho.
