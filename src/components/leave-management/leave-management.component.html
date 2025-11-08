@@ -41,27 +41,12 @@
               <p class="text-sm text-blue-300 font-semibold">{{ request.request_type }}</p>
               <p class="text-sm text-gray-300">{{ formatDateRange(request.start_date, request.end_date) }}</p>
             </div>
-            @if (activeTab() === 'Pendente') {
-              <div class="flex-shrink-0 flex gap-2 mt-4 sm:mt-0">
-                <button (click)="handleRequest(request, 'Rejeitada')" class="px-4 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Rejeitar</button>
-                <button (click)="handleRequest(request, 'Aprovada')" class="px-4 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white">Aprovar</button>
-              </div>
-            }
-          </div>
-           @if (request.reason) {
-            <p class="text-sm italic text-yellow-200 mt-2 pt-2 border-t border-gray-700">"{{ request.reason }}"</p>
-          }
-           @if (request.manager_notes) {
-            <p class.text-sm text-gray-400 mt-2 pt-2 border-t border-gray-700><strong>Observação do Gestor:</strong> {{ request.manager_notes }}</p>
-          }
-          @if (request.attachment_url) {
-            <div class="flex justify-end mt-2 pt-2 border-t border-gray-700">
-                <a [href]="request.attachment_url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-400 hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-base">attachment</span>
-                    Ver Anexo
-                </a>
+            <div class="flex-shrink-0 flex gap-2 mt-4 sm:mt-0">
+              <button (click)="openDetailsModal(request)" class="px-4 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">
+                Detalhes
+              </button>
             </div>
-          }
+          </div>
         </div>
       }
     }
@@ -114,4 +99,14 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Details Modal -->
+@if (isDetailsModalOpen() && selectedRequestForDetails(); as request) {
+  <app-leave-request-details-modal 
+    [request]="request"
+    (close)="closeDetailsModal()"
+    (approve)="handleRequest(request, 'Aprovada', $event)"
+    (reject)="handleRequest(request, 'Rejeitada', $event)">
+  </app-leave-request-details-modal>
 }

@@ -1,0 +1,84 @@
+@if (request(); as req) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <div>
+            <h3 class="text-xl font-bold text-white">Detalhes da Solicitação</h3>
+            <p class="text-gray-400 text-sm">Funcionário: {{ req.employees?.name }}</p>
+        </div>
+        <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      
+      <!-- Body -->
+      <div class="flex-1 p-6 overflow-y-auto space-y-6">
+        <!-- Request Details -->
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+            <div class="flex flex-col"><dt class="text-gray-400">Tipo de Ausência</dt><dd class="text-white font-semibold text-base">{{ req.request_type }}</dd></div>
+            <div class="flex flex-col"><dt class="text-gray-400">Status</dt><dd class="text-white font-semibold text-base">{{ req.status }}</dd></div>
+            <div class="flex flex-col"><dt class="text-gray-400">Período</dt><dd class="text-white font-medium">{{ formatDateRange(req.start_date, req.end_date) }}</dd></div>
+            <div class="flex flex-col"><dt class="text-gray-400">Data da Solicitação</dt><dd class="text-white font-medium">{{ req.created_at | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+        </dl>
+        
+        @if(req.reason) {
+            <div>
+                <h4 class="text-md font-semibold text-white mb-2">Justificativa do Funcionário</h4>
+                <p class="text-gray-300 bg-gray-700/50 p-3 rounded-lg italic">"{{ req.reason }}"</p>
+            </div>
+        }
+
+        <!-- Attachment -->
+        @if(req.attachment_url) {
+            <div>
+                <h4 class="text-md font-semibold text-white mb-2">Anexo</h4>
+                <div class="bg-gray-700/50 p-4 rounded-lg">
+                    @if(isImage()) {
+                        <img [src]="req.attachment_url" alt="Anexo da solicitação" class="max-h-80 w-auto rounded-md mx-auto">
+                    } @else {
+                        <div class="flex items-center justify-center gap-4">
+                            <span class="material-symbols-outlined text-4xl text-gray-400">description</span>
+                            <a [href]="req.attachment_url" target="_blank" rel="noopener noreferrer" class="text-lg font-semibold text-blue-400 hover:underline">
+                                Baixar Anexo
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Manager Section -->
+        @if(req.status === 'Pendente') {
+            <div>
+                <h4 class="text-md font-semibold text-white mb-2">Ação do Gestor</h4>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Adicionar Observação (Opcional)</label>
+                    <textarea 
+                        [value]="managerNotes()" 
+                        (input)="managerNotes.set($any($event.target).value)" 
+                        rows="2" 
+                        placeholder="Ex: Folga aprovada, bom descanso!" 
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400">
+                    </textarea>
+                </div>
+            </div>
+        } @else if (req.manager_notes) {
+            <div>
+                <h4 class="text-md font-semibold text-white mb-2">Sua Observação</h4>
+                <p class="text-gray-300 bg-gray-700/50 p-3 rounded-lg">{{ req.manager_notes }}</p>
+            </div>
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+        @if(req.status === 'Pendente') {
+            <button (click)="onReject()" class="px-6 py-2 font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white">Rejeitar</button>
+            <button (click)="onApprove()" class="px-6 py-2 font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white">Aprovar</button>
+        }
+      </div>
+    </div>
+  </div>
+}

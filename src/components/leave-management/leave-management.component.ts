@@ -5,13 +5,14 @@ import { Employee, LeaveRequest, LeaveRequestStatus, LeaveRequestType } from '..
 import { HrStateService } from '../../services/hr-state.service';
 import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { LeaveRequestDetailsModalComponent } from './leave-request-details-modal/leave-request-details-modal.component';
 
 type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id'>>;
 
 @Component({
   selector: 'app-leave-management',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LeaveRequestDetailsModalComponent],
   templateUrl: './leave-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe]
@@ -35,6 +36,10 @@ export class LeaveManagementComponent {
   isModalOpen = signal(false);
   editingRequest = signal<LeaveRequest | null>(null);
   requestForm = signal<LeaveForm>({});
+
+  // Modal State for details
+  isDetailsModalOpen = signal(false);
+  selectedRequestForDetails = signal<LeaveRequest | null>(null);
 
   availableRequestTypes: LeaveRequestType[] = ['Férias', 'Folga', 'Falta Justificada', 'Atestado'];
 
@@ -106,30 +111,26 @@ export class LeaveManagementComponent {
     }
   }
 
-  async handleRequest(request: LeaveRequest, action: 'Aprovada' | 'Rejeitada') {
-    const title = `${action === 'Aprovada' ? 'Aprovar' : 'Rejeitar'} Solicitação`;
-    const message = `Adicione uma observação (opcional) para ${request.employees?.name}.`;
-    const confirmText = action === 'Aprovada' ? 'Aprovar' : 'Rejeitar';
-    
-    const { confirmed, value: notes } = await this.notificationService.prompt(
-      message,
-      title,
-      {
-        inputType: 'textarea',
-        placeholder: 'Escreva sua observação aqui...',
-        initialValue: request.manager_notes || '',
-        confirmText: confirmText,
-      }
-    );
+  openDetailsModal(request: LeaveRequest) {
+    this.selectedRequestForDetails.set(request);
+    this.isDetailsModalOpen.set(true);
+  }
 
-    if (!confirmed) return;
+  closeDetailsModal() {
+    this.isDetailsModalOpen.set(false);
+    this.selectedRequestForDetails.set(null);
+  }
 
+  async handleRequest(request: LeaveRequest, action: 'Aprovada' | 'Rejeitada', notes: string | null) {
     const { success, error } = await this.leaveDataService.updateLeaveRequest(request.id, {
       status: action,
       manager_notes: notes || null
     });
 
-    if (!success) {
+    if (success) {
+      this.notificationService.show(`Solicitação ${action === 'Aprovada' ? 'aprovada' : 'rejeitada'} com sucesso.`, 'success');
+      this.closeDetailsModal();
+    } else {
       await this.notificationService.alert(`Erro ao ${action === 'Aprovada' ? 'aprovar' : 'rejeitar'}: ${error.message}`);
     }
   }
