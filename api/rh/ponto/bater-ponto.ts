@@ -48,7 +48,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             return response.status(status!).json({ error });
         }
 
-        const { employeeId, pin } = request.body;
+        const { employeeId, pin, latitude, longitude } = request.body;
         if (!employeeId || !pin) {
             return response.status(400).json({ error: { message: '`employeeId` and `pin` are required.' } });
         }
@@ -69,7 +69,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
         const now = new Date().toISOString();
 
         if (!employee.current_clock_in_id) { // Clocking in
-            const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ employee_id: employeeId, user_id: restaurantId }).select('id').single();
+            const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ 
+                employee_id: employeeId, 
+                user_id: restaurantId,
+                latitude: latitude || null,
+                longitude: longitude || null
+            }).select('id').single();
             if (insertError) throw insertError;
             await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
             return response.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name });

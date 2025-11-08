@@ -455,6 +455,8 @@ export interface TimeClockEntry {
   break_end_time: string | null;
   notes: string | null;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
   employees?: { name: string }; // Relation
 }
 
