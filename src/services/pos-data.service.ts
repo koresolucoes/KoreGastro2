@@ -8,6 +8,7 @@ import { PricingService } from './pricing.service';
 import { supabase } from './supabase-client';
 import { v4 as uuidv4 } from 'uuid';
 import { InventoryDataService } from './inventory-data.service';
+import { WebhookService } from './webhook.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -21,6 +22,7 @@ export class PosDataService {
   private pricingService = inject(PricingService);
   private inventoryDataService = inject(InventoryDataService);
   private posState = inject(PosStateService);
+  private webhookService = inject(WebhookService);
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {
     return this.posState.openOrders().find(o => o.table_number === tableNumber);
@@ -346,55 +348,27 @@ export class PosDataService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    const { error: orderError } = await supabase
-      .from('orders')
-      .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
-      .eq('id', orderId);
-    if (orderError) return { success: false, error: orderError };
+    // Use an RPC function to ensure atomicity
+    const { data: updatedOrder, error: rpcError } = await supabase.rpc('update_order_payment', {
+      p_order_id: orderId,
+      p_table_id: tableId,
+      p_payments: payments,
+      p_tip_amount: tipAmount,
+      p_employee_id: this.posState.tables().find(t => t.id === tableId)?.employee_id
+    });
 
-    const { error: tableError } = await supabase
-      .from('tables')
-      .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
-      .eq('id', tableId);
-    if (tableError) return { success: false, error: tableError };
-
-    const tableEmployeeId = this.posState.tables().find(t => t.id === tableId)?.employee_id;
-
-    const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
-      description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
-      type: 'Receita' as TransactionType,
-      amount: p.amount,
-      user_id: userId,
-      employee_id: tableEmployeeId
-    }));
-
-    if (tipAmount > 0) {
-      transactionsToInsert.push({
-        description: `Gorjeta Pedido #${orderId.slice(0, 8)}`,
-        type: 'Gorjeta' as TransactionType,
-        amount: tipAmount,
-        user_id: userId,
-        employee_id: tableEmployeeId
-      });
+    if (rpcError) {
+      return { success: false, error: rpcError };
     }
 
-    if (transactionsToInsert.length > 0) {
-      const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
-      if (transactionError) return { success: false, error: transactionError };
-    }
-
-    // Deduct stock after successful payment
-    const { data: orderItems, error: itemsError } = await supabase.from('order_items').select('*').eq('order_id', orderId);
+    // Deduct stock after successful payment (fire and forget)
+    this.inventoryDataService.deductStockForOrderItems(updatedOrder.order_items, orderId).catch(stockError => {
+        console.error(`[POS Data Service] NON-FATAL: Stock deduction failed for order ${orderId}.`, stockError);
+    });
     
-    if (itemsError) {
-        console.error('Could not fetch items for stock deduction, but payment was processed.', itemsError);
-    } else if (orderItems) {
-        const { success: deductionSuccess, error: deductionError } = await this.inventoryDataService.deductStockForOrderItems(orderItems, orderId);
-        if (!deductionSuccess) {
-            console.error('Stock deduction failed after payment was processed. Manual adjustment needed.', deductionError);
-        }
-    }
-    
+    // Trigger webhook for order update
+    this.webhookService.triggerWebhook('order.updated', updatedOrder);
+
     // Manually trigger a refresh for cashier data after successful payment.
     await this.stateService.refreshDashboardAndCashierData();
 

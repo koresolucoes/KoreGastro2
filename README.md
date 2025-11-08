@@ -127,6 +127,174 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 ---
 
+## 🔌 Webhooks
+
+O ChefOS pode enviar notificações automáticas para sistemas externos sempre que eventos chave ocorrerem, como um novo pedido sendo criado ou informações de um cliente sendo atualizadas. Isso é feito usando webhooks.
+
+Um webhook é uma requisição HTTP `POST` enviada do ChefOS para uma URL que você fornece. O corpo da requisição contém um payload JSON com informações sobre o evento que acabou de acontecer.
+
+### Configuração
+
+1.  Vá para `Configurações > Módulos e Integrações`.
+2.  Na seção "Webhooks", clique em "Novo Webhook".
+3.  Insira a **URL** do seu sistema que irá receber a notificação. Esta URL deve ser capaz de receber requisições POST.
+4.  Selecione os **eventos** que você deseja receber (ex: `order.created`).
+5.  Salve o webhook. Um **segredo de assinatura** será gerado. **Copie e armazene este segredo em um local seguro, pois ele só será exibido uma vez.**
+
+### Verificação da Assinatura (Segurança)
+
+Para garantir que as requisições vêm do ChefOS e não foram adulteradas, cada payload de webhook é assinado usando o seu segredo. A assinatura é enviada no cabeçalho `X-Chefos-Signature`.
+
+Você **deve** verificar esta assinatura no seu servidor. A assinatura é um hash HMAC-SHA256 do corpo da requisição, usando seu segredo como chave.
+
+**Exemplo de verificação em Node.js (com Express):**
+
+```javascript
+const crypto = require('crypto');
+const express = require('express');
+
+const app = express();
+
+// Use um body-parser que forneça o corpo bruto da requisição (raw body)
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+
+function verifySignature(rawBody, signatureHeader, secret) {
+  if (!rawBody || !signatureHeader || !secret) {
+    return false;
+  }
+  
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(rawBody);
+  const computedSignature = `sha256=${hmac.digest('hex')}`;
+
+  // Compara as assinaturas de forma segura para evitar timing attacks.
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signatureHeader), Buffer.from(computedSignature));
+  } catch (error) {
+    return false;
+  }
+}
+
+// Seu endpoint que receberá os webhooks
+app.post('/webhook-receiver', (req, res) => {
+  const signature = req.headers['x-chefos-signature'];
+  const secret = 'SEU_SEGREDO_ARMAZENADO_AQUI'; // Busque o segredo do seu banco de dados
+
+  if (!verifySignature(req.rawBody, signature, secret)) {
+    console.warn('Invalid signature received!');
+    return res.status(401).send('Invalid signature');
+  }
+
+  // Assinatura válida, processe o payload (req.body)
+  const event = req.headers['x-chefos-event'];
+  const payload = req.body;
+  console.log(`Received event '${event}' with payload:`, payload);
+
+  // Lógica para tratar o evento...
+
+  res.status(200).send({ status: 'Webhook received' });
+});
+
+// app.listen(...)
+```
+
+### Eventos e Payloads
+
+#### `order.created`
+Disparado quando um novo pedido é criado (via API externa ou Venda Rápida enviada para a cozinha).
+
+**Exemplo de Payload:**
+```json
+{
+  "orderId": "uuid-do-pedido-criado",
+  "tableNumber": 0,
+  "orderType": "QuickSale",
+  "status": "OPEN",
+  "timestamp": "2024-09-25T18:00:00Z",
+  "customer": null,
+  "items": [
+    {
+      "name": "Hambúrguer Clássico",
+      "quantity": 1,
+      "price": 30.00,
+      "notes": "Sem picles."
+    }
+  ],
+  "externalInfo": {
+    "label": "Totem 1",
+    "id": "pedido-totem-xyz-123"
+  }
+}
+```
+
+#### `order.updated`
+Disparado quando:
+1.  Itens são adicionados a um pedido aberto (via API externa).
+2.  O status do pedido muda (ex: para `COMPLETED` após o pagamento).
+
+**Payload (Itens Adicionados):**
+```json
+{
+  "id": "uuid-do-pedido-existente",
+  "table_number": 15,
+  "order_type": "Dine-in",
+  "status": "OPEN",
+  "timestamp": "...",
+  "customers": { "id": "...", "name": "João" },
+  "itemsAdded": [
+    {
+      "name": "Refrigerante",
+      "quantity": 1,
+      "price": 8.00,
+      "notes": null
+    }
+  ],
+  "allItems": [ /* ... lista completa de todos os itens no pedido ... */ ]
+}
+```
+**Payload (Status Alterado):** O objeto completo do pedido, agora com `status: "COMPLETED"` e `completed_at: "timestamp"`.
+
+#### `stock.updated`
+Disparado quando a quantidade de um ingrediente no estoque é alterada (compra, perda, produção, venda, etc.).
+
+**Payload:**
+```json
+{
+  "ingredientId": "uuid-do-ingrediente",
+  "ingredientName": "Carne de Hambúrguer",
+  "quantityChange": -150,
+  "newStock": 1850,
+  "unit": "g",
+  "reason": "Venda Pedido #uuid-do-pedido"
+}
+```
+- `quantityChange`: Pode ser positivo (entrada) ou negativo (saída).
+- `newStock`: O novo saldo do ingrediente no estoque após a alteração.
+
+#### `customer.created`
+Disparado quando um novo cliente é cadastrado no sistema.
+
+**Payload:** O objeto completo do cliente recém-criado.
+```json
+{
+  "id": "uuid-do-cliente",
+  "name": "João Ninguém",
+  "phone": "11987654321",
+  "email": "joao@email.com",
+  "cpf": "111.222.333-44",
+  "notes": "Prefere mesa perto da janela.",
+  "loyalty_points": 0,
+  "user_id": "uuid-do-restaurante",
+  "created_at": "..."
+}
+```
+
+---
+
 ## 🗺️ Roadmap de Futuras Funcionalidades
 
 Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades focadas em aumentar a lucratividade, eficiência e a experiência do cliente.

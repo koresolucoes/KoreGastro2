@@ -1,15 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-// FIX: Add Customer model to imports
-import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement } from '../models/db.models';
+import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement, Webhook, WebhookEvent } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
+import { v4 as uuidv4 } from 'uuid';
+import { WebhookService } from './webhook.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SettingsDataService {
   private authService = inject(AuthService);
+  private webhookService = inject(WebhookService);
 
   private async uploadAsset(file: File, path: string): Promise<{ publicUrl: string | null; error: any }> {
     const { error: uploadError } = await supabase.storage
@@ -227,11 +229,15 @@ export class SettingsDataService {
     return { success: !error, error };
   }
   
-  // FIX: Add methods to manage customer data.
   async addCustomer(customer: Partial<Customer>): Promise<{ success: boolean; error: any; data?: Customer }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     const { data, error } = await supabase.from('customers').insert({ ...customer, user_id: userId }).select().single();
+    
+    if (data) {
+        this.webhookService.triggerWebhook('customer.created', data);
+    }
+    
     return { success: !error, error, data };
   }
 
@@ -297,5 +303,47 @@ export class SettingsDataService {
       .eq('user_id', userId)
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false });
+  }
+  
+  // --- Webhook Management ---
+
+  async getWebhooks(): Promise<{ data: Webhook[] | null; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+
+    return supabase.from('webhooks').select('*').eq('user_id', userId).order('created_at');
+  }
+
+  async addWebhook(url: string, events: WebhookEvent[]): Promise<{ data: Webhook & { secret: string } | null; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    
+    // Generate a secure random secret
+    const secret = `whsec_${uuidv4().replace(/-/g, '')}`;
+    
+    const { data, error } = await supabase
+        .from('webhooks')
+        .insert({
+            url,
+            events,
+            secret,
+            user_id: userId,
+            is_active: true
+        })
+        .select()
+        .single();
+        
+    return { data, error };
+  }
+  
+  async updateWebhook(id: string, updates: Partial<Webhook>): Promise<{ success: boolean; error: any }> {
+    const { id: webhookId, user_id, created_at, secret, ...updateData } = updates;
+    const { error } = await supabase.from('webhooks').update(updateData).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteWebhook(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('webhooks').delete().eq('id', id);
+    return { success: !error, error };
   }
 }

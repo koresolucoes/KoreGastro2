@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
+import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier, Webhook, WebhookEvent } from '../../models/db.models';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
@@ -200,6 +200,20 @@ export class SettingsComponent {
   rewardPendingDeletion = signal<LoyaltyReward | null>(null);
   availableRewardTypes: LoyaltyRewardType[] = ['discount_fixed', 'discount_percentage', 'free_item'];
   sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
+
+  // Webhook State
+  webhooks = this.settingsState.webhooks;
+  isWebhookModalOpen = signal(false);
+  editingWebhook = signal<Webhook | null>(null);
+  webhookForm = signal<{ url: string; events: WebhookEvent[] }>({ url: '', events: [] });
+  availableWebhookEvents: { key: WebhookEvent, label: string }[] = [
+    { key: 'order.created', label: 'Pedido Criado' },
+    { key: 'order.updated', label: 'Pedido Atualizado' },
+    { key: 'stock.updated', label: 'Estoque Atualizado' },
+    { key: 'customer.created', label: 'Cliente Criado' },
+  ];
+  webhookToDelete = signal<Webhook | null>(null);
+  newWebhookSecret = signal<string | null>(null); // To show secret only once after creation
 
   qrCodeUrl = computed(() => {
     const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
@@ -867,6 +881,93 @@ export class SettingsComponent {
         const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
         if(!success) await this.notificationService.alert(`Erro: ${error?.message}`);
         this.rewardPendingDeletion.set(null);
+    }
+  }
+
+  // --- Webhook Methods ---
+  openAddWebhookModal() {
+    this.editingWebhook.set(null);
+    this.webhookForm.set({ url: '', events: [] });
+    this.newWebhookSecret.set(null);
+    this.isWebhookModalOpen.set(true);
+  }
+
+  openEditWebhookModal(webhook: Webhook) {
+    this.editingWebhook.set(webhook);
+    this.webhookForm.set({ url: webhook.url, events: [...webhook.events] });
+    this.newWebhookSecret.set(null);
+    this.isWebhookModalOpen.set(true);
+  }
+
+  closeWebhookModal() {
+    this.isWebhookModalOpen.set(false);
+    this.newWebhookSecret.set(null);
+  }
+
+  updateWebhookFormField(field: 'url' | 'events', value: any) {
+    this.webhookForm.update(form => ({ ...form, [field]: value }));
+  }
+
+  toggleWebhookEvent(event: WebhookEvent) {
+    this.webhookForm.update(form => {
+      const newEvents = new Set(form.events);
+      if (newEvents.has(event)) {
+        newEvents.delete(event);
+      } else {
+        newEvents.add(event);
+      }
+      return { ...form, events: Array.from(newEvents) };
+    });
+  }
+
+  async saveWebhook() {
+    const form = this.webhookForm();
+    if (!form.url.trim() || !form.url.startsWith('https://')) {
+      this.notificationService.show('Por favor, insira uma URL válida começando com https://', 'warning');
+      return;
+    }
+    if (form.events.length === 0) {
+      this.notificationService.show('Selecione pelo menos um evento para o webhook.', 'warning');
+      return;
+    }
+
+    if (this.editingWebhook()) {
+      // Update
+      const { success, error } = await this.settingsDataService.updateWebhook(this.editingWebhook()!.id, { ...form });
+      if (success) {
+        this.notificationService.show('Webhook atualizado!', 'success');
+        this.closeWebhookModal();
+      } else {
+        this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      }
+    } else {
+      // Create
+      const { data, error } = await this.settingsDataService.addWebhook(form.url, form.events);
+      if (data) {
+        this.newWebhookSecret.set(data.secret); // Show the secret to the user
+      } else {
+        this.notificationService.show(`Erro ao criar webhook: ${error?.message}`, 'error');
+        this.closeWebhookModal();
+      }
+    }
+  }
+  
+  requestDeleteWebhook(webhook: Webhook) {
+    this.webhookToDelete.set(webhook);
+  }
+
+  cancelDeleteWebhook() {
+    this.webhookToDelete.set(null);
+  }
+
+  async confirmDeleteWebhook() {
+    const webhook = this.webhookToDelete();
+    if (webhook) {
+      const { success, error } = await this.settingsDataService.deleteWebhook(webhook.id);
+      if (!success) {
+        this.notificationService.show(`Erro ao deletar: ${error?.message}`, 'error');
+      }
+      this.webhookToDelete.set(null);
     }
   }
 }

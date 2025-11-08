@@ -5,6 +5,8 @@ import { supabase } from './supabase-client';
 import { RecipeStateService } from './recipe-state.service';
 import { RecipeDataService } from './recipe-data.service';
 import { v4 as uuidv4 } from 'uuid';
+import { WebhookService } from './webhook.service';
+import { InventoryStateService } from './inventory-state.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +15,8 @@ export class InventoryDataService {
   private authService = inject(AuthService);
   private recipeState = inject(RecipeStateService);
   private recipeDataService = inject(RecipeDataService);
+  private webhookService = inject(WebhookService);
+  private inventoryState = inject(InventoryStateService);
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.authService.currentUser()?.id;
@@ -185,6 +189,16 @@ export class InventoryDataService {
         expirationDateForEntry = null
     } = params;
 
+    const { data: originalIngredient, error: fetchError } = await supabase
+        .from('ingredients')
+        .select('name, stock, unit')
+        .eq('id', ingredientId)
+        .single();
+    
+    if (fetchError) {
+        return { success: false, error: fetchError };
+    }
+        
     const { error } = await supabase.rpc('adjust_stock_by_lot', {
         p_ingredient_id: ingredientId,
         p_quantity_change: quantityChange,
@@ -194,7 +208,24 @@ export class InventoryDataService {
         p_lot_number_for_entry: lotNumberForEntry,
         p_expiration_date_for_entry: expirationDateForEntry,
     });
-    return { success: !error, error };
+
+    if (error) {
+        return { success: !error, error };
+    }
+    
+    // Trigger webhook on success
+    const newStock = originalIngredient.stock + quantityChange;
+    const webhookPayload = {
+        ingredientId: ingredientId,
+        ingredientName: originalIngredient.name,
+        quantityChange: quantityChange,
+        newStock: newStock,
+        unit: originalIngredient.unit,
+        reason: reason
+    };
+    this.webhookService.triggerWebhook('stock.updated', webhookPayload);
+
+    return { success: true, error: null };
   }
 
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
