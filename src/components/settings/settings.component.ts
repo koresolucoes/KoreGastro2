@@ -1,396 +1,788 @@
-
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { 
-  Station, 
-  IngredientCategory, 
-  Supplier, 
-  Category as RecipeCategory, 
-  CompanyProfile, 
-  Role, 
-  RolePermission, 
-  Promotion, 
-  PromotionRecipe, 
-  Recipe, 
-  ReservationSettings,
-  OperatingHours,
-  LoyaltySettings,
-  LoyaltyReward,
-  Webhook,
-  WebhookEvent,
-  Employee
-} from '../../models/db.models';
+import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
+import { SettingsDataService } from '../../services/settings-data.service';
+import { InventoryDataService } from '../../services/inventory-data.service';
+import { RecipeDataService } from '../../services/recipe-data.service';
+import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
+import { ReservationDataService } from '../../services/reservation-data.service';
+import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+import { OperationalAuthService } from '../../services/operational-auth.service';
 
-// State Services
-import { SettingsStateService } from '../../services/settings-state.service';
+// Import new state services
 import { PosStateService } from '../../services/pos-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
+import { DemoService } from '../../services/demo.service';
 
-// Data Services
-import { SettingsDataService } from '../../services/settings-data.service';
-import { PosDataService } from '../../services/pos-data.service';
-import { InventoryDataService } from '../../services/inventory-data.service';
-import { RecipeDataService } from '../../services/recipe-data.service';
-import { ReservationDataService } from '../../services/reservation-data.service';
-import { NotificationService } from '../../services/notification.service';
-import { ALL_PERMISSION_KEYS } from '../../config/permissions';
-
-type SettingsView = 'profile' | 'stations' | 'recipe_categories' | 'ingredient_categories' | 'suppliers' | 'roles' | 'promotions' | 'reservations' | 'loyalty' | 'integrations' | 'webhooks';
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
-  // --- Injected Services ---
-  private settingsState = inject(SettingsStateService);
-  private posState = inject(PosStateService);
-  private inventoryState = inject(InventoryStateService);
-  private recipeState = inject(RecipeStateService);
-  private hrState = inject(HrStateService);
+  // Data services
   private settingsDataService = inject(SettingsDataService);
-  private posDataService = inject(PosDataService);
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
   private reservationDataService = inject(ReservationDataService);
+  
+  // Auth & Notification services
   private notificationService = inject(NotificationService);
+  authService = inject(AuthService);
+  private operationalAuthService = inject(OperationalAuthService);
 
-  // --- View State ---
-  activeView = signal<SettingsView>('profile');
-  isSaving = signal(false);
+  // New state services
+  private posState = inject(PosStateService);
+  private inventoryState = inject(InventoryStateService);
+  private recipeState = inject(RecipeStateService);
+  private settingsState = inject(SettingsStateService);
+  private hrState = inject(HrStateService);
+  private subscriptionState = inject(SubscriptionStateService);
+  private demoService = inject(DemoService);
 
-  // --- Data from State Services ---
-  companyProfile = this.settingsState.companyProfile;
+  // Data Signals from new services
   stations = this.posState.stations;
-  recipeCategories = this.recipeState.categories;
-  ingredientCategories = this.inventoryState.ingredientCategories;
+  categories = this.inventoryState.ingredientCategories;
   suppliers = this.inventoryState.suppliers;
+  recipeCategories = this.recipeState.categories;
+  recipes = this.recipeState.recipes;
+  reservationSettings = this.settingsState.reservationSettings;
+  companyProfile = this.settingsState.companyProfile;
   roles = this.hrState.roles;
   rolePermissions = this.hrState.rolePermissions;
-  recipes = this.recipeState.recipes;
-  promotions = this.recipeState.promotions;
-  reservationSettings = this.settingsState.reservationSettings;
   loyaltySettings = this.settingsState.loyaltySettings;
   loyaltyRewards = this.settingsState.loyaltyRewards;
-  webhooks = this.settingsState.webhooks;
-  allWebhookEvents: WebhookEvent[] = ['order.created', 'order.updated', 'stock.updated', 'customer.created'];
+  subscription = this.subscriptionState.subscription;
+  currentPlan = this.subscriptionState.currentPlan;
+  trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
 
-  // --- Form & Modal State ---
+  // For template display
+  daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
 
-  // Profile
-  profileForm = signal<Partial<CompanyProfile>>({});
-  logoFile = signal<File | null>(null);
-  coverFile = signal<File | null>(null);
-  headerFile = signal<File | null>(null);
-  logoPreview = signal<string | null>(null);
-  coverPreview = signal<string | null>(null);
-  headerPreview = signal<string | null>(null);
+  // Tab state
+  activeTab = signal<SettingsTab>('empresa');
 
-  // Generic add/edit for simple lists
-  isModalOpen = signal(false);
-  modalTitle = signal('');
-  editingItem = signal<{ id: string, name: string } | null>(null);
-  formName = signal('');
-  modalContext: WritableSignal<'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role' | null> = signal(null);
-
-  // Role permissions modal
-  isPermissionsModalOpen = signal(false);
-  editingRolePermissions = signal<Role | null>(null);
-  permissionsForm = signal<Set<string>>(new Set());
-  allPermissions = ALL_PERMISSION_KEYS;
-
-  // Reservation settings
-  reservationSettingsForm = signal<Partial<ReservationSettings>>({});
-
-  // Loyalty
-  loyaltySettingsForm = signal<Partial<LoyaltySettings>>({});
-  isLoyaltyRewardModalOpen = signal(false);
-  editingLoyaltyReward = signal<Partial<LoyaltyReward> | null>(null);
+  // Reservation Form
+  reservationForm = signal<Partial<ReservationSettings>>({});
   
-  // Webhooks
-  isWebhookModalOpen = signal(false);
-  editingWebhook = signal<Partial<Webhook> | null>(null);
+  // Company Profile Form
+  companyProfileForm = signal<Partial<CompanyProfile>>({});
+  logoFile = signal<File | null>(null);
+  logoPreviewUrl = signal<string | null>(null);
+  coverFile = signal<File | null>(null);
+  coverPreviewUrl = signal<string | null>(null);
+  headerFile = signal<File | null>(null);
+  headerPreviewUrl = signal<string | null>(null);
+
+  // Search terms
+  stationSearchTerm = signal('');
+  categorySearchTerm = signal('');
+  recipeCategorySearchTerm = signal('');
+  supplierSearchTerm = signal('');
+
+  // Role Management State
+  allPermissions = ALL_PERMISSION_KEYS;
+  
+  private allPermissionGroups = [
+    {
+      name: 'Vendas',
+      permissions: [
+        { key: '/pos', label: 'PDV' },
+        { key: '/cashier', label: 'Caixa' },
+        { key: '/reservations', label: 'Reservas' },
+        { key: '/customers', label: 'Clientes' }
+      ]
+    },
+    {
+      name: 'iFood',
+      permissions: [
+        { key: '/ifood-kds', label: 'KDS Delivery' },
+        { key: '/ifood-menu', label: 'Cardápio iFood' },
+        { key: '/ifood-store-manager', label: 'Gestor de Loja' },
+      ]
+    },
+    {
+      name: 'Produção',
+      permissions: [
+        { key: '/kds', label: 'Cozinha (KDS)' },
+        { key: '/mise-en-place', label: 'Mise en Place' },
+        { key: '/technical-sheets', label: 'Fichas Técnicas' }
+      ]
+    },
+    {
+      name: 'Gestão',
+      permissions: [
+        { key: '/dashboard', label: 'Dashboard' },
+        { key: '/inventory', label: 'Estoque' },
+        { key: '/purchasing', label: 'Compras' },
+        { key: '/suppliers', label: 'Fornecedores' },
+        { key: '/performance', label: 'Desempenho' },
+        { key: '/reports', label: 'Relatórios' }
+      ]
+    },
+    {
+      name: 'RH',
+      permissions: [
+        { key: '/employees', label: 'Funcionários' },
+        { key: '/schedules', label: 'Escalas' },
+        { key: '/my-leave', label: 'Minhas Ausências' },
+        { key: '/leave-management', label: 'Gestão de Ausências' },
+        { key: '/time-clock', label: 'Controle de Ponto' },
+        { key: '/payroll', label: 'Folha de Pagamento' }
+      ]
+    },
+    {
+      name: 'Outros',
+      permissions: [
+        { key: '/menu', label: 'Cardápio Online' },
+        { key: '/my-profile', label: 'Meu Perfil' },
+        { key: '/tutorials', label: 'Tutoriais' },
+        { key: '/settings', label: 'Configurações' }
+      ]
+    }
+  ];
+
+  userAvailablePermissions = computed(() => {
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!activeEmployee || !activeEmployee.role_id) return new Set<string>();
+
+    return new Set(
+        this.rolePermissions()
+            .filter(p => p.role_id === activeEmployee.role_id)
+            .map(p => p.permission_key)
+    );
+  });
+
+  permissionGroups = computed(() => {
+    const isGerente = this.operationalAuthService.activeEmployee()?.role === 'Gerente';
+    
+    if (isGerente) {
+      return this.allPermissionGroups;
+    }
+
+    const available = this.userAvailablePermissions();
+    return this.allPermissionGroups.map(group => ({
+        ...group,
+        permissions: group.permissions.filter(p => available.has(p.key))
+    })).filter(group => group.permissions.length > 0);
+  });
+
+  isPermissionsModalOpen = signal(false);
+  editingRole = signal<Role | null>(null);
+  rolePermissionsForm = signal<Record<string, boolean>>({});
+  newRoleName = signal('');
+  rolePendingDeletion = signal<Role | null>(null);
+
+  // Loyalty Program State
+  loyaltySettingsForm = signal<Partial<LoyaltySettings>>({});
+  isRewardModalOpen = signal(false);
+  editingReward = signal<Partial<LoyaltyReward> | null>(null);
+  rewardForm = signal<Partial<LoyaltyReward>>({});
+  rewardPendingDeletion = signal<LoyaltyReward | null>(null);
+  availableRewardTypes: LoyaltyRewardType[] = ['discount_fixed', 'discount_percentage', 'free_item'];
+  sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
+
+  qrCodeUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
+  });
+
+  publicMenuUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+  });
+
+  publicBookingUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
+  });
+
+  apiAccessQrCodeData = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    const apiKey = this.companyProfileForm().external_api_key;
+    if (!userId || !apiKey) {
+      return null;
+    }
+    const data = {
+      restaurantId: userId,
+      apiKey: apiKey,
+    };
+    return JSON.stringify(data);
+  });
+
+  apiAccessQrCodeUrl = computed(() => {
+    const data = this.apiAccessQrCodeData();
+    if (!data) {
+      return '';
+    }
+    return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(data)}`;
+  });
 
   constructor() {
-    this.setupFormEffects();
+    effect(() => {
+        const settings = this.reservationSettings();
+        if (settings) {
+            const weeklyHours = settings.weekly_hours || [];
+            const fullWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => {
+                const existing = weeklyHours.find(h => h.day_of_week === i);
+                return existing || {
+                    day_of_week: i,
+                    opening_time: '18:00',
+                    closing_time: '23:00',
+                    is_closed: true,
+                };
+            });
+            this.reservationForm.set({ ...settings, weekly_hours: fullWeeklyHours });
+        } else {
+            const defaultWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => ({
+                day_of_week: i,
+                opening_time: '18:00',
+                closing_time: '23:00',
+                is_closed: i === 1,
+            }));
+            this.reservationForm.set({
+                is_enabled: false,
+                weekly_hours: defaultWeeklyHours,
+                booking_duration_minutes: 90,
+                max_party_size: 8,
+                min_party_size: 1,
+                booking_notice_days: 30,
+            });
+        }
+    });
+    
+    effect(() => {
+        const profile = this.companyProfile();
+        if (profile) {
+            this.companyProfileForm.set({ ...profile });
+            this.logoPreviewUrl.set(profile.logo_url);
+            this.coverPreviewUrl.set(profile.menu_cover_url);
+            this.headerPreviewUrl.set(profile.menu_header_url);
+        } else {
+            this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: '', ifood_merchant_id: null});
+        }
+    });
+
+    effect(() => {
+        const settings = this.loyaltySettings();
+        if (settings) {
+            this.loyaltySettingsForm.set({ ...settings });
+        } else {
+            this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
+        }
+    });
   }
 
-  private setupFormEffects() {
-    // Effect to reset and populate forms when data loads or view changes
-    const profile = this.companyProfile();
-    this.profileForm.set(profile ? { ...profile } : {});
-    this.logoPreview.set(profile?.logo_url || null);
-    this.coverPreview.set(profile?.menu_cover_url || null);
-    this.headerPreview.set(profile?.menu_header_url || null);
-
-    const resSettings = this.reservationSettings();
-    this.reservationSettingsForm.set(resSettings ? { ...resSettings } : { is_enabled: false, booking_duration_minutes: 90, max_party_size: 10, min_party_size: 1, booking_notice_days: 30, weekly_hours: [] });
-
-    const loySettings = this.loyaltySettings();
-    this.loyaltySettingsForm.set(loySettings ? { ...loySettings } : { is_enabled: false, points_per_real: 1 });
+  setActiveTab(tab: SettingsTab) {
+    this.activeTab.set(tab);
   }
 
-  // --- View Management ---
-  setView(view: SettingsView) {
-    this.activeView.set(view);
+  // Filtered lists
+  filteredStations = computed(() => {
+    const term = this.stationSearchTerm().toLowerCase();
+    if (!term) return this.stations();
+    return this.stations().filter(s => s.name.toLowerCase().includes(term));
+  });
+
+  filteredCategories = computed(() => {
+    const term = this.categorySearchTerm().toLowerCase();
+    if (!term) return this.categories();
+    return this.categories().filter(c => c.name.toLowerCase().includes(term));
+  });
+  
+  filteredRecipeCategories = computed(() => {
+    const term = this.recipeCategorySearchTerm().toLowerCase();
+    if (!term) return this.recipeCategories();
+    return this.recipeCategories().filter(c => c.name.toLowerCase().includes(term));
+  });
+  
+  // --- Station Management ---
+  newStationName = signal('');
+  editingStation = signal<Station | null>(null);
+  stationPendingDeletion = signal<Station | null>(null);
+
+  async handleAddStation() {
+    const name = this.newStationName().trim(); if (!name) return;
+    const { success, error } = await this.settingsDataService.addStation(name);
+    if (success) { this.newStationName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  startEditingStation(s: Station) { this.editingStation.set({ ...s }); this.stationPendingDeletion.set(null); }
+  cancelEditingStation() { this.editingStation.set(null); }
+  updateEditingStationName(event: Event) {
+    const name = (event.target as HTMLInputElement).value;
+    this.editingStation.update(s => s ? { ...s, name } : s);
+  }
+  async saveStation() {
+    const station = this.editingStation(); if (!station?.name.trim()) return;
+    const { success, error } = await this.settingsDataService.updateStation(station.id, station.name.trim());
+    if (success) { this.cancelEditingStation(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  requestDeleteStation(s: Station) { this.stationPendingDeletion.set(s); this.editingStation.set(null); }
+  cancelDeleteStation() { this.stationPendingDeletion.set(null); }
+  async confirmDeleteStation() {
+    const station = this.stationPendingDeletion(); if (!station) return;
+    const { success, error } = await this.settingsDataService.deleteStation(station.id);
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
+    this.stationPendingDeletion.set(null);
   }
 
-  // --- Generic Modal Handlers ---
-  openModal(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string } | null) {
-    this.modalContext.set(context);
-    this.editingItem.set(item);
-    this.formName.set(item?.name || '');
-    this.modalTitle.set(`${item ? 'Editar' : 'Adicionar'} ${this.getContextTitle(context)}`);
-    this.isModalOpen.set(true);
+  // --- Ingredient Category Management ---
+  newCategoryName = signal('');
+  editingCategory = signal<IngredientCategory | null>(null);
+  categoryPendingDeletion = signal<IngredientCategory | null>(null);
+
+  async handleAddCategory() {
+    const name = this.newCategoryName().trim(); if (!name) return;
+    const { success, error } = await this.inventoryDataService.addIngredientCategory(name);
+    if (success) { this.newCategoryName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  startEditingCategory(c: IngredientCategory) { this.editingCategory.set({ ...c }); this.categoryPendingDeletion.set(null); }
+  cancelEditingCategory() { this.editingCategory.set(null); }
+  updateEditingCategoryName(event: Event) {
+    const name = (event.target as HTMLInputElement).value;
+    this.editingCategory.update(c => c ? { ...c, name } : c);
+  }
+  async saveCategory() {
+    const category = this.editingCategory(); if (!category?.name.trim()) return;
+    const { success, error } = await this.inventoryDataService.updateIngredientCategory(category.id, category.name.trim());
+    if (success) { this.cancelEditingCategory(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  requestDeleteCategory(c: IngredientCategory) { this.categoryPendingDeletion.set(c); this.editingCategory.set(null); }
+  cancelDeleteCategory() { this.categoryPendingDeletion.set(null); }
+  async confirmDeleteCategory() {
+    const category = this.categoryPendingDeletion(); if (!category) return;
+    const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
+    this.categoryPendingDeletion.set(null);
+  }
+  
+  // --- Supplier Management (Removed as per user request) ---
+  isSupplierModalOpen = signal(false);
+  editingSupplier = signal<Partial<Supplier> | null>(null);
+  supplierForm = signal<Partial<Supplier>>({});
+  supplierPendingDeletion = signal<Supplier | null>(null);
+  
+  filteredSuppliers = computed(() => {
+    const term = this.supplierSearchTerm().toLowerCase();
+    if (!term) return this.suppliers();
+    return this.suppliers().filter(s => s.name.toLowerCase().includes(term));
+  });
+
+  openAddSupplierModal() {
+    this.supplierForm.set({});
+    this.editingSupplier.set(null);
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  openEditSupplierModal(s: Supplier) {
+    this.editingSupplier.set(s);
+    this.supplierForm.set({ ...s });
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  closeSupplierModal() { this.isSupplierModalOpen.set(false); }
+
+  updateSupplierFormField(field: keyof Omit<Supplier, 'id' | 'created_at' | 'user_id'>, value: string) {
+    this.supplierForm.update(form => ({ ...form, [field]: value }));
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
-    this.modalContext.set(null);
-    this.editingItem.set(null);
-    this.formName.set('');
-  }
-
-  private getContextTitle(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role' | null): string {
-    switch (context) {
-      case 'station': return 'Estação';
-      case 'recipe_category': return 'Categoria de Prato';
-      case 'ingredient_category': return 'Categoria de Ingrediente';
-      case 'supplier': return 'Fornecedor';
-      case 'role': return 'Cargo';
-      default: return '';
+  async saveSupplier() {
+    const form = this.supplierForm();
+    if (!form.name?.trim()) {
+      await this.notificationService.alert('Nome é obrigatório');
+      return;
     }
-  }
-
-  async saveItem() {
-    const context = this.modalContext();
-    const name = this.formName().trim();
-    if (!context || !name) return;
-
-    this.isSaving.set(true);
-    let result: { success: boolean; error: any; data?: any };
-    const id = this.editingItem()?.id;
-
-    switch (context) {
-      case 'station':
-        result = id ? await this.settingsDataService.updateStation(id, name) : await this.settingsDataService.addStation(name);
-        break;
-      case 'recipe_category':
-        result = id ? await this.recipeDataService.updateRecipeCategory(id, name) : await this.recipeDataService.addRecipeCategory(name);
-        break;
-      case 'ingredient_category':
-        result = id ? await this.inventoryDataService.updateIngredientCategory(id, name) : await this.inventoryDataService.addIngredientCategory(name);
-        break;
-      case 'supplier':
-        result = id ? await this.inventoryDataService.updateSupplier({ id, name }) : await this.inventoryDataService.addSupplier({ name });
-        break;
-      case 'role':
-        result = id ? await this.settingsDataService.updateRole(id, name) : await this.settingsDataService.addRole(name);
-        break;
-    }
-
-    if (result.success) {
-      this.closeModal();
+    let res;
+    if (this.editingSupplier()) {
+      res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
     } else {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
+      res = await this.inventoryDataService.addSupplier(form as any);
     }
-    this.isSaving.set(false);
+    if (res.success) {
+      this.closeSupplierModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${res.error?.message}`);
+    }
   }
 
-  async deleteItem(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string }) {
-    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir "${item.name}"?`);
-    if (!confirmed) return;
-
-    this.isSaving.set(true);
-    let result: { success: boolean; error: any };
-
-    switch (context) {
-      case 'station': result = await this.settingsDataService.deleteStation(item.id); break;
-      case 'recipe_category': result = await this.recipeDataService.deleteRecipeCategory(item.id); break;
-      case 'ingredient_category': result = await this.inventoryDataService.deleteIngredientCategory(item.id); break;
-      case 'supplier': result = await this.inventoryDataService.deleteSupplier(item.id); break;
-      case 'role': result = await this.settingsDataService.deleteRole(item.id); break;
+  requestDeleteSupplier(s: Supplier) { this.supplierPendingDeletion.set(s); }
+  cancelDeleteSupplier() { this.supplierPendingDeletion.set(null); }
+  async confirmDeleteSupplier() {
+    const supplier = this.supplierPendingDeletion();
+    if (!supplier) return;
+    const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
+    if (!success) {
+      await this.notificationService.alert(`Falha: ${error?.message}`);
     }
-
-    if (!result.success) {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
-    }
-    this.isSaving.set(false);
+    this.supplierPendingDeletion.set(null);
   }
 
-  // --- Profile Handlers ---
-  handleFileChange(event: Event, type: 'logo' | 'cover' | 'header') {
+
+  // --- Recipe Category Management ---
+  isRecipeCategoryModalOpen = signal(false);
+  newRecipeCategoryName = signal('');
+  editingRecipeCategory = signal<Category | null>(null);
+  recipeCategoryPendingDeletion = signal<Category | null>(null);
+  recipeCategoryImageFile = signal<File | null>(null);
+  recipeCategoryImagePreviewUrl = signal<string | null>(null);
+
+  openAddRecipeCategoryModal() {
+    this.editingRecipeCategory.set(null);
+    this.newRecipeCategoryName.set('');
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(null);
+    this.isRecipeCategoryModalOpen.set(true);
+  }
+
+  openEditRecipeCategoryModal(c: Category) {
+    this.editingRecipeCategory.set({ ...c });
+    this.newRecipeCategoryName.set(c.name);
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(c.image_url);
+    this.isRecipeCategoryModalOpen.set(true);
+  }
+
+  closeRecipeCategoryModal() {
+    this.isRecipeCategoryModalOpen.set(false);
+  }
+  
+  handleRecipeCategoryImageChange(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
+      this.recipeCategoryImageFile.set(file);
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (type === 'logo') { this.logoFile.set(file); this.logoPreview.set(result); }
-        if (type === 'cover') { this.coverFile.set(file); this.coverPreview.set(result); }
-        if (type === 'header') { this.headerFile.set(file); this.headerPreview.set(result); }
-      };
+      reader.onload = (e) => this.recipeCategoryImagePreviewUrl.set(e.target?.result as string);
       reader.readAsDataURL(file);
     }
   }
 
-  async saveProfile() {
-    this.isSaving.set(true);
-    const { success, error } = await this.settingsDataService.updateCompanyProfile(this.profileForm(), this.logoFile(), this.coverFile(), this.headerFile());
-    if (success) {
-      this.notificationService.show('Perfil da empresa salvo com sucesso!', 'success');
-      this.logoFile.set(null); // Clear file signals after upload
-      this.coverFile.set(null);
-      this.headerFile.set(null);
-    } else {
-      this.notificationService.show(`Erro ao salvar perfil: ${error.message}`, 'error');
+  async saveRecipeCategory() {
+    const name = this.newRecipeCategoryName().trim();
+    if (!name) {
+      await this.notificationService.alert('O nome da categoria é obrigatório.');
+      return;
     }
-    this.isSaving.set(false);
+    const imageFile = this.recipeCategoryImageFile();
+    const editingCategory = this.editingRecipeCategory();
+    
+    let result;
+    if (editingCategory) {
+      result = await this.recipeDataService.updateRecipeCategory(editingCategory.id, name, imageFile);
+    } else {
+      result = await this.recipeDataService.addRecipeCategory(name, imageFile);
+    }
+
+    if (result.success) {
+      this.closeRecipeCategoryModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${result.error?.message}`);
+    }
   }
 
-  // --- Roles & Permissions Handlers ---
+  requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); }
+  cancelDeleteRecipeCategory() { this.recipeCategoryPendingDeletion.set(null); }
+  async confirmDeleteRecipeCategory() {
+    const category = this.recipeCategoryPendingDeletion(); if (!category) return;
+    const { success, error } = await this.recipeDataService.deleteRecipeCategory(category.id);
+    if (!success) { await this.notificationService.alert(`Falha ao deletar. Erro: ${error?.message}`); }
+    this.recipeCategoryPendingDeletion.set(null);
+  }
+
+  // --- Reservation Settings ---
+  updateReservationFormField(field: keyof Omit<ReservationSettings, 'id' | 'created_at' | 'user_id' | 'weekly_hours'>, value: any) {
+    if (field === 'is_enabled') {
+        this.reservationForm.update(form => ({ ...form, [field]: !!value }));
+    } else {
+        this.reservationForm.update(form => ({ ...form, [field]: value }));
+    }
+  }
+
+  updateWeeklyHours(dayIndex: number, field: 'opening_time' | 'closing_time' | 'is_closed', value: string | boolean) {
+    this.reservationForm.update(form => {
+      const newHours = form.weekly_hours ? [...form.weekly_hours] : [];
+      if (newHours[dayIndex]) {
+        const updatedDay = { ...newHours[dayIndex], [field]: value };
+        newHours[dayIndex] = updatedDay;
+        return { ...form, weekly_hours: newHours };
+      }
+      return form;
+    });
+  }
+
+  async saveReservationSettings() {
+    const form = this.reservationForm();
+    const { success, error } = await this.reservationDataService.updateReservationSettings(form);
+    if (success) {
+      await this.notificationService.alert('Configurações de reserva salvas!', 'Sucesso');
+    } else {
+      await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+    }
+  }
+
+  // --- Company Profile ---
+  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url' | 'menu_cover_url' | 'menu_header_url'>, value: string) {
+      this.companyProfileForm.update(form => ({ ...form, [field]: value }));
+  }
+  
+  handleLogoFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.logoFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.logoPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  handleCoverFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.coverFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.coverPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  handleHeaderFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.headerFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.headerPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+  
+  async saveCompanyProfile() {
+      const profileForm = this.companyProfileForm();
+      if (!profileForm.company_name || !profileForm.cnpj) {
+          await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
+          return;
+      }
+      
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile(), this.coverFile(), this.headerFile());
+
+      if (success) {
+          await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
+          this.logoFile.set(null);
+          this.coverFile.set(null);
+          this.headerFile.set(null);
+      } else {
+          await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
+      }
+  }
+
+  async copyToClipboard(text: string | null | undefined) {
+    if (!text) {
+      this.notificationService.show('Nenhum texto para copiar.', 'warning');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      this.notificationService.show('Copiado para a área de transferência!', 'success');
+    } catch (err) {
+      await this.notificationService.alert('Falha ao copiar.');
+    }
+  }
+
+  async regenerateApiKey() {
+    const confirmed = await this.notificationService.confirm(
+      'Gerar uma nova chave de API irá invalidar permanentemente a chave atual. Qualquer sistema usando a chave antiga deixará de funcionar. Deseja continuar?',
+      'Gerar Nova Chave de API?'
+    );
+    if (confirmed) {
+      const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
+      if (success && data) {
+        this.companyProfileForm.update(form => ({ ...form, external_api_key: data.external_api_key }));
+        await this.notificationService.alert('Nova chave de API gerada com sucesso! Não se esqueça de atualizar seus sistemas integrados.', 'Sucesso');
+      } else {
+        await this.notificationService.alert(`Erro ao gerar nova chave: ${error?.message}`);
+      }
+    }
+  }
+
+  // --- Role Methods ---
   openPermissionsModal(role: Role) {
-    this.editingRolePermissions.set(role);
-    const currentPermissions = this.rolePermissions().filter(p => p.role_id === role.id).map(p => p.permission_key);
-    this.permissionsForm.set(new Set(currentPermissions));
+    this.editingRole.set(role);
+    const currentPermissions = new Set(
+      this.rolePermissions()
+        .filter(p => p.role_id === role.id)
+        .map(p => p.permission_key)
+    );
+    const formState: Record<string, boolean> = {};
+    for (const key of this.allPermissions) {
+      formState[key] = currentPermissions.has(key);
+    }
+    this.rolePermissionsForm.set(formState);
     this.isPermissionsModalOpen.set(true);
   }
 
   closePermissionsModal() {
     this.isPermissionsModalOpen.set(false);
-    this.editingRolePermissions.set(null);
+    this.editingRole.set(null);
   }
 
-  togglePermission(key: string) {
-    this.permissionsForm.update(currentSet => {
-      const newSet = new Set(currentSet);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
+  updatePermission(key: string, isChecked: boolean) {
+    this.rolePermissionsForm.update(form => ({ ...form, [key]: isChecked }));
   }
 
   async savePermissions() {
-    const role = this.editingRolePermissions();
-    if (!role) return;
+    const role = this.editingRole();
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!role || !activeEmployee?.role_id) return;
+    
+    const permissions = Object.entries(this.rolePermissionsForm())
+      .filter(([, isEnabled]) => isEnabled)
+      .map(([key]) => key);
 
-    this.isSaving.set(true);
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, Array.from(this.permissionsForm()), '');
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, permissions, activeEmployee.role_id);
     if (success) {
-      this.notificationService.show(`Permissões para "${role.name}" salvas!`, 'success');
       this.closePermissionsModal();
     } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  // --- Integrations ---
-  async regenerateApiKey() {
-    const confirmed = await this.notificationService.confirm(
-      'Isso irá invalidar sua chave de API externa atual. Qualquer integração que a utilize precisará ser atualizada. Deseja continuar?'
-    );
-    if (!confirmed) return;
-    
-    this.isSaving.set(true);
-    const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
-    if (success && data) {
-      this.profileForm.update(p => ({ ...p, external_api_key: data.external_api_key }));
-      this.notificationService.show('Nova chave de API gerada com sucesso!', 'success');
-    } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  // --- Reservations ---
-  async saveReservationSettings() {
-    this.isSaving.set(true);
-    const { success, error } = await this.reservationDataService.updateReservationSettings(this.reservationSettingsForm());
-     if (success) {
-      this.notificationService.show('Configurações de reserva salvas!', 'success');
-    } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  // --- Loyalty ---
-  async saveLoyaltySettings() {
-    this.isSaving.set(true);
-    const { success, error } = await this.settingsDataService.upsertLoyaltySettings(this.loyaltySettingsForm());
-    if (success) {
-      this.notificationService.show('Configurações de fidelidade salvas!', 'success');
-    } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  openLoyaltyRewardModal(reward: Partial<LoyaltyReward> | null) {
-    this.editingLoyaltyReward.set(reward);
-    this.isLoyaltyRewardModalOpen.set(true);
-  }
-
-  closeLoyaltyRewardModal() {
-    this.isLoyaltyRewardModalOpen.set(false);
-    this.editingLoyaltyReward.set(null);
-  }
-
-  async saveLoyaltyReward(reward: Partial<LoyaltyReward>) {
-    this.isSaving.set(true);
-    const result = reward.id
-      ? await this.settingsDataService.updateLoyaltyReward(reward)
-      : await this.settingsDataService.addLoyaltyReward(reward);
-    
-    if (result.success) {
-      this.closeLoyaltyRewardModal();
-    } else {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  async deleteLoyaltyReward(reward: LoyaltyReward) {
-    const confirmed = await this.notificationService.confirm(`Excluir a recompensa "${reward.name}"?`);
-    if (!confirmed) return;
-
-    const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
-    if (!success) {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
+      await this.notificationService.alert(`Erro ao salvar permissões: ${error?.message}`);
     }
   }
 
-  // --- Webhooks ---
-  openWebhookModal(webhook: Partial<Webhook> | null) {
-    this.editingWebhook.set(webhook);
-    this.isWebhookModalOpen.set(true);
+  async handleAddRole() {
+    const { confirmed, value: roleName } = await this.notificationService.prompt('Qual o nome do novo cargo?', 'Novo Cargo', { placeholder: 'Ex: Cozinha' });
+    if (confirmed && roleName) {
+      const { success, error } = await this.settingsDataService.addRole(roleName);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao criar cargo: ${error?.message}`);
+      }
+    }
   }
 
-  closeWebhookModal() {
-    this.isWebhookModalOpen.set(false);
-    this.editingWebhook.set(null);
+  requestDeleteRole(role: Role) {
+    this.rolePendingDeletion.set(role);
+  }
+  cancelDeleteRole() {
+    this.rolePendingDeletion.set(null);
+  }
+  async confirmDeleteRole() {
+    const role = this.rolePendingDeletion();
+    if (role) {
+      const { success, error } = await this.settingsDataService.deleteRole(role.id);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao deletar cargo: ${error?.message}`);
+      }
+      this.rolePendingDeletion.set(null);
+    }
   }
   
-  // Omitted save/delete webhook methods as they require new data service methods
-  // which are outside the scope of fixing the current error.
-  // Will provide stubs for now.
-
-  async saveWebhook(webhook: Partial<Webhook>) {
-      this.notificationService.show('Funcionalidade de salvar webhook ainda não foi implementada.', 'info');
-      this.closeWebhookModal();
+  // --- Loyalty Program ---
+  getRewardValueLabel(reward: LoyaltyReward): string {
+    const recipesMap = new Map(this.recipes().map(r => [r.id, r.name]));
+    switch (reward.reward_type) {
+      case 'free_item':
+        return `Item Grátis: ${recipesMap.get(reward.reward_value) || 'Item especial'}`;
+      case 'discount_percentage':
+        return `${reward.reward_value}% de desconto`;
+      case 'discount_fixed':
+        return `R$ ${reward.reward_value} de desconto`;
+    }
+  }
+  getRewardTypeLabel(type: LoyaltyRewardType): string {
+    switch (type) {
+        case 'discount_fixed': return 'Desconto (R$)';
+        case 'discount_percentage': return 'Desconto (%)';
+        case 'free_item': return 'Item Grátis';
+    }
+  }
+  
+  updateLoyaltySettingsField(field: keyof Omit<LoyaltySettings, 'user_id' | 'created_at'>, value: any) {
+    this.loyaltySettingsForm.update(form => {
+        if (field === 'is_enabled') return { ...form, [field]: !!value };
+        if (field === 'points_per_real') return { ...form, [field]: Number(value) };
+        return form;
+    });
   }
 
-  async deleteWebhook(webhook: Webhook) {
-      this.notificationService.show('Funcionalidade de deletar webhook ainda não foi implementada.', 'info');
+  async saveLoyaltySettings() {
+    const form = this.loyaltySettingsForm();
+    const { success, error } = await this.settingsDataService.upsertLoyaltySettings(form);
+    if (success) {
+      this.notificationService.show('Configurações salvas!', 'success');
+    } else {
+      await this.notificationService.alert(`Erro: ${error?.message}`);
+    }
   }
 
+  openAddRewardModal() {
+    this.editingReward.set(null);
+    this.rewardForm.set({
+      name: '',
+      description: '',
+      points_cost: 100,
+      reward_type: 'discount_fixed',
+      reward_value: '10', // 10 reais
+      is_active: true
+    });
+    this.isRewardModalOpen.set(true);
+  }
+  
+  openEditRewardModal(reward: LoyaltyReward) {
+    this.editingReward.set(reward);
+    this.rewardForm.set({ ...reward });
+    this.isRewardModalOpen.set(true);
+  }
+
+  closeRewardModal() { this.isRewardModalOpen.set(false); }
+
+  updateRewardFormField(field: keyof Omit<LoyaltyReward, 'id' | 'user_id' | 'created_at'>, value: any) {
+    this.rewardForm.update(form => {
+        if(field === 'is_active') return { ...form, [field]: !!value };
+        if(field === 'points_cost') return { ...form, [field]: Number(value) };
+        if(field === 'reward_type') {
+            const newForm = { ...form, [field]: value };
+            // Reset reward_value when type changes
+            newForm.reward_value = value === 'free_item' ? '' : '10';
+            return newForm;
+        }
+        return { ...form, [field]: value };
+    });
+  }
+
+  async saveReward() {
+    const form = this.rewardForm();
+    if (!form.name?.trim() || !form.reward_value?.trim()) {
+        await this.notificationService.alert('Nome e valor da recompensa são obrigatórios.');
+        return;
+    }
+    const result = this.editingReward()
+      ? await this.settingsDataService.updateLoyaltyReward({ ...form, id: this.editingReward()!.id })
+      : await this.settingsDataService.addLoyaltyReward(form);
+    
+    if (result.success) {
+        this.closeRewardModal();
+    } else {
+        await this.notificationService.alert(`Erro: ${result.error?.message}`);
+    }
+  }
+
+  requestDeleteReward(reward: LoyaltyReward) { this.rewardPendingDeletion.set(reward); }
+  cancelDeleteReward() { this.rewardPendingDeletion.set(null); }
+  async confirmDeleteReward() {
+    const reward = this.rewardPendingDeletion();
+    if(reward) {
+        const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
+        if(!success) await this.notificationService.alert(`Erro: ${error?.message}`);
+        this.rewardPendingDeletion.set(null);
+    }
+  }
 }
