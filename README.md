@@ -99,7 +99,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 ### 👥 **Recursos Humanos (RH)**
 - **Cadastro Completo de Funcionários:** Gerencie informações pessoais, de contato, contratuais, de pagamento e bancárias de toda a equipe.
 - **Escalas de Trabalho:** Crie e publique escalas de trabalho semanais. Apenas escalas publicadas são visíveis para não-gerentes.
-- **Controle de Ponto:** Monitore e realize ajustes manuais nos registros de entrada, saída e pausas dos funcionários. O registro em si é feito pelo funcionário logado.
+- **Controle de Ponto com Geolocalização:** Monitore e realize ajustes manuais nos registros de entrada, saída e pausas. O sistema permite configurar um **ponto geográfico e um raio de permissão** para garantir que o registro de ponto seja feito apenas no local do restaurante. A configuração é facilitada por um **mapa interativo** onde você pode visualizar e definir a área exata.
 - **Gestão de Ausências:** Aprove ou rejeite solicitações de férias e folgas. Os funcionários têm uma tela para solicitar e acompanhar suas próprias ausências.
 - **Folha de Pagamento:** Calcule uma prévia da folha de pagamento com base nas horas trabalhadas, considerando **horas extras com base em limites diários e semanais**, e gere **contracheques (holerites)** detalhados e prontos para impressão.
 
