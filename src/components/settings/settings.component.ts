@@ -63,6 +63,7 @@ export class SettingsComponent {
   loyaltyRewards = this.settingsState.loyaltyRewards;
   subscription = this.subscriptionState.subscription;
   currentPlan = this.subscriptionState.currentPlan;
+  trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -107,6 +108,7 @@ export class SettingsComponent {
       permissions: [
         { key: '/ifood-kds', label: 'KDS Delivery' },
         { key: '/ifood-menu', label: 'Cardápio iFood' },
+        { key: '/ifood-store-manager', label: 'Gestor de Loja' },
       ]
     },
     {
@@ -143,6 +145,7 @@ export class SettingsComponent {
       name: 'Outros',
       permissions: [
         { key: '/menu', label: 'Cardápio Online' },
+        { key: '/my-profile', label: 'Meu Perfil' },
         { key: '/tutorials', label: 'Tutoriais' },
         { key: '/settings', label: 'Configurações' }
       ]
@@ -367,12 +370,12 @@ export class SettingsComponent {
     this.categoryPendingDeletion.set(null);
   }
   
-  // --- Supplier Management ---
+  // --- Supplier Management (Removed as per user request) ---
   isSupplierModalOpen = signal(false);
   editingSupplier = signal<Partial<Supplier> | null>(null);
   supplierForm = signal<Partial<Supplier>>({});
   supplierPendingDeletion = signal<Supplier | null>(null);
-
+  
   filteredSuppliers = computed(() => {
     const term = this.supplierSearchTerm().toLowerCase();
     if (!term) return this.suppliers();
@@ -391,9 +394,7 @@ export class SettingsComponent {
     this.isSupplierModalOpen.set(true);
   }
   
-  closeSupplierModal() {
-    this.isSupplierModalOpen.set(false);
-  }
+  closeSupplierModal() { this.isSupplierModalOpen.set(false); }
 
   updateSupplierFormField(field: keyof Omit<Supplier, 'id' | 'created_at' | 'user_id'>, value: string) {
     this.supplierForm.update(form => ({ ...form, [field]: value }));
@@ -418,14 +419,8 @@ export class SettingsComponent {
     }
   }
 
-  requestDeleteSupplier(s: Supplier) {
-    this.supplierPendingDeletion.set(s);
-  }
-  
-  cancelDeleteSupplier() {
-    this.supplierPendingDeletion.set(null);
-  }
-  
+  requestDeleteSupplier(s: Supplier) { this.supplierPendingDeletion.set(s); }
+  cancelDeleteSupplier() { this.supplierPendingDeletion.set(null); }
   async confirmDeleteSupplier() {
     const supplier = this.supplierPendingDeletion();
     if (!supplier) return;
@@ -435,6 +430,7 @@ export class SettingsComponent {
     }
     this.supplierPendingDeletion.set(null);
   }
+
 
   // --- Recipe Category Management ---
   isRecipeCategoryModalOpen = signal(false);
