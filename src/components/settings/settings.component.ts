@@ -1,498 +1,771 @@
-
-import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { 
-  CompanyProfile, Station, Role, IngredientCategory, Supplier, Category as RecipeCategory, Promotion,
-  PromotionRecipe, DiscountType, Recipe, ReservationSettings, OperatingHours,
-  LoyaltySettings, LoyaltyReward, LoyaltyRewardType, Webhook, WebhookEvent
-} from '../../models/db.models';
+import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
-import { ReservationDataService } from '../../services/reservation-data.service';
 import { NotificationService } from '../../services/notification.service';
-import { SettingsStateService } from '../../services/settings-state.service';
+import { AuthService } from '../../services/auth.service';
+import { ReservationDataService } from '../../services/reservation-data.service';
+import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+import { OperationalAuthService } from '../../services/operational-auth.service';
+
+// Import new state services
+import { PosStateService } from '../../services/pos-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
-import { PosStateService } from '../../services/pos-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
-import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
+import { DemoService } from '../../services/demo.service';
 
-type SettingsTab = 'company' | 'stations' | 'roles' | 'categories' | 'suppliers' | 'promotions' | 'reservations' | 'loyalty' | 'integrations' | 'webhooks';
+type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="h-full flex flex-col p-4 md:p-6 bg-gray-900 text-gray-200">
-      <header class="mb-6">
-        <h1 class="text-3xl font-bold text-white">Configurações</h1>
-        <p class="text-gray-400">Gerencie todos os aspectos do seu restaurante.</p>
-      </header>
-
-      <div class="flex-grow flex flex-col md:flex-row gap-6 overflow-y-auto">
-        <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 flex-shrink-0 bg-gray-800 rounded-lg p-2 md:p-4 self-start">
-          <nav class="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
-            @for (tab of tabs; track tab.id) {
-              <button 
-                (click)="activeTab.set(tab.id)"
-                [class.bg-blue-600]="activeTab() === tab.id"
-                [class.text-white]="activeTab() === tab.id"
-                class="flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors flex-shrink-0">
-                <span class="material-symbols-outlined">{{ tab.icon }}</span>
-                <span class="hidden md:inline">{{ tab.name }}</span>
-              </button>
-            }
-          </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-grow bg-gray-800 rounded-lg p-6 overflow-y-auto">
-          @switch (activeTab()) {
-            @case ('company') {
-              <!-- Company Profile Section -->
-              <section>
-                <h2 class="text-2xl font-semibold mb-4 text-white">Perfil da Empresa</h2>
-                <div class="space-y-4">
-                   <div>
-                    <label for="company_name" class="block text-sm font-medium text-gray-300">Nome do Restaurante</label>
-                    <input type="text" id="company_name" [ngModel]="companyProfileForm().company_name" (ngModelChange)="updateCompanyProfileField('company_name', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-white">
-                  </div>
-                   <div>
-                    <label for="cnpj" class="block text-sm font-medium text-gray-300">CNPJ</label>
-                    <input type="text" id="cnpj" [ngModel]="companyProfileForm().cnpj" (ngModelChange)="updateCompanyProfileField('cnpj', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-white">
-                  </div>
-                   <div>
-                    <label for="address" class="block text-sm font-medium text-gray-300">Endereço</label>
-                    <input type="text" id="address" [ngModel]="companyProfileForm().address" (ngModelChange)="updateCompanyProfileField('address', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-white">
-                  </div>
-                   <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-300">Telefone</label>
-                    <input type="text" id="phone" [ngModel]="companyProfileForm().phone" (ngModelChange)="updateCompanyProfileField('phone', $event)" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-white">
-                  </div>
-                  <div class="flex justify-end mt-6">
-                    <button (click)="saveCompanyProfile()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow-md transition-colors">Salvar Perfil</button>
-                  </div>
-                </div>
-              </section>
-            }
-            @case ('stations') {
-              <!-- Stations Section -->
-              <section>
-                 <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-2xl font-semibold text-white">Estações de Produção</h2>
-                  <button (click)="openStationModal(null)" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow-md transition-colors">Adicionar Estação</button>
-                </div>
-                 <div class="space-y-2">
-                  @for (station of stations(); track station.id) {
-                    <div class="flex justify-between items-center p-3 bg-gray-700 rounded-md">
-                      <span class="font-medium">{{ station.name }}</span>
-                      <div>
-                        <button (click)="openStationModal(station)" class="text-blue-400 hover:text-blue-300 mr-4">Editar</button>
-                        <button (click)="deleteStation(station)" class="text-red-400 hover:text-red-300">Excluir</button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </section>
-            }
-             @case ('roles') {
-              <section>
-                 <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-2xl font-semibold text-white">Cargos e Permissões</h2>
-                  <button (click)="openRoleModal(null)" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow-md transition-colors">Adicionar Cargo</button>
-                </div>
-                 <div class="space-y-2">
-                  @for (role of roles(); track role.id) {
-                    <div class="flex justify-between items-center p-3 bg-gray-700 rounded-md">
-                      <span class="font-medium">{{ role.name }}</span>
-                      <div>
-                        <button (click)="openPermissionsModal(role)" class="text-yellow-400 hover:text-yellow-300 mr-4">Permissões</button>
-                        <button (click)="openRoleModal(role)" class="text-blue-400 hover:text-blue-300 mr-4">Editar</button>
-                        <button (click)="deleteRole(role)" class="text-red-400 hover:text-red-300">Excluir</button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </section>
-            }
-            @case('integrations') {
-               <section>
-                <h2 class="text-2xl font-semibold mb-4 text-white">Integrações</h2>
-                <div class="space-y-6">
-                  <!-- iFood Integration -->
-                  <div class="p-4 bg-gray-700 rounded-lg">
-                    <h3 class="text-xl font-semibold mb-2 text-white">iFood</h3>
-                    <div>
-                      <label for="ifood_merchant_id" class="block text-sm font-medium text-gray-300">Merchant ID</label>
-                      <input type="text" id="ifood_merchant_id" [ngModel]="companyProfileForm().ifood_merchant_id" (ngModelChange)="updateCompanyProfileField('ifood_merchant_id', $event)" class="mt-1 block w-full bg-gray-600 border-gray-500 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-white" placeholder="ID da sua loja no iFood">
-                    </div>
-                    <div class="flex justify-end mt-4">
-                       <button (click)="saveCompanyProfile()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow-md transition-colors">Salvar iFood ID</button>
-                    </div>
-                  </div>
-
-                  <!-- External API -->
-                  <div class="p-4 bg-gray-700 rounded-lg">
-                    <h3 class="text-xl font-semibold mb-2 text-white">API Externa</h3>
-                    <p class="text-gray-400 mb-4">Use esta chave para integrar com sistemas externos, como totens de autoatendimento ou aplicativos de delivery próprios.</p>
-                    <div>
-                      <label for="api_key" class="block text-sm font-medium text-gray-300">Sua Chave de API</label>
-                      <div class="flex items-center mt-1">
-                        <input type="text" id="api_key" readonly [value]="companyProfile()?.external_api_key || 'Nenhuma chave gerada'" class="block w-full bg-gray-600 border-gray-500 rounded-md shadow-sm text-gray-300">
-                        <button (click)="copyApiKey()" class="ml-2 p-2 bg-gray-600 hover:bg-gray-500 rounded-md"><span class="material-symbols-outlined">content_copy</span></button>
-                      </div>
-                    </div>
-                     <div class="flex justify-end mt-4">
-                       <button (click)="regenerateApiKey()" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-md shadow-md transition-colors">Gerar Nova Chave</button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            }
-             @case ('webhooks') {
-              <section>
-                 <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-2xl font-semibold text-white">Webhooks</h2>
-                  <button (click)="openWebhookModal(null)" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow-md transition-colors">Adicionar Webhook</button>
-                </div>
-                <p class="text-gray-400 mb-4">Seus endpoints serão notificados em tempo real quando os eventos selecionados ocorrerem.</p>
-                 <div class="space-y-2">
-                  @if (webhooks().length === 0) {
-                    <p class="text-gray-500">Nenhum webhook configurado.</p>
-                  }
-                  @for (webhook of webhooks(); track webhook.id) {
-                    <div class="p-3 bg-gray-700 rounded-md">
-                        <div class="flex justify-between items-center">
-                            <div class="flex-grow">
-                                <p class="font-mono text-sm break-all">{{ webhook.url }}</p>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <span [class.bg-green-500]="webhook.is_active" [class.bg-red-500]="!webhook.is_active" class="w-3 h-3 rounded-full"></span>
-                                    <span class="text-xs text-gray-400">{{ webhook.is_active ? 'Ativo' : 'Inativo' }}</span>
-                                </div>
-                            </div>
-                            <div class="flex-shrink-0 ml-4">
-                                <button (click)="openWebhookModal(webhook)" class="text-blue-400 hover:text-blue-300 mr-4">Editar</button>
-                                <button (click)="deleteWebhook(webhook)" class="text-red-400 hover:text-red-300">Excluir</button>
-                            </div>
-                        </div>
-                    </div>
-                  }
-                </div>
-              </section>
-            }
-            @default {
-              <p>Selecione uma categoria de configuração.</p>
-            }
-          }
-        </main>
-      </div>
-    </div>
-    
-    <!-- Modals -->
-    @if (isStationModalOpen()) {
-      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeStationModal()">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md" (click)="$event.stopPropagation()">
-          <h3 class="text-xl font-semibold mb-4">{{ editingStation() ? 'Editar' : 'Adicionar' }} Estação</h3>
-          <input type="text" [(ngModel)]="stationName" class="w-full bg-gray-700 border-gray-600 rounded-md text-white" placeholder="Nome da Estação">
-          <div class="flex justify-end mt-4 gap-4">
-            <button (click)="closeStationModal()" class="px-4 py-2 rounded-md hover:bg-gray-700">Cancelar</button>
-            <button (click)="saveStation()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md">Salvar</button>
-          </div>
-        </div>
-      </div>
-    }
-
-    @if (isRoleModalOpen()) {
-       <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closeRoleModal()">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md" (click)="$event.stopPropagation()">
-          <h3 class="text-xl font-semibold mb-4">{{ editingRole() ? 'Editar' : 'Adicionar' }} Cargo</h3>
-          <input type="text" [(ngModel)]="roleName" class="w-full bg-gray-700 border-gray-600 rounded-md text-white" placeholder="Nome do Cargo">
-          <div class="flex justify-end mt-4 gap-4">
-            <button (click)="closeRoleModal()" class="px-4 py-2 rounded-md hover:bg-gray-700">Cancelar</button>
-            <button (click)="saveRole()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md">Salvar</button>
-          </div>
-        </div>
-      </div>
-    }
-
-    @if (isPermissionsModalOpen()) {
-      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" (click)="closePermissionsModal()">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] flex flex-col" (click)="$event.stopPropagation()">
-          <h3 class="text-xl font-semibold mb-4">Permissões para: {{ editingRole()?.name }}</h3>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto pr-2">
-            @for (permission of ALL_PERMISSION_KEYS; track permission) {
-              <label class="flex items-center p-2 bg-gray-700 rounded-md cursor-pointer hover:bg-gray-600">
-                <input type="checkbox" class="h-4 w-4 rounded bg-gray-600 border-gray-500 text-blue-500 focus:ring-blue-600"
-                  [checked]="rolePermissions().has(permission)"
-                  (change)="togglePermission(permission)">
-                <span class="ml-3 text-sm text-gray-300">{{ permission.replace('/', '').replace('-', ' ') | titlecase }}</span>
-              </label>
-            }
-          </div>
-          <div class="flex justify-end mt-6 gap-4 border-t border-gray-700 pt-4">
-            <button (click)="closePermissionsModal()" class="px-4 py-2 rounded-md hover:bg-gray-700">Cancelar</button>
-            <button (click)="savePermissions()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md">Salvar Permissões</button>
-          </div>
-        </div>
-      </div>
-    }
-  `,
+  imports: [CommonModule],
+  templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SettingsComponent implements OnInit {
-  // --- Injections ---
+export class SettingsComponent {
+  // Data services
   private settingsDataService = inject(SettingsDataService);
   private inventoryDataService = inject(InventoryDataService);
   private recipeDataService = inject(RecipeDataService);
   private reservationDataService = inject(ReservationDataService);
+  
+  // Auth & Notification services
   private notificationService = inject(NotificationService);
-  private settingsState = inject(SettingsStateService);
+  authService = inject(AuthService);
+  private operationalAuthService = inject(OperationalAuthService);
+
+  // New state services
+  private posState = inject(PosStateService);
   private inventoryState = inject(InventoryStateService);
   private recipeState = inject(RecipeStateService);
-  private posState = inject(PosStateService);
+  private settingsState = inject(SettingsStateService);
   private hrState = inject(HrStateService);
+  private subscriptionState = inject(SubscriptionStateService);
+  private demoService = inject(DemoService);
 
-  // --- State Signals ---
-  activeTab = signal<SettingsTab>('company');
-  readonly ALL_PERMISSION_KEYS = ALL_PERMISSION_KEYS;
+  // Data Signals from new services
+  stations = this.posState.stations;
+  categories = this.inventoryState.ingredientCategories;
+  suppliers = this.inventoryState.suppliers;
+  recipeCategories = this.recipeState.categories;
+  recipes = this.recipeState.recipes;
+  reservationSettings = this.settingsState.reservationSettings;
+  companyProfile = this.settingsState.companyProfile;
+  roles = this.hrState.roles;
+  rolePermissions = this.hrState.rolePermissions;
+  loyaltySettings = this.settingsState.loyaltySettings;
+  loyaltyRewards = this.settingsState.loyaltyRewards;
+  subscription = this.subscriptionState.subscription;
+  currentPlan = this.subscriptionState.currentPlan;
+
+  // For template display
+  daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+  webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
+
+  // Tab state
+  activeTab = signal<SettingsTab>('empresa');
+
+  // Reservation Form
+  reservationForm = signal<Partial<ReservationSettings>>({});
   
-  tabs: { id: SettingsTab; name: string; icon: string }[] = [
-    { id: 'company', name: 'Perfil da Empresa', icon: 'storefront' },
-    { id: 'stations', name: 'Estações de Produção', icon: 'soup_kitchen' },
-    { id: 'roles', name: 'Cargos e Permissões', icon: 'shield_person' },
-    // { id: 'categories', name: 'Categorias', icon: 'category' },
-    // { id: 'suppliers', name: 'Fornecedores', icon: 'local_shipping' },
-    // { id: 'promotions', name: 'Promoções', icon: 'sell' },
-    // { id: 'reservations', name: 'Reservas', icon: 'event_seat' },
-    // { id: 'loyalty', name: 'Fidelidade', icon: 'loyalty' },
-    { id: 'integrations', name: 'Integrações', icon: 'integration_instructions' },
-    { id: 'webhooks', name: 'Webhooks', icon: 'webhook' },
+  // Company Profile Form
+  companyProfileForm = signal<Partial<CompanyProfile>>({});
+  logoFile = signal<File | null>(null);
+  logoPreviewUrl = signal<string | null>(null);
+  coverFile = signal<File | null>(null);
+  coverPreviewUrl = signal<string | null>(null);
+  headerFile = signal<File | null>(null);
+  headerPreviewUrl = signal<string | null>(null);
+
+  // Search terms
+  stationSearchTerm = signal('');
+  categorySearchTerm = signal('');
+  recipeCategorySearchTerm = signal('');
+  supplierSearchTerm = signal('');
+
+  // Role Management State
+  allPermissions = ALL_PERMISSION_KEYS;
+  
+  private allPermissionGroups = [
+    {
+      name: 'Vendas',
+      permissions: [
+        { key: '/pos', label: 'PDV' },
+        { key: '/cashier', label: 'Caixa' },
+        { key: '/reservations', label: 'Reservas' },
+        { key: '/customers', label: 'Clientes' }
+      ]
+    },
+    {
+      name: 'iFood',
+      permissions: [
+        { key: '/ifood-kds', label: 'KDS Delivery' },
+        { key: '/ifood-menu', label: 'Cardápio iFood' },
+      ]
+    },
+    {
+      name: 'Produção',
+      permissions: [
+        { key: '/kds', label: 'Cozinha (KDS)' },
+        { key: '/mise-en-place', label: 'Mise en Place' },
+        { key: '/technical-sheets', label: 'Fichas Técnicas' }
+      ]
+    },
+    {
+      name: 'Gestão',
+      permissions: [
+        { key: '/dashboard', label: 'Dashboard' },
+        { key: '/inventory', label: 'Estoque' },
+        { key: '/purchasing', label: 'Compras' },
+        { key: '/suppliers', label: 'Fornecedores' },
+        { key: '/performance', label: 'Desempenho' },
+        { key: '/reports', label: 'Relatórios' }
+      ]
+    },
+    {
+      name: 'RH',
+      permissions: [
+        { key: '/employees', label: 'Funcionários' },
+        { key: '/schedules', label: 'Escalas' },
+        { key: '/my-leave', label: 'Minhas Ausências' },
+        { key: '/leave-management', label: 'Gestão de Ausências' },
+        { key: '/time-clock', label: 'Controle de Ponto' },
+        { key: '/payroll', label: 'Folha de Pagamento' }
+      ]
+    },
+    {
+      name: 'Outros',
+      permissions: [
+        { key: '/menu', label: 'Cardápio Online' },
+        { key: '/tutorials', label: 'Tutoriais' },
+        { key: '/settings', label: 'Configurações' }
+      ]
+    }
   ];
 
-  // --- Data Signals from State Services ---
-  companyProfile = this.settingsState.companyProfile;
-  stations = this.posState.stations;
-  roles = this.hrState.roles;
-  webhooks = this.settingsState.webhooks;
+  userAvailablePermissions = computed(() => {
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!activeEmployee || !activeEmployee.role_id) return new Set<string>();
 
-  // --- Form & Modal State ---
-  companyProfileForm = signal<Partial<CompanyProfile>>({});
-  
-  isStationModalOpen = signal(false);
-  editingStation = signal<Station | null>(null);
-  stationName = signal('');
-  
-  isRoleModalOpen = signal(false);
-  editingRole = signal<Role | null>(null);
-  roleName = signal('');
-  
+    return new Set(
+        this.rolePermissions()
+            .filter(p => p.role_id === activeEmployee.role_id)
+            .map(p => p.permission_key)
+    );
+  });
+
+  permissionGroups = computed(() => {
+    const isGerente = this.operationalAuthService.activeEmployee()?.role === 'Gerente';
+    
+    if (isGerente) {
+      return this.allPermissionGroups;
+    }
+
+    const available = this.userAvailablePermissions();
+    return this.allPermissionGroups.map(group => ({
+        ...group,
+        permissions: group.permissions.filter(p => available.has(p.key))
+    })).filter(group => group.permissions.length > 0);
+  });
+
   isPermissionsModalOpen = signal(false);
-  rolePermissions = signal<Set<string>>(new Set());
-  
-  isWebhookModalOpen = signal(false);
-  editingWebhook = signal<Partial<Webhook> | null>(null);
-  webhookForm = signal<Partial<Webhook>>({ is_active: true, events: [] });
-  availableWebhookEvents: WebhookEvent[] = ['order.created', 'order.updated', 'stock.updated', 'customer.created'];
+  editingRole = signal<Role | null>(null);
+  rolePermissionsForm = signal<Record<string, boolean>>({});
+  newRoleName = signal('');
+  rolePendingDeletion = signal<Role | null>(null);
 
-  ngOnInit() {
-    // Initialize forms when data is available
+  // Loyalty Program State
+  loyaltySettingsForm = signal<Partial<LoyaltySettings>>({});
+  isRewardModalOpen = signal(false);
+  editingReward = signal<Partial<LoyaltyReward> | null>(null);
+  rewardForm = signal<Partial<LoyaltyReward>>({});
+  rewardPendingDeletion = signal<LoyaltyReward | null>(null);
+  availableRewardTypes: LoyaltyRewardType[] = ['discount_fixed', 'discount_percentage', 'free_item'];
+  sellableRecipes = computed(() => this.recipes().filter(r => !r.is_sub_recipe));
+
+  qrCodeUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
+  });
+
+  publicMenuUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+  });
+
+  publicBookingUrl = computed(() => {
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
+  });
+
+  constructor() {
     effect(() => {
-      const profile = this.companyProfile();
-      if (profile) {
-        this.companyProfileForm.set({ ...profile });
-      }
+        const settings = this.reservationSettings();
+        if (settings) {
+            const weeklyHours = settings.weekly_hours || [];
+            const fullWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => {
+                const existing = weeklyHours.find(h => h.day_of_week === i);
+                return existing || {
+                    day_of_week: i,
+                    opening_time: '18:00',
+                    closing_time: '23:00',
+                    is_closed: true,
+                };
+            });
+            this.reservationForm.set({ ...settings, weekly_hours: fullWeeklyHours });
+        } else {
+            const defaultWeeklyHours: OperatingHours[] = Array.from({ length: 7 }, (_, i) => ({
+                day_of_week: i,
+                opening_time: '18:00',
+                closing_time: '23:00',
+                is_closed: i === 1,
+            }));
+            this.reservationForm.set({
+                is_enabled: false,
+                weekly_hours: defaultWeeklyHours,
+                booking_duration_minutes: 90,
+                max_party_size: 8,
+                min_party_size: 1,
+                booking_notice_days: 30,
+            });
+        }
+    });
+    
+    effect(() => {
+        const profile = this.companyProfile();
+        if (profile) {
+            this.companyProfileForm.set({ ...profile });
+            this.logoPreviewUrl.set(profile.logo_url);
+            this.coverPreviewUrl.set(profile.menu_cover_url);
+            this.headerPreviewUrl.set(profile.menu_header_url);
+        } else {
+            this.companyProfileForm.set({ company_name: '', cnpj: '', address: '', phone: '', ifood_merchant_id: null});
+        }
+    });
+
+    effect(() => {
+        const settings = this.loyaltySettings();
+        if (settings) {
+            this.loyaltySettingsForm.set({ ...settings });
+        } else {
+            this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
+        }
     });
   }
+
+  setActiveTab(tab: SettingsTab) {
+    this.activeTab.set(tab);
+  }
+
+  // Filtered lists
+  filteredStations = computed(() => {
+    const term = this.stationSearchTerm().toLowerCase();
+    if (!term) return this.stations();
+    return this.stations().filter(s => s.name.toLowerCase().includes(term));
+  });
+
+  filteredCategories = computed(() => {
+    const term = this.categorySearchTerm().toLowerCase();
+    if (!term) return this.categories();
+    return this.categories().filter(c => c.name.toLowerCase().includes(term));
+  });
   
-  // --- Company Profile Methods ---
-  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at'>, value: any) {
-    this.companyProfileForm.update(form => ({ ...form, [field]: value }));
+  filteredRecipeCategories = computed(() => {
+    const term = this.recipeCategorySearchTerm().toLowerCase();
+    if (!term) return this.recipeCategories();
+    return this.recipeCategories().filter(c => c.name.toLowerCase().includes(term));
+  });
+  
+  // --- Station Management ---
+  newStationName = signal('');
+  editingStation = signal<Station | null>(null);
+  stationPendingDeletion = signal<Station | null>(null);
+
+  async handleAddStation() {
+    const name = this.newStationName().trim(); if (!name) return;
+    const { success, error } = await this.settingsDataService.addStation(name);
+    if (success) { this.newStationName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  startEditingStation(s: Station) { this.editingStation.set({ ...s }); this.stationPendingDeletion.set(null); }
+  cancelEditingStation() { this.editingStation.set(null); }
+  updateEditingStationName(event: Event) {
+    const name = (event.target as HTMLInputElement).value;
+    this.editingStation.update(s => s ? { ...s, name } : s);
+  }
+  async saveStation() {
+    const station = this.editingStation(); if (!station?.name.trim()) return;
+    const { success, error } = await this.settingsDataService.updateStation(station.id, station.name.trim());
+    if (success) { this.cancelEditingStation(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  requestDeleteStation(s: Station) { this.stationPendingDeletion.set(s); this.editingStation.set(null); }
+  cancelDeleteStation() { this.stationPendingDeletion.set(null); }
+  async confirmDeleteStation() {
+    const station = this.stationPendingDeletion(); if (!station) return;
+    const { success, error } = await this.settingsDataService.deleteStation(station.id);
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
+    this.stationPendingDeletion.set(null);
+  }
+
+  // --- Ingredient Category Management ---
+  newCategoryName = signal('');
+  editingCategory = signal<IngredientCategory | null>(null);
+  categoryPendingDeletion = signal<IngredientCategory | null>(null);
+
+  async handleAddCategory() {
+    const name = this.newCategoryName().trim(); if (!name) return;
+    const { success, error } = await this.inventoryDataService.addIngredientCategory(name);
+    if (success) { this.newCategoryName.set(''); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  startEditingCategory(c: IngredientCategory) { this.editingCategory.set({ ...c }); this.categoryPendingDeletion.set(null); }
+  cancelEditingCategory() { this.editingCategory.set(null); }
+  updateEditingCategoryName(event: Event) {
+    const name = (event.target as HTMLInputElement).value;
+    this.editingCategory.update(c => c ? { ...c, name } : c);
+  }
+  async saveCategory() {
+    const category = this.editingCategory(); if (!category?.name.trim()) return;
+    const { success, error } = await this.inventoryDataService.updateIngredientCategory(category.id, category.name.trim());
+    if (success) { this.cancelEditingCategory(); } else { await this.notificationService.alert(`Falha: ${error?.message}`); }
+  }
+  requestDeleteCategory(c: IngredientCategory) { this.categoryPendingDeletion.set(c); this.editingCategory.set(null); }
+  cancelDeleteCategory() { this.categoryPendingDeletion.set(null); }
+  async confirmDeleteCategory() {
+    const category = this.categoryPendingDeletion(); if (!category) return;
+    const { success, error } = await this.inventoryDataService.deleteIngredientCategory(category.id);
+    if (!success) { await this.notificationService.alert(`Falha: ${error?.message}`); }
+    this.categoryPendingDeletion.set(null);
+  }
+  
+  // --- Supplier Management ---
+  isSupplierModalOpen = signal(false);
+  editingSupplier = signal<Partial<Supplier> | null>(null);
+  supplierForm = signal<Partial<Supplier>>({});
+  supplierPendingDeletion = signal<Supplier | null>(null);
+
+  filteredSuppliers = computed(() => {
+    const term = this.supplierSearchTerm().toLowerCase();
+    if (!term) return this.suppliers();
+    return this.suppliers().filter(s => s.name.toLowerCase().includes(term));
+  });
+
+  openAddSupplierModal() {
+    this.supplierForm.set({});
+    this.editingSupplier.set(null);
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  openEditSupplierModal(s: Supplier) {
+    this.editingSupplier.set(s);
+    this.supplierForm.set({ ...s });
+    this.isSupplierModalOpen.set(true);
+  }
+  
+  closeSupplierModal() {
+    this.isSupplierModalOpen.set(false);
+  }
+
+  updateSupplierFormField(field: keyof Omit<Supplier, 'id' | 'created_at' | 'user_id'>, value: string) {
+    this.supplierForm.update(form => ({ ...form, [field]: value }));
+  }
+
+  async saveSupplier() {
+    const form = this.supplierForm();
+    if (!form.name?.trim()) {
+      await this.notificationService.alert('Nome é obrigatório');
+      return;
+    }
+    let res;
+    if (this.editingSupplier()) {
+      res = await this.inventoryDataService.updateSupplier({ ...form, id: this.editingSupplier()!.id });
+    } else {
+      res = await this.inventoryDataService.addSupplier(form as any);
+    }
+    if (res.success) {
+      this.closeSupplierModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${res.error?.message}`);
+    }
+  }
+
+  requestDeleteSupplier(s: Supplier) {
+    this.supplierPendingDeletion.set(s);
+  }
+  
+  cancelDeleteSupplier() {
+    this.supplierPendingDeletion.set(null);
+  }
+  
+  async confirmDeleteSupplier() {
+    const supplier = this.supplierPendingDeletion();
+    if (!supplier) return;
+    const { success, error } = await this.inventoryDataService.deleteSupplier(supplier.id);
+    if (!success) {
+      await this.notificationService.alert(`Falha: ${error?.message}`);
+    }
+    this.supplierPendingDeletion.set(null);
+  }
+
+  // --- Recipe Category Management ---
+  isRecipeCategoryModalOpen = signal(false);
+  newRecipeCategoryName = signal('');
+  editingRecipeCategory = signal<Category | null>(null);
+  recipeCategoryPendingDeletion = signal<Category | null>(null);
+  recipeCategoryImageFile = signal<File | null>(null);
+  recipeCategoryImagePreviewUrl = signal<string | null>(null);
+
+  openAddRecipeCategoryModal() {
+    this.editingRecipeCategory.set(null);
+    this.newRecipeCategoryName.set('');
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(null);
+    this.isRecipeCategoryModalOpen.set(true);
+  }
+
+  openEditRecipeCategoryModal(c: Category) {
+    this.editingRecipeCategory.set({ ...c });
+    this.newRecipeCategoryName.set(c.name);
+    this.recipeCategoryImageFile.set(null);
+    this.recipeCategoryImagePreviewUrl.set(c.image_url);
+    this.isRecipeCategoryModalOpen.set(true);
+  }
+
+  closeRecipeCategoryModal() {
+    this.isRecipeCategoryModalOpen.set(false);
+  }
+  
+  handleRecipeCategoryImageChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.recipeCategoryImageFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.recipeCategoryImagePreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async saveRecipeCategory() {
+    const name = this.newRecipeCategoryName().trim();
+    if (!name) {
+      await this.notificationService.alert('O nome da categoria é obrigatório.');
+      return;
+    }
+    const imageFile = this.recipeCategoryImageFile();
+    const editingCategory = this.editingRecipeCategory();
+    
+    let result;
+    if (editingCategory) {
+      result = await this.recipeDataService.updateRecipeCategory(editingCategory.id, name, imageFile);
+    } else {
+      result = await this.recipeDataService.addRecipeCategory(name, imageFile);
+    }
+
+    if (result.success) {
+      this.closeRecipeCategoryModal();
+    } else {
+      await this.notificationService.alert(`Falha: ${result.error?.message}`);
+    }
+  }
+
+  requestDeleteRecipeCategory(c: Category) { this.recipeCategoryPendingDeletion.set(c); }
+  cancelDeleteRecipeCategory() { this.recipeCategoryPendingDeletion.set(null); }
+  async confirmDeleteRecipeCategory() {
+    const category = this.recipeCategoryPendingDeletion(); if (!category) return;
+    const { success, error } = await this.recipeDataService.deleteRecipeCategory(category.id);
+    if (!success) { await this.notificationService.alert(`Falha ao deletar. Erro: ${error?.message}`); }
+    this.recipeCategoryPendingDeletion.set(null);
+  }
+
+  // --- Reservation Settings ---
+  updateReservationFormField(field: keyof Omit<ReservationSettings, 'id' | 'created_at' | 'user_id' | 'weekly_hours'>, value: any) {
+    if (field === 'is_enabled') {
+        this.reservationForm.update(form => ({ ...form, [field]: !!value }));
+    } else {
+        this.reservationForm.update(form => ({ ...form, [field]: value }));
+    }
+  }
+
+  updateWeeklyHours(dayIndex: number, field: 'opening_time' | 'closing_time' | 'is_closed', value: string | boolean) {
+    this.reservationForm.update(form => {
+      const newHours = form.weekly_hours ? [...form.weekly_hours] : [];
+      if (newHours[dayIndex]) {
+        const updatedDay = { ...newHours[dayIndex], [field]: value };
+        newHours[dayIndex] = updatedDay;
+        return { ...form, weekly_hours: newHours };
+      }
+      return form;
+    });
+  }
+
+  async saveReservationSettings() {
+    const form = this.reservationForm();
+    const { success, error } = await this.reservationDataService.updateReservationSettings(form);
+    if (success) {
+      await this.notificationService.alert('Configurações de reserva salvas!', 'Sucesso');
+    } else {
+      await this.notificationService.alert(`Erro ao salvar: ${error?.message}`);
+    }
+  }
+
+  // --- Company Profile ---
+  updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url' | 'menu_cover_url' | 'menu_header_url'>, value: string) {
+      this.companyProfileForm.update(form => ({ ...form, [field]: value }));
+  }
+  
+  handleLogoFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.logoFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.logoPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  handleCoverFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.coverFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.coverPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  handleHeaderFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.headerFile.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => this.headerPreviewUrl.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   }
   
   async saveCompanyProfile() {
-    const { success, error } = await this.settingsDataService.updateCompanyProfile(this.companyProfileForm());
-    if (success) {
-      this.notificationService.show('Perfil da empresa salvo com sucesso!', 'success');
-    } else {
-      this.notificationService.show(`Erro ao salvar perfil: ${error?.message}`, 'error');
+      const profileForm = this.companyProfileForm();
+      if (!profileForm.company_name || !profileForm.cnpj) {
+          await this.notificationService.alert('Nome da Empresa e CNPJ são obrigatórios.');
+          return;
+      }
+      
+      const { success, error } = await this.settingsDataService.updateCompanyProfile(profileForm, this.logoFile(), this.coverFile(), this.headerFile());
+
+      if (success) {
+          await this.notificationService.alert('Dados da empresa salvos com sucesso!', 'Sucesso');
+          this.logoFile.set(null);
+          this.coverFile.set(null);
+          this.headerFile.set(null);
+      } else {
+          await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
+      }
+  }
+
+  async copyToClipboard(text: string | null | undefined) {
+    if (!text) {
+      this.notificationService.show('Nenhum texto para copiar.', 'warning');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      this.notificationService.show('Copiado para a área de transferência!', 'success');
+    } catch (err) {
+      await this.notificationService.alert('Falha ao copiar.');
     }
   }
 
-  // --- Station Methods ---
-  openStationModal(station: Station | null) {
-    this.editingStation.set(station);
-    this.stationName.set(station?.name || '');
-    this.isStationModalOpen.set(true);
-  }
-
-  closeStationModal() {
-    this.isStationModalOpen.set(false);
-  }
-
-  async saveStation() {
-    const name = this.stationName().trim();
-    if (!name) return;
-
-    const editing = this.editingStation();
-    const { success, error } = editing
-      ? await this.settingsDataService.updateStation(editing.id, name)
-      : await this.settingsDataService.addStation(name);
-
-    if (success) {
-      this.closeStationModal();
-    } else {
-      this.notificationService.show(`Erro: ${error?.message}`, 'error');
-    }
-  }
-
-  async deleteStation(station: Station) {
-    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir a estação "${station.name}"?`);
+  async regenerateApiKey() {
+    const confirmed = await this.notificationService.confirm(
+      'Gerar uma nova chave de API irá invalidar permanentemente a chave atual. Qualquer sistema usando a chave antiga deixará de funcionar. Deseja continuar?',
+      'Gerar Nova Chave de API?'
+    );
     if (confirmed) {
-      await this.settingsDataService.deleteStation(station.id);
+      const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
+      if (success && data) {
+        this.companyProfileForm.update(form => ({ ...form, external_api_key: data.external_api_key }));
+        await this.notificationService.alert('Nova chave de API gerada com sucesso! Não se esqueça de atualizar seus sistemas integrados.', 'Sucesso');
+      } else {
+        await this.notificationService.alert(`Erro ao gerar nova chave: ${error?.message}`);
+      }
     }
   }
 
   // --- Role Methods ---
-  openRoleModal(role: Role | null) {
-    this.editingRole.set(role);
-    this.roleName.set(role?.name || '');
-    this.isRoleModalOpen.set(true);
-  }
-  
-  closeRoleModal() {
-    this.isRoleModalOpen.set(false);
-  }
-
-  async saveRole() {
-    const name = this.roleName().trim();
-    if (!name) return;
-    const editing = this.editingRole();
-    const { success, error } = editing
-      ? await this.settingsDataService.updateRole(editing.id, name)
-      : await this.settingsDataService.addRole(name);
-    if (success) this.closeRoleModal();
-    else this.notificationService.show(`Erro: ${error?.message}`, 'error');
-  }
-
-  async deleteRole(role: Role) {
-    if (role.name === 'Gerente') {
-      this.notificationService.show('O cargo de Gerente não pode ser excluído.', 'warning');
-      return;
-    }
-    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir o cargo "${role.name}"?`);
-    if (confirmed) {
-      await this.settingsDataService.deleteRole(role.id);
-    }
-  }
-
-  // --- Permissions Methods ---
   openPermissionsModal(role: Role) {
-    const currentPermissions = new Set(
-      this.hrState.rolePermissions().filter(p => p.role_id === role.id).map(p => p.permission_key)
-    );
-    this.rolePermissions.set(currentPermissions);
     this.editingRole.set(role);
+    const currentPermissions = new Set(
+      this.rolePermissions()
+        .filter(p => p.role_id === role.id)
+        .map(p => p.permission_key)
+    );
+    const formState: Record<string, boolean> = {};
+    for (const key of this.allPermissions) {
+      formState[key] = currentPermissions.has(key);
+    }
+    this.rolePermissionsForm.set(formState);
     this.isPermissionsModalOpen.set(true);
   }
-  
-  closePermissionsModal() { this.isPermissionsModalOpen.set(false); }
-  
-  togglePermission(key: string) {
-    this.rolePermissions.update(current => {
-      const newSet = new Set(current);
-      if (newSet.has(key)) newSet.delete(key);
-      else newSet.add(key);
-      return newSet;
-    });
+
+  closePermissionsModal() {
+    this.isPermissionsModalOpen.set(false);
+    this.editingRole.set(null);
+  }
+
+  updatePermission(key: string, isChecked: boolean) {
+    this.rolePermissionsForm.update(form => ({ ...form, [key]: isChecked }));
   }
 
   async savePermissions() {
     const role = this.editingRole();
-    if (!role) return;
+    const activeEmployee = this.operationalAuthService.activeEmployee();
+    if (!role || !activeEmployee?.role_id) return;
+    
+    const permissions = Object.entries(this.rolePermissionsForm())
+      .filter(([, isEnabled]) => isEnabled)
+      .map(([key]) => key);
 
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, Array.from(this.rolePermissions()));
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, permissions, activeEmployee.role_id);
     if (success) {
-      this.notificationService.show('Permissões salvas!', 'success');
       this.closePermissionsModal();
     } else {
-      this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      await this.notificationService.alert(`Erro ao salvar permissões: ${error?.message}`);
     }
-  }
-  
-  // --- Integrations ---
-  async regenerateApiKey() {
-      const confirmed = await this.notificationService.confirm(
-        'Gerar uma nova chave de API invalidará a chave atual. Deseja continuar?',
-        'Atenção'
-      );
-      if (confirmed) {
-        const { success, error } = await this.settingsDataService.regenerateExternalApiKey();
-        if (success) {
-          this.notificationService.show('Nova chave de API gerada com sucesso!', 'success');
-        } else {
-          this.notificationService.show(`Erro: ${error?.message}`, 'error');
-        }
-      }
-  }
-  
-  copyApiKey() {
-    const key = this.companyProfile()?.external_api_key;
-    if (key) {
-        navigator.clipboard.writeText(key);
-        this.notificationService.show('Chave de API copiada!', 'success');
-    }
-  }
-  
-  // --- Webhook Methods ---
-  openWebhookModal(webhook: Webhook | null) {
-    this.editingWebhook.set(webhook);
-    this.webhookForm.set(webhook ? { ...webhook } : { url: '', events: [], is_active: true });
-    this.isWebhookModalOpen.set(true);
   }
 
-  closeWebhookModal() {
-    this.isWebhookModalOpen.set(false);
+  async handleAddRole() {
+    const { confirmed, value: roleName } = await this.notificationService.prompt('Qual o nome do novo cargo?', 'Novo Cargo', { placeholder: 'Ex: Cozinha' });
+    if (confirmed && roleName) {
+      const { success, error } = await this.settingsDataService.addRole(roleName);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao criar cargo: ${error?.message}`);
+      }
+    }
+  }
+
+  requestDeleteRole(role: Role) {
+    this.rolePendingDeletion.set(role);
+  }
+  cancelDeleteRole() {
+    this.rolePendingDeletion.set(null);
+  }
+  async confirmDeleteRole() {
+    const role = this.rolePendingDeletion();
+    if (role) {
+      const { success, error } = await this.settingsDataService.deleteRole(role.id);
+      if (!success) {
+        await this.notificationService.alert(`Erro ao deletar cargo: ${error?.message}`);
+      }
+      this.rolePendingDeletion.set(null);
+    }
   }
   
-  toggleWebhookEvent(event: WebhookEvent) {
-    this.webhookForm.update(form => {
-      const newEvents = new Set(form.events);
-      if (newEvents.has(event)) {
-        newEvents.delete(event);
-      } else {
-        newEvents.add(event);
-      }
-      return { ...form, events: Array.from(newEvents) };
+  // --- Loyalty Program ---
+  getRewardValueLabel(reward: LoyaltyReward): string {
+    const recipesMap = new Map(this.recipes().map(r => [r.id, r.name]));
+    switch (reward.reward_type) {
+      case 'free_item':
+        return `Item Grátis: ${recipesMap.get(reward.reward_value) || 'Item especial'}`;
+      case 'discount_percentage':
+        return `${reward.reward_value}% de desconto`;
+      case 'discount_fixed':
+        return `R$ ${reward.reward_value} de desconto`;
+    }
+  }
+  getRewardTypeLabel(type: LoyaltyRewardType): string {
+    switch (type) {
+        case 'discount_fixed': return 'Desconto (R$)';
+        case 'discount_percentage': return 'Desconto (%)';
+        case 'free_item': return 'Item Grátis';
+    }
+  }
+  
+  updateLoyaltySettingsField(field: keyof Omit<LoyaltySettings, 'user_id' | 'created_at'>, value: any) {
+    this.loyaltySettingsForm.update(form => {
+        if (field === 'is_enabled') return { ...form, [field]: !!value };
+        if (field === 'points_per_real') return { ...form, [field]: Number(value) };
+        return form;
     });
   }
 
-  async saveWebhook() {
-    const form = this.webhookForm();
-    if (!form.url?.trim()) {
-      this.notificationService.show('A URL é obrigatória.', 'warning');
-      return;
-    }
-
-    const { success, error } = form.id
-      ? await this.settingsDataService.updateWebhook(form)
-      : await this.settingsDataService.addWebhook(form);
-    
+  async saveLoyaltySettings() {
+    const form = this.loyaltySettingsForm();
+    const { success, error } = await this.settingsDataService.upsertLoyaltySettings(form);
     if (success) {
-      this.notificationService.show('Webhook salvo com sucesso!', 'success');
-      this.closeWebhookModal();
+      this.notificationService.show('Configurações salvas!', 'success');
     } else {
-      this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      await this.notificationService.alert(`Erro: ${error?.message}`);
     }
   }
 
-  async deleteWebhook(webhook: Webhook) {
-    const confirmed = await this.notificationService.confirm('Tem certeza que deseja excluir este webhook?');
-    if (confirmed) {
-      await this.settingsDataService.deleteWebhook(webhook.id);
+  openAddRewardModal() {
+    this.editingReward.set(null);
+    this.rewardForm.set({
+      name: '',
+      description: '',
+      points_cost: 100,
+      reward_type: 'discount_fixed',
+      reward_value: '10', // 10 reais
+      is_active: true
+    });
+    this.isRewardModalOpen.set(true);
+  }
+  
+  openEditRewardModal(reward: LoyaltyReward) {
+    this.editingReward.set(reward);
+    this.rewardForm.set({ ...reward });
+    this.isRewardModalOpen.set(true);
+  }
+
+  closeRewardModal() { this.isRewardModalOpen.set(false); }
+
+  updateRewardFormField(field: keyof Omit<LoyaltyReward, 'id' | 'user_id' | 'created_at'>, value: any) {
+    this.rewardForm.update(form => {
+        if(field === 'is_active') return { ...form, [field]: !!value };
+        if(field === 'points_cost') return { ...form, [field]: Number(value) };
+        if(field === 'reward_type') {
+            const newForm = { ...form, [field]: value };
+            // Reset reward_value when type changes
+            newForm.reward_value = value === 'free_item' ? '' : '10';
+            return newForm;
+        }
+        return { ...form, [field]: value };
+    });
+  }
+
+  async saveReward() {
+    const form = this.rewardForm();
+    if (!form.name?.trim() || !form.reward_value?.trim()) {
+        await this.notificationService.alert('Nome e valor da recompensa são obrigatórios.');
+        return;
+    }
+    const result = this.editingReward()
+      ? await this.settingsDataService.updateLoyaltyReward({ ...form, id: this.editingReward()!.id })
+      : await this.settingsDataService.addLoyaltyReward(form);
+    
+    if (result.success) {
+        this.closeRewardModal();
+    } else {
+        await this.notificationService.alert(`Erro: ${result.error?.message}`);
+    }
+  }
+
+  requestDeleteReward(reward: LoyaltyReward) { this.rewardPendingDeletion.set(reward); }
+  cancelDeleteReward() { this.rewardPendingDeletion.set(null); }
+  async confirmDeleteReward() {
+    const reward = this.rewardPendingDeletion();
+    if(reward) {
+        const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
+        if(!success) await this.notificationService.alert(`Erro: ${error?.message}`);
+        this.rewardPendingDeletion.set(null);
     }
   }
 }

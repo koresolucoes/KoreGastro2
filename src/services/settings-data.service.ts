@@ -1,11 +1,9 @@
-
 import { Injectable, inject } from '@angular/core';
 // FIX: Add Customer model to imports
-import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement, Webhook } from '../models/db.models';
+import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
   providedIn: 'root',
@@ -171,10 +169,30 @@ export class SettingsDataService {
     return { success: !error, error };
   }
   
-  async updateRolePermissions(roleId: string, permissions: string[]): Promise<{ success: boolean, error: any }> {
+  async updateRolePermissions(roleId: string, permissions: string[], callerRoleId: string): Promise<{ success: boolean, error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
+    // Security Check: Only apply permission granting restrictions if the caller is editing a DIFFERENT role.
+    // A manager should always be able to add/remove any permission from their own role.
+    if (roleId !== callerRoleId) {
+      const { data: callerPermissionsData, error: fetchError } = await supabase
+        .from('role_permissions')
+        .select('permission_key')
+        .eq('role_id', callerRoleId);
+        
+      if (fetchError) {
+        return { success: false, error: fetchError };
+      }
+
+      const callerPermissionsSet = new Set((callerPermissionsData || []).map(p => p.permission_key));
+      const canGrantAll = permissions.every(p => callerPermissionsSet.has(p));
+
+      if (!canGrantAll) {
+        return { success: false, error: { message: 'Ação não permitida. Você não pode conceder a outros uma permissão que você não possui.' } };
+      }
+    }
+
     // Proceed with update
     const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
     if (deleteError) return { success: false, error: deleteError };
@@ -279,26 +297,5 @@ export class SettingsDataService {
       .eq('user_id', userId)
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false });
-  }
-
-  // --- Webhooks ---
-  async addWebhook(webhook: Partial<Webhook>): Promise<{ success: boolean; error: any; data?: Webhook }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: undefined };
-    // Generate a secret
-    const secret = `whsec_${uuidv4().replace(/-/g, '')}`;
-    const { data, error } = await supabase.from('webhooks').insert({ ...webhook, user_id: userId, secret }).select().single();
-    return { success: !error, error, data };
-  }
-
-  async updateWebhook(webhook: Partial<Webhook>): Promise<{ success: boolean; error: any }> {
-    const { id, secret, ...updateData } = webhook; // Don't allow updating the secret
-    const { error } = await supabase.from('webhooks').update(updateData).eq('id', id!);
-    return { success: !error, error };
-  }
-
-  async deleteWebhook(id: string): Promise<{ success: boolean; error: any }> {
-    const { error } = await supabase.from('webhooks').delete().eq('id', id);
-    return { success: !error, error };
   }
 }

@@ -1,4 +1,3 @@
-
 import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
 import { ProductionPlan } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -128,8 +127,6 @@ export class SupabaseStateService {
         this.settingsState.reservationSettings.set(null);
         this.settingsState.loyaltySettings.set(null);
         this.settingsState.loyaltyRewards.set([]);
-        // Add mock webhooks
-        this.settingsState.webhooks.set([]);
 
         // Mock subscription as fully active
         this.subscriptionState.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
@@ -264,8 +261,6 @@ export class SupabaseStateService {
         case 'loyalty_settings': this.refetchSingleRow('loyalty_settings', '*', this.settingsState.loyaltySettings); break;
         case 'loyalty_rewards': this.refetchSimpleTable('loyalty_rewards', '*', this.settingsState.loyaltyRewards); break;
         case 'company_profile': this.refetchSingleRow('company_profile', '*', this.settingsState.companyProfile); break;
-        // Add case for webhooks
-        case 'webhooks': this.refetchSimpleTable('webhooks', '*', this.settingsState.webhooks); break;
         case 'customers':
         case 'loyalty_movements':
             this.refetchSimpleTable('customers', '*', this.posState.customers);
@@ -298,7 +293,7 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks
+      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -333,7 +328,6 @@ export class SupabaseStateService {
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
       supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
-      supabase.from('webhooks').select('*').eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -371,7 +365,6 @@ export class SupabaseStateService {
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
     this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
-    this.settingsState.webhooks.set(webhooks.data || []);
 
 
     await this.refreshDashboardAndCashierData();
