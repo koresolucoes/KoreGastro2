@@ -1236,6 +1236,62 @@ Verifica se um PIN pertence a um funcionário específico, ideal para telas de l
         
 ---
 
+#### **Recurso: Ausências (`/ausencias`)**
+
+Gerencia solicitações de ausência (férias, folgas, etc.).
+
+*   **`POST /api/rh/ausencias`**
+    *   **Ação:** Cria uma nova solicitação de ausência para um funcionário. A solicitação é criada com o status "Pendente" para aprovação do gestor.
+    *   **Requisição:**
+        ```json
+        POST /api/rh/ausencias?restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "employeeId": "uuid-do-funcionario",
+          "request_type": "Falta Justificada",
+          "start_date": "2024-10-28",
+          "end_date": "2024-10-28",
+          "reason": "Consulta médica."
+        }
+        ```
+    *   **Campos:**
+        *   `employeeId` (obrigatório): O UUID do funcionário.
+        *   `request_type` (obrigatório): O tipo de ausência. Valores possíveis: `Férias`, `Folga`, `Falta Justificada`, `Atestado`.
+        *   `start_date` (obrigatório): Data de início no formato `YYYY-MM-DD`.
+        *   `end_date` (obrigatório): Data de fim no formato `YYYY-MM-DD`.
+        *   `reason` (opcional): Justificativa para a ausência.
+    *   **Resposta (201 Created):** Retorna o objeto da solicitação de ausência recém-criada.
+
+*   **`GET /api/rh/ausencias`**
+    *   **Ação:** Lista as solicitações de ausência.
+    *   **Query Parameters:**
+        *   `employeeId` (opcional): Filtra as solicitações de um funcionário específico.
+        *   `start_date` (opcional): Filtra solicitações que iniciam a partir desta data (`YYYY-MM-DD`).
+        *   `end_date` (opcional): Filtra solicitações que terminam até esta data (`YYYY-MM-DD`).
+    *   **Requisição:**
+        ```
+        GET /api/rh/ausencias?restaurantId=SEU_USER_ID&employeeId=uuid-do-funcionario
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        ```
+    *   **Resposta (200 OK):** Retorna um array com as solicitações de ausência.
+        ```json
+        [
+          {
+            "id": "uuid-da-solicitacao",
+            "employee_id": "uuid-do-funcionario",
+            "request_type": "Falta Justificada",
+            "status": "Pendente",
+            "start_date": "2024-10-28",
+            "end_date": "2024-10-28",
+            "reason": "Consulta médica.",
+            "employees": { "name": "Davi Cozinheiro" }
+          }
+        ]
+        ```
+---
+
 #### **Recurso: Escalas (`/escalas`)**
 
 Permite a consulta e publicação de escalas de trabalho.
