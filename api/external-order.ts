@@ -1,9 +1,8 @@
-
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, Customer, Recipe, RecipePreparation, OrderItemStatus } from '../src/models/db.models.js';
 import { v4 as uuidv4 } from 'uuid';
+import { triggerWebhook } from './webhook-emitter.js';
 
 // This is a separate client instance using the service role key for admin-level access
 const supabase = createClient(
@@ -134,16 +133,18 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
 
     // Data Processing for POST
     let customerId: string | null = null;
+    let customerDataForWebhook: Customer | null = null;
     if (body.customer?.name) {
         const { data: existingCustomer } = await supabase
             .from('customers')
-            .select('id')
+            .select('*')
             .eq('user_id', restaurantId)
             .eq('name', body.customer.name)
             .maybeSingle();
 
         if (existingCustomer) {
             customerId = existingCustomer.id;
+            customerDataForWebhook = existingCustomer;
         } else {
             const { data: newCustomer, error: customerError } = await supabase
                 .from('customers')
@@ -153,10 +154,11 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
                     phone: body.customer.phone || null,
                     email: body.customer.email || null,
                 })
-                .select('id')
+                .select('*')
                 .single();
             if (customerError) throw new Error(`Could not create customer: ${customerError.message}`);
             customerId = newCustomer!.id;
+            customerDataForWebhook = newCustomer;
         }
     }
 
@@ -208,7 +210,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
             status: 'OPEN',
             customer_id: customerId,
         })
-        .select('id')
+        .select('id, timestamp')
         .single();
     if (orderError) throw new Error(`Error creating order: ${orderError.message}`);
 
@@ -234,6 +236,31 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
     }
     }
 
+    // Trigger 'order.created' webhook
+    try {
+        const webhookPayload = {
+            orderId: newOrder.id,
+            tableNumber: effectiveTableNumber,
+            orderType: effectiveOrderType,
+            status: 'OPEN',
+            timestamp: newOrder.timestamp,
+            customer: customerDataForWebhook,
+            items: orderItemsToInsert.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                notes: item.notes,
+            })),
+            externalInfo: {
+                label: body.orderTypeLabel,
+                id: body.externalId,
+            },
+        };
+        await triggerWebhook(restaurantId, 'order.created', webhookPayload);
+    } catch (whError: any) {
+        console.error(`[API /external-order] Webhook trigger failed for order ${newOrder.id}:`, whError.message);
+    }
+
     return response.status(201).json({
     success: true,
     message: 'Order created successfully and sent to KDS.',
@@ -257,7 +284,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
     
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, table_number, order_type, status, timestamp, customers(*)')
       .eq('id', orderId)
       .eq('user_id', restaurantId)
       .eq('status', 'OPEN')
@@ -284,9 +311,22 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
 
     const orderItemsToInsert = await buildOrderItems(restaurantId, order.id, items, recipesMap);
     
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
+    const { data: insertedItems, error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert).select();
     if (itemsError) {
         throw new Error(`Error creating order items: ${itemsError.message}`);
+    }
+
+     // Trigger 'order.updated' webhook
+    try {
+        const { data: allItems } = await supabase.from('order_items').select('*').eq('order_id', orderId);
+        const webhookPayload = {
+            ...order,
+            itemsAdded: insertedItems,
+            allItems: allItems || [],
+        };
+        await triggerWebhook(restaurantId, 'order.updated', webhookPayload);
+    } catch (whError: any) {
+        console.error(`[API /external-order] Webhook trigger failed for order update ${orderId}:`, whError.message);
     }
     
     return response.status(200).json({

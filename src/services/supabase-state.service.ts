@@ -271,6 +271,7 @@ export class SupabaseStateService {
         case 'roles': this.refetchSimpleTable('roles', '*', this.hrState.roles); break;
         case 'role_permissions': this.refetchSimpleTable('role_permissions', '*', this.hrState.rolePermissions); break;
         case 'time_clock_entries': this.refetchSimpleTable('employees', '*', this.hrState.employees); break;
+        case 'webhooks': this.refetchSimpleTable('webhooks', '*', this.settingsState.webhooks); break;
         case 'transactions':
         case 'cashier_closings':
             this.refreshDashboardAndCashierData();
@@ -296,7 +297,7 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders
+      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -331,6 +332,7 @@ export class SupabaseStateService {
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
       supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
+      supabase.from('webhooks').select('*').eq('user_id', userId),
     ]);
 
     // Populate all state services
@@ -368,6 +370,7 @@ export class SupabaseStateService {
     this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
     this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
+    this.settingsState.webhooks.set(webhooks.data || []);
 
 
     await this.refreshDashboardAndCashierData();
