@@ -7,7 +7,7 @@ import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 
-type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'status' | 'manager_notes' | 'employees'>>;
+type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'status' | 'manager_notes' | 'employees' | 'attachment_url'>>;
 
 @Component({
   selector: 'app-my-leave',
@@ -31,6 +31,8 @@ export class MyLeaveComponent {
   // Modal State
   isModalOpen = signal(false);
   requestForm = signal<LeaveForm>({});
+  selectedFile = signal<File | null>(null);
+  selectedFileName = computed(() => this.selectedFile()?.name);
   
   availableRequestTypes: LeaveRequestType[] = ['Férias', 'Folga', 'Falta Justificada', 'Atestado'];
 
@@ -51,15 +53,34 @@ export class MyLeaveComponent {
       end_date: new Date().toISOString().split('T')[0],
       reason: ''
     });
+    this.selectedFile.set(null);
     this.isModalOpen.set(true);
   }
 
   closeModal() {
     this.isModalOpen.set(false);
   }
+  
+  handleFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+        this.selectedFile.set(input.files[0]);
+    } else {
+        this.selectedFile.set(null);
+    }
+  }
 
   updateFormField(field: keyof LeaveForm, value: string) {
     this.requestForm.update(form => ({ ...form, [field]: value }));
+  }
+
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve((reader.result as string).split(',')[1]); // Get only base64 part
+        reader.onerror = error => reject(error);
+    });
   }
 
   async submitRequest() {
@@ -74,7 +95,16 @@ export class MyLeaveComponent {
       status: 'Pendente' // All employee requests start as pending
     };
 
-    const { success, error } = await this.leaveDataService.addLeaveRequest(requestData);
+    let attachmentPayload;
+    if (this.selectedFile()) {
+        const fileBase64 = await this.fileToBase64(this.selectedFile()!);
+        attachmentPayload = {
+            file: fileBase64,
+            filename: this.selectedFile()!.name,
+        };
+    }
+
+    const { success, error } = await this.leaveDataService.addLeaveRequest(requestData, attachmentPayload);
     
     if (success) {
       this.closeModal();

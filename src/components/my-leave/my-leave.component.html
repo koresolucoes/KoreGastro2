@@ -40,6 +40,14 @@
            @if (request.manager_notes) {
             <p class="text-sm text-gray-400 mt-3 pt-3 border-t border-gray-700"><strong>Observação do Gestor:</strong> {{ request.manager_notes }}</p>
           }
+          @if (request.attachment_url) {
+            <div class="flex justify-end mt-2 pt-2 border-t border-gray-700">
+                <a [href]="request.attachment_url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-400 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base">attachment</span>
+                    Ver Anexo
+                </a>
+            </div>
+          }
         </div>
       }
     }
@@ -76,6 +84,13 @@
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Motivo/Justificativa (Opcional)</label>
           <textarea [value]="requestForm().reason || ''" (input)="updateFormField('reason', $any($event.target).value)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Anexar Documento (Opcional)</label>
+            <input type="file" (change)="handleFileChange($event)" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            @if (selectedFileName()) {
+                <p class="text-xs text-gray-500 mt-1">Arquivo selecionado: {{ selectedFileName() }}</p>
+            }
         </div>
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end gap-3">

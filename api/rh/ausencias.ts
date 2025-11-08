@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { LeaveRequestType } from '../../src/models/db.models.js';
+import { Buffer } from 'buffer';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -80,7 +81,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { employeeId, request_type, start_date, end_date, reason } = req.body;
+    const { employeeId, request_type, start_date, end_date, reason, attachment, attachment_filename } = req.body;
     
     if (!employeeId || !request_type || !start_date || !end_date) {
         return res.status(400).json({ error: { message: '`employeeId`, `request_type`, `start_date`, and `end_date` are required.' } });
@@ -91,6 +92,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         return res.status(400).json({ error: { message: `Invalid \`request_type\`. Must be one of: ${validTypes.join(', ')}` } });
     }
 
+    // 1. Insert the request without the attachment URL first to get an ID
     const { data: newRequest, error } = await supabase
         .from('leave_requests')
         .insert({
@@ -106,5 +108,45 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         .single();
     
     if (error) throw error;
-    return res.status(201).json(newRequest);
+
+    let finalRequest = newRequest;
+
+    // 2. If an attachment is provided, upload it and update the request
+    if (attachment && attachment_filename) {
+        try {
+            const fileBuffer = Buffer.from(attachment, 'base64');
+            const filePath = `public/leave_attachments/${restaurantId}/${newRequest.id}/${attachment_filename}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('restaurant_assets')
+                .upload(filePath, fileBuffer, {
+                    // Set content type if possible, otherwise Supabase infers it
+                    // For simplicity, we let it infer. For production, you might pass mime type from client.
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: urlData } = supabase.storage
+                .from('restaurant_assets')
+                .getPublicUrl(filePath);
+            
+            // 3. Update the request with the public URL
+            const { data: updatedRequest, error: updateError } = await supabase
+                .from('leave_requests')
+                .update({ attachment_url: urlData.publicUrl })
+                .eq('id', newRequest.id)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+            
+            finalRequest = updatedRequest;
+        } catch (uploadError: any) {
+            // Log the error but don't fail the entire request.
+            // The leave request is still valid, only the attachment failed.
+            console.error(`[API /rh/ausencias] Failed to upload attachment for leave request ${newRequest.id}:`, uploadError.message);
+        }
+    }
+    
+    return res.status(201).json(finalRequest);
 }

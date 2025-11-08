@@ -1253,7 +1253,9 @@ Gerencia solicitações de ausência (férias, folgas, etc.).
           "request_type": "Falta Justificada",
           "start_date": "2024-10-28",
           "end_date": "2024-10-28",
-          "reason": "Consulta médica."
+          "reason": "Consulta médica.",
+          "attachment": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",
+          "attachment_filename": "atestado.pdf"
         }
         ```
     *   **Campos:**
@@ -1262,6 +1264,8 @@ Gerencia solicitações de ausência (férias, folgas, etc.).
         *   `start_date` (obrigatório): Data de início no formato `YYYY-MM-DD`.
         *   `end_date` (obrigatório): Data de fim no formato `YYYY-MM-DD`.
         *   `reason` (opcional): Justificativa para a ausência.
+        *   `attachment` (opcional): String (base64) do arquivo a ser anexado.
+        *   `attachment_filename` (opcional): O nome original do arquivo.
     *   **Resposta (201 Created):** Retorna o objeto da solicitação de ausência recém-criada.
 
 *   **`GET /api/rh/ausencias`**
@@ -1286,6 +1290,7 @@ Gerencia solicitações de ausência (férias, folgas, etc.).
             "start_date": "2024-10-28",
             "end_date": "2024-10-28",
             "reason": "Consulta médica.",
+            "attachment_url": "https://.../atestado.pdf",
             "employees": { "name": "Davi Cozinheiro" }
           }
         ]

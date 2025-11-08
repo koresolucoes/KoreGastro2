@@ -54,6 +54,14 @@
            @if (request.manager_notes) {
             <p class.text-sm text-gray-400 mt-2 pt-2 border-t border-gray-700><strong>Observação do Gestor:</strong> {{ request.manager_notes }}</p>
           }
+          @if (request.attachment_url) {
+            <div class="flex justify-end mt-2 pt-2 border-t border-gray-700">
+                <a [href]="request.attachment_url" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-400 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base">attachment</span>
+                    Ver Anexo
+                </a>
+            </div>
+          }
         </div>
       }
     }

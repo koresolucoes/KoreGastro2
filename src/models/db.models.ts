@@ -493,6 +493,7 @@ export interface LeaveRequest {
   end_date: string; // date string
   reason: string | null;
   manager_notes: string | null;
+  attachment_url?: string | null;
   created_at: string;
   updated_at: string;
   employees?: { name: string, role: string }; // Relation
