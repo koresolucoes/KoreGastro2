@@ -1,5 +1,4 @@
-
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
@@ -36,18 +35,23 @@ import { InventoryDataService } from '../../services/inventory-data.service';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+
+import { SettingsListViewComponent } from './settings-list-view/settings-list-view.component';
+
+declare var L: any; // Declare Leaflet global to avoid TypeScript errors
 
 type SettingsView = 'profile' | 'stations' | 'recipe_categories' | 'ingredient_categories' | 'suppliers' | 'roles' | 'promotions' | 'reservations' | 'loyalty' | 'integrations' | 'webhooks';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SettingsListViewComponent],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SettingsComponent {
+export class SettingsComponent implements AfterViewInit {
   // --- Injected Services ---
   private settingsState = inject(SettingsStateService);
   private posState = inject(PosStateService);
@@ -60,10 +64,16 @@ export class SettingsComponent {
   private recipeDataService = inject(RecipeDataService);
   private reservationDataService = inject(ReservationDataService);
   private notificationService = inject(NotificationService);
+  private authService = inject(AuthService);
 
   // --- View State ---
   activeView = signal<SettingsView>('profile');
   isSaving = signal(false);
+
+  // --- Map State ---
+  private map: any;
+  private marker: any;
+  private radiusCircle: any;
 
   // --- Data from State Services ---
   companyProfile = this.settingsState.companyProfile;
@@ -73,17 +83,9 @@ export class SettingsComponent {
   suppliers = this.inventoryState.suppliers;
   roles = this.hrState.roles;
   rolePermissions = this.hrState.rolePermissions;
-  recipes = this.recipeState.recipes;
-  promotions = this.recipeState.promotions;
-  reservationSettings = this.settingsState.reservationSettings;
-  loyaltySettings = this.settingsState.loyaltySettings;
-  loyaltyRewards = this.settingsState.loyaltyRewards;
   webhooks = this.settingsState.webhooks;
-  allWebhookEvents: WebhookEvent[] = ['order.created', 'order.updated', 'stock.updated', 'customer.created'];
-
+  
   // --- Form & Modal State ---
-
-  // Profile
   profileForm = signal<Partial<CompanyProfile>>({});
   logoFile = signal<File | null>(null);
   coverFile = signal<File | null>(null);
@@ -92,139 +94,104 @@ export class SettingsComponent {
   coverPreview = signal<string | null>(null);
   headerPreview = signal<string | null>(null);
 
-  // Generic add/edit for simple lists
   isModalOpen = signal(false);
   modalTitle = signal('');
   editingItem = signal<{ id: string, name: string } | null>(null);
   formName = signal('');
   modalContext: WritableSignal<'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role' | null> = signal(null);
 
-  // Role permissions modal
   isPermissionsModalOpen = signal(false);
   editingRolePermissions = signal<Role | null>(null);
   permissionsForm = signal<Set<string>>(new Set());
   allPermissions = ALL_PERMISSION_KEYS;
 
-  // Reservation settings
-  reservationSettingsForm = signal<Partial<ReservationSettings>>({});
-
-  // Loyalty
-  loyaltySettingsForm = signal<Partial<LoyaltySettings>>({});
   isLoyaltyRewardModalOpen = signal(false);
   editingLoyaltyReward = signal<Partial<LoyaltyReward> | null>(null);
   
-  // Webhooks
   isWebhookModalOpen = signal(false);
   editingWebhook = signal<Partial<Webhook> | null>(null);
+
+  publicMenuUrl = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return '';
+    return `${window.location.origin}/#/menu/${userId}`;
+  });
+
+  qrCodeUrl = computed(() => {
+      const url = this.publicMenuUrl();
+      if (!url) return '';
+      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+  });
 
   constructor() {
     this.setupFormEffects();
   }
-
-  private setupFormEffects() {
-    // Effect to reset and populate forms when data loads or view changes
-    const profile = this.companyProfile();
-    this.profileForm.set(profile ? { ...profile } : {});
-    this.logoPreview.set(profile?.logo_url || null);
-    this.coverPreview.set(profile?.menu_cover_url || null);
-    this.headerPreview.set(profile?.menu_header_url || null);
-
-    const resSettings = this.reservationSettings();
-    this.reservationSettingsForm.set(resSettings ? { ...resSettings } : { is_enabled: false, booking_duration_minutes: 90, max_party_size: 10, min_party_size: 1, booking_notice_days: 30, weekly_hours: [] });
-
-    const loySettings = this.loyaltySettings();
-    this.loyaltySettingsForm.set(loySettings ? { ...loySettings } : { is_enabled: false, points_per_real: 1 });
+  
+  ngAfterViewInit(): void {
+    if (this.activeView() === 'profile') {
+      setTimeout(() => this.initMap(), 100);
+    }
   }
 
-  // --- View Management ---
+  private setupFormEffects() {
+    effect(() => {
+      const profile = this.companyProfile();
+      this.profileForm.set(profile ? { ...profile } : {});
+      this.logoPreview.set(profile?.logo_url || null);
+      this.coverPreview.set(profile?.menu_cover_url || null);
+      this.headerPreview.set(profile?.menu_header_url || null);
+    });
+
+    effect(() => {
+      if (this.activeView() === 'profile') {
+        setTimeout(() => this.initMap(), 0);
+      } else {
+        if (this.map) {
+          this.map.remove();
+          this.map = null;
+        }
+      }
+    });
+  }
+  
+  private initMap() {
+    if (this.map || !document.getElementById('map')) return;
+
+    const profile = this.profileForm();
+    const lat = profile?.latitude ?? -23.55052; // Default São Paulo
+    const lon = profile?.longitude ?? -46.633308;
+    const radius = profile?.time_clock_radius ?? 200;
+
+    this.map = L.map('map').setView([lat, lon], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.map);
+
+    this.marker = L.marker([lat, lon], { draggable: true }).addTo(this.map);
+    this.radiusCircle = L.circle([lat, lon], { radius }).addTo(this.map);
+    
+    this.marker.on('dragend', (event: any) => {
+      const position = event.target.getLatLng();
+      this.radiusCircle.setLatLng(position);
+      this.profileForm.update(p => ({ ...p, latitude: position.lat, longitude: position.lng }));
+    });
+  }
+
+  updateRadius(radius: number) {
+    if (this.radiusCircle) {
+      this.radiusCircle.setRadius(radius);
+    }
+    this.profileForm.update(p => ({ ...p, time_clock_radius: radius }));
+  }
+
   setView(view: SettingsView) {
     this.activeView.set(view);
   }
 
-  // --- Generic Modal Handlers ---
-  openModal(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string } | null) {
-    this.modalContext.set(context);
-    this.editingItem.set(item);
-    this.formName.set(item?.name || '');
-    this.modalTitle.set(`${item ? 'Editar' : 'Adicionar'} ${this.getContextTitle(context)}`);
-    this.isModalOpen.set(true);
+  updateProfileField(field: keyof CompanyProfile, value: string) {
+    this.profileForm.update(p => ({...p, [field]: value}));
   }
 
-  closeModal() {
-    this.isModalOpen.set(false);
-    this.modalContext.set(null);
-    this.editingItem.set(null);
-    this.formName.set('');
-  }
-
-  private getContextTitle(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role' | null): string {
-    switch (context) {
-      case 'station': return 'Estação';
-      case 'recipe_category': return 'Categoria de Prato';
-      case 'ingredient_category': return 'Categoria de Ingrediente';
-      case 'supplier': return 'Fornecedor';
-      case 'role': return 'Cargo';
-      default: return '';
-    }
-  }
-
-  async saveItem() {
-    const context = this.modalContext();
-    const name = this.formName().trim();
-    if (!context || !name) return;
-
-    this.isSaving.set(true);
-    let result: { success: boolean; error: any; data?: any };
-    const id = this.editingItem()?.id;
-
-    switch (context) {
-      case 'station':
-        result = id ? await this.settingsDataService.updateStation(id, name) : await this.settingsDataService.addStation(name);
-        break;
-      case 'recipe_category':
-        result = id ? await this.recipeDataService.updateRecipeCategory(id, name) : await this.recipeDataService.addRecipeCategory(name);
-        break;
-      case 'ingredient_category':
-        result = id ? await this.inventoryDataService.updateIngredientCategory(id, name) : await this.inventoryDataService.addIngredientCategory(name);
-        break;
-      case 'supplier':
-        result = id ? await this.inventoryDataService.updateSupplier({ id, name }) : await this.inventoryDataService.addSupplier({ name });
-        break;
-      case 'role':
-        result = id ? await this.settingsDataService.updateRole(id, name) : await this.settingsDataService.addRole(name);
-        break;
-    }
-
-    if (result.success) {
-      this.closeModal();
-    } else {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  async deleteItem(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string }) {
-    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir "${item.name}"?`);
-    if (!confirmed) return;
-
-    this.isSaving.set(true);
-    let result: { success: boolean; error: any };
-
-    switch (context) {
-      case 'station': result = await this.settingsDataService.deleteStation(item.id); break;
-      case 'recipe_category': result = await this.recipeDataService.deleteRecipeCategory(item.id); break;
-      case 'ingredient_category': result = await this.inventoryDataService.deleteIngredientCategory(item.id); break;
-      case 'supplier': result = await this.inventoryDataService.deleteSupplier(item.id); break;
-      case 'role': result = await this.settingsDataService.deleteRole(item.id); break;
-    }
-
-    if (!result.success) {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  // --- Profile Handlers ---
   handleFileChange(event: Event, type: 'logo' | 'cover' | 'header') {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
@@ -244,16 +211,82 @@ export class SettingsComponent {
     const { success, error } = await this.settingsDataService.updateCompanyProfile(this.profileForm(), this.logoFile(), this.coverFile(), this.headerFile());
     if (success) {
       this.notificationService.show('Perfil da empresa salvo com sucesso!', 'success');
-      this.logoFile.set(null); // Clear file signals after upload
-      this.coverFile.set(null);
-      this.headerFile.set(null);
+      this.logoFile.set(null); this.coverFile.set(null); this.headerFile.set(null);
     } else {
       this.notificationService.show(`Erro ao salvar perfil: ${error.message}`, 'error');
     }
     this.isSaving.set(false);
   }
 
-  // --- Roles & Permissions Handlers ---
+  // --- Generic Modal Logic ---
+  openModal(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string } | null) {
+    this.modalContext.set(context);
+    this.editingItem.set(item);
+    this.formName.set(item?.name || '');
+    this.modalTitle.set(`${item ? 'Editar' : 'Adicionar'} ${this.getContextTitle(context)}`);
+    this.isModalOpen.set(true);
+  }
+
+  closeModal() {
+    this.isModalOpen.set(false);
+  }
+
+  async saveItem() {
+    const context = this.modalContext();
+    const name = this.formName().trim();
+    if (!context || !name) return;
+
+    this.isSaving.set(true);
+    let result: { success: boolean; error: any; data?: any };
+    const id = this.editingItem()?.id;
+
+    switch (context) {
+      case 'station': result = id ? await this.settingsDataService.updateStation(id, name) : await this.settingsDataService.addStation(name); break;
+      case 'recipe_category': result = id ? await this.recipeDataService.updateRecipeCategory(id, name) : await this.recipeDataService.addRecipeCategory(name); break;
+      case 'ingredient_category': result = id ? await this.inventoryDataService.updateIngredientCategory(id, name) : await this.inventoryDataService.addIngredientCategory(name); break;
+      case 'supplier': result = id ? await this.inventoryDataService.updateSupplier({ id, name }) : await this.inventoryDataService.addSupplier({ name }); break;
+      case 'role': result = id ? await this.settingsDataService.updateRole(id, name) : await this.settingsDataService.addRole(name); break;
+      default: result = { success: false, error: { message: 'Contexto inválido' } };
+    }
+
+    if (result.success) {
+      this.closeModal();
+    } else {
+      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
+    }
+    this.isSaving.set(false);
+  }
+
+  async deleteItem(context: 'station' | 'recipe_category' | 'ingredient_category' | 'supplier' | 'role', item: { id: string, name: string }) {
+    const confirmed = await this.notificationService.confirm(`Tem certeza que deseja excluir "${item.name}"?`);
+    if (!confirmed) return;
+
+    this.isSaving.set(true);
+    let result: { success: boolean; error: any };
+    switch (context) {
+      case 'station': result = await this.settingsDataService.deleteStation(item.id); break;
+      case 'recipe_category': result = await this.recipeDataService.deleteRecipeCategory(item.id); break;
+      case 'ingredient_category': result = await this.inventoryDataService.deleteIngredientCategory(item.id); break;
+      case 'supplier': result = await this.inventoryDataService.deleteSupplier(item.id); break;
+      case 'role': result = await this.settingsDataService.deleteRole(item.id); break;
+      default: result = { success: false, error: { message: 'Contexto inválido' } };
+    }
+    if (!result.success) this.notificationService.show(`Erro: ${result.error.message}`, 'error');
+    this.isSaving.set(false);
+  }
+
+  private getContextTitle(context: any): string {
+    const titles = {
+      station: 'Estação',
+      recipe_category: 'Categoria de Prato',
+      ingredient_category: 'Categoria de Ingrediente',
+      supplier: 'Fornecedor',
+      role: 'Cargo',
+    };
+    return titles[context] || '';
+  }
+
+  // --- Permissions Logic ---
   openPermissionsModal(role: Role) {
     this.editingRolePermissions.set(role);
     const currentPermissions = this.rolePermissions().filter(p => p.role_id === role.id).map(p => p.permission_key);
@@ -263,17 +296,12 @@ export class SettingsComponent {
 
   closePermissionsModal() {
     this.isPermissionsModalOpen.set(false);
-    this.editingRolePermissions.set(null);
   }
 
   togglePermission(key: string) {
     this.permissionsForm.update(currentSet => {
       const newSet = new Set(currentSet);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
+      newSet.has(key) ? newSet.delete(key) : newSet.add(key);
       return newSet;
     });
   }
@@ -281,9 +309,8 @@ export class SettingsComponent {
   async savePermissions() {
     const role = this.editingRolePermissions();
     if (!role) return;
-
     this.isSaving.set(true);
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, Array.from(this.permissionsForm()), '');
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, Array.from(this.permissionsForm()), this.authService.currentUser()!.id);
     if (success) {
       this.notificationService.show(`Permissões para "${role.name}" salvas!`, 'success');
       this.closePermissionsModal();
@@ -296,7 +323,7 @@ export class SettingsComponent {
   // --- Integrations ---
   async regenerateApiKey() {
     const confirmed = await this.notificationService.confirm(
-      'Isso irá invalidar sua chave de API externa atual. Qualquer integração que a utilize precisará ser atualizada. Deseja continuar?'
+      'Isso irá invalidar sua chave de API externa atual. Deseja continuar?'
     );
     if (!confirmed) return;
     
@@ -310,87 +337,4 @@ export class SettingsComponent {
     }
     this.isSaving.set(false);
   }
-
-  // --- Reservations ---
-  async saveReservationSettings() {
-    this.isSaving.set(true);
-    const { success, error } = await this.reservationDataService.updateReservationSettings(this.reservationSettingsForm());
-     if (success) {
-      this.notificationService.show('Configurações de reserva salvas!', 'success');
-    } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  // --- Loyalty ---
-  async saveLoyaltySettings() {
-    this.isSaving.set(true);
-    const { success, error } = await this.settingsDataService.upsertLoyaltySettings(this.loyaltySettingsForm());
-    if (success) {
-      this.notificationService.show('Configurações de fidelidade salvas!', 'success');
-    } else {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  openLoyaltyRewardModal(reward: Partial<LoyaltyReward> | null) {
-    this.editingLoyaltyReward.set(reward);
-    this.isLoyaltyRewardModalOpen.set(true);
-  }
-
-  closeLoyaltyRewardModal() {
-    this.isLoyaltyRewardModalOpen.set(false);
-    this.editingLoyaltyReward.set(null);
-  }
-
-  async saveLoyaltyReward(reward: Partial<LoyaltyReward>) {
-    this.isSaving.set(true);
-    const result = reward.id
-      ? await this.settingsDataService.updateLoyaltyReward(reward)
-      : await this.settingsDataService.addLoyaltyReward(reward);
-    
-    if (result.success) {
-      this.closeLoyaltyRewardModal();
-    } else {
-      this.notificationService.show(`Erro: ${result.error.message}`, 'error');
-    }
-    this.isSaving.set(false);
-  }
-
-  async deleteLoyaltyReward(reward: LoyaltyReward) {
-    const confirmed = await this.notificationService.confirm(`Excluir a recompensa "${reward.name}"?`);
-    if (!confirmed) return;
-
-    const { success, error } = await this.settingsDataService.deleteLoyaltyReward(reward.id);
-    if (!success) {
-      this.notificationService.show(`Erro: ${error.message}`, 'error');
-    }
-  }
-
-  // --- Webhooks ---
-  openWebhookModal(webhook: Partial<Webhook> | null) {
-    this.editingWebhook.set(webhook);
-    this.isWebhookModalOpen.set(true);
-  }
-
-  closeWebhookModal() {
-    this.isWebhookModalOpen.set(false);
-    this.editingWebhook.set(null);
-  }
-  
-  // Omitted save/delete webhook methods as they require new data service methods
-  // which are outside the scope of fixing the current error.
-  // Will provide stubs for now.
-
-  async saveWebhook(webhook: Partial<Webhook>) {
-      this.notificationService.show('Funcionalidade de salvar webhook ainda não foi implementada.', 'info');
-      this.closeWebhookModal();
-  }
-
-  async deleteWebhook(webhook: Webhook) {
-      this.notificationService.show('Funcionalidade de deletar webhook ainda não foi implementada.', 'info');
-  }
-
 }
