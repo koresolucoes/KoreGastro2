@@ -27,7 +27,9 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
 
   if (error) {
     console.error(`[WebhookEmitter] Error fetching webhooks for user ${userId} and event ${event}:`, error);
-    return;
+    // Throw the error to let the caller know something went wrong.
+    // This addresses the "fetch failed" error by making it visible to the calling function.
+    throw error;
   }
 
   if (!webhooks || webhooks.length === 0) {
@@ -40,7 +42,7 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
   const payloadString = JSON.stringify(payload);
   const payloadBuffer = Buffer.from(payloadString, 'utf-8');
 
-  // 2. Send all webhooks concurrently and log their results.
+  // 2. Send all webhooks concurrently.
   const promises = webhooks.map(webhook => {
     // 2a. Create the HMAC-SHA256 signature
     const signature = createHmac('sha256', webhook.secret)
@@ -59,7 +61,6 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
     })
     .then(response => {
       if (!response.ok) {
-        // If the response is not OK, we create a custom error object to log later.
         return response.text().then(text => Promise.reject({
           url: webhook.url,
           status: response.status,
@@ -69,7 +70,6 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
       return { url: webhook.url, status: response.status };
     })
     .catch(networkError => {
-      // Catch network-level errors (e.g., DNS issues, unreachable server)
       return Promise.reject({
         url: webhook.url,
         status: 'NETWORK_ERROR',
@@ -78,15 +78,15 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
     });
   });
 
-  // 3. Log results without blocking the main application flow
-  Promise.allSettled(promises).then(results => {
-    results.forEach(result => {
-      if (result.status === 'rejected') {
-        const errorInfo = result.reason;
-        console.error(`[WebhookEmitter] Failed to send webhook to ${errorInfo.url}. Status: ${errorInfo.status}. Response:`, errorInfo.body);
-      } else {
-        console.log(`[WebhookEmitter] Successfully sent webhook to ${result.value.url}. Status: ${result.value.status}`);
-      }
-    });
+  // 3. Await all webhook dispatches to complete before the serverless function can terminate.
+  const results = await Promise.allSettled(promises);
+  
+  results.forEach(result => {
+    if (result.status === 'rejected') {
+      const errorInfo = result.reason;
+      console.error(`[WebhookEmitter] Failed to send webhook to ${errorInfo.url}. Status: ${errorInfo.status}. Response:`, errorInfo.body);
+    } else {
+      console.log(`[WebhookEmitter] Successfully sent webhook to ${result.value.url}. Status: ${result.value.status}`);
+    }
   });
 }

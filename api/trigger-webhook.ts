@@ -51,12 +51,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return response.status(403).json({ error: { message: 'Invalid API key.' } });
     }
     
-    // 2. Trigger webhook (fire and forget)
-    // We don't await this because we want to respond to the client immediately.
-    triggerWebhook(restaurantId, event as WebhookEvent, payload);
+    // 2. Await the webhook dispatching process. This ensures the serverless function
+    // doesn't terminate prematurely, which was causing intermittent failures.
+    await triggerWebhook(restaurantId, event as WebhookEvent, payload);
 
-    // 3. Respond to client
-    return response.status(202).json({ success: true, message: 'Webhook event trigger accepted.' });
+    // 3. Respond to client after processing is initiated.
+    return response.status(202).json({ success: true, message: 'Webhook event trigger processed.' });
 
   } catch (error: any) {
     console.error('[API /trigger-webhook] Fatal error:', error);
