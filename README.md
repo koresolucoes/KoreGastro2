@@ -1295,6 +1295,24 @@ Gerencia solicitações de ausência (férias, folgas, etc.).
           }
         ]
         ```
+
+*   **`PATCH /api/rh/ausencias?id={id_da_solicitacao}`**
+    *   **Ação:** Aprova ou rejeita uma solicitação de ausência existente.
+    *   **Requisição:**
+        ```json
+        PATCH /api/rh/ausencias?id=uuid-da-solicitacao&restaurantId=SEU_USER_ID
+        Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+        Content-Type: application/json
+
+        {
+          "status": "Aprovada",
+          "manager_notes": "Boas férias!"
+        }
+        ```
+    *   **Campos:**
+        *   `status` (obrigatório): String. Deve ser `Aprovada` ou `Rejeitada`.
+        *   `manager_notes` (opcional): String. Uma observação do gestor sobre a decisão.
+    *   **Resposta (200 OK):** Retorna o objeto da solicitação de ausência atualizado.
 ---
 
 #### **Recurso: Escalas (`/escalas`)**

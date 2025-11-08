@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { LeaveRequestType } from '../../src/models/db.models.js';
+import { LeaveRequestType, LeaveRequestStatus } from '../../src/models/db.models.js';
 import { Buffer } from 'buffer';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -52,7 +52,7 @@ function sanitizeFilename(filename: string): string {
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (request.method === 'OPTIONS') {
@@ -72,8 +72,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
             case 'POST':
                 await handlePost(request, response, restaurantId);
                 break;
+            case 'PATCH':
+                await handlePatch(request, response, restaurantId);
+                break;
             default:
-                response.setHeader('Allow', ['GET', 'POST']);
+                response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
                 response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
         }
     } catch (error: any) {
@@ -168,4 +171,44 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     }
     
     return res.status(201).json(finalRequest);
+}
+
+async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const { id } = req.query;
+    const { status, manager_notes } = req.body;
+
+    if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: { message: 'A leave request `id` is required in the query parameters.' } });
+    }
+
+    const validStatuses: LeaveRequestStatus[] = ['Aprovada', 'Rejeitada'];
+    if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ error: { message: `A valid 'status' ('Aprovada' or 'Rejeitada') is required in the request body.` } });
+    }
+
+    const updatePayload: { status: LeaveRequestStatus; manager_notes?: string | null, updated_at: string } = {
+        status: status,
+        updated_at: new Date().toISOString()
+    };
+
+    if (manager_notes !== undefined) {
+        updatePayload.manager_notes = manager_notes;
+    }
+
+    const { data: updatedRequest, error } = await supabase
+        .from('leave_requests')
+        .update(updatePayload)
+        .eq('id', id)
+        .eq('user_id', restaurantId)
+        .select()
+        .single();
+    
+    if (error) {
+        if (error.code === 'PGRST116') { // Not found
+            return res.status(404).json({ error: { message: `Leave request with id "${id}" not found.` } });
+        }
+        throw error;
+    }
+    
+    return res.status(200).json(updatedRequest);
 }
