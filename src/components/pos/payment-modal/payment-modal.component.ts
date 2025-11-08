@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models/db.models';
@@ -7,7 +6,6 @@ import { PrintingService } from '../../../services/printing.service';
 import { NotificationService } from '../../../services/notification.service';
 import { RedeemRewardModalComponent } from '../../shared/redeem-reward-modal/redeem-reward-modal.component';
 import { v4 as uuidv4 } from 'uuid';
-import { WebhookService } from '../../../services/webhook.service';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -31,7 +29,6 @@ export class PaymentModalComponent {
   posDataService = inject(PosDataService);
   printingService = inject(PrintingService);
   notificationService = inject(NotificationService);
-  webhookService = inject(WebhookService);
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -131,29 +128,6 @@ export class PaymentModalComponent {
         const balance = this.balanceDue();
         this.paymentAmountInput.set(balance > 0 ? balance.toFixed(2) : '');
     });
-  }
-
-  async sendChargeToTerminal() {
-    const amount = parseFloat(this.paymentAmountInput());
-    const order = this.order();
-    const table = this.table();
-
-    if (!order || !table || isNaN(amount) || amount <= 0) {
-        this.notificationService.show('Valor inválido ou pedido não encontrado.', 'warning');
-        return;
-    }
-
-    const payload = {
-        orderId: order.id,
-        tableNumber: table.number,
-        amount: amount,
-        paymentMethod: this.selectedPaymentMethod(),
-        transactionId: uuidv4() // Unique ID for this payment attempt
-    };
-
-    this.webhookService.triggerWebhook('payment.initiated', payload);
-
-    this.notificationService.show('Comando de cobrança enviado para a maquininha. Aguarde a confirmação do pagamento no seu sistema.', 'info', 8000);
   }
 
   async addPayment() {

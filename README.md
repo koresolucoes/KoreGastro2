@@ -204,24 +204,6 @@ app.post('/webhook-receiver', (req, res) => {
 
 ### Eventos e Payloads
 
-#### `payment.initiated`
-Disparado quando o caixa envia uma cobrança para uma maquininha de cartão externa.
-
-**Exemplo de Payload:**
-```json
-{
-  "orderId": "uuid-do-pedido-existente",
-  "tableNumber": 15,
-  "amount": 83.60,
-  "paymentMethod": "Cartão de Crédito",
-  "transactionId": "uuid-unico-da-tentativa-de-pagamento"
-}
-```
-**Fluxo Recomendado:**
-1. Seu sistema intermediário escuta por este evento.
-2. Use o `amount` e `paymentMethod` para iniciar a transação na maquininha via SDK.
-3. Após o pagamento ser **aprovado** na maquininha, seu sistema deve chamar o endpoint `POST /api/payments` com os dados do pagamento (`orderId`, `payments: [{ method, amount }]`) para finalizar o pedido no ChefOS.
-
 #### `order.created`
 Disparado quando um novo pedido é criado (via API externa ou Venda Rápida enviada para a cozinha).
 
