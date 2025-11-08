@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
@@ -10,6 +11,8 @@ import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.c
 import { NotificationService } from '../../services/notification.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
+import { WebhookService } from '../../services/webhook.service';
+import { v4 as uuidv4 } from 'uuid';
 
 // Import new state services
 import { RecipeStateService } from '../../services/recipe-state.service';
@@ -50,6 +53,7 @@ export class CashierComponent {
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
+  webhookService = inject(WebhookService);
 
   // Inject new state services
   recipeState = inject(RecipeStateService);
@@ -182,6 +186,28 @@ export class CashierComponent {
   closeQuickSalePaymentModal() { 
     this.isQuickSalePaymentModalOpen.set(false);
     this.processingQuickSaleOrder.set(null);
+  }
+
+  async sendChargeToTerminal() {
+    const amount = parseFloat(this.paymentAmountInput());
+    const processingOrder = this.processingQuickSaleOrder();
+
+    if (isNaN(amount) || amount <= 0) {
+        this.notificationService.show('Por favor, insira um valor válido para a cobrança.', 'warning');
+        return;
+    }
+
+    const payload = {
+        orderId: processingOrder?.id || null, // Can be null for a new quick sale
+        tableNumber: 0, // Quick Sale is always considered table 0
+        amount: amount,
+        paymentMethod: this.selectedPaymentMethod(),
+        transactionId: uuidv4() // Unique ID for this specific payment attempt
+    };
+
+    this.webhookService.triggerWebhook('payment.initiated', payload);
+
+    this.notificationService.show('Comando de cobrança enviado para a maquininha. Aguarde a confirmação do pagamento no seu sistema.', 'info', 8000);
   }
 
   async addPayment() {

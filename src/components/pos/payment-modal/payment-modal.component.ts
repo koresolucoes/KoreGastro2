@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models/db.models';
@@ -152,7 +153,7 @@ export class PaymentModalComponent {
 
     this.webhookService.triggerWebhook('payment.initiated', payload);
 
-    this.notificationService.show('Comando de cobrança enviado para a maquininha. Aguarde a confirmação do pagamento.', 'info', 6000);
+    this.notificationService.show('Comando de cobrança enviado para a maquininha. Aguarde a confirmação do pagamento no seu sistema.', 'info', 8000);
   }
 
   async addPayment() {
