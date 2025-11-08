@@ -22,7 +22,8 @@ export class LeaveManagementComponent {
   hrState = inject(HrStateService);
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
-  datePipe = inject(DatePipe);
+  // FIX: Add explicit type to injected pipe to resolve type inference issues.
+  datePipe: DatePipe = inject(DatePipe);
 
   // Data
   // FIX: Access state from the correct feature-specific service

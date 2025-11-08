@@ -15,7 +15,8 @@ declare var d3: any;
 export class HourlySalesChartComponent {
   data: InputSignal<PeakHoursData[]> = input.required<PeakHoursData[]>();
   chartContainer = viewChild<ElementRef>('chartContainer');
-  private currencyPipe = inject(CurrencyPipe);
+  // FIX: Add explicit type to injected pipe to resolve type inference issues in d3 callbacks.
+  private currencyPipe: CurrencyPipe = inject(CurrencyPipe);
   
   constructor() {
     effect(() => {

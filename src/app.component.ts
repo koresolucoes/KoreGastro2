@@ -1,6 +1,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -10,7 +11,7 @@ import { OperationalAuthService } from './services/operational-auth.service';
 import { NotificationModalComponent } from './components/notification-modal/notification-modal.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { ToastContainerComponent } from './components/shared/toast-container/toast-container.component';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs/interop';
 import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
 import { DemoService } from './services/demo.service';
@@ -47,7 +48,8 @@ export class AppComponent implements OnInit {
   isTutorialsRoute = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(e => e.urlAfterRedirects.startsWith('/tutorials'))
+      // FIX: Cast event to NavigationEnd to fix 'urlAfterRedirects' not existing on 'unknown'.
+      map(e => (e as NavigationEnd).urlAfterRedirects.startsWith('/tutorials'))
     ),
     { initialValue: this.router.url.startsWith('/tutorials') }
   );

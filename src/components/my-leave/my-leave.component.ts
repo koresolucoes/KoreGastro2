@@ -23,7 +23,8 @@ export class MyLeaveComponent {
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
-  datePipe = inject(DatePipe);
+  // FIX: Add explicit type to injected pipe to resolve type inference issues.
+  datePipe: DatePipe = inject(DatePipe);
 
   // Data
   activeEmployee = this.operationalAuthService.activeEmployee;

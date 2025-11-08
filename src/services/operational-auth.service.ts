@@ -1,5 +1,6 @@
 
 
+
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry } from '../models/db.models';
 import { Router } from '@angular/router';
@@ -11,6 +12,7 @@ import { SupabaseStateService } from './supabase-state.service';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DemoService } from './demo.service';
 import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
+import { NotificationService } from './notification.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -27,6 +29,7 @@ export class OperationalAuthService {
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
   private demoService = inject(DemoService);
+  private notificationService = inject(NotificationService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
@@ -132,14 +135,72 @@ export class OperationalAuthService {
       await this.loadActiveShift(employee);
   }
 
-  async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
-    const { data: newEntry, error } = await supabase
-        .from('time_clock_entries')
-        .insert({ employee_id: employee.id }) // user_id will be set by the DB default
-        .select('id')
-        .single();
+  private getCurrentLocation(): Promise<{ latitude: number, longitude: number }> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocalização não é suportada por este navegador."));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          let message = "Não foi possível obter sua localização. ";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              message += "Você negou a permissão de acesso à localização.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message += "As informações de localização não estão disponíveis.";
+              break;
+            case error.TIMEOUT:
+              message += "A solicitação de localização expirou.";
+              break;
+            default:
+              message += "Ocorreu um erro desconhecido.";
+              break;
+          }
+          reject(new Error(message));
+        }
+      );
+    });
+  }
 
-    if (error) return { success: false, error };
+  async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
+    let location: { latitude: number, longitude: number } | null = null;
+    try {
+      location = await this.getCurrentLocation();
+    } catch (locationError: any) {
+      this.notificationService.show(locationError.message, 'error', 6000);
+      return { success: false, error: locationError };
+    }
+
+    const { data: newEntry, error } = await supabase
+      .from('time_clock_entries')
+      .insert({ 
+        employee_id: employee.id,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+       // Check for custom error from RLS policy
+       if (error.message.includes('distancia_invalida')) {
+        this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
+        return { success: false, error: { message: 'Distância inválida.' } };
+      }
+       if (error.message.includes('localizacao_nao_configurada')) {
+        this.notificationService.show('A localização do restaurante não foi configurada pelo gestor.', 'error');
+        return { success: false, error: { message: 'Localização não configurada.' } };
+      }
+      return { success: false, error };
+    }
 
     const { error: empError } = await supabase
         .from('employees')
@@ -147,20 +208,18 @@ export class OperationalAuthService {
         .eq('id', employee.id);
 
     if (empError) {
-        // Rollback
         await supabase.from('time_clock_entries').delete().eq('id', newEntry.id);
         return { success: false, error: empError };
     }
     
-    // Manually update the state to reflect the change immediately
     const updatedEmployee = { ...employee, current_clock_in_id: newEntry.id };
-    // FIX: Access employees from hrState
     this.hrState.employees.update(employees => 
         employees.map(e => e.id === employee.id ? updatedEmployee : e)
     );
-    this.login(updatedEmployee); // Sets the active employee
+    this.login(updatedEmployee);
     return { success: true, error: null };
   }
+
 
   async clockOut(): Promise<{ success: boolean; error: any }> {
       const employee = this.activeEmployee();
@@ -183,17 +242,13 @@ export class OperationalAuthService {
           .eq('id', employee.id);
   
       if (empError) {
-          // Don't rollback here, as the clock-out time is already set.
-          // It's better to have a record that needs manual fixing than lose the clock-out time.
           return { success: false, error: empError };
       }
       
-      // Manually update state
-      // FIX: Access employees from hrState
        this.hrState.employees.update(employees => 
           employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
       );
-      this.switchEmployee(); // Clears session and navigates
+      this.switchEmployee();
       return { success: true, error: null };
   }
 

@@ -4,6 +4,22 @@ import { TimeClockEntry } from '../../../src/models/db.models.js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+// Haversine formula to calculate distance between two lat/lon points in meters
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180; // φ, λ in radians
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // in metres
+}
+
 async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -65,6 +81,29 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (employee.pin !== pin) {
             return response.status(403).json({ error: { message: 'Invalid PIN.' } });
         }
+        
+        // --- Geolocation validation logic ---
+        const { data: profile, error: profileError } = await supabase
+          .from('company_profile')
+          .select('latitude, longitude, time_clock_radius')
+          .eq('user_id', restaurantId)
+          .single();
+
+        if (profileError) throw profileError;
+
+        // Check only if the restaurant has configured the location check
+        if (profile.latitude && profile.longitude && profile.time_clock_radius) {
+            if (latitude === undefined || longitude === undefined) {
+                return response.status(400).json({ error: { message: 'Localização do funcionário não fornecida.' } });
+            }
+            const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
+            if (distance > profile.time_clock_radius) {
+                return response.status(403).json({ error: { message: 'Você está muito longe do restaurante para bater o ponto.' } });
+            }
+        }
+        // If location is not configured on profile, the check is skipped. 
+        // Could be changed to an error if strict checking is required.
+
 
         const now = new Date().toISOString();
 

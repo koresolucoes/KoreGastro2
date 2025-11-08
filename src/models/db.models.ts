@@ -513,6 +513,9 @@ export interface CompanyProfile {
   menu_header_url: string | null;
   external_api_key: string | null;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  time_clock_radius: number | null;
 }
 
 // --- Loyalty Program ---

@@ -16,8 +16,9 @@ export class SalesCogsChartComponent {
   data: InputSignal<DailySalesCogs[]> = input.required<DailySalesCogs[]>();
   chartContainer = viewChild<ElementRef>('chartContainer');
 
-  private datePipe = inject(DatePipe);
-  private currencyPipe = inject(CurrencyPipe);
+  // FIX: Add explicit types to injected pipes to resolve type inference issues in d3 callbacks.
+  private datePipe: DatePipe = inject(DatePipe);
+  private currencyPipe: CurrencyPipe = inject(CurrencyPipe);
   
   constructor() {
     effect(() => {

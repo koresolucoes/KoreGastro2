@@ -122,6 +122,9 @@ export class SupabaseStateService {
             menu_cover_url: null,
             menu_header_url: null,
             external_api_key: null,
+            latitude: null,
+            longitude: null,
+            time_clock_radius: null
         });
         this.settingsState.reservations.set([]);
         this.settingsState.reservationSettings.set(null);

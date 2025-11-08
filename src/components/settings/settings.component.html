@@ -115,6 +115,24 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-6 pt-6 border-t border-gray-700">
+              <h3 class="text-lg font-semibold text-white mb-4">Controle de Ponto por Geolocalização</h3>
+              <p class="text-xs text-gray-400 mb-3">Defina as coordenadas do seu restaurante para validar a localização do funcionário ao bater o ponto. Use um site como o Google Maps para obter a latitude e longitude do seu endereço.</p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Latitude</label>
+                  <input type="number" [value]="companyProfileForm().latitude" (input)="updateCompanyProfileField('latitude', $any($event.target).value)" placeholder="-23.550520" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Longitude</label>
+                  <input type="number" [value]="companyProfileForm().longitude" (input)="updateCompanyProfileField('longitude', $any($event.target).value)" placeholder="-46.633308" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Raio (metros)</label>
+                  <input type="number" [value]="companyProfileForm().time_clock_radius" (input)="updateCompanyProfileField('time_clock_radius', $any($event.target).value)" placeholder="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+              </div>
+            </div>
             <div class="mt-6">
               <button (click)="saveCompanyProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Salvar Dados da Empresa</button>
             </div>

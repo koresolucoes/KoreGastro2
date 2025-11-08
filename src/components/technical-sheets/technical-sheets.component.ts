@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -132,7 +133,8 @@ export class TechnicalSheetsComponent {
     const term = this.searchTerm().toLowerCase();
     const recipes = this.allRecipes().map(r => ({
       ...r,
-      cost: this.recipeCosts().get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
+      // FIX: Cast recipeCosts signal result to Map to resolve 'get' does not exist error.
+      cost: (this.recipeCosts() as Map<string, any>).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
     }));
     if (!term) return recipes;
     return recipes.filter(r => r.name.toLowerCase().includes(term));
