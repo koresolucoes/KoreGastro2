@@ -1,7 +1,3 @@
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -31,25 +27,19 @@ export class AppComponent implements OnInit {
   supabaseStateService = inject(SupabaseStateService);
   subscriptionStateService = inject(SubscriptionStateService);
   demoService = inject(DemoService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
-  // FIX: Corrected property name from `subscriptionState` to the injected `subscriptionStateService`.
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
-  // FIX: Corrected property name from `subscriptionState` to the injected `subscriptionStateService`.
   isTrialing = this.subscriptionStateService.isTrialing;
-  // FIX: Corrected property name from `subscriptionState` to the injected `subscriptionStateService`.
   subscription = this.subscriptionStateService.subscription;
-  // FIX: Corrected property name from `subscriptionState` to the injected `subscriptionStateService`.
   trialDaysRemaining = this.subscriptionStateService.trialDaysRemaining;
 
   isTutorialsRoute = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      // FIX: Cast event to NavigationEnd to fix 'urlAfterRedirects' not existing on 'unknown'.
-      map(e => (e as NavigationEnd).urlAfterRedirects.startsWith('/tutorials'))
+      map(e => e.urlAfterRedirects.startsWith('/tutorials'))
     ),
     { initialValue: this.router.url.startsWith('/tutorials') }
   );
@@ -92,7 +82,6 @@ export class AppComponent implements OnInit {
     if (accessToken && refreshToken && type !== 'recovery') {
       console.log('Tokens encontrados na URL. Tentando configurar a sessão...');
       
-      // FIX: Cast supabase.auth to 'any' to bypass a potential typing issue in older library versions.
       (supabase.auth as any).setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
