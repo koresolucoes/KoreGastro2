@@ -29,6 +29,27 @@ async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{
     return { restaurantId };
 }
 
+/**
+ * Sanitizes a filename to be URL-friendly for Supabase Storage.
+ * @param filename The original filename.
+ * @returns A safe version of the filename.
+ */
+function sanitizeFilename(filename: string): string {
+    const extensionMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
+    const extension = extensionMatch ? extensionMatch[0] : '';
+    const name = extensionMatch ? filename.slice(0, -extension.length) : filename;
+
+    const sanitizedName = name
+        .normalize('NFD') // Decompose accented characters into base characters and diacritics
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+        .replace(/[^a-zA-Z0-9\s_.-]/g, '') // Remove non-alphanumeric chars except for spaces, underscores, dots, hyphens
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .substring(0, 100); // Truncate to a reasonable length
+
+    return `${sanitizedName}${extension}`;
+}
+
+
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -115,14 +136,12 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     if (attachment && attachment_filename) {
         try {
             const fileBuffer = Buffer.from(attachment, 'base64');
-            const filePath = `public/leave_attachments/${restaurantId}/${newRequest.id}/${attachment_filename}`;
+            const sanitizedFilename = sanitizeFilename(attachment_filename);
+            const filePath = `public/leave_attachments/${restaurantId}/${newRequest.id}/${sanitizedFilename}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('restaurant_assets')
-                .upload(filePath, fileBuffer, {
-                    // Set content type if possible, otherwise Supabase infers it
-                    // For simplicity, we let it infer. For production, you might pass mime type from client.
-                });
+                .upload(filePath, fileBuffer, {});
 
             if (uploadError) throw uploadError;
 
