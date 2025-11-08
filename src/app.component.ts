@@ -7,7 +7,7 @@ import { OperationalAuthService } from './services/operational-auth.service';
 import { NotificationModalComponent } from './components/notification-modal/notification-modal.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { ToastContainerComponent } from './components/shared/toast-container/toast-container.component';
-import { toSignal } from '@angular/core/rxjs/interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
 import { DemoService } from './services/demo.service';
@@ -30,10 +30,14 @@ export class AppComponent implements OnInit {
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
+  // FIX: Access properties from the injected `subscriptionStateService` instance.
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
+  // FIX: Access properties from the injected `subscriptionStateService` instance.
   isTrialing = this.subscriptionStateService.isTrialing;
+  // FIX: Access properties from the injected `subscriptionStateService` instance.
   subscription = this.subscriptionStateService.subscription;
+  // FIX: Access properties from the injected `subscriptionStateService` instance.
   trialDaysRemaining = this.subscriptionStateService.trialDaysRemaining;
 
   isTutorialsRoute = toSignal(
