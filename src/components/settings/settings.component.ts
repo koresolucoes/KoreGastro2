@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier } from '../../models/db.models';
 import { SettingsDataService } from '../../services/settings-data.service';
@@ -18,6 +18,8 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { DemoService } from '../../services/demo.service';
+
+declare var L: any; // Declare Leaflet
 
 type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
 
@@ -48,6 +50,13 @@ export class SettingsComponent {
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
   private demoService = inject(DemoService);
+
+  // Map related properties
+  @ViewChild('mapContainer') mapContainer!: ElementRef;
+  private map: any;
+  private marker: any;
+  private circle: any;
+  private mapInitialized = false;
 
   // Data Signals from new services
   stations = this.posState.stations;
@@ -285,6 +294,81 @@ export class SettingsComponent {
             this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
         }
     });
+
+    // Effect for map initialization and updates
+    effect(() => {
+        const tab = this.activeTab();
+        
+        // Initialize map only when the tab is visible and it's not already initialized
+        if (tab === 'empresa' && !this.mapInitialized) {
+            // Defer to make sure ViewChild is available.
+            setTimeout(() => {
+                if (this.mapContainer?.nativeElement) {
+                    this.initMap();
+                }
+            }, 0);
+        }
+        
+        // Sync form changes to map (marker, circle, and view)
+        const profile = this.companyProfileForm();
+        if (this.mapInitialized && this.map) {
+            const lat = profile.latitude ?? -15.793889;
+            const lon = profile.longitude ?? -47.882778;
+            const radius = profile.time_clock_radius ?? 100;
+            const latLng = L.latLng(lat, lon);
+
+            if (this.marker) this.marker.setLatLng(latLng);
+            if (this.circle) {
+                this.circle.setLatLng(latLng);
+                this.circle.setRadius(radius);
+            }
+            
+            const currentCenter = this.map.getCenter();
+            if (currentCenter.distanceTo(latLng) > 1) { // Only re-center if distance is more than 1 meter
+                this.map.flyTo(latLng, this.map.getZoom());
+            }
+        }
+    });
+  }
+
+  private initMap(): void {
+    if (this.map || !this.mapContainer?.nativeElement) {
+        return; // Already initialized or container not ready
+    }
+
+    const profile = this.companyProfileForm();
+    const lat = profile.latitude ?? -15.793889;
+    const lon = profile.longitude ?? -47.882778;
+    const radius = profile.time_clock_radius ?? 100;
+
+    this.map = L.map(this.mapContainer.nativeElement).setView([lat, lon], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(this.map);
+
+    this.marker = L.marker([lat, lon]).addTo(this.map);
+
+    this.circle = L.circle([lat, lon], {
+        color: 'blue',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.3,
+        radius: radius
+    }).addTo(this.map);
+
+    this.map.on('click', (e: any) => {
+        const newLat = e.latlng.lat;
+        const newLng = e.latlng.lng;
+        
+        // Update form state directly, the effect will sync the map
+        this.companyProfileForm.update(form => ({
+            ...form,
+            latitude: newLat,
+            longitude: newLng,
+        }));
+    });
+
+    this.mapInitialized = true;
   }
 
   setActiveTab(tab: SettingsTab) {
