@@ -392,7 +392,13 @@
               <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
             </div>
           </div>
-          <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-500 disabled:bg-gray-600">Adicionar Pagamento</button>
+          <div class="grid grid-cols-2 gap-2">
+            <button (click)="sendChargeToTerminal()" [disabled]="!paymentAmountInput() || +paymentAmountInput() <= 0" class="w-full bg-purple-600 text-white font-bold py-2 px-2 rounded-lg hover:bg-purple-500 transition-colors flex items-center justify-center gap-1 disabled:bg-gray-600 disabled:cursor-not-allowed" title="Enviar cobrança para a maquininha">
+              <span class="material-symbols-outlined text-base">credit_card</span>
+              Maquininha
+            </button>
+            <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-500 disabled:bg-gray-600">Adicionar Pagamento</button>
+          </div>
         </div>
         <div class="flex-1 border-t border-gray-700 pt-4 overflow-y-auto">
           <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
