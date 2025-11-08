@@ -208,6 +208,27 @@ export class SettingsComponent {
     return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
   });
 
+  apiAccessQrCodeData = computed(() => {
+    const userId = this.authService.currentUser()?.id;
+    const apiKey = this.companyProfileForm().external_api_key;
+    if (!userId || !apiKey) {
+      return null;
+    }
+    const data = {
+      restaurantId: userId,
+      apiKey: apiKey,
+    };
+    return JSON.stringify(data);
+  });
+
+  apiAccessQrCodeUrl = computed(() => {
+    const data = this.apiAccessQrCodeData();
+    if (!data) {
+      return '';
+    }
+    return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(data)}`;
+  });
+
   constructor() {
     effect(() => {
         const settings = this.reservationSettings();
