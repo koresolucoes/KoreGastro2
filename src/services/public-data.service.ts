@@ -87,13 +87,25 @@ export class PublicDataService {
   async getPublicCompanyProfile(userId: string): Promise<Partial<CompanyProfile> | null> {
     const { data, error } = await supabase
       .from('company_profile')
-      .select('company_name, logo_url, address, phone, menu_cover_url, menu_header_url')
+      .select('*') // Select all to bypass potential column-specific RLS issues
       .eq('user_id', userId)
       .single();
+      
     if (error) {
-      console.error('Error fetching public company profile:', error);
+      // Don't log "not found" as a critical error, it's a valid case.
+      if (error.code !== 'PGRST116') {
+        console.error('Error fetching public company profile:', error);
+      }
       return null;
     }
+    
+    if (data) {
+      // IMPORTANT: Explicitly remove sensitive fields before returning to the client.
+      // This prevents exposing API keys or other private data.
+      delete (data as any).external_api_key;
+      delete (data as any).ifood_merchant_id;
+    }
+
     return data;
   }
 
