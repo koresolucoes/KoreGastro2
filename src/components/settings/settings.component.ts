@@ -174,12 +174,12 @@ export class SettingsComponent {
     if (!context || !name) return;
 
     this.isSaving.set(true);
-    let result: { success: boolean; error: any };
+    let result: { success: boolean; error: any; data?: any };
     const id = this.editingItem()?.id;
 
     switch (context) {
       case 'station':
-        result = id ? await this.posDataService.updateStation(id, name) : await this.posDataService.addStation(name);
+        result = id ? await this.settingsDataService.updateStation(id, name) : await this.settingsDataService.addStation(name);
         break;
       case 'recipe_category':
         result = id ? await this.recipeDataService.updateRecipeCategory(id, name) : await this.recipeDataService.addRecipeCategory(name);
@@ -211,7 +211,7 @@ export class SettingsComponent {
     let result: { success: boolean; error: any };
 
     switch (context) {
-      case 'station': result = await this.posDataService.deleteStation(item.id); break;
+      case 'station': result = await this.settingsDataService.deleteStation(item.id); break;
       case 'recipe_category': result = await this.recipeDataService.deleteRecipeCategory(item.id); break;
       case 'ingredient_category': result = await this.inventoryDataService.deleteIngredientCategory(item.id); break;
       case 'supplier': result = await this.inventoryDataService.deleteSupplier(item.id); break;
@@ -385,12 +385,12 @@ export class SettingsComponent {
   // Will provide stubs for now.
 
   async saveWebhook(webhook: Partial<Webhook>) {
-      this.notificationService.show('Funcionalidade de salvar webhook ainda não implementada.', 'info');
+      this.notificationService.show('Funcionalidade de salvar webhook ainda não foi implementada.', 'info');
       this.closeWebhookModal();
   }
 
   async deleteWebhook(webhook: Webhook) {
-      this.notificationService.show('Funcionalidade de deletar webhook ainda não implementada.', 'info');
+      this.notificationService.show('Funcionalidade de deletar webhook ainda não foi implementada.', 'info');
   }
 
 }
