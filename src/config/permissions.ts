@@ -23,5 +23,6 @@ export const ALL_PERMISSION_KEYS = [
   '/reservations',
   '/time-clock',
   '/leave-management',
-  '/tutorials'
+  '/tutorials',
+  '/delivery'
 ];

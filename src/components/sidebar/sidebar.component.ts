@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -51,6 +52,7 @@ export class SidebarComponent {
   expandedGroups = signal<Record<string, boolean>>({
     'Vendas': true,
     'iFood': true,
+    'Delivery': true,
   });
 
   allNavLinks: CombinedNavItem[] = [
@@ -62,6 +64,13 @@ export class SidebarComponent {
         { name: 'Caixa', path: '/cashier', icon: 'point_of_sale', roles: ['Gerente', 'Caixa'] },
         { name: 'Reservas', path: '/reservations', icon: 'calendar_month', roles: ['Gerente', 'Caixa', 'Garçom'] },
         { name: 'Clientes', path: '/customers', icon: 'group', roles: ['Gerente', 'Caixa'] },
+      ]
+    },
+    {
+      name: 'Delivery',
+      icon: 'local_shipping',
+      children: [
+        { name: 'Painel de Entregas', path: '/delivery', icon: 'dashboard', roles: ['Gerente', 'Caixa'] },
       ]
     },
     {

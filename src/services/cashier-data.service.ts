@@ -105,7 +105,7 @@ export class CashierDataService {
 
     return supabase
       .from('orders')
-      .select('*, order_items(*), customers(*)')
+      .select('*, order_items(*), customers(*), delivery_drivers(*)')
       .eq('user_id', userId)
       .eq('status', 'COMPLETED')
       .gte('completed_at', startDate.toISOString())

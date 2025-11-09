@@ -4,7 +4,9 @@ export type WebhookEvent =
   | 'order.created'
   | 'order.updated'
   | 'stock.updated'
-  | 'customer.created';
+  | 'customer.created'
+  | 'delivery.created'
+  | 'delivery.status_updated';
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
 export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO';
@@ -18,7 +20,7 @@ export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Ates
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
-export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout';
+export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 
@@ -247,6 +249,16 @@ export interface Customer {
   loyalty_points: number;
 }
 
+export interface DeliveryDriver {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string | null;
+  vehicle_type: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   table_number: number;
@@ -272,6 +284,11 @@ export interface Order {
   ifood_pickup_code?: string | null;
   ifood_dispute_id?: string | null;
   ifood_dispute_details?: any | null;
+  
+  // External Delivery fields
+  delivery_driver_id?: string | null;
+  delivery_status?: string | null;
+  delivery_drivers?: DeliveryDriver; // Relation
 }
 
 export interface OrderItem {

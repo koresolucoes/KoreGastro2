@@ -17,6 +17,7 @@ import { DashboardStateService } from './dashboard-state.service';
 import { DemoService } from './demo.service';
 import * as mockData from '../data/mock-data';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
+import { DeliveryStateService } from './delivery-state.service';
 
 @Injectable({
   providedIn: 'root',
@@ -36,6 +37,7 @@ export class SupabaseStateService {
   private subscriptionState = inject(SubscriptionStateService);
   private dashboardState = inject(DashboardStateService);
   private demoService = inject(DemoService);
+  private deliveryState = inject(DeliveryStateService);
 
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
@@ -185,8 +187,8 @@ export class SupabaseStateService {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
     const [openOrdersRes, finishedIfoodOrdersRes] = await Promise.all([
-        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId),
-        supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId)
+        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId),
+        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId)
     ]);
 
     if (!openOrdersRes.error) {
@@ -212,6 +214,9 @@ export class SupabaseStateService {
         case 'orders':
         case 'order_items':
             this.refetchOrdersAndFinished();
+            break;
+        case 'delivery_drivers':
+            this.refetchSimpleTable('delivery_drivers', '*', this.deliveryState.deliveryDrivers);
             break;
         case 'subscriptions':
         case 'plans':
@@ -297,13 +302,14 @@ export class SupabaseStateService {
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks
+      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks,
+      deliveryDrivers
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
       supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
-      supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId),
+      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId),
       supabase.from('employees').select('*').eq('user_id', userId),
       supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
       supabase.from('ingredient_categories').select('*').eq('user_id', userId),
@@ -331,8 +337,9 @@ export class SupabaseStateService {
       supabase.from('subscriptions').select('*').eq('user_id', userId),
       supabase.from('plans').select('*'),
       supabase.from('recipes').select('*').eq('user_id', userId),
-      supabase.from('orders').select('*, order_items(*), customers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
+      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
       supabase.from('webhooks').select('*').eq('user_id', userId),
+      supabase.from('delivery_drivers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
     ]);
 
     // Populate all state services
@@ -371,6 +378,7 @@ export class SupabaseStateService {
     this.recipeState.recipes.set(recipes.data || []);
     this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
     this.settingsState.webhooks.set(webhooks.data || []);
+    this.deliveryState.deliveryDrivers.set(deliveryDrivers.data || []);
 
 
     await this.refreshDashboardAndCashierData();
@@ -383,10 +391,10 @@ export class SupabaseStateService {
     const today = new Date(); const isoEndDate = today.toISOString(); today.setHours(0, 0, 0, 0); const isoStartDate = today.toISOString();
     const cashierStartDate = this.cashierState.lastCashierClosing() ? new Date(this.cashierState.lastCashierClosing()!.closed_at) : new Date(isoStartDate);
     const results = await Promise.all([
-        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'COMPLETED').gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
+        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'COMPLETED').gte('completed_at', cashierStartDate.toISOString()).lte('completed_at', isoEndDate).eq('user_id', userId),
         supabase.from('transactions').select('*').gte('date', cashierStartDate.toISOString()).lte('date', isoEndDate).eq('user_id', userId),
         supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId),
-        supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'COMPLETED').gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId)
+        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'COMPLETED').gte('completed_at', isoStartDate).lte('completed_at', isoEndDate).eq('user_id', userId)
     ]);
     this.setCompletedOrdersWithPrices(results[0].data || []);
     this.cashierState.transactions.set(results[1].data || []);
@@ -424,7 +432,7 @@ export class SupabaseStateService {
 
   private async refetchOrders() {
     const userId = this.currentUser()?.id; if (!userId) return;
-    const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*)').eq('status', 'OPEN').eq('user_id', userId);
+    const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId);
     if (!error) this.setOrdersWithPrices(data || []);
     else console.error('Error refetching orders:', error);
   }
@@ -461,6 +469,7 @@ export class SupabaseStateService {
     this.ifoodState.clearData();
     this.subscriptionState.clearData();
     this.dashboardState.clearData();
+    this.deliveryState.clearData();
     this.isDataLoaded.set(false);
   }
   
@@ -470,7 +479,7 @@ export class SupabaseStateService {
     const [transactionsRes, productionPlansRes, completedOrdersRes] = await Promise.all([
       supabase.from('transactions').select('*').eq('user_id', userId).in('type', ['Gorjeta', 'Receita']).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()),
       supabase.from('production_plans').select('*, production_tasks(*, employees(name))').eq('user_id', userId).gte('plan_date', startDate.toISOString().split('T')[0]).lte('plan_date', endDate.toISOString().split('T')[0]),
-      supabase.from('orders').select('*, order_items(*), customers(*)').eq('user_id', userId).eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString())
+      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('user_id', userId).eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString())
     ]);
       
     if (transactionsRes.error || productionPlansRes.error || completedOrdersRes.error) { 

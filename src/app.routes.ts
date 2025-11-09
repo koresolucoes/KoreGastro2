@@ -35,6 +35,7 @@ import { ResetPasswordComponent } from './components/auth/reset-password.compone
 import { DemoAccessComponent } from './components/demo/demo-access.component';
 import { loginGuard } from './guards/login.guard';
 import { IfoodStoreManagerComponent } from './components/ifood-store-manager/ifood-store-manager.component';
+import { DeliveryComponent } from './components/delivery/delivery.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
@@ -72,5 +73,6 @@ export const APP_ROUTES: Routes = [
   { path: 'leave-management', component: LeaveManagementComponent, canActivate: [roleGuard] },
   { path: 'tutorials', component: TutorialsListComponent, canActivate: [roleGuard] },
   { path: 'tutorials/:id', component: TutorialDetailComponent, canActivate: [roleGuard] },
+  { path: 'delivery', component: DeliveryComponent, canActivate: [roleGuard] },
   { path: '**', redirectTo: 'dashboard' } // Wildcard route for a 404 page
 ];
