@@ -38,6 +38,12 @@ export class FunctionalitySettingsComponent {
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
   webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
 
+  // Modal State Signals
+  isIFoodModalOpen = signal(false);
+  isApiModalOpen = signal(false);
+  isLoyaltyModalOpen = signal(false);
+  isReservationModalOpen = signal(false);
+
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
   
@@ -174,9 +180,15 @@ export class FunctionalitySettingsComponent {
     });
   }
 
+  async toggleReservations(event: Event) {
+    const is_enabled = (event.target as HTMLInputElement).checked;
+    this.reservationForm.update(form => ({ ...form, is_enabled }));
+    await this.saveReservationSettings();
+  }
+
   async saveReservationSettings() {
     const { success, error } = await this.reservationDataService.updateReservationSettings(this.reservationForm());
-    if (success) await this.notificationService.alert('Configurações de reserva salvas!', 'Sucesso');
+    if (success) this.notificationService.show('Configurações de reserva salvas!', 'success');
     else await this.notificationService.alert(`Erro: ${error?.message}`);
   }
 
@@ -197,9 +209,15 @@ export class FunctionalitySettingsComponent {
     this.loyaltySettingsForm.update(form => ({ ...form, [field]: value }));
   }
 
+  async toggleLoyalty(event: Event) {
+    const is_enabled = (event.target as HTMLInputElement).checked;
+    this.loyaltySettingsForm.update(form => ({ ...form, is_enabled }));
+    await this.saveLoyaltySettings();
+  }
+
   async saveLoyaltySettings() {
     const { success, error } = await this.settingsDataService.upsertLoyaltySettings(this.loyaltySettingsForm());
-    if (success) this.notificationService.show('Configurações salvas!', 'success');
+    if (success) this.notificationService.show('Configurações de fidelidade salvas!', 'success');
     else await this.notificationService.alert(`Erro: ${error?.message}`);
   }
 
