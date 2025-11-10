@@ -39,6 +39,15 @@
               </div>
             </div>
             <div>
+              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Endereço</h4>
+              <div class="text-sm text-white font-medium whitespace-pre-wrap mb-2">
+                {{ customer().address || 'Não informado' }}
+              </div>
+              @if (customer().latitude && customer().longitude) {
+                <div #mapContainer class="w-full h-48 rounded-lg z-0"></div>
+              }
+            </div>
+            <div>
               <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Documentos</h4>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ customer().cpf || 'Não informado' }}</dd></div>

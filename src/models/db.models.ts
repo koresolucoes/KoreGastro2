@@ -245,6 +245,8 @@ export interface Customer {
   email: string | null;
   cpf: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   notes: string | null;
   created_at: string;
   loyalty_points: number;

@@ -106,8 +106,7 @@ export const MOCK_RECIPES: Recipe[] = [
 
 // --- OTHERS ---
 export const MOCK_CUSTOMERS: Customer[] = [
-    // FIX: Add missing 'address' property to conform to Customer type.
-    { id: 'cust-1', name: 'Cliente Fiel', phone: '11999998888', email: 'fiel@email.com', cpf: '123.456.789-00', address: null, notes: 'Prefere a mesa da janela.', loyalty_points: 150, user_id: 'demo-user', created_at: new Date().toISOString() },
+    { id: 'cust-1', name: 'Cliente Fiel', phone: '11999998888', email: 'fiel@email.com', cpf: '123.456.789-00', address: 'Av. Paulista, 1578 - Bela Vista, São Paulo - SP, 01310-200', latitude: -23.5613, longitude: -46.6565, notes: 'Prefere a mesa da janela.', loyalty_points: 150, user_id: 'demo-user', created_at: new Date().toISOString() },
 ];
 
 export const MOCK_TRANSACTIONS: Transaction[] = [

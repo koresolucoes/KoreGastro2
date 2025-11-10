@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Customer } from '../src/models/db.models.js';
@@ -149,6 +150,9 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
       email: body.email || null,
       cpf: body.cpf || null,
       notes: body.notes || null,
+      address: body.address || null,
+      latitude: body.latitude || null,
+      longitude: body.longitude || null,
       loyalty_points: body.loyalty_points || 0
     })
     .select()

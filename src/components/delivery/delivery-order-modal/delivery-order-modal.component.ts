@@ -6,6 +6,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { RecipeStateService } from '../../../services/recipe-state.service';
 import { Recipe, Customer, Order, OrderItem } from '../../../models/db.models';
 import { CustomerSelectModalComponent } from '../../shared/customer-select-modal/customer-select-modal.component';
+import { SettingsStateService } from '../../../services/settings-state.service';
 
 interface CartItem {
   recipe: Recipe;
@@ -24,6 +25,7 @@ export class DeliveryOrderModalComponent {
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
   private recipeState = inject(RecipeStateService);
+  private settingsState = inject(SettingsStateService);
 
   editingOrder: InputSignal<Order | null> = input<Order | null>(null);
   closeModal: OutputEmitterRef<void> = output<void>();
@@ -109,16 +111,38 @@ export class DeliveryOrderModalComponent {
     );
   }
 
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371e3; // metres
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distanceInMeters = R * c;
+    return distanceInMeters / 1000; // convert to KM
+  }
+
   handleCustomerSelected(customer: Customer) {
     this.selectedCustomer.set(customer);
     this.isCustomerSelectModalOpen.set(false);
-    if (customer.address) {
-      // Simulate distance calculation
-      const randomDistance = Math.random() * (15 - 1) + 1; // Random distance between 1 and 15 km
-      this.distance.set(parseFloat(randomDistance.toFixed(1)));
-      this.notificationService.show(`Distância calculada: ${this.distance()} km (simulado).`, 'info');
+
+    const profile = this.settingsState.companyProfile();
+    if (customer.latitude && customer.longitude && profile?.latitude && profile.longitude) {
+        const distance = this.calculateDistance(
+            profile.latitude,
+            profile.longitude,
+            customer.latitude,
+            customer.longitude
+        );
+        this.distance.set(parseFloat(distance.toFixed(1)));
+        this.notificationService.show(`Distância calculada: ${this.distance()} km.`, 'info');
     } else {
-      this.distance.set(0); // Reset if customer has no address
+        this.distance.set(0); // Reset if coords are missing
     }
   }
 
