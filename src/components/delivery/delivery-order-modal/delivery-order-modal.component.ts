@@ -174,7 +174,6 @@ export class DeliveryOrderModalComponent {
     }
 
     this.isSaving.set(false);
-    // FIX: Corrected a reference error by checking `result.success` instead of the undefined variable `success` after a service call.
     if (result.success) {
       this.notificationService.show(this.isEditing() ? 'Pedido atualizado com sucesso!' : 'Pedido criado com sucesso!', 'success');
       this.closeModal.emit();

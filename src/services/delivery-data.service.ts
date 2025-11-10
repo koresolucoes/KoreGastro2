@@ -1,12 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
-// FIX: import Order model
 import { DeliveryDriver, Order, OrderItem, OrderItemStatus, Recipe, Transaction, TransactionType } from '../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PosStateService } from './pos-state.service';
 import { PricingService } from './pricing.service';
-// FIX: import InventoryDataService
 import { InventoryDataService } from './inventory-data.service';
 
 // Interface for the new order cart item
@@ -22,7 +20,6 @@ export class DeliveryDataService {
   private authService = inject(AuthService);
   private posState = inject(PosStateService);
   private pricingService = inject(PricingService);
-  // FIX: inject InventoryDataService
   private inventoryDataService = inject(InventoryDataService);
 
   async updateDeliveryStatus(orderId: string, status: string, driverId?: string | null) {
@@ -39,7 +36,6 @@ export class DeliveryDataService {
     return { success: !error, error };
   }
   
-  // FIX: Add missing method assignDriverToOrder
   async assignDriverToOrder(orderId: string, driverId: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase
       .from('orders')
@@ -54,7 +50,6 @@ export class DeliveryDataService {
     return { success: !error, error };
   }
 
-  // FIX: Add missing method finalizeDeliveryOrder
   async finalizeDeliveryOrder(order: Order): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
@@ -76,6 +71,10 @@ export class DeliveryDataService {
     // 2. Insert transactions
     const orderTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Desconhecido';
+    
+    // Find the employee ID linked to the driver ID
+    const driver = this.posState.orders().find(o => o.id === order.id)?.delivery_drivers;
+    const employeeIdForTransaction = driver?.employee_id || null;
 
     const transactionsToInsert: Partial<Transaction>[] = [
       {
@@ -83,17 +82,16 @@ export class DeliveryDataService {
         type: 'Receita',
         amount: orderTotal,
         user_id: userId,
-        employee_id: order.delivery_driver_id, // Attribute sale to the driver
       }
     ];
     
     if (order.delivery_cost && order.delivery_cost > 0) {
         transactionsToInsert.push({
-            description: `Taxa de Entrega Pedido #${order.id.slice(0, 8)}`,
-            type: 'Despesa', // This might be a business decision. Is it an expense or part of revenue? Assuming expense for driver payout.
+            description: `Pagamento Entrega Pedido #${order.id.slice(0, 8)} - ${driver?.name || 'Entregador'}`,
+            type: 'Despesa',
             amount: order.delivery_cost,
             user_id: userId,
-            employee_id: order.delivery_driver_id,
+            employee_id: employeeIdForTransaction,
         });
     }
 

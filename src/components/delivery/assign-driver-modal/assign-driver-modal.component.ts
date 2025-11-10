@@ -30,7 +30,7 @@ export class AssignDriverModalComponent {
     
     const costMap = new Map<string, number>();
     drivers.forEach(driver => {
-        const cost = driver.base_rate + (driver.rate_per_km * distance);
+        const cost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
         costMap.set(driver.id, cost);
     });
     return costMap;

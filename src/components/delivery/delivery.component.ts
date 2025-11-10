@@ -118,7 +118,7 @@ export class DeliveryComponent {
     }
 
     const distance = order.delivery_distance_km ?? 0;
-    const deliveryCost = driver.base_rate + (driver.rate_per_km * distance);
+    const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
     
     const { success, error } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
 

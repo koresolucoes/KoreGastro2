@@ -18,6 +18,13 @@
           [class.text-white]="performanceView() === 'kitchen'">
           Cozinha
         </button>
+        <button 
+          (click)="performanceView.set('delivery')"
+          class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors"
+          [class.bg-blue-600]="performanceView() === 'delivery'"
+          [class.text-white]="performanceView() === 'delivery'">
+          Delivery
+        </button>
       </div>
       <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
         <button 
@@ -154,7 +161,7 @@
           </div>
         </div>
       }
-    } @else { <!-- Kitchen View -->
+    } @else if(performanceView() === 'kitchen') { <!-- Kitchen View -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         @for (stat of kitchenStats(); track stat.label) {
           <div class="bg-gray-800 rounded-lg p-6">
@@ -209,6 +216,97 @@
                   }
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      }
+    } @else { <!-- Delivery View -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        @for (stat of deliveryStats(); track stat.label) {
+          <div class="bg-gray-800 rounded-lg p-6">
+            <p class="text-gray-400 text-sm font-medium">{{ stat.label }}</p>
+            <p class="text-3xl font-bold text-white mt-2">
+              {{ stat.isCurrency ? (stat.value | currency:'BRL') : (stat.value | number:'1.0-1') }} {{ stat.unit }}
+            </p>
+          </div>
+        }
+      </div>
+
+       @if (deliveryPerformance().length === 0) {
+        <div class="bg-gray-800 rounded-lg p-16 text-center">
+          <h2 class="text-xl font-semibold text-white">Nenhum dado de entrega encontrado</h2>
+          <p class="text-gray-400 mt-2">Não há entregas concluídas no período selecionado.</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Top Drivers Chart -->
+          <div class="bg-gray-800 rounded-lg p-6 lg:col-span-1">
+            <h2 class="text-xl font-semibold text-white mb-4">Top 5 Entregadores por Entregas</h2>
+            <div class="space-y-4">
+              @for(performer of topDriversByDeliveries(); track performer.driver.id) {
+                <div class="flex items-center gap-4">
+                  <span class="font-semibold text-gray-400 w-12 truncate text-sm" [title]="performer.driver.name">{{ performer.driver.name.split(' ')[0] }}</span>
+                  <div class="flex-1 bg-gray-700 rounded-full h-6">
+                    <div class="bg-purple-600 h-6 rounded-full flex items-center justify-end px-2" 
+                         [style.width.%]="(maxDeliveries() > 0 ? (performer.completedDeliveries / maxDeliveries() * 100) : 0)">
+                      <span class="text-xs font-bold text-white">{{ performer.completedDeliveries }} entregas</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Detailed Delivery Performance Table -->
+          <div class="bg-gray-800 rounded-lg lg:col-span-2">
+            <div class="p-6 border-b border-gray-700">
+              <h2 class="text-xl font-semibold text-white">Desempenho Detalhado por Entregador</h2>
+            </div>
+            <div class="overflow-x-auto hidden lg:block">
+              <table class="w-full text-left">
+                <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+                  <tr>
+                    <th scope="col" class="px-6 py-3">Entregador</th>
+                    <th scope="col" class="px-6 py-3 text-center">Nº de Entregas</th>
+                    <th scope="col" class="px-6 py-3 text-right">Distância Total</th>
+                    <th scope="col" class="px-6 py-3 text-right">Taxas Ganhas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (driver of deliveryPerformance(); track driver.driver.id) {
+                    <tr class="border-b border-gray-700 hover:bg-gray-700/30">
+                      <td class="px-6 py-4 font-medium text-white">{{ driver.driver.name }}</td>
+                      <td class="px-6 py-4 text-center font-semibold text-white">{{ driver.completedDeliveries }}</td>
+                      <td class="px-6 py-4 text-right text-gray-300">{{ driver.totalDistance | number:'1.1-1' }} km</td>
+                      <td class="px-6 py-4 text-right font-semibold text-green-400">{{ driver.totalFeesEarned | currency:'BRL' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+             <!-- Mobile Cards -->
+            <div class="block lg:hidden p-4 space-y-4">
+              @for(driver of deliveryPerformance(); track driver.driver.id) {
+                <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+                  <div>
+                    <p class="font-semibold text-white text-lg">{{ driver.driver.name }}</p>
+                  </div>
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-gray-600/50 text-sm">
+                    <div>
+                        <p class="text-gray-400 text-xs">Nº de Entregas</p>
+                        <p class="text-white font-semibold">{{ driver.completedDeliveries }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-xs">Taxas Ganhas</p>
+                        <p class="text-green-400 font-semibold">{{ driver.totalFeesEarned | currency:'BRL' }}</p>
+                    </div>
+                     <div>
+                        <p class="text-gray-400 text-xs">Distância Total</p>
+                        <p class="text-white font-medium">{{ driver.totalDistance | number:'1.1-1' }} km</p>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>

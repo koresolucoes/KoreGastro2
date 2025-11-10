@@ -1,13 +1,14 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Employee, Order, ProductionPlan } from '../../models/db.models';
+import { Employee, Order, ProductionPlan, DeliveryDriver } from '../../models/db.models';
 import { DashboardStateService } from '../../services/dashboard-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service'; // Keep for fetch trigger
+import { DeliveryStateService } from '../../services/delivery-state.service';
 
 type ReportPeriod = 'day' | 'week' | 'month';
-type PerformanceView = 'sales' | 'kitchen';
+type PerformanceView = 'sales' | 'kitchen' | 'delivery';
 
 interface EmployeePerformance {
   employee: Employee;
@@ -30,6 +31,13 @@ interface MiseEnPlacePerfData {
   completedTasks: number;
 }
 
+interface DeliveryDriverPerformance {
+  driver: DeliveryDriver;
+  completedDeliveries: number;
+  totalDistance: number;
+  totalFeesEarned: number;
+}
+
 
 @Component({
   selector: 'app-performance',
@@ -43,6 +51,7 @@ export class PerformanceComponent implements OnInit {
     private dashboardState = inject(DashboardStateService);
     private hrState = inject(HrStateService);
     private posState = inject(PosStateService);
+    private deliveryState = inject(DeliveryStateService);
 
     period = signal<ReportPeriod>('day');
     performanceView = signal<PerformanceView>('sales');
@@ -50,6 +59,7 @@ export class PerformanceComponent implements OnInit {
     
     performanceTransactions = this.dashboardState.performanceTransactions;
     employees = this.hrState.employees;
+    deliveryDrivers = this.deliveryState.deliveryDrivers;
     performanceProductionPlans = this.dashboardState.performanceProductionPlans;
     performanceCompletedOrders = this.dashboardState.performanceCompletedOrders;
 
@@ -265,5 +275,49 @@ export class PerformanceComponent implements OnInit {
         }
       }
       return count > 0 ? totalTime / count : 0;
+    });
+
+    // --- Delivery Performance Computeds ---
+
+    deliveryPerformance = computed((): DeliveryDriverPerformance[] => {
+        const driversMap = new Map<string, DeliveryDriverPerformance>(this.deliveryDrivers().map(d => [d.id, {
+            driver: d,
+            completedDeliveries: 0,
+            totalDistance: 0,
+            totalFeesEarned: 0,
+        }]));
+
+        const deliveryOrders = this.performanceCompletedOrders().filter(o => o.order_type === 'External-Delivery' && o.delivery_driver_id);
+
+        for (const order of deliveryOrders) {
+            const driverData = driversMap.get(order.delivery_driver_id!);
+            if (driverData) {
+                driverData.completedDeliveries++;
+                driverData.totalDistance += order.delivery_distance_km ?? 0;
+                driverData.totalFeesEarned += order.delivery_cost ?? 0;
+            }
+        }
+        
+        return Array.from(driversMap.values())
+            .filter(d => d.completedDeliveries > 0)
+            .sort((a, b) => b.completedDeliveries - a.completedDeliveries);
+    });
+    
+    totalDeliveries = computed(() => this.deliveryPerformance().reduce((sum, d) => sum + d.completedDeliveries, 0));
+    totalDistance = computed(() => this.deliveryPerformance().reduce((sum, d) => sum + d.totalDistance, 0));
+    totalFees = computed(() => this.deliveryPerformance().reduce((sum, d) => sum + d.totalFeesEarned, 0));
+    
+    deliveryStats = computed(() => [
+        { label: 'Total de Entregas', value: this.totalDeliveries(), isCurrency: false, unit: '' },
+        { label: 'Distância Total', value: this.totalDistance(), isCurrency: false, unit: ' km' },
+        { label: 'Total de Taxas', value: this.totalFees(), isCurrency: true, unit: '' },
+    ]);
+    
+    topDriversByDeliveries = computed(() => this.deliveryPerformance().slice(0, 5));
+
+    maxDeliveries = computed(() => {
+        const top = this.topDriversByDeliveries();
+        if (top.length === 0) return 0;
+        return Math.max(...top.map(d => d.completedDeliveries));
     });
 }
