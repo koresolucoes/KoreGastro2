@@ -45,7 +45,7 @@
       </div>
     </div>
     <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-      <button (click)="openAddWebhookModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+      <button (click)="isWebhookModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
         Gerenciar
       </button>
     </div>
@@ -189,8 +189,126 @@
   </div>
 }
 
-<!-- Other modals from the original component remain unchanged, just wrapped in @if blocks -->
-<!-- ... Webhooks Modal ... -->
-<!-- ... Loyalty Reward Modal ... -->
-<!-- ... Reservation Settings Modal ... -->
-<!-- The TS file will now contain the signals and methods to control these modals -->
+<!-- Webhooks Modal -->
+@if(isWebhookModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeWebhookModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">{{ editingWebhook() ? 'Editar Webhook' : 'Novo Webhook' }}</h3>
+        <button (click)="closeWebhookModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+        @if(newWebhookSecret()) {
+            <div class="bg-green-900/50 border border-green-700 text-green-200 p-4 rounded-lg">
+                <h4 class="font-bold text-lg">Webhook Criado com Sucesso!</h4>
+                <p class="text-sm mt-2">Salve o segredo de assinatura abaixo. Ele é usado para verificar se as requisições vêm do ChefOS e <strong class="text-white">não será mostrado novamente</strong>.</p>
+                <div class="flex gap-2 mt-3">
+                    <input type="text" readonly [value]="newWebhookSecret()" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-300 font-mono text-sm">
+                    <button (click)="copyToClipboard(newWebhookSecret())" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shrink-0" title="Copiar Segredo">
+                        <span class="material-symbols-outlined text-base">content_copy</span>
+                    </button>
+                </div>
+            </div>
+        }
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">URL do Endpoint *</label>
+            <input type="url" [(ngModel)]="webhookForm().url" name="webhookUrl" placeholder="https://seu-sistema.com/webhook" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+        </div>
+        <div>
+            <h4 class="text-sm font-medium text-gray-300 mb-2">Eventos a Serem Enviados *</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @for(event of availableWebhookEvents; track event.key) {
+                    <label class="flex items-center p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+                        <input type="checkbox" [checked]="webhookForm().events.includes(event.key)" (change)="toggleWebhookEvent(event.key)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-3 text-sm text-gray-200">{{ event.label }}</span>
+                    </label>
+                }
+            </div>
+        </div>
+         @if (editingWebhook()) {
+          <div class="flex items-center">
+            <input type="checkbox" id="is_active" [(ngModel)]="webhookForm().is_active" name="is_active" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+            <label for="is_active" class="ml-2 text-sm text-gray-200">Ativo</label>
+          </div>
+        }
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeWebhookModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+        <button (click)="saveWebhook()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">{{ editingWebhook() ? 'Salvar Alterações' : 'Criar Webhook' }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Loyalty Reward Modal -->
+@if(isLoyaltyModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isLoyaltyModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+          <h3 class="text-xl font-bold text-white">Configurar Programa de Fidelidade</h3>
+          <button (click)="isLoyaltyModalOpen.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Pontos por Real Gasto</label>
+                  <input type="number" [value]="loyaltySettingsForm().points_per_real" (input)="updateLoyaltySettingsField('points_per_real', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+              </div>
+          </div>
+          <div class="flex justify-between items-center">
+              <h4 class="text-lg font-semibold text-white">Prêmios</h4>
+              <button (click)="openAddRewardModal()" class="bg-blue-600 text-white font-semibold py-1 px-3 rounded-lg text-sm">+ Novo Prêmio</button>
+          </div>
+          <div class="space-y-2">
+              @for(reward of loyaltyRewards(); track reward.id) {
+                <div class="bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-white">{{reward.name}} - <span class="text-blue-300">{{reward.points_cost}} pts</span></p>
+                        <p class="text-xs text-gray-400">{{ getRewardValueLabel(reward) }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button (click)="openEditRewardModal(reward)" class="p-2 text-blue-400 hover:text-blue-300"><span class="material-symbols-outlined text-base">edit</span></button>
+                        <button (click)="requestDeleteReward(reward)" class="p-2 text-red-400 hover:text-red-300"><span class="material-symbols-outlined text-base">delete</span></button>
+                    </div>
+                </div>
+              }
+          </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end">
+          <button (click)="saveLoyaltySettings(); isLoyaltyModalOpen.set(false)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar e Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reservation Settings Modal -->
+@if(isReservationModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isReservationModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Configurações de Reserva</h3></div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div><label class="block text-sm text-gray-300 mb-1">Nº Mín. Pessoas</label><input type="number" [value]="reservationForm().min_party_size" (input)="updateReservationFormField('min_party_size', +$any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+              <div><label class="block text-sm text-gray-300 mb-1">Nº Máx. Pessoas</label><input type="number" [value]="reservationForm().max_party_size" (input)="updateReservationFormField('max_party_size', +$any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+              <div><label class="block text-sm text-gray-300 mb-1">Duração (minutos)</label><input type="number" [value]="reservationForm().booking_duration_minutes" (input)="updateReservationFormField('booking_duration_minutes', +$any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+              <div><label class="block text-sm text-gray-300 mb-1">Antecedência (dias)</label><input type="number" [value]="reservationForm().booking_notice_days" (input)="updateReservationFormField('booking_notice_days', +$any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+          </div>
+          <div>
+              <h4 class="text-lg font-semibold text-white mb-3">Horário de Funcionamento para Reservas</h4>
+              <div class="space-y-3">
+                  @for(day of reservationForm().weekly_hours; track day.day_of_week; let i = $index) {
+                      <div class="grid grid-cols-5 gap-3 items-center">
+                          <div class="col-span-1"><label [for]="'closed-' + i" class="flex items-center gap-2 text-sm text-white"><input type="checkbox" [id]="'closed-' + i" [checked]="!day.is_closed" (change)="updateWeeklyHours(i, 'is_closed', !$any($event.target).checked)" class="h-4 w-4 rounded">{{ daysOfWeek[i] }}</label></div>
+                          <div class="col-span-2"><input type="time" [value]="day.opening_time" (input)="updateWeeklyHours(i, 'opening_time', $any($event.target).value)" [disabled]="day.is_closed" class="w-full bg-gray-700 rounded p-2 text-white text-sm disabled:opacity-50"></div>
+                          <div class="col-span-2"><input type="time" [value]="day.closing_time" (input)="updateWeeklyHours(i, 'closing_time', $any($event.target).value)" [disabled]="day.is_closed" class="w-full bg-gray-700 rounded p-2 text-white text-sm disabled:opacity-50"></div>
+                      </div>
+                  }
+              </div>
+          </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end">
+          <button (click)="saveReservationSettings(); isReservationModalOpen.set(false)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar e Fechar</button>
+      </div>
+    </div>
+  </div>
+}
