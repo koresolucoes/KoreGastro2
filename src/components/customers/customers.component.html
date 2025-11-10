@@ -150,9 +150,19 @@
             </ul>
           }
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Endereço Completo (Confirmado)</label>
-          <textarea [value]="customerForm().address || ''" (input)="updateCustomerFormField('address', $any($event.target).value)" rows="2" class="w-full bg-gray-900/50 rounded p-2 text-gray-400 cursor-not-allowed" readonly></textarea>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="md:col-span-3">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Endereço (Rua, Av.)</label>
+            <input type="text" [value]="addressStreet()" (input)="addressStreet.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Número</label>
+            <input type="text" [value]="addressNumber()" (input)="addressNumber.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Complemento</label>
+            <input type="text" [value]="addressComplement()" (input)="addressComplement.set($any($event.target).value)" placeholder="Apto, Bloco" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+          </div>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Endereço no Mapa</label>

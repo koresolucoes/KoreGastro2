@@ -39,6 +39,11 @@ export class CustomersComponent {
   addressSearchResults = signal<any[]>([]);
   isSearchingAddress = signal(false);
   private debounceTimer: any;
+  
+  // New separate address fields
+  addressStreet = signal('');
+  addressNumber = signal('');
+  addressComplement = signal('');
 
   // Map related state
   @ViewChild('addEditMapContainer') mapContainer: ElementRef | undefined;
@@ -77,6 +82,9 @@ export class CustomersComponent {
   openAddModal() {
     this.customerForm.set({});
     this.editingCustomer.set(null);
+    this.addressStreet.set('');
+    this.addressNumber.set('');
+    this.addressComplement.set('');
     this.isModalOpen.set(true);
   }
 
@@ -84,6 +92,25 @@ export class CustomersComponent {
     this.editingCustomer.set(customer);
     this.customerForm.set({ ...customer });
     this.isModalOpen.set(true);
+
+    // Parse address
+    const address = customer.address || '';
+    const parts = address.split(',');
+    this.addressStreet.set(parts[0].trim());
+    
+    if (parts.length > 1) {
+        const remainder = parts.slice(1).join(',').trim();
+        const complementParts = remainder.split(' - ');
+        this.addressNumber.set(complementParts[0].trim());
+        if (complementParts.length > 1) {
+            this.addressComplement.set(complementParts.slice(1).join(' - ').trim());
+        } else {
+            this.addressComplement.set('');
+        }
+    } else {
+        this.addressNumber.set('');
+        this.addressComplement.set('');
+    }
   }
 
   closeModal() {
@@ -113,12 +140,27 @@ export class CustomersComponent {
       await this.notificationService.alert('O nome do cliente é obrigatório.');
       return;
     }
+    
+    // Compose the full address string from the separate fields
+    let fullAddress = this.addressStreet().trim();
+    const number = this.addressNumber().trim();
+    const complement = this.addressComplement().trim();
+
+    if (number) {
+        fullAddress += `, ${number}`;
+    }
+    if (complement) {
+        fullAddress += ` - ${complement}`;
+    }
+    
+    const formWithFullAddress = { ...form, address: fullAddress };
+
 
     let res;
     if (this.editingCustomer()) {
-      res = await this.settingsDataService.updateCustomer({ ...form, id: this.editingCustomer()!.id });
+      res = await this.settingsDataService.updateCustomer({ ...formWithFullAddress, id: this.editingCustomer()!.id });
     } else {
-      res = await this.settingsDataService.addCustomer(form);
+      res = await this.settingsDataService.addCustomer(formWithFullAddress);
     }
 
     if (res.success) {
@@ -221,9 +263,12 @@ export class CustomersComponent {
     const lat = parseFloat(result.lat);
     const lon = parseFloat(result.lon);
 
+    this.addressStreet.set(result.display_name);
+    this.addressNumber.set('');
+    this.addressComplement.set('');
+
     this.customerForm.update(form => ({
         ...form,
-        address: result.display_name,
         latitude: lat,
         longitude: lon
     }));
@@ -244,7 +289,7 @@ export class CustomersComponent {
           if (!response.ok) throw new Error('A geocodificação reversa falhou');
           const data = await response.json();
           if (data && data.display_name) {
-              this.customerForm.update(f => ({ ...f, address: data.display_name }));
+              this.addressStreet.set(data.display_name);
           }
       } catch (error) {
           console.error('Erro na geocodificação reversa:', error);
