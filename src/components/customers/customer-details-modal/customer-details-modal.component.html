@@ -43,9 +43,18 @@
               <div class="text-sm text-white font-medium whitespace-pre-wrap mb-2">
                 {{ customer().address || 'Não informado' }}
               </div>
-              @if (customer().latitude && customer().longitude) {
-                <div #mapContainer class="w-full h-48 rounded-lg z-0"></div>
-              }
+              <div #mapContainer class="w-full h-48 rounded-lg z-0 relative bg-gray-700/50">
+                  @if (isLoadingMap()) {
+                      <div class="absolute inset-0 flex items-center justify-center">
+                          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                      </div>
+                  }
+                  @if (mapGeocodeError()) {
+                      <div class="absolute inset-0 flex items-center justify-center text-center text-gray-400 text-sm p-4">
+                          {{ mapGeocodeError() }}
+                      </div>
+                  }
+              </div>
             </div>
             <div>
               <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Documentos</h4>

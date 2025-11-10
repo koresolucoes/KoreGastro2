@@ -31,54 +31,62 @@ export class CustomerDetailsModalComponent {
   private map: any;
   private mapInitialized = false;
 
+  isLoadingMap = signal(false);
+  mapGeocodeError = signal<string | null>(null);
+
   constructor() {
     effect(() => {
       // This effect runs when the customer input or active tab changes.
       const cust = this.customer();
       const tab = this.activeTab();
 
-      // Teardown map if we are not on the details tab
-      if (tab !== 'details') {
-        this.destroyMap();
-      }
+      this.destroyMap(); // Always clean up first
 
-      // Logic for each tab
-      switch (tab) {
-        case 'details':
-          // The map container is only in the DOM on this tab.
-          // We use a timeout to ensure the @if has rendered the container
-          // before we try to initialize the map.
-          setTimeout(() => this.initMap(), 0);
-          break;
-        case 'history':
-          if (this.consumptionHistory().length === 0) {
-            this.loadConsumptionHistory(cust.id);
+      if (tab === 'details') {
+          if (cust.latitude && cust.longitude) {
+              setTimeout(() => this.initMap(cust.latitude!, cust.longitude!), 0);
+          } else if (cust.address) {
+              setTimeout(() => this.geocodeAddressAndInitMap(cust.address!), 0);
           }
-          break;
-        case 'loyalty':
-          if (this.loyaltyMovements().length === 0) {
-            this.loadLoyaltyHistory(cust.id);
-          }
-          break;
       }
     }, { allowSignalWrites: true });
   }
 
-  private initMap(): void {
-    const cust = this.customer();
-    // Check if map is already there, or if container/data is missing
-    if (this.mapInitialized || !this.mapContainer?.nativeElement || !cust.latitude || !cust.longitude) {
+  private async geocodeAddressAndInitMap(address: string) {
+    if (!this.mapContainer?.nativeElement) return;
+    this.isLoadingMap.set(true);
+    this.mapGeocodeError.set(null);
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=br&limit=1`);
+        if (!response.ok) throw new Error('Falha ao buscar no serviço de geocodificação.');
+        const data = await response.json();
+        if (data && data.length > 0) {
+            const { lat, lon } = data[0];
+            this.initMap(parseFloat(lat), parseFloat(lon));
+        } else {
+            this.mapGeocodeError.set('Endereço não encontrado no mapa.');
+        }
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        this.mapGeocodeError.set('Erro ao carregar mapa.');
+    } finally {
+        this.isLoadingMap.set(false);
+    }
+}
+
+  private initMap(lat: number, lon: number): void {
+    if (this.mapInitialized || !this.mapContainer?.nativeElement) {
         return;
     }
 
-    this.map = L.map(this.mapContainer.nativeElement).setView([cust.latitude, cust.longitude], 16);
+    this.map = L.map(this.mapContainer.nativeElement).setView([lat, lon], 16);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(this.map);
 
     // Customer Marker
-    L.marker([cust.latitude, cust.longitude]).addTo(this.map)
+    L.marker([lat, lon]).addTo(this.map)
         .bindPopup('Endereço do Cliente').openPopup();
 
     // Restaurant Marker
