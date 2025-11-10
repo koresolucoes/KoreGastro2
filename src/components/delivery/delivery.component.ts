@@ -7,6 +7,7 @@ import { DeliveryDataService } from '../../services/delivery-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { DeliveryDriversModalComponent } from './delivery-drivers-modal/delivery-drivers-modal.component';
 import { DeliveryOrderModalComponent } from './delivery-order-modal/delivery-order-modal.component';
+import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-modal.component';
 
 type DeliveryStatus = 'AWAITING_PREP' | 'IN_PREPARATION' | 'READY_FOR_DISPATCH' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 interface OrderWithDriver extends Order {
@@ -16,7 +17,7 @@ interface OrderWithDriver extends Order {
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent],
+  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent, AssignDriverModalComponent],
   templateUrl: './delivery.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -26,12 +27,16 @@ export class DeliveryComponent {
   private notificationService = inject(NotificationService);
 
   isDriversModalOpen = signal(false);
-  isOrderModalOpen = signal(false);
+  orderModalState = signal<'new' | Order | null>(null);
+  
+  isAssignDriverModalOpen = signal(false);
+  orderToAssignDriver = signal<OrderWithDriver | null>(null);
   
   deliveryOrders = computed<OrderWithDriver[]>(() => 
     this.posState.openOrders()
       .filter(o => o.order_type === 'External-Delivery')
       .map(o => ({...o, driverName: o.delivery_drivers?.name ?? 'Não atribuído' }))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   );
   
   // Columns for the Kanban board
@@ -42,18 +47,15 @@ export class DeliveryComponent {
 
   drop(event: CdkDragDrop<OrderWithDriver[]>) {
     if (event.previousContainer === event.container) {
-      // Reordering within the same list (not really necessary for this UI, but good practice)
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
-      // Moving item to a new list
       const movedOrder = event.previousContainer.data[event.previousIndex];
       const newStatus = event.container.id as DeliveryStatus;
 
-      // Handle special logic, e.g., assigning a driver
       if (newStatus === 'OUT_FOR_DELIVERY' && !movedOrder.delivery_driver_id) {
         this.notificationService.show('Atribua um entregador antes de mover para "Em Rota".', 'warning');
-        // TODO: Open driver assignment modal here
-        return; // Prevent the move
+        this.openAssignDriverModal(movedOrder);
+        return;
       }
 
       transferArrayItem(
@@ -67,11 +69,30 @@ export class DeliveryComponent {
     }
   }
   
-  async updateOrderStatus(orderId: string, status: DeliveryStatus) {
-    const { success, error } = await this.deliveryDataService.updateDeliveryStatus(orderId, status);
+  async updateOrderStatus(orderId: string, status: DeliveryStatus, driverId?: string) {
+    const { success, error } = await this.deliveryDataService.updateDeliveryStatus(orderId, status, driverId);
     if (!success) {
       this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
-      // Here you might want to add logic to revert the item's position in the UI
+      // Realtime will eventually correct the UI, but an immediate revert could be implemented here if needed.
     }
+  }
+
+  openEditModal(order: Order) {
+    if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') {
+      this.notificationService.show('Não é possível editar um pedido que já está em rota ou foi entregue.', 'info');
+      return;
+    }
+    this.orderModalState.set(order);
+  }
+
+  openAssignDriverModal(order: OrderWithDriver) {
+    this.orderToAssignDriver.set(order);
+    this.isAssignDriverModalOpen.set(true);
+  }
+
+  async handleDriverAssigned(event: { orderId: string, driverId: string }) {
+    this.isAssignDriverModalOpen.set(false);
+    await this.updateOrderStatus(event.orderId, 'OUT_FOR_DELIVERY', event.driverId);
+    this.notificationService.show('Entregador atribuído e pedido movido para "Em Rota"!', 'success');
   }
 }

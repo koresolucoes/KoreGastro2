@@ -2,7 +2,7 @@
   <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
     <!-- Header -->
     <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-      <h3 class="text-xl font-bold text-white">Novo Pedido de Delivery</h3>
+      <h3 class="text-xl font-bold text-white">{{ isEditing() ? 'Editar Pedido de Delivery' : 'Novo Pedido de Delivery' }}</h3>
       <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
@@ -93,7 +93,7 @@
     <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
         <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
         <button (click)="saveOrder()" [disabled]="cart().length === 0 || isSaving()" class="px-6 py-2 font-bold rounded-lg bg-green-600 hover:bg-green-500 text-white disabled:bg-gray-500">
-            @if(isSaving()) { <span>Criando...</span> } @else { <span>Criar Pedido</span> }
+            @if(isSaving()) { <span>Salvando...</span> } @else { <span>{{ isEditing() ? 'Salvar Alterações' : 'Criar Pedido' }}</span> }
         </button>
     </div>
   </div>

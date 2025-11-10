@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -107,7 +108,7 @@ export class TechnicalSheetsComponent {
   availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
 
   private recipeIdFromParams = toSignal(
-    this.route.queryParamMap.pipe(map(params => params.get('recipeId')))
+    this.route.queryParamMap.pipe(map(params => params.get('id')))
   );
 
   constructor() {

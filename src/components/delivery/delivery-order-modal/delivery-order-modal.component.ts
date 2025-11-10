@@ -1,11 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, output, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, output, OutputEmitterRef, input, InputSignal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeliveryDataService } from '../../../services/delivery-data.service';
 import { NotificationService } from '../../../services/notification.service';
 import { RecipeStateService } from '../../../services/recipe-state.service';
-import { PosStateService } from '../../../services/pos-state.service';
-import { Recipe, Customer } from '../../../models/db.models';
+import { Recipe, Customer, Order, OrderItem } from '../../../models/db.models';
 import { CustomerSelectModalComponent } from '../../shared/customer-select-modal/customer-select-modal.component';
 
 interface CartItem {
@@ -25,9 +24,11 @@ export class DeliveryOrderModalComponent {
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
   private recipeState = inject(RecipeStateService);
-  private posState = inject(PosStateService);
 
+  editingOrder: InputSignal<Order | null> = input<Order | null>(null);
   closeModal: OutputEmitterRef<void> = output<void>();
+  
+  isEditing = computed(() => !!this.editingOrder());
 
   cart = signal<CartItem[]>([]);
   selectedCustomer = signal<Customer | null>(null);
@@ -37,6 +38,37 @@ export class DeliveryOrderModalComponent {
   isCustomerSelectModalOpen = signal(false);
 
   recipes = this.recipeState.recipesWithStockStatus;
+
+  constructor() {
+    effect(() => {
+        const order = this.editingOrder();
+        if (order) {
+            // Populate state for editing
+            this.isSaving.set(false);
+            this.selectedCustomer.set(order.customers || null);
+            this.paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Dinheiro';
+
+            const recipesMap = this.recipeState.recipesById();
+            
+            const cartItems: CartItem[] = (order.order_items || [])
+                .reduce((acc, orderItem) => {
+                    if (orderItem.recipe_id) {
+                        const recipe = recipesMap.get(orderItem.recipe_id);
+                        if (recipe) {
+                            const existing = acc.find(ci => ci.recipe.id === recipe.id);
+                            if (existing) {
+                                existing.quantity += orderItem.quantity;
+                            } else {
+                                acc.push({ recipe, quantity: orderItem.quantity, notes: orderItem.notes || '' });
+                            }
+                        }
+                    }
+                    return acc;
+                }, [] as CartItem[]);
+            this.cart.set(cartItems);
+        }
+    });
+  }
 
   filteredRecipes = computed(() => {
     const term = this.recipeSearchTerm().toLowerCase();
@@ -90,19 +122,28 @@ export class DeliveryOrderModalComponent {
       return;
     }
     this.isSaving.set(true);
-
-    const { success, error } = await this.deliveryDataService.createExternalDeliveryOrder(
-      this.cart(),
-      this.selectedCustomer()?.id || null,
-      this.paymentMethod
-    );
+    
+    const order = this.editingOrder();
+    let result;
+    if (order) {
+      result = await this.deliveryDataService.updateExternalDeliveryOrder(
+        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod
+      );
+    } else {
+      result = await this.deliveryDataService.createExternalDeliveryOrder(
+        this.cart(),
+        this.selectedCustomer()?.id || null,
+        this.paymentMethod
+      );
+    }
 
     this.isSaving.set(false);
-    if (success) {
-      this.notificationService.show('Pedido de delivery criado com sucesso!', 'success');
+    // FIX: Corrected a reference error by checking `result.success` instead of the undefined variable `success` after a service call.
+    if (result.success) {
+      this.notificationService.show(this.isEditing() ? 'Pedido atualizado com sucesso!' : 'Pedido criado com sucesso!', 'success');
       this.closeModal.emit();
     } else {
-      this.notificationService.show(`Erro ao criar pedido: ${error?.message}`, 'error');
+      this.notificationService.show(`Erro ao salvar pedido: ${result.error?.message}`, 'error');
     }
   }
 }

@@ -72,10 +72,51 @@ export class DeliveryDataService {
 
     if (orderError) return { success: false, error: orderError };
     
-    // 2. Create order items
+    // 2. Create order items from cart
+    const { success, error } = await this.createOrderItemsForOrder(order.id, cart, userId);
+    if (!success) {
+      await supabase.from('orders').delete().eq('id', order.id); // Rollback
+      return { success, error };
+    }
+
+    return { success: true, error: null };
+  }
+
+  async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    // 1. Delete old items
+    const { error: deleteError } = await supabase.from('order_items').delete().eq('order_id', orderId);
+    if (deleteError) {
+      return { success: false, error: deleteError };
+    }
+
+    // 2. Create new items from cart
+    const { success, error: itemsError } = await this.createOrderItemsForOrder(orderId, cart, userId);
+    if (!success) {
+      // At this point, old items are deleted but new ones failed. This is a partial failure state.
+      // The user will need to re-edit the order.
+      return { success: false, error: itemsError };
+    }
+    
+    // 3. Update order details
+    const { error: orderUpdateError } = await supabase
+      .from('orders')
+      .update({ customer_id: customerId, notes: `Pagamento: ${paymentMethod}` })
+      .eq('id', orderId);
+
+    if (orderUpdateError) {
+        // Items are updated, but order metadata failed.
+        return { success: false, error: orderUpdateError };
+    }
+
+    return { success: true, error: null };
+  }
+
+  private async createOrderItemsForOrder(orderId: string, cart: DeliveryCartItem[], userId: string): Promise<{ success: boolean, error: any }> {
     const stations = this.posState.stations();
     if (stations.length === 0) {
-      await supabase.from('orders').delete().eq('id', order.id); // Rollback
       return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
     }
     const fallbackStationId = stations[0].id;
@@ -94,8 +135,9 @@ export class DeliveryDataService {
 
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
-            return recipePreps.map((prep: any) => ({
-                order_id: order.id, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: item.notes,
+            return recipePreps.map((prep: any, prepIndex: number) => ({
+                order_id: orderId, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, 
+                notes: prepIndex === 0 ? item.notes : null, // Add notes only to the first item of a group
                 status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
                 price: effectivePrice / recipePreps.length, 
                 original_price: item.recipe.price / recipePreps.length,
@@ -103,7 +145,7 @@ export class DeliveryDataService {
             }));
         }
         return [{
-            order_id: order.id, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,
+            order_id: orderId, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,
             status: 'PENDENTE' as OrderItemStatus, station_id: fallbackStationId, status_timestamps,
             price: effectivePrice, 
             original_price: item.recipe.price,
@@ -112,16 +154,14 @@ export class DeliveryDataService {
     });
 
     if (allItemsToInsert.length === 0) {
-        await supabase.from('orders').delete().eq('id', order.id);
         return { success: true, error: null };
     }
 
     const { error: itemsError } = await supabase.from('order_items').insert(allItemsToInsert);
     if (itemsError) {
-        await supabase.from('orders').delete().eq('id', order.id); // Rollback
         return { success: false, error: itemsError };
     }
-
+    
     return { success: true, error: null };
   }
 }

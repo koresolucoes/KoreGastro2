@@ -43,7 +43,8 @@ export class AppComponent implements OnInit {
   isTutorialsRoute = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(e => e.urlAfterRedirects.startsWith('/tutorials'))
+      // FIX: Explicitly cast event to NavigationEnd to resolve type inference issue on `urlAfterRedirects`.
+      map(e => (e as NavigationEnd).urlAfterRedirects.startsWith('/tutorials'))
     ),
     { initialValue: this.router.url.startsWith('/tutorials') }
   );
