@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, Customer, Recipe, RecipePreparation, OrderItemStatus } from '../src/models/db.models.js';
@@ -27,6 +28,7 @@ interface RequestBody {
     name: string;
     phone?: string;
     email?: string;
+    address?: string;
   };
   items: RequestItem[];
 }
@@ -153,6 +155,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
                     name: body.customer.name,
                     phone: body.customer.phone || null,
                     email: body.customer.email || null,
+                    address: body.customer.address || null,
                 })
                 .select('*')
                 .single();
@@ -164,28 +167,35 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
 
     // NEW LOGIC: Handle table existence and default to QuickSale if not found.
     let effectiveTableNumber = body.tableNumber;
-    let effectiveOrderType: OrderType = body.tableNumber > 0 ? 'Dine-in' : 'QuickSale';
+    let effectiveOrderType: OrderType;
     let tableIdToUpdate: string | null = null;
 
     if (body.tableNumber > 0) {
-    const { data: table, error: tableError } = await supabase
-        .from('tables')
-        .select('id')
-        .eq('user_id', restaurantId)
-        .eq('number', body.tableNumber)
-        .maybeSingle();
-    
-    if (tableError) throw new Error(`Error checking for table: ${tableError.message}`);
+        effectiveOrderType = 'Dine-in';
+        const { data: table, error: tableError } = await supabase
+            .from('tables')
+            .select('id')
+            .eq('user_id', restaurantId)
+            .eq('number', body.tableNumber)
+            .maybeSingle();
+        
+        if (tableError) throw new Error(`Error checking for table: ${tableError.message}`);
 
-    if (!table) {
-        // Table not found, create a QuickSale order instead.
-        effectiveTableNumber = 0;
-        effectiveOrderType = 'QuickSale';
+        if (!table) {
+            effectiveTableNumber = 0;
+            effectiveOrderType = 'QuickSale'; // Fallback to QuickSale if table number is invalid
+        } else {
+            tableIdToUpdate = table.id;
+        }
     } else {
-        // Table found, we will update its status later.
-        tableIdToUpdate = table.id;
+        // If it's a takeout/counter sale but has a customer with an address, it's a delivery.
+        if (body.customer?.address) {
+            effectiveOrderType = 'External-Delivery';
+        } else {
+            effectiveOrderType = 'QuickSale';
+        }
     }
-    }
+
 
     const externalCodes = items.map(i => i.externalCode);
     const { data: recipes, error: recipeError } = await supabase
@@ -209,6 +219,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
             order_type: effectiveOrderType,     // Use effective type
             status: 'OPEN',
             customer_id: customerId,
+            delivery_status: effectiveOrderType === 'External-Delivery' ? 'AWAITING_PREP' : null
         })
         .select('id, timestamp')
         .single();
@@ -236,8 +247,9 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
     }
     }
 
-    // Trigger 'order.created' webhook
+    // Trigger 'order.created' or 'delivery.created' webhook
     try {
+        const webhookEvent = effectiveOrderType === 'External-Delivery' ? 'delivery.created' : 'order.created';
         const webhookPayload = {
             orderId: newOrder.id,
             tableNumber: effectiveTableNumber,
@@ -256,7 +268,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
                 id: body.externalId,
             },
         };
-        await triggerWebhook(restaurantId, 'order.created', webhookPayload);
+        await triggerWebhook(restaurantId, webhookEvent, webhookPayload);
     } catch (whError: any) {
         console.error(`[API /external-order] Webhook trigger failed for order ${newOrder.id}:`, whError.message);
     }
