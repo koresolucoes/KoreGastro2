@@ -196,6 +196,93 @@ export class PrintingService {
     }, 250);
   }
 
+  async printDeliveryGuide(order: Order) {
+    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    if (!printWindow) {
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      return;
+    }
+    printWindow.document.title = `Guia de Entrega - #${order.id.slice(0, 8)}`;
+    const guideHtml = this.generateDeliveryGuideHtml(order);
+    printWindow.document.write(guideHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  }
+
+  private generateDeliveryGuideHtml(order: Order): string {
+    const companyName = this.settingsState.companyProfile()?.company_name || 'Seu Restaurante';
+    const date = this.datePipe.transform(order.timestamp, 'dd/MM/yyyy HH:mm');
+    const total = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Não especificado';
+
+    const itemsHtml = order.order_items.map(item => `
+      <div class="item">
+        <div class="line">
+          <span>${item.quantity}x ${item.name}</span>
+          <span>${this.currencyPipe.transform(item.price * item.quantity, 'BRL')}</span>
+        </div>
+      </div>
+    `).join('');
+
+    const customerHtml = order.customers ? `
+      <div class="section-title">CLIENTE</div>
+      <div><strong>Nome:</strong> ${order.customers.name}</div>
+      <div><strong>Telefone:</strong> ${order.customers.phone || 'N/A'}</div>
+      <div style="margin-top: 5px;"><strong>Endereço:</strong><br>${order.customers.address || 'N/A'}</div>
+    ` : '<div class="section-title">CLIENTE NÃO IDENTIFICADO</div>';
+
+    return `
+      <html>
+        <head>
+          <title>Guia de Entrega - #${order.id.slice(0, 8)}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; line-height: 1.4; }
+            .center { text-align: center; }
+            .header { font-size: 16px; font-weight: bold; }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .line { display: flex; justify-content: space-between; margin-bottom: 2px; }
+            .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
+            .total { font-weight: bold; font-size: 14px; }
+            .item { margin-bottom: 5px; }
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0.5cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center header">GUIA DE ENTREGA</div>
+          <div class="center">${companyName}</div>
+          <div class="divider"></div>
+          <div>Pedido: #${order.id.slice(0, 8)}</div>
+          <div>Data: ${date}</div>
+          <div class="divider"></div>
+          ${customerHtml}
+          <div class="divider"></div>
+          <div class="section-title">ITENS</div>
+          ${itemsHtml}
+          <div class="divider"></div>
+          <div class="section-title">PAGAMENTO</div>
+          <div class="line">
+            <span>Método:</span>
+            <span>${paymentMethod}</span>
+          </div>
+          <div class="line total">
+            <span>TOTAL A RECEBER</span>
+            <span>${this.currencyPipe.transform(total, 'BRL')}</span>
+          </div>
+          <div class="divider"></div>
+          <div class="center" style="margin-top: 20px;">_________________________</div>
+          <div class="center">Assinatura do Cliente</div>
+        </body>
+      </html>
+    `;
+  }
+
   private generateIfoodReceiptHtml(order: ProcessedIfoodOrder): string {
     const companyName = this.settingsState.companyProfile()?.company_name || 'Seu Restaurante';
     const date = this.datePipe.transform(order.timestamp, 'dd/MM/yyyy HH:mm:ss');
@@ -531,7 +618,6 @@ export class PrintingService {
       </div>
     `).join('');
     
-    // FIX: Include customer CPF if available on the order
     const customerCpfHtml = order.customers?.cpf ? `<div>CPF: ${order.customers.cpf}</div>` : '';
 
     return `

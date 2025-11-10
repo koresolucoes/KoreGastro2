@@ -9,6 +9,8 @@ import { DeliveryDriversModalComponent } from './delivery-drivers-modal/delivery
 import { DeliveryOrderModalComponent } from './delivery-order-modal/delivery-order-modal.component';
 import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-modal.component';
 import { DeliveryStateService } from '../../services/delivery-state.service';
+import { DeliveryDetailsModalComponent } from './delivery-details-modal/delivery-details-modal.component';
+import { CashierStateService } from '../../services/cashier-state.service';
 
 type DeliveryStatus = 'AWAITING_PREP' | 'IN_PREPARATION' | 'READY_FOR_DISPATCH' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 interface OrderWithDriver extends Order {
@@ -18,7 +20,7 @@ interface OrderWithDriver extends Order {
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent, AssignDriverModalComponent],
+  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent, AssignDriverModalComponent, DeliveryDetailsModalComponent],
   templateUrl: './delivery.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -27,12 +29,16 @@ export class DeliveryComponent {
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
   private deliveryState = inject(DeliveryStateService);
+  private cashierState = inject(CashierStateService);
 
   isDriversModalOpen = signal(false);
   orderModalState = signal<'new' | Order | null>(null);
   
   isAssignDriverModalOpen = signal(false);
   orderToAssignDriver = signal<OrderWithDriver | null>(null);
+  
+  isDetailsModalOpen = signal(false);
+  selectedOrderForDetails = signal<OrderWithDriver | null>(null);
   
   deliveryOrders = computed<OrderWithDriver[]>(() => 
     this.posState.openOrders()
@@ -47,7 +53,7 @@ export class DeliveryComponent {
   prontoParaEnvio = computed(() => this.deliveryOrders().filter(o => o.delivery_status === 'READY_FOR_DISPATCH'));
   emRota = computed(() => this.deliveryOrders().filter(o => o.delivery_status === 'OUT_FOR_DELIVERY'));
   entregues = computed(() => 
-    this.posState.orders()
+    this.cashierState.completedOrders()
       .filter(o => o.order_type === 'External-Delivery' && o.delivery_status === 'DELIVERED')
       .map(o => ({...o, driverName: o.delivery_drivers?.name ?? 'Não atribuído' }))
       .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
@@ -142,5 +148,19 @@ export class DeliveryComponent {
     } else {
       this.notificationService.show(`Erro ao finalizar entrega: ${error?.message}`, 'error');
     }
+  }
+
+  openDetailsModal(order: OrderWithDriver) {
+    this.selectedOrderForDetails.set(order);
+    this.isDetailsModalOpen.set(true);
+  }
+
+  closeDetailsModal() {
+    this.isDetailsModalOpen.set(false);
+    this.selectedOrderForDetails.set(null);
+  }
+  
+  getOrderTotal(order: Order): number {
+    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 }
