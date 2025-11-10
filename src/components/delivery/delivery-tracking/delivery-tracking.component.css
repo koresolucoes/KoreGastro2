@@ -1,0 +1,36 @@
+/* Custom styles for Leaflet popups */
+.driver-popup .leaflet-popup-content-wrapper {
+  background-color: #1f2937; /* bg-gray-800 */
+  color: #d1d5db; /* text-gray-300 */
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border: 1px solid #374151; /* border-gray-700 */
+}
+
+.driver-popup .leaflet-popup-content {
+  margin: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.driver-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+.driver-popup strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.driver-popup .status {
+  font-size: 12px;
+  color: #9ca3af; /* text-gray-400 */
+}
+
+/* Custom Icon style */
+.delivery-driver-icon {
+  background-color: #1e40af; /* some blue */
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #1e40af;
+}

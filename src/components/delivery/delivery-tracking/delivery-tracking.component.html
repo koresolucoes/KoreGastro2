@@ -1,0 +1,45 @@
+<div class="h-full flex flex-col md:flex-row gap-4">
+  <!-- Sidebar with Driver List -->
+  <div class="flex-shrink-0 w-full md:w-64 bg-gray-800 rounded-lg p-4 flex flex-col">
+    <h2 class="text-lg font-semibold text-white mb-3 border-b border-gray-700 pb-2">Entregadores Ativos</h2>
+    <div class="overflow-y-auto flex-1">
+      @if (drivers().length === 0) {
+        <p class="text-sm text-gray-500 text-center py-8">Nenhum entregador cadastrado.</p>
+      } @else {
+        <ul class="space-y-2">
+          @for (driver of drivers(); track driver.id) {
+            <li (click)="panToDriver(driver)" class="p-3 rounded-lg flex items-center gap-3 transition-colors cursor-pointer" [class.bg-blue-600/30]="isDriverSelected(driver)" [class.hover:bg-gray-700/50]="!isDriverSelected(driver)">
+              <div class="relative flex-shrink-0">
+                <span class="material-symbols-outlined text-3xl" [class.text-green-400]="hasRecentLocation(driver)" [class.text-gray-500]="!hasRecentLocation(driver)">
+                  two_wheeler
+                </span>
+                @if(hasRecentLocation(driver)) {
+                  <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 animate-pulse"></div>
+                }
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-white truncate">{{ driver.name }}</p>
+                <p class="text-xs text-gray-400 truncate">{{ driver.phone }}</p>
+                @if(hasRecentLocation(driver)) {
+                    <p class="text-xs text-gray-500">Visto {{ formatTimeAgo(driver.last_updated_at) }}</p>
+                } @else {
+                    <p class="text-xs text-gray-600">Sem localização</p>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div class="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
+    <div #mapContainer class="w-full h-full z-0"></div>
+    @if(isLoadingMap()) {
+      <div class="absolute inset-0 bg-gray-800/50 flex items-center justify-center z-10">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      </div>
+    }
+  </div>
+</div>

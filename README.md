@@ -652,6 +652,32 @@ Use este endpoint para que um aplicativo de entregador externo atualize o status
 
 ---
 
+#### `POST /api/delivery-location`
+
+Use este endpoint para que um aplicativo de entregador externo envie sua localização (latitude/longitude) em tempo real.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "driverId": "uuid-do-entregador",
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}
+```
+
+**Campos:**
+*   `restaurantId` (obrigatório): String. O ID do seu usuário no sistema ChefOS.
+*   `driverId` (obrigatório): String. O `id` do entregador.
+*   `latitude` (obrigatório): Número. A latitude atual do entregador.
+*   `longitude` (obrigatório): Número. A longitude atual do entregador.
+
+**Resposta (Sucesso 204 No Content):** Nenhuma resposta.
+
+**Importante:** Este endpoint atualizará a localização do entregador no banco de dados, que por sua vez, acionará uma notificação em tempo real (via Supabase Realtime) para o painel do ChefOS, movendo o ícone do entregador no mapa.
+
+---
+
 ### 🔌 API de Clientes
 
 O ChefOS expõe uma API para gerenciamento de clientes, permitindo a integração com sistemas de fidelidade, CRMs ou aplicativos personalizados.

@@ -11,8 +11,11 @@ import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-
 import { DeliveryStateService } from '../../services/delivery-state.service';
 import { DeliveryDetailsModalComponent } from './delivery-details-modal/delivery-details-modal.component';
 import { CashierStateService } from '../../services/cashier-state.service';
+import { DeliveryTrackingComponent } from './delivery-tracking/delivery-tracking.component';
 
 type DeliveryStatus = 'AWAITING_PREP' | 'IN_PREPARATION' | 'READY_FOR_DISPATCH' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
+type DeliveryView = 'kanban' | 'tracking';
+
 interface OrderWithDriver extends Order {
   driverName?: string;
 }
@@ -20,7 +23,7 @@ interface OrderWithDriver extends Order {
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent, AssignDriverModalComponent, DeliveryDetailsModalComponent],
+  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent, AssignDriverModalComponent, DeliveryDetailsModalComponent, DeliveryTrackingComponent],
   templateUrl: './delivery.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,6 +33,8 @@ export class DeliveryComponent {
   private notificationService = inject(NotificationService);
   private deliveryState = inject(DeliveryStateService);
   private cashierState = inject(CashierStateService);
+
+  view = signal<DeliveryView>('kanban');
 
   isDriversModalOpen = signal(false);
   orderModalState = signal<'new' | Order | null>(null);
