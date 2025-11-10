@@ -1,100 +1,128 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <!-- Card: iFood Integration -->
-  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
-    <div class="flex items-start gap-4">
-      <img src="https://i.imgur.com/NzlCBGX.png" alt="iFood Logo" class="h-10 w-10 object-contain">
-      <div>
-        <h2 class="text-xl font-semibold text-white">Integração iFood</h2>
-        <p class="text-sm text-gray-400 mt-1">Receba pedidos do iFood diretamente no seu KDS e gerencie seu cardápio.</p>
-      </div>
-    </div>
-    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-      <button (click)="isIFoodModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-        Configurar
-      </button>
+<!-- Panel: iFood Integration -->
+<div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
+  <div class="flex items-start gap-4">
+    <img src="https://i.imgur.com/NzlCBGX.png" alt="iFood Logo" class="h-10 w-10 object-contain">
+    <div>
+      <h2 class="text-xl font-semibold text-white">Integração iFood</h2>
+      <p class="text-sm text-gray-400 mt-1">Receba pedidos do iFood diretamente no seu KDS e gerencie seu cardápio.</p>
     </div>
   </div>
+  <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
+    <button (click)="isIFoodModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+      Configurar
+    </button>
+  </div>
+</div>
 
-  <!-- Card: External API -->
-  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
-    <div class="flex items-start gap-4">
-      <div class="p-2 bg-gray-700/50 rounded-lg">
-        <span class="material-symbols-outlined text-2xl text-purple-400">api</span>
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold text-white">API de Pedidos Externos</h2>
-        <p class="text-sm text-gray-400 mt-1">Permita que sistemas de terceiros, como totens e apps, enviem pedidos para o ChefOS.</p>
-      </div>
+<!-- Card: External API -->
+<div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
+  <div class="flex items-start gap-4">
+    <div class="p-2 bg-gray-700/50 rounded-lg">
+      <span class="material-symbols-outlined text-2xl text-purple-400">api</span>
     </div>
-    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-      <button (click)="isApiModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-        Configurar
-      </button>
+    <div>
+      <h2 class="text-xl font-semibold text-white">API de Pedidos Externos</h2>
+      <p class="text-sm text-gray-400 mt-1">Permita que sistemas de terceiros, como totens e apps, enviem pedidos para o ChefOS.</p>
     </div>
   </div>
+  <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
+    <button (click)="isApiModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+      Configurar
+    </button>
+  </div>
+</div>
 
-  <!-- Card: Webhooks -->
-  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
-    <div class="flex items-start gap-4">
-      <div class="p-2 bg-gray-700/50 rounded-lg">
-        <span class="material-symbols-outlined text-2xl text-cyan-400">webhook</span>
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold text-white">Webhooks</h2>
-        <p class="text-sm text-gray-400 mt-1">Envie notificações automáticas para sistemas externos quando eventos ocorrerem.</p>
-      </div>
+<!-- Card: Webhooks -->
+<div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700 md:col-span-2">
+  <div class="flex items-start gap-4">
+    <div class="p-2 bg-gray-700/50 rounded-lg">
+      <span class="material-symbols-outlined text-2xl text-cyan-400">webhook</span>
     </div>
-    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-      <button (click)="isWebhookModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-        Gerenciar
-      </button>
+    <div>
+      <h2 class="text-xl font-semibold text-white">Webhooks</h2>
+      <p class="text-sm text-gray-400 mt-1">Envie notificações para sistemas externos quando eventos ocorrerem.</p>
     </div>
   </div>
+  <div class="mt-4 pt-4 border-t border-gray-700/50 flex-1 flex flex-col">
+      <div class="flex justify-between items-center mb-3">
+          <h3 class="text-md font-semibold text-white">Endpoints Configurados</h3>
+          <button (click)="openAddWebhookModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-lg text-sm">+ Novo Webhook</button>
+      </div>
+      @if (webhooks().length === 0) {
+          <div class="text-center text-gray-500 py-6 text-sm">Nenhum webhook configurado.</div>
+      } @else {
+          <ul class="space-y-2">
+              @for (webhook of webhooks(); track webhook.id) {
+                  <li class="bg-gray-800 p-3 rounded-lg flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-3 flex-1 min-w-0">
+                          <div class="w-3 h-3 rounded-full flex-shrink-0" [class.bg-green-500]="webhook.is_active" [class.bg-gray-500]="!webhook.is_active" [title]="webhook.is_active ? 'Ativo' : 'Inativo'"></div>
+                          <div class="flex-1 min-w-0">
+                              <p class="text-white font-mono text-sm truncate" [title]="webhook.url">{{ webhook.url }}</p>
+                              <p class="text-xs text-gray-400">{{ webhook.events.join(', ') }}</p>
+                          </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                          @if (webhookToDelete()?.id === webhook.id) {
+                              <div class="flex items-center gap-2">
+                                  <span class="text-sm text-red-300">Certeza?</span>
+                                  <button (click)="confirmDeleteWebhook()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button>
+                                  <button (click)="cancelDeleteWebhook()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button>
+                              </div>
+                          } @else {
+                              <button (click)="openEditWebhookModal(webhook)" class="p-2 text-blue-400 hover:text-white" title="Editar"><span class="material-symbols-outlined text-base">edit</span></button>
+                              <button (click)="requestDeleteWebhook(webhook)" class="p-2 text-red-400 hover:text-white" title="Excluir"><span class="material-symbols-outlined text-base">delete</span></button>
+                          }
+                      </div>
+                  </li>
+              }
+          </ul>
+      }
+  </div>
+</div>
 
-  <!-- Card: Loyalty Program -->
-  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
-    <div class="flex items-start gap-4">
-       <div class="p-2 bg-gray-700/50 rounded-lg">
-        <span class="material-symbols-outlined text-2xl text-pink-400">loyalty</span>
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold text-white">Programa de Fidelidade</h2>
-        <p class="text-sm text-gray-400 mt-1">Recompense seus clientes fiéis com pontos que podem ser trocados por prêmios.</p>
-      </div>
+<!-- Card: Loyalty Program -->
+<div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
+  <div class="flex items-start gap-4">
+     <div class="p-2 bg-gray-700/50 rounded-lg">
+      <span class="material-symbols-outlined text-2xl text-pink-400">loyalty</span>
     </div>
-    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-      <label class="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" [checked]="loyaltySettingsForm().is_enabled" (change)="toggleLoyalty($event)" class="sr-only peer">
-        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        <span class="ms-3 text-sm font-medium text-gray-300">{{ loyaltySettingsForm().is_enabled ? 'Ativo' : 'Inativo' }}</span>
-      </label>
-      <button (click)="isLoyaltyModalOpen.set(true)" [disabled]="!loyaltySettingsForm().is_enabled" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm disabled:bg-gray-600 disabled:cursor-not-allowed">
-        Configurar
-      </button>
+    <div>
+      <h2 class="text-xl font-semibold text-white">Programa de Fidelidade</h2>
+      <p class="text-sm text-gray-400 mt-1">Recompense seus clientes fiéis com pontos que podem ser trocados por prêmios.</p>
     </div>
   </div>
+  <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" [checked]="loyaltySettingsForm().is_enabled" (change)="toggleLoyalty($event)" class="sr-only peer">
+      <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+      <span class="ms-3 text-sm font-medium text-gray-300">{{ loyaltySettingsForm().is_enabled ? 'Ativo' : 'Inativo' }}</span>
+    </label>
+    <button (click)="isLoyaltyModalOpen.set(true)" [disabled]="!loyaltySettingsForm().is_enabled" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm disabled:bg-gray-600 disabled:cursor-not-allowed">
+      Configurar
+    </button>
+  </div>
+</div>
 
-  <!-- Card: Reservations -->
-  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
-    <div class="flex items-start gap-4">
-      <div class="p-2 bg-gray-700/50 rounded-lg">
-        <span class="material-symbols-outlined text-2xl text-teal-400">calendar_month</span>
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold text-white">Sistema de Reservas</h2>
-        <p class="text-sm text-gray-400 mt-1">Permita que seus clientes façam reservas online através de uma página pública.</p>
-      </div>
+<!-- Card: Reservations -->
+<div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
+  <div class="flex items-start gap-4">
+    <div class="p-2 bg-gray-700/50 rounded-lg">
+      <span class="material-symbols-outlined text-2xl text-teal-400">calendar_month</span>
     </div>
-    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
-       <label class="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" [checked]="reservationForm().is_enabled" (change)="toggleReservations($event)" class="sr-only peer">
-        <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        <span class="ms-3 text-sm font-medium text-gray-300">{{ reservationForm().is_enabled ? 'Ativo' : 'Inativo' }}</span>
-      </label>
-      <button (click)="isReservationModalOpen.set(true)" [disabled]="!reservationForm().is_enabled" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm disabled:bg-gray-600 disabled:cursor-not-allowed">
-        Configurar
-      </button>
+    <div>
+      <h2 class="text-xl font-semibold text-white">Sistema de Reservas</h2>
+      <p class="text-sm text-gray-400 mt-1">Permita que seus clientes façam reservas online através de uma página pública.</p>
     </div>
+  </div>
+  <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end items-center gap-4">
+     <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" [checked]="reservationForm().is_enabled" (change)="toggleReservations($event)" class="sr-only peer">
+      <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+      <span class="ms-3 text-sm font-medium text-gray-300">{{ reservationForm().is_enabled ? 'Ativo' : 'Inativo' }}</span>
+    </label>
+    <button (click)="isReservationModalOpen.set(true)" [disabled]="!reservationForm().is_enabled" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm disabled:bg-gray-600 disabled:cursor-not-allowed">
+      Configurar
+    </button>
   </div>
 </div>
 
@@ -161,6 +189,19 @@
                 <button (click)="regenerateApiKey()" class="w-full text-sm font-semibold text-yellow-300 bg-yellow-900/40 hover:bg-yellow-900/60 px-3 py-2 rounded-md transition-colors">
                     Gerar Nova Chave (Invalida a anterior)
                 </button>
+                </div>
+            </div>
+             <div class="p-4 bg-gray-900/50 rounded-lg space-y-4">
+                <h3 class="text-lg font-semibold text-white">Link do Cardápio Público</h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">URL do seu cardápio online</label>
+                    <div class="flex gap-2">
+                        <input type="text" readonly [value]="publicMenuUrl()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 text-sm font-mono">
+                        <button (click)="copyToClipboard(publicMenuUrl())" [disabled]="!publicMenuUrl()" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white shrink-0 disabled:opacity-50" title="Copiar URL">
+                            <span class="material-symbols-outlined text-base">content_copy</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Use este link para compartilhar seu cardápio com clientes ou integrar em outros sistemas.</p>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

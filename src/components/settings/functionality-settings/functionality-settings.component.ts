@@ -62,7 +62,7 @@ export class FunctionalitySettingsComponent {
   // Webhook State
   isWebhookModalOpen = signal(false);
   editingWebhook = signal<Webhook | null>(null);
-  webhookForm = signal<{ url: string; events: WebhookEvent[] }>({ url: '', events: [] });
+  webhookForm = signal<{ url: string; events: WebhookEvent[], is_active?: boolean }>({ url: '', events: [], is_active: true });
   availableWebhookEvents: { key: WebhookEvent, label: string }[] = [
     { key: 'order.created', label: 'Pedido Criado' },
     { key: 'order.updated', label: 'Pedido Atualizado' },
@@ -74,10 +74,15 @@ export class FunctionalitySettingsComponent {
   webhookToDelete = signal<Webhook | null>(null);
   newWebhookSecret = signal<string | null>(null);
 
-  qrCodeUrl = computed(() => {
+  publicMenuUrl = computed(() => {
     const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
     if (!userId) return '';
-    const menuUrl = `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+    return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+  });
+
+  qrCodeUrl = computed(() => {
+    const menuUrl = this.publicMenuUrl();
+    if (!menuUrl) return '';
     return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(menuUrl)}`;
   });
 
@@ -267,14 +272,14 @@ export class FunctionalitySettingsComponent {
   // --- Webhook Methods ---
   openAddWebhookModal() {
     this.editingWebhook.set(null);
-    this.webhookForm.set({ url: '', events: [] });
+    this.webhookForm.set({ url: '', events: [], is_active: true });
     this.newWebhookSecret.set(null);
     this.isWebhookModalOpen.set(true);
   }
 
   openEditWebhookModal(webhook: Webhook) {
     this.editingWebhook.set(webhook);
-    this.webhookForm.set({ url: webhook.url, events: [...webhook.events] });
+    this.webhookForm.set({ url: webhook.url, events: [...webhook.events], is_active: webhook.is_active });
     this.newWebhookSecret.set(null);
     this.isWebhookModalOpen.set(true);
   }
