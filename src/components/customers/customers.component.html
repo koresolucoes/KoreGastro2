@@ -101,7 +101,7 @@
 <!-- Add/Edit Customer Modal -->
 @if(isModalOpen()) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl" (click)="$event.stopPropagation()">
       <div class="flex justify-between items-center p-4 border-b border-gray-700">
         <h3 class="text-xl font-bold text-white">{{ editingCustomer() ? 'Editar Cliente' : 'Novo Cliente' }}</h3>
         <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
@@ -128,8 +128,23 @@
             </div>
         </div>
         <div>
-            <label class="block text-sm text-gray-300 mb-1">Endereço</label>
-            <textarea [value]="customerForm().address || ''" (input)="updateCustomerFormField('address', $any($event.target).value)" rows="3" placeholder="Rua Exemplo, 123, Bairro, Cidade - Estado, CEP" class="w-full bg-gray-700 rounded p-2 text-white"></textarea>
+            <label class="block text-sm text-gray-300 mb-1">Endereço (Texto)</label>
+            <textarea [value]="customerForm().address || ''" (input)="updateCustomerFormField('address', $any($event.target).value)" rows="2" placeholder="Rua Exemplo, 123, Bairro, Cidade - Estado, CEP" class="w-full bg-gray-700 rounded p-2 text-white"></textarea>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Endereço (Mapa)</label>
+            <p class="text-xs text-gray-400 mb-2">Clique no mapa para definir a localização exata do cliente.</p>
+            <div #addEditMapContainer class="w-full h-64 rounded-lg z-0"></div>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Latitude</label>
+                    <input type="number" [value]="customerForm().latitude || ''" (input)="updateCustomerFormField('latitude', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                </div>
+                 <div>
+                    <label class="block text-xs text-gray-400 mb-1">Longitude</label>
+                    <input type="number" [value]="customerForm().longitude || ''" (input)="updateCustomerFormField('longitude', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                </div>
+            </div>
         </div>
         <div>
             <label class="block text-sm text-gray-300 mb-1">Observações</label>

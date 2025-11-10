@@ -33,43 +33,40 @@ export class CustomerDetailsModalComponent {
 
   constructor() {
     effect(() => {
-      // This effect runs when the customer input changes.
+      // This effect runs when the customer input or active tab changes.
       const cust = this.customer();
-      this.consumptionHistory.set([]);
-      this.loyaltyMovements.set([]);
-      if (this.activeTab() === 'history') {
-        this.loadConsumptionHistory(cust.id);
+      const tab = this.activeTab();
+
+      // Teardown map if we are not on the details tab
+      if (tab !== 'details') {
+        this.destroyMap();
       }
-      if (this.activeTab() === 'loyalty') {
-        this.loadLoyaltyHistory(cust.id);
-      }
-      if (this.activeTab() === 'details') {
-          this.destroyMap();
-          setTimeout(() => this.initMap(), 100);
+
+      // Logic for each tab
+      switch (tab) {
+        case 'details':
+          // The map container is only in the DOM on this tab.
+          // We use a timeout to ensure the @if has rendered the container
+          // before we try to initialize the map.
+          setTimeout(() => this.initMap(), 0);
+          break;
+        case 'history':
+          if (this.consumptionHistory().length === 0) {
+            this.loadConsumptionHistory(cust.id);
+          }
+          break;
+        case 'loyalty':
+          if (this.loyaltyMovements().length === 0) {
+            this.loadLoyaltyHistory(cust.id);
+          }
+          break;
       }
     }, { allowSignalWrites: true });
-
-    effect(() => {
-        // This effect runs when the active tab changes.
-        const tab = this.activeTab();
-        const custId = this.customer().id;
-        if (tab === 'history' && this.consumptionHistory().length === 0) {
-            this.loadConsumptionHistory(custId);
-        }
-        if (tab === 'loyalty' && this.loyaltyMovements().length === 0) {
-            this.loadLoyaltyHistory(custId);
-        }
-        if (tab === 'details' && this.mapContainer) {
-            this.destroyMap();
-            setTimeout(() => this.initMap(), 100);
-        } else if (tab !== 'details') {
-            this.destroyMap();
-        }
-    });
   }
 
   private initMap(): void {
     const cust = this.customer();
+    // Check if map is already there, or if container/data is missing
     if (this.mapInitialized || !this.mapContainer?.nativeElement || !cust.latitude || !cust.longitude) {
         return;
     }
