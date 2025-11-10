@@ -299,6 +299,25 @@ Disparado quando um novo cliente é cadastrado no sistema.
 }
 ```
 
+#### `delivery.created`
+Disparado quando um novo pedido de delivery (não-iFood) é criado.
+
+**Exemplo de Payload:** O objeto completo do pedido recém-criado.
+
+#### `delivery.status_updated`
+Disparado quando o status de um pedido de delivery (não-iFood) é atualizado via API.
+
+**Exemplo de Payload:**
+```json
+{
+  "orderId": "uuid-do-pedido-atualizado",
+  "status": "OUT_FOR_DELIVERY",
+  "driverId": "uuid-do-entregador-atribuido",
+  "timestamp": "2024-09-26T14:00:00Z",
+  "fullOrder": { /* O objeto completo e atualizado do pedido */ }
+}
+```
+
 ---
 
 ## 🗺️ Roadmap de Futuras Funcionalidades
@@ -597,6 +616,39 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
   }
 ]
 ```
+
+---
+
+#### `PATCH /api/delivery`
+
+Use este endpoint para que um aplicativo de entregador externo atualize o status de um pedido de delivery em tempo real.
+
+**Corpo da Requisição (JSON):**
+
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "orderId": "uuid-do-pedido-de-delivery",
+  "newStatus": "OUT_FOR_DELIVERY"
+}
+```
+
+**Campos:**
+*   `restaurantId` (obrigatório): String. O ID do seu usuário no sistema ChefOS.
+*   `orderId` (obrigatório): String. O `id` do pedido de delivery.
+*   `newStatus` (obrigatório): String. O novo status da entrega. Valores possíveis:
+    *   `'OUT_FOR_DELIVERY'`: O entregador saiu para a entrega.
+    *   `'ARRIVED_AT_DESTINATION'`: O entregador chegou ao endereço do cliente (status intermediário).
+    *   `'DELIVERED'`: A entrega foi concluída com sucesso. Isso moverá o pedido para a coluna "Entregue".
+
+**Resposta (Sucesso 200 OK):**
+```json
+{
+  "success": true,
+  "message": "Delivery status updated successfully."
+}
+```
+**Importante:** A atualização de status via esta API acionará automaticamente a atualização em tempo real no painel Kanban do gerente no ChefOS, movendo o card do pedido para a coluna correspondente.
 
 ---
 

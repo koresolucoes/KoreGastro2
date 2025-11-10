@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PosStateService } from './pos-state.service';
 import { PricingService } from './pricing.service';
 import { InventoryDataService } from './inventory-data.service';
+import { WebhookService } from './webhook.service';
 
 // Interface for the new order cart item
 interface DeliveryCartItem {
@@ -21,6 +22,7 @@ export class DeliveryDataService {
   private posState = inject(PosStateService);
   private pricingService = inject(PricingService);
   private inventoryDataService = inject(InventoryDataService);
+  private webhookService = inject(WebhookService);
 
   async updateDeliveryStatus(orderId: string, status: string, driverId?: string | null) {
     const updatePayload: { delivery_status: string; delivery_driver_id?: string | null } = {
@@ -154,6 +156,17 @@ export class DeliveryDataService {
     if (!success) {
       await supabase.from('orders').delete().eq('id', order.id); // Rollback
       return { success, error };
+    }
+    
+    // 3. Trigger webhook
+    const { data: fullOrder } = await supabase
+        .from('orders')
+        .select('*, order_items(*), customers(*), delivery_drivers(*)')
+        .eq('id', order.id)
+        .single();
+
+    if (fullOrder) {
+        this.webhookService.triggerWebhook('delivery.created', fullOrder);
     }
 
     return { success: true, error: null };

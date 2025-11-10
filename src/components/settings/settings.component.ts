@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier, Webhook, WebhookEvent } from '../../models/db.models';
@@ -218,6 +217,8 @@ export class SettingsComponent {
     { key: 'order.updated', label: 'Pedido Atualizado' },
     { key: 'stock.updated', label: 'Estoque Atualizado' },
     { key: 'customer.created', label: 'Cliente Criado' },
+    { key: 'delivery.created', label: 'Pedido de Entrega Criado' },
+    { key: 'delivery.status_updated', label: 'Status de Entrega Atualizado' },
   ];
   webhookToDelete = signal<Webhook | null>(null);
   newWebhookSecret = signal<string | null>(null); // To show secret only once after creation
