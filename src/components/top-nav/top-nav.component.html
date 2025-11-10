@@ -21,7 +21,7 @@
                           [class.hover:bg-gray-700]="!isGroupActive(item) && openDropdown() !== item.name"
                           [class.hover:text-white]="!isGroupActive(item) && openDropdown() !== item.name">
                     @if (item.name === 'iFood' && item.imageUrl) {
-                      <img [src]="item.imageUrl" [alt]="item.name" class="h-6 object-contain">
+                      <img [src]="item.imageUrl" [alt]="item.name" class="h-4 object-contain">
                     } @else {
                       <span>{{ item.name }}</span>
                     }
