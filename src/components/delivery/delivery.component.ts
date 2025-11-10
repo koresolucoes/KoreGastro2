@@ -106,18 +106,21 @@ export class DeliveryComponent {
     this.isAssignDriverModalOpen.set(true);
   }
 
-  async handleDriverAssigned(event: { orderId: string, driverId: string, distance: number }) {
+  async handleDriverAssigned(event: { driverId: string }) {
     this.isAssignDriverModalOpen.set(false);
-    
+    const order = this.orderToAssignDriver();
+    if (!order) return;
+
     const driver = this.deliveryState.deliveryDrivers().find(d => d.id === event.driverId);
     if (!driver) {
         this.notificationService.show('Entregador não encontrado.', 'error');
         return;
     }
 
-    const deliveryCost = driver.base_rate + (driver.rate_per_km * event.distance);
+    const distance = order.delivery_distance_km ?? 0;
+    const deliveryCost = driver.base_rate + (driver.rate_per_km * distance);
     
-    const { success, error } = await this.deliveryDataService.assignDriverToOrder(event.orderId, event.driverId, event.distance, deliveryCost);
+    const { success, error } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
 
     if (success) {
       this.notificationService.show('Entregador atribuído e pedido movido para "Em Rota"!', 'success');

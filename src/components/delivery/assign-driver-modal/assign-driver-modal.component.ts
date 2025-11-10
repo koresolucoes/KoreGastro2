@@ -17,15 +17,26 @@ export class AssignDriverModalComponent {
   order: InputSignal<Order> = input.required<Order>();
   
   closeModal: OutputEmitterRef<void> = output<void>();
-  driverAssigned: OutputEmitterRef<{ orderId: string; driverId: string; distance: number; }> = output();
-
-  distance = signal(0);
+  driverAssigned: OutputEmitterRef<{ driverId: string }> = output();
 
   availableDrivers = computed(() => 
     this.deliveryState.deliveryDrivers().filter(d => d.is_active)
   );
+  
+  costForDriver = computed(() => {
+    const drivers = this.availableDrivers();
+    const order = this.order();
+    const distance = order.delivery_distance_km ?? 0;
+    
+    const costMap = new Map<string, number>();
+    drivers.forEach(driver => {
+        const cost = driver.base_rate + (driver.rate_per_km * distance);
+        costMap.set(driver.id, cost);
+    });
+    return costMap;
+  });
 
   assign(driverId: string) {
-    this.driverAssigned.emit({ orderId: this.order().id, driverId, distance: this.distance() });
+    this.driverAssigned.emit({ driverId });
   }
 }

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
 // FIX: import Order model
-import { DeliveryDriver, Order, OrderItem, OrderItemStatus, Recipe } from '../models/db.models';
+import { DeliveryDriver, Order, OrderItem, OrderItemStatus, Recipe, Transaction, TransactionType } from '../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PosStateService } from './pos-state.service';
 import { PricingService } from './pricing.service';
@@ -77,10 +77,10 @@ export class DeliveryDataService {
     const orderTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Desconhecido';
 
-    const transactionsToInsert = [
+    const transactionsToInsert: Partial<Transaction>[] = [
       {
         description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethod})`,
-        type: 'Receita' as const,
+        type: 'Receita',
         amount: orderTotal,
         user_id: userId,
         employee_id: order.delivery_driver_id, // Attribute sale to the driver
@@ -90,7 +90,7 @@ export class DeliveryDataService {
     if (order.delivery_cost && order.delivery_cost > 0) {
         transactionsToInsert.push({
             description: `Taxa de Entrega Pedido #${order.id.slice(0, 8)}`,
-            type: 'Despesa' as const, // This might be a business decision. Is it an expense or part of revenue? Assuming expense for driver payout.
+            type: 'Despesa', // This might be a business decision. Is it an expense or part of revenue? Assuming expense for driver payout.
             amount: order.delivery_cost,
             user_id: userId,
             employee_id: order.delivery_driver_id,
@@ -129,7 +129,7 @@ export class DeliveryDataService {
     return { success: !error, error };
   }
 
-  async createExternalDeliveryOrder(cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string): Promise<{ success: boolean; error: any }> {
+  async createExternalDeliveryOrder(cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -143,7 +143,8 @@ export class DeliveryDataService {
             delivery_status: 'AWAITING_PREP',
             user_id: userId,
             customer_id: customerId,
-            notes: `Pagamento: ${paymentMethod}` 
+            notes: `Pagamento: ${paymentMethod}`,
+            delivery_distance_km: distance,
         })
         .select('id')
         .single();
@@ -160,7 +161,7 @@ export class DeliveryDataService {
     return { success: true, error: null };
   }
 
-  async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string): Promise<{ success: boolean; error: any }> {
+  async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -181,7 +182,7 @@ export class DeliveryDataService {
     // 3. Update order details
     const { error: orderUpdateError } = await supabase
       .from('orders')
-      .update({ customer_id: customerId, notes: `Pagamento: ${paymentMethod}` })
+      .update({ customer_id: customerId, notes: `Pagamento: ${paymentMethod}`, delivery_distance_km: distance })
       .eq('id', orderId);
 
     if (orderUpdateError) {

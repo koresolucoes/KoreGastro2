@@ -128,6 +128,10 @@
             </div>
         </div>
         <div>
+            <label class="block text-sm text-gray-300 mb-1">Endereço</label>
+            <textarea [value]="customerForm().address || ''" (input)="updateCustomerFormField('address', $any($event.target).value)" rows="3" placeholder="Rua Exemplo, 123, Bairro, Cidade - Estado, CEP" class="w-full bg-gray-700 rounded p-2 text-white"></textarea>
+        </div>
+        <div>
             <label class="block text-sm text-gray-300 mb-1">Observações</label>
             <textarea [value]="customerForm().notes || ''" (input)="updateCustomerFormField('notes', $any($event.target).value)" rows="3" class="w-full bg-gray-700 rounded p-2 text-white"></textarea>
         </div>

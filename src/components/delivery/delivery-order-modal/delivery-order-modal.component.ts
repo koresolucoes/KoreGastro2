@@ -34,6 +34,7 @@ export class DeliveryOrderModalComponent {
   selectedCustomer = signal<Customer | null>(null);
   paymentMethod: string = 'Dinheiro';
   recipeSearchTerm = signal('');
+  distance = signal(0);
   isSaving = signal(false);
   isCustomerSelectModalOpen = signal(false);
 
@@ -47,6 +48,7 @@ export class DeliveryOrderModalComponent {
             this.isSaving.set(false);
             this.selectedCustomer.set(order.customers || null);
             this.paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Dinheiro';
+            this.distance.set(order.delivery_distance_km ?? 0);
 
             const recipesMap = this.recipeState.recipesById();
             
@@ -110,10 +112,19 @@ export class DeliveryOrderModalComponent {
   handleCustomerSelected(customer: Customer) {
     this.selectedCustomer.set(customer);
     this.isCustomerSelectModalOpen.set(false);
+    if (customer.address) {
+      // Simulate distance calculation
+      const randomDistance = Math.random() * (15 - 1) + 1; // Random distance between 1 and 15 km
+      this.distance.set(parseFloat(randomDistance.toFixed(1)));
+      this.notificationService.show(`Distância calculada: ${this.distance()} km (simulado).`, 'info');
+    } else {
+      this.distance.set(0); // Reset if customer has no address
+    }
   }
 
   removeCustomer() {
     this.selectedCustomer.set(null);
+    this.distance.set(0);
   }
 
   async saveOrder() {
@@ -127,13 +138,14 @@ export class DeliveryOrderModalComponent {
     let result;
     if (order) {
       result = await this.deliveryDataService.updateExternalDeliveryOrder(
-        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod
+        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod, this.distance()
       );
     } else {
       result = await this.deliveryDataService.createExternalDeliveryOrder(
         this.cart(),
         this.selectedCustomer()?.id || null,
-        this.paymentMethod
+        this.paymentMethod,
+        this.distance()
       );
     }
 

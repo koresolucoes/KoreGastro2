@@ -244,6 +244,7 @@ export interface Customer {
   phone: string | null;
   email: string | null;
   cpf: string | null;
+  address: string | null;
   notes: string | null;
   created_at: string;
   loyalty_points: number;
