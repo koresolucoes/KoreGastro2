@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Customer } from '../src/models/db.models.js';
 import { createHash, timingSafeEqual } from 'crypto';
-// FIX: Add missing Buffer import
 import { Buffer } from 'buffer';
 
 // Initialize Supabase client
