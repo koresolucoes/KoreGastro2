@@ -1,0 +1,179 @@
+<!-- Main Top Navigation Bar -->
+<nav class="bg-gray-800 border-b border-gray-700 text-white relative z-30 no-print" (mouseleave)="closeDropdowns()">
+  <div class="mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Left side: Logo and Desktop Navigation -->
+      <div class="flex items-center">
+        <a routerLink="/dashboard" class="flex-shrink-0 text-3xl font-extrabold">
+          <span>Chef</span><span class="text-blue-500">OS</span>
+        </a>
+        <!-- Desktop Menu -->
+        <div class="hidden md:block ml-10">
+          <div class="flex items-baseline space-x-4">
+            @for (item of navItems(); track item.name) {
+              <div class="relative">
+                @if (isNavGroup(item)) {
+                  <button (click)="toggleDropdown(item.name); $event.stopPropagation()"
+                          class="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                          [class.bg-gray-700]="isGroupActive(item) || openDropdown() === item.name"
+                          [class.text-white]="isGroupActive(item) || openDropdown() === item.name"
+                          [class.text-gray-300]="!isGroupActive(item) && openDropdown() !== item.name"
+                          [class.hover:bg-gray-700]="!isGroupActive(item) && openDropdown() !== item.name"
+                          [class.hover:text-white]="!isGroupActive(item) && openDropdown() !== item.name">
+                    <span>{{ item.name }}</span>
+                    <span class="material-symbols-outlined text-base transition-transform" [class.rotate-180]="openDropdown() === item.name">expand_more</span>
+                  </button>
+                  <!-- Dropdown Panel -->
+                  @if (openDropdown() === item.name) {
+                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none py-1"
+                         (click)="$event.stopPropagation()">
+                      @for (child of item.children; track child.path) {
+                        <a [routerLink]="child.path" routerLinkActive="bg-blue-600" (click)="handleLinkClick()"
+                           class="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                          <span class="material-symbols-outlined text-base">{{ child.icon }}</span>
+                          <span>{{ child.name }}</span>
+                        </a>
+                      }
+                    </div>
+                  }
+                } @else {
+                  <a [routerLink]="item.path" routerLinkActive="bg-gray-700 text-white"
+                     (click)="handleLinkClick()"
+                     class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                    {{ item.name }}
+                  </a>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: User Profile (Desktop) and Mobile Menu Button -->
+      <div class="flex items-center">
+        <!-- Desktop User Menu -->
+        <div class="hidden md:block ml-4 relative">
+          <button (click)="toggleDropdown('user-menu'); $event.stopPropagation()" class="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+            <span class="sr-only">Open user menu</span>
+             @if (activeEmployee()?.photo_url; as photoUrl) {
+                <img [src]="photoUrl" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
+             } @else {
+                <span class="material-symbols-outlined text-3xl text-gray-400">account_circle</span>
+             }
+          </button>
+          <!-- User Dropdown Panel -->
+          @if (openDropdown() === 'user-menu') {
+            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none" (click)="$event.stopPropagation()">
+              <div class="px-4 py-2 border-b border-gray-700">
+                <p class="text-sm font-semibold text-white truncate" [title]="activeEmployee()?.name">{{ activeEmployee()?.name }}</p>
+                <p class="text-xs text-gray-400">{{ activeEmployee()?.role }}</p>
+              </div>
+              <a routerLink="/my-profile" (click)="handleLinkClick()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Meu Perfil</a>
+              <button (click)="handleShiftAction(); $event.stopPropagation()" class="w-full text-left block px-4 py-2 text-sm" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+                {{ shiftButtonState().text }}
+              </button>
+              <button (click)="switchEmployee()" class="w-full text-left block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Trocar Operador</button>
+              <button (click)="signOut()" class="w-full text-left block px-4 py-2 text-sm text-red-400 hover:bg-gray-700">Sair do Sistema</button>
+            </div>
+          }
+        </div>
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button (click)="toggleMobileMenu()" class="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+            <span class="sr-only">Open main menu</span>
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Off-Canvas Mobile Menu -->
+  @if (isMobileMenuOpen()) {
+    <div class="fixed inset-0 z-40">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-black/60" (click)="toggleMobileMenu()"></div>
+      
+      <!-- Menu Content -->
+      <aside class="absolute top-0 left-0 bottom-0 w-64 bg-gray-800 text-gray-300 flex flex-col">
+        <div class="flex items-center justify-between h-16 px-4 border-b border-gray-700">
+          <div class="text-3xl font-extrabold text-white"><span>Chef</span><span class="text-blue-500">OS</span></div>
+          <button (click)="toggleMobileMenu()" class="p-2 rounded-md text-gray-400 hover:bg-gray-700"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        
+        <nav class="flex-1 mt-4 overflow-y-auto">
+          <ul>
+            @for (item of navItems(); track item.name) {
+              <li>
+                @if (isNavGroup(item)) {
+                  <details class="group">
+                    <summary class="flex items-center justify-between h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 cursor-pointer">
+                      <div class="flex items-center space-x-4">
+                        @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 object-contain"> }
+                        @else if (item.icon) { <span class="material-symbols-outlined h-6 w-6">{{ item.icon }}</span> }
+                        <span class="font-medium">{{ item.name }}</span>
+                      </div>
+                      <span class="material-symbols-outlined h-5 w-5 transition-transform duration-200 group-open:rotate-90">chevron_right</span>
+                    </summary>
+                    <ul class="bg-gray-900/50">
+                      @for (child of item.children; track child.path) {
+                        <li>
+                          <a [routerLink]="child.path" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
+                             class="flex items-center h-12 pl-12 pr-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <span class="material-symbols-outlined h-5 w-5">{{child.icon}}</span>
+                            <span class="font-medium">{{ child.name }}</span>
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                } @else {
+                  <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
+                     class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+                    @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 object-contain"> }
+                    @else if (item.icon) { <span class="material-symbols-outlined h-6 w-6">{{ item.icon }}</span> }
+                    <span class="font-medium">{{ item.name }}</span>
+                  </a>
+                }
+              </li>
+            }
+          </ul>
+        </nav>
+
+        <div class="p-4 border-t border-gray-700 space-y-4">
+          @if(activeEmployee(); as employee) {
+            <div class="p-2 rounded-lg hover:bg-gray-700/50">
+                <a routerLink="/my-profile" (click)="handleLinkClick()" class="flex items-center space-x-3 group">
+                  <div class="flex-shrink-0">
+                    @if (employee.photo_url) { <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover"> }
+                    @else { <span class="material-symbols-outlined text-4xl text-gray-400">account_circle</span> }
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-white truncate text-sm group-hover:text-blue-400">{{ employee.name }}</p>
+                  </div>
+                </a>
+                 <div class="mt-2 flex items-center justify-around text-xs">
+                    <button (click)="handleShiftAction()" class="flex-1 hover:underline text-center" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+                      {{ shiftButtonState().text }}
+                    </button>
+                     <button (click)="switchEmployee()" class="flex-1 text-gray-300 hover:text-white hover:underline text-center">
+                      Trocar Operador
+                    </button>
+                </div>
+            </div>
+          }
+          <div class="flex items-center space-x-3 p-2">
+              <div class="flex-shrink-0">
+                @if (companyProfile()?.logo_url; as logoUrl) { <img [src]="logoUrl" alt="Logo da Empresa" class="w-8 h-8 rounded-full object-cover"> }
+                @else { <span class="material-symbols-outlined text-4xl text-gray-400">storefront</span> }
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-white truncate text-sm">{{ currentUser()?.email }}</p>
+                <button (click)="signOut()" class="text-xs text-red-400 hover:text-red-300 hover:underline">Sair do Sistema</button>
+              </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</nav>
