@@ -704,6 +704,30 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 ---
 
+#### `POST /api/clientes?action=login`
+
+Use este endpoint para autenticar um cliente e obter seus dados.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "identifier": "cliente@email.com",
+  "password": "senha_do_cliente"
+}
+```
+
+**Campos:**
+*   `restaurantId` (obrigatório): String.
+*   `identifier` (obrigatório): String. Pode ser o `email`, `phone` ou `cpf` do cliente.
+*   `password` (obrigatório): String. A senha do cliente.
+
+**Resposta (Sucesso 200 OK):** Retorna o objeto completo do cliente (sem a senha).
+
+**Resposta (Erro 401 Unauthorized):** As credenciais (`identifier` ou `password`) são inválidas.
+
+---
+
 #### `POST /api/clientes`
 
 Use este endpoint para cadastrar um novo cliente.
@@ -716,6 +740,7 @@ Use este endpoint para cadastrar um novo cliente.
   "phone": "21912345678",
   "email": "maria@email.com",
   "cpf": "444.555.666-77",
+  "password": "uma_senha_segura",
   "notes": "Cliente novo, primeira visita."
 }
 ```
@@ -725,20 +750,34 @@ Use este endpoint para cadastrar um novo cliente.
 *   `restaurantId` (obrigatório): String.
 *   `name` (obrigatório): String.
 *   `phone`, `email`, `cpf`, `notes` (opcionais): String.
+*   `password` (opcional): String. Senha para o cliente (mínimo 6 caracteres).
 
 **Resposta (Sucesso 201 Created):** Retorna o objeto do cliente recém-criado.
 
 ---
 
-#### `PATCH /api/clientes`
+#### `PATCH /api/clientes?id={id}`
 
-Use este endpoint para adicionar ou remover pontos de fidelidade de um cliente. Esta operação registra a movimentação no histórico do cliente.
+Use este endpoint para atualizar informações de um cliente (incluindo senha) ou para gerenciar pontos de fidelidade.
 
-**Query Parameters:**
+**Corpo da Requisição (JSON para dados gerais):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "name": "Maria Atualizada",
+  "phone": "21987654321",
+  "password": "nova_senha_segura"
+}
+```
 
-*   `id` (obrigatório): O UUID do cliente a ser atualizado.
+**Campos (Dados Gerais):**
+*   `restaurantId` (obrigatório): String.
+*   Qualquer um dos campos do cliente pode ser enviado para atualização: `name`, `phone`, `email`, `cpf`, `notes`, `address`, `latitude`, `longitude`.
+*   `password` (opcional): String (mínimo 6 caracteres). Se enviado, a senha do cliente será atualizada.
 
-**Corpo da Requisição (JSON):**
+---
+
+**Corpo da Requisição (JSON para pontos de fidelidade):**
 ```json
 {
   "restaurantId": "SEU_USER_ID_AQUI",
@@ -748,8 +787,7 @@ Use este endpoint para adicionar ou remover pontos de fidelidade de um cliente. 
 ```
 *Um valor negativo em `loyalty_points_change` remove pontos.*
 
-**Campos:**
-
+**Campos (Pontos de Fidelidade):**
 *   `restaurantId` (obrigatório): String.
 *   `loyalty_points_change` (obrigatório): Número. A quantidade de pontos a adicionar (positivo) ou remover (negativo).
 *   `description` (obrigatório): String. O motivo da movimentação (ex: "Acúmulo por compra", "Resgate de prêmio").

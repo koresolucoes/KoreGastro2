@@ -1,14 +1,62 @@
-
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Customer } from '../src/models/db.models.js';
+import { createHash, timingSafeEqual } from 'crypto';
+// FIX: Add missing Buffer import
+import { Buffer } from 'buffer';
 
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const PUBLIC_CUSTOMER_COLUMNS = 'id, name, phone, email, cpf, notes, loyalty_points, user_id, created_at, address, latitude, longitude';
+
+// --- Handler for Login requests ---
+async function handleLogin(request: VercelRequest, response: VercelResponse, restaurantId: string) {
+    const { identifier, password } = request.body;
+
+    if (!identifier || !password) {
+        return response.status(400).json({ error: { message: 'Identifier (email, phone, or cpf) and password are required.' } });
+    }
+
+    const { data: customer, error: fetchError } = await supabase
+        .from('customers')
+        .select('id, password_hash')
+        .eq('user_id', restaurantId)
+        .or(`email.eq.${identifier},phone.eq.${identifier},cpf.eq.${identifier}`)
+        .maybeSingle();
+    
+    if (fetchError || !customer || !customer.password_hash) {
+        return response.status(401).json({ error: { message: 'Invalid credentials.' } });
+    }
+
+    const passwordHash = createHash('sha256').update(password).digest('hex');
+    const storedHash = customer.password_hash;
+    
+    try {
+        const areEqual = timingSafeEqual(Buffer.from(passwordHash), Buffer.from(storedHash));
+
+        if (areEqual) {
+            const { data: customerPublicData, error: publicFetchError } = await supabase
+                .from('customers')
+                .select(PUBLIC_CUSTOMER_COLUMNS)
+                .eq('id', customer.id)
+                .single();
+            
+            if (publicFetchError) throw publicFetchError;
+
+            return response.status(200).json(customerPublicData);
+        } else {
+            return response.status(401).json({ error: { message: 'Invalid credentials.' } });
+        }
+    } catch (e) {
+        // This will catch errors from timingSafeEqual if hashes have different lengths
+        return response.status(401).json({ error: { message: 'Invalid credentials.' } });
+    }
+}
+
 
 // Main handler function
 export default async function handler(request: VercelRequest, response: VercelResponse) {
@@ -48,6 +96,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (providedApiKey !== profile.external_api_key) {
       return response.status(403).json({ error: { message: 'Invalid API key.' } });
     }
+    
+    // Custom action routing
+    if (request.query.action === 'login' && request.method === 'POST') {
+        await handleLogin(request, response, restaurantId);
+        return;
+    }
 
     // 2. Method Routing
     switch (request.method) {
@@ -78,7 +132,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
     // Get a single customer by ID
     const { data, error } = await supabase
       .from('customers')
-      .select('*')
+      .select(PUBLIC_CUSTOMER_COLUMNS)
       .eq('user_id', restaurantId)
       .eq('id', id)
       .single();
@@ -93,7 +147,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
     const searchTerm = `%${search}%`;
     const { data, error } = await supabase
       .from('customers')
-      .select('*')
+      .select(PUBLIC_CUSTOMER_COLUMNS)
       .eq('user_id', restaurantId)
       .or(`name.ilike.${searchTerm},phone.ilike.${searchTerm},cpf.ilike.${searchTerm},email.ilike.${searchTerm}`);
     
@@ -104,7 +158,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   // Get all customers for the restaurant if no specific query
   const { data, error } = await supabase
     .from('customers')
-    .select('*')
+    .select(PUBLIC_CUSTOMER_COLUMNS)
     .eq('user_id', restaurantId)
     .order('name', { ascending: true });
 
@@ -114,7 +168,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 
 // --- Handler for POST requests ---
 async function handlePost(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-  const body: Partial<Customer> = request.body;
+  const body: Partial<Customer> & { password?: string } = request.body;
 
   if (!body.name) {
     return response.status(400).json({ error: { message: '`name` is a required field.' } });
@@ -141,6 +195,14 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
     }
   }
 
+  let password_hash: string | null = null;
+  if (body.password) {
+      if (typeof body.password !== 'string' || body.password.length < 6) {
+          return response.status(400).json({ error: { message: 'Password must be a string of at least 6 characters.' } });
+      }
+      password_hash = createHash('sha256').update(body.password).digest('hex');
+  }
+
   const { data: newCustomer, error } = await supabase
     .from('customers')
     .insert({
@@ -153,9 +215,10 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
       address: body.address || null,
       latitude: body.latitude || null,
       longitude: body.longitude || null,
-      loyalty_points: body.loyalty_points || 0
+      loyalty_points: body.loyalty_points || 0,
+      password_hash: password_hash
     })
-    .select()
+    .select(PUBLIC_CUSTOMER_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -165,51 +228,59 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
 // --- Handler for PATCH requests ---
 async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     const { id } = request.query;
-    const { loyalty_points_change, description } = request.body;
+    const { loyalty_points_change, description, password, ...otherFields } = request.body;
 
     if (!id || typeof id !== 'string') {
         return response.status(400).json({ error: { message: 'A customer `id` is required in the query parameters.' } });
     }
 
-    if (loyalty_points_change === undefined || typeof loyalty_points_change !== 'number') {
-        return response.status(400).json({ error: { message: '`loyalty_points_change` (number) is required in the request body.' } });
+    // --- Loyalty Points Update (special case) ---
+    if (loyalty_points_change !== undefined) {
+        if (typeof loyalty_points_change !== 'number' || !description || typeof description !== 'string') {
+            return response.status(400).json({ error: { message: '`loyalty_points_change` (number) and `description` are required for loyalty updates.' } });
+        }
+        
+        const { data: customer, error: fetchError } = await supabase.from('customers').select('loyalty_points').eq('id', id).eq('user_id', restaurantId).single();
+        if (fetchError) throw new Error(`Could not find customer to update points: ${fetchError.message}`);
+        
+        const newPoints = (customer.loyalty_points || 0) + loyalty_points_change;
+        const { data: updatedCustomer, error: updateError } = await supabase.from('customers').update({ loyalty_points: newPoints }).eq('id', id).select(PUBLIC_CUSTOMER_COLUMNS).single();
+        if (updateError) throw new Error(`Could not update customer points: ${updateError.message}`);
+        
+        const { error: logError } = await supabase.from('loyalty_movements').insert({ user_id: restaurantId, customer_id: id, points_change: loyalty_points_change, description: description });
+        if(logError) console.error("Failed to log loyalty movement:", logError.message);
+        
+        return response.status(200).json(updatedCustomer);
+    }
+
+    // --- General Field & Password Update ---
+    const updatePayload: { [key: string]: any } = {};
+    const allowedFields: (keyof Customer)[] = ['name', 'phone', 'email', 'cpf', 'notes', 'address', 'latitude', 'longitude'];
+    for (const field of allowedFields) {
+        if (request.body[field] !== undefined) {
+            updatePayload[field] = request.body[field];
+        }
+    }
+
+    if (password) {
+        if (typeof password !== 'string' || password.length < 6) {
+            return response.status(400).json({ error: { message: 'Password must be a string of at least 6 characters.' } });
+        }
+        updatePayload.password_hash = createHash('sha256').update(password).digest('hex');
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+        const { data: updatedCustomer, error: updateError } = await supabase
+            .from('customers')
+            .update(updatePayload)
+            .eq('id', id)
+            .eq('user_id', restaurantId)
+            .select(PUBLIC_CUSTOMER_COLUMNS)
+            .single();
+
+        if (updateError) throw updateError;
+        return response.status(200).json(updatedCustomer);
     }
     
-    if (!description || typeof description !== 'string') {
-        return response.status(400).json({ error: { message: '`description` (string) is required in the request body for logging.' } });
-    }
-
-    // This manual, non-atomic approach is a fallback. The ideal solution is an RPC function.
-    // It's acceptable for many scenarios but can have race conditions under heavy load.
-    const { data: customer, error: fetchError } = await supabase
-        .from('customers')
-        .select('loyalty_points')
-        .eq('id', id)
-        .eq('user_id', restaurantId)
-        .single();
-    
-    if (fetchError) throw new Error(`Could not find customer to update points: ${fetchError.message}`);
-
-    const newPoints = (customer.loyalty_points || 0) + loyalty_points_change;
-
-    const { data: updatedCustomer, error: updateError } = await supabase
-        .from('customers')
-        .update({ loyalty_points: newPoints })
-        .eq('id', id)
-        .select()
-        .single();
-    
-    if (updateError) throw new Error(`Could not update customer points: ${updateError.message}`);
-    
-    // Log the movement for traceability
-    const { error: logError } = await supabase.from('loyalty_movements').insert({
-       user_id: restaurantId,
-       customer_id: id,
-       points_change: loyalty_points_change,
-       description: description
-    });
-    
-    if(logError) console.error("Failed to log loyalty movement after manual update:", logError.message);
-    
-    return response.status(200).json(updatedCustomer);
+    return response.status(400).json({ error: { message: 'No valid update fields provided.' } });
 }
