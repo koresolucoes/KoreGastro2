@@ -12,6 +12,7 @@ import { DeliveryStateService } from '../../services/delivery-state.service';
 import { DeliveryDetailsModalComponent } from './delivery-details-modal/delivery-details-modal.component';
 import { CashierStateService } from '../../services/cashier-state.service';
 import { DeliveryTrackingComponent } from './delivery-tracking/delivery-tracking.component';
+import { WebhookService } from '../../services/webhook.service';
 
 type DeliveryStatus = 'AWAITING_PREP' | 'IN_PREPARATION' | 'READY_FOR_DISPATCH' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 type DeliveryView = 'kanban' | 'tracking';
@@ -33,6 +34,7 @@ export class DeliveryComponent {
   private notificationService = inject(NotificationService);
   private deliveryState = inject(DeliveryStateService);
   private cashierState = inject(CashierStateService);
+  private webhookService = inject(WebhookService);
 
   view = signal<DeliveryView>('kanban');
 
@@ -92,13 +94,21 @@ export class DeliveryComponent {
         event.currentIndex,
       );
       
-      this.updateOrderStatus(movedOrder.id, newStatus);
+      this.updateOrderStatus(movedOrder, newStatus);
     }
   }
   
-  async updateOrderStatus(orderId: string, status: DeliveryStatus) {
-    const { success, error } = await this.deliveryDataService.updateDeliveryStatus(orderId, status);
-    if (!success) {
+  async updateOrderStatus(order: Order, status: DeliveryStatus) {
+    const { success, error } = await this.deliveryDataService.updateDeliveryStatus(order.id, status);
+    if (success) {
+      this.webhookService.triggerWebhook('delivery.status_updated', {
+        orderId: order.id,
+        status: status,
+        driverId: order.delivery_driver_id,
+        timestamp: new Date().toISOString(),
+        fullOrder: order
+      });
+    } else {
       this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
       // Realtime will eventually correct the UI, but an immediate revert could be implemented here if needed.
     }
@@ -135,6 +145,13 @@ export class DeliveryComponent {
 
     if (success) {
       this.notificationService.show('Entregador atribuído e pedido movido para "Em Rota"!', 'success');
+      this.webhookService.triggerWebhook('delivery.status_updated', {
+        orderId: order.id,
+        status: 'OUT_FOR_DELIVERY',
+        driverId: event.driverId,
+        timestamp: new Date().toISOString(),
+        fullOrder: order
+      });
     } else {
       this.notificationService.show(`Erro ao atribuir entregador: ${error?.message}`, 'error');
     }
@@ -150,6 +167,13 @@ export class DeliveryComponent {
     const { success, error } = await this.deliveryDataService.finalizeDeliveryOrder(order);
     if (success) {
       this.notificationService.show('Entrega finalizada com sucesso!', 'success');
+      this.webhookService.triggerWebhook('delivery.status_updated', {
+        orderId: order.id,
+        status: 'DELIVERED',
+        driverId: order.delivery_driver_id,
+        timestamp: new Date().toISOString(),
+        fullOrder: order
+      });
     } else {
       this.notificationService.show(`Erro ao finalizar entrega: ${error?.message}`, 'error');
     }
