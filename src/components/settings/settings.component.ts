@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, IngredientCategory, Category, ReservationSettings, CompanyProfile, Role, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Supplier, Webhook, WebhookEvent } from '../../models/db.models';
@@ -110,6 +111,12 @@ export class SettingsComponent {
         { key: '/cashier', label: 'Caixa' },
         { key: '/reservations', label: 'Reservas' },
         { key: '/customers', label: 'Clientes' }
+      ]
+    },
+    {
+      name: 'Delivery',
+      permissions: [
+        { key: '/delivery', label: 'Painel de Delivery' }
       ]
     },
     {
