@@ -26,11 +26,22 @@
                     <p class="text-xs text-gray-400">{{ driver.vehicle_type || 'Veículo não informado' }} - {{ driver.phone || 'Telefone não informado' }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <button (click)="startEditing(driver)" class="p-2 text-blue-400 hover:text-blue-300">
-                    <span class="material-symbols-outlined text-base">edit</span>
-                  </button>
-                </div>
+                @if (driverPendingDeletion()?.id === driver.id) {
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm text-red-300">Certeza?</span>
+                    <button (click)="confirmDelete()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                    <button (click)="cancelDelete()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-2">
+                    <button (click)="startEditing(driver)" class="p-2 text-blue-400 hover:text-blue-300">
+                      <span class="material-symbols-outlined text-base">edit</span>
+                    </button>
+                    <button (click)="requestDelete(driver)" class="p-2 text-red-400 hover:text-red-300">
+                      <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </div>
+                }
               </div>
             }
           </div>

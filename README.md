@@ -64,6 +64,12 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Ações Rápidas:** Altere o **preço** e a **disponibilidade** de um item diretamente na visão "ao vivo", e a alteração é enviada imediatamente para o iFood.
 - **Criação de Categorias:** Crie novas categorias no seu cardápio do iFood diretamente pelo ChefOS.
 
+### 🛵 **Delivery Externo**
+- **Painel Kanban:** Gerencie pedidos de delivery feitos por telefone ou balcão em um painel visual com colunas (`Fila`, `Em Preparo`, `Pronto para Envio`, `Em Rota`).
+- **Lançamento Manual:** Um formulário rápido para criar novos pedidos, associar clientes (ou cadastrar novos), adicionar itens do cardápio e definir a forma de pagamento.
+- **Gestão de Entregadores:** Cadastre sua própria equipe de entregadores, com informações de contato e status (ativo/inativo).
+- **Atribuição de Entregas:** Atribua pedidos prontos a entregadores disponíveis e acompanhe quais entregas estão em andamento.
+
 ### 💰 **Caixa (Cashier)**
 - **Fila de Pagamento:** Visualize todas as mesas que estão aguardando para pagar em uma tela dedicada.
 - **Venda Rápida:** Um PDV simplificado para vendas no balcão. Os pedidos podem ser pagos na hora ou enviados para a cozinha para pagamento posterior.
@@ -501,6 +507,95 @@ Use este endpoint para adicionar itens a um pedido existente que esteja aberto.
   "message": "Items added to order successfully.",
   "orderId": "uuid-do-pedido-aberto-no-chefos"
 }
+```
+
+---
+
+### 🔌 API de Delivery Externo
+
+Esta API permite que sistemas externos monitorem o status dos pedidos de delivery (não-iFood) e consultem a lista de entregadores ativos.
+
+A autenticação segue o mesmo padrão, usando uma chave Bearer.
+
+**Header:** `Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA`
+
+---
+
+#### `GET /api/delivery`
+
+Use este endpoint para buscar a lista de entregadores ativos ou os pedidos de delivery em andamento.
+
+**Query Parameters:**
+
+*   `restaurantId` (obrigatório): O ID do seu usuário no sistema ChefOS.
+*   `resource` (obrigatório): O tipo de recurso a ser buscado. Valores possíveis: `drivers`, `orders`.
+
+**Exemplo de Requisição (buscar entregadores):**
+```
+GET https://gastro.koresolucoes.com.br/api/delivery?restaurantId=SEU_USER_ID&resource=drivers
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (`resource=drivers`, 200 OK):**
+```json
+[
+  {
+    "id": "uuid-do-entregador-1",
+    "name": "João Moto",
+    "phone": "11988887777",
+    "vehicle_type": "Moto",
+    "is_active": true
+  },
+  {
+    "id": "uuid-do-entregador-2",
+    "name": "Maria Carro",
+    "phone": "11977776666",
+    "vehicle_type": "Carro",
+    "is_active": true
+  }
+]
+```
+
+**Exemplo de Requisição (buscar pedidos):**
+```
+GET https://gastro.koresolucoes.com.br/api/delivery?restaurantId=SEU_USER_ID&resource=orders
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+
+**Exemplo de Resposta (`resource=orders`, 200 OK):**
+```json
+[
+  {
+    "id": "uuid-do-pedido-1",
+    "delivery_status": "READY_FOR_DISPATCH",
+    "delivery_driver_id": null,
+    "customers": {
+      "name": "Ana Cliente",
+      "phone": "21912345678"
+    },
+    "order_items": [
+      {
+        "name": "Pizza Grande",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "uuid-do-pedido-2",
+    "delivery_status": "OUT_FOR_DELIVERY",
+    "delivery_driver_id": "uuid-do-entregador-1",
+    "customers": {
+      "name": "Carlos Cliente",
+      "phone": "31987654321"
+    },
+    "order_items": [
+      {
+        "name": "Hambúrguer Duplo",
+        "quantity": 2
+      }
+    ]
+  }
+]
 ```
 
 ---

@@ -1,0 +1,104 @@
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">Novo Pedido de Delivery</h3>
+      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Left: Menu -->
+      <div class="flex flex-col">
+        <h4 class="text-lg font-semibold text-white mb-3">Cardápio</h4>
+        <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-4 pr-4 py-2 text-white mb-3">
+        <div class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto pr-2 items-start">
+          @for (recipe of filteredRecipes(); track recipe.id) {
+            <div (click)="addToCart(recipe)" class="bg-gray-700 p-3 rounded-lg text-center flex flex-col justify-center min-h-[96px] transition-colors" [class.cursor-pointer]="recipe.hasStock" [class.hover:bg-gray-600]="recipe.hasStock" [class.opacity-50]="!recipe.hasStock" [class.pointer-events-none]="!recipe.hasStock" [title]="!recipe.hasStock ? 'Sem estoque' : ''">
+              <p class="font-semibold text-sm">{{ recipe.name }}</p>
+              <p class="text-xs text-gray-400 mt-1">{{ recipe.price | currency:'BRL' }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Right: Order Details -->
+      <div class="flex flex-col bg-gray-900/50 p-4 rounded-lg">
+        <h4 class="text-lg font-semibold text-white mb-3">Detalhes do Pedido</h4>
+        
+        <!-- Customer -->
+        <div class="mb-4">
+            @if(selectedCustomer(); as customer) {
+                <div class="bg-gray-700/50 p-3 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <p class="font-semibold text-white">{{ customer.name }}</p>
+                        <button (click)="removeCustomer()" class="text-xs text-red-400 hover:text-white">Remover</button>
+                    </div>
+                    <p class="text-sm text-gray-400">{{ customer.phone }}</p>
+                </div>
+            } @else {
+                <button (click)="isCustomerSelectModalOpen.set(true)" class="w-full py-2 px-4 bg-gray-700/50 text-blue-400 rounded-lg hover:bg-gray-700 transition-colors">
+                    Associar Cliente
+                </button>
+            }
+        </div>
+
+        <!-- Cart -->
+        <div class="flex-1 overflow-y-auto pr-2 mb-4">
+            @if(cart().length === 0) {
+                <p class="text-center text-gray-500 py-10">O carrinho está vazio.</p>
+            } @else {
+                <ul class="space-y-2">
+                    @for(item of cart(); track item.recipe.id) {
+                        <li class="p-2 bg-gray-700/50 rounded-md">
+                            <div class="flex justify-between items-center text-sm">
+                                <p class="font-semibold text-white">{{ item.recipe.name }}</p>
+                                <span class="font-bold text-white">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <p class="text-xs text-gray-400">{{ item.quantity }} x {{ item.recipe.price | currency:'BRL' }}</p>
+                                <div class="flex items-center gap-2">
+                                    <button (click)="updateQuantity(item.recipe.id, -1)" class="w-6 h-6 bg-gray-600 rounded-full">-</button>
+                                    <button (click)="updateQuantity(item.recipe.id, 1)" class="w-6 h-6 bg-gray-600 rounded-full">+</button>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <!-- Total -->
+        <div class="mt-auto pt-4 border-t border-gray-700 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
+                <select [(ngModel)]="paymentMethod" name="paymentMethod" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    <option>Dinheiro</option>
+                    <option>Cartão de Crédito</option>
+                    <option>Cartão de Débito</option>
+                    <option>PIX</option>
+                </select>
+            </div>
+            <div class="flex justify-between items-center text-xl font-bold text-white">
+                <span>Total</span>
+                <span>{{ cartTotal() | currency:'BRL' }}</span>
+            </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveOrder()" [disabled]="cart().length === 0 || isSaving()" class="px-6 py-2 font-bold rounded-lg bg-green-600 hover:bg-green-500 text-white disabled:bg-gray-500">
+            @if(isSaving()) { <span>Criando...</span> } @else { <span>Criar Pedido</span> }
+        </button>
+    </div>
+  </div>
+</div>
+
+@if(isCustomerSelectModalOpen()) {
+  <app-customer-select-modal (closeModal)="isCustomerSelectModalOpen.set(false)" (customerSelected)="handleCustomerSelected($event)"></app-customer-select-modal>
+}

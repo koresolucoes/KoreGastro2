@@ -110,3 +110,6 @@
 @if (isDriversModalOpen()) {
   <app-delivery-drivers-modal (closeModal)="isDriversModalOpen.set(false)"></app-delivery-drivers-modal>
 }
+@if (isOrderModalOpen()) {
+  <app-delivery-order-modal (closeModal)="isOrderModalOpen.set(false)"></app-delivery-order-modal>
+}

@@ -6,6 +6,7 @@ import { PosStateService } from '../../services/pos-state.service';
 import { DeliveryDataService } from '../../services/delivery-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { DeliveryDriversModalComponent } from './delivery-drivers-modal/delivery-drivers-modal.component';
+import { DeliveryOrderModalComponent } from './delivery-order-modal/delivery-order-modal.component';
 
 type DeliveryStatus = 'AWAITING_PREP' | 'IN_PREPARATION' | 'READY_FOR_DISPATCH' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 interface OrderWithDriver extends Order {
@@ -15,7 +16,7 @@ interface OrderWithDriver extends Order {
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent],
+  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, DeliveryDriversModalComponent, DeliveryOrderModalComponent],
   templateUrl: './delivery.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -25,7 +26,7 @@ export class DeliveryComponent {
   private notificationService = inject(NotificationService);
 
   isDriversModalOpen = signal(false);
-  isOrderModalOpen = signal(false); // Placeholder for future modal
+  isOrderModalOpen = signal(false);
   
   deliveryOrders = computed<OrderWithDriver[]>(() => 
     this.posState.openOrders()

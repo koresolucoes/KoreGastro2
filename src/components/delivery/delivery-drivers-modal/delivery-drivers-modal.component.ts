@@ -30,8 +30,10 @@ export class DeliveryDriversModalComponent {
   
   editingDriver = signal<DeliveryDriver | null>(null);
   driverForm = signal<Partial<DeliveryDriver>>(EMPTY_FORM);
+  driverPendingDeletion = signal<DeliveryDriver | null>(null);
 
   startEditing(driver: DeliveryDriver) {
+    this.driverPendingDeletion.set(null);
     this.editingDriver.set(driver);
     this.driverForm.set({ ...driver });
   }
@@ -62,5 +64,27 @@ export class DeliveryDriversModalComponent {
     } else {
       this.notificationService.show(`Erro ao salvar: ${result.error?.message}`, 'error');
     }
+  }
+
+  requestDelete(driver: DeliveryDriver) {
+    this.editingDriver.set(null);
+    this.driverPendingDeletion.set(driver);
+  }
+
+  cancelDelete() {
+    this.driverPendingDeletion.set(null);
+  }
+
+  async confirmDelete() {
+    const driverToDelete = this.driverPendingDeletion();
+    if (!driverToDelete) return;
+
+    const { success, error } = await this.deliveryDataService.deleteDriver(driverToDelete.id);
+    if (success) {
+      this.notificationService.show('Entregador removido com sucesso!', 'success');
+    } else {
+      this.notificationService.show(`Erro ao remover: ${error?.message}`, 'error');
+    }
+    this.driverPendingDeletion.set(null);
   }
 }
