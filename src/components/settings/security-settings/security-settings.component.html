@@ -1,0 +1,75 @@
+<!-- Panel: Roles and Permissions -->
+<div class="bg-gray-800 rounded-lg p-6">
+<h2 class="text-xl font-semibold text-white mb-4">Cargos e Permissões</h2>
+<div class="mb-6">
+    <h3 class="font-semibold text-white mb-2">Adicionar Novo Cargo</h3>
+    <div class="flex flex-col sm:flex-row gap-2">
+    <input type="text" [value]="newRoleName()" (input)="newRoleName.set($any($event.target).value)" (keydown.enter)="handleAddRole()" placeholder="Nome do Cargo" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+    <button (click)="handleAddRole()" [disabled]="!newRoleName().trim()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600">Adicionar</button>
+    </div>
+</div>
+<div>
+    <h3 class="font-semibold text-white mb-2">Cargos Existentes</h3>
+    @if (roles().length > 0) {
+    <ul class="space-y-2 max-h-80 overflow-y-auto pr-2">
+        @for(role of roles(); track role.id) {
+        <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+            @if (rolePendingDeletion()?.id === role.id) {
+            <span class="text-sm text-red-300">Certeza?</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="confirmDeleteRole()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                <button (click)="cancelDeleteRole()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+            </div>
+            } @else {
+            <span class="flex-1 text-white truncate min-w-0" [title]="role.name">{{ role.name }}</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="openPermissionsModal(role)" class="p-2 text-blue-400 hover:text-blue-300" title="Editar Permissões">
+                <span class="material-symbols-outlined text-base">lock_open</span>
+                </button>
+                <button (click)="requestDeleteRole(role)" class="p-2 text-red-400 hover:text-red-300" title="Excluir Cargo" [disabled]="role.name === 'Gerente'">
+                <span class="material-symbols-outlined text-base" [class.opacity-50]="role.name === 'Gerente'">delete</span>
+                </button>
+            </div>
+            }
+        </li>
+        }
+    </ul>
+    } @else {
+    <p class="text-center text-gray-500 py-4">Nenhum cargo personalizado criado.</p>
+    }
+</div>
+</div>
+
+<!-- Permissions Modal -->
+@if (isPermissionsModalOpen() && editingRole(); as role) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePermissionsModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">Editar Permissões para "{{ role.name }}"</h3>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+        @for (group of permissionGroups(); track group.name) {
+          <div>
+            <h4 class="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">{{ group.name }}</h4>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              @for (permission of group.permissions; track permission.key) {
+                <label class="flex items-center p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    class="h-5 w-5 rounded border-gray-500 text-blue-600 focus:ring-blue-500"
+                    [checked]="rolePermissionsForm()[permission.key]"
+                    (change)="updatePermission(permission.key, $any($event.target).checked)">
+                  <span class="ml-3 text-sm font-medium text-gray-200">{{ permission.label }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closePermissionsModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="savePermissions()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Permissões</button>
+      </div>
+    </div>
+  </div>
+}

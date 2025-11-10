@@ -1,0 +1,157 @@
+<!-- Panel: Station Management -->
+<div class="bg-gray-800 rounded-lg p-6">
+<h2 class="text-xl font-semibold text-white mb-4">Estações de Produção (KDS)</h2>
+<div class="mb-6">
+    <h3 class="font-semibold text-white mb-2">Adicionar Nova</h3>
+    <div class="flex flex-col sm:flex-row gap-2">
+    <input type="text" [value]="newStationName()" (input)="newStationName.set($any($event.target).value)" (keydown.enter)="handleAddStation()" placeholder="Nome da Estação" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <button (click)="handleAddStation()" [disabled]="!newStationName().trim()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-600">Adicionar</button>
+    </div>
+</div>
+<div>
+    <h3 class="font-semibold text-white mb-2">Existentes</h3>
+    @if (stations().length > 0) {
+    <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
+        @for(item of stations(); track item.id) {
+        <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+            @if (editingStation()?.id === item.id) {
+            <input type="text" [value]="editingStation()!.name" (input)="updateEditingStationName($event)" (keydown.enter)="saveStation()" (keydown.escape)="cancelEditingStation()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="saveStation()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                <button (click)="cancelEditingStation()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            } @else if (stationPendingDeletion()?.id === item.id) {
+            <span class="text-sm text-red-300">Certeza?</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="confirmDeleteStation()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                <button (click)="cancelDeleteStation()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+            </div>
+            } @else {
+            <span class="flex-1 text-white truncate min-w-0" [title]="item.name">{{ item.name }}</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="startEditingStation(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                <button (click)="requestDeleteStation(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            </div>
+            }
+        </li>
+        }
+    </ul>
+    } @else { <p class="text-center text-gray-500 py-4">Nenhuma estação cadastrada.</p> }
+</div>
+</div>
+
+<!-- Panel: Ingredient Category Management -->
+<div class="bg-gray-800 rounded-lg p-6">
+<h2 class="text-xl font-semibold text-white mb-4">Categorias de Ingredientes</h2>
+<div class="mb-6">
+    <h3 class="font-semibold text-white mb-2">Adicionar Nova</h3>
+    <div class="flex flex-col sm:flex-row gap-2">
+    <input type="text" [value]="newCategoryName()" (input)="newCategoryName.set($any($event.target).value)" (keydown.enter)="handleAddCategory()" placeholder="Nome da Categoria" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <button (click)="handleAddCategory()" [disabled]="!newCategoryName().trim()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-600">Adicionar</button>
+    </div>
+</div>
+<div>
+    <h3 class="font-semibold text-white mb-2">Existentes</h3>
+    @if (categories().length > 0) {
+    <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
+        @for(item of categories(); track item.id) {
+        <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+            @if (editingCategory()?.id === item.id) {
+            <input type="text" [value]="editingCategory()!.name" (input)="updateEditingCategoryName($event)" (keydown.enter)="saveCategory()" (keydown.escape)="cancelEditingCategory()" class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="saveCategory()" class="p-2 text-green-400 hover:text-green-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                <button (click)="cancelEditingCategory()" class="p-2 text-gray-400 hover:text-gray-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            } @else if (categoryPendingDeletion()?.id === item.id) {
+            <span class="text-sm text-red-300">Certeza?</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="confirmDeleteCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                <button (click)="cancelDeleteCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+            </div>
+            } @else {
+            <span class="flex-1 text-white truncate min-w-0" [title]="item.name">{{ item.name }}</span>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="startEditingCategory(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                <button (click)="requestDeleteCategory(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            </div>
+            }
+        </li>
+        }
+    </ul>
+    } @else { <p class="text-center text-gray-500 py-4">Nenhuma categoria cadastrada.</p> }
+</div>
+</div>
+<!-- Panel: Recipe Category Management -->
+<div class="bg-gray-800 rounded-lg p-6">
+<div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-semibold text-white">Categorias de Pratos (Cardápio)</h2>
+    <button (click)="openAddRecipeCategoryModal()" class="bg-blue-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-blue-500 text-sm">Adicionar</button>
+</div>
+<div>
+    <h3 class="font-semibold text-white mb-2">Existentes</h3>
+    @if (recipeCategories().length > 0) {
+    <ul class="space-y-2 max-h-60 overflow-y-auto pr-2">
+        @for(item of recipeCategories(); track item.id) {
+        <li class="flex items-center justify-between gap-4 bg-gray-700/50 p-3 rounded-lg min-h-[58px]">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+            @if(item.image_url) {
+                <img [src]="item.image_url" [alt]="item.name" class="w-10 h-10 rounded-md object-cover flex-shrink-0">
+            } @else {
+                <div class="w-10 h-10 rounded-md bg-gray-600 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-gray-500">menu_book</span>
+                </div>
+            }
+            <span class="text-white truncate" [title]="item.name">{{ item.name }}</span>
+            </div>
+            @if (recipeCategoryPendingDeletion()?.id === item.id) {
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-sm text-red-300">Certeza?</span>
+                <button (click)="confirmDeleteRecipeCategory()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                <button (click)="cancelDeleteRecipeCategory()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+            </div>
+            } @else {
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button (click)="openEditRecipeCategoryModal(item)" class="p-2 text-blue-400 hover:text-blue-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg></button>
+                <button (click)="requestDeleteRecipeCategory(item)" class="p-2 text-red-400 hover:text-red-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            </div>
+            }
+        </li>
+        }
+    </ul>
+    } @else { <p class="text-center text-gray-500 py-4">Nenhuma categoria encontrada.</p> }
+</div>
+</div>
+
+<!-- Recipe Category Modal -->
+@if(isRecipeCategoryModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeRecipeCategoryModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingRecipeCategory() ? 'Editar Categoria' : 'Nova Categoria' }}</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="flex flex-col items-center gap-2">
+            <label for="category-image-upload" class="cursor-pointer">
+              @if(recipeCategoryImagePreviewUrl()) {
+                <img [src]="recipeCategoryImagePreviewUrl()" alt="Pré-visualização da categoria" class="h-24 w-24 rounded-md object-cover border-2 border-gray-600 hover:opacity-80">
+              } @else {
+                <div class="h-24 w-24 rounded-md bg-gray-700 flex flex-col items-center justify-center border-2 border-dashed border-gray-500 hover:bg-gray-600 text-gray-500 text-center p-2">
+                  <span class="material-symbols-outlined">add_photo_alternate</span>
+                   <span class="text-xs mt-1">Imagem</span>
+                </div>
+              }
+            </label>
+            <input id="category-image-upload" type="file" class="hidden" (change)="handleRecipeCategoryImageChange($event)" accept="image/png, image/jpeg, image/webp">
+        </div>
+        <div>
+            <label class="block text-sm text-gray-300 mb-1">Nome da Categoria</label>
+            <input type="text" [value]="newRecipeCategoryName()" (input)="newRecipeCategoryName.set($any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeRecipeCategoryModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveRecipeCategory()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
