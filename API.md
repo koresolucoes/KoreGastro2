@@ -24,7 +24,8 @@ Além disso, a maioria dos endpoints requer que o `restaurantId` (o ID do seu us
 ---
 
 ## 🔌 API de Pedidos Externos
-O ChefOS oferece uma API externa para que sistemas de terceiros, como totens de autoatendimento ou aplicativos de delivery próprios, possam enviar pedidos diretamente para o sistema. Os pedidos entram na fila do KDS e do Caixa como qualquer outro pedido interno.
+
+Endpoints para consultar o cardápio e criar ou modificar pedidos, sejam eles para consumo no local, retirada ou delivery.
 
 ### `GET /api/external-order`
 Use este endpoint para buscar o cardápio disponível de um restaurante.
@@ -62,29 +63,27 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 ---
 
 ### `POST /api/external-order`
-Use este endpoint para criar um novo pedido.
+Use este endpoint para criar um novo pedido, seja para consumo no local (Dine-in), retirada (QuickSale) ou **delivery**.
 
-**Exemplo de Corpo da Requisição (JSON):**
+**Exemplo de Corpo da Requisição (Delivery):**
 ```json
 {
   "restaurantId": "SEU_USER_ID_AQUI",
-  "tableNumber": 15,
-  "orderTypeLabel": "Totem de Autoatendimento 1",
-  "externalId": "pedido-totem-xyz-123",
+  "tableNumber": 0,
+  "orderTypeLabel": "Pedido via App Próprio",
   "customer": {
-    "name": "João Ninguém",
-    "phone": "11987654321"
+    "name": "Ana Cliente",
+    "phone": "21912345678",
+    "address": "Rua das Flores, 123, Bairro dos Jardins, Rio de Janeiro - RJ, 22290-240"
   },
   "items": [
     {
-      "externalCode": "HB-CLASSICO",
-      "quantity": 2,
-      "notes": "Um sem picles, por favor."
+      "externalCode": "PZ-MARGH",
+      "quantity": 1
     },
     {
       "externalCode": "REFRI-LATA",
-      "quantity": 2,
-      "price": 7.50
+      "quantity": 2
     }
   ]
 }
@@ -92,13 +91,17 @@ Use este endpoint para criar um novo pedido.
 
 **Campos do Corpo da Requisição:**
 - `restaurantId` (string, **obrigatório**): O ID do seu usuário no sistema ChefOS.
-- `tableNumber` (number, **obrigatório**): O número da mesa para pedidos "Dine-in". Use `0` para vendas de balcão/retirada ("QuickSale").
+- `tableNumber` (number, **obrigatório**):
+  - Para pedidos "Dine-in", use o número da mesa.
+  - Para vendas de balcão/retirada, use `0`.
+  - **Para pedidos de delivery, use `0` e forneça o campo `address` no objeto `customer`.**
 - `orderTypeLabel` (string, opcional): Um rótulo para identificar a origem do pedido (ex: "Totem 1", "App de Entrega").
 - `externalId` (string, opcional): Um ID único do sistema de origem para referência.
-- `customer` (object, opcional): Dados do cliente. Se o nome já existir, o pedido será associado ao cliente existente; caso contrário, um novo cliente será criado.
+- `customer` (object, opcional): Dados do cliente.
   - `name` (string, **obrigatório** se `customer` for enviado).
   - `phone` (string, opcional).
   - `email` (string, opcional).
+  - `address` (string, opcional): **Obrigatório para criar um pedido de delivery.** O endereço completo do cliente. Se fornecido junto com `tableNumber: 0`, o pedido será criado com o tipo `External-Delivery` e aparecerá no painel de entregas.
 - `items` (array, **obrigatório**):
   - `externalCode` (string, **obrigatório**): O código do item, conforme retornado pela API do cardápio (GET).
   - `quantity` (number, **obrigatório**).
@@ -165,7 +168,12 @@ Use este endpoint para buscar a lista de entregadores ativos ou os pedidos de de
 - `restaurantId` (string, **obrigatório**).
 - `resource` (string, **obrigatório**): Valores possíveis: `drivers`, `orders`.
 
-**Exemplo de Resposta (`resource=drivers`, 200 OK):**
+**Exemplo de Requisição (`resource=drivers`):**
+```
+GET https://gastro.koresolucoes.com.br/api/delivery?restaurantId=SEU_USER_ID&resource=drivers
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+**Resposta (200 OK):**
 ```json
 [
   {
@@ -178,7 +186,12 @@ Use este endpoint para buscar a lista de entregadores ativos ou os pedidos de de
 ]
 ```
 
-**Exemplo de Resposta (`resource=orders`, 200 OK):**
+**Exemplo de Requisição (`resource=orders`):**
+```
+GET https://gastro.koresolucoes.com.br/api/delivery?restaurantId=SEU_USER_ID&resource=orders
+Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
+```
+**Resposta (200 OK):**
 ```json
 [
   {
@@ -528,12 +541,6 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 #### `POST /api/rh/funcionarios`
 **Ação:** Cria um novo funcionário.
-**Requisição:**
-```
-POST /api/rh/funcionarios?restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-Content-Type: application/json
-```
 **Corpo da Requisição (Exemplo):**
 ```json
 {
@@ -544,37 +551,14 @@ Content-Type: application/json
   "salary_rate": 2200.00
 }
 ```
-**Resposta (Exemplo 201 Created):**
-```json
-{
-    "id": "novo-uuid-do-funcionario",
-    "name": "Novo Garçom",
-    "pin": "5678",
-    "role_id": "uuid-do-cargo-garcom",
-    "salary_type": "mensal",
-    "salary_rate": 2200.00,
-    "user_id": "SEU_USER_ID",
-    "created_at": "..."
-}
-```
+**Resposta (201 Created):** Retorna o objeto do funcionário recém-criado.
 
 #### `GET /api/rh/funcionarios?id={id}`
 **Ação:** Obtém os detalhes de um funcionário específico.
-**Requisição:**
-```
-GET /api/rh/funcionarios?id=uuid-do-funcionario&restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):** Retorna o objeto completo do funcionário.
+**Resposta (200 OK):** Retorna o objeto completo do funcionário.
 
 #### `PATCH /api/rh/funcionarios?id={id}`
 **Ação:** Atualiza a informação de um funcionário.
-**Requisição:**
-```
-PATCH /api/rh/funcionarios?id=uuid-do-funcionario&restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-Content-Type: application/json
-```
 **Corpo da Requisição (Exemplo):**
 ```json
 {
@@ -582,15 +566,10 @@ Content-Type: application/json
   "salary_rate": 2350.00
 }
 ```
-**Resposta (Exemplo 200 OK):** Retorna o objeto do funcionário atualizado.
+**Resposta (200 OK):** Retorna o objeto do funcionário atualizado.
 
 #### `DELETE /api/rh/funcionarios?id={id}`
-**Ação:** Desativa (ou remove) um funcionário do sistema.
-**Requisição:**
-```
-DELETE /api/rh/funcionarios?id=uuid-do-funcionario&restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
+**Ação:** Desativa um funcionário.
 **Resposta (204 No Content):** Nenhuma resposta.
 
 ---
@@ -598,69 +577,28 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 ### Recurso: Cargos e Permissões (`/api/rh/cargos`)
 
 #### `GET /api/rh/cargos`
-**Ação:** Lista todos os cargos (roles).
-**Requisição:**
-```
-GET /api/rh/cargos?restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):**
+**Ação:** Lista todos os cargos.
+**Resposta (200 OK):**
 ```json
 [
-  {
-    "id": "uuid-do-cargo-gerente",
-    "name": "Gerente",
-    "user_id": "SEU_USER_ID",
-    "created_at": "..."
-  }
+  { "id": "uuid-do-cargo-gerente", "name": "Gerente", "user_id": "..." }
 ]
 ```
 
 #### `GET /api/rh/cargos?id={id}&subresource=permissoes`
 **Ação:** Lista as permissões de um cargo específico.
-**Requisição:**
-```
-GET /api/rh/cargos?id=uuid-do-cargo-garcom&subresource=permissoes&restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):**
-```json
-[ "/pos", "/my-leave" ]
-```
+**Resposta (200 OK):** `[ "/pos", "/my-leave" ]`
 
 #### `PUT /api/rh/cargos?id={id}&subresource=permissoes`
-**Ação:** Define (sobrescreve) a lista completa de permissões para um cargo.
-**Requisição:**
-```
-PUT /api/rh/cargos?id=uuid-do-cargo-garcom&subresource=permissoes&restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-Content-Type: application/json
-```
-**Corpo da Requisição (Exemplo):**
-```json
-{ "permissions": ["/pos", "/cashier"] }
-```
-**Resposta (Exemplo 200 OK):**
-```json
-{ 
-  "success": true, 
-  "message": "Permissions updated." 
-}
-```
+**Ação:** Define a lista completa de permissões para um cargo.
+**Corpo da Requisição:** `{ "permissions": ["/pos", "/cashier"] }`
+**Resposta (200 OK):** `{ "success": true, "message": "Permissions updated." }`
 
 ---
 
 ### Recurso: Permissões Disponíveis (`/api/rh/permissoes-disponiveis`)
-**Ação:** Endpoint de ajuda que lista todas as chaves de permissão possíveis no sistema.
-**Requisição:**
-```
-GET /api/rh/permissoes-disponiveis?restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):**
-```json
-[ "/dashboard", "/pos", "/kds", "/cashier", "/inventory", ... ]
-```
+**Ação:** Lista todas as chaves de permissão possíveis.
+**Resposta (200 OK):** `[ "/dashboard", "/pos", "/kds", ... ]`
 
 ---
 
@@ -668,236 +606,124 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 #### `GET /api/rh/ponto`
 **Ação:** Obtém os registros de ponto para um período.
-**Parâmetros de Query:**
-- `data_inicio` (string, **obrigatório**): `YYYY-MM-DD`
-- `data_fim` (string, **obrigatório**): `YYYY-MM-DD`
-- `employeeId` (string, opcional): UUID do funcionário para filtrar.
-**Requisição:**
-```
-GET /api/rh/ponto?restaurantId=SEU_USER_ID&data_inicio=2024-09-01&data_fim=2024-09-30
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):**
+**Parâmetros de Query:** `data_inicio`, `data_fim` (**obrigatórios**); `employeeId` (opcional).
+**Resposta (200 OK):**
 ```json
 [
   {
     "id": "uuid-do-registro",
     "employee_id": "uuid-do-funcionario",
     "clock_in_time": "2024-09-25T18:00:00Z",
-    "clock_out_time": "2024-09-26T02:00:00Z",
-    "break_start_time": null,
-    "break_end_time": null,
-    "notes": null,
-    "user_id": "SEU_USER_ID"
+    "clock_out_time": "2024-09-26T02:00:00Z"
   }
 ]
 ```
 
 #### `POST /api/rh/ponto/bater-ponto`
-**Ação:** Registra um evento de ponto (entrada/saída/pausa) para um funcionário.
-**Requisição:**
-```
-POST /api/rh/ponto/bater-ponto?restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-Content-Type: application/json
-```
-**Corpo da Requisição (Exemplo):**
-```json
-{
-  "employeeId": "uuid-do-funcionario",
-  "pin": "1234" 
-}
-```
-**Respostas de Sucesso (Exemplos 200 OK):**
-```json
-{ "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }
-```
-```json
-{ "status": "PAUSA_INICIADA", "employeeName": "Ana Gerente" }
-```
+**Ação:** Registra um evento de ponto (entrada/saída/pausa).
+**Corpo da Requisição:** `{ "employeeId": "uuid-do-funcionario", "pin": "1234" }`
+**Respostas (200 OK):**
+- `{ "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }`
+- `{ "status": "PAUSA_INICIADA", "employeeName": "Ana Gerente" }`
+- `{ "status": "PAUSA_FINALIZADA", "employeeName": "Ana Gerente" }`
+- `{ "status": "TURNO_FINALIZADO", "employeeName": "Ana Gerente" }`
 
 #### `POST /api/rh/ponto` (Ajuste Manual)
-**Ação:** Adiciona um registro de ponto manualmente (para correções).
-**Corpo da Requisição (Exemplo):**
-```json
-{ 
-  "employee_id": "uuid-do-funcionario", 
-  "clock_in_time": "2024-09-25T18:00:00Z", 
-  "clock_out_time": "2024-09-26T02:00:00Z"
-}
-```
-**Resposta (Exemplo 201 Created):** Retorna o novo registro criado.
+**Ação:** Adiciona um registro de ponto manualmente.
+**Corpo da Requisição:** `{ "employee_id": "...", "clock_in_time": "...", "clock_out_time": "..." }`
+**Resposta (201 Created):** Retorna o novo registro.
 
 #### `PATCH /api/rh/ponto?id={id}` (Ajuste Manual)
 **Ação:** Corrige um registro de ponto existente.
-**Corpo da Requisição (Exemplo):**
-```json
-{
-  "notes": "Ajuste manual de horário.",
-  "clock_out_time": "2024-09-26T02:05:00Z"
-}
-```
-**Resposta (Exemplo 200 OK):** Retorna o registro atualizado.
+**Corpo da Requisição:** `{ "notes": "Ajuste manual." }`
+**Resposta (200 OK):** Retorna o registro atualizado.
 
 ---
 
 ### Recurso: Verificação de PIN (`/api/rh/verificar-pin`)
 **Ação:** Valida o PIN de um funcionário.
-**Requisição:**
-```
-POST /api/rh/verificar-pin?restaurantId=SEU_USER_ID
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-Content-Type: application/json
-```
-**Corpo da Requisição (Exemplo):**
-```json
-{
-  "employeeId": "uuid-do-funcionario",
-  "pin": "1234" 
-}
-```
-**Resposta (Sucesso 200 OK):**
-```json
-{
-  "success": true,
-  "message": "PIN verified successfully.",
-  "employee": {
-    "id": "uuid-do-funcionario",
-    "name": "Ana Gerente"
-  }
-}
-```
-**Resposta (Erro 403 Forbidden):**
-```json
-{
-  "success": false,
-  "message": "Invalid employeeId or PIN."
-}
-```
+**Corpo da Requisição:** `{ "employeeId": "uuid-do-funcionario", "pin": "1234" }`
+**Resposta (200 OK):** `{ "success": true, "message": "PIN verified.", "employee": { ... } }`
+**Resposta (403 Forbidden):** `{ "success": false, "message": "Invalid employeeId or PIN." }`
 
 ---
 
 ### Recurso: Ausências (`/api/rh/ausencias`)
 
 #### `POST /api/rh/ausencias`
-**Ação:** Cria uma nova solicitação de ausência.
-**Corpo da Requisição (Exemplo):**
+**Ação:** Cria uma solicitação de ausência.
+**Corpo da Requisição:**
 ```json
 {
   "employeeId": "uuid-do-funcionario",
   "request_type": "Falta Justificada",
   "start_date": "2024-10-28",
   "end_date": "2024-10-28",
-  "reason": "Consulta médica.",
-  "attachment": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",
-  "attachment_filename": "atestado.pdf"
+  "reason": "Consulta médica."
 }
 ```
-**Resposta (Exemplo 201 Created):** Retorna o objeto da solicitação criada.
+**Resposta (201 Created):** Retorna a solicitação criada.
 
 #### `GET /api/rh/ausencias`
 **Ação:** Lista as solicitações de ausência.
-**Parâmetros de Query:** `employeeId`, `start_date`, `end_date` (todos opcionais).
-**Resposta (Exemplo 200 OK):**
+**Parâmetros de Query:** `employeeId`, `start_date`, `end_date` (opcionais).
+**Resposta (200 OK):**
 ```json
 [
   {
     "id": "uuid-da-solicitacao",
     "employee_id": "uuid-do-funcionario",
-    "request_type": "Falta Justificada",
     "status": "Pendente",
-    "start_date": "2024-10-28",
-    "end_date": "2024-10-28",
-    "reason": "Consulta médica.",
-    "attachment_url": "https://.../atestado.pdf",
-    "employees": { "name": "Davi Cozinheiro" }
+    ...
   }
 ]
 ```
 
 #### `PATCH /api/rh/ausencias?id={id_da_solicitacao}`
-**Ação:** Aprova ou rejeita uma solicitação de ausência.
-**Corpo da Requisição (Exemplo):**
-```json
-{
-  "status": "Aprovada",
-  "manager_notes": "Boas férias!"
-}
-```
-**Resposta (Exemplo 200 OK):** Retorna o objeto da solicitação atualizado.
+**Ação:** Aprova ou rejeita uma solicitação.
+**Corpo da Requisição:** `{ "status": "Aprovada", "manager_notes": "Boas férias!" }`
+**Resposta (200 OK):** Retorna a solicitação atualizada.
 
 ---
 
 ### Recurso: Escalas (`/api/rh/escalas`)
 
 #### `GET /api/rh/escalas`
-**Ação:** Obtém as escalas e seus turnos para um período.
+**Ação:** Obtém as escalas e turnos para um período.
 **Parâmetros de Query:** `data_inicio`, `data_fim` (**obrigatórios**).
-**Resposta (Exemplo 200 OK):**
+**Resposta (200 OK):**
 ```json
 [
   {
     "id": "uuid-da-escala",
     "week_start_date": "2024-09-23",
     "is_published": true,
-    "shifts": [
-      {
-        "id": "uuid-do-turno",
-        "employee_id": "uuid-do-funcionario",
-        "start_time": "2024-09-25T18:00:00Z",
-        "end_time": "2024-09-26T02:00:00Z",
-        "is_day_off": false
-      }
-    ]
+    "shifts": [ ... ]
   }
 ]
 ```
 
 #### `POST /api/rh/escalas?id={id}&subresource=publicar`
 **Ação:** Publica ou despublica uma escala.
-**Corpo da Requisição (Exemplo):**
-```json
-{
-  "publish": true
-}
-```
-**Resposta (Exemplo 200 OK):**
-```json
-{ 
-  "success": true, 
-  "message": "Schedule uuid-da-escala publish state set to true." 
-}
-```
+**Corpo da Requisição:** `{ "publish": true }`
+**Resposta (200 OK):** `{ "success": true, "message": "Schedule published." }`
 
 ---
 
 ### Recurso: Folha de Pagamento (`/api/rh/folha-pagamento`)
-**Ação:** Gera um resumo da prévia da folha de pagamento para um período.
+**Ação:** Gera um resumo da folha de pagamento.
 **Parâmetros de Query:** `action=resumo`, `mes` (1-12), `ano` (**obrigatórios**).
-**Requisição:**
-```
-GET /api/rh/folha-pagamento?action=resumo&restaurantId=SEU_USER_ID&mes=09&ano=2024
-Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
-```
-**Resposta (Exemplo 200 OK):**
+**Resposta (200 OK):**
 ```json
 {
   "periodo": "Setembro/2024",
   "totales": {
-    "total_a_pagar": 12500.50,
-    "total_horas_extras": 80.5,
-    "total_horas_trabalhadas": 750.0
+    "total_a_pagar": 12500.50
   },
   "empleados": [
     {
       "employeeId": "uuid-do-funcionario",
       "name": "Ana Gerente",
-      "cargo": "Gerente",
-      "horas_programadas": 160,
-      "horas_trabajadas": 170.5,
-      "horas_extras": 10.5,
-      "pago_base": 3000.00,
-      "pago_extra": 500.75,
       "total_a_pagar": 3500.75
     }
   ]
@@ -934,7 +760,6 @@ function verifySignature(rawBody, signatureHeader, secret) {
 
 #### `order.created`
 Disparado quando um novo pedido é criado.
-
 **Payload:**
 ```json
 {
@@ -954,7 +779,6 @@ Disparado quando um novo pedido é criado.
 
 #### `order.updated`
 Disparado quando itens são adicionados a um pedido ou seu status muda.
-
 **Payload (Itens Adicionados):**
 ```json
 {
@@ -971,7 +795,6 @@ Disparado quando itens são adicionados a um pedido ou seu status muda.
 
 #### `stock.updated`
 Disparado quando a quantidade de um ingrediente é alterada.
-
 **Payload:**
 ```json
 {
@@ -988,21 +811,18 @@ Disparado quando a quantidade de um ingrediente é alterada.
 
 #### `customer.created`
 Disparado quando um novo cliente é cadastrado.
-
 **Payload:** O objeto completo do cliente recém-criado.
 
 ---
 
 #### `delivery.created`
 Disparado quando um novo pedido de delivery (não-iFood) é criado.
-
 **Payload:** O objeto completo do pedido recém-criado.
 
 ---
 
 #### `delivery.status_updated`
 Disparado quando o status de um pedido de delivery (não-iFood) é atualizado via API.
-
 **Payload:**
 ```json
 {
