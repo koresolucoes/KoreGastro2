@@ -257,6 +257,9 @@ export interface DeliveryDriver {
   vehicle_type: string | null;
   is_active: boolean;
   created_at: string;
+  base_rate: number;
+  rate_per_km: number;
+  employee_id: string | null;
 }
 
 export interface Order {
@@ -289,6 +292,8 @@ export interface Order {
   delivery_driver_id?: string | null;
   delivery_status?: string | null;
   delivery_drivers?: DeliveryDriver; // Relation
+  delivery_distance_km?: number | null;
+  delivery_cost?: number | null;
 }
 
 export interface OrderItem {

@@ -1,16 +1,20 @@
 import { Component, ChangeDetectionStrategy, inject, signal, output, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DeliveryDriver } from '../../../models/db.models';
+import { DeliveryDriver, Employee } from '../../../models/db.models';
 import { DeliveryStateService } from '../../../services/delivery-state.service';
 import { DeliveryDataService } from '../../../services/delivery-data.service';
 import { NotificationService } from '../../../services/notification.service';
+import { HrStateService } from '../../../services/hr-state.service';
 
 const EMPTY_FORM: Partial<DeliveryDriver> = {
   name: '',
   phone: '',
   vehicle_type: 'Moto',
   is_active: true,
+  base_rate: 0,
+  rate_per_km: 0,
+  employee_id: null
 };
 
 @Component({
@@ -24,9 +28,11 @@ export class DeliveryDriversModalComponent {
   private deliveryState = inject(DeliveryStateService);
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
+  private hrState = inject(HrStateService);
 
   closeModal: OutputEmitterRef<void> = output<void>();
   drivers = this.deliveryState.deliveryDrivers;
+  employees = this.hrState.employees;
   
   editingDriver = signal<DeliveryDriver | null>(null);
   driverForm = signal<Partial<DeliveryDriver>>(EMPTY_FORM);

@@ -1,12 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Order } from '../../../models/db.models';
 import { DeliveryStateService } from '../../../services/delivery-state.service';
 
 @Component({
   selector: 'app-assign-driver-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './assign-driver-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -16,13 +17,15 @@ export class AssignDriverModalComponent {
   order: InputSignal<Order> = input.required<Order>();
   
   closeModal: OutputEmitterRef<void> = output<void>();
-  driverAssigned: OutputEmitterRef<{ orderId: string; driverId: string; }> = output();
+  driverAssigned: OutputEmitterRef<{ orderId: string; driverId: string; distance: number; }> = output();
+
+  distance = signal(0);
 
   availableDrivers = computed(() => 
     this.deliveryState.deliveryDrivers().filter(d => d.is_active)
   );
 
   assign(driverId: string) {
-    this.driverAssigned.emit({ orderId: this.order().id, driverId });
+    this.driverAssigned.emit({ orderId: this.order().id, driverId, distance: this.distance() });
   }
 }

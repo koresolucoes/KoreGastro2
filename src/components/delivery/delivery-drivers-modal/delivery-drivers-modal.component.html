@@ -68,6 +68,25 @@
               <option>Bicicleta</option>
             </select>
           </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Taxa Base (R$)</label>
+              <input type="number" [(ngModel)]="driverForm().base_rate" name="base_rate" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Taxa por KM (R$)</label>
+              <input type="number" step="0.01" [(ngModel)]="driverForm().rate_per_km" name="rate_per_km" class="w-full bg-gray-700 rounded p-2 text-white">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Vincular a Funcionário</label>
+            <select [(ngModel)]="driverForm().employee_id" name="employee_id" class="w-full bg-gray-700 rounded p-2 text-white">
+              <option [ngValue]="null">Nenhum (Entregador Externo)</option>
+              @for(employee of employees(); track employee.id) {
+                <option [value]="employee.id">{{ employee.name }}</option>
+              }
+            </select>
+          </div>
           <div class="flex items-center">
             <input type="checkbox" id="is_active" [(ngModel)]="driverForm().is_active" name="is_active" class="h-4 w-4 rounded border-gray-500 text-blue-600">
             <label for="is_active" class="ml-2 text-sm text-gray-200">Ativo</label>

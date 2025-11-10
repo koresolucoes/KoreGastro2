@@ -1,10 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
-import { DeliveryDriver, OrderItem, OrderItemStatus, Recipe } from '../models/db.models';
+// FIX: import Order model
+import { DeliveryDriver, Order, OrderItem, OrderItemStatus, Recipe } from '../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PosStateService } from './pos-state.service';
 import { PricingService } from './pricing.service';
+// FIX: import InventoryDataService
+import { InventoryDataService } from './inventory-data.service';
 
 // Interface for the new order cart item
 interface DeliveryCartItem {
@@ -19,6 +22,8 @@ export class DeliveryDataService {
   private authService = inject(AuthService);
   private posState = inject(PosStateService);
   private pricingService = inject(PricingService);
+  // FIX: inject InventoryDataService
+  private inventoryDataService = inject(InventoryDataService);
 
   async updateDeliveryStatus(orderId: string, status: string, driverId?: string | null) {
     const updatePayload: { delivery_status: string; delivery_driver_id?: string | null } = {
@@ -34,6 +39,79 @@ export class DeliveryDataService {
     return { success: !error, error };
   }
   
+  // FIX: Add missing method assignDriverToOrder
+  async assignDriverToOrder(orderId: string, driverId: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase
+      .from('orders')
+      .update({ 
+        delivery_driver_id: driverId, 
+        delivery_status: 'OUT_FOR_DELIVERY',
+        delivery_distance_km: distance,
+        delivery_cost: deliveryCost
+      })
+      .eq('id', orderId);
+
+    return { success: !error, error };
+  }
+
+  // FIX: Add missing method finalizeDeliveryOrder
+  async finalizeDeliveryOrder(order: Order): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    // 1. Update order status
+    const { error: orderUpdateError } = await supabase
+      .from('orders')
+      .update({ 
+        status: 'COMPLETED', 
+        delivery_status: 'DELIVERED',
+        completed_at: new Date().toISOString() 
+      })
+      .eq('id', order.id);
+
+    if (orderUpdateError) {
+      return { success: false, error: orderUpdateError };
+    }
+
+    // 2. Insert transactions
+    const orderTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Desconhecido';
+
+    const transactionsToInsert = [
+      {
+        description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethod})`,
+        type: 'Receita' as const,
+        amount: orderTotal,
+        user_id: userId,
+        employee_id: order.delivery_driver_id, // Attribute sale to the driver
+      }
+    ];
+    
+    if (order.delivery_cost && order.delivery_cost > 0) {
+        transactionsToInsert.push({
+            description: `Taxa de Entrega Pedido #${order.id.slice(0, 8)}`,
+            type: 'Despesa' as const, // This might be a business decision. Is it an expense or part of revenue? Assuming expense for driver payout.
+            amount: order.delivery_cost,
+            user_id: userId,
+            employee_id: order.delivery_driver_id,
+        });
+    }
+
+    const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
+    if (transactionError) {
+      console.error(`CRITICAL: Order ${order.id} finalized but failed to insert transactions.`, transactionError);
+      // Don't rollback, as the order is already marked complete.
+    }
+
+    // 3. Deduct stock (fire and forget)
+    this.inventoryDataService.deductStockForOrderItems(order.order_items, order.id).catch(stockError => {
+        console.error(`[DeliveryDataService] NON-FATAL: Stock deduction failed for order ${order.id}.`, stockError);
+    });
+
+    return { success: true, error: null };
+  }
+
+
   async addDriver(driver: Partial<DeliveryDriver>): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' }};

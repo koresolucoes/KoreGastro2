@@ -12,11 +12,22 @@
     </div>
 
     <!-- Body -->
-    <div class="p-6 max-h-[60vh] overflow-y-auto">
+    <div class="p-6">
+       <div class="mb-4">
+        <label for="distance" class="block text-sm font-medium text-gray-300 mb-1">Distância da Entrega (KM)</label>
+        <input 
+          type="number" 
+          id="distance"
+          name="distance"
+          [(ngModel)]="distance"
+          placeholder="Ex: 5.3"
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+      </div>
+
       @if (availableDrivers().length === 0) {
         <p class="text-center text-gray-500 py-10">Nenhum entregador ativo cadastrado.</p>
       } @else {
-        <ul class="space-y-3">
+        <ul class="space-y-3 max-h-[40vh] overflow-y-auto">
           @for (driver of availableDrivers(); track driver.id) {
             <li 
               (click)="assign(driver.id)"
