@@ -44,6 +44,16 @@ export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
       this.plotInitialDrivers();
       this.subscribeToLocationChanges();
       this.isLoadingMap.set(false);
+
+      // FIX: Call invalidateSize after a short delay to ensure the map container
+      // has the correct dimensions after being rendered inside a conditional block (@switch).
+      // This solves the issue where only a part of the map tiles would load initially.
+      setTimeout(() => {
+        if (this.map) {
+          this.map.invalidateSize();
+        }
+      }, 100);
+      
     } else {
       console.error('Leaflet library not loaded.');
       this.isLoadingMap.set(false);
