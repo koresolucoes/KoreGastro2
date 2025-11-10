@@ -207,23 +207,40 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 ---
 
 ### `PATCH /api/delivery`
-Use este endpoint para que um aplicativo de entregador externo atualize o status de um pedido de delivery.
+Use este endpoint para que um aplicativo de entregador externo atualize o status de um pedido de delivery ou atribua um entregador.
 
+**Ação: `update_status`**
+Atualiza o status de um pedido.
 **Corpo da Requisição (JSON):**
 ```json
 {
   "restaurantId": "SEU_USER_ID_AQUI",
+  "action": "update_status",
   "orderId": "uuid-do-pedido-de-delivery",
   "newStatus": "OUT_FOR_DELIVERY"
 }
 ```
 **Valores para `newStatus`:** `'OUT_FOR_DELIVERY'`, `'ARRIVED_AT_DESTINATION'`, `'DELIVERED'`.
 
-**Resposta (Sucesso 200 OK):**
+---
+
+**Ação: `assign_driver`**
+Atribui um entregador a um pedido e o move para "Em Rota".
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "action": "assign_driver",
+  "orderId": "uuid-do-pedido-pronto",
+  "driverId": "uuid-do-entregador"
+}
+```
+
+**Resposta (Sucesso 200 OK para ambas as ações):**
 ```json
 {
   "success": true,
-  "message": "Delivery status updated successfully."
+  "message": "Ação executada com sucesso."
 }
 ```
 

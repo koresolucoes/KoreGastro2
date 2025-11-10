@@ -100,57 +100,130 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 }
 
 async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const { orderId, newStatus } = request.body;
+    const { action, orderId, newStatus, driverId } = request.body;
 
-    if (!orderId || !newStatus) {
-        return response.status(400).json({ error: { message: '`orderId` and `newStatus` are required in the request body.' } });
-    }
-
-    const allowedStatuses = ['OUT_FOR_DELIVERY', 'ARRIVED_AT_DESTINATION', 'DELIVERED'];
-    if (!allowedStatuses.includes(newStatus)) {
-        return response.status(400).json({ error: { message: `Invalid newStatus. Must be one of: ${allowedStatuses.join(', ')}` } });
-    }
-
-    const updatePayload: { status?: string; delivery_status: string; completed_at?: string } = {
-      delivery_status: newStatus,
-    };
-    
-    // If an external app marks the order as DELIVERED, we also mark it as COMPLETED
-    // to move it to the "Entregue" column on the KDS, as per the user's request.
-    // Payment reconciliation is assumed to happen later (e.g., end of shift).
-    if (newStatus === 'DELIVERED') {
-        updatePayload.status = 'COMPLETED';
-        updatePayload.completed_at = new Date().toISOString();
+    if (!orderId) {
+        return response.status(400).json({ error: { message: '`orderId` is required in the request body.' } });
     }
     
-    const { data: updatedOrder, error } = await supabase
-        .from('orders')
-        .update(updatePayload)
-        .eq('id', orderId)
-        .eq('user_id', restaurantId)
-        .eq('status', 'OPEN') // Can only update open orders
-        .select('*, customers(*), delivery_drivers(*)')
-        .single();
+    // Default to 'update_status' if action is missing but newStatus is present (backward compatibility)
+    const effectiveAction = action || (newStatus ? 'update_status' : null);
 
-    if (error) {
-        if (error.code === 'PGRST116') { // No rows found
-            return response.status(404).json({ error: { message: `Open delivery order with id "${orderId}" not found.` } });
+    if (!effectiveAction) {
+        return response.status(400).json({ error: { message: 'An `action` (e.g., "update_status", "assign_driver") or `newStatus` is required.' } });
+    }
+
+    if (effectiveAction === 'update_status') {
+        if (!newStatus) {
+            return response.status(400).json({ error: { message: '`newStatus` is required for action `update_status`.' } });
         }
-        throw error;
-    }
-    
-    // Trigger webhook for status update
-    try {
-        await triggerWebhook(restaurantId, 'delivery.status_updated', {
-            orderId: updatedOrder.id,
-            status: newStatus,
-            driverId: updatedOrder.delivery_driver_id,
-            timestamp: new Date().toISOString(),
-            fullOrder: updatedOrder
-        });
-    } catch (whError: any) {
-        console.error(`[API /delivery] Webhook trigger failed for delivery status update on order ${updatedOrder.id}:`, whError.message);
-    }
+        const allowedStatuses = ['OUT_FOR_DELIVERY', 'ARRIVED_AT_DESTINATION', 'DELIVERED'];
+        if (!allowedStatuses.includes(newStatus)) {
+            return response.status(400).json({ error: { message: `Invalid newStatus. Must be one of: ${allowedStatuses.join(', ')}` } });
+        }
 
-    return response.status(200).json({ success: true, message: "Delivery status updated successfully." });
+        const updatePayload: { status?: string; delivery_status: string; completed_at?: string } = {
+          delivery_status: newStatus,
+        };
+        
+        if (newStatus === 'DELIVERED') {
+            updatePayload.status = 'COMPLETED';
+            updatePayload.completed_at = new Date().toISOString();
+        }
+        
+        const { data: updatedOrder, error } = await supabase
+            .from('orders')
+            .update(updatePayload)
+            .eq('id', orderId)
+            .eq('user_id', restaurantId)
+            .eq('status', 'OPEN')
+            .select('*, customers(*), delivery_drivers(*)')
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return response.status(404).json({ error: { message: `Open delivery order with id "${orderId}" not found.` } });
+            }
+            throw error;
+        }
+        
+        try {
+            await triggerWebhook(restaurantId, 'delivery.status_updated', {
+                orderId: updatedOrder.id,
+                status: newStatus,
+                driverId: updatedOrder.delivery_driver_id,
+                timestamp: new Date().toISOString(),
+                fullOrder: updatedOrder
+            });
+        } catch (whError: any) {
+            console.error(`[API /delivery] Webhook trigger failed for delivery status update on order ${updatedOrder.id}:`, whError.message);
+        }
+
+        return response.status(200).json({ success: true, message: "Delivery status updated successfully." });
+    
+    } else if (effectiveAction === 'assign_driver') {
+        if (!driverId) {
+            return response.status(400).json({ error: { message: '`driverId` is required for action `assign_driver`.' } });
+        }
+
+        const { data: driver, error: driverError } = await supabase
+            .from('delivery_drivers')
+            .select('base_rate, rate_per_km')
+            .eq('id', driverId)
+            .eq('user_id', restaurantId)
+            .single();
+
+        if (driverError || !driver) {
+            return response.status(404).json({ error: { message: `Driver with id "${driverId}" not found.` } });
+        }
+        
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .select('delivery_distance_km')
+            .eq('id', orderId)
+            .single();
+
+        if (orderError || !order) {
+            return response.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
+        }
+
+        const distance = order.delivery_distance_km ?? 0;
+        const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
+
+        const { data: updatedOrder, error: updateError } = await supabase
+            .from('orders')
+            .update({ 
+                delivery_driver_id: driverId, 
+                delivery_status: 'OUT_FOR_DELIVERY',
+                delivery_cost: deliveryCost
+            })
+            .eq('id', orderId)
+            .eq('user_id', restaurantId)
+            .select('*, customers(*), delivery_drivers(*)')
+            .single();
+
+        if (updateError) {
+            if (updateError.code === 'PGRST116') {
+                return response.status(404).json({ error: { message: `Open delivery order with id "${orderId}" not found.` } });
+            }
+            throw updateError;
+        }
+
+        try {
+            await triggerWebhook(restaurantId, 'delivery.status_updated', {
+                orderId: updatedOrder.id,
+                status: 'OUT_FOR_DELIVERY',
+                driverId: driverId,
+                timestamp: new Date().toISOString(),
+                fullOrder: updatedOrder
+            });
+        } catch (whError: any) {
+            console.error(`[API /delivery] Webhook trigger failed for driver assignment on order ${updatedOrder.id}:`, whError.message);
+        }
+
+        return response.status(200).json({ success: true, message: "Driver assigned successfully." });
+
+    } else {
+        return response.status(400).json({ error: { message: 'Invalid `action` provided. Use `update_status` or `assign_driver`.' } });
+    }
 }
