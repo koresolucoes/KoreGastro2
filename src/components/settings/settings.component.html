@@ -14,14 +14,14 @@
           <span class="material-symbols-outlined">storefront</span>
           <span class="font-medium">Loja e Assinatura</span>
         </button>
-        <button (click)="activeTab.set('operacao')"
+        <button (click)="activeTab.set('cadastros')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'operacao'"
-                [class.text-white]="activeTab() === 'operacao'"
-                [class.text-gray-300]="activeTab() !== 'operacao'"
-                [class.hover:bg-gray-700]="activeTab() !== 'operacao'">
-          <span class="material-symbols-outlined">category</span>
-          <span class="font-medium">Categorias e Estações</span>
+                [class.bg-blue-600]="activeTab() === 'cadastros'"
+                [class.text-white]="activeTab() === 'cadastros'"
+                [class.text-gray-300]="activeTab() !== 'cadastros'"
+                [class.hover:bg-gray-700]="activeTab() !== 'cadastros'">
+          <span class="material-symbols-outlined">database</span>
+          <span class="font-medium">Cadastros</span>
         </button>
         <button (click)="activeTab.set('funcionalidades')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
@@ -50,7 +50,7 @@
         @case ('empresa') {
           <app-company-settings></app-company-settings>
         }
-        @case ('operacao') {
+        @case ('cadastros') {
           <app-operation-settings></app-operation-settings>
         }
         @case ('funcionalidades') {

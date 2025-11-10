@@ -9,6 +9,8 @@ import { PosStateService } from '../../../services/pos-state.service';
 import { InventoryStateService } from '../../../services/inventory-state.service';
 import { RecipeStateService } from '../../../services/recipe-state.service';
 
+type OperationTab = 'stations' | 'ingredientCategories' | 'recipeCategories';
+
 @Component({
   selector: 'app-operation-settings',
   standalone: true,
@@ -24,6 +26,8 @@ export class OperationSettingsComponent {
   private posState = inject(PosStateService);
   private inventoryState = inject(InventoryStateService);
   private recipeState = inject(RecipeStateService);
+
+  activeSubTab = signal<OperationTab>('stations');
 
   stations = this.posState.stations;
   categories = this.inventoryState.ingredientCategories;

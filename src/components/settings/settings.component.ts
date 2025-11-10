@@ -7,7 +7,7 @@ import { OperationSettingsComponent } from './operation-settings/operation-setti
 import { FunctionalitySettingsComponent } from './functionality-settings/functionality-settings.component';
 import { SecuritySettingsComponent } from './security-settings/security-settings.component';
 
-type SettingsTab = 'empresa' | 'operacao' | 'funcionalidades' | 'seguranca';
+type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca';
 
 @Component({
   selector: 'app-settings',
