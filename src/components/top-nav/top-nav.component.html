@@ -20,7 +20,11 @@
                           [class.text-gray-300]="!isGroupActive(item) && openDropdown() !== item.name"
                           [class.hover:bg-gray-700]="!isGroupActive(item) && openDropdown() !== item.name"
                           [class.hover:text-white]="!isGroupActive(item) && openDropdown() !== item.name">
-                    <span>{{ item.name }}</span>
+                    @if (item.name === 'iFood' && item.imageUrl) {
+                      <img [src]="item.imageUrl" [alt]="item.name" class="h-6 object-contain">
+                    } @else {
+                      <span>{{ item.name }}</span>
+                    }
                     <span class="material-symbols-outlined text-base transition-transform" [class.rotate-180]="openDropdown() === item.name">expand_more</span>
                   </button>
                   <!-- Dropdown Panel -->
