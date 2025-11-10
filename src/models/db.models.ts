@@ -263,7 +263,6 @@ export interface DeliveryDriver {
   base_rate: number;
   rate_per_km: number;
   employee_id: string | null;
-  // FIX: Add optional location properties to match the database schema and fix type errors.
   last_latitude?: number | null;
   last_longitude?: number | null;
   last_updated_at?: string | null;
