@@ -1,4 +1,3 @@
-
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { AuthService } from './../services/auth.service';
@@ -7,6 +6,7 @@ import { Observable, map, of, combineLatest } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { DemoService } from './../services/demo.service';
 import { filter, take, timeout, catchError } from 'rxjs/operators';
+import { SupabaseStateService } from '../services/supabase-state.service';
 
 export const roleGuard: CanActivateFn = (
     route: ActivatedRouteSnapshot,
@@ -14,9 +14,9 @@ export const roleGuard: CanActivateFn = (
 ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree => {
   const authService = inject(AuthService);
   const operationalAuthService = inject(OperationalAuthService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
   const router: Router = inject(Router);
   const demoService = inject(DemoService);
+  const supabaseStateService = inject(SupabaseStateService);
 
   if (demoService.isDemoMode()) {
     if (operationalAuthService.activeEmployee()) {
@@ -38,11 +38,12 @@ export const roleGuard: CanActivateFn = (
     );
   }
 
-  // Wait for BOTH the main auth service and the operator auth service to be initialized.
-  // This is the definitive fix for the reload race condition.
+  // Wait for BOTH the main auth service, the operator auth service, AND the main data to be initialized.
+  // This is the definitive fix for the reload race condition, as permissions are part of the main data load.
   return combineLatest([
     toObservable(authService.authInitialized).pipe(filter(init => init), take(1)),
-    toObservable(operationalAuthService.operatorAuthInitialized).pipe(filter(init => init), take(1))
+    toObservable(operationalAuthService.operatorAuthInitialized).pipe(filter(init => init), take(1)),
+    toObservable(supabaseStateService.isDataLoaded).pipe(filter(loaded => loaded), take(1))
   ]).pipe(
     map(() => {
       const user = authService.currentUser();
