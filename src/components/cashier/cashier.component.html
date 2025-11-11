@@ -216,14 +216,16 @@
                 </div>
               }
               @if (cashDrawerView() === 'closing') {
-                <div class="bg-gray-800 p-4 rounded-lg">
-                  <h2 class="text-xl font-semibold text-white mb-4">Conferência e Fechamento</h2>
-                  <div class="space-y-4">
-                    <div><label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label><p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p></div>
-                    <div><label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label><input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1"></div>
-                    <div><label class="block text-sm font-medium text-gray-300">Diferença</label><p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">{{ cashDifference() | currency:'BRL' }} @if(countedCash() !== null) { @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } }</p></div>
+                <div class="bg-gray-800 p-4 rounded-lg flex flex-col h-full">
+                  <div class="flex-1 overflow-y-auto">
+                    <h2 class="text-xl font-semibold text-white mb-4">Conferência e Fechamento</h2>
+                    <div class="space-y-4">
+                      <div><label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label><p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p></div>
+                      <div><label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label><input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1"></div>
+                      <div><label class="block text-sm font-medium text-gray-300">Diferença</label><p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">{{ cashDifference() | currency:'BRL' }} @if(countedCash() !== null) { @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } }</p></div>
+                    </div>
                   </div>
-                  <div class="mt-6">
+                  <div class="mt-6 flex-shrink-0">
                     <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Fechar Caixa</button>
                   </div>
                 </div>
@@ -261,8 +263,8 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-800 p-6 rounded-lg flex flex-col justify-between">
-              <div>
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col">
+              <div class="flex-1">
                 <h2 class="text-xl font-semibold text-white mb-4">Conferência e Fechamento</h2>
                 <div class="space-y-4">
                   <div><label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label><p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p></div>
@@ -270,7 +272,9 @@
                   <div><label class="block text-sm font-medium text-gray-300">Diferença</label><p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">{{ cashDifference() | currency:'BRL' }} @if(countedCash() !== null) { @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } }</p></div>
                 </div>
               </div>
-              <div class="mt-6"><button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Fechar Caixa</button></div>
+              <div class="mt-6 flex-shrink-0">
+                <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Fechar Caixa</button>
+              </div>
             </div>
           </div>
         }
