@@ -85,21 +85,47 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   }
 
   if (resource === 'orders') {
-    const { data, error } = await supabase
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select('id, delivery_status, delivery_driver_id, delivery_cost, timestamp, notes, customers(name, phone, address, latitude, longitude), order_items(name, quantity, price)')
+      .select('*')
       .eq('user_id', restaurantId)
       .eq('order_type', 'External-Delivery')
       .in('status', ['OPEN']) // Only active orders
       .order('timestamp', { ascending: true });
 
-    if (error) throw error;
+    if (ordersError) throw ordersError;
+    if (!ordersData || ordersData.length === 0) {
+      return response.status(200).json([]);
+    }
+
+    const orderIds = ordersData.map(o => o.id);
+    const customerIds = ordersData.map(o => o.customer_id).filter(Boolean);
+
+    const [itemsRes, customersRes] = await Promise.all([
+      supabase.from('order_items').select('*').in('order_id', orderIds),
+      supabase.from('customers').select('*').in('id', customerIds as string[]),
+    ]);
+
+    if (itemsRes.error) throw itemsRes.error;
+    if (customersRes.error) throw customersRes.error;
+
+    const itemsByOrderId = new Map<string, any[]>();
+    (itemsRes.data || []).forEach(item => {
+      if (!itemsByOrderId.has(item.order_id)) {
+        itemsByOrderId.set(item.order_id, []);
+      }
+      itemsByOrderId.get(item.order_id)!.push(item);
+    });
+
+    const customersById = new Map<string, any>();
+    (customersRes.data || []).forEach(customer => {
+      customersById.set(customer.id, customer);
+    });
     
-    const formattedOrders = (data || []).map(order => {
-        const items = order.order_items || [];
+    const formattedOrders = ordersData.map(order => {
+        const items = itemsByOrderId.get(order.id) || [];
         const total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        // FIX: The 'customers' relation can be an array or an object. Safely extract the object.
-        const customerData = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+        const customerData = order.customer_id ? customersById.get(order.customer_id) : null;
         
         return {
             id: order.id,
@@ -108,7 +134,8 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
             delivery_driver_id: order.delivery_driver_id,
             customer: {
                 name: customerData?.name || 'Não informado',
-                phone: customerData?.phone || 'Não informado'
+                phone: customerData?.phone || 'Não informado',
+                address: customerData?.address || 'Não informado'
             },
             items: items.map(item => ({
                 name: item.name,
