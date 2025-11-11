@@ -778,8 +778,19 @@ Gerencie seus endpoints de webhook de forma programática.
   "events": ["order.created", "customer.created"]
 }
 ```
+
+**Eventos de Webhook Disponíveis:**
+O campo `events` deve ser um array contendo uma ou mais das seguintes strings:
+
+- `order.created`: Disparado quando um novo pedido é criado (via API externa ou PDV).
+- `order.updated`: Disparado quando um pedido existente é atualizado (itens adicionados, status alterado).
+- `stock.updated`: Disparado quando o estoque de um ingrediente é ajustado.
+- `customer.created`: Disparado quando um novo cliente é cadastrado.
+- `delivery.created`: Disparado quando um novo pedido de delivery (não-iFood) é criado.
+- `delivery.status_updated`: Disparado quando o status de um pedido de delivery (não-iFood) é atualizado.
+
 **Resposta (201 Created):** Retorna o objeto completo do webhook criado, **incluindo o segredo de assinatura**.
-> **Importante:** Guarde o `secret` em um local seguro. Ele não será exibido novamente.
+> **Importante:** Guarde o `secret` em um local seguro. Ele не será exibido novamente.
 ```json
 {
   "id": "novo-uuid",
