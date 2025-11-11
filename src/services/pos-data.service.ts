@@ -9,6 +9,7 @@ import { supabase } from './supabase-client';
 import { v4 as uuidv4 } from 'uuid';
 import { InventoryDataService } from './inventory-data.service';
 import { WebhookService } from './webhook.service';
+import { DeliveryDataService } from './delivery-data.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -23,6 +24,7 @@ export class PosDataService {
   private inventoryDataService = inject(InventoryDataService);
   private posState = inject(PosStateService);
   private webhookService = inject(WebhookService);
+  private deliveryDataService = inject(DeliveryDataService);
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {
     return this.posState.openOrders().find(o => o.table_number === tableNumber);
@@ -89,7 +91,7 @@ export class PosDataService {
   async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean; error: any }> {
     const { data: currentItem, error: fetchError } = await supabase
       .from('order_items')
-      .select('status_timestamps')
+      .select('status_timestamps, order_id')
       .eq('id', itemId)
       .single();
 
@@ -106,6 +108,11 @@ export class PosDataService {
       .from('order_items')
       .update({ status, status_timestamps: newTimestamps })
       .eq('id', itemId);
+
+    if (!error && currentItem.order_id) {
+      // Fire and forget, let it run in the background.
+      this.checkAndUpdateDeliveryOrderStatus(currentItem.order_id);
+    }
 
     return { success: !error, error };
   }
@@ -135,7 +142,57 @@ export class PosDataService {
     });
 
     const { error } = await supabase.from('order_items').upsert(updates);
+    
+    if (!error && items && items.length > 0) {
+        const orderId = items[0].order_id; // Assuming all items belong to the same order
+        // Fire and forget
+        this.checkAndUpdateDeliveryOrderStatus(orderId);
+    }
+
     return { success: !error, error };
+  }
+
+  private async checkAndUpdateDeliveryOrderStatus(orderId: string): Promise<void> {
+    try {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('id, order_type, delivery_status, order_items(*)')
+            .eq('id', orderId)
+            .single();
+
+        if (error || !order || order.order_type !== 'External-Delivery') {
+            return; // Not an external delivery order, or error occurred
+        }
+
+        // Don't move status backwards
+        if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') {
+            return;
+        }
+        
+        const items = order.order_items;
+        if (!items || items.length === 0) {
+            return;
+        }
+
+        const allReady = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+        if (allReady) {
+            if (order.delivery_status !== 'READY_FOR_DISPATCH') {
+                await this.deliveryDataService.updateDeliveryStatus(orderId, 'READY_FOR_DISPATCH');
+            }
+            return;
+        }
+
+        const anyInPreparation = items.some(i => i.status === 'EM_PREPARO');
+        if (anyInPreparation) {
+            if (order.delivery_status === 'AWAITING_PREP') {
+                await this.deliveryDataService.updateDeliveryStatus(orderId, 'IN_PREPARATION');
+            }
+            return;
+        }
+
+    } catch (e) {
+        console.error(`[PosDataService] Failed to check and update delivery order status for order ${orderId}:`, e);
+    }
   }
 
   async acknowledgeOrderItemAttention(itemId: string): Promise<{ success: boolean; error: any }> {
