@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { triggerWebhook } from './webhook-emitter.js';
@@ -86,14 +87,52 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   if (resource === 'orders') {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, delivery_status, delivery_driver_id, customers(name, phone, address, latitude, longitude), order_items(name, quantity)')
+      .select('id, delivery_status, delivery_driver_id, delivery_cost, timestamp, notes, customers(name, phone, address, latitude, longitude), order_items(name, quantity, price)')
       .eq('user_id', restaurantId)
       .eq('order_type', 'External-Delivery')
       .in('status', ['OPEN']) // Only active orders
       .order('timestamp', { ascending: true });
 
     if (error) throw error;
-    return response.status(200).json(data || []);
+    
+    const formattedOrders = (data || []).map(order => {
+        const items = order.order_items || [];
+        const total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        // FIX: The 'customers' relation can be an array or an object. Safely extract the object.
+        const customerData = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+        
+        return {
+            id: order.id,
+            short_id: order.id.slice(0, 4),
+            delivery_status: order.delivery_status,
+            delivery_driver_id: order.delivery_driver_id,
+            customer: {
+                name: customerData?.name || 'Não informado',
+                phone: customerData?.phone || 'Não informado'
+            },
+            items: items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            delivery_address: {
+                street: customerData?.address || 'Endereço não informado',
+                number: '',
+                neighborhood: '',
+                city: '',
+                state: '',
+                zip_code: '',
+                latitude: customerData?.latitude,
+                longitude: customerData?.longitude
+            },
+            created_at: order.timestamp,
+            total_amount: total_amount,
+            delivery_fee: order.delivery_cost || 0,
+            payment_method: order.notes?.replace('Pagamento: ', '') || 'Não informado'
+        };
+    });
+
+    return response.status(200).json(formattedOrders);
   }
 
   return response.status(400).json({ error: { message: 'Invalid resource. Use ?resource=drivers or ?resource=orders' } });
