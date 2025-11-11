@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { triggerWebhook } from './webhook-emitter.js';
@@ -85,78 +84,55 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   }
 
   if (resource === 'orders') {
-    const { data: ordersData, error: ordersError } = await supabase
+    const { data: orders, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('*, order_items(*), customers(*)')
       .eq('user_id', restaurantId)
       .eq('order_type', 'External-Delivery')
       .in('status', ['OPEN']) // Only active orders
       .order('timestamp', { ascending: true });
 
-    if (ordersError) throw ordersError;
-    if (!ordersData || ordersData.length === 0) {
+    if (error) throw error;
+    if (!orders) {
       return response.status(200).json([]);
     }
 
-    const orderIds = ordersData.map(o => o.id);
-    const customerIds = ordersData.map(o => o.customer_id).filter(Boolean);
+    const formattedOrders = orders.map(order => {
+      // Supabase can return a to-one relationship as an array, so we safely handle it.
+      const customerData = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+      const items = (order.order_items as any[]) || [];
+      const total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    const [itemsRes, customersRes] = await Promise.all([
-      supabase.from('order_items').select('*').in('order_id', orderIds),
-      supabase.from('customers').select('*').in('id', customerIds as string[]),
-    ]);
-
-    if (itemsRes.error) throw itemsRes.error;
-    if (customersRes.error) throw customersRes.error;
-
-    const itemsByOrderId = new Map<string, any[]>();
-    (itemsRes.data || []).forEach(item => {
-      if (!itemsByOrderId.has(item.order_id)) {
-        itemsByOrderId.set(item.order_id, []);
-      }
-      itemsByOrderId.get(item.order_id)!.push(item);
-    });
-
-    const customersById = new Map<string, any>();
-    (customersRes.data || []).forEach(customer => {
-      customersById.set(customer.id, customer);
-    });
-    
-    const formattedOrders = ordersData.map(order => {
-        const items = itemsByOrderId.get(order.id) || [];
-        const total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const customerData = order.customer_id ? customersById.get(order.customer_id) : null;
-        
-        return {
-            id: order.id,
-            short_id: order.id.slice(0, 4),
-            delivery_status: order.delivery_status,
-            delivery_driver_id: order.delivery_driver_id,
-            customer: {
-                name: customerData?.name || 'Não informado',
-                phone: customerData?.phone || 'Não informado',
-                address: customerData?.address || 'Não informado'
-            },
-            items: items.map(item => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.price
-            })),
-            delivery_address: {
-                street: customerData?.address || 'Endereço não informado',
-                number: '',
-                neighborhood: '',
-                city: '',
-                state: '',
-                zip_code: '',
-                latitude: customerData?.latitude,
-                longitude: customerData?.longitude
-            },
-            created_at: order.timestamp,
-            total_amount: total_amount,
-            delivery_fee: order.delivery_cost || 0,
-            payment_method: order.notes?.replace('Pagamento: ', '') || 'Não informado'
-        };
+      return {
+        id: order.id,
+        short_id: order.id.slice(0, 4),
+        delivery_status: order.delivery_status,
+        delivery_driver_id: order.delivery_driver_id,
+        customer: {
+          name: customerData?.name || 'Não informado',
+          phone: customerData?.phone || 'Não informado',
+          address: customerData?.address || 'Não informado'
+        },
+        items: items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        delivery_address: {
+          street: customerData?.address || 'Endereço não informado',
+          number: '',
+          neighborhood: '',
+          city: '',
+          state: '',
+          zip_code: '',
+          latitude: customerData?.latitude,
+          longitude: customerData?.longitude
+        },
+        created_at: order.timestamp,
+        total_amount: total_amount,
+        delivery_fee: order.delivery_cost || 0,
+        payment_method: order.notes?.replace('Pagamento: ', '') || 'Não informado'
+      };
     });
 
     return response.status(200).json(formattedOrders);
