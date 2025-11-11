@@ -180,102 +180,87 @@
           </div>
         }
         @case ('cashDrawer') {
-          <!-- Mobile Tabbed View -->
-          <div class="lg:hidden flex flex-col h-full">
-            <div class="flex-shrink-0 flex space-x-1 bg-gray-700 p-1 rounded-lg mb-4 no-print">
-              <button (click)="cashDrawerView.set('movement')" class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="cashDrawerView() === 'movement'" [class.text-white]="cashDrawerView() === 'movement'">Movimentação</button>
-              <button (click)="cashDrawerView.set('closing')" class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="cashDrawerView() === 'closing'" [class.text-white]="cashDrawerView() === 'closing'">Fechamento</button>
-            </div>
-            <div class="flex-1 overflow-y-auto">
-              @if (cashDrawerView() === 'movement') {
-                <div class="bg-gray-800 p-4 rounded-lg flex flex-col space-y-6">
-                    <div>
-                        <h2 class="text-xl font-semibold text-white mb-4">Resumo do Caixa</h2>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Saldo Inicial</span><span class="font-semibold text-white">{{ openingBalance() | currency:'BRL' }}</span></div>
-                            @for(summary of revenueSummary(); track summary.method) {
-                                <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Vendas em {{ summary.method }}</span><span class="font-semibold text-green-400">+ {{ summary.total | currency:'BRL' }}</span></div>
-                            }
-                            <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Total de Despesas</span><span class="font-semibold text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col">
-                        <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
-                        <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                          <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                          <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                          <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
-                        </div>
-                         <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
-                         <div>
-                            @if(expenseTransactions().length > 0) {
-                              <ul class="space-y-2">@for(expense of expenseTransactions(); track expense.id) {<li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm"><span class="text-gray-300">{{ expense.description }}</span><span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span></li>}</ul>
-                            } @else {<p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>}
-                         </div>
-                    </div>
-                </div>
-              }
-              @if (cashDrawerView() === 'closing') {
-                <div class="bg-gray-800 p-4 rounded-lg flex flex-col h-full">
-                  <div class="flex-1 overflow-y-auto">
-                    <h2 class="text-xl font-semibold text-white mb-4">Conferência e Fechamento</h2>
-                    <div class="space-y-4">
-                      <div><label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label><p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p></div>
-                      <div><label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label><input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1"></div>
-                      <div><label class="block text-sm font-medium text-gray-300">Diferença</label><p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">{{ cashDifference() | currency:'BRL' }} @if(countedCash() !== null) { @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } }</p></div>
-                    </div>
-                  </div>
-                  <div class="mt-6 flex-shrink-0">
-                    <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Fechar Caixa</button>
+          <div class="flex flex-col lg:flex-row gap-6 h-full">
+            <!-- Left Panel (Movement) -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col lg:w-1/2">
+              <h2 class="text-xl font-semibold text-white mb-4 flex-shrink-0">Movimentação do Caixa</h2>
+              
+              <div class="flex-1 overflow-y-auto -mr-4 pr-4 space-y-6">
+                <div>
+                  <h3 class="font-semibold text-white mb-2">Resumo do Caixa</h3>
+                  <div class="space-y-3">
+                    <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Saldo Inicial</span><span class="font-semibold text-white">{{ openingBalance() | currency:'BRL' }}</span></div>
+                    @for(summary of revenueSummary(); track summary.method) {
+                      <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Vendas em {{ summary.method }}</span><span class="font-semibold text-green-400">+ {{ summary.total | currency:'BRL' }}</span></div>
+                    }
+                    <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Total de Despesas</span><span class="font-semibold text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
                   </div>
                 </div>
-              }
-            </div>
-          </div>
 
-          <!-- Desktop Two-Column View -->
-          <div class="hidden lg:grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-            <div class="bg-gray-800 p-6 rounded-lg flex flex-col">
-                <h2 class="text-xl font-semibold text-white mb-4 flex-shrink-0">Movimentação do Caixa</h2>
-                <div class="flex-1 overflow-y-auto -mr-4 pr-4 space-y-6">
+                <div class="flex flex-col">
+                  <div>
+                    <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                      <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                      <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                      <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
+                    </div>
+                  </div>
+                  <div class="flex flex-col mt-4">
+                    <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
                     <div>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Saldo Inicial</span><span class="font-semibold text-white">{{ openingBalance() | currency:'BRL' }}</span></div>
-                            @for(summary of revenueSummary(); track summary.method) {<div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Vendas em {{ summary.method }}</span><span class="font-semibold text-green-400">+ {{ summary.total | currency:'BRL' }}</span></div>}
-                            <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Total de Despesas</span><span class="font-semibold text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
-                        </div>
+                      @if(expenseTransactions().length > 0) {
+                        <ul class="space-y-2">
+                          @for(expense of expenseTransactions(); track expense.id) {
+                            <li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm">
+                              <span class="text-gray-300">{{ expense.description }}</span>
+                              <span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span>
+                            </li>
+                          }
+                        </ul>
+                      } @else {
+                        <p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>
+                      }
                     </div>
-                    <div class="flex flex-col">
-                        <div>
-                          <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
-                          <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                            <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                            <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
-                          </div>
-                        </div>
-                        <div class="flex flex-col mt-4">
-                          <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
-                          <div>
-                            @if(expenseTransactions().length > 0) {<ul class="space-y-2">@for(expense of expenseTransactions(); track expense.id) {<li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm"><span class="text-gray-300">{{ expense.description }}</span><span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span></li>}</ul>} @else {<p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>}
-                          </div>
-                        </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
-            <div class="bg-gray-800 p-6 rounded-lg flex flex-col">
-              <div class="flex-1">
-                <h2 class="text-xl font-semibold text-white mb-4">Conferência e Fechamento</h2>
+
+            <!-- Right Panel (Closing) -->
+            <div class="bg-gray-800 p-6 rounded-lg flex flex-col lg:w-1/2">
+              <h2 class="text-xl font-semibold text-white mb-4 flex-shrink-0">Conferência e Fechamento</h2>
+              
+              <div class="flex-1 overflow-y-auto -mr-4 pr-4">
                 <div class="space-y-4">
-                  <div><label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label><p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p></div>
-                  <div><label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label><input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1"></div>
-                  <div><label class="block text-sm font-medium text-gray-300">Diferença</label><p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">{{ cashDifference() | currency:'BRL' }} @if(countedCash() !== null) { @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } }</p></div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label>
+                    <p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label>
+                    <input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300">Diferença</label>
+                    <p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">
+                      {{ cashDifference() | currency:'BRL' }} 
+                      @if(countedCash() !== null) { 
+                        @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } 
+                        @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } 
+                      }
+                    </p>
+                  </div>
                 </div>
               </div>
+
               <div class="mt-6 flex-shrink-0">
-                <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Fechar Caixa</button>
+                <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
+                  Fechar Caixa
+                </button>
               </div>
             </div>
+
           </div>
         }
         @case ('reprint') {
