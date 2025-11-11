@@ -190,6 +190,8 @@ export class DeliveryComponent {
   }
   
   getOrderTotal(order: Order): number {
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const itemsTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryCost = order.delivery_cost ?? 0;
+    return itemsTotal + deliveryCost;
   }
 }

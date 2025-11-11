@@ -48,7 +48,13 @@
         <!-- Distance -->
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-300 mb-1">Distância (KM)</label>
-          <input type="number" step="0.1" [(ngModel)]="distance" name="distance" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+          <input type="number" step="0.1" [ngModel]="distance()" (ngModelChange)="distance.set($event)" name="distance" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+
+        <!-- Delivery Fee -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-300 mb-1">Taxa de Entrega (R$)</label>
+          <input type="number" step="0.01" [ngModel]="deliveryFee()" (ngModelChange)="deliveryFee.set($event)" name="deliveryFee" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
         </div>
 
 

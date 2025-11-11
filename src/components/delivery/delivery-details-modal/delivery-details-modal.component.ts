@@ -4,7 +4,7 @@ import { Order } from '../../../models/db.models';
 import { PrintingService } from '../../../services/printing.service';
 import { SettingsStateService } from '../../../services/settings-state.service';
 
-declare var L: any;
+declare var L: any; // Declare Leaflet
 
 @Component({
   selector: 'app-delivery-details-modal',
@@ -89,8 +89,12 @@ export class DeliveryDetailsModalComponent implements OnDestroy {
     }
   }
 
-  getOrderTotal(order: Order): number {
+  getItemSubtotal(order: Order): number {
     return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  getOrderTotal(order: Order): number {
+    return this.getItemSubtotal(order) + (order.delivery_cost ?? 0);
   }
 
   printGuide() {

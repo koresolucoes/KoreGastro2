@@ -71,7 +71,8 @@ export class DeliveryDataService {
     }
 
     // 2. Insert transactions
-    const orderTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const itemsTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryCost = order.delivery_cost ?? 0;
     const paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Desconhecido';
     
     // Find the employee ID linked to the driver ID
@@ -82,16 +83,16 @@ export class DeliveryDataService {
       {
         description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethod})`,
         type: 'Receita',
-        amount: orderTotal,
+        amount: itemsTotal + deliveryCost,
         user_id: userId,
       }
     ];
     
-    if (order.delivery_cost && order.delivery_cost > 0) {
+    if (deliveryCost > 0) {
         transactionsToInsert.push({
             description: `Pagamento Entrega Pedido #${order.id.slice(0, 8)} - ${driver?.name || 'Entregador'}`,
             type: 'Despesa',
-            amount: order.delivery_cost,
+            amount: deliveryCost,
             user_id: userId,
             employee_id: employeeIdForTransaction,
         });
@@ -129,7 +130,7 @@ export class DeliveryDataService {
     return { success: !error, error };
   }
 
-  async createExternalDeliveryOrder(cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number): Promise<{ success: boolean; error: any }> {
+  async createExternalDeliveryOrder(cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -145,6 +146,7 @@ export class DeliveryDataService {
             customer_id: customerId,
             notes: `Pagamento: ${paymentMethod}`,
             delivery_distance_km: distance,
+            delivery_cost: deliveryCost,
         })
         .select('id')
         .single();
@@ -172,7 +174,7 @@ export class DeliveryDataService {
     return { success: true, error: null };
   }
 
-  async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number): Promise<{ success: boolean; error: any }> {
+  async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, paymentMethod: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
@@ -193,7 +195,7 @@ export class DeliveryDataService {
     // 3. Update order details
     const { error: orderUpdateError } = await supabase
       .from('orders')
-      .update({ customer_id: customerId, notes: `Pagamento: ${paymentMethod}`, delivery_distance_km: distance })
+      .update({ customer_id: customerId, notes: `Pagamento: ${paymentMethod}`, delivery_distance_km: distance, delivery_cost: deliveryCost })
       .eq('id', orderId);
 
     if (orderUpdateError) {

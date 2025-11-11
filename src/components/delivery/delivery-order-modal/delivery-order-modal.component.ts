@@ -37,6 +37,7 @@ export class DeliveryOrderModalComponent {
   paymentMethod: string = 'Dinheiro';
   recipeSearchTerm = signal('');
   distance = signal(0);
+  deliveryFee = signal(0);
   isSaving = signal(false);
   isCustomerSelectModalOpen = signal(false);
 
@@ -51,6 +52,7 @@ export class DeliveryOrderModalComponent {
             this.selectedCustomer.set(order.customers || null);
             this.paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Dinheiro';
             this.distance.set(order.delivery_distance_km ?? 0);
+            this.deliveryFee.set(order.delivery_cost ?? 0);
 
             const recipesMap = this.recipeState.recipesById();
             
@@ -84,7 +86,8 @@ export class DeliveryOrderModalComponent {
   });
 
   cartTotal = computed(() => {
-    return this.cart().reduce((sum, item) => sum + item.recipe.price * item.quantity, 0);
+    const itemsTotal = this.cart().reduce((sum, item) => sum + item.recipe.price * item.quantity, 0);
+    return itemsTotal + this.deliveryFee();
   });
 
   addToCart(recipe: Recipe & { hasStock?: boolean }) {
@@ -162,14 +165,15 @@ export class DeliveryOrderModalComponent {
     let result;
     if (order) {
       result = await this.deliveryDataService.updateExternalDeliveryOrder(
-        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod, this.distance()
+        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod, this.distance(), this.deliveryFee()
       );
     } else {
       result = await this.deliveryDataService.createExternalDeliveryOrder(
         this.cart(),
         this.selectedCustomer()?.id || null,
         this.paymentMethod,
-        this.distance()
+        this.distance(),
+        this.deliveryFee()
       );
     }
 
