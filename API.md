@@ -749,6 +749,67 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 
 ---
 
+## 🔌 API de Webhooks
+Gerencie seus endpoints de webhook de forma programática.
+
+### `GET /api/webhooks`
+**Ação:** Lista todos os webhooks configurados.
+**Parâmetros de Query:** `restaurantId` (string, **obrigatório**).
+**Resposta (200 OK):** Retorna um array de objetos webhook (sem o segredo).
+```json
+[
+  {
+    "id": "uuid-do-webhook",
+    "url": "https://meusistema.com/webhook",
+    "events": ["order.created", "stock.updated"],
+    "is_active": true,
+    "created_at": "..."
+  }
+]
+```
+
+### `POST /api/webhooks`
+**Ação:** Cria um novo endpoint de webhook.
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "url": "https://meusistema.com/novo-webhook",
+  "events": ["order.created", "customer.created"]
+}
+```
+**Resposta (201 Created):** Retorna o objeto completo do webhook criado, **incluindo o segredo de assinatura**.
+> **Importante:** Guarde o `secret` em um local seguro. Ele não será exibido novamente.
+```json
+{
+  "id": "novo-uuid",
+  "url": "https://meusistema.com/novo-webhook",
+  "events": ["order.created", "customer.created"],
+  "secret": "whsec_abcd1234...",
+  "is_active": true,
+  "created_at": "..."
+}
+```
+
+### `PATCH /api/webhooks?id={webhookId}`
+**Ação:** Atualiza um webhook existente.
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "SEU_USER_ID_AQUI",
+  "url": "https://meusistema.com/webhook-atualizado", // opcional
+  "events": ["order.created", "order.updated"],      // opcional
+  "is_active": false                                  // opcional
+}
+```
+**Resposta (200 OK):** Retorna o objeto do webhook atualizado (sem o segredo).
+
+### `DELETE /api/webhooks?id={webhookId}`
+**Ação:** Exclui um webhook.
+**Resposta (204 No Content):** Nenhuma resposta.
+
+---
+
 ## 🔌 Webhooks
 O ChefOS pode enviar notificações automáticas para sistemas externos sempre que eventos chave ocorrerem.
 
