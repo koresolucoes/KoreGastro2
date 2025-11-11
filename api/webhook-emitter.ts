@@ -54,8 +54,8 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Chefos-Signature': `sha256=${signature}`,
-        'X-Chefos-Event': event,
+        'X-Cheffs-Signature': `sha256=${signature}`,
+        'X-Cheffs-Event': event,
       },
       body: payloadString,
     })

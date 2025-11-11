@@ -779,18 +779,8 @@ Gerencie seus endpoints de webhook de forma programática.
 }
 ```
 
-**Eventos de Webhook Disponíveis:**
-O campo `events` deve ser um array contendo uma ou mais das seguintes strings:
-
-- `order.created`: Disparado quando um novo pedido é criado (via API externa ou PDV).
-- `order.updated`: Disparado quando um pedido existente é atualizado (itens adicionados, status alterado).
-- `stock.updated`: Disparado quando o estoque de um ingrediente é ajustado.
-- `customer.created`: Disparado quando um novo cliente é cadastrado.
-- `delivery.created`: Disparado quando um novo pedido de delivery (não-iFood) é criado.
-- `delivery.status_updated`: Disparado quando o status de um pedido de delivery (não-iFood) é atualizado.
-
 **Resposta (201 Created):** Retorna o objeto completo do webhook criado, **incluindo o segredo de assinatura**.
-> **Importante:** Guarde o `secret` em um local seguro. Ele не será exibido novamente.
+> **Importante:** Guarde o `secret` em um local seguro. Ele não será exibido novamente.
 ```json
 {
   "id": "novo-uuid",
@@ -830,18 +820,29 @@ O ChefOS pode enviar notificações automáticas para sistemas externos sempre q
 3.  Salve e armazene o **segredo de assinatura** gerado.
 
 ### Verificação da Assinatura
-Valide o cabeçalho `X-Chefos-Signature` em seu servidor. A assinatura é um hash HMAC-SHA256 do corpo bruto (raw body) da requisição, usando seu segredo como chave.
+O ChefOS assina cada requisição de webhook com uma assinatura única. Isso permite que você verifique se a requisição veio do ChefOS e não de um terceiro.
+
+**Cabeçalhos:**
+- `X-Cheffs-Signature`: A assinatura HMAC-SHA256 do corpo da requisição.
+- `X-Cheffs-Event`: O tipo de evento que disparou o webhook (ex: `order.created`).
+
+**Como Validar:**
+Valide o cabeçalho `X-Cheffs-Signature`. A assinatura é um hash HMAC-SHA256 do **corpo bruto (raw body)** da requisição, usando seu segredo como chave.
 
 **Exemplo em Node.js:**
 ```javascript
 const crypto = require('crypto');
 
 function verifySignature(rawBody, signatureHeader, secret) {
+  // O header vem como 'sha256=hash', então pegamos apenas o hash
+  const signature = signatureHeader.split('=')[1];
+  
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(rawBody);
-  const computedSignature = `sha256=${hmac.digest('hex')}`;
-  // Use crypto.timingSafeEqual para uma comparação segura
-  return crypto.timingSafeEqual(Buffer.from(signatureHeader), Buffer.from(computedSignature));
+  const computedSignature = hmac.digest('hex');
+
+  // Use crypto.timingSafeEqual para uma comparação segura contra ataques de tempo
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature));
 }
 ```
 
