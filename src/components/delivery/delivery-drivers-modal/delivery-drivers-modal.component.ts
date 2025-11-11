@@ -6,10 +6,12 @@ import { DeliveryStateService } from '../../../services/delivery-state.service';
 import { DeliveryDataService } from '../../../services/delivery-data.service';
 import { NotificationService } from '../../../services/notification.service';
 import { HrStateService } from '../../../services/hr-state.service';
+import { SettingsDataService } from '../../../services/settings-data.service';
 
-const EMPTY_FORM: Partial<DeliveryDriver> = {
+const EMPTY_FORM: Partial<DeliveryDriver> & { pin?: string } = {
   name: '',
   phone: '',
+  pin: '',
   vehicle_type: 'Moto',
   is_active: true,
   base_rate: 0,
@@ -29,19 +31,21 @@ export class DeliveryDriversModalComponent {
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
   private hrState = inject(HrStateService);
+  private settingsDataService = inject(SettingsDataService);
 
   closeModal: OutputEmitterRef<void> = output<void>();
   drivers = this.deliveryState.deliveryDrivers;
   employees = this.hrState.employees;
   
   editingDriver = signal<DeliveryDriver | null>(null);
-  driverForm = signal<Partial<DeliveryDriver>>(EMPTY_FORM);
+  driverForm = signal<Partial<DeliveryDriver> & { pin?: string }>(EMPTY_FORM);
   driverPendingDeletion = signal<DeliveryDriver | null>(null);
 
   startEditing(driver: DeliveryDriver) {
     this.driverPendingDeletion.set(null);
     this.editingDriver.set(driver);
-    this.driverForm.set({ ...driver });
+    // When editing, we don't handle the PIN. Name and phone are directly on the driver for simplicity here.
+    this.driverForm.set({ ...driver, pin: '' });
   }
 
   cancelEditing() {
@@ -57,20 +61,70 @@ export class DeliveryDriversModalComponent {
     }
 
     const editing = this.editingDriver();
-    let result;
+    
     if (editing) {
-      result = await this.deliveryDataService.updateDriver(editing.id, form);
+      // Logic for updating an existing driver
+      const { success, error } = await this.deliveryDataService.updateDriver(editing.id, form);
+      if (success) {
+        this.notificationService.show('Entregador atualizado!', 'success');
+        this.cancelEditing();
+      } else {
+        this.notificationService.show(`Erro ao salvar: ${error?.message}`, 'error');
+      }
     } else {
-      result = await this.deliveryDataService.addDriver(form);
-    }
+      // Logic for creating a new driver AND a new employee
+      if (!form.pin || form.pin.length !== 4) {
+        this.notificationService.show('O PIN de 4 dígitos é obrigatório.', 'warning');
+        return;
+      }
 
-    if (result.success) {
-      this.notificationService.show('Entregador salvo com sucesso!', 'success');
-      this.cancelEditing();
-    } else {
-      this.notificationService.show(`Erro ao salvar: ${result.error?.message}`, 'error');
+      // 1. Find or create "Entregador" role
+      let driverRole = this.hrState.roles().find(r => r.name === 'Entregador');
+      if (!driverRole) {
+        const { data: newRole } = await this.settingsDataService.addRole('Entregador');
+        if (newRole) driverRole = newRole;
+      }
+      if (!driverRole) {
+        this.notificationService.show('Não foi possível encontrar ou criar o cargo de "Entregador".', 'error');
+        return;
+      }
+
+      // 2. Create the Employee record
+      const { data: newEmployee, success: empSuccess, error: empError } = await this.settingsDataService.addEmployee({
+        name: form.name,
+        phone: form.phone,
+        pin: form.pin,
+        role_id: driverRole.id
+      });
+      if (!empSuccess || !newEmployee) {
+        this.notificationService.show(`Erro ao criar o funcionário: ${empError?.message}`, 'error');
+        return;
+      }
+
+      // 3. Create the Delivery Driver record, linking the new employee
+      const driverData = {
+        name: form.name,
+        phone: form.phone,
+        vehicle_type: form.vehicle_type,
+        is_active: form.is_active,
+        base_rate: form.base_rate,
+        rate_per_km: form.rate_per_km,
+        employee_id: newEmployee.id
+      };
+
+      const { success: driverSuccess, error: driverError } = await this.deliveryDataService.addDriver(driverData);
+      
+      if (driverSuccess) {
+        this.notificationService.show('Entregador e funcionário criados com sucesso!', 'success');
+        this.cancelEditing();
+      } else {
+        this.notificationService.show(`Erro ao criar o entregador: ${driverError?.message}. O funcionário foi criado, por favor, verifique a lista de funcionários.`, 'error');
+        // Optional: attempt to delete the created employee for cleanup
+        await this.settingsDataService.deleteEmployee(newEmployee.id);
+      }
     }
   }
+
 
   requestDelete(driver: DeliveryDriver) {
     this.editingDriver.set(null);
@@ -87,6 +141,10 @@ export class DeliveryDriversModalComponent {
 
     const { success, error } = await this.deliveryDataService.deleteDriver(driverToDelete.id);
     if (success) {
+      // Also delete the associated employee record
+      if (driverToDelete.employee_id) {
+        await this.settingsDataService.deleteEmployee(driverToDelete.employee_id);
+      }
       this.notificationService.show('Entregador removido com sucesso!', 'success');
     } else {
       this.notificationService.show(`Erro ao remover: ${error?.message}`, 'error');

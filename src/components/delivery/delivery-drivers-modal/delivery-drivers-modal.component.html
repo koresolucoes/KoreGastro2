@@ -60,6 +60,14 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
             <input type="tel" [(ngModel)]="driverForm().phone" name="phone" class="w-full bg-gray-700 rounded p-2 text-white">
           </div>
+          
+          @if (!editingDriver()) {
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">PIN (4 dígitos) *</label>
+              <input type="password" [(ngModel)]="driverForm().pin" name="pin" required maxlength="4" class="w-full bg-gray-700 rounded p-2 text-white text-center tracking-widest">
+            </div>
+          }
+
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de Veículo</label>
             <select [(ngModel)]="driverForm().vehicle_type" name="vehicle_type" class="w-full bg-gray-700 rounded p-2 text-white">
@@ -78,21 +86,13 @@
               <input type="number" step="0.01" [(ngModel)]="driverForm().rate_per_km" name="rate_per_km" class="w-full bg-gray-700 rounded p-2 text-white">
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Vincular a Funcionário</label>
-            <select [(ngModel)]="driverForm().employee_id" name="employee_id" class="w-full bg-gray-700 rounded p-2 text-white">
-              <option [ngValue]="null">Nenhum (Entregador Externo)</option>
-              @for(employee of employees(); track employee.id) {
-                <option [value]="employee.id">{{ employee.name }}</option>
-              }
-            </select>
-          </div>
+
           <div class="flex items-center">
             <input type="checkbox" id="is_active" [(ngModel)]="driverForm().is_active" name="is_active" class="h-4 w-4 rounded border-gray-500 text-blue-600">
             <label for="is_active" class="ml-2 text-sm text-gray-200">Ativo</label>
           </div>
           <div class="pt-2 flex flex-col gap-2">
-            <button type="submit" [disabled]="!driverForm().name?.trim()" class="w-full px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+            <button type="submit" [disabled]="!driverForm().name?.trim() || (!editingDriver() && driverForm().pin?.length !== 4)" class="w-full px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
               Salvar
             </button>
             @if (editingDriver()) {
