@@ -86,7 +86,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   if (resource === 'orders') {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, delivery_status, delivery_driver_id, customers(name, phone), order_items(name, quantity)')
+      .select('id, delivery_status, delivery_driver_id, customers(name, phone, address, latitude, longitude), order_items(name, quantity)')
       .eq('user_id', restaurantId)
       .eq('order_type', 'External-Delivery')
       .in('status', ['OPEN']) // Only active orders
