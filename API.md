@@ -181,7 +181,8 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
     "name": "João Moto",
     "phone": "11988887777",
     "vehicle_type": "Moto",
-    "is_active": true
+    "is_active": true,
+    "employee_id": "uuid-do-funcionario-correspondente"
   }
 ]
 ```
@@ -198,8 +199,13 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
     "id": "uuid-do-pedido-1",
     "delivery_status": "READY_FOR_DISPATCH",
     "delivery_driver_id": null,
-    "customers": { "name": "Ana Cliente", "phone": "21912345678" },
-    "order_items": [ { "name": "Pizza Grande", "quantity": 1 } ]
+    "customer": { "name": "Ana Cliente", "phone": "21912345678", "address": "Rua..." },
+    "items": [ { "name": "Pizza Grande", "quantity": 1, "price": 55.00 } ],
+    "delivery_address": { "latitude": -22.9, "longitude": -43.2 },
+    "created_at": "...",
+    "total_amount": 55.00,
+    "delivery_fee": 7.00,
+    "payment_method": "Cartão de Crédito"
   }
 ]
 ```
@@ -225,14 +231,14 @@ Atualiza o status de um pedido.
 ---
 
 **Ação: `assign_driver`**
-Atribui um entregador a um pedido e o move para "Em Rota".
+Atribui um entregador (baseado no seu ID de funcionário) a um pedido e o move para "Em Rota".
 **Corpo da Requisição (JSON):**
 ```json
 {
   "restaurantId": "SEU_USER_ID_AQUI",
   "action": "assign_driver",
   "orderId": "uuid-do-pedido-pronto",
-  "driverId": "uuid-do-entregador"
+  "employeeId": "uuid-do-funcionario-entregador"
 }
 ```
 

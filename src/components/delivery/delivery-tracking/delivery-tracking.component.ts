@@ -4,7 +4,6 @@ import { DeliveryStateService } from '../../../services/delivery-state.service';
 import { SettingsStateService } from '../../../services/settings-state.service';
 import { DeliveryDriver } from '../../../models/db.models';
 import { supabase } from '../../../services/supabase-client';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 declare var L: any; // Declare Leaflet
 
@@ -25,7 +24,8 @@ export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef;
   private map: any;
   private driverMarkers = new Map<string, any>(); // Using 'any' for L.Marker
-  private channel: RealtimeChannel | null = null;
+  // FIX: The `RealtimeChannel` type is not exported in this version of the Supabase library. Using 'any'.
+  private channel: any | null = null;
   
   isLoadingMap = signal(true);
   selectedDriverId = signal<string | null>(null);

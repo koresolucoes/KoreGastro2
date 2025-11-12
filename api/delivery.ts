@@ -75,7 +75,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
   if (resource === 'drivers') {
     const { data, error } = await supabase
       .from('delivery_drivers')
-      .select('id, name, phone, vehicle_type, is_active')
+      .select('id, name, phone, vehicle_type, is_active, employee_id')
       .eq('user_id', restaurantId)
       .eq('is_active', true);
       
@@ -142,7 +142,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 }
 
 async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const { action, orderId, newStatus, driverId } = request.body;
+    const { action, orderId, newStatus, employeeId } = request.body;
 
     if (!orderId) {
         return response.status(400).json({ error: { message: '`orderId` is required in the request body.' } });
@@ -204,19 +204,19 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
         return response.status(200).json({ success: true, message: "Delivery status updated successfully." });
     
     } else if (effectiveAction === 'assign_driver') {
-        if (!driverId) {
-            return response.status(400).json({ error: { message: '`driverId` is required for action `assign_driver`.' } });
+        if (!employeeId) {
+            return response.status(400).json({ error: { message: '`employeeId` is required for action `assign_driver`.' } });
         }
 
         const { data: driver, error: driverError } = await supabase
             .from('delivery_drivers')
-            .select('base_rate, rate_per_km')
-            .eq('id', driverId)
+            .select('id, base_rate, rate_per_km')
+            .eq('employee_id', employeeId)
             .eq('user_id', restaurantId)
             .single();
 
         if (driverError || !driver) {
-            return response.status(404).json({ error: { message: `Driver with id "${driverId}" not found.` } });
+            return response.status(404).json({ error: { message: `Delivery driver associated with employee ID "${employeeId}" not found.` } });
         }
         
         const { data: order, error: orderError } = await supabase
@@ -235,7 +235,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
         const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
             .update({ 
-                delivery_driver_id: driverId, 
+                delivery_driver_id: driver.id, 
                 delivery_status: 'OUT_FOR_DELIVERY',
                 delivery_cost: deliveryCost
             })
@@ -255,7 +255,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
             await triggerWebhook(restaurantId, 'delivery.status_updated', {
                 orderId: updatedOrder.id,
                 status: 'OUT_FOR_DELIVERY',
-                driverId: driverId,
+                driverId: driver.id,
                 timestamp: new Date().toISOString(),
                 fullOrder: updatedOrder
             });
