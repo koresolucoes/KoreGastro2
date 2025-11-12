@@ -66,43 +66,6 @@ export class AppComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.handleTokenAuthenticationFromUrl();
-  }
-
-  private handleTokenAuthenticationFromUrl(): void {
-    // This logic only runs if not in demo mode.
-    if (this.isDemoMode()) return;
-    
-    // Pega o fragmento da URL (tudo depois do '#')
-    const hash = window.location.hash.substring(1);
-    if (!hash || !hash.includes('access_token')) return;
-
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const type = params.get('type'); // Supabase adds type=recovery for password resets
-
-    // Only proceed if it's a login flow (not a password recovery)
-    if (accessToken && refreshToken && type !== 'recovery') {
-      console.log('Tokens encontrados na URL. Tentando configurar a sessão...');
-      
-      (supabase.auth as any).setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      }).then(({ data, error }: { data: any, error: any }) => {
-        if (error) {
-          console.error('Erro ao configurar a sessão com tokens:', error);
-          // Clean the URL and let the user stay on the login screen if it fails
-          window.location.hash = '';
-          this.router.navigate(['/login']); 
-        } else if (data.session) {
-          console.log('Sessão configurada com sucesso!');
-          // Clean the URL and navigate to the main app page
-          window.location.hash = '';
-          // The auth guards will handle redirection from here, starting with employee selection
-          this.router.navigate(['/employee-selection']);
-        }
-      });
-    }
+    // The token authentication logic has been moved to index.tsx to run before bootstrap.
   }
 }
