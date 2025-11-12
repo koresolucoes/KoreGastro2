@@ -643,13 +643,40 @@ Authorization: Bearer SUA_CHAVE_DE_API_EXTERNA
 ```
 
 #### `POST /api/rh/ponto/bater-ponto`
-**Ação:** Registra um evento de ponto (entrada/saída/pausa).
-**Corpo da Requisição:** `{ "employeeId": "uuid-do-funcionario", "pin": "1234" }`
-**Respostas (200 OK):**
-- `{ "status": "TURNO_INICIADO", "employeeName": "Ana Gerente" }`
-- `{ "status": "PAUSA_INICIADA", "employeeName": "Ana Gerente" }`
-- `{ "status": "PAUSA_FINALIZADA", "employeeName": "Ana Gerente" }`
-- `{ "status": "TURNO_FINALIZADO", "employeeName": "Ana Gerente" }`
+**Ação:** Endpoint inteligente ("botão único") que gerencia todo o ciclo de trabalho de um funcionário: entrada, início/fim de pausa e saída. Ele funciona como uma máquina de estados, determinando a próxima ação com base no estado atual do turno do funcionário.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-user-id-aqui",
+  "employeeId": "uuid-do-funcionario",
+  "pin": "1234",
+  "latitude": -23.550520,
+  "longitude": -46.633308
+}
+```
+
+**Campos:**
+- `restaurantId` (string, **obrigatório**): ID do seu usuário/restaurante.
+- `employeeId` (string, **obrigatório**): ID do funcionário.
+- `pin` (string, **obrigatório**): PIN de 4 dígitos do funcionário.
+- `latitude` (number, **condicional**): Latitude do dispositivo do funcionário. Obrigatório apenas se o controle de ponto por geolocalização estiver ativado nas configurações da loja.
+- `longitude` (number, **condicional**): Longitude do dispositivo do funcionário. Obrigatório apenas se o controle de ponto por geolocalização estiver ativado.
+
+**Lógica de Geolocalização:**
+- Se a geolocalização estiver ativada em `Configurações > Loja e Assinatura`, a API calculará a distância entre as coordenadas fornecidas e as coordenadas do restaurante.
+- Se a distância for maior que o raio permitido, a API retornará um erro `403 Forbidden` com a mensagem `Você está muito longe do restaurante para bater o ponto.`
+
+**Respostas de Sucesso (200 OK):**
+- `{ "status": "TURNO_INICIADO", "employeeName": "Nome do Funcionário" }`
+- `{ "status": "PAUSA_INICIADA", "employeeName": "Nome do Funcionário" }`
+- `{ "status": "PAUSA_FINALIZADA", "employeeName": "Nome do Funcionário" }`
+- `{ "status": "TURNO_FINALIZADO", "employeeName": "Nome do Funcionário" }`
+
+**Respostas de Erro Comuns:**
+- `400 Bad Request`: Faltam campos obrigatórios (incluindo `latitude`/`longitude` quando a geolocalização está ativa).
+- `403 Forbidden`: PIN inválido (`Invalid PIN.`) ou funcionário fora do raio de geolocalização.
+- `404 Not Found`: `employeeId` não encontrado.
 
 #### `POST /api/rh/ponto` (Ajuste Manual)
 **Ação:** Adiciona um registro de ponto manualmente.
