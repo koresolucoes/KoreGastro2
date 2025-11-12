@@ -1,3 +1,4 @@
+
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -42,7 +43,7 @@ export const APP_ROUTES: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'demo', component: DemoAccessComponent },
   { path: 'employee-selection', component: EmployeeSelectionComponent, canActivate: [authGuard] },
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [roleGuard] },
   { path: 'my-profile', component: MyProfileComponent, canActivate: [roleGuard] },
   { path: 'pos', component: PosComponent, canActivate: [roleGuard] },
