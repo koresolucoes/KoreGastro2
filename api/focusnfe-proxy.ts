@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Buffer } from 'buffer';
@@ -179,6 +180,8 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string 
         }))
     };
     
+    console.log('[API /focusnfe-proxy] JSON payload for NFC-e emission:\n', JSON.stringify(nfcePayload, null, 2));
+    
     await supabase.from('orders').update({ nfce_ref: orderId }).eq('id', orderId);
 
     const response = await callFocusNFeApi('POST', `/v2/nfce?ref=${orderId}`, token, nfcePayload, focusNFeHomologacaoUrl);
@@ -235,6 +238,8 @@ async function handleConsultarCnpj(res: VercelResponse, token: string | null, pa
 
 async function callFocusNFeApi(method: 'GET' | 'POST' | 'PUT' | 'DELETE', endpoint: string, token: string, body?: any, baseUrl: string = focusNFeHomologacaoUrl): Promise<any> {
     const url = `${baseUrl}${endpoint}`;
+    console.log(`[API /focusnfe-proxy] Calling FocusNFe Endpoint: ${method} ${url}`);
+    
     const encodedToken = Buffer.from(`${token}:`).toString('base64');
 
     const options: RequestInit = {

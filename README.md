@@ -77,6 +77,12 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Gestão de Caixa:** Registre despesas, confira o saldo e realize o fechamento de caixa detalhado, que compara o valor esperado com o contado e gera um resumo para impressão.
 - **Reimpressão:** Acesse o histórico de vendas do dia para reimprimir recibos ou conferir detalhes de um pedido.
 
+### 🧾 **Emissão Fiscal (NFC-e)**
+- **Integração com FocusNFe:** Emissão de Nota Fiscal de Consumidor Eletrônica (NFC-e) de forma integrada e automatizada através da API da FocusNFe.
+- **Emissão Pós-Venda:** Após finalizar uma venda no caixa, a opção de emitir a NFC-e fica disponível na tela de "Vendas Finalizadas", simplificando o fluxo fiscal.
+- **Gestão Completa de Documentos:** Acompanhe o status de cada nota (`autorizado`, `cancelado`, `erro`) diretamente na interface. Visualize o DANFE (Documento Auxiliar da NFC-e), envie por e-mail ou cancele notas autorizadas com justificativa.
+- **Configuração Simplificada:** No painel de `Configurações > Módulos e Integrações`, o gestor pode configurar o token da API da FocusNFe e fazer o upload seguro do Certificado Digital A1 (arquivo `.pfx`) com sua senha, deixando o sistema pronto para emitir.
+
 ### 📦 **Estoque e Compras**
 - **Controle de Insumos:** Gerencie todos os seus ingredientes, custos, unidades, fornecedores e categorias.
 - **Alertas Automatizados:** O dashboard sinaliza itens com estoque baixo, próximos ao vencimento ou parados há muito tempo.
@@ -138,6 +144,10 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 Para continuar evoluindo o ChefOS, planejamos implementar novas funcionalidades focadas em aumentar a lucratividade, eficiência e a experiência do cliente.
 
 ### 🎯 Alta Prioridade (Foco em Core Business e Lucratividade)
+
+*   **Módulo Fiscal Avançado:**
+    *   **Emissão de NF-e (modelo 55):** Suporte para emissão de Nota Fiscal Eletrônica para vendas entre empresas (B2B), devoluções ou transferências.
+    *   **Relatórios Fiscais:** Geração de relatórios essenciais para a contabilidade, como espelho de notas emitidas e preparação para o SPED Fiscal.
 
 *   **Melhorias na Integração de Delivery:**
     *   **Integração com outros Marketplaces:** Suporte para Rappi e outras plataformas de delivery.
