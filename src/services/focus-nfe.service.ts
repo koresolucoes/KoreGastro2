@@ -52,9 +52,6 @@ export class FocusNFeService {
     }
   }
 
-  // FIX: Updated the return type to include the 'data' object, which is returned
-  // by the proxy and contains the certificate's validity date. This resolves
-  // the TypeScript error in the calling component.
   async saveTokenAndCertificate(
     token: string,
     certificateFile: File | null,
@@ -81,6 +78,10 @@ export class FocusNFeService {
 
   async cancelNfce(orderId: string, justification: string): Promise<{ success: boolean, error?: any, data?: any }> {
     return this.proxyRequest('cancel_nfce', { orderId, justification });
+  }
+
+  async consultarCnpj(cnpj: string): Promise<{ success: boolean; error?: any; data?: any }> {
+    return this.proxyRequest('consultar_cnpj', { cnpj });
   }
 
   private fileToBase64(file: File): Promise<string> {

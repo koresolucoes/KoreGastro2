@@ -22,8 +22,17 @@
         <input type="text" [value]="companyProfileForm().company_name || ''" (input)="updateCompanyProfileField('company_name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
     </div>
     <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
-        <input type="text" [value]="companyProfileForm().cnpj || ''" (input)="updateCompanyProfileField('cnpj', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+      <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ</label>
+      <div class="flex items-center gap-2">
+        <input type="text" [value]="companyProfileForm().cnpj || ''" (input)="updateCompanyProfileField('cnpj', $any($event.target).value)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="00.000.000/0000-00">
+        <button (click)="consultarCnpj()" [disabled]="!isCnpjValid() || isConsultingCnpj()" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed h-[42px] w-[42px] flex items-center justify-center flex-shrink-0">
+            @if(isConsultingCnpj()) {
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            } @else {
+                <span class="material-symbols-outlined text-base">search</span>
+            }
+        </button>
+      </div>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>

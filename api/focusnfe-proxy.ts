@@ -7,7 +7,7 @@ import { Order, CompanyProfile, Recipe, Transaction } from '../src/models/db.mod
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 const focusNFeBaseUrl = 'https://homologacao.focusnfe.com.br'; // Use 'https://api.focusnfe.com.br' for production
 
-type FocusNFeAction = 'save_settings' | 'emit_nfce' | 'cancel_nfce';
+type FocusNFeAction = 'save_settings' | 'emit_nfce' | 'cancel_nfce' | 'consultar_cnpj';
 
 // --- Main Handler ---
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -56,6 +56,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
              case 'cancel_nfce':
                 await handleCancelNfce(res, restaurantId, profile.focusnfe_token, payload);
+                break;
+            case 'consultar_cnpj':
+                await handleConsultarCnpj(res, profile.focusnfe_token, payload);
                 break;
             default:
                 return res.status(400).json({ error: { message: `Unknown action: ${action}` } });
@@ -108,7 +111,6 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string,
     const [orderRes, recipesRes, transactionsRes] = await Promise.all([
         supabase.from('orders').select('*, customers(cpf)').eq('id', orderId).single(),
         supabase.from('recipes').select('id, ncm_code').eq('user_id', userId),
-        // FIX: Replaced invalid .eq() with 3 arguments with the correct .like() filter.
         supabase.from('transactions').select('description, amount').like('description', `%Pedido #${orderId.slice(0,8)}%`).eq('type', 'Receita')
     ]);
 
@@ -192,6 +194,19 @@ async function handleCancelNfce(res: VercelResponse, userId: string, token: stri
     
     await supabase.from('orders').update(updatePayload).eq('id', orderId);
 
+    return res.status(200).json({ data: response });
+}
+
+async function handleConsultarCnpj(res: VercelResponse, token: string | null, payload: any) {
+    if (!token) throw new Error('FocusNFe Token not configured.');
+    const { cnpj } = payload;
+    if (!cnpj || typeof cnpj !== 'string') throw new Error('`cnpj` is required.');
+
+    const sanitizedCnpj = cnpj.replace(/[^\d]/g, '');
+    if (sanitizedCnpj.length !== 14) throw new Error('Invalid CNPJ format. It must have 14 digits.');
+
+    const response = await callFocusNFeApi('GET', `/v2/cnpjs/${sanitizedCnpj}`, token);
+    
     return res.status(200).json({ data: response });
 }
 
