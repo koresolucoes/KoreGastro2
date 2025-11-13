@@ -108,6 +108,27 @@
       </button>
     </div>
   </div>
+
+  <!-- Card: NFC-e Integration -->
+  <div class="bg-gray-900/50 rounded-lg p-6 flex flex-col border border-gray-700">
+    <div class="flex-grow">
+      <div class="flex items-start gap-4">
+        <div class="p-2 bg-gray-700/50 rounded-lg">
+          <span class="material-symbols-outlined text-2xl text-green-400">receipt_long</span>
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold text-white">Emissão Fiscal (NFC-e)</h2>
+          <p class="text-sm text-gray-400 mt-1">Integre com a FocusNFe para emitir notas fiscais de consumidor.</p>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-700/50 flex justify-end">
+      <button (click)="isFocusNFeModalOpen.set(true)" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+        Configurar
+      </button>
+    </div>
+  </div>
+
 </div>
 
 
@@ -369,6 +390,42 @@
       </div>
       <div class="p-4 bg-gray-700/50 flex justify-end">
           <button (click)="saveReservationSettings(); isReservationModalOpen.set(false)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar e Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- FocusNFe Modal -->
+@if(isFocusNFeModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isFocusNFeModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Configuração de Emissão Fiscal (NFC-e)</h3></div>
+      <div class="p-6 space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">CNPJ do Emitente</label>
+            <input type="text" readonly [value]="companyProfileForm().cnpj || 'Preencha em Dados da Empresa'" class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Token da API FocusNFe *</label>
+            <input type="password" [value]="focusNFeToken()" (input)="focusNFeToken.set($any($event.target).value)" placeholder="Cole seu token de produção aqui" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+         <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Certificado Digital A1 (.pfx)</label>
+            <input type="file" (change)="handleFocusNFeCertFileChange($event)" accept=".pfx,.p12" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+             @if (focusNFeCertFileName()) {
+                <p class="text-xs text-gray-500 mt-1">Arquivo selecionado: {{ focusNFeCertFileName() }}</p>
+            }
+        </div>
+         <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Senha do Certificado *</label>
+            <input type="password" [value]="focusNFeCertPassword()" (input)="focusNFeCertPassword.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="isFocusNFeModalOpen.set(false)" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+         <button (click)="saveFocusNFeSettings()" [disabled]="isSavingFocusNFe()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+           @if(isSavingFocusNFe()) { <span>Salvando...</span> } @else { <span>Salvar</span> }
+         </button>
       </div>
     </div>
   </div>

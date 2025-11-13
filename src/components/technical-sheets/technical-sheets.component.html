@@ -132,12 +132,16 @@
                   <input id="recipe-image-upload" type="file" class="hidden" (change)="handleRecipeImageChange($event)" accept="image/png, image/jpeg, image/webp">
               </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1">Preço Venda</label>
                 <input type="number" [value]="recipeForm().recipe.price ?? 0" (input)="updateRecipeField('price', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
               </div>
               <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Cód. NCM</label>
+                <input type="text" [value]="recipeForm().recipe.ncm_code || ''" (input)="updateRecipeField('ncm_code', $any($event.target).value)" placeholder="8 dígitos" maxlength="8" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div class="md:col-span-1">
                 <label class="block text-sm font-medium text-gray-300 mb-1">Categoria PDV</label>
                 <div class="flex gap-2">
                     <select [value]="recipeForm().recipe.category_id || ''" (change)="updateRecipeField('category_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">

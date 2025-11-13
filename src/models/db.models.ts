@@ -232,6 +232,7 @@ export interface Recipe {
   image_url: string | null;
   operational_cost?: number;
   external_code: string | null;
+  ncm_code?: string | null;
   created_at: string;
   user_id: string;
   hasStock?: boolean; // App-level property
@@ -300,6 +301,14 @@ export interface Order {
   delivery_drivers?: DeliveryDriver; // Relation
   delivery_distance_km?: number | null;
   delivery_cost?: number | null;
+
+  // NFC-e fields
+  nfce_ref?: string | null;
+  nfce_status?: string | null;
+  nfce_url?: string | null;
+  nfce_xml_path?: string | null;
+  nfce_chave?: string | null;
+  nfce_last_response?: any | null; // JSONB
 }
 
 export interface OrderItem {
@@ -544,6 +553,8 @@ export interface CompanyProfile {
   latitude: number | null;
   longitude: number | null;
   time_clock_radius: number | null;
+  focusnfe_token?: string | null;
+  focusnfe_cert_valid_until?: string | null;
 }
 
 // --- Loyalty Program ---

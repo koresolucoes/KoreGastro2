@@ -1,6 +1,3 @@
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +28,7 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
     is_sub_recipe: false,
     source_ingredient_id: null,
     external_code: null,
+    ncm_code: null,
   },
   preparations: [],
   ingredients: [],

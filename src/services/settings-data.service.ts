@@ -151,6 +151,16 @@ export class SettingsDataService {
     return { success: true, error: null, data: { external_api_key: data } };
   }
 
+  async updateFocusNFeToken(token: string, validUntil: string | null): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { error } = await supabase
+      .from('company_profile')
+      .update({ focusnfe_token: token, focusnfe_cert_valid_until: validUntil })
+      .eq('user_id', userId);
+    return { success: !error, error };
+  }
+
   // --- Roles and Permissions ---
   async addRole(name: string): Promise<{ success: boolean, error: any, data?: Role }> {
     const userId = this.authService.currentUser()?.id;
