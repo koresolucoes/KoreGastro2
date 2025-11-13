@@ -205,9 +205,26 @@ async function handleConsultarCnpj(res: VercelResponse, token: string | null, pa
     const sanitizedCnpj = cnpj.replace(/[^\d]/g, '');
     if (sanitizedCnpj.length !== 14) throw new Error('Invalid CNPJ format. It must have 14 digits.');
 
-    const response = await callFocusNFeApi('GET', `/v2/cnpjs/${sanitizedCnpj}`, token);
+    // FIX: The CNPJ consultation endpoint uses the production URL, not the homologation one.
+    const url = `https://api.focusnfe.com.br/v2/cnpjs/${sanitizedCnpj}`;
+    const encodedToken = Buffer.from(`${token}:`).toString('base64');
+
+    const apiResponse = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Basic ${encodedToken}`,
+        },
+    });
+
+    const responseBody = await apiResponse.json();
+
+    if (!apiResponse.ok) {
+        console.error(`FocusNFe CNPJ API Error (${apiResponse.status}):`, responseBody);
+        const errorMessage = responseBody.mensagem || responseBody.message || 'Erro ao consultar CNPJ na FocusNFe.';
+        throw new Error(errorMessage);
+    }
     
-    return res.status(200).json({ data: response });
+    return res.status(200).json({ data: responseBody });
 }
 
 // --- Helpers ---
