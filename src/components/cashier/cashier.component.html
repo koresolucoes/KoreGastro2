@@ -2,7 +2,7 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
     <h1 class="text-3xl font-bold text-white">Caixa</h1>
     <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
-      <button (click)="view.set('payingTables')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'">Mesas p/ Pagar</button>
+      <button (click)="view.set('payingTables')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'">Mesas p/ Cobrar</button>
       <button (click)="view.set('quickSale')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'">Venda Rápida</button>
       <button (click)="view.set('cashDrawer')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'">Fechamento de Caixa</button>
       <button (click)="view.set('reprint')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'reprint'" [class.text-white]="view() === 'reprint'">Vendas Finalizadas</button>
@@ -35,7 +35,7 @@
                       </div>
                       <!-- Buttons visible only on medium screens and up -->
                       <div class="hidden md:flex flex-col gap-2 mt-2">
-                          <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="w-full text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Pagar</button>
+                          <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="w-full text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Cobrar</button>
                           <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="w-full text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
                           <button (click)="$event.stopPropagation(); reopenTable(table)" class="w-full text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
                       </div>
@@ -307,12 +307,16 @@
                         <!-- NFC-e Status & Actions (Mobile) -->
                         <div class="flex flex-col gap-2">
                             @if (!order.nfce_status) {
-                                <button (click)="emitNfce(order)" class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Emitir NFC-e</button>
+                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-600 flex items-center justify-center">
+                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> } @else { <span>Emitir NFC-e</span> }
+                                </button>
                             } @else if (order.nfce_status === 'autorizado') {
                                 <span class="text-sm font-semibold text-green-400 text-center">NFC-e Autorizada</span>
                                 <div class="grid grid-cols-2 gap-2">
                                     <button (click)="viewDanfe(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Ver DANFE</button>
-                                    <button (click)="cancelNfce(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-red-800 hover:bg-red-700 text-white">Cancelar</button>
+                                    <button (click)="cancelNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-4 py-2 text-xs font-medium rounded-lg bg-red-800 hover:bg-red-700 text-white disabled:bg-gray-600 flex items-center justify-center">
+                                       @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> } @else { <span>Cancelar</span> }
+                                    </button>
                                 </div>
                             } @else if (order.nfce_status === 'cancelado') {
                                 <span class="text-sm font-semibold text-gray-400 text-center">NFC-e Cancelada</span>
@@ -320,7 +324,9 @@
                                 <span class="text-sm font-semibold text-red-400 text-center">Erro na NFC-e</span>
                                 <div class="grid grid-cols-2 gap-2">
                                     <button (click)="viewNfceError(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Ver Erro</button>
-                                    <button (click)="emitNfce(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Reenviar</button>
+                                    <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 flex items-center justify-center">
+                                      @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> } @else { <span>Reenviar</span> }
+                                    </button>
                                 </div>
                             }
                         </div>
@@ -357,7 +363,9 @@
                         <td class="px-6 py-4 text-right font-semibold">{{ getOrderTotal(order) | currency:'BRL' }}</td>
                         <td class="px-6 py-4 text-center">
                             @if (!order.nfce_status) {
-                                <button (click)="emitNfce(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white">Emitir</button>
+                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 w-20 text-center">
+                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Emitir</span> }
+                                </button>
                             } @else if (order.nfce_status === 'autorizado') {
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300">Autorizada</span>
                             } @else if (order.nfce_status === 'cancelado') {
@@ -372,9 +380,14 @@
                           <div class="flex justify-center items-center gap-2">
                              @if (order.nfce_status === 'autorizado') {
                                 <button (click)="viewDanfe(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">DANFE</button>
-                                <button (click)="cancelNfce(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-red-800 hover:bg-red-700 text-white">Cancelar</button>
+                                <button (click)="cancelNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-red-800 hover:bg-red-700 text-white disabled:bg-gray-600 w-20 text-center">
+                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Cancelar</span> }
+                                </button>
                             } @else if (order.nfce_status === 'erro_autorizacao') {
                                 <button (click)="viewNfceError(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Ver Erro</button>
+                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 w-20 text-center">
+                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Reenviar</span> }
+                                </button>
                             }
                             <button (click)="openDetailsModal(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Detalhes</button>
                             <button (click)="reprintReceipt(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Recibo</button>
@@ -581,7 +594,7 @@
       </div>
       <div class="p-4 space-y-3">
         <button (click)="openPaymentForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-3 transition-colors">
-          Pagar Conta
+          Cobrar Conta
         </button>
         <button (click)="openPreBillForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-blue-600 text-white hover:bg-blue-500 rounded-md py-3 transition-colors">
           Gerar Pré-conta

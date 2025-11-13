@@ -6,6 +6,7 @@ import { PrintingService } from '../../../services/printing.service';
 import { NotificationService } from '../../../services/notification.service';
 import { RedeemRewardModalComponent } from '../../shared/redeem-reward-modal/redeem-reward-modal.component';
 import { v4 as uuidv4 } from 'uuid';
+import { FocusNFeService } from '../../../services/focus-nfe.service';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -29,6 +30,7 @@ export class PaymentModalComponent {
   posDataService = inject(PosDataService);
   printingService = inject(PrintingService);
   notificationService = inject(NotificationService);
+  focusNFeService = inject(FocusNFeService);
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -42,6 +44,7 @@ export class PaymentModalComponent {
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
   isRedeemModalOpen = signal(false);
+  isEmittingNfce = signal(false);
 
   // Discount Modal State
   isDiscountModalOpen = signal(false);
@@ -314,5 +317,28 @@ export class PaymentModalComponent {
     const { success, error } = await this.posDataService.applyDiscountToOrderItems([item.id], null, null);
     if (success) this.closeDiscountModal();
     else await this.notificationService.alert(`Erro ao remover desconto: ${error?.message}`);
+  }
+  
+  async emitNfce() {
+    const order = this.order();
+    if (!order) return;
+
+    this.isEmittingNfce.set(true);
+
+    const { success, error, data } = await this.focusNFeService.emitNfce(order.id);
+
+    if (success) {
+        if (data.status === 'autorizado') {
+            this.notificationService.show('NFC-e autorizada com sucesso!', 'success');
+        } else {
+            const statusMessage = data.mensagem_sefaz || data.status;
+            this.notificationService.show(`Status NFC-e: ${statusMessage}`, 'info');
+        }
+    } else {
+        const errorMessage = (error as any)?.message || 'Erro desconhecido.';
+        await this.notificationService.alert(`Falha ao emitir NFC-e: ${errorMessage}`, 'Erro');
+    }
+
+    this.isEmittingNfce.set(false);
   }
 }

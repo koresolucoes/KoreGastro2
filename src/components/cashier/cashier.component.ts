@@ -10,6 +10,7 @@ import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.c
 import { NotificationService } from '../../services/notification.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
+import { FocusNFeService } from '../../services/focus-nfe.service';
 
 // Import new state services
 import { RecipeStateService } from '../../services/recipe-state.service';
@@ -50,6 +51,7 @@ export class CashierComponent {
   printingService = inject(PrintingService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
+  focusNFeService = inject(FocusNFeService);
 
   // Inject new state services
   recipeState = inject(RecipeStateService);
@@ -90,6 +92,8 @@ export class CashierComponent {
   completedOrdersSearchTerm = signal('');
   isFetchingCompletedOrders = signal(false);
   completedOrdersForPeriod = signal<Order[]>([]);
+  processingNfceOrders = signal<Set<string>>(new Set());
+
 
   // --- Paying Tables Signals ---
   tablesForPayment = computed(() => this.posState.tables().filter(t => t.status === 'PAGANDO'));
@@ -609,5 +613,76 @@ export class CashierComponent {
 
   closeDetailsModal() {
     this.isDetailsModalOpen.set(false);
+  }
+
+  async emitNfce(order: Order) {
+    if (!order.id) return;
+    const confirmed = await this.notificationService.confirm(
+      `Deseja emitir a NFC-e para o pedido #${order.id.slice(0, 8)}?`,
+      'Confirmar Emissão'
+    );
+    if (!confirmed) return;
+
+    this.processingNfceOrders.update(set => new Set(set).add(order.id));
+    const { success, error, data } = await this.focusNFeService.emitNfce(order.id);
+    if (success) {
+      if (data.status === 'autorizado') {
+        this.notificationService.show('NFC-e autorizada com sucesso!', 'success');
+      } else {
+        const statusMessage = data.mensagem_sefaz || data.status;
+        this.notificationService.show(`Status NFC-e: ${statusMessage}`, 'info');
+      }
+    } else {
+      const errorMessage = (error as any)?.message || 'Erro desconhecido.';
+      await this.notificationService.alert(`Falha ao emitir NFC-e: ${errorMessage}`, 'Erro');
+    }
+    this.processingNfceOrders.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(order.id);
+      return newSet;
+    });
+  }
+
+  viewDanfe(order: Order) {
+    if (order.nfce_url) {
+      window.open(order.nfce_url, '_blank');
+    }
+  }
+
+  async cancelNfce(order: Order) {
+    const { confirmed, value: justification } = await this.notificationService.prompt(
+      'Insira uma justificativa para o cancelamento (mínimo 15 caracteres).',
+      'Cancelar NFC-e',
+      { inputType: 'textarea', confirmText: 'Confirmar Cancelamento' }
+    );
+    if (!confirmed || !justification || justification.trim().length < 15) {
+      if (confirmed) {
+        this.notificationService.show('A justificativa é obrigatória e deve ter no mínimo 15 caracteres.', 'warning');
+      }
+      return;
+    }
+    this.processingNfceOrders.update(set => new Set(set).add(order.id));
+    const { success, error, data } = await this.focusNFeService.cancelNfce(order.id, justification);
+    if (success) {
+      if (data.status === 'cancelado') {
+        this.notificationService.show('NFC-e cancelada com sucesso!', 'success');
+      } else {
+        this.notificationService.show(`Status: ${data.mensagem_sefaz || data.status}`, 'info');
+      }
+    } else {
+      const errorMessage = (error as any)?.message || 'Erro desconhecido.';
+      await this.notificationService.alert(`Falha ao cancelar NFC-e: ${errorMessage}`, 'Erro');
+    }
+    this.processingNfceOrders.update(set => {
+      const newSet = new Set(set);
+      newSet.delete(order.id);
+      return newSet;
+    });
+  }
+
+  async viewNfceError(order: Order) {
+    const errorDetails = order.nfce_last_response as any;
+    const message = errorDetails?.mensagem_sefaz || JSON.stringify(errorDetails, null, 2);
+    await this.notificationService.alert(message, 'Erro de Autorização da SEFAZ');
   }
 }
