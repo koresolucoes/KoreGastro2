@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { SettingsStateService } from './settings-state.service';
@@ -51,11 +52,14 @@ export class FocusNFeService {
     }
   }
 
+  // FIX: Updated the return type to include the 'data' object, which is returned
+  // by the proxy and contains the certificate's validity date. This resolves
+  // the TypeScript error in the calling component.
   async saveTokenAndCertificate(
     token: string,
     certificateFile: File | null,
     certificatePass: string
-  ): Promise<{ success: boolean, error?: any }> {
+  ): Promise<{ success: boolean; error?: any; data?: { message: string, cert_valid_until: string | null } }> {
     
     let certificateBase64: string | null = null;
     if (certificateFile) {

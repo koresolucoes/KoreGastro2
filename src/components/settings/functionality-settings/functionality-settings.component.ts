@@ -9,6 +9,7 @@ import { ReservationDataService } from '../../../services/reservation-data.servi
 import { RecipeStateService } from '../../../services/recipe-state.service';
 import { SettingsStateService } from '../../../services/settings-state.service';
 import { DemoService } from '../../../services/demo.service';
+import { FocusNFeService } from '../../../services/focus-nfe.service';
 
 @Component({
   selector: 'app-functionality-settings',
@@ -25,6 +26,7 @@ export class FunctionalitySettingsComponent {
   private recipeState = inject(RecipeStateService);
   private settingsState = inject(SettingsStateService);
   private demoService = inject(DemoService);
+  private focusNFeService = inject(FocusNFeService);
 
   // Data Signals
   reservationSettings = this.settingsState.reservationSettings;
@@ -43,6 +45,7 @@ export class FunctionalitySettingsComponent {
   isApiModalOpen = signal(false);
   isLoyaltyModalOpen = signal(false);
   isReservationModalOpen = signal(false);
+  isFocusNFeModalOpen = signal(false);
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});
@@ -73,6 +76,13 @@ export class FunctionalitySettingsComponent {
   ];
   webhookToDelete = signal<Webhook | null>(null);
   newWebhookSecret = signal<string | null>(null);
+
+  // FocusNFe Modal State
+  isSavingFocusNFe = signal(false);
+  focusNFeToken = signal('');
+  focusNFeCertFile = signal<File | null>(null);
+  focusNFeCertPassword = signal('');
+  focusNFeCertFileName = computed(() => this.focusNFeCertFile()?.name);
 
   publicMenuUrl = computed(() => {
     const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
@@ -121,6 +131,7 @@ export class FunctionalitySettingsComponent {
         const profile = this.companyProfile();
         if (profile) {
             this.companyProfileForm.set({ ...profile });
+            this.focusNFeToken.set(profile.focusnfe_token || '');
         }
     });
 
@@ -326,5 +337,55 @@ export class FunctionalitySettingsComponent {
       if (!success) this.notificationService.show(`Erro: ${error?.message}`, 'error');
       this.webhookToDelete.set(null);
     }
+  }
+
+  // --- FocusNFe Methods ---
+  handleFocusNFeCertFileChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+        this.focusNFeCertFile.set(file);
+    }
+  }
+
+  async saveFocusNFeSettings() {
+    this.isSavingFocusNFe.set(true);
+    const token = this.focusNFeToken().trim();
+    const certFile = this.focusNFeCertFile();
+    const certPass = this.focusNFeCertPassword();
+
+    if (!token) {
+        this.notificationService.show('O token da API FocusNFe é obrigatório.', 'warning');
+        this.isSavingFocusNFe.set(false);
+        return;
+    }
+
+    if (certFile && !certPass) {
+        this.notificationService.show('A senha do certificado é obrigatória ao enviar um novo arquivo.', 'warning');
+        this.isSavingFocusNFe.set(false);
+        return;
+    }
+
+    const { success, error, data } = await this.focusNFeService.saveTokenAndCertificate(
+        token,
+        certFile,
+        certPass
+    );
+    
+    if (success) {
+        this.notificationService.show('Configurações fiscais salvas com sucesso!', 'success');
+        this.settingsState.companyProfile.update(profile => {
+            if (!profile) return null;
+            const updatedProfile: CompanyProfile = { ...profile, focusnfe_token: token };
+            if (data?.cert_valid_until) {
+                updatedProfile.focusnfe_cert_valid_until = data.cert_valid_until;
+            }
+            return updatedProfile;
+        });
+        this.isFocusNFeModalOpen.set(false);
+    } else {
+        this.notificationService.show(`Erro ao salvar: ${(error as any)?.message || 'Erro desconhecido'}`, 'error');
+    }
+
+    this.isSavingFocusNFe.set(false);
   }
 }
