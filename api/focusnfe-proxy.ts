@@ -88,12 +88,37 @@ async function handleSaveSettings(res: VercelResponse, userId: string, currentTo
 
     let certValidUntil: string | null = null;
     if (certificateBase64 && certificatePassword) {
+        // FIX: The certificate management endpoint operates on the production URL, not homologation.
+        const url = 'https://api.focusnfe.com.br/v2/certificates';
+        const encodedToken = Buffer.from(`${tokenToUse}:`).toString('base64');
+
         const certPayload = {
             "arquivo_certificado_base64": certificateBase64,
             "senha_certificado": certificatePassword
         };
-        const response = await callFocusNFeApi('POST', '/v2/certificates', tokenToUse, certPayload);
-        certValidUntil = response.validade; // Assuming 'validade' is the field from FocusNFe
+
+        const apiResponse = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${encodedToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(certPayload)
+        });
+        
+        // The response might be empty on success (e.g., 201 Created), or contain data.
+        const responseBodyText = await apiResponse.text();
+        const responseBody = responseBodyText ? JSON.parse(responseBodyText) : null;
+
+        if (!apiResponse.ok) {
+            console.error(`FocusNFe Certificate API Error (${apiResponse.status}):`, responseBody);
+            // Try to parse a more specific error message from FocusNFe's response
+            const errorMessage = responseBody?.mensagem_sefaz || responseBody?.mensagem || responseBody?.erros?.[0]?.mensagem || JSON.stringify(responseBody) || `HTTP error ${apiResponse.status}`;
+            throw new Error(`Erro na API FocusNFe: ${errorMessage}`);
+        }
+        
+        // The /v2/empresas endpoint returns 'certificado_valido_ate'. It's likely this endpoint does too.
+        certValidUntil = responseBody?.certificado_valido_ate || responseBody?.validade || null;
         await supabase.from('company_profile').update({ focusnfe_cert_valid_until: certValidUntil }).eq('user_id', userId);
     }
 
