@@ -1,6 +1,7 @@
 
 
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -279,16 +280,24 @@ export class PurchasingComponent implements OnInit {
             const newForm: Partial<Ingredient> = { ...form };
             
             switch (field) {
-                case 'stock':
-                case 'cost':
+                case 'stock': {
+                    const numValue = parseFloat(value);
+                    newForm.stock = isNaN(numValue) ? 0 : numValue;
+                    break;
+                }
+                case 'cost': {
+                    const numValue = parseFloat(value);
+                    newForm.cost = isNaN(numValue) ? 0 : numValue;
+                    break;
+                }
                 case 'min_stock': {
                     const numValue = parseFloat(value);
-                    newForm[field] = isNaN(numValue) ? 0 : numValue;
+                    newForm.min_stock = isNaN(numValue) ? 0 : numValue;
                     break;
                 }
                 case 'price': {
                     const numValue = parseFloat(value);
-                    newForm[field] = isNaN(numValue) ? null : numValue;
+                    newForm.price = isNaN(numValue) ? null : numValue;
                     break;
                 }
                 case 'is_sellable':
@@ -301,14 +310,28 @@ export class PurchasingComponent implements OnInit {
                     newForm.unit = value as IngredientUnit;
                     break;
                 case 'category_id':
+                    newForm.category_id = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'supplier_id':
+                    newForm.supplier_id = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'pos_category_id':
+                    newForm.pos_category_id = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'station_id':
+                    newForm.station_id = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'proxy_recipe_id':
+                    newForm.proxy_recipe_id = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'external_code':
+                    newForm.external_code = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'expiration_date':
+                    newForm.expiration_date = (value === 'null' || value === '') ? null : value;
+                    break;
                 case 'last_movement_at':
-                    newForm[field] = (value === 'null' || value === '') ? null : value;
+                    newForm.last_movement_at = (value === 'null' || value === '') ? null : value;
                     break;
                 default: {
                     const _exhaustiveCheck: never = field;

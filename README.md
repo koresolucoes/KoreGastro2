@@ -12,7 +12,7 @@ ChefOS é uma plataforma de gestão completa, com versões disponíveis para **W
 
 Para começar a usar, testar o sistema ou baixar os aplicativos, acesse nosso site oficial:
 
-**[https://chefos.koresolucoes.com.br](https://chefos.koresolucoes.com.br)**
+**[https://chefos.shop](https://chefos.shop)**
 
 ### Como Começar:
 
