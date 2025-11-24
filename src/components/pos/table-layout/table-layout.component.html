@@ -1,5 +1,6 @@
 
 
+
 @if (!isEditMode()) {
   <!-- ======================= -->
   <!--      DISPLAY MODE       -->
@@ -17,7 +18,7 @@
         <span class="text-3xl font-bold">{{ table.number }}</span>
         <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
         @if (table.status !== 'LIVRE') {
-          <span class="text-xs text-gray-400 truncate mt-1">{{ getEmployeeName(table) }}</span>
+          <span class="w-full text-center text-xs text-gray-400 truncate mt-1">{{ getEmployeeName(table) }}</span>
         }
       </div>
     }
@@ -41,7 +42,7 @@
         <span class="text-2xl font-bold">{{ table.number }}</span>
         <span class="text-xs uppercase">{{ table.status }}</span>
         @if (table.status !== 'LIVRE') {
-          <span class="text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
+          <span class="w-full text-center text-xs text-gray-400 truncate">{{ getEmployeeName(table) }}</span>
         }
       </div>
     }
