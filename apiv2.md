@@ -15,7 +15,7 @@ A URL base para todas as chamadas da API V2 é: `https://gastro.koresolucoes.com
 ### Autenticação
 - Todas as requisições para a API V2 devem ser autenticadas.
 - A autenticação é feita via **Bearer Token** no cabeçalho `Authorization`.
-- O `restaurantId` (ID do usuário) deve ser enviado no corpo (`body`) de requisições `POST` e `PATCH`, ou como parâmetro de query (`query parameter`) em requisições `GET` e `DELETE`.
+- O `restaurantId` (ID do usuário) deve ser enviado no corpo (`body`) de requisições `POST` e `PATCH`, ou como um parâmetro de query (`query parameter`) em requisições `GET` e `DELETE`.
 
 **Exemplo de Cabeçalho:**
 ```
@@ -56,51 +56,37 @@ Lista todos os salões do restaurante.
     "name": "Salão Principal",
     "user_id": "seu-restaurant-id",
     "created_at": "..."
-  },
-  {
-    "id": "uuid-do-salao-2",
-    "name": "Varanda",
-    "user_id": "seu-restaurant-id",
-    "created_at": "..."
   }
 ]
 ```
 
 ---
 
-#### `GET /api/v2/halls/{hallId}`
+#### `GET /api/v2/halls?id={hallId}`
 Obtém os detalhes de um salão específico.
-
-**Parâmetros de Path:**
-- `hallId` (string, **obrigatório**): O UUID do salão.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
-
-**Exemplo de Requisição:** `GET /api/v2/halls/uuid-do-salao-1?restaurantId=...`
+- `id` (string, **obrigatório**): O UUID do salão.
 
 **Exemplo de Resposta (200 OK):**
 ```json
 {
   "id": "uuid-do-salao-1",
   "name": "Salão Principal",
-  "user_id": "seu-restaurant-id",
-  "created_at": "..."
+  ...
 }
 ```
 
 ---
 
-#### `GET /api/v2/halls/{hallId}/tables`
+#### `GET /api/v2/halls?id={hallId}&subresource=tables`
 Lista todas as mesas associadas a um salão específico.
-
-**Parâmetros de Path:**
-- `hallId` (string, **obrigatório**): O UUID do salão.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
-
-**Exemplo de Requisição:** `GET /api/v2/halls/uuid-do-salao-1/tables?restaurantId=...`
+- `id` (string, **obrigatório**): O UUID do salão.
+- `subresource` (string, **obrigatório**): Deve ser "tables".
 
 **Exemplo de Resposta (200 OK):**
 ```json
@@ -132,18 +118,17 @@ Cria um novo salão.
 {
   "id": "uuid-do-novo-salao",
   "name": "Área Externa",
-  "user_id": "seu-restaurant-id",
-  "created_at": "..."
+  ...
 }
 ```
 
 ---
 
-#### `PATCH /api/v2/halls/{hallId}`
+#### `PATCH /api/v2/halls?id={hallId}`
 Atualiza o nome de um salão.
 
-**Parâmetros de Path:**
-- `hallId` (string, **obrigatório**): O UUID do salão.
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID do salão.
 
 **Corpo da Requisição (JSON):**
 ```json
@@ -163,14 +148,12 @@ Atualiza o nome de um salão.
 
 ---
 
-#### `DELETE /api/v2/halls/{hallId}`
+#### `DELETE /api/v2/halls?id={hallId}`
 Exclui um salão e todas as mesas contidas nele.
-
-**Parâmetros de Path:**
-- `hallId` (string, **obrigatório**): O UUID do salão.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID do salão.
 
 **Resposta (Sucesso 204 No Content):** Nenhuma resposta.
 
@@ -197,28 +180,19 @@ Lista todas as mesas. Pode ser filtrada por salão ou status.
     "number": 1,
     "hall_id": "uuid-do-salao-1",
     "status": "LIVRE",
-    "x": 50,
-    "y": 50,
-    "width": 80,
-    "height": 80,
-    "customer_count": 0,
-    "employee_id": null,
-    "created_at": "...",
-    "user_id": "..."
+    ...
   }
 ]
 ```
 
 ---
 
-#### `GET /api/v2/tables/{tableId}`
+#### `GET /api/v2/tables?id={tableId}`
 Obtém os detalhes de uma mesa específica.
-
-**Parâmetros de Path:**
-- `tableId` (string, **obrigatório**): O UUID da mesa.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID da mesa.
 
 **Resposta (200 OK):** Objeto da mesa.
 
@@ -243,11 +217,11 @@ Cria uma nova mesa em um salão.
 
 ---
 
-#### `PATCH /api/v2/tables/{tableId}`
+#### `PATCH /api/v2/tables?id={tableId}`
 Atualiza os dados de uma mesa, como status, posição ou número.
 
-**Parâmetros de Path:**
-- `tableId` (string, **obrigatório**): O UUID da mesa.
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID da mesa.
 
 **Corpo da Requisição (JSON, exemplo de mudança de status):**
 ```json
@@ -256,27 +230,16 @@ Atualiza os dados de uma mesa, como status, posição ou número.
   "status": "OCUPADA"
 }
 ```
-**Corpo da Requisição (JSON, exemplo de mudança de layout):**
-```json
-{
-  "restaurantId": "seu-restaurant-id",
-  "x": 110,
-  "y": 210,
-  "number": 16
-}
-```
 **Resposta (200 OK):** Retorna o objeto da mesa atualizada.
 
 ---
 
-#### `DELETE /api/v2/tables/{tableId}`
+#### `DELETE /api/v2/tables?id={tableId}`
 Exclui uma mesa.
-
-**Parâmetros de Path:**
-- `tableId` (string, **obrigatório**): O UUID da mesa.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID da mesa.
 
 **Resposta (204 No Content):** Nenhuma resposta.
 
@@ -301,10 +264,7 @@ Lista os itens do cardápio.
   {
     "id": "uuid-da-receita-1",
     "name": "Hambúrguer Clássico",
-    "description": "Pão, carne, queijo e salada.",
     "price": 30.00,
-    "category_id": "uuid-da-categoria-1",
-    "category_name": "Lanches",
     "is_available": true,
     "has_stock": true,
     ...
@@ -314,24 +274,22 @@ Lista os itens do cardápio.
 
 ---
 
-#### `GET /api/v2/menu-items/{itemId}`
+#### `GET /api/v2/menu-items?id={itemId}`
 Obtém um item específico do cardápio.
-
-**Parâmetros de Path:**
-- `itemId` (string, **obrigatório**): O UUID da receita (item).
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID da receita (item).
 
 **Resposta (200 OK):** Objeto do item do cardápio.
 
 ---
 
-#### `PATCH /api/v2/menu-items/{itemId}`
+#### `PATCH /api/v2/menu-items?id={itemId}`
 Atualiza o preço ou a disponibilidade de um item.
 
-**Parâmetros de Path:**
-- `itemId` (string, **obrigatório**): O UUID da receita (item).
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID da receita (item).
 
 **Corpo da Requisição (JSON):**
 ```json
@@ -373,8 +331,7 @@ Cria um novo pedido.
   "tableNumber": 5,
   "customerId": "uuid-do-cliente-opcional",
   "items": [
-    { "externalCode": "HB-CLASSICO", "quantity": 2, "notes": "Um sem picles" },
-    { "externalCode": "REFRI-LATA", "quantity": 2 }
+    { "externalCode": "HB-CLASSICO", "quantity": 2, "notes": "Um sem picles" }
   ]
 }
 ```
@@ -382,37 +339,34 @@ Cria um novo pedido.
 
 ---
 
-#### `GET /api/v2/orders/{orderId}`
+#### `GET /api/v2/orders?id={orderId}`
 Obtém os detalhes de um pedido.
-
-**Parâmetros de Path:**
-- `orderId` (string, **obrigatório**): O UUID do pedido.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID do pedido.
 
 **Resposta (200 OK):** Objeto do pedido com `order_items` e `customers`.
 
 ---
 
-#### `DELETE /api/v2/orders/{orderId}`
+#### `DELETE /api/v2/orders?id={orderId}`
 Cancela um pedido que está aberto (`OPEN`).
-
-**Parâmetros de Path:**
-- `orderId` (string, **obrigatório**): O UUID do pedido.
 
 **Parâmetros de Query:**
 - `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID do pedido.
 
 **Resposta (200 OK):** Objeto do pedido com status `CANCELLED`.
 
 ---
 
-#### `POST /api/v2/orders/{orderId}/items`
+#### `POST /api/v2/orders?id={orderId}&subresource=items`
 Adiciona um ou mais itens a um pedido existente e aberto.
 
-**Parâmetros de Path:**
-- `orderId` (string, **obrigatório**): O UUID do pedido.
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID do pedido.
+- `subresource` (string, **obrigatório**): Deve ser "items".
 
 **Corpo da Requisição (JSON):**
 ```json
@@ -427,11 +381,12 @@ Adiciona um ou mais itens a um pedido existente e aberto.
 
 ---
 
-#### `POST /api/v2/orders/{orderId}/request-payment`
+#### `POST /api/v2/orders?id={orderId}&subresource=request-payment`
 Sinaliza que a conta de um pedido de mesa (`Dine-in`) foi solicitada. Isso atualiza o status da mesa para `PAGANDO`.
 
-**Parâmetros de Path:**
-- `orderId` (string, **obrigatório**): O UUID do pedido.
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID do pedido.
+- `subresource` (string, **obrigatório**): Deve ser "request-payment".
 
 **Corpo da Requisição (JSON):**
 ```json
@@ -440,3 +395,243 @@ Sinaliza que a conta de um pedido de mesa (`Dine-in`) foi solicitada. Isso atual
 }
 ```
 **Resposta (200 OK):** `{ "success": true, "message": "Table status updated to PAGANDO." }`
+
+---
+
+### Clientes (`/api/v2/customers`)
+Recurso para gerenciar a base de clientes do restaurante.
+
+---
+
+#### `GET /api/v2/customers`
+Lista todos os clientes ou busca por um termo.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `search` (string, opcional): Termo para buscar em nome, telefone, email ou CPF.
+
+**Resposta (200 OK):** Array de objetos de cliente.
+
+---
+
+#### `GET /api/v2/customers?id={customerId}`
+Obtém os detalhes de um cliente específico.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID do cliente.
+
+**Resposta (200 OK):** Objeto do cliente.
+
+---
+
+#### `POST /api/v2/customers`
+Cria um novo cliente.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "name": "Novo Cliente",
+  "phone": "11987654321",
+  "email": "cliente@email.com",
+  "cpf": "111.222.333-44",
+  "address": "Rua Exemplo, 123",
+  "password": "uma_senha_opcional_com_min_6_chars"
+}
+```
+**Resposta (201 Created):** Retorna o objeto do cliente criado (sem o `password_hash`).
+
+---
+
+#### `POST /api/v2/customers?action=login`
+Autentica um cliente para obter seus dados. Útil para portais de cliente.
+
+**Parâmetros de Query:**
+- `action` (string, **obrigatório**): Deve ser "login".
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "identifier": "cliente@email.com",
+  "password": "senha_do_cliente"
+}
+```
+- `identifier` pode ser e-mail, telefone ou CPF.
+
+**Resposta (200 OK):** O objeto completo do cliente (sem `password_hash`).
+**Resposta (401 Unauthorized):** Credenciais inválidas.
+
+---
+
+#### `PATCH /api/v2/customers?id={customerId}`
+Atualiza os dados de um cliente ou seus pontos de fidelidade.
+
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID do cliente.
+
+**Corpo (JSON - para dados gerais):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "name": "Cliente Atualizado",
+  "password": "nova_senha_opcional"
+}
+```
+
+**Corpo (JSON - para pontos de fidelidade):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "loyalty_points_change": 50,
+  "description": "Bônus de aniversário"
+}
+```
+**Resposta (200 OK):** Retorna o objeto completo e atualizado do cliente.
+
+---
+
+#### `DELETE /api/v2/customers?id={customerId}`
+Exclui um cliente.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID do cliente.
+
+**Resposta (204 No Content):** Nenhuma resposta.
+
+---
+
+### Reservas (`/api/v2/reservations`)
+Recurso para gerenciar reservas.
+
+---
+
+#### `GET /api/v2/reservations?action=availability`
+Verifica os horários disponíveis para uma data e número de pessoas.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `action` (string, **obrigatório**): Deve ser "availability".
+- `date` (string, **obrigatório**): Data no formato `YYYY-MM-DD`.
+- `party_size` (number, **obrigatório**): Número de pessoas.
+
+**Resposta (200 OK):**
+```json
+{
+  "availability": ["19:00", "19:30", "20:30"]
+}
+```
+
+---
+
+#### `GET /api/v2/reservations`
+Lista as reservas dentro de um período.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `start_date` (string, **obrigatório**): Data de início no formato `YYYY-MM-DD`.
+- `end_date` (string, **obrigatório**): Data de fim no formato `YYYY-MM-DD`.
+
+**Resposta (200 OK):** Array de objetos de reserva.
+
+---
+
+#### `GET /api/v2/reservations?id={reservationId}`
+Obtém os detalhes de uma reserva específica.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID da reserva.
+
+**Resposta (200 OK):** Objeto da reserva.
+
+---
+
+#### `POST /api/v2/reservations`
+Cria uma nova reserva.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "customer_name": "Cliente Externo",
+  "party_size": 2,
+  "reservation_time": "2024-12-25T20:00:00.000Z",
+  "notes": "Vindo de um sistema parceiro."
+}
+```
+**Resposta (201 Created):** Retorna o objeto da reserva criada.
+
+---
+
+#### `PATCH /api/v2/reservations?id={reservationId}`
+Atualiza uma reserva. Útil para confirmar ou cancelar.
+
+**Parâmetros de Query:**
+- `id` (string, **obrigatório**): O UUID da reserva.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "status": "CONFIRMED"
+}
+```
+**Resposta (200 OK):** Retorna o objeto da reserva atualizada.
+
+---
+
+#### `DELETE /api/v2/reservations?id={reservationId}`
+Exclui uma reserva.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**).
+- `id` (string, **obrigatório**): O UUID da reserva.
+
+**Resposta (204 No Content):** Nenhuma resposta.
+
+---
+
+### Pagamentos (`/api/v2/payments`)
+Recurso para finalizar o pagamento de um pedido.
+
+---
+
+#### `POST /api/v2/payments`
+Processa o pagamento de um pedido aberto, finalizando a venda.
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "restaurantId": "seu-restaurant-id",
+  "orderId": "uuid-do-pedido-aberto",
+  "payments": [
+    { "method": "Cartão de Crédito", "amount": 50.00 },
+    { "method": "PIX", "amount": 35.50 }
+  ],
+  "tip": 8.55 
+}
+```
+
+**Campos do Corpo:**
+- `restaurantId` (string, **obrigatório**).
+- `orderId` (string, **obrigatório**): O UUID do pedido a ser finalizado.
+- `payments` (array, **obrigatório**): Um array de objetos de pagamento.
+  - `method` (string): "Dinheiro", "Cartão de Crédito", "Cartão de Débito", "PIX", "Vale Refeição".
+  - `amount` (number): Valor do pagamento.
+- `tip` (number, opcional): Valor da gorjeta/taxa de serviço.
+
+**Resposta (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Payment processed and order completed successfully."
+}
+```
+
+**Respostas de Erro:**
+- `400 Bad Request`: Dados de pagamento insuficientes ou inválidos.
+- `404 Not Found`: Pedido aberto com o `orderId` fornecido não encontrado.
+- `500 Internal Server Error`: Falha ao processar a transação ou atualizar o status.
