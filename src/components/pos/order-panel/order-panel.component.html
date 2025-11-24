@@ -91,7 +91,7 @@
                     <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                         @for (recipe of filteredRecipes(); track recipe.id) {
                         <div (click)="recipe.is_available && recipe.hasStock ? addToCart(recipe) : null" 
-                            class="group bg-gray-700/50 rounded-lg overflow-hidden border border-gray-700/50 transition-all duration-200 relative"
+                            class="group bg-gray-700/50 rounded-lg overflow-hidden border border-gray-700/50 transition-all duration-200 relative flex flex-col"
                             [class.cursor-pointer]="recipe.is_available && recipe.hasStock"
                             [class.hover:border-blue-500]="recipe.is_available && recipe.hasStock"
                             [class.hover:shadow-lg]="recipe.is_available && recipe.hasStock">
@@ -109,9 +109,9 @@
                                 }
                             </div>
 
-                            <div class="p-2">
-                                <h4 class="font-semibold text-white text-sm leading-tight h-10">{{ recipe.name }}</h4>
-                                <p class="text-base font-bold text-blue-400 mt-1">{{ (recipePrices().get(recipe.id) ?? recipe.price) | currency:'BRL' }}</p>
+                            <div class="p-2 flex flex-col flex-grow">
+                                <h4 class="font-semibold text-white text-sm leading-tight break-words flex-grow">{{ recipe.name }}</h4>
+                                <p class="text-base font-bold text-blue-400 mt-1 text-right">{{ (recipePrices().get(recipe.id) ?? recipe.price) | currency:'BRL' }}</p>
                             </div>
                         </div>
                         }
