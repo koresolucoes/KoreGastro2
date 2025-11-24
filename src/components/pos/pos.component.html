@@ -45,6 +45,7 @@
           [tables]="tables()"
           [isEditMode]="isEditMode()"
           [employeeNameMap]="employeeNameMap()"
+          [selectedTable]="selectedTable()"
           (tableClicked)="handleTableClicked($event)"
           (tableRightClicked)="handleTableRightClick($event)">
         </app-table-layout>

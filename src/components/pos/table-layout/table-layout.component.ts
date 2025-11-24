@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus } from '../../../models/db.models';
@@ -24,6 +26,8 @@ export class TableLayoutComponent {
   isEditMode: InputSignal<boolean> = input.required<boolean>();
   employeeNameMap: InputSignal<Map<string, string>> = input.required<Map<string, string>>();
   hallIndex: InputSignal<number> = input.required<number>();
+  selectedTable: InputSignal<Table | null> = input<Table | null>(null);
+  
   tableClicked: OutputEmitterRef<Table> = output<Table>();
   tableRightClicked: OutputEmitterRef<{ event: MouseEvent, table: Table }> = output();
 

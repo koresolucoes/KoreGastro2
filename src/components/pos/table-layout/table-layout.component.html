@@ -1,4 +1,5 @@
 
+
 @if (!isEditMode()) {
   <!-- ======================= -->
   <!--      DISPLAY MODE       -->
@@ -10,8 +11,9 @@
       <div
         (click)="tableClicked.emit(table)"
         (contextmenu)="onRightClick($event, table)"
-        class="flex flex-col items-center justify-center p-4 rounded-lg border-2 aspect-square cursor-pointer"
-        [class]="getStatusClass(table.status)">
+        class="flex flex-col items-center justify-center p-4 rounded-lg border-2 aspect-square cursor-pointer transition-all"
+        [class]="getStatusClass(table.status)"
+        [class.scale-105]="selectedTable()?.id === table.id">
         <span class="text-3xl font-bold">{{ table.number }}</span>
         <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
         @if (table.status !== 'LIVRE') {
@@ -27,8 +29,11 @@
       <div
         (click)="tableClicked.emit(table)"
         (contextmenu)="onRightClick($event, table)"
-        class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-colors duration-150 ease-in-out border-2 cursor-pointer"
+        class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-150 ease-in-out border-2 cursor-pointer"
         [class]="getStatusClass(table.status)"
+        [class.border-blue-400]="selectedTable()?.id === table.id"
+        [class.border-4]="selectedTable()?.id === table.id"
+        [class.scale-105]="selectedTable()?.id === table.id"
         [style.left.px]="table.x"
         [style.top.px]="table.y"
         [style.width.px]="table.width"
