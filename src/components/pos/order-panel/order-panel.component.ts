@@ -72,6 +72,9 @@ export class OrderPanelComponent {
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
+  // Mobile cart visibility
+  isCartVisible = signal(false);
+
   // Notes Modal Signals
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
@@ -93,6 +96,34 @@ export class OrderPanelComponent {
       priceMap.set(recipe.id, this.pricingService.getEffectivePrice(recipe));
     }
     return priceMap;
+  });
+  
+  cartItemQuantities = computed(() => {
+    const quantities = new Map<string, number>();
+    // Items in cart
+    for (const item of this.shoppingCart()) {
+        quantities.set(item.recipe.id, (quantities.get(item.recipe.id) || 0) + item.quantity);
+    }
+    
+    // Items already in order
+    const processedGroupIds = new Set<string>();
+    for (const item of this.currentOrder()?.order_items || []) {
+        if (item.recipe_id) {
+            if (item.group_id) {
+                if (!processedGroupIds.has(item.group_id)) {
+                    quantities.set(item.recipe_id, (quantities.get(item.recipe_id) || 0) + item.quantity);
+                    processedGroupIds.add(item.group_id);
+                }
+            } else {
+                quantities.set(item.recipe_id, (quantities.get(item.recipe_id) || 0) + item.quantity);
+            }
+        }
+    }
+    return quantities;
+  });
+
+  totalCartItems = computed(() => {
+    return this.shoppingCart().reduce((total, item) => total + item.quantity, 0);
   });
 
   constructor() {
@@ -222,7 +253,6 @@ export class OrderPanelComponent {
   });
 
   private hasEnoughStockFor(recipe: Recipe): boolean {
-    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
     const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
     const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
     const reserved = this.reservedIngredients();
@@ -233,7 +263,6 @@ export class OrderPanelComponent {
 
     // Check direct raw ingredients
     for (const ing of composition.directIngredients) {
-      // FIX: Add a guard to ensure ingredient exists before accessing its properties.
       const ingredient = ingredientsMap.get(ing.ingredientId);
       if (ingredient) {
         const availableStock = ingredient.stock;
@@ -251,7 +280,6 @@ export class OrderPanelComponent {
 
     // Check sub-recipe stock items
     for (const subIng of composition.subRecipeIngredients) {
-      // FIX: Add a guard to ensure ingredient exists before accessing its properties.
       const ingredient = ingredientsMap.get(subIng.ingredientId);
       if (ingredient) {
         const availableStock = ingredient.stock;
@@ -293,6 +321,16 @@ export class OrderPanelComponent {
     }
   }
   
+  decrementFromCart(recipe: Recipe) {
+    // Try to find a cart item (not yet sent to kitchen)
+    const cartItem = this.shoppingCart().find(item => item.recipe.id === recipe.id && !item.notes);
+    if (cartItem) {
+        this.updateCartItemQuantity(cartItem.id, -1);
+    } else {
+        this.notificationService.show("Não é possível remover itens já enviados para a cozinha a partir daqui.", 'warning');
+    }
+  }
+
   updateCartItemQuantity(itemId: string, change: -1 | 1) {
     const itemToUpdate = this.shoppingCart().find(item => item.id === itemId);
     if (!itemToUpdate) return;
