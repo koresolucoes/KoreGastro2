@@ -14,9 +14,11 @@ interface ItemGroup {
   id: string;
   name: string;
   items: OrderItem[];
-  total: number;
+  total: number; // This is the subtotal of items in the group
   isPaid: boolean;
   payments: PaymentInfo[];
+  serviceFeeApplied: boolean;
+  splitCount: number;
 }
 
 @Component({
@@ -39,73 +41,108 @@ export class PaymentModalComponent {
 
   splitMode = signal<'total' | 'item'>('total');
   paymentSuccess = signal(false);
-  serviceFeeApplied = signal(true);
+  serviceFeeApplied = signal(true); // For 'total' mode
+  splitCount = signal(1); // For 'total' mode
   payments = signal<PaymentInfo[]>([]);
   paymentAmountInput = signal('');
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
   isRedeemModalOpen = signal(false);
   isEmittingNfce = signal(false);
 
-  // Discount Modal State
   isDiscountModalOpen = signal(false);
   editingDiscountItem = signal<OrderItem | null>(null);
   discountType = signal<DiscountType>('percentage');
   discountValue = signal<number | null>(null);
 
-  // Split by Item State
   itemGroups = signal<ItemGroup[]>([]);
   unassignedItems = signal<OrderItem[]>([]);
   selectedGroupId = signal<string | null>(null);
 
   customer = computed(() => this.order()?.customers);
 
-  // --- Computed Properties ---
+  selectedGroup = computed(() => {
+    if (this.splitMode() !== 'item') return null;
+    const groupId = this.selectedGroupId();
+    if (!groupId) return null;
+    return this.itemGroups().find(g => g.id === groupId) ?? null;
+  });
+
+  isServiceFeeToggleOn = computed(() => {
+    if (this.splitMode() === 'item') {
+      return this.selectedGroup()?.serviceFeeApplied ?? false;
+    }
+    return this.serviceFeeApplied();
+  });
   
-  // Total of the entire order
+  splitTotalPerPerson = computed(() => {
+    if (this.splitMode() === 'total') {
+        const total = this.orderTotal();
+        const count = this.splitCount();
+        if (!total || !count || count <= 0) return 0;
+        return total / count;
+    } else {
+        const group = this.selectedGroup();
+        if (!group || group.splitCount <= 0) return 0;
+        const groupTotalWithTip = group.total + (group.serviceFeeApplied ? group.total * 0.1 : 0);
+        return groupTotalWithTip / group.splitCount;
+    }
+  });
+
   orderSubtotal = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
   tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
   orderTotal = computed(() => this.orderSubtotal() + this.tipAmount());
 
-  // Total paid across all payments (in both modes)
   totalPaid = computed(() => this.payments().reduce((sum, p) => sum + p.amount, 0));
 
-  // The final total to be displayed, depending on the split mode and selection
-  displayTotal = computed(() => {
-    if (this.splitMode() === 'item') {
-      const group = this.itemGroups().find(g => g.id === this.selectedGroupId());
-      return group ? group.total : 0;
-    }
-    return this.orderTotal();
-  });
   displaySubtotal = computed(() => {
     if (this.splitMode() === 'item') {
-      const group = this.itemGroups().find(g => g.id === this.selectedGroupId());
-      return group ? group.total : 0;
+      return this.selectedGroup()?.total ?? 0;
     }
     return this.orderSubtotal();
   });
-  displayTipAmount = computed(() => this.serviceFeeApplied() && this.splitMode() === 'total' ? this.tipAmount() : 0);
 
-  balanceDue = computed(() => parseFloat((this.displayTotal() - this.totalPaid()).toFixed(2)));
-  isPaymentComplete = computed(() => this.balanceDue() <= 0.001);
-  
+  displayTipAmount = computed(() => {
+    if (this.splitMode() === 'item') {
+      const group = this.selectedGroup();
+      return group?.serviceFeeApplied ? (group.total * 0.1) : 0;
+    }
+    return this.tipAmount();
+  });
+
+  displayTotal = computed(() => this.displaySubtotal() + this.displayTipAmount());
+
+  balanceDue = computed(() => {
+    const totalToPay = this.displayTotal();
+    const paidForThisEntity = this.splitMode() === 'item' 
+        ? (this.selectedGroup()?.payments.reduce((sum, p) => sum + p.amount, 0) ?? 0)
+        : this.totalPaid();
+    return parseFloat((totalToPay - paidForThisEntity).toFixed(2));
+  });
+
+  isPaymentComplete = computed(() => {
+    if (this.splitMode() === 'item') {
+      return this.itemGroups().length > 0 && this.itemGroups().every(g => g.isPaid) && this.unassignedItems().length === 0;
+    }
+    return this.balanceDue() <= 0.001;
+  });
+
   change = computed(() => {
     if (this.selectedPaymentMethod() !== 'Dinheiro' || this.isPaymentComplete()) return 0;
     const amount = parseFloat(this.paymentAmountInput());
-    if (isNaN(amount) || amount <= this.balanceDue()) return 0;
-    return parseFloat((amount - this.balanceDue()).toFixed(2));
+    const balance = this.balanceDue();
+    if (isNaN(amount) || amount <= balance) return 0;
+    return parseFloat((amount - balance).toFixed(2));
   });
 
   constructor() {
     effect(() => {
-        this.resetPaymentState();
+      this.splitMode(); // React to mode change
+      this.resetPaymentState();
     });
 
     effect(() => {
-      // Initialize or reset split-by-item state when mode changes or order loads
-      const mode = this.splitMode();
       const ord = this.order();
-      if (mode === 'item' && ord) {
+      if (this.splitMode() === 'item' && ord) {
         this.itemGroups.set([]);
         this.unassignedItems.set([...ord.order_items]);
         this.selectedGroupId.set(null);
@@ -113,14 +150,12 @@ export class PaymentModalComponent {
     });
 
     effect(() => {
-      // When a group is selected, update payment details for that group
       const groupId = this.selectedGroupId();
-      const groups = this.itemGroups();
-      const group = groups.find(g => g.id === groupId);
+      const group = this.itemGroups().find(g => g.id === groupId);
       untracked(() => {
         this.payments.set(group?.payments || []);
-        const balance = group ? group.total - (group.payments.reduce((sum, p) => sum + p.amount, 0)) : 0;
-        this.paymentAmountInput.set(balance > 0 ? balance.toFixed(2) : '');
+        const groupBalance = group ? (group.total + (group.serviceFeeApplied ? group.total * 0.1 : 0)) - (group.payments.reduce((s,p) => s + p.amount, 0)) : 0;
+        this.paymentAmountInput.set(groupBalance > 0 ? groupBalance.toFixed(2) : '');
       });
     });
   }
@@ -133,6 +168,49 @@ export class PaymentModalComponent {
     });
   }
 
+  addGroup() {
+    const newGroup: ItemGroup = {
+      id: uuidv4(),
+      name: `Pessoa ${this.itemGroups().length + 1}`,
+      items: [],
+      total: 0,
+      isPaid: false,
+      payments: [],
+      serviceFeeApplied: true,
+      splitCount: 1,
+    };
+    this.itemGroups.update(groups => [...groups, newGroup]);
+    this.selectedGroupId.set(newGroup.id);
+  }
+
+  toggleServiceFee() {
+    if (this.splitMode() === 'item') {
+      const groupId = this.selectedGroupId();
+      if (!groupId) return;
+      this.itemGroups.update(groups =>
+        groups.map(g =>
+          g.id === groupId ? { ...g, serviceFeeApplied: !g.serviceFeeApplied } : g
+        )
+      );
+    } else {
+      this.serviceFeeApplied.update(v => !v);
+    }
+  }
+
+  onSplitCountChange(event: Event) {
+    const count = parseInt((event.target as HTMLInputElement).value, 10);
+    const validCount = !isNaN(count) && count > 0 ? count : 1;
+    if (this.splitMode() === 'item') {
+      const groupId = this.selectedGroupId();
+      if (!groupId) return;
+      this.itemGroups.update(groups =>
+        groups.map(g => g.id === groupId ? { ...g, splitCount: validCount } : g)
+      );
+    } else {
+      this.splitCount.set(validCount);
+    }
+  }
+
   async addPayment() {
     const method = this.selectedPaymentMethod();
     const balance = this.balanceDue();
@@ -143,34 +221,33 @@ export class PaymentModalComponent {
       return;
     }
 
-    if (method !== 'Dinheiro' && amount > balance + 0.001) {
-      await this.notificationService.alert(`O valor para ${method} não pode ser maior que o saldo restante de ${balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`);
+    if (method !== 'Dinheiro' && amount > balance + 0.01) {
+      await this.notificationService.alert(`O valor para ${method} não pode ser maior que o saldo restante.`);
       return;
     }
-    
+
     const paymentAmount = (method === 'Dinheiro' && amount > balance) ? balance : amount;
-    
-    if (paymentAmount > 0) {
-      const newPayment: PaymentInfo = { method, amount: parseFloat(paymentAmount.toFixed(2)) };
-      
-      if (this.splitMode() === 'item') {
-        const groupId = this.selectedGroupId();
-        if (!groupId) return;
-        this.itemGroups.update(groups => groups.map(g => {
-          if (g.id === groupId) {
-            const updatedPayments = [...g.payments, newPayment];
-            const paidAmount = updatedPayments.reduce((sum, p) => sum + p.amount, 0);
-            return { ...g, payments: updatedPayments, isPaid: paidAmount >= g.total - 0.001 };
-          }
-          return g;
-        }));
-      } else {
-        this.payments.update(p => [...p, newPayment]);
-      }
+    if (paymentAmount <= 0) return;
+
+    const newPayment: PaymentInfo = { method, amount: parseFloat(paymentAmount.toFixed(2)) };
+
+    if (this.splitMode() === 'item') {
+      const groupId = this.selectedGroupId();
+      if (!groupId) return;
+      this.itemGroups.update(groups => groups.map(g => {
+        if (g.id === groupId) {
+          const updatedPayments = [...g.payments, newPayment];
+          const paidAmount = updatedPayments.reduce((sum, p) => sum + p.amount, 0);
+          const groupTotal = g.total + (g.serviceFeeApplied ? g.total * 0.1 : 0);
+          return { ...g, payments: updatedPayments, isPaid: paidAmount >= groupTotal - 0.01 };
+        }
+        return g;
+      }));
+    } else {
+      this.payments.update(p => [...p, newPayment]);
     }
     
-    const newBalance = this.balanceDue();
-    this.paymentAmountInput.set(newBalance > 0 ? newBalance.toFixed(2) : '');
+    this.paymentAmountInput.set(this.balanceDue() > 0 ? this.balanceDue().toFixed(2) : '');
   }
 
   removePayment(index: number) {
@@ -180,7 +257,7 @@ export class PaymentModalComponent {
       this.itemGroups.update(groups => groups.map(g => {
         if (g.id === groupId) {
           const updatedPayments = g.payments.filter((_, i) => i !== index);
-          return { ...g, payments: updatedPayments, isPaid: false }; // Re-open group for payment
+          return { ...g, payments: updatedPayments, isPaid: false };
         }
         return g;
       }));
@@ -188,35 +265,37 @@ export class PaymentModalComponent {
       this.payments.update(p => p.filter((_, i) => i !== index));
     }
     
-    const newBalance = this.balanceDue();
-    this.paymentAmountInput.set(newBalance > 0 ? newBalance.toFixed(2) : '');
+    this.paymentAmountInput.set(this.balanceDue() > 0 ? this.balanceDue().toFixed(2) : '');
   }
-  
+
   async finalizePayment() {
     const order = this.order();
     const table = this.table();
     if (!order || !table) return;
 
-    // Aggregate payments from all groups if in item split mode
-    const allPayments = this.splitMode() === 'item' 
-      ? this.itemGroups().flatMap(g => g.payments) 
-      : this.payments();
-    
+    const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
     const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
-    const orderTotal = this.orderTotal();
 
-    if (totalPaid < orderTotal - 0.001) {
+    const finalOrderTotal = this.splitMode() === 'item'
+      ? this.itemGroups().reduce((sum, group) => sum + group.total + (group.serviceFeeApplied ? group.total * 0.1 : 0), 0)
+      : this.orderTotal();
+
+    const finalTipAmount = this.splitMode() === 'item'
+      ? this.itemGroups().reduce((sum, group) => sum + (group.serviceFeeApplied ? group.total * 0.1 : 0), 0)
+      : this.tipAmount();
+
+    if (totalPaid < finalOrderTotal - 0.01) {
       await this.notificationService.alert('O valor total pago é menor que o total da conta.');
       return;
     }
-    
+
     const confirmed = await this.notificationService.confirm(
-      `Confirmar o pagamento de ${orderTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para a Mesa ${table.number}? Esta ação é irreversível.`,
+      `Confirmar o pagamento de ${finalOrderTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}?`,
       'Confirmar Pagamento'
     );
     if (!confirmed) return;
-    
-    const { success, error } = await this.posDataService.finalizeOrderPayment(order.id, table.id, orderTotal, allPayments, this.tipAmount());
+
+    const { success, error } = await this.posDataService.finalizeOrderPayment(order.id, table.id, finalOrderTotal, allPayments, finalTipAmount);
 
     if (success) {
       this.paymentSuccess.set(true);
@@ -229,26 +308,12 @@ export class PaymentModalComponent {
     const order = this.order();
     const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
     if (order) {
-        this.printingService.printCustomerReceipt(order, allPayments);
+      this.printingService.printCustomerReceipt(order, allPayments);
     }
   }
 
   finishAndClose() {
       this.paymentFinalized.emit();
-  }
-
-  // --- Item Split Logic ---
-  addGroup() {
-    const newGroup: ItemGroup = {
-      id: uuidv4(),
-      name: `Pessoa ${this.itemGroups().length + 1}`,
-      items: [],
-      total: 0,
-      isPaid: false,
-      payments: []
-    };
-    this.itemGroups.update(groups => [...groups, newGroup]);
-    this.selectedGroupId.set(newGroup.id);
   }
 
   selectGroup(groupId: string) {
@@ -267,7 +332,6 @@ export class PaymentModalComponent {
         return;
       }
     }
-
     this.unassignedItems.update(items => items.filter(i => i.id !== item.id));
     this.itemGroups.update(groups => groups.map(g => {
       if (g.id === (groupId ?? this.selectedGroupId())) {
@@ -291,7 +355,6 @@ export class PaymentModalComponent {
     this.unassignedItems.update(items => [...items, item]);
   }
 
-  // --- Discount Methods ---
   openDiscountModal(item: OrderItem) {
     this.editingDiscountItem.set(item);
     this.discountType.set(item.discount_type || 'percentage');
@@ -299,9 +362,7 @@ export class PaymentModalComponent {
     this.isDiscountModalOpen.set(true);
   }
 
-  closeDiscountModal() {
-    this.isDiscountModalOpen.set(false);
-  }
+  closeDiscountModal() { this.isDiscountModalOpen.set(false); }
 
   async saveDiscount() {
     const item = this.editingDiscountItem();
@@ -322,23 +383,13 @@ export class PaymentModalComponent {
   async emitNfce() {
     const order = this.order();
     if (!order) return;
-
     this.isEmittingNfce.set(true);
-
     const { success, error, data } = await this.focusNFeService.emitNfce(order.id);
-
     if (success) {
-        if (data.status === 'autorizado') {
-            this.notificationService.show('NFC-e autorizada com sucesso!', 'success');
-        } else {
-            const statusMessage = data.mensagem_sefaz || data.status;
-            this.notificationService.show(`Status NFC-e: ${statusMessage}`, 'info');
-        }
+      this.notificationService.show(`Status NFC-e: ${data.mensagem_sefaz || data.status}`, 'info');
     } else {
-        const errorMessage = (error as any)?.message || 'Erro desconhecido.';
-        await this.notificationService.alert(`Falha ao emitir NFC-e: ${errorMessage}`, 'Erro');
+      await this.notificationService.alert(`Falha ao emitir NFC-e: ${(error as any)?.message || 'Erro desconhecido.'}`, 'Erro');
     }
-
     this.isEmittingNfce.set(false);
   }
 }
