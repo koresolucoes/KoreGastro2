@@ -33,7 +33,7 @@
                 }
             </button>
             <button (click)="printReceipt()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-500 transition-colors text-lg flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062-.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
                 <span>Imprimir Recibo</span>
             </button>
             <button (click)="finishAndClose()" class="w-full bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors">
@@ -120,7 +120,13 @@
             <!-- Right Panel (Payment) -->
             <div class="p-4 flex flex-col">
               <div class="space-y-2 mb-4 pb-4 border-b border-gray-600">
-                  <div class="flex justify-between text-lg"><span class="text-gray-300">Subtotal</span><span>{{ displaySubtotal() | currency:'BRL' }}</span></div>
+                  <div class="flex justify-between text-lg"><span class="text-gray-300">Subtotal</span><span>{{ orderSubtotalBeforeDiscount() | currency:'BRL' }}</span></div>
+                  @if (globalDiscountAmount() > 0) {
+                    <div class="flex justify-between text-lg">
+                      <button (click)="openGlobalDiscountModal()" class="text-red-400 hover:underline">Desconto</button>
+                      <span class="text-red-400">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
+                    </div>
+                  }
                   <div class="flex justify-between items-center text-lg">
                       <div class="flex items-center gap-2">
                           <span class="text-gray-300">Taxa de Serviço (10%)</span>
@@ -161,6 +167,10 @@
                       </div>
                   </div>
                   <div class="flex gap-2">
+                    <button (click)="openGlobalDiscountModal()" class="flex-1 bg-gray-600 text-white font-bold py-2 px-2 rounded-lg hover:bg-gray-500 transition-colors flex items-center justify-center gap-1">
+                      <span class="material-symbols-outlined text-base">sell</span>
+                      Desconto
+                    </button>
                     <button (click)="isRedeemModalOpen.set(true)" [disabled]="!customer() || splitMode() === 'item'" class="flex-1 bg-indigo-600 text-white font-bold py-2 px-2 rounded-lg hover:bg-indigo-500 transition-colors flex items-center justify-center gap-1 disabled:bg-gray-600 disabled:cursor-not-allowed" title="Resgatar Prêmio de Fidelidade">
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
                         Prêmio
@@ -234,3 +244,36 @@
     </div>
 </div>
 }
+
+<!-- Global Discount Modal -->
+@if(isGlobalDiscountModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" (click)="closeGlobalDiscountModal()">
+      <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
+        <h3 class="text-xl font-bold text-white mb-4">Aplicar Desconto na Conta</h3>
+        
+        <div class="flex gap-1 bg-gray-700 p-1 rounded-lg mb-4">
+          <button (click)="globalDiscountType.set('percentage')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="globalDiscountType() === 'percentage'">Porcentagem (%)</button>
+          <button (click)="globalDiscountType.set('fixed_value')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="globalDiscountType() === 'fixed_value'">Valor Fixo (R$)</button>
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Valor do Desconto</label>
+          <input 
+            type="number"
+            [value]="globalDiscountValue()"
+            (input)="globalDiscountValue.set(+$any($event.target).value)"
+            [placeholder]="globalDiscountType() === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 5 para R$5,00'"
+            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+  
+        <div class="mt-6 flex justify-end gap-2">
+          <button (click)="closeGlobalDiscountModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">
+            Cancelar
+          </button>
+          <button (click)="saveGlobalDiscount()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">
+            Salvar Desconto
+          </button>
+        </div>
+      </div>
+  </div>
+  }

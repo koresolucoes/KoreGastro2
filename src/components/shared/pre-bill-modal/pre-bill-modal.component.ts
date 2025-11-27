@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Order, Table } from '../../../models/db.models';
@@ -33,7 +32,22 @@ export class PreBillModalComponent {
     });
   }
 
-  orderSubtotal = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
+  orderSubtotalBeforeDiscount = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
+
+  globalDiscountAmount = computed(() => {
+    const order = this.order();
+    if (!order || !order.discount_type || !order.discount_value) {
+      return 0;
+    }
+    if (order.discount_type === 'percentage') {
+      return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
+    }
+    return order.discount_value;
+  });
+
+  orderSubtotal = computed(() => {
+    return this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount();
+  });
   
   tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
   
@@ -66,4 +80,3 @@ export class PreBillModalComponent {
     }
   }
 }
-      

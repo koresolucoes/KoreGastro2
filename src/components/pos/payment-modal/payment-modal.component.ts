@@ -49,10 +49,16 @@ export class PaymentModalComponent {
   isRedeemModalOpen = signal(false);
   isEmittingNfce = signal(false);
 
+  // Item Discount
   isDiscountModalOpen = signal(false);
   editingDiscountItem = signal<OrderItem | null>(null);
   discountType = signal<DiscountType>('percentage');
   discountValue = signal<number | null>(null);
+
+  // Global Discount
+  isGlobalDiscountModalOpen = signal(false);
+  globalDiscountType = signal<DiscountType>('percentage');
+  globalDiscountValue = signal<number | null>(null);
 
   itemGroups = signal<ItemGroup[]>([]);
   unassignedItems = signal<OrderItem[]>([]);
@@ -74,6 +80,26 @@ export class PaymentModalComponent {
     return this.serviceFeeApplied();
   });
   
+  orderSubtotalBeforeDiscount = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
+
+  globalDiscountAmount = computed(() => {
+    const order = this.order();
+    if (!order || !order.discount_type || !order.discount_value) {
+      return 0;
+    }
+    if (order.discount_type === 'percentage') {
+      return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
+    }
+    return order.discount_value;
+  });
+
+  orderSubtotal = computed(() => {
+    return this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount();
+  });
+  
+  tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
+  orderTotal = computed(() => this.orderSubtotal() + this.tipAmount());
+
   splitTotalPerPerson = computed(() => {
     if (this.splitMode() === 'total') {
         const total = this.orderTotal();
@@ -87,10 +113,6 @@ export class PaymentModalComponent {
         return groupTotalWithTip / group.splitCount;
     }
   });
-
-  orderSubtotal = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
-  tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
-  orderTotal = computed(() => this.orderSubtotal() + this.tipAmount());
 
   totalPaid = computed(() => this.payments().reduce((sum, p) => sum + p.amount, 0));
 
@@ -391,5 +413,40 @@ export class PaymentModalComponent {
       await this.notificationService.alert(`Falha ao emitir NFC-e: ${(error as any)?.message || 'Erro desconhecido.'}`, 'Erro');
     }
     this.isEmittingNfce.set(false);
+  }
+
+  // --- Global Discount Methods ---
+  openGlobalDiscountModal() {
+    const order = this.order();
+    this.globalDiscountType.set(order?.discount_type || 'percentage');
+    this.globalDiscountValue.set(order?.discount_value || null);
+    this.isGlobalDiscountModalOpen.set(true);
+  }
+
+  closeGlobalDiscountModal() {
+    this.isGlobalDiscountModalOpen.set(false);
+  }
+
+  async saveGlobalDiscount() {
+    const order = this.order();
+    if (!order) return;
+    
+    const value = this.globalDiscountValue();
+    const type = this.globalDiscountType();
+    
+    const finalValue = (value === null || value <= 0) ? null : value;
+    const finalType = finalValue === null ? null : type;
+
+    const { success, error } = await this.posDataService.applyGlobalOrderDiscount(
+      order.id,
+      finalType,
+      finalValue
+    );
+
+    if (success) {
+      this.closeGlobalDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+    }
   }
 }

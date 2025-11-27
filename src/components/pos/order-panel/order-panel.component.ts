@@ -86,6 +86,11 @@ export class OrderPanelComponent {
   discountType = signal<DiscountType>('percentage');
   discountValue = signal<number | null>(null);
 
+  // Global Discount Modal
+  isGlobalDiscountModalOpen = signal(false);
+  globalDiscountType = signal<DiscountType>('percentage');
+  globalDiscountValue = signal<number | null>(null);
+
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
   hasCustomer = computed(() => !!this.currentOrder()?.customers);
@@ -196,11 +201,26 @@ export class OrderPanelComponent {
     return [...Array.from(grouped.values()), ...singles];
   });
   
-  orderTotal = computed(() => {
-    const prices = this.recipePrices();
+  orderSubtotal = computed(() => {
     const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
-    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (prices.get(item.recipe.id)! * item.quantity), 0);
+    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (this.recipePrices().get(item.recipe.id)! * item.quantity), 0);
     return currentItemsTotal + cartItemsTotal;
+  });
+  
+  globalDiscountAmount = computed(() => {
+    const order = this.currentOrder();
+    if (!order || !order.discount_type || !order.discount_value) {
+      return 0;
+    }
+    const subtotal = this.orderSubtotal();
+    if (order.discount_type === 'percentage') {
+      return subtotal * (order.discount_value / 100);
+    }
+    return order.discount_value;
+  });
+
+  orderTotal = computed(() => {
+    return this.orderSubtotal() - this.globalDiscountAmount();
   });
 
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
@@ -474,6 +494,42 @@ export class OrderPanelComponent {
       this.closeDiscountModal();
     } else {
       await this.notificationService.alert(`Erro ao remover desconto: ${error?.message}`);
+    }
+  }
+
+  // --- Global Discount Methods ---
+  openGlobalDiscountModal() {
+    const order = this.currentOrder();
+    this.globalDiscountType.set(order?.discount_type || 'percentage');
+    this.globalDiscountValue.set(order?.discount_value || null);
+    this.isGlobalDiscountModalOpen.set(true);
+  }
+
+  closeGlobalDiscountModal() {
+    this.isGlobalDiscountModalOpen.set(false);
+  }
+
+  async saveGlobalDiscount() {
+    const order = this.currentOrder();
+    if (!order) return;
+    
+    const value = this.globalDiscountValue();
+    const type = this.globalDiscountType();
+    
+    // If value is 0 or null, it means we are removing the discount
+    const finalValue = (value === null || value <= 0) ? null : value;
+    const finalType = finalValue === null ? null : type;
+
+    const { success, error } = await this.posDataService.applyGlobalOrderDiscount(
+      order.id,
+      finalType,
+      finalValue
+    );
+
+    if (success) {
+      this.closeGlobalDiscountModal();
+    } else {
+      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
     }
   }
 }
