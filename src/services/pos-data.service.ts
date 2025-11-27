@@ -394,6 +394,22 @@ export class PosDataService {
     const { error } = await supabase.from('order_items').upsert(updates);
     return { success: !error, error };
   }
+  
+  async applyGlobalOrderDiscount(
+    orderId: string,
+    discountType: DiscountType | null,
+    discountValue: number | null
+  ): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        discount_type: discountType,
+        discount_value: discountValue,
+      })
+      .eq('id', orderId);
+      
+    return { success: !error, error };
+  }
 
   async finalizeOrderPayment(
     orderId: string,

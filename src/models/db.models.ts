@@ -281,6 +281,10 @@ export interface Order {
   order_items: OrderItem[];
   customers?: Customer; // Relation
   
+  // Global Discount
+  discount_type?: DiscountType | null;
+  discount_value?: number | null;
+  
   // iFood fields
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
