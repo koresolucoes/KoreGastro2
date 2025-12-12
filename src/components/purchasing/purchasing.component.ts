@@ -21,6 +21,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -84,11 +86,23 @@ export class PurchasingComponent implements OnInit {
         }));
     });
 
+    // FIX: Refactor to use a switch statement to avoid type inference issues with dynamic property access in signals.
     updateOrderFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
-        this.orderForm.update(f => ({
-            ...f,
-            [field]: field === 'supplier_id' ? (value === 'null' ? null : value) : value
-        }));
+        this.orderForm.update(f => {
+            const newForm = { ...f };
+            switch (field) {
+                case 'supplier_id':
+                    newForm.supplier_id = (value === 'null' ? null : value);
+                    break;
+                case 'status':
+                    newForm.status = value as PurchaseOrderStatus;
+                    break;
+                case 'notes':
+                    newForm.notes = value;
+                    break;
+            }
+            return newForm;
+        });
     }
 
     ngOnInit() {
@@ -210,9 +224,8 @@ export class PurchasingComponent implements OnInit {
                     `Este item é fornecido por "${supplierName}". Deseja definir este fornecedor para a ordem inteira?`,
                     'Sugerir Fornecedor'
                 );
-                // FIX: Add a non-null assertion (!) because the 'if' condition guarantees 'supplier_id' is not null, resolving a potential type mismatch.
                 if (confirmed) {
-                    this.updateOrderFormField('supplier_id', ingredient.supplier_id!);
+                    this.updateOrderFormField('supplier_id', ingredient.supplier_id);
                 }
             }
         }
@@ -352,6 +365,18 @@ export class PurchasingComponent implements OnInit {
                 case 'last_movement_at':
                     newForm.last_movement_at = (value === 'null' || value === '') ? null : value;
                     break;
+                // FIX: Add missing cases for new Ingredient properties to satisfy exhaustiveness check.
+                case 'is_portionable':
+                    newForm.is_portionable = value as boolean;
+                    break;
+                case 'is_yield_product':
+                    newForm.is_yield_product = value as boolean;
+                    break;
+                case 'standard_portion_weight_g': {
+                    const numValue = parseFloat(value);
+                    newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
+                    break;
+                }
                 default: {
                     const _exhaustiveCheck: never = field;
                     break;

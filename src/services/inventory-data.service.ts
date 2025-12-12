@@ -1,5 +1,6 @@
+
 import { Injectable, inject } from '@angular/core';
-import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
+import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem, PortioningOutputType } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { RecipeStateService } from './recipe-state.service';
@@ -420,5 +421,38 @@ export class InventoryDataService {
       }
     }
     return usageMap;
+  }
+
+  async createPortioningEvent(
+    eventData: {
+      inputIngredientId: string;
+      inputQuantity: number;
+      notes: string | null;
+    },
+    outputs: {
+      output_type: PortioningOutputType;
+      ingredient_id: string | null;
+      quantity: number;
+      unit: string;
+      description: string | null;
+    }[]
+  ): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+
+    const { error } = await supabase.rpc('create_portioning_event', {
+      p_user_id: userId,
+      p_input_ingredient_id: eventData.inputIngredientId,
+      p_input_quantity: eventData.inputQuantity,
+      p_notes: eventData.notes,
+      p_outputs: outputs,
+    });
+
+    if (error) {
+      console.error('Error calling create_portioning_event RPC:', error);
+      return { success: false, error };
+    }
+
+    return { success: true, error: null };
   }
 }
