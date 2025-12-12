@@ -88,7 +88,7 @@ export class PurchasingComponent implements OnInit {
         }));
     });
 
-    updateOrderFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
+    updatePOFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
         this.orderForm.update(f => ({
             ...f,
             [field]: field === 'supplier_id' ? (value === 'null' ? null : value) : value
@@ -214,7 +214,6 @@ export class PurchasingComponent implements OnInit {
                     `Este item é fornecido por "${supplierName}". Deseja definir este fornecedor para a ordem inteira?`,
                     'Sugerir Fornecedor'
                 );
-                // FIX: Corrected method call from 'updateOrderFormField' to 'updatePOFormField' and added a non-null assertion as the 'if' condition guarantees 'supplier_id' is not null.
                 if (confirmed) {
                     this.updatePOFormField('supplier_id', ingredient.supplier_id!);
                 }
@@ -297,25 +296,18 @@ export class PurchasingComponent implements OnInit {
         this.isAddingIngredient.set(false);
     }
 
-    // FIX: Replaced the implementation of `updateNewIngredientField` with a type-safe `switch` statement to resolve a TypeScript error where the signal's value was being inferred as 'unknown' during dynamic property updates. This ensures each property is updated correctly according to its type.
+    // FIX: Replaced unsafe object update with a type-safe switch statement to handle different field types correctly. This resolves the "'supplier_id' does not exist on type 'unknown'" error.
     updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.newIngredientForm.update(form => {
             const newForm: Partial<Ingredient> = { ...form };
             
             switch (field) {
-                case 'stock': {
+                case 'stock':
+                case 'cost':
+                case 'min_stock':
+                case 'standard_portion_weight_g': {
                     const numValue = parseFloat(value);
-                    newForm.stock = isNaN(numValue) ? 0 : numValue;
-                    break;
-                }
-                case 'cost': {
-                    const numValue = parseFloat(value);
-                    newForm.cost = isNaN(numValue) ? 0 : numValue;
-                    break;
-                }
-                case 'min_stock': {
-                    const numValue = parseFloat(value);
-                    newForm.min_stock = isNaN(numValue) ? 0 : numValue;
+                    newForm[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
                     break;
                 }
                 case 'price': {
@@ -324,48 +316,25 @@ export class PurchasingComponent implements OnInit {
                     break;
                 }
                 case 'is_sellable':
-                    newForm.is_sellable = value as boolean;
-                    break;
                 case 'is_portionable':
-                    newForm.is_portionable = value as boolean;
-                    break;
                 case 'is_yield_product':
-                    newForm.is_yield_product = value as boolean;
+                    newForm[field] = value as boolean;
                     break;
-                case 'standard_portion_weight_g': {
-                    const numValue = parseFloat(value);
-                    newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
-                    break;
-                }
                 case 'name':
-                    newForm.name = value;
+                    newForm[field] = value;
                     break;
                 case 'unit':
-                    newForm.unit = value as IngredientUnit;
+                    newForm[field] = value as IngredientUnit;
                     break;
                 case 'category_id':
-                    newForm.category_id = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'supplier_id':
-                    newForm.supplier_id = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'pos_category_id':
-                    newForm.pos_category_id = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'station_id':
-                    newForm.station_id = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'proxy_recipe_id':
-                    newForm.proxy_recipe_id = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'external_code':
-                    newForm.external_code = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'expiration_date':
-                    newForm.expiration_date = (value === 'null' || value === '') ? null : value;
-                    break;
                 case 'last_movement_at':
-                    newForm.last_movement_at = (value === 'null' || value === '') ? null : value;
+                    newForm[field] = (value === 'null' || value === '') ? null : value;
                     break;
                 default: {
                     const _exhaustiveCheck: never = field;

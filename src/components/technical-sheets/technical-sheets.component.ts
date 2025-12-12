@@ -221,7 +221,7 @@ export class TechnicalSheetsComponent {
           const baseIngredient = ingredientsMap.get(i.ingredient_id);
           const baseUnit = baseIngredient?.unit || 'un';
           
-          let displayUnit = baseUnit;
+          let displayUnit: IngredientUnit = baseUnit;
           let displayQuantity = rest.quantity;
 
           // If stored in KG and value is < 1, show in G
@@ -420,25 +420,18 @@ export class TechnicalSheetsComponent {
   }
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
   
-  // FIX: Refactor `updateNewIngredientField` to use a type-safe `switch` statement, resolving a compiler error where `newForm` was incorrectly inferred as `unknown`. This eliminates `as any` type assertions and ensures each property is updated correctly according to its type.
+  // FIX: Replaced unsafe object update with a type-safe switch statement to handle different field types correctly. This resolves the "'unit' does not exist on type 'unknown'" error.
   updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
     this.newIngredientForm.update(form => {
       const newForm: Partial<Ingredient> = { ...form };
       
       switch (field) {
-        case 'stock': {
+        case 'stock':
+        case 'cost':
+        case 'min_stock':
+        case 'standard_portion_weight_g': {
           const numValue = parseFloat(value);
-          newForm.stock = isNaN(numValue) ? 0 : numValue;
-          break;
-        }
-        case 'cost': {
-          const numValue = parseFloat(value);
-          newForm.cost = isNaN(numValue) ? 0 : numValue;
-          break;
-        }
-        case 'min_stock': {
-          const numValue = parseFloat(value);
-          newForm.min_stock = isNaN(numValue) ? 0 : numValue;
+          newForm[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
           break;
         }
         case 'price': {
@@ -447,48 +440,25 @@ export class TechnicalSheetsComponent {
           break;
         }
         case 'is_sellable':
-          newForm.is_sellable = value as boolean;
-          break;
         case 'is_portionable':
-          newForm.is_portionable = value as boolean;
-          break;
         case 'is_yield_product':
-          newForm.is_yield_product = value as boolean;
+          newForm[field] = value as boolean;
           break;
-        case 'standard_portion_weight_g': {
-          const numValue = parseFloat(value);
-          newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
-          break;
-        }
         case 'name':
-          newForm.name = value;
+          newForm[field] = value;
           break;
         case 'unit':
-          newForm.unit = value as IngredientUnit;
+          newForm[field] = value as IngredientUnit;
           break;
         case 'category_id':
-          newForm.category_id = (value === 'null' || value === '') ? null : value;
-          break;
         case 'supplier_id':
-          newForm.supplier_id = (value === 'null' || value === '') ? null : value;
-          break;
         case 'pos_category_id':
-          newForm.pos_category_id = (value === 'null' || value === '') ? null : value;
-          break;
         case 'station_id':
-          newForm.station_id = (value === 'null' || value === '') ? null : value;
-          break;
         case 'proxy_recipe_id':
-          newForm.proxy_recipe_id = (value === 'null' || value === '') ? null : value;
-          break;
         case 'external_code':
-          newForm.external_code = (value === 'null' || value === '') ? null : value;
-          break;
         case 'expiration_date':
-          newForm.expiration_date = (value === 'null' || value === '') ? null : value;
-          break;
         case 'last_movement_at':
-          newForm.last_movement_at = (value === 'null' || value === '') ? null : value;
+          newForm[field] = (value === 'null' || value === '') ? null : value;
           break;
         default: {
           // This should be unreachable if the type of `field` is correct
@@ -650,7 +620,6 @@ export class TechnicalSheetsComponent {
               name: form.recipe.name!,
               preparations: form.preparations.map(p => ({
                   name: p.name || 'Etapa sem nome',
-                  // FIX: Explicitly type the 'i' parameter to provide the correct type information to the compiler, removing the need for 'as any'.
                   ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map(i => ({
                       name: this.getIngredientName(i.ingredient_id),
                       quantity: i.quantity,
