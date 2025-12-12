@@ -38,6 +38,7 @@ import { loginGuard } from './guards/login.guard';
 import { IfoodStoreManagerComponent } from './components/ifood-store-manager/ifood-store-manager.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { PortioningComponent } from './components/inventory/portioning/portioning.component';
+import { InventoryOverviewComponent } from './components/inventory/inventory-overview/inventory-overview.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
@@ -51,9 +52,16 @@ export const APP_ROUTES: Routes = [
   { path: 'kds', component: KdsComponent, canActivate: [roleGuard] },
   { path: 'ifood-kds', component: IfoodKdsComponent, canActivate: [roleGuard] },
   { path: 'cashier', component: CashierComponent, canActivate: [roleGuard] },
-  { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
-  { path: 'inventory/audit', component: InventoryAuditComponent, canActivate: [roleGuard] },
-  { path: 'inventory/portioning', component: PortioningComponent, canActivate: [roleGuard] },
+  { 
+    path: 'inventory', 
+    component: InventoryComponent, 
+    canActivate: [roleGuard],
+    children: [
+      { path: '', component: InventoryOverviewComponent },
+      { path: 'portioning', component: PortioningComponent },
+      { path: 'audit', component: InventoryAuditComponent },
+    ]
+  },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard] },
   { path: 'suppliers', component: SuppliersComponent, canActivate: [roleGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [roleGuard] },

@@ -1,28 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -128,7 +103,10 @@ export class PurchasingComponent implements OnInit {
                 const itemsForThisOrder = suppliersInOrder.get(firstSupplierId);
     
                 this.openAddModal(itemsForThisOrder);
-                this.orderForm.update(form => ({ ...form, supplier_id: firstSupplierId }));
+                // FIX: The compiler infers the signal's value as 'unknown' in this context, causing a type error.
+                // Using the existing type-safe `updateOrderFormField` method resolves this by providing a consistent
+                // way to update the form state that the compiler can correctly interpret.
+                this.updateOrderFormField('supplier_id', firstSupplierId ?? 'null');
             }
         }
     }

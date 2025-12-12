@@ -1,0 +1,172 @@
+
+<!-- Filters and Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4 no-print">
+  <div class="relative w-full md:w-1/2">
+    <input 
+      type="text" 
+      [value]="searchTerm()" 
+      (input)="searchTerm.set($any($event).target).value)"
+      placeholder="Buscar ingrediente pelo nome..." 
+      class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    </div>
+  </div>
+  <div class="flex w-full md:w-auto items-center gap-2">
+    <button (click)="openAddModal()" class="flex-1 md:flex-initial bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+      <span>Adicionar Ingrediente</span>
+    </button>
+  </div>
+</div>
+<div class="mb-4 flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg no-print">
+    <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
+    <button (click)="activeCategoryFilter.set(null)"
+        class="px-3 py-1 text-sm rounded-full transition-colors"
+        [class.bg-blue-600]="activeCategoryFilter() === null"
+        [class.text-white]="activeCategoryFilter() === null"
+        [class.bg-gray-700]="activeCategoryFilter() !== null"
+        [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
+        Todas
+    </button>
+    @for (category of categories(); track category.id) {
+        <button (click)="activeCategoryFilter.set(category.id)"
+            class="px-3 py-1 text-sm rounded-full transition-colors"
+            [class.bg-blue-600]="activeCategoryFilter() === category.id"
+            [class.text-white]="activeCategoryFilter() === category.id"
+            [class.bg-gray-700]="activeCategoryFilter() !== category.id"
+            [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
+            {{ category.name }}
+        </button>
+    }
+</div>
+
+<!-- Ingredient List -->
+<div class="bg-gray-800 rounded-lg">
+  @if (filteredIngredients().length === 0) {
+    <div class="text-center py-16">
+      <p class="text-gray-500">Nenhum ingrediente encontrado.</p>
+    </div>
+  } @else {
+    <!-- Desktop Table View -->
+    <div class="hidden md:block overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+          <tr>
+            <th class="px-6 py-3">Ingrediente</th>
+            <th class="px-6 py-3 text-right">Estoque</th>
+            <th class="px-6 py-3 text-right">Custo Unitário</th>
+            <th class="px-6 py-3 text-right">Valor em Estoque</th>
+            <th class="px-6 py-3 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ingredient of filteredIngredients(); track ingredient.id) {
+            <tr (click)="openDetailsModal(ingredient)" class="border-b border-gray-700 hover:bg-gray-700/40 cursor-pointer">
+              <td class="px-6 py-4 font-medium text-white">{{ ingredient.name }}</td>
+              <td class="px-6 py-4 text-right" [class.text-red-400]="ingredient.stock < ingredient.min_stock">
+                {{ ingredient.stock | number:'1.0-3' }} {{ ingredient.unit }}
+              </td>
+              <td class="px-6 py-4 text-right">{{ ingredient.cost | currency:'BRL' }}</td>
+              <td class="px-6 py-4 text-right font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</td>
+              <td class="px-6 py-4 text-center">
+                @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                  <div (click)="$event.stopPropagation()" class="flex gap-2 justify-center items-center">
+                    <span class="text-sm text-red-300">Certeza?</span>
+                    <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                    <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
+                } @else {
+                  <div (click)="$event.stopPropagation()" class="flex gap-4 justify-center">
+                    <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:underline">Editar</button>
+                    <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:underline">Excluir</button>
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="block md:hidden p-4 space-y-4">
+      @for (ingredient of filteredIngredients(); track ingredient.id) {
+        <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-semibold text-white text-lg">{{ ingredient.name }}</p>
+              <p class="text-sm" [class.text-red-400]="ingredient.stock < ingredient.min_stock" [class.text-gray-400]="ingredient.stock >= ingredient.min_stock">
+                Estoque: {{ ingredient.stock | number:'1.0-3' }} {{ ingredient.unit }}
+              </p>
+            </div>
+            <p class="text-xl font-semibold text-green-400">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
+          </div>
+          <div (click)="$event.stopPropagation()" class="flex justify-end gap-4 pt-3 border-t border-gray-600/50">
+            @if (ingredientPendingDeletion()?.id === ingredient.id) {
+              <div class="flex gap-2 items-center w-full justify-end">
+                <span class="text-sm text-red-300">Certeza?</span>
+                <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+              </div>
+            } @else {
+              <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:underline text-sm font-semibold">Editar</button>
+              <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:underline text-sm font-semibold">Excluir</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Add/Edit Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingIngredient() ? 'Editar Ingrediente' : 'Novo Ingrediente' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm text-gray-300 mb-1">Nome *</label><input type="text" [value]="ingredientForm().name || ''" (input)="updateIngredientFormField('name', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+          <div><label class="block text-sm text-gray-300 mb-1">Unidade *</label><select [value]="ingredientForm().unit" (change)="updateIngredientFormField('unit', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white">@for(u of availableUnits; track u){<option [value]="u">{{u}}</option>}</select></div>
+        </div>
+        <!-- Stock & Cost -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div><label class="block text-sm text-gray-300 mb-1">Custo Unitário *</label><input type="number" [value]="ingredientForm().cost" (input)="updateIngredientFormField('cost', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+          <div><label class="block text-sm text-gray-300 mb-1">Estoque Inicial</label><input type="number" [value]="ingredientForm().stock" (input)="updateIngredientFormField('stock', $any($event.target).value)" [disabled]="!!editingIngredient()" class="w-full bg-gray-700 rounded p-2 text-white disabled:bg-gray-900/50 disabled:cursor-not-allowed"></div>
+          <div><label class="block text-sm text-gray-300 mb-1">Estoque Mínimo</label><input type="number" [value]="ingredientForm().min_stock" (input)="updateIngredientFormField('min_stock', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+        </div>
+        <!-- Associations -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm text-gray-300 mb-1">Categoria</label><select [value]="ingredientForm().category_id" (change)="updateIngredientFormField('category_id', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"><option value="null">Nenhuma</option>@for(c of categories(); track c.id){<option [value]="c.id">{{c.name}}</option>}</select></div>
+          <div><label class="block text-sm text-gray-300 mb-1">Fornecedor</label><select [value]="ingredientForm().supplier_id" (change)="updateIngredientFormField('supplier_id', $any($event.target).value)" class="w-full bg-gray-700 rounded p-2 text-white"><option value="null">Nenhum</option>@for(s of suppliers(); track s.id){<option [value]="s.id">{{s.name}}</option>}</select></div>
+        </div>
+        <!-- Portioning Flags -->
+        <div class="space-y-2 pt-4 border-t border-gray-700">
+          <div class="flex items-center"><input type="checkbox" id="is_portionable" [checked]="ingredientForm().is_portionable" (change)="updateIngredientFormField('is_portionable', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600"><label for="is_portionable" class="ml-2 text-sm text-gray-200">É um insumo porcionável? (Ex: Peça de Picanha)</label></div>
+          <div class="flex items-center"><input type="checkbox" id="is_yield_product" [checked]="ingredientForm().is_yield_product" (change)="updateIngredientFormField('is_yield_product', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600"><label for="is_yield_product" class="ml-2 text-sm text-gray-200">É um produto de rendimento? (Ex: Medalhão, Aparas)</label></div>
+        </div>
+        @if(ingredientForm().is_yield_product) {
+          <div><label class="block text-sm text-gray-300 mb-1">Peso Padrão da Porção (g)</label><input type="number" [value]="ingredientForm().standard_portion_weight_g" (input)="updateIngredientFormField('standard_portion_weight_g', $any($event.target).value)" placeholder="Ex: 200" class="w-full bg-gray-700 rounded p-2 text-white"></div>
+        }
+      </div>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="saveIngredient()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Details Modal -->
+@if(isDetailsModalOpen() && selectedIngredientForDetails(); as ingredient) {
+  <app-ingredient-details-modal 
+    [ingredient]="ingredient"
+    [lots]="lotsForSelectedIngredient()"
+    (close)="isDetailsModalOpen.set(false)">
+  </app-ingredient-details-modal>
+}
