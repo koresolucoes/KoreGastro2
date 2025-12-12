@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -20,6 +21,9 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
     cost: 0,
     stock: 0,
     min_stock: 0,
+    is_portionable: false,
+    is_yield_product: false,
+    standard_portion_weight_g: null
 };
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
@@ -223,21 +227,52 @@ export class InventoryComponent {
         this.isDetailsModalOpen.set(true);
     }
 
-    updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'ingredient_categories' | 'suppliers'>, value: any) {
+    updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.ingredientForm.update(form => {
-            const newForm = { ...form };
-            if (field === 'is_sellable') {
-                newForm[field] = value as boolean;
-            } else if (['category_id', 'supplier_id', 'pos_category_id', 'station_id', 'expiration_date'].includes(field as string)) {
-                newForm[field as 'category_id' | 'supplier_id' | 'pos_category_id' | 'station_id' | 'expiration_date'] = (value === 'null' || value === '') ? null : value;
-            } else if (['name', 'unit', 'last_movement_at', 'external_code'].includes(field as string)) {
-                newForm[field as 'name' | 'unit' | 'last_movement_at' | 'external_code'] = value;
-            } else if (['stock', 'cost', 'min_stock', 'price'].includes(field as string)) {
-                const numValue = parseFloat(value);
-                if (!isNaN(numValue)) {
-                    newForm[field as 'stock' | 'cost' | 'min_stock' | 'price'] = numValue;
+            const newForm: Partial<Ingredient> = { ...form };
+            
+            switch (field) {
+                case 'stock':
+                case 'cost':
+                case 'min_stock': {
+                    const numValue = parseFloat(value);
+                    newForm[field] = isNaN(numValue) ? 0 : numValue;
+                    break;
+                }
+                case 'price':
+                case 'standard_portion_weight_g': {
+                    const numValue = parseFloat(value);
+                    newForm[field] = isNaN(numValue) ? null : numValue;
+                    break;
+                }
+                case 'is_sellable':
+                case 'is_portionable':
+                case 'is_yield_product':
+                    newForm[field] = value as boolean;
+                    break;
+                case 'name':
+                    newForm.name = value;
+                    break;
+                case 'unit':
+                    newForm.unit = value as IngredientUnit;
+                    break;
+                case 'category_id':
+                case 'supplier_id':
+                case 'pos_category_id':
+                case 'station_id':
+                case 'proxy_recipe_id':
+                case 'external_code':
+                case 'expiration_date':
+                case 'last_movement_at':
+                    newForm[field] = (value === 'null' || value === '') ? null : value;
+                    break;
+                default: {
+                    // This will cause a compile-time error if I forget a case, which is good.
+                    const _exhaustiveCheck: never = field;
+                    break;
                 }
             }
+            
             return newForm;
         });
     }

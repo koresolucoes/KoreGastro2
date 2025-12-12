@@ -525,7 +525,8 @@ export class TechnicalSheetsComponent {
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
-    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
     const ingredientsToSave = form.ingredients.map((formIngredient: (Omit<RecipeIngredient, 'user_id' | 'recipe_id'> & { unit: IngredientUnit })) => {
         const baseIngredient = ingredientsMap.get(formIngredient.ingredient_id);
         if (!baseIngredient) return null;
