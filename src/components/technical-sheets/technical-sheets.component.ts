@@ -479,18 +479,6 @@ export class TechnicalSheetsComponent {
         case 'last_movement_at':
           newForm.last_movement_at = (value === 'null' || value === '') ? null : value;
           break;
-        // FIX: Add missing cases for new Ingredient properties to make the switch exhaustive.
-        case 'is_portionable':
-            newForm.is_portionable = value as boolean;
-            break;
-        case 'is_yield_product':
-            newForm.is_yield_product = value as boolean;
-            break;
-        case 'standard_portion_weight_g': {
-            const numValue = parseFloat(value);
-            newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
-            break;
-        }
         default: {
           // This should be unreachable if the type of `field` is correct
           const _exhaustiveCheck: never = field;
@@ -556,8 +544,7 @@ export class TechnicalSheetsComponent {
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
-    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
-    const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
+    const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
     const ingredientsToSave = form.ingredients.map(formIngredient => {
         const baseIngredient = ingredientsMap.get(formIngredient.ingredient_id);
         if (!baseIngredient) return null;

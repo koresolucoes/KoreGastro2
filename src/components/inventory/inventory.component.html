@@ -1,34 +1,715 @@
 
-<div class="container mx-auto h-full flex flex-col">
-  <div class="flex-shrink-0">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-white">Gestão de Estoque</h1>
-        <p class="text-gray-400 mt-1">Monitore, cadastre e ajuste os insumos do seu restaurante.</p>
+<div class="container mx-auto">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Gestão de Estoque</h1>
+      <p class="text-gray-400 mt-1">Monitore, cadastre e ajuste os insumos do seu restaurante.</p>
+    </div>
+    <div class="flex items-center gap-2 self-start md:self-center">
+        <a routerLink="/inventory/audit" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-500 transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0v-5.25a.75.75 0 01.75-.75zm0 0a.75.75 0 100-1.5.75.75 0 000 1.5zM12 21a9 9 0 110-18 9 9 0 010 18z" /></svg>
+            <span>Realizar Contagem</span>
+        </a>
+        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors">
+          Adicionar Ingrediente
+        </button>
+    </div>
+  </div>
+
+  <!-- Interactive Dashboard -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div 
+      (click)="setDashboardFilter('all')"
+      class="bg-gray-800 p-4 rounded-lg cursor-pointer transition-all border-2"
+      [class.border-blue-500]="activeDashboardFilter() === 'all'"
+      [class.border-gray-700]="activeDashboardFilter() !== 'all'"
+      [class.hover:border-gray-600]="activeDashboardFilter() !== 'all'">
+      <h3 class="text-sm font-medium text-gray-400">Inventário Total</h3>
+      <p class="text-2xl font-bold text-white">{{ ingredients().length }} Itens</p>
+      <p class="text-sm font-semibold text-blue-300 mt-1">{{ totalInventoryCost() | currency:'BRL' }}</p>
+    </div>
+    <div 
+      (click)="setDashboardFilter('low_stock')"
+      class="bg-gray-800 p-4 rounded-lg cursor-pointer transition-all border-2"
+      [class.border-yellow-500]="activeDashboardFilter() === 'low_stock'"
+      [class.border-gray-700]="activeDashboardFilter() !== 'low_stock'"
+      [class.hover:border-gray-600]="activeDashboardFilter() !== 'low_stock'">
+      <h3 class="text-sm font-medium text-yellow-400">Estoque Baixo</h3>
+      <p class="text-2xl font-bold text-white">{{ lowStockCount() }}</p>
+    </div>
+    <div 
+      (click)="setDashboardFilter('expiring_soon')"
+      class="bg-gray-800 p-4 rounded-lg cursor-pointer transition-all border-2"
+      [class.border-orange-500]="activeDashboardFilter() === 'expiring_soon'"
+      [class.border-gray-700]="activeDashboardFilter() !== 'expiring_soon'"
+      [class.hover:border-gray-600]="activeDashboardFilter() !== 'expiring_soon'">
+      <h3 class="text-sm font-medium text-orange-400">Próximos a Vencer (7d)</h3>
+      <p class="text-2xl font-bold text-white">{{ expiringSoonCount() }}</p>
+    </div>
+    <div 
+      (click)="setDashboardFilter('stagnant')"
+      class="bg-gray-800 p-4 rounded-lg cursor-pointer transition-all border-2"
+      [class.border-purple-500]="activeDashboardFilter() === 'stagnant'"
+      [class.border-gray-700]="activeDashboardFilter() !== 'stagnant'"
+      [class.hover:border-gray-600]="activeDashboardFilter() !== 'stagnant'">
+      <h3 class="text-sm font-medium text-purple-400">Estoque Parado (30d)</h3>
+      <p class="text-2xl font-bold text-white">{{ stagnantStockCount() }}</p>
+    </div>
+  </div>
+  
+  <!-- AI Prediction Section -->
+  <div class="bg-gray-800 rounded-lg p-6 mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-xl font-semibold text-white">Análise e Previsão com IA</h2>
+            <p class="text-gray-400 mt-1 text-sm">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
+        </div>
+        <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+          @if(isAnalyzingStock()) {
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span>Analisando...</span>
+          } @else {
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+            <span>Analisar Estoque</span>
+          }
+        </button>
+    </div>
+    @if(stockPrediction(); as predictions) {
+      <div class="mt-4 pt-4 border-t border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold text-white">Previsão para a Próxima Semana</h3>
+            <button (click)="generatePurchaseOrder()" [disabled]="!hasItemsToOrder()" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-green-500 transition-colors text-sm disabled:opacity-50">
+                Gerar Ordem de Compra
+            </button>
+        </div>
+        <div class="max-h-60 overflow-y-auto pr-2">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gray-700/50 text-gray-300 uppercase sticky top-0"><tr>
+                <th class="px-4 py-2">Ingrediente</th>
+                <th class="px-4 py-2 text-center">Estoque Atual</th>
+                <th class="px-4 py-2 text-center">Uso Previsto</th>
+                <th class="px-4 py-2 text-center">Sugestão de Compra</th>
+            </tr></thead>
+            <tbody>@for(p of predictions; track p.ingredientId) {
+            <tr class="border-b border-gray-700">
+                <td class="px-4 py-2 font-medium text-white">{{p.ingredientName}}</td>
+                <td class="px-4 py-2 text-center text-gray-300">{{p.currentStock}} {{p.unit}}</td>
+                <td class="px-4 py-2 text-center text-yellow-300 font-medium">{{p.predictedUsage}} {{p.unit}}</td>
+                <td class="px-4 py-2 text-center text-blue-300 font-bold bg-gray-700/50">{{p.suggestedPurchase}} {{p.unit}}</td>
+            </tr>
+            }</tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+
+
+  <!-- Search and Category Filters -->
+  <div class="mb-4 space-y-4">
+    <div class="relative">
+      <input 
+        type="text" 
+        [value]="searchTerm()" 
+        (input)="searchTerm.set($any($event.target).value)"
+        placeholder="Buscar ingrediente pelo nome..." 
+        class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
       </div>
     </div>
-
-    <!-- Tabs Navigation -->
-    <div class="mb-4 border-b border-gray-700 no-print">
-      <nav class="-mb-px flex space-x-6">
-        <a routerLink="/inventory" routerLinkActive="border-blue-500 text-white" [routerLinkActiveOptions]="{exact: true}"
-          class="py-3 px-1 border-b-2 text-sm font-medium text-gray-400 hover:text-gray-200">
-          Visão Geral
-        </a>
-        <a routerLink="/inventory/portioning" routerLinkActive="border-blue-500 text-white"
-          class="py-3 px-1 border-b-2 text-sm font-medium text-gray-400 hover:text-gray-200">
-          Porcionamento
-        </a>
-        <a routerLink="/inventory/audit" routerLinkActive="border-blue-500 text-white"
-          class="py-3 px-1 border-b-2 text-sm font-medium text-gray-400 hover:text-gray-200">
-          Realizar Contagem
-        </a>
-      </nav>
+    <div class="flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg">
+        <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
+        <button (click)="setCategoryFilter(null)"
+            class="px-3 py-1 text-sm rounded-full transition-colors"
+            [class.bg-blue-600]="activeCategoryFilter() === null"
+            [class.text-white]="activeCategoryFilter() === null"
+            [class.bg-gray-700]="activeCategoryFilter() !== null"
+            [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
+            Todas
+        </button>
+        @for (category of categories(); track category.id) {
+            <button (click)="setCategoryFilter(category.id)"
+                class="px-3 py-1 text-sm rounded-full transition-colors"
+                [class.bg-blue-600]="activeCategoryFilter() === category.id"
+                [class.text-white]="activeCategoryFilter() === category.id"
+                [class.bg-gray-700]="activeCategoryFilter() !== category.id"
+                [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
+                {{ category.name }}
+            </button>
+        }
     </div>
   </div>
 
-  <!-- Main content area for child routes -->
-  <div class="flex-1 overflow-y-auto">
-    <router-outlet></router-outlet>
+  <div class="bg-gray-800 rounded-lg">
+    <!-- Desktop Table View -->
+    <div class="hidden md:block overflow-x-auto">
+      <table class="w-full text-left min-w-max">
+        <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+          <tr>
+            <th scope="col" class="px-6 py-3">Ingrediente</th>
+            <th scope="col" class="px-6 py-3">Estoque</th>
+            <th scope="col" class="px-6 py-3">Cód. Externo</th>
+            <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
+            <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
+            <th scope="col" class="px-6 py-3 text-center">Status</th>
+            <th scope="col" class="px-6 py-3 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ingredient of filteredIngredients(); track ingredient.id) {
+            <tr (click)="openDetailsModal(ingredient)" class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150 cursor-pointer" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+              <td class="px-6 py-4 font-medium text-white">
+                <div>{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</div>
+                <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
+              </td>
+              <td class="px-6 py-4">{{ ingredient.stock }} {{ ingredient.unit }}</td>
+              <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ ingredient.external_code || '-' }}</td>
+              <td class="px-6 py-4 text-right">{{ ingredient.cost | currency:'BRL' }}</td>
+              <td class="px-6 py-4 text-right font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</td>
+              <td class="px-6 py-4 text-center">
+                @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                  <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
+                } @else {
+                  <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
+                }
+              </td>
+              <td class="px-6 py-4 text-center">
+                <div (click)="$event.stopPropagation()">
+                  @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                      <div class="flex gap-2 justify-center items-center">
+                          <span class="text-sm text-red-300">Certeza?</span>
+                          <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                          <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                      </div>
+                  } @else {
+                      <div class="flex gap-2 justify-center">
+                          <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
+                          <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
+                          <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                      </div>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+           @if(filteredIngredients().length === 0) {
+              <tr>
+                <td colspan="8" class="text-center text-gray-500 py-16">
+                  Nenhum ingrediente encontrado com os filtros atuais.
+                </td>
+              </tr>
+           }
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Mobile Card View -->
+    <div class="block md:hidden p-4 space-y-4">
+      @for (ingredient of filteredIngredients(); track ingredient.id) {
+        <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+          <!-- Top row: Name and Status -->
+          <div class="flex justify-between items-start">
+              <div>
+                  <p class="font-semibold text-white">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</p>
+                  <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
+              </div>
+              @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
+              } @else {
+                <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
+              }
+          </div>
+
+          <!-- Middle: Details Grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
+              <div>
+                  <p class="text-gray-400 text-xs">Estoque</p>
+                  <p class="text-white font-medium">{{ ingredient.stock }} {{ ingredient.unit }}</p>
+              </div>
+               <div>
+                  <p class="text-gray-400 text-xs">Custo Total</p>
+                  <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
+              </div>
+              <div>
+                  <p class="text-gray-400 text-xs">Cód. Externo</p>
+                  <p class="text-white font-mono text-xs">{{ ingredient.external_code || '-' }}</p>
+              </div>
+              <div>
+                  <p class="text-gray-400 text-xs">Últ. Mov.</p>
+                  <p class="text-white font-medium">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
+              </div>
+          </div>
+
+          <!-- Bottom: Actions -->
+          <div (click)="$event.stopPropagation()" class="pt-3 border-t border-gray-600/50">
+              @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                  <div class="flex gap-2 justify-end items-center">
+                      <span class="text-sm text-red-300">Certeza?</span>
+                      <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                      <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  </div>
+              } @else {
+                  <div class="flex gap-2 justify-end">
+                      <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
+                      <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
+                      <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                  </div>
+              }
+          </div>
+        </div>
+      }
+      @if(filteredIngredients().length === 0) {
+        <div class="text-center text-gray-500 py-16">
+          Nenhum ingrediente encontrado com os filtros atuais.
+        </div>
+      }
+    </div>
+
   </div>
 </div>
+
+<!-- Add/Edit Ingredient Modal -->
+@if(isModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <h3 class="text-xl font-bold text-white">{{ editingIngredient() ? 'Editar Ingrediente' : 'Adicionar Novo Ingrediente' }}</h3>
+        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Ingrediente</label>
+              <input type="text" [value]="ingredientForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" placeholder="Ex: Farinha de Trigo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Cód. Externo (PDV / iFood)</label>
+              <input type="text" [value]="ingredientForm().external_code || ''" (input)="updateFormValue('external_code', $any($event.target).value)" placeholder="Ex: SKU123" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Categoria de Estoque</label>
+              <select (change)="updateFormValue('category_id', $any($event.target).value)" [value]="ingredientForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option [value]="null">Nenhuma</option>
+                @for (cat of categories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor Principal</label>
+              <select (change)="updateFormValue('supplier_id', $any($event.target).value)" [value]="ingredientForm().supplier_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option [value]="null">Nenhum</option>
+                @for (sup of suppliers(); track sup.id) {
+                  <option [value]="sup.id">{{ sup.name }}</option>
+                }
+              </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          @if (!editingIngredient()) {
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Inicial</label>
+              <input type="number" [value]="ingredientForm().stock ?? 0" (input)="updateFormValue('stock', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          } @else {
+             <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Atual</label>
+                <input type="number" [value]="ingredientForm().stock ?? 0" disabled class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
+            </div>
+          }
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
+            <select (change)="updateFormValue('unit', $any($event.target).value)" [value]="ingredientForm().unit" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              @for (unit of availableUnits; track unit) {
+                <option [value]="unit">{{ unit.toUpperCase() }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Custo Unitário (R$)</label>
+            <input type="number" [value]="ingredientForm().cost ?? 0" (input)="updateFormValue('cost', $any($event.target).value)" placeholder="Ex: 12.50" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Mínimo</label>
+            <input type="number" [value]="ingredientForm().min_stock ?? 0" (input)="updateFormValue('min_stock', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
+            <input type="date" [value]="ingredientForm().expiration_date | date:'yyyy-MM-dd'" (input)="updateFormValue('expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Sellable Item Section -->
+        <div class="pt-4 border-t border-gray-700">
+            <div class="flex items-center">
+                <input id="is_sellable" type="checkbox" [checked]="ingredientForm().is_sellable" (change)="updateFormValue('is_sellable', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+                <label for="is_sellable" class="ml-2 block text-sm font-medium text-gray-200">Pode ser vendido diretamente no PDV?</label>
+            </div>
+            @if(ingredientForm().is_sellable) {
+                <div class="mt-4 space-y-4 p-4 bg-gray-700/50 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
+                        <input type="number" [value]="ingredientForm().price ?? 0" (input)="updateFormValue('price', $any($event.target).value)" placeholder="Ex: 5.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Categoria no PDV</label>
+                            <select (change)="updateFormValue('pos_category_id', $any($event.target).value)" [value]="ingredientForm().pos_category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option [value]="null">Selecione...</option>
+                                @for(cat of recipeCategories(); track cat.id) {
+                                    <option [value]="cat.id">{{ cat.name }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Estação KDS</label>
+                             <select (change)="updateFormValue('station_id', $any($event.target).value)" [value]="ingredientForm().station_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                <option [value]="null">Selecione...</option>
+                                @for(station of stations(); track station.id) {
+                                    <option [value]="station.id">{{ station.name }}</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+         <button (click)="saveIngredient()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar</button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- Adjustment Modal -->
+@if(isAdjustmentModalOpen() && adjustmentIngredient(); as ingredient) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAdjustmentModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+        <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
+            <div>
+                <h3 class="text-xl font-bold text-white">Ajustar Estoque</h3>
+                <p class="text-gray-400">{{ ingredient.name }}</p>
+            </div>
+            <button (click)="closeAdjustmentModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-6 flex-1 overflow-y-auto">
+            <!-- Action Type Toggle -->
+            <div class="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-lg mb-6">
+                <button 
+                    (click)="setAdjustmentType('entry')" 
+                    class="py-2 px-4 rounded-md text-sm font-semibold transition-colors"
+                    [class.bg-green-600]="adjustmentType() === 'entry'"
+                    [class.text-white]="adjustmentType() === 'entry'"
+                    [class.text-gray-400]="adjustmentType() !== 'entry'"
+                    [class.hover:bg-gray-700]="adjustmentType() !== 'entry'">
+                    Registrar Entrada
+                </button>
+                <button 
+                    (click)="setAdjustmentType('exit')"
+                    class="py-2 px-4 rounded-md text-sm font-semibold transition-colors"
+                    [class.bg-red-600]="adjustmentType() === 'exit'"
+                    [class.text-white]="adjustmentType() === 'exit'"
+                    [class.text-gray-400]="adjustmentType() !== 'exit'"
+                    [class.hover:bg-gray-700]="adjustmentType() !== 'exit'">
+                    Registrar Saída
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Quantity -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade</label>
+                    <div class="flex items-center">
+                        <input type="number" min="0" [value]="adjustmentQuantity()" (input)="adjustmentQuantity.set(+$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <span class="ml-3 text-gray-400 uppercase font-semibold">{{ ingredient.unit }}</span>
+                    </div>
+                </div>
+
+                 @if (adjustmentType() === 'entry') {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Nº do Lote</label>
+                            <input type="text" [value]="adjustmentLotNumber()" (input)="adjustmentLotNumber.set($any($event.target).value || null)" placeholder="(Opcional)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
+                            <input type="date" [value]="adjustmentExpirationDate() | date:'yyyy-MM-dd'" (input)="adjustmentExpirationDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                 }
+
+                <!-- Reason -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Motivo do Ajuste</label>
+                    <select (change)="adjustmentReason.set($any($event.target).value)" [value]="adjustmentReason()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        @if (adjustmentType() === 'entry') {
+                            @for(reason of entryReasons; track reason) {
+                                <option [value]="reason">{{ reason }}</option>
+                            }
+                        } @else {
+                             @for(reason of exitReasons; track reason) {
+                                <option [value]="reason">{{ reason }}</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Conditional Fields -->
+                @if(adjustmentReason() === 'Compra de Fornecedor') {
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor (Opcional)</label>
+                        <select (change)="adjustmentSupplierId.set($any($event.target).value || null)" [value]="adjustmentSupplierId()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione um fornecedor</option>
+                            @for(supplier of suppliers(); track supplier.id) {
+                                <option [value]="supplier.id">{{ supplier.name }}</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                @if(adjustmentReason() === 'Outro') {
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Especifique o Motivo</label>
+                        <input type="text" [value]="adjustmentCustomReason()" (input)="adjustmentCustomReason.set($any($event.target).value)" placeholder="Descreva o motivo..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                }
+            </div>
+
+            <!-- Stock Preview -->
+            <div class="flex justify-between text-xs text-gray-500 mt-4 px-1">
+                <span>Estoque Atual: <span class="font-bold text-gray-400">{{ ingredient.stock }}</span></span>
+                <span>Após Ajuste: <span class="font-bold text-lg" [class.text-green-400]="stockAfterAdjustment() > ingredient.stock" [class.text-red-400]="stockAfterAdjustment() < ingredient.stock">{{ stockAfterAdjustment() }}</span></span>
+            </div>
+
+             <!-- Lot Listing -->
+            @if (lotsForAdjustmentModal().length > 0) {
+              <div class="mt-6 pt-4 border-t border-gray-700">
+                <h4 class="text-md font-semibold text-white mb-2">Lotes em Estoque</h4>
+                <div class="max-h-40 overflow-y-auto pr-2 bg-gray-900/50 rounded-lg">
+                  <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-gray-700/80 backdrop-blur-sm">
+                      <tr>
+                        <th class="p-2">Lote</th>
+                        <th class="p-2">Validade</th>
+                        <th class="p-2 text-right">Quantidade</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for(lot of lotsForAdjustmentModal(); track lot.id) {
+                        <tr class="border-b border-gray-700/50">
+                          <td class="p-2">{{ lot.lot_number || 'N/A' }}</td>
+                          <td class="p-2">{{ lot.expiration_date | date:'dd/MM/yy' }}</td>
+                          <td class="p-2 text-right font-mono">{{ lot.quantity | number }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
+        </div>
+
+        <div class="p-4 bg-gray-900/50 flex justify-end gap-3 flex-shrink-0 border-t border-gray-700">
+            <button (click)="closeAdjustmentModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+            <button 
+                (click)="handleAdjustStock()"
+                class="px-6 py-2 font-bold rounded-lg text-white transition-colors"
+                [class.bg-green-600]="adjustmentType() === 'entry'"
+                [class.hover:bg-green-500]="adjustmentType() === 'entry'"
+                [class.bg-red-600]="adjustmentType() === 'exit'"
+                [class.hover:bg-red-500]="adjustmentType() === 'exit'">
+                {{ adjustmentType() === 'entry' ? 'Confirmar Entrada' : 'Confirmar Saída' }}
+            </button>
+        </div>
+    </div>
+  </div>
+}
+
+<!-- Ingredient Details Modal -->
+@if(isDetailsModalOpen() && selectedIngredientForDetails()) {
+  <app-ingredient-details-modal
+    [ingredient]="selectedIngredientForDetails()!"
+    [lots]="lotsForSelectedIngredient()"
+    (close)="isDetailsModalOpen.set(false)">
+  </app-ingredient-details-modal>
+}
+
+<!-- Purchase Order Modal -->
+@if(isPurchaseOrderModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePurchaseOrderModal()">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-white">Nova Ordem de Compra</h3>
+        <button (click)="closePurchaseOrderModal()" class="p-1 rounded-full text-gray-400 hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+        <!-- Order Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor</label>
+            <select (change)="updatePOFormField('supplier_id', $any($event.target).value)" [value]="poForm().supplier_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="null">Nenhum/Diverso</option>
+              @for(s of suppliers(); track s.id) {
+                <option [value]="s.id">{{s.name}}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+            <select (change)="updatePOFormField('status', $any($event.target).value)" [value]="poForm().status" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option>Rascunho</option>
+              <option>Enviada</option>
+            </select>
+          </div>
+        </div>
+        <!-- Items -->
+        <div>
+          <h4 class="text-lg font-semibold text-white mb-3">Itens do Pedido</h4>
+          @if(poForm().status === 'Enviada') {
+            <div class="mb-3 p-3 bg-blue-900/50 border border-blue-700 rounded-lg text-sm text-blue-300">
+              <p><strong>Atenção:</strong> A ordem foi enviada. Preencha os custos unitários de cada item conforme a nota fiscal antes de marcar o pedido como "Recebido".</p>
+            </div>
+          }
+          <!-- Table Header -->
+          <div class="hidden sm:grid grid-cols-12 gap-x-3 px-3 mb-2 text-xs text-gray-400 font-medium">
+            <span class="col-span-4">Ingrediente</span>
+            <span class="col-span-2 text-center">Custo Unit.</span>
+            <span class="col-span-2 text-center">Lote</span>
+            <span class="col-span-2 text-center">Validade</span>
+            <span class="col-span-2 text-center">Quantidade</span>
+          </div>
+
+          <div class="space-y-2 mb-3">
+            @for(item of poItems(); track item.id) {
+              <div class="p-3 rounded-lg bg-gray-900/50">
+                <div class="grid grid-cols-12 gap-x-3 gap-y-2 items-center">
+                    <div class="col-span-12 sm:col-span-4 font-medium text-white flex justify-between items-center">
+                        <span>{{item.name}}</span>
+                         <button (click)="removePOItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Remover">
+                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
+                        </button>
+                    </div>
+                    
+                    <div class="col-span-6 sm:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Custo Unit.</label>
+                        <input type="number" step="0.01" [value]="item.cost || 0" (change)="updatePOItemField(item.id, 'cost', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Lote</label>
+                        <input type="text" [value]="item.lot_number || ''" (change)="updatePOItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="(Opcional)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Validade</label>
+                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updatePOItemField(item.id, 'expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                    </div>
+                    
+                    <div class="col-span-6 sm:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Quantidade</label>
+                        <div class="flex items-center">
+                            <input type="number" [value]="item.quantity" (change)="updatePOItemField(item.id, 'quantity', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                            <span class="text-xs text-gray-400 ml-2 hidden sm:inline">{{item.unit}}</span>
+                        </div>
+                    </div>
+                    
+                     <div class="col-span-12 sm:hidden text-right text-xs text-gray-400">
+                        Unidade: {{item.unit}}
+                    </div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="relative mt-2">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            </div>
+            <input type="text" [value]="poItemSearchTerm()" (input)="poItemSearchTerm.set($any($event.target).value)" placeholder="Adicionar ingrediente..." class="w-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg p-2 pl-10 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+            @if(poItemSearchTerm()) {
+                <div class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto shadow-lg">
+                    <ul>
+                      @for(ing of poFilteredIngredients(); track ing.id) {
+                        <li (mousedown)="!poCurrentItemIds().has(ing.id) ? addPOItemToOrder(ing) : null" 
+                            class="p-3 text-sm rounded-md"
+                            [class.hover:bg-gray-700]="!poCurrentItemIds().has(ing.id)"
+                            [class.cursor-pointer]="!poCurrentItemIds().has(ing.id)"
+                            [class.opacity-50]="poCurrentItemIds().has(ing.id)"
+                            [class.text-gray-500]="poCurrentItemIds().has(ing.id)">
+                            {{ing.name}}
+                            @if(poCurrentItemIds().has(ing.id)) {
+                                <span class="text-xs italic"> (Já adicionado)</span>
+                            }
+                        </li>
+                      }
+                    </ul>
+                    <div class="border-t border-gray-700 p-2 text-center">
+                      <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:underline">
+                        Não encontrou? Cadastre um novo ingrediente.
+                      </button>
+                    </div>
+                </div>
+              }
+          </div>
+        </div>
+         <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
+          <textarea rows="2" (change)="updatePOFormField('notes', $any($event.target).value)" [value]="poForm().notes" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
+        <div>
+          <span class="text-lg font-bold text-gray-300">Total do Pedido:</span>
+          <span class="text-lg font-bold text-white ml-2">{{ poTotal() | currency:'BRL' }}</span>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="closePurchaseOrderModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+          <button (click)="savePurchaseOrder()" [disabled]="isSavingPO()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-500">
+            @if(isSavingPO()) { <span>Salvando...</span> } @else { <span>Salvar Pedido</span> }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Ingredient "On-the-fly" Modal -->
+@if (isAddingIngredient()) {
+  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeAddIngredientModal()">
+    <div class="bg-gray-700 rounded-lg w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-600"><h4 class="text-lg font-semibold text-white">Novo Ingrediente</h4></div>
+      <div class="p-6 space-y-4">
+          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome do Ingrediente" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+          <div class="grid grid-cols-2 gap-4">
+            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+                @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
+            </select>
+          </div>
+      </div>
+      <div class="p-4 bg-gray-600/50 flex justify-end gap-2">
+        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-500 hover:bg-gray-400">Cancelar</button>
+        <button (click)="saveNewIngredient()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500">Salvar Ingrediente</button>
+      </div>
+    </div>
+  </div>
+}

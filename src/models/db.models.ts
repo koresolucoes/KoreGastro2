@@ -1,4 +1,3 @@
-
 // --- Basic Types ---
 // FIX: Add WebhookEvent type for webhook service
 export type WebhookEvent =
@@ -24,7 +23,6 @@ export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
-export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
 
 
 // --- New Types for Settings ---
@@ -198,9 +196,6 @@ export interface Ingredient {
   external_code: string | null;
   created_at: string;
   user_id: string;
-  is_portionable: boolean;
-  is_yield_product: boolean;
-  standard_portion_weight_g: number | null;
   ingredient_categories?: { name: string }; // Relation
   suppliers?: { name: string }; // Relation
 }
@@ -655,28 +650,4 @@ export interface Webhook {
   events: WebhookEvent[];
   is_active: boolean;
   created_at: string;
-}
-
-// --- Portioning Models ---
-export interface PortioningEvent {
-  id: string;
-  user_id: string;
-  processed_at: string;
-  employee_id: string | null;
-  notes: string | null;
-  input_ingredient_id: string;
-  input_quantity: number;
-  total_input_cost: number;
-  yield_percentage: number | null;
-  created_at: string;
-}
-
-export interface PortioningEventOutput {
-  id: string;
-  event_id: string;
-  ingredient_id: string | null;
-  output_type: PortioningOutputType;
-  description: string | null;
-  quantity_produced: number;
-  unit: IngredientUnit;
 }
