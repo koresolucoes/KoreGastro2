@@ -449,6 +449,17 @@ export class TechnicalSheetsComponent {
         case 'is_sellable':
           newForm.is_sellable = value as boolean;
           break;
+        case 'is_portionable':
+          newForm.is_portionable = value as boolean;
+          break;
+        case 'is_yield_product':
+          newForm.is_yield_product = value as boolean;
+          break;
+        case 'standard_portion_weight_g': {
+          const numValue = parseFloat(value);
+          newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
+          break;
+        }
         case 'name':
           newForm.name = value;
           break;
@@ -545,7 +556,7 @@ export class TechnicalSheetsComponent {
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
 
     const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
-    const ingredientsToSave = form.ingredients.map(formIngredient => {
+    const ingredientsToSave = form.ingredients.map((formIngredient: (Omit<RecipeIngredient, 'user_id' | 'recipe_id'> & { unit: IngredientUnit })) => {
         const baseIngredient = ingredientsMap.get(formIngredient.ingredient_id);
         if (!baseIngredient) return null;
 

@@ -21,6 +21,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -322,6 +324,17 @@ export class PurchasingComponent implements OnInit {
                 case 'is_sellable':
                     newForm.is_sellable = value as boolean;
                     break;
+                case 'is_portionable':
+                    newForm.is_portionable = value as boolean;
+                    break;
+                case 'is_yield_product':
+                    newForm.is_yield_product = value as boolean;
+                    break;
+                case 'standard_portion_weight_g': {
+                    const numValue = parseFloat(value);
+                    newForm.standard_portion_weight_g = isNaN(numValue) ? null : numValue;
+                    break;
+                }
                 case 'name':
                     newForm.name = value;
                     break;

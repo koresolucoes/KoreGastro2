@@ -1,0 +1,138 @@
+<div class="container mx-auto h-full flex flex-col">
+  <!-- Header -->
+  <div class="flex-shrink-0">
+    <a routerLink="/inventory" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4">
+      <span class="material-symbols-outlined">arrow_back</span>
+      <span>Voltar para o Estoque</span>
+    </a>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Porcionamento Planejado</h1>
+            <p class="text-gray-400 mt-1">Registre o processo de porcionamento de insumos para controlar rendimento e perdas.</p>
+        </div>
+        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined">add</span>
+            <span>Registrar Novo Porcionamento</span>
+        </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 overflow-y-auto bg-gray-800 rounded-lg p-4">
+    @if(portioningEvents().length === 0) {
+        <div class="text-center py-16 text-gray-500">Nenhum evento de porcionamento registrado.</div>
+    } @else {
+        <div class="space-y-4">
+            @for(event of portioningEvents(); track event.id) {
+                <div class="bg-gray-700/50 p-4 rounded-lg">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-white">Insumo: {{ event.ingredients?.name }}</p>
+                            <p class="text-sm text-gray-400">Processado em: {{ event.processed_at | date:'dd/MM/yyyy HH:mm' }} por {{ event.employees?.name || 'N/A' }}</p>
+                        </div>
+                        @if (event.yield_percentage) {
+                          <span class="text-sm font-semibold text-blue-300">Rendimento: {{ event.yield_percentage | number:'1.1-1' }}%</span>
+                        }
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-600/50 text-sm">
+                        <p><strong>Entrada:</strong> {{ event.input_quantity }} un</p>
+                        <strong>Saídas:</strong>
+                        <ul class="list-disc list-inside pl-2 text-gray-300">
+                           @for(output of event.portioning_event_outputs; track output.id) {
+                            <li>{{ output.output_type }}: {{ output.quantity_produced }} {{ output.unit }} - {{ output.ingredients?.name || output.description }}</li>
+                           }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if(isModalOpen()) {
+    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+      <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+          <h3 class="text-xl font-bold text-white">Novo Evento de Porcionamento</h3>
+          <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-6 flex-1 overflow-y-auto space-y-6">
+          <!-- Input Section -->
+          <section class="bg-gray-900/50 p-4 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-3">Insumo de Entrada</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Ingrediente a Porcionar *</label>
+                    <select [ngModel]="form().input_ingredient_id" (ngModelChange)="form.update(f => ({...f, input_ingredient_id: $event, input_lot_id: undefined}))" name="input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white">
+                        <option [value]="undefined">Selecione...</option>
+                        @for(ing of portionableIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Lote de Origem *</label>
+                    <select [ngModel]="form().input_lot_id" (ngModelChange)="form.update(f => ({...f, input_lot_id: $event}))" name="input_lot_id" [disabled]="!form().input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white disabled:opacity-50">
+                        <option [value]="undefined">Selecione...</option>
+                        @for(lot of availableLots(); track lot.id) { <option [value]="lot.id">Lote {{ lot.lot_number || lot.id.slice(0,4) }} (Estoque: {{lot.quantity}})</option> }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade a Usar *</label>
+                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="form.update(f => ({...f, input_quantity: $event}))" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
+                </div>
+            </div>
+          </section>
+          
+          <!-- Outputs Section -->
+          <section class="bg-gray-900/50 p-4 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-3">Resultados (Saídas)</h4>
+            <div class="space-y-3">
+              @for(output of form().outputs; track $index) {
+                <div class="p-3 bg-gray-700/50 rounded-lg space-y-2 relative">
+                  @if($index > 0) {
+                    <button (click)="removeOutput($index)" class="absolute -top-2 -right-2 p-1 bg-red-600 rounded-full text-white"><span class="material-symbols-outlined text-sm">close</span></button>
+                  }
+                  <p class="font-semibold text-white">{{ output.output_type === 'YIELD' ? 'Rendimento Principal' : (output.output_type === 'BYPRODUCT' ? 'Subproduto' : 'Perda') }}</p>
+                  @if(output.output_type !== 'WASTE') {
+                    <div>
+                      <label class="text-xs text-gray-400">Vincular ao item de estoque</label>
+                      <select [ngModel]="output.ingredient_id" (ngModelChange)="updateOutputField($index, 'ingredient_id', $event)" name="output_ingredient_id_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                          <option [value]="undefined">Selecione...</option>
+                          @for(ing of yieldIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
+                      </select>
+                    </div>
+                  } @else {
+                    <div>
+                      <label class="text-xs text-gray-400">Descrição da Perda</label>
+                      <input type="text" [ngModel]="output.description" (ngModelChange)="updateOutputField($index, 'description', $event)" name="output_description_{{$index}}" placeholder="Ex: Aparas, Ossos" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                  }
+                   <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="text-xs text-gray-400">Quantidade Produzida / Perdida</label>
+                      <input type="number" [ngModel]="output.quantity_produced" (ngModelChange)="updateOutputField($index, 'quantity_produced', +$event)" name="output_quantity_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                     <div>
+                      <label class="text-xs text-gray-400">Unidade</label>
+                      <input type="text" [ngModel]="output.unit" (ngModelChange)="updateOutputField($index, 'unit', $event)" name="output_unit_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+                <button (click)="addOutput('BYPRODUCT')" class="w-full py-2 text-sm font-semibold text-blue-400 border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-lg">+ Subproduto</button>
+                <button (click)="addOutput('WASTE')" class="w-full py-2 text-sm font-semibold text-yellow-400 border-2 border-dashed border-gray-600 hover:border-yellow-500 rounded-lg">+ Perda</button>
+            </div>
+          </section>
+        </div>
+        <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+           <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+           <button (click)="saveEvent()" [disabled]="isSaving()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
+             @if(isSaving()) { <span>Salvando...</span> } @else { <span>Salvar e Ajustar Estoque</span> }
+           </button>
+        </div>
+      </div>
+    </div>
+}

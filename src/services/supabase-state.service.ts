@@ -241,8 +241,11 @@ export class SupabaseStateService {
         case 'ingredients':
         case 'inventory_lots':
         case 'inventory_movements':
+        case 'portioning_events':
+        case 'portioning_event_outputs':
              this.refetchSimpleTable('ingredients', '*, ingredient_categories(name), suppliers(name)', this.inventoryState.ingredients);
              this.refetchSimpleTable('inventory_lots', '*', this.inventoryState.inventoryLots);
+             this.refetchSimpleTable('portioning_events', '*, employees(name), ingredients!input_ingredient_id(name), portioning_event_outputs(*, ingredients(name))', this.inventoryState.portioningEvents, true);
             break;
         case 'recipe_ingredients': this.refetchSimpleTable('recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeState.recipeIngredients); break;
         case 'recipe_sub_recipes': this.refetchSimpleTable('recipe_sub_recipes', '*, recipes:recipes!child_recipe_id(name, id)', this.recipeState.recipeSubRecipes); break;
@@ -303,7 +306,7 @@ export class SupabaseStateService {
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
       ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks,
-      deliveryDrivers
+      deliveryDrivers, portioningEvents
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -340,6 +343,7 @@ export class SupabaseStateService {
       supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
       supabase.from('webhooks').select('*').eq('user_id', userId),
       supabase.from('delivery_drivers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+      supabase.from('portioning_events').select('*, employees(name), ingredients!input_ingredient_id(name), portioning_event_outputs(*, ingredients(name))').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
     // Populate all state services
@@ -360,6 +364,7 @@ export class SupabaseStateService {
     this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
     this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
     this.inventoryState.productionPlans.set(productionPlans.data || []);
+    this.inventoryState.portioningEvents.set(portioningEvents.data || []);
     this.settingsState.reservations.set(reservations.data || []);
     this.settingsState.reservationSettings.set(reservationSettings.data || null);
     this.hrState.schedules.set(schedules.data || []);
@@ -408,7 +413,7 @@ export class SupabaseStateService {
     if (tableName !== 'plans') {
       query = query.eq('user_id', userId);
     }
-    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs'].includes(tableName) 
+    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs', 'portioning_events'].includes(tableName) 
         ? (tableName === 'production_plans' ? 'plan_date' : tableName === 'schedules' ? 'week_start_date' : tableName === 'leave_requests' ? 'start_date' : 'created_at')
         : 'created_at';
         

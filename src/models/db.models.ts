@@ -23,6 +23,7 @@ export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
+export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
 
 
 // --- New Types for Settings ---
@@ -190,10 +191,13 @@ export interface Ingredient {
   last_movement_at?: string | null;
   is_sellable: boolean;
   price: number | null;
+  proxy_recipe_id: string | null;
   pos_category_id: string | null;
   station_id: string | null;
-  proxy_recipe_id: string | null;
   external_code: string | null;
+  is_portionable: boolean;
+  is_yield_product: boolean;
+  standard_portion_weight_g: number | null;
   created_at: string;
   user_id: string;
   ingredient_categories?: { name: string }; // Relation
@@ -650,4 +654,34 @@ export interface Webhook {
   events: WebhookEvent[];
   is_active: boolean;
   created_at: string;
+}
+
+// --- Portioning ---
+export interface PortioningEvent {
+  id: string;
+  user_id: string;
+  processed_at: string;
+  employee_id: string | null;
+  notes: string | null;
+  input_ingredient_id: string;
+  input_quantity: number;
+  total_input_cost: number;
+  yield_percentage: number | null;
+  created_at: string;
+  // relations
+  employees?: { name: string };
+  ingredients?: { name: string };
+  portioning_event_outputs?: PortioningEventOutput[];
+}
+
+export interface PortioningEventOutput {
+  id: string;
+  event_id: string;
+  ingredient_id: string | null; // null for WASTE
+  output_type: PortioningOutputType;
+  description: string | null; // for WASTE or BYPRODUCT
+  quantity_produced: number;
+  unit: IngredientUnit;
+  // relations
+  ingredients?: { name: string };
 }
