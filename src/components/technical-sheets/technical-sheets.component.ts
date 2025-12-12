@@ -651,7 +651,7 @@ export class TechnicalSheetsComponent {
               preparations: form.preparations.map(p => ({
                   name: p.name || 'Etapa sem nome',
                   // FIX: Explicitly type the 'i' parameter to provide the correct type information to the compiler, removing the need for 'as any'.
-                  ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map((i: { ingredient_id: string; quantity: number; unit: string; }) => ({
+                  ingredients: form.ingredients.filter(i => i.preparation_id === p.id).map(i => ({
                       name: this.getIngredientName(i.ingredient_id),
                       quantity: i.quantity,
                       unit: i.unit,

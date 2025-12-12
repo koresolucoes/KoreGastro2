@@ -65,21 +65,21 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-gray-300 mb-1">Ingrediente a Porcionar *</label>
-                    <select [ngModel]="form().input_ingredient_id" (ngModelChange)="form.update(f => ({...f, input_ingredient_id: $event, input_lot_id: undefined}))" name="input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white">
+                    <select [ngModel]="form().input_ingredient_id" (ngModelChange)="onInputIngredientChange($event)" name="input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white">
                         <option [value]="undefined">Selecione...</option>
                         @for(ing of portionableIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
                     </select>
                 </div>
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-gray-300 mb-1">Lote de Origem *</label>
-                    <select [ngModel]="form().input_lot_id" (ngModelChange)="form.update(f => ({...f, input_lot_id: $event}))" name="input_lot_id" [disabled]="!form().input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white disabled:opacity-50">
+                    <select [ngModel]="form().input_lot_id" (ngModelChange)="updateFormValue('input_lot_id', $event)" name="input_lot_id" [disabled]="!form().input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white disabled:opacity-50">
                         <option [value]="undefined">Selecione...</option>
                         @for(lot of availableLots(); track lot.id) { <option [value]="lot.id">Lote {{ lot.lot_number || lot.id.slice(0,4) }} (Estoque: {{lot.quantity}})</option> }
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade a Usar *</label>
-                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="form.update(f => ({...f, input_quantity: $event}))" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
+                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="updateFormValue('input_quantity', +$any($event.target).value)" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
                 </div>
             </div>
           </section>

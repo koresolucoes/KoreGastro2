@@ -76,6 +76,21 @@ export class PortioningComponent {
     }));
   }
 
+  onInputIngredientChange(ingredientId: string | undefined) {
+    this.form.update(f => ({
+      ...f,
+      input_ingredient_id: ingredientId,
+      input_lot_id: undefined // Reset lot when ingredient changes
+    }));
+  }
+
+  updateFormValue(field: keyof Omit<PortioningForm, 'outputs' | 'input_ingredient_id'>, value: any) {
+    this.form.update(f => ({
+      ...f,
+      [field]: value
+    }));
+  }
+
   updateOutputField(index: number, field: keyof PortioningEventOutput, value: any) {
     this.form.update(f => {
         const newOutputs = [...(f.outputs || [])];

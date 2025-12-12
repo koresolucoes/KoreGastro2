@@ -23,6 +23,8 @@
 
 
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -212,9 +214,9 @@ export class PurchasingComponent implements OnInit {
                     `Este item é fornecido por "${supplierName}". Deseja definir este fornecedor para a ordem inteira?`,
                     'Sugerir Fornecedor'
                 );
-                // FIX: Add a non-null assertion (!) because the 'if' condition guarantees 'supplier_id' is not null, resolving a potential type mismatch.
+                // FIX: Corrected method call from 'updateOrderFormField' to 'updatePOFormField' and added a non-null assertion as the 'if' condition guarantees 'supplier_id' is not null.
                 if (confirmed) {
-                    this.updateOrderFormField('supplier_id', ingredient.supplier_id!);
+                    this.updatePOFormField('supplier_id', ingredient.supplier_id!);
                 }
             }
         }
