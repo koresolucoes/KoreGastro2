@@ -79,7 +79,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade a Usar *</label>
-                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="updateFormValue('input_quantity', +$any($event.target).value)" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
+                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="updateFormValue('input_quantity', +$event)" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
                 </div>
             </div>
           </section>
