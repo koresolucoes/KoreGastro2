@@ -38,7 +38,7 @@ export class FunctionalitySettingsComponent {
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-  webhookUrl = 'https://gastro.koresolucoes.com.br/api/ifood-webhook';
+  webhookUrl = 'https://app.chefos.online/api/ifood-webhook';
 
   // Modal State Signals
   isIFoodModalOpen = signal(false);
@@ -87,7 +87,7 @@ export class FunctionalitySettingsComponent {
   publicMenuUrl = computed(() => {
     const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
     if (!userId) return '';
-    return `https://gastro.koresolucoes.com.br/#/menu/${userId}`;
+    return `https://app.chefos.online/#/menu/${userId}`;
   });
 
   qrCodeUrl = computed(() => {

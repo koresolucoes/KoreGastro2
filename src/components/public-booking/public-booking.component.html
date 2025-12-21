@@ -1,101 +1,107 @@
-
-<div class="min-h-screen font-sans text-gray-800 bg-gray-50 flex items-stretch">
+<div class="min-h-screen font-sans text-gray-800 bg-white flex flex-col lg:flex-row items-stretch">
   <!-- Left Side: Branding / Visual (Desktop only) -->
   <div class="hidden lg:flex lg:w-1/2 relative bg-gray-900 overflow-hidden">
-    <div class="absolute inset-0 bg-cover bg-center opacity-60" [style.background-image]="'url(' + (companyProfile()?.menu_cover_url || 'https://picsum.photos/1080/1920?restaurant,interior') + ')'"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
-    <div class="relative z-10 flex flex-col justify-end p-16 h-full text-white">
+    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[60s] hover:scale-105 ease-linear" [style.background-image]="'url(' + (companyProfile()?.menu_cover_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop') + ')'"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+    <div class="relative z-10 flex flex-col justify-end p-20 h-full text-white">
         @if(companyProfile()?.logo_url; as logo) {
-            <img [src]="logo" class="w-24 h-24 rounded-full border-4 border-white mb-6 object-cover shadow-lg">
+            <img [src]="logo" class="w-24 h-24 rounded-full border-4 border-white/20 mb-8 object-cover shadow-2xl backdrop-blur-md">
         }
-        <h1 class="text-5xl font-black mb-4 leading-tight">{{ companyProfile()?.company_name || 'Faça sua Reserva' }}</h1>
-        <p class="text-xl text-gray-200 font-light max-w-md">{{ companyProfile()?.address || 'Uma experiência gastronômica única espera por você.' }}</p>
+        <h1 class="text-6xl font-black mb-6 leading-tight tracking-tight">{{ companyProfile()?.company_name || 'Faça sua Reserva' }}</h1>
+        <p class="text-xl text-gray-200 font-light max-w-lg leading-relaxed">{{ companyProfile()?.address || 'Uma experiência gastronômica única espera por você.' }}</p>
     </div>
   </div>
 
   <!-- Right Side: Booking Form -->
-  <div class="w-full lg:w-1/2 flex flex-col justify-center p-6 sm:p-12 lg:p-24 bg-white relative">
+  <div class="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-24 bg-white relative">
     @if(viewState() === 'loading') {
          <div class="flex flex-col items-center justify-center h-full">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-6"></div>
-            <p class="text-gray-500 font-medium">Carregando disponibilidade...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-6"></div>
+            <p class="text-gray-500 font-medium animate-pulse">Consultando disponibilidade...</p>
         </div>
     } @else if (viewState() === 'success') {
-         <div class="text-center animate-fade-in-up">
-            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+         <div class="text-center animate-fade-in-up flex flex-col items-center justify-center h-full">
+            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-8 mx-auto shadow-sm">
                 <span class="material-symbols-outlined text-5xl">check_circle</span>
             </div>
             <h2 class="text-3xl font-bold text-gray-900 mb-2">Reserva Confirmada!</h2>
-            <p class="text-gray-600 mb-8">Sua mesa está garantida. Estamos ansiosos para recebê-lo.</p>
+            <p class="text-gray-500 mb-10 max-w-md mx-auto">Sua mesa está garantida. Enviamos um e-mail com os detalhes.</p>
             
-            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left max-w-sm mx-auto shadow-sm">
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Data</span>
-                    <span class="font-bold">{{ selectedDate() | date:'dd/MM/yyyy' }}</span>
+            <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100 text-left w-full max-w-sm mx-auto shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-blue-500"></div>
+                <div class="flex justify-between mb-4 pb-4 border-b border-gray-200">
+                    <span class="text-gray-500 text-sm">Data</span>
+                    <span class="font-bold text-gray-900">{{ selectedDate() | date:'dd/MM/yyyy' }}</span>
                 </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Horário</span>
-                    <span class="font-bold">{{ selectedTime() }}</span>
+                <div class="flex justify-between mb-4 pb-4 border-b border-gray-200">
+                    <span class="text-gray-500 text-sm">Horário</span>
+                    <span class="font-bold text-gray-900">{{ selectedTime() }}</span>
                 </div>
-                <div class="flex justify-between mb-2">
-                    <span class="text-gray-500">Pessoas</span>
-                    <span class="font-bold">{{ partySize() }}</span>
+                <div class="flex justify-between mb-4 pb-4 border-b border-gray-200">
+                    <span class="text-gray-500 text-sm">Pessoas</span>
+                    <span class="font-bold text-gray-900">{{ partySize() }}</span>
                 </div>
-                 <div class="flex justify-between">
-                    <span class="text-gray-500">Nome</span>
-                    <span class="font-bold">{{ customerName() }}</span>
+                 <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Reserva para</span>
+                    <span class="font-bold text-gray-900 text-right">{{ customerName() }}</span>
                 </div>
             </div>
 
-            <button (click)="startNewBooking()" class="mt-10 text-blue-600 font-semibold hover:text-blue-800 transition-colors">
-                Fazer outra reserva
+            <button (click)="startNewBooking()" class="mt-12 text-blue-600 font-semibold hover:text-blue-800 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined">arrow_back</span> Fazer outra reserva
             </button>
         </div>
     } @else if (viewState() === 'error') {
-         <div class="text-center">
-            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
-                <span class="material-symbols-outlined text-4xl">error</span>
+         <div class="text-center flex flex-col items-center justify-center h-full">
+            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <span class="material-symbols-outlined text-4xl">error_outline</span>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Algo deu errado</h2>
-            <p class="text-gray-600 mb-8">{{ errorMessage() }}</p>
-            <button (click)="startNewBooking()" class="bg-gray-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-gray-800 transition-colors">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Ops, algo deu errado</h2>
+            <p class="text-gray-500 mb-8 max-w-md mx-auto">{{ errorMessage() }}</p>
+            <button (click)="startNewBooking()" class="bg-gray-900 text-white font-bold py-3 px-8 rounded-full hover:bg-black transition-colors shadow-lg">
                 Tentar Novamente
             </button>
         </div>
     } @else {
         <!-- Form Steps -->
-        <div class="max-w-lg mx-auto w-full">
+        <div class="max-w-xl mx-auto w-full">
             <!-- Mobile Header (Logo only) -->
             <div class="lg:hidden flex justify-center mb-8">
                  @if(companyProfile()?.logo_url; as logo) {
-                    <img [src]="logo" class="w-20 h-20 rounded-full border-2 border-gray-100 shadow-sm">
+                    <img [src]="logo" class="w-20 h-20 rounded-full border border-gray-100 shadow-sm">
                 } @else {
-                    <div class="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold text-xl">COS</div>
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-900 font-bold text-xl">C</div>
                 }
             </div>
 
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">Reservar Mesa</h2>
-                <p class="text-gray-500">Preencha os dados abaixo para garantir seu lugar.</p>
+            <div class="mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Reservar Mesa</h2>
+                <p class="text-gray-500 mt-2">Preencha os dados abaixo para garantir seu lugar.</p>
             </div>
 
-            <form (ngSubmit)="submitReservation()" class="space-y-8">
+            <form (ngSubmit)="submitReservation()" class="space-y-10">
                 
                 <!-- Section 1: Details -->
                 <section>
-                    <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">1. Detalhes</label>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">DATA</label>
-                            <input type="date" [value]="selectedDate()" (input)="onDateChange($event)" [min]="minDate()" [max]="maxDate()" required 
-                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                    <div class="flex items-center gap-2 mb-4">
+                         <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</span>
+                         <label class="text-sm font-bold text-gray-900 uppercase tracking-wider">Detalhes</label>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label class="block text-xs font-semibold text-gray-500 ml-1">DATA DA RESERVA</label>
+                            <div class="relative">
+                                <input type="date" [value]="selectedDate()" (input)="onDateChange($event)" [min]="minDate()" [max]="maxDate()" required 
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all cursor-pointer">
+                            </div>
                         </div>
-                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">PESSOAS</label>
-                             <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2">
-                                <button type="button" (click)="updatePartySize(-1)" class="p-3 text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30" [disabled]="partySize() <= (settings()?.min_party_size || 1)">-</button>
-                                <input type="number" [(ngModel)]="partySize" name="partySize" readonly class="w-full bg-transparent border-none text-center font-bold text-gray-900 focus:ring-0">
-                                <button type="button" (click)="updatePartySize(1)" class="p-3 text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30" [disabled]="partySize() >= (settings()?.max_party_size || 20)">+</button>
+                         <div class="space-y-1">
+                            <label class="block text-xs font-semibold text-gray-500 ml-1">Nº DE PESSOAS</label>
+                             <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2 h-[54px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white focus-within:border-transparent transition-all">
+                                <button type="button" (click)="updatePartySize(-1)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30 transition-colors" [disabled]="partySize() <= (settings()?.min_party_size || 1)">-</button>
+                                <input type="number" [(ngModel)]="partySize" name="partySize" readonly class="w-full bg-transparent border-none text-center font-bold text-gray-900 text-lg focus:ring-0 p-0">
+                                <button type="button" (click)="updatePartySize(1)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30 transition-colors" [disabled]="partySize() >= (settings()?.max_party_size || 20)">+</button>
                             </div>
                         </div>
                     </div>
@@ -103,19 +109,26 @@
 
                 <!-- Section 2: Time -->
                 <section>
-                    <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">2. Horário</label>
+                    <div class="flex items-center gap-2 mb-4">
+                         <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">2</span>
+                         <label class="text-sm font-bold text-gray-900 uppercase tracking-wider">Horário Disponível</label>
+                    </div>
+
                     @if (timeSlots().length > 0) {
-                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                             @for (slot of timeSlots(); track slot.time) {
                                 <button type="button" (click)="selectTime(slot.time)" [disabled]="!slot.isAvailable" 
-                                    class="py-3 px-2 rounded-xl text-sm font-bold border transition-all duration-200"
-                                    [class.bg-blue-600]="selectedTime() === slot.time"
+                                    class="py-2.5 px-1 rounded-lg text-sm font-bold border transition-all duration-200 relative overflow-hidden group"
+                                    [class.bg-gray-900]="selectedTime() === slot.time"
                                     [class.text-white]="selectedTime() === slot.time"
-                                    [class.border-blue-600]="selectedTime() === slot.time"
+                                    [class.border-gray-900]="selectedTime() === slot.time"
+                                    [class.shadow-lg]="selectedTime() === slot.time"
+                                    [class.scale-105]="selectedTime() === slot.time"
                                     [class.bg-white]="selectedTime() !== slot.time"
-                                    [class.text-gray-900]="selectedTime() !== slot.time"
+                                    [class.text-gray-700]="selectedTime() !== slot.time"
                                     [class.border-gray-200]="selectedTime() !== slot.time"
-                                    [class.hover:border-blue-400]="selectedTime() !== slot.time && slot.isAvailable"
+                                    [class.hover:border-gray-400]="selectedTime() !== slot.time && slot.isAvailable"
+                                    [class.hover:bg-gray-50]="selectedTime() !== slot.time && slot.isAvailable"
                                     [class.opacity-40]="!slot.isAvailable"
                                     [class.cursor-not-allowed]="!slot.isAvailable">
                                     {{ slot.time }}
@@ -133,20 +146,31 @@
                 <!-- Section 3: Personal Info -->
                 @if (selectedTime()) {
                     <section class="animate-fade-in-up">
-                        <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">3. Seus Dados</label>
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">3</span>
+                            <label class="text-sm font-bold text-gray-900 uppercase tracking-wider">Seus Dados</label>
+                        </div>
+                        
                         <div class="space-y-4">
-                            <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                            <div>
+                                <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo" required 
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all">
+                            </div>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone (WhatsApp)" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
-                                <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                                <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone (WhatsApp)" required 
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all">
+                                <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" 
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all">
                             </div>
 
-                            <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações (Ex: Aniversário, Cadeira de bebê...)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"></textarea>
+                            <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações (Ex: Aniversário, Cadeira de bebê...)" 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all"></textarea>
                         </div>
                     </section>
 
-                    <button type="submit" [disabled]="!customerName() || !customerPhone()" class="w-full bg-gray-900 text-white font-bold py-4 px-6 rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    <button type="submit" [disabled]="!customerName() || !customerPhone()" 
+                        class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-500 transition-all transform hover:-translate-y-1 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mt-4 text-lg">
                         Confirmar Reserva
                     </button>
                 }

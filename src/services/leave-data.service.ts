@@ -33,7 +33,7 @@ export class LeaveDataService {
     }
 
     try {
-      const response = await fetch('https://gastro.koresolucoes.com.br/api/rh/ausencias', {
+      const response = await fetch('https://app.chefos.online/api/rh/ausencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

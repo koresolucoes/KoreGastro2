@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
@@ -211,7 +210,8 @@ export class MenuComponent implements OnInit, OnDestroy {
         ? this.route.snapshot.paramMap.get('userId') 
         : (this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id);
     if (!userId) return '#';
-    return `https://gastro.koresolucoes.com.br/#/book/${userId}`;
+    // Updated base URL
+    return `https://app.chefos.online/#/book/${userId}`;
   });
 
   isRestaurantOpen = computed(() => {

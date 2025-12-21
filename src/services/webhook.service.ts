@@ -50,7 +50,7 @@ export class WebhookService {
     };
 
     // Fire and forget fetch request to the backend proxy
-    fetch('https://gastro.koresolucoes.com.br/api/trigger-webhook', {
+    fetch('https://app.chefos.online/api/trigger-webhook', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

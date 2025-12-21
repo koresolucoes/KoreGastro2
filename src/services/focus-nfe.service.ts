@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { SettingsStateService } from './settings-state.service';
@@ -30,7 +29,7 @@ export class FocusNFeService {
     }
 
     try {
-      const response = await fetch('https://gastro.koresolucoes.com.br/api/focusnfe-proxy', {
+      const response = await fetch('https://app.chefos.online/api/focusnfe-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,11 +71,11 @@ export class FocusNFeService {
     return this.proxyRequest('save_settings', payload);
   }
   
-  async emitNfce(orderId: string): Promise<{ success: boolean, error?: any, data?: any }> {
+  async emitNfce(orderId: string): Promise<{ success: boolean; error?: any, data?: any }> {
     return this.proxyRequest('emit_nfce', { orderId });
   }
 
-  async cancelNfce(orderId: string, justification: string): Promise<{ success: boolean, error?: any, data?: any }> {
+  async cancelNfce(orderId: string, justification: string): Promise<{ success: boolean; error?: any, data?: any }> {
     return this.proxyRequest('cancel_nfce', { orderId, justification });
   }
 

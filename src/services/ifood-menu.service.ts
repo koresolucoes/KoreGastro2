@@ -172,7 +172,7 @@ export class IfoodMenuService {
     }
 
     try {
-      const response = await fetch('https://gastro.koresolucoes.com.br/api/ifood-catalog', {
+      const response = await fetch('https://app.chefos.online/api/ifood-catalog', {
         method: 'POST', // The proxy itself is always called with POST
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body, isImageUpload })
