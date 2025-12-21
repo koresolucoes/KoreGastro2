@@ -1,6 +1,6 @@
 
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, ViewportScroller } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -31,13 +31,13 @@ export class MenuComponent implements OnInit, OnDestroy {
   private recipeState = inject(RecipeStateService);
   private settingsState = inject(SettingsStateService);
   private pricingService = inject(PricingService);
-  // FIX: Explicitly type the injected ActivatedRoute service.
   private route: ActivatedRoute = inject(ActivatedRoute);
-  // FIX: Explicitly type the injected Router service.
   private router: Router = inject(Router);
   private publicDataService = inject(PublicDataService);
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
+  private viewportScroller = inject(ViewportScroller);
+  
   private routeSub: Subscription | undefined;
 
   // View state
@@ -63,8 +63,6 @@ export class MenuComponent implements OnInit, OnDestroy {
       const userId = params.get('userId');
       if (userId) {
         // Public View
-        document.body.classList.remove('bg-gray-900');
-        document.body.classList.add('bg-white');
         this.isPublicView.set(true);
         this.view.set('cover'); // Start with the cover page for public
         this.loadPublicData(userId);
@@ -79,11 +77,6 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.routeSub?.unsubscribe();
-    // Revert body class if it was changed for the public view
-    if (this.isPublicView()) {
-        document.body.classList.add('bg-gray-900');
-        document.body.classList.remove('bg-white');
-    }
   }
 
   async loadPublicData(userId: string) {
@@ -152,25 +145,26 @@ export class MenuComponent implements OnInit, OnDestroy {
   
   filteredMenu = computed(() => {
     const menu = this.baseMenu();
-    const activeSlug = this.activeCategorySlug();
+    // When searching, we want to search across ALL categories, ignoring the selected category filter
     const term = this.searchTerm().toLowerCase();
-
-    let categoryFilteredMenu = menu;
+    
+    if (term) {
+         return menu.map(group => ({
+            ...group,
+            recipes: group.recipes.filter(recipe => 
+                recipe.name.toLowerCase().includes(term) ||
+                recipe.description?.toLowerCase().includes(term)
+            )
+        })).filter(group => group.recipes.length > 0);
+    }
+    
+    // If not searching, respect category filter
+    const activeSlug = this.activeCategorySlug();
     if (activeSlug) {
-        categoryFilteredMenu = menu.filter(group => this.createSlug(group.category.name) === activeSlug);
+        return menu.filter(group => this.createSlug(group.category.name) === activeSlug);
     }
     
-    if (!term) {
-        return categoryFilteredMenu;
-    }
-    
-    return categoryFilteredMenu.map(group => ({
-        ...group,
-        recipes: group.recipes.filter(recipe => 
-            recipe.name.toLowerCase().includes(term) ||
-            recipe.description?.toLowerCase().includes(term)
-        )
-    })).filter(group => group.recipes.length > 0);
+    return menu;
   });
   
   loyaltyRewardsDisplay = computed(() => {
@@ -268,10 +262,26 @@ export class MenuComponent implements OnInit, OnDestroy {
   
   setView(newView: 'cover' | 'menu' | 'info') {
     this.view.set(newView);
+    if (newView === 'menu' || newView === 'cover') {
+        setTimeout(() => this.viewportScroller.scrollToPosition([0, 0]), 0);
+    }
   }
   
   setSelectedCategory(slug: string | null) {
     this.activeCategorySlug.set(slug);
+    if (slug === 'top') {
+        this.viewportScroller.scrollToPosition([0, 0]);
+        this.activeCategorySlug.set(null);
+    } else if (slug && this.view() === 'menu') {
+        // Scroll to anchor logic if needed, but filtering is usually enough for a clean UI
+        // this.viewportScroller.scrollToAnchor(slug);
+    }
+  }
+  
+  scrollToCategory(slug: string) {
+      if (slug === 'top') {
+         window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
   }
 
   createSlug(text: string): string {

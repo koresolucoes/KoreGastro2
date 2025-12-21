@@ -1,96 +1,158 @@
-<div class="bg-gray-100 text-gray-900 min-h-screen font-sans flex flex-col items-center justify-center p-4">
-    <div class="w-full max-w-lg">
-        <header class="text-center mb-6 flex flex-col items-center gap-4">
-            @if(companyProfile()?.logo_url; as logo) {
-              <img [src]="logo" [alt]="'Logo de ' + (companyProfile()?.company_name || 'Restaurante')" class="h-24 w-24 rounded-full object-cover shadow-md border-4 border-white">
-            }
-            <div>
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">{{ companyProfile()?.company_name || 'Faça sua Reserva' }}</h1>
-                @if (companyProfile()?.company_name) {
-                    <p class="mt-1 text-lg text-gray-600">Faça sua Reserva</p>
+
+<div class="min-h-screen font-sans text-gray-800 bg-gray-50 flex items-stretch">
+  <!-- Left Side: Branding / Visual (Desktop only) -->
+  <div class="hidden lg:flex lg:w-1/2 relative bg-gray-900 overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center opacity-60" [style.background-image]="'url(' + (companyProfile()?.menu_cover_url || 'https://picsum.photos/1080/1920?restaurant,interior') + ')'"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
+    <div class="relative z-10 flex flex-col justify-end p-16 h-full text-white">
+        @if(companyProfile()?.logo_url; as logo) {
+            <img [src]="logo" class="w-24 h-24 rounded-full border-4 border-white mb-6 object-cover shadow-lg">
+        }
+        <h1 class="text-5xl font-black mb-4 leading-tight">{{ companyProfile()?.company_name || 'Faça sua Reserva' }}</h1>
+        <p class="text-xl text-gray-200 font-light max-w-md">{{ companyProfile()?.address || 'Uma experiência gastronômica única espera por você.' }}</p>
+    </div>
+  </div>
+
+  <!-- Right Side: Booking Form -->
+  <div class="w-full lg:w-1/2 flex flex-col justify-center p-6 sm:p-12 lg:p-24 bg-white relative">
+    @if(viewState() === 'loading') {
+         <div class="flex flex-col items-center justify-center h-full">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-6"></div>
+            <p class="text-gray-500 font-medium">Carregando disponibilidade...</p>
+        </div>
+    } @else if (viewState() === 'success') {
+         <div class="text-center animate-fade-in-up">
+            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <span class="material-symbols-outlined text-5xl">check_circle</span>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Reserva Confirmada!</h2>
+            <p class="text-gray-600 mb-8">Sua mesa está garantida. Estamos ansiosos para recebê-lo.</p>
+            
+            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left max-w-sm mx-auto shadow-sm">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-500">Data</span>
+                    <span class="font-bold">{{ selectedDate() | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-500">Horário</span>
+                    <span class="font-bold">{{ selectedTime() }}</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-500">Pessoas</span>
+                    <span class="font-bold">{{ partySize() }}</span>
+                </div>
+                 <div class="flex justify-between">
+                    <span class="text-gray-500">Nome</span>
+                    <span class="font-bold">{{ customerName() }}</span>
+                </div>
+            </div>
+
+            <button (click)="startNewBooking()" class="mt-10 text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+                Fazer outra reserva
+            </button>
+        </div>
+    } @else if (viewState() === 'error') {
+         <div class="text-center">
+            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <span class="material-symbols-outlined text-4xl">error</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Algo deu errado</h2>
+            <p class="text-gray-600 mb-8">{{ errorMessage() }}</p>
+            <button (click)="startNewBooking()" class="bg-gray-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-gray-800 transition-colors">
+                Tentar Novamente
+            </button>
+        </div>
+    } @else {
+        <!-- Form Steps -->
+        <div class="max-w-lg mx-auto w-full">
+            <!-- Mobile Header (Logo only) -->
+            <div class="lg:hidden flex justify-center mb-8">
+                 @if(companyProfile()?.logo_url; as logo) {
+                    <img [src]="logo" class="w-20 h-20 rounded-full border-2 border-gray-100 shadow-sm">
+                } @else {
+                    <div class="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold text-xl">COS</div>
                 }
             </div>
-        </header>
 
-        <main class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
-            @switch (viewState()) {
-                @case ('loading') {
-                    <div class="flex flex-col items-center justify-center h-96">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        <p class="mt-4 text-gray-600">Carregando...</p>
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">Reservar Mesa</h2>
+                <p class="text-gray-500">Preencha os dados abaixo para garantir seu lugar.</p>
+            </div>
+
+            <form (ngSubmit)="submitReservation()" class="space-y-8">
+                
+                <!-- Section 1: Details -->
+                <section>
+                    <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">1. Detalhes</label>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">DATA</label>
+                            <input type="date" [value]="selectedDate()" (input)="onDateChange($event)" [min]="minDate()" [max]="maxDate()" required 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                        </div>
+                         <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">PESSOAS</label>
+                             <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2">
+                                <button type="button" (click)="updatePartySize(-1)" class="p-3 text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30" [disabled]="partySize() <= (settings()?.min_party_size || 1)">-</button>
+                                <input type="number" [(ngModel)]="partySize" name="partySize" readonly class="w-full bg-transparent border-none text-center font-bold text-gray-900 focus:ring-0">
+                                <button type="button" (click)="updatePartySize(1)" class="p-3 text-gray-500 hover:text-blue-600 font-bold text-lg disabled:opacity-30" [disabled]="partySize() >= (settings()?.max_party_size || 20)">+</button>
+                            </div>
+                        </div>
                     </div>
-                }
-                @case ('form') {
-                    @if (settings(); as s) {
-                        <form (ngSubmit)="submitReservation()" class="space-y-6">
-                            <!-- Step 1: Date & Party Size -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-800 mb-3">1. Escolha a Data e o Tamanho do Grupo</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="date" class="block text-sm font-medium text-gray-700">Data</label>
-                                        <input type="date" id="date" [value]="selectedDate()" (input)="onDateChange($event)" [min]="minDate()" [max]="maxDate()" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="party-size" class="block text-sm font-medium text-gray-700">Nº de Pessoas</label>
-                                        <input type="number" id="party-size" [(ngModel)]="partySize" name="partySize" [min]="s.min_party_size" [max]="s.max_party_size" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Step 2: Time -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-800 mb-3">2. Selecione o Horário</h3>
-                                @if (timeSlots().length > 0) {
-                                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        @for (slot of timeSlots(); track slot.time) {
-                                            <button type="button" (click)="selectTime(slot.time)" [disabled]="!slot.isAvailable" class="px-2 py-3 text-sm font-semibold rounded-md transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed" [class.bg-blue-600]="selectedTime() === slot.time" [class.text-white]="selectedTime() === slot.time" [class.bg-blue-100]="selectedTime() !== slot.time" [class.text-blue-800]="selectedTime() !== slot.time" [class.hover:bg-blue-200]="selectedTime() !== slot.time">
-                                                {{ slot.time }}
-                                            </button>
-                                        }
-                                    </div>
-                                } @else {
-                                    <p class="text-center text-gray-500 bg-gray-100 p-4 rounded-md">Nenhum horário disponível para esta data.</p>
-                                }
-                            </div>
-                            <!-- Step 3: Details -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-800 mb-3">3. Seus Dados</h3>
-                                <div class="space-y-4">
-                                    <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
-                                    <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone *" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
-                                    <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500">
-                                    <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações? (Ex: Alergias, cadeira de bebê)" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500"></textarea>
-                                </div>
-                            </div>
-                            <!-- Submit -->
-                            <button type="submit" [disabled]="!selectedTime()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                Confirmar Reserva
-                            </button>
-                        </form>
+                </section>
+
+                <!-- Section 2: Time -->
+                <section>
+                    <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">2. Horário</label>
+                    @if (timeSlots().length > 0) {
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            @for (slot of timeSlots(); track slot.time) {
+                                <button type="button" (click)="selectTime(slot.time)" [disabled]="!slot.isAvailable" 
+                                    class="py-3 px-2 rounded-xl text-sm font-bold border transition-all duration-200"
+                                    [class.bg-blue-600]="selectedTime() === slot.time"
+                                    [class.text-white]="selectedTime() === slot.time"
+                                    [class.border-blue-600]="selectedTime() === slot.time"
+                                    [class.bg-white]="selectedTime() !== slot.time"
+                                    [class.text-gray-900]="selectedTime() !== slot.time"
+                                    [class.border-gray-200]="selectedTime() !== slot.time"
+                                    [class.hover:border-blue-400]="selectedTime() !== slot.time && slot.isAvailable"
+                                    [class.opacity-40]="!slot.isAvailable"
+                                    [class.cursor-not-allowed]="!slot.isAvailable">
+                                    {{ slot.time }}
+                                </button>
+                            }
+                        </div>
+                    } @else {
+                         <div class="bg-orange-50 text-orange-800 p-4 rounded-xl border border-orange-100 text-sm flex items-center gap-3">
+                            <span class="material-symbols-outlined">event_busy</span>
+                            Não há horários disponíveis para esta data.
+                        </div>
                     }
-                }
-                @case ('success') {
-                    <div class="text-center py-12">
-                         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 mx-auto">
-                            <svg class="w-12 h-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                </section>
+
+                <!-- Section 3: Personal Info -->
+                @if (selectedTime()) {
+                    <section class="animate-fade-in-up">
+                        <label class="block text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">3. Seus Dados</label>
+                        <div class="space-y-4">
+                            <input type="text" [(ngModel)]="customerName" name="customerName" placeholder="Nome Completo" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <input type="tel" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Telefone (WhatsApp)" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                                <input type="email" [(ngModel)]="customerEmail" name="customerEmail" placeholder="E-mail (Opcional)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+                            </div>
+
+                            <textarea [(ngModel)]="notes" name="notes" rows="2" placeholder="Observações (Ex: Aniversário, Cadeira de bebê...)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"></textarea>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-900">Reserva Enviada!</h2>
-                        <p class="mt-2 text-gray-600">Sua reserva para <strong>{{partySize()}} pessoa(s)</strong> no dia <strong>{{selectedDate() | date:'dd/MM/yyyy'}}</strong> às <strong>{{selectedTime()}}</strong> foi enviada para o restaurante.</p>
-                        <p class="mt-2 text-gray-600">Você receberá uma confirmação em breve. Obrigado!</p>
-                        <button (click)="startNewBooking()" class="mt-8 bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Fazer outra reserva</button>
-                    </div>
+                    </section>
+
+                    <button type="submit" [disabled]="!customerName() || !customerPhone()" class="w-full bg-gray-900 text-white font-bold py-4 px-6 rounded-xl hover:bg-black transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                        Confirmar Reserva
+                    </button>
                 }
-                 @case ('error') {
-                     <div class="text-center py-12">
-                        <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
-                            <svg class="w-12 h-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-900">Ocorreu um Erro</h2>
-                        <p class="mt-2 text-gray-600">{{ errorMessage() }}</p>
-                        <button (click)="startNewBooking()" class="mt-8 bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Tentar Novamente</button>
-                    </div>
-                }
-            }
-        </main>
-    </div>
+
+            </form>
+        </div>
+    }
+  </div>
 </div>

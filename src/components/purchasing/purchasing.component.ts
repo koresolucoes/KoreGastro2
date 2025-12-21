@@ -1,34 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -103,7 +72,7 @@ export class PurchasingComponent implements OnInit {
         const navigationState = this.router.getCurrentNavigation()?.extras.state;
         if (navigationState && navigationState['newOrderItems']) {
             const prefillItems = navigationState['newOrderItems'] as { ingredientId: string, quantity: number }[];
-            const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i]));
+            const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i] as [string, Ingredient]));
             
             const suppliersInOrder = new Map<string | null, { ingredientId: string, quantity: number }[]>();
             

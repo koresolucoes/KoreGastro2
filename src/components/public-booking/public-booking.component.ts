@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -23,9 +22,7 @@ interface TimeSlot {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicBookingComponent implements OnInit, OnDestroy {
-  // FIX: Explicitly type the injected ActivatedRoute service.
   route: ActivatedRoute = inject(ActivatedRoute);
-  // FIX: Explicitly type the injected Router service.
   router: Router = inject(Router);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
@@ -56,7 +53,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // This component is public, so we need to adjust the body class for the light theme
     document.body.classList.remove('bg-gray-900');
-    document.body.classList.add('bg-gray-100');
+    document.body.classList.add('bg-white'); // Changed to white for better contrast with new design
 
     this.routeSub = this.route.paramMap.subscribe(params => {
       const userId = params.get('userId');
@@ -73,36 +70,40 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // Revert body class when leaving the component
     document.body.classList.add('bg-gray-900');
-    document.body.classList.remove('bg-gray-100');
+    document.body.classList.remove('bg-white');
     this.routeSub?.unsubscribe();
   }
 
   async loadInitialData(userId: string) {
     this.viewState.set('loading');
-    const [settings, profile] = await Promise.all([
-        this.reservationDataService.getPublicReservationSettings(userId),
-        this.publicDataService.getPublicCompanyProfile(userId)
-    ]);
+    try {
+        const [settings, profile] = await Promise.all([
+            this.reservationDataService.getPublicReservationSettings(userId),
+            this.publicDataService.getPublicCompanyProfile(userId)
+        ]);
 
-    if (!settings) {
-      this.viewState.set('error');
-      this.errorMessage.set('Este restaurante não está aceitando reservas no momento.');
-      return;
+        if (!settings) {
+            this.viewState.set('error');
+            this.errorMessage.set('Este restaurante não está aceitando reservas no momento.');
+            return;
+        }
+
+        this.settings.set(settings);
+        this.companyProfile.set(profile);
+        
+        this.partySize.set(Math.max(settings.min_party_size, Math.min(this.partySize(), settings.max_party_size)));
+
+        const today = new Date();
+        const maxDate = new Date();
+        maxDate.setDate(today.getDate() + settings.booking_notice_days);
+        this.maxDate.set(maxDate.toISOString().split('T')[0]);
+
+        await this.fetchReservationsForDate(this.selectedDate());
+        this.viewState.set('form');
+    } catch (e) {
+        this.viewState.set('error');
+        this.errorMessage.set('Erro ao carregar dados do restaurante.');
     }
-
-    this.settings.set(settings);
-    this.companyProfile.set(profile);
-    
-    // Clamp the initial party size to be within the allowed range
-    this.partySize.set(Math.max(settings.min_party_size, Math.min(this.partySize(), settings.max_party_size)));
-
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + settings.booking_notice_days);
-    this.maxDate.set(maxDate.toISOString().split('T')[0]);
-
-    await this.fetchReservationsForDate(this.selectedDate());
-    this.viewState.set('form');
   }
 
   async fetchReservationsForDate(date: string) {
@@ -120,12 +121,24 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
     await this.fetchReservationsForDate(newDate);
   }
 
+  updatePartySize(change: number) {
+      const settings = this.settings();
+      if (!settings) return;
+      
+      const newSize = this.partySize() + change;
+      if (newSize >= settings.min_party_size && newSize <= settings.max_party_size) {
+          this.partySize.set(newSize);
+      }
+  }
+
   timeSlots = computed<TimeSlot[]>(() => {
     const s = this.settings();
-    const selectedDate = new Date(this.selectedDate() + 'T12:00:00Z'); // Use UTC noon to avoid timezone shifts with getDay()
-    const dayOfWeek = selectedDate.getUTCDay(); // 0 for Sunday, 1 for Monday, etc.
-
-    if (!s || !s.weekly_hours) return [];
+    const selectedDateStr = this.selectedDate();
+    if (!s || !s.weekly_hours || !selectedDateStr) return [];
+    
+    // Create date at noon UTC to get correct day of week
+    const selectedDate = new Date(selectedDateStr + 'T12:00:00Z');
+    const dayOfWeek = selectedDate.getUTCDay();
 
     const daySettings = s.weekly_hours.find(d => d.day_of_week === dayOfWeek);
     if (!daySettings || daySettings.is_closed) return [];
@@ -144,14 +157,34 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
         return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
     }));
 
+    // Filter past times if selected date is today
+    const now = new Date();
+    const isToday = selectedDateStr === now.toISOString().split('T')[0];
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
     let current = opening;
     while (current < closing) {
-      const timeStr = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`;
-      slots.push({
-        time: timeStr,
-        isAvailable: !existingTimes.has(timeStr),
-      });
-      current = new Date(current.getTime() + s.booking_duration_minutes * 60000);
+        // Stop if the slot start time + duration exceeds closing time
+        const slotEnd = new Date(current.getTime() + s.booking_duration_minutes * 60000);
+        if (slotEnd > closing) break;
+
+        const timeStr = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`;
+        const slotMinutes = current.getHours() * 60 + current.getMinutes();
+        
+        let isAvailable = !existingTimes.has(timeStr);
+        
+        if (isToday && slotMinutes < currentMinutes + 30) { // Require at least 30 min lead time for today
+             isAvailable = false;
+        }
+
+        slots.push({
+            time: timeStr,
+            isAvailable: isAvailable,
+        });
+        // 30 minute intervals for slots usually, or use duration? 
+        // Standard is usually fixed intervals (e.g. every 30 mins) regardless of duration.
+        // Let's use 30 min intervals for better flexibility.
+        current = new Date(current.getTime() + 30 * 60000); 
     }
     return slots;
   });
@@ -168,15 +201,10 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.partySize() < settings.min_party_size || this.partySize() > settings.max_party_size) {
-        await this.notificationService.alert(`O número de pessoas deve ser entre ${settings.min_party_size} e ${settings.max_party_size}.`);
-        return;
+    if (!this.customerName() || !this.customerPhone() || !this.selectedTime()) {
+        return; // Validation handled by template
     }
 
-    if (!this.customerName() || !this.customerPhone() || !this.selectedTime()) {
-        await this.notificationService.alert('Por favor, preencha seu nome, telefone e selecione um horário.');
-        return;
-    }
     this.viewState.set('loading');
     const userId = this.userId();
     if (!userId) {
@@ -201,6 +229,7 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
 
     if (success) {
       this.viewState.set('success');
+      window.scrollTo(0,0);
     } else {
       this.viewState.set('error');
       this.errorMessage.set(error?.message || 'Não foi possível completar sua reserva. Por favor, tente novamente.');
