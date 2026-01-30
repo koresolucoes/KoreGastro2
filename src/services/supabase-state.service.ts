@@ -83,6 +83,8 @@ export class SupabaseStateService {
         this.inventoryState.inventoryLots.set([]);
         this.inventoryState.purchaseOrders.set([]);
         this.inventoryState.productionPlans.set([]);
+        this.inventoryState.stationStocks.set([]);
+        this.inventoryState.requisitions.set([]);
 
         this.recipeState.categories.set(mockData.MOCK_RECIPE_CATEGORIES);
         this.recipeState.recipes.set(mockData.MOCK_RECIPES);
@@ -247,6 +249,13 @@ export class SupabaseStateService {
              this.refetchSimpleTable('inventory_lots', '*', this.inventoryState.inventoryLots);
              this.refetchSimpleTable('portioning_events', '*, employees(name), ingredients!input_ingredient_id(name), portioning_event_outputs(*, ingredients(name))', this.inventoryState.portioningEvents, true);
             break;
+        case 'station_stocks':
+             this.refetchSimpleTable('station_stocks', '*, stations(name), ingredients(name, unit)', this.inventoryState.stationStocks);
+             break;
+        case 'requisitions':
+        case 'requisition_items':
+             this.refetchSimpleTable('requisitions', '*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)', this.inventoryState.requisitions, true);
+             break;
         case 'recipe_ingredients': this.refetchSimpleTable('recipe_ingredients', '*, ingredients(name, unit, cost)', this.recipeState.recipeIngredients); break;
         case 'recipe_sub_recipes': this.refetchSimpleTable('recipe_sub_recipes', '*, recipes:recipes!child_recipe_id(name, id)', this.recipeState.recipeSubRecipes); break;
         case 'recipe_preparations': this.refetchSimpleTable('recipe_preparations', '*', this.recipeState.recipePreparations); break;
@@ -306,7 +315,7 @@ export class SupabaseStateService {
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
       ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks,
-      deliveryDrivers, portioningEvents
+      deliveryDrivers, portioningEvents, stationStocks, requisitions
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('tables').select('*').eq('user_id', userId),
@@ -344,6 +353,8 @@ export class SupabaseStateService {
       supabase.from('webhooks').select('*').eq('user_id', userId),
       supabase.from('delivery_drivers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('portioning_events').select('*, employees(name), ingredients!input_ingredient_id(name), portioning_event_outputs(*, ingredients(name))').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('station_stocks').select('*, stations(name), ingredients(name, unit)').eq('user_id', userId),
+      supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
     // Populate all state services
@@ -384,6 +395,8 @@ export class SupabaseStateService {
     this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
     this.settingsState.webhooks.set(webhooks.data || []);
     this.deliveryState.deliveryDrivers.set(deliveryDrivers.data || []);
+    this.inventoryState.stationStocks.set(stationStocks.data || []);
+    this.inventoryState.requisitions.set(requisitions.data || []);
 
 
     await this.refreshDashboardAndCashierData();
@@ -413,7 +426,7 @@ export class SupabaseStateService {
     if (tableName !== 'plans') {
       query = query.eq('user_id', userId);
     }
-    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs', 'portioning_events'].includes(tableName) 
+    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs', 'portioning_events', 'requisitions'].includes(tableName) 
         ? (tableName === 'production_plans' ? 'plan_date' : tableName === 'schedules' ? 'week_start_date' : tableName === 'leave_requests' ? 'start_date' : 'created_at')
         : 'created_at';
         

@@ -1,5 +1,4 @@
 
-
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PosComponent } from './components/pos/pos.component';
@@ -39,6 +38,7 @@ import { loginGuard } from './guards/login.guard';
 import { IfoodStoreManagerComponent } from './components/ifood-store-manager/ifood-store-manager.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { PortioningComponent } from './components/inventory/portioning/portioning.component';
+import { RequisitionsComponent } from './components/requisitions/requisitions.component';
 
 export const APP_ROUTES: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
@@ -55,6 +55,7 @@ export const APP_ROUTES: Routes = [
   { path: 'inventory', component: InventoryComponent, canActivate: [roleGuard] },
   { path: 'inventory/audit', component: InventoryAuditComponent, canActivate: [roleGuard] },
   { path: 'inventory/portioning', component: PortioningComponent, canActivate: [roleGuard] },
+  { path: 'requisitions', component: RequisitionsComponent, canActivate: [roleGuard] },
   { path: 'purchasing', component: PurchasingComponent, canActivate: [roleGuard] },
   { path: 'suppliers', component: SuppliersComponent, canActivate: [roleGuard] },
   { path: 'customers', component: CustomersComponent, canActivate: [roleGuard] },

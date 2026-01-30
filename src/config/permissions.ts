@@ -1,3 +1,4 @@
+
 export const ALL_PERMISSION_KEYS = [
   '/dashboard',
   '/pos',
@@ -5,6 +6,7 @@ export const ALL_PERMISSION_KEYS = [
   '/ifood-kds',
   '/cashier',
   '/inventory',
+  '/requisitions',
   '/purchasing',
   '/suppliers',
   '/customers',

@@ -685,3 +685,51 @@ export interface PortioningEventOutput {
   // relations
   ingredients?: { name: string };
 }
+
+// --- Stock Restructuring (Phase 1) ---
+
+export interface StationStock {
+  id: string;
+  user_id: string;
+  station_id: string;
+  ingredient_id: string;
+  quantity: number;
+  last_restock_date: string | null;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  stations?: { name: string };
+  ingredients?: { name: string; unit: string };
+}
+
+export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL';
+
+export interface Requisition {
+  id: string;
+  user_id: string;
+  requested_by: string | null;
+  station_id: string | null;
+  status: RequisitionStatus;
+  notes: string | null;
+  created_at: string;
+  processed_at: string | null;
+  processed_by: string | null;
+  // Relations
+  requester?: { name: string }; // Alias for employees!requested_by
+  processor?: { name: string }; // Alias for employees!processed_by
+  stations?: { name: string };
+  requisition_items?: RequisitionItem[];
+}
+
+export interface RequisitionItem {
+  id: string;
+  user_id: string;
+  requisition_id: string;
+  ingredient_id: string;
+  quantity_requested: number;
+  quantity_delivered: number | null;
+  unit: string;
+  created_at: string;
+  // Relations
+  ingredients?: { name: string };
+}

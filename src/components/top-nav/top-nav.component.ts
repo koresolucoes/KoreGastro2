@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -78,6 +79,7 @@ export class TopNavComponent {
       icon: 'soup_kitchen',
       children: [
         { name: 'Cozinha (KDS)', path: '/kds', icon: 'deck', roles: ['Gerente', 'Cozinha'] },
+        { name: 'Requisições', path: '/requisitions', icon: 'move_to_inbox', roles: ['Gerente', 'Cozinha', 'Caixa'] },
         { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] },
         { name: 'Fichas Técnicas', path: '/technical-sheets', icon: 'list_alt', roles: ['Gerente'] },
       ]
@@ -117,7 +119,7 @@ export class TopNavComponent {
     
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

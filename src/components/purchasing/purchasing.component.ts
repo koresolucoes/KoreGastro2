@@ -7,6 +7,7 @@ import { PurchasingDataService } from '../../services/purchasing-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { v4 as uuidv4 } from 'uuid';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { FormsModule } from '@angular/forms';
 
 type FormItem = {
     id: string; // Can be temp id
@@ -22,7 +23,7 @@ type FormItem = {
 @Component({
   selector: 'app-purchasing',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './purchasing.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -62,14 +63,22 @@ export class PurchasingComponent implements OnInit {
     });
 
     updatePOFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
-        this.orderForm.update(f => ({
-            ...f,
-            [field]: field === 'supplier_id' ? (value === 'null' ? null : value) : value
-        }));
+        this.orderForm.update(f => {
+            // Fix: Cast updated to any to avoid "Property does not exist on type 'unknown'" error if inference fails
+            const updated: any = { ...f };
+            if (field === 'supplier_id') {
+                updated.supplier_id = value === 'null' ? null : value;
+            } else if (field === 'status') {
+                updated.status = value as PurchaseOrderStatus;
+            } else if (field === 'notes') {
+                updated.notes = value;
+            }
+            return updated;
+        });
     }
 
     ngOnInit() {
-        const navigationState = this.router.getCurrentNavigation()?.extras.state;
+        const navigationState = this.router.getCurrentNavigation()?.extras.state as any; // Cast to any to allow access
         if (navigationState && navigationState['newOrderItems']) {
             const prefillItems = navigationState['newOrderItems'] as { ingredientId: string, quantity: number }[];
             const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i] as [string, Ingredient]));
@@ -280,7 +289,7 @@ export class PurchasingComponent implements OnInit {
                 case 'min_stock':
                 case 'standard_portion_weight_g': {
                     const numValue = parseFloat(value);
-                    newForm[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
+                    (newForm as any)[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
                     break;
                 }
                 case 'price': {
@@ -291,13 +300,13 @@ export class PurchasingComponent implements OnInit {
                 case 'is_sellable':
                 case 'is_portionable':
                 case 'is_yield_product':
-                    newForm[field] = value as boolean;
+                    (newForm as any)[field] = value as boolean;
                     break;
                 case 'name':
-                    newForm[field] = value;
+                    newForm.name = value;
                     break;
                 case 'unit':
-                    newForm[field] = value as IngredientUnit;
+                    newForm.unit = value as IngredientUnit;
                     break;
                 case 'category_id':
                 case 'supplier_id':
@@ -307,9 +316,10 @@ export class PurchasingComponent implements OnInit {
                 case 'external_code':
                 case 'expiration_date':
                 case 'last_movement_at':
-                    newForm[field] = (value === 'null' || value === '') ? null : value;
+                    (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
                     break;
                 default: {
+                    // This should be unreachable if the type of `field` is correct
                     const _exhaustiveCheck: never = field;
                     break;
                 }
