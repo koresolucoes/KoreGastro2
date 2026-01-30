@@ -132,8 +132,8 @@ export class TechnicalSheetsComponent {
     const term = this.searchTerm().toLowerCase();
     const recipes = this.allRecipes().map(r => ({
       ...r,
-      // FIX: Cast recipeCosts signal result to Map to resolve 'get' does not exist error.
-      cost: (this.recipeCosts() as Map<string, any>).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
+      // FIX: Cast recipeCosts signal result to any to resolve 'get' does not exist error on unknown type.
+      cost: (this.recipeCosts() as any).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
     }));
     if (!term) return recipes;
     return recipes.filter(r => r.name.toLowerCase().includes(term));
@@ -173,7 +173,7 @@ export class TechnicalSheetsComponent {
       }
     }
     for (const item of form.subRecipes) {
-      const subRecipeCost = subRecipeCostMap.get(item.child_recipe_id)?.totalCost ?? 0;
+      const subRecipeCost = (subRecipeCostMap as any).get(item.child_recipe_id)?.totalCost ?? 0;
       total += subRecipeCost * (item.quantity || 0);
     }
     return total;

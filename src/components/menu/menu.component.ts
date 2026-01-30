@@ -263,14 +263,14 @@ export class MenuComponent implements OnInit, OnDestroy {
   setView(newView: 'cover' | 'menu' | 'info') {
     this.view.set(newView);
     if (newView === 'menu' || newView === 'cover') {
-        setTimeout(() => this.viewportScroller.scrollToPosition([0, 0]), 0);
+        setTimeout(() => (this.viewportScroller as any).scrollToPosition([0, 0]), 0);
     }
   }
   
   setSelectedCategory(slug: string | null) {
     this.activeCategorySlug.set(slug);
     if (slug === 'top') {
-        this.viewportScroller.scrollToPosition([0, 0]);
+        (this.viewportScroller as any).scrollToPosition([0, 0]);
         this.activeCategorySlug.set(null);
     } else if (slug && this.view() === 'menu') {
         // Scroll to anchor logic if needed, but filtering is usually enough for a clean UI

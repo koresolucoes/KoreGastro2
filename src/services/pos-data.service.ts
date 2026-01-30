@@ -289,47 +289,110 @@ export class PosDataService {
     discountType: DiscountType | null,
     discountValue: number | null
   ): Promise<{ success: boolean; error: any }> {
-    // ... (same as before)
     if (itemIds.length === 0) return { success: true, error: null };
     
+    // 1. Fetch current items to calculate discounts correctly
     const { data: items, error: fetchError } = await supabase.from('order_items').select('*').in('id', itemIds);
     if (fetchError) return { success: false, error: fetchError };
     if (!items) return { success: false, error: { message: 'Items not found' } };
 
     let updates: Partial<OrderItem>[];
+
+    // 2. Calculate new prices based on discount
     if (discountType === null || discountValue === null || discountValue < 0) {
-      updates = items.map(item => ({ ...item, price: item.original_price, discount_type: null, discount_value: null, }));
+      // Remove discount: revert to original price
+      updates = items.map(item => ({ 
+          ...item, 
+          price: item.original_price, 
+          discount_type: null, 
+          discount_value: null 
+      }));
     } else if (discountType === 'percentage') {
-      updates = items.map(item => ({ ...item, price: item.original_price * (1 - discountValue / 100), discount_type: discountType, discount_value: discountValue, }));
+      // Percentage discount
+      updates = items.map(item => ({ 
+          ...item, 
+          price: item.original_price * (1 - discountValue / 100), 
+          discount_type: discountType, 
+          discount_value: discountValue 
+      }));
     } else { 
+      // Fixed value discount (prorated across items based on their original price share)
       const totalOriginalPrice = items.reduce((sum, i) => sum + i.original_price, 0);
       if (totalOriginalPrice > 0) {
         updates = items.map(item => {
           const proportion = item.original_price / totalOriginalPrice;
           const itemDiscount = discountValue * proportion;
-          return { ...item, price: Math.max(0, item.original_price - itemDiscount), discount_type: discountType, discount_value: discountValue, };
+          return { 
+              ...item, 
+              price: Math.max(0, item.original_price - itemDiscount), 
+              discount_type: discountType, 
+              discount_value: discountValue 
+          };
         });
       } else {
-        updates = items.map(item => ({ ...item, price: 0, discount_type: discountType, discount_value: discountValue, }));
+        updates = items.map(item => ({ ...item, price: 0, discount_type: discountType, discount_value: discountValue }));
       }
     }
+
+    // 3. Update Database
     const { error } = await supabase.from('order_items').upsert(updates);
 
-    if (error && error.message.includes("Could not find the 'discount_type' column")) {
-       return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+    if (error) {
+         if(error.message.includes("Could not find the 'discount_type' column")) {
+            return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+         }
+         return { success: false, error };
     }
 
-    return { success: !error, error };
+    // 4. Manually update local state immediately (Optimistic Update)
+    // This ensures UI reacts even if Realtime is slow or fails
+    this.posState.orders.update(currentOrders => {
+        return currentOrders.map(order => {
+            // Check if this order contains any of the modified items
+            const orderHasItems = order.order_items.some(i => itemIds.includes(i.id));
+            if (!orderHasItems) return order;
+
+            // Update the items within this order
+            const newItems = order.order_items.map(item => {
+                const update = updates.find(u => u.id === item.id);
+                if (update) {
+                    // Merge existing item with update (which contains new prices and discount info)
+                    return { ...item, ...update } as OrderItem;
+                }
+                return item;
+            });
+
+            return { ...order, order_items: newItems };
+        });
+    });
+
+    return { success: true, error: null };
   }
   
   async applyGlobalOrderDiscount(orderId: string, discountType: DiscountType | null, discountValue: number | null): Promise<{ success: boolean; error: any }> {
-    const { error } = await supabase.from('orders').update({ discount_type: discountType, discount_value: discountValue, }).eq('id', orderId);
+    // 1. Update Database
+    const { error } = await supabase
+        .from('orders')
+        .update({ discount_type: discountType, discount_value: discountValue })
+        .eq('id', orderId);
 
-    if (error && error.message.includes("Could not find the 'discount_type' column")) {
-       return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+    if (error) {
+        if(error.message.includes("Could not find the 'discount_type' column")) {
+            return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+        }
+        return { success: false, error };
     }
     
-    return { success: !error, error };
+    // 2. Manually update local state immediately (Optimistic Update)
+    this.posState.orders.update(currentOrders => 
+        currentOrders.map(order => 
+            order.id === orderId 
+                ? { ...order, discount_type: discountType, discount_value: discountValue } 
+                : order
+        )
+    );
+    
+    return { success: true, error: null };
   }
 
   async finalizeOrderPayment(

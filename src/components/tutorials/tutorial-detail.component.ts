@@ -1,8 +1,6 @@
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, ParamMap } from '@angular/router';
 import { Tutorial, TutorialService } from '../../services/tutorial.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -19,7 +17,7 @@ export class TutorialDetailComponent {
   private route: ActivatedRoute = inject(ActivatedRoute);
   private tutorialService = inject(TutorialService);
 
-  private tutorialId = toSignal(this.route.paramMap.pipe(map(params => params.get('id'))));
+  private tutorialId = toSignal(this.route.paramMap.pipe(map((params: ParamMap) => params.get('id'))));
 
   tutorial = computed(() => {
     const id = this.tutorialId();
