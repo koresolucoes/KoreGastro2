@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models/db.models';
@@ -317,12 +318,15 @@ export class PaymentModalComponent {
     );
     if (!confirmed) return;
 
-    const { success, error } = await this.posDataService.finalizeOrderPayment(order.id, table.id, finalOrderTotal, allPayments, finalTipAmount);
+    const result = await this.posDataService.finalizeOrderPayment(order.id, table.id, finalOrderTotal, allPayments, finalTipAmount);
 
-    if (success) {
+    if (result.success) {
       this.paymentSuccess.set(true);
+      if (result.warningMessage) {
+        this.notificationService.show(result.warningMessage, 'warning', 10000);
+      }
     } else {
-      await this.notificationService.alert(`Falha ao registrar pagamento. Erro: ${error?.message}`);
+      await this.notificationService.alert(`Falha ao registrar pagamento. Erro: ${result.error?.message}`);
     }
   }
 
@@ -337,6 +341,8 @@ export class PaymentModalComponent {
   finishAndClose() {
       this.paymentFinalized.emit();
   }
+
+  // ... (rest of methods like selectGroup, assignItemToGroup, etc. remain unchanged)
 
   selectGroup(groupId: string) {
     const group = this.itemGroups().find(g => g.id === groupId);

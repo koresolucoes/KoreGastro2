@@ -139,9 +139,12 @@ export class RequisitionListComponent {
   updateDeliveryQty(reqId: string, itemId: string, value: string) {
     const qty = parseFloat(value);
     this.deliveryQuantities.update(map => {
-        const newMap = new Map(map);
-        if (!newMap.has(reqId)) newMap.set(reqId, new Map());
-        newMap.get(reqId)!.set(itemId, isNaN(qty) ? 0 : qty);
+        const newMap = new Map<string, Map<string, number>>(map);
+        if (!newMap.has(reqId)) newMap.set(reqId, new Map<string, number>());
+        const itemMap = newMap.get(reqId);
+        if (itemMap) {
+            itemMap.set(itemId, isNaN(qty) ? 0 : qty);
+        }
         return newMap;
     });
   }

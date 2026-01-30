@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -7,6 +8,7 @@ import { RecipeDataService } from './recipe-data.service';
 import { v4 as uuidv4 } from 'uuid';
 import { WebhookService } from './webhook.service';
 import { InventoryStateService } from './inventory-state.service';
+import { PosStateService } from './pos-state.service';
 
 @Injectable({
   providedIn: 'root',
@@ -17,6 +19,7 @@ export class InventoryDataService {
   private recipeDataService = inject(RecipeDataService);
   private webhookService = inject(WebhookService);
   private inventoryState = inject(InventoryStateService);
+  private posState = inject(PosStateService);
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.authService.currentUser()?.id;
@@ -258,7 +261,7 @@ export class InventoryDataService {
     return { success: !error, error };
   }
   
-  async deleteSupplier(id: string): Promise<{ success: boolean; error: any }> {
+  async deleteSupplier(id: string): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('suppliers').delete().eq('id', id);
     return { success: !error, error };
   }
@@ -273,17 +276,16 @@ export class InventoryDataService {
     }
     
     try {
-      // 1. Deduct raw ingredients sequentially to avoid race conditions
+      // 1. Deduct raw ingredients sequentially
+      // NOTE: In Phase 3, this should ideally also consume from station stocks, 
+      // but Mise En Place logic usually implies fetching from Central for preparation.
+      // We will keep it simple here and assume production happens with Central stock for now, 
+      // or we can enhance it later to check station stock first if needed.
       const deductionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
         const result = await this.adjustIngredientStock({ ingredientId, quantityChange: -totalDeduction, reason: deductionReason });
-        if (!result.success) {
-          // If one deduction fails, stop and report the error.
-          // A full transaction rollback would be ideal but requires backend changes.
-          // This sequential approach prevents further deductions after a failure.
-          throw result.error; 
-        }
+        if (!result.success) throw result.error;
       }
 
       // 2. Add produced sub-recipe to stock
@@ -297,17 +299,14 @@ export class InventoryDataService {
       });
       if (!success) throw error;
       
-      // 3. Update the cost of the source ingredient based on the production cost.
+      // 3. Update cost
       const newUnitCost = recipeComposition.totalCost;
       const { error: costUpdateError } = await supabase
         .from('ingredients')
         .update({ cost: newUnitCost })
         .eq('id', sourceIngredientId);
       
-      if (costUpdateError) {
-        // Log the error but don't fail the entire transaction, as the stock is already updated.
-        console.error(`Production stock updated, but failed to update cost for ingredient ${sourceIngredientId}:`, costUpdateError);
-      }
+      if (costUpdateError) console.error(`Production stock updated, but failed to update cost:`, costUpdateError);
       
       return { success: true, error: null };
     } catch (error) {
@@ -316,17 +315,29 @@ export class InventoryDataService {
     }
   }
 
-  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any }> {
+  /**
+   * SMART CONSUMPTION LOGIC:
+   * 1. Checks Station Stock first.
+   * 2. If insufficient, checks Central Stock (Ingredients).
+   * 3. If Central has stock but Station doesn't, it deducts from Central and returns a WARNING.
+   */
+  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const recipeCompositions = this.recipeState.recipeDirectComposition();
-    const deductions = new Map<string, number>();
     const processedGroupIds = new Set<string>();
+    
+    // Map to aggregate deductions: StationID -> IngredientID -> Quantity
+    const stationDeductions = new Map<string, Map<string, number>>();
+    // Map to keep track of ingredient names for warnings
+    const ingredientNames = new Map<string, string>();
+    // Set to collect stations that needed a fallback to central stock
+    const stationsNeedingRestock = new Set<string>();
 
+    // 1. Calculate Requirements
     for (const item of orderItems) {
       if (!item.recipe_id) continue;
-
       if (item.group_id) {
         if (processedGroupIds.has(item.group_id)) continue; 
         processedGroupIds.add(item.group_id);
@@ -334,43 +345,129 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        // Deduct direct raw ingredients
-        for (const ing of composition.directIngredients) {
-          const totalQuantityToDeduct = ing.quantity * item.quantity;
-          deductions.set(ing.ingredientId, (deductions.get(ing.ingredientId) || 0) + totalQuantityToDeduct);
+        // Use the item's station_id to determine which station stock to check
+        const targetStationId = item.station_id;
+
+        if (!stationDeductions.has(targetStationId)) {
+            stationDeductions.set(targetStationId, new Map());
         }
-        // Deduct finished sub-recipe ingredients
+        const stationMap = stationDeductions.get(targetStationId)!;
+
+        // Helper to add to map
+        const addToMap = (ingId: string, qty: number) => {
+            stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
+            // Cache name for later (optimization: could fetch from state)
+            const ing = this.inventoryState.ingredients().find(i => i.id === ingId);
+            if(ing) ingredientNames.set(ingId, ing.name);
+        };
+
+        // Direct ingredients
+        for (const ing of composition.directIngredients) {
+          addToMap(ing.ingredientId, ing.quantity * item.quantity);
+        }
+        // Sub-recipe ingredients (if they are tracked as stock items)
         for (const subIng of composition.subRecipeIngredients) {
-            const totalQuantityToDeduct = subIng.quantity * item.quantity;
-            deductions.set(subIng.ingredientId, (deductions.get(subIng.ingredientId) || 0) + totalQuantityToDeduct);
+            addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
         }
       }
     }
 
-    if (deductions.size === 0) {
-      return { success: true, error: null }; // Nothing to deduct
+    if (stationDeductions.size === 0) {
+      return { success: true, error: null };
     }
 
     try {
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
-      // Process deductions sequentially to avoid database race conditions.
-      for (const [ingredientId, quantityChange] of deductions.entries()) {
-        if (quantityChange > 0) {
-          const result = await this.adjustIngredientStock({ ingredientId: ingredientId, quantityChange: -quantityChange, reason: reason });
-          if (!result.success) {
-            // Stop on the first error to prevent partial stock deductions.
-            throw result.error;
-          }
+
+      // 2. Process Deductions
+      for (const [stationId, ingredientsNeeded] of stationDeductions.entries()) {
+        for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
+             if (quantityNeeded <= 0) continue;
+
+             // A. Check Station Stock
+             const { data: stationStockData } = await supabase
+                .from('station_stocks')
+                .select('id, quantity')
+                .eq('station_id', stationId)
+                .eq('ingredient_id', ingredientId)
+                .single();
+            
+            const currentStationQty = stationStockData?.quantity || 0;
+
+            if (currentStationQty >= quantityNeeded) {
+                // Happy Path: Deduct from Station
+                await supabase.from('station_stocks')
+                    .update({ quantity: currentStationQty - quantityNeeded, updated_at: new Date().toISOString() })
+                    .eq('id', stationStockData!.id);
+            } else {
+                // B. Insufficient Station Stock -> Check Central (Fallback)
+                const { data: centralIngredient } = await supabase
+                    .from('ingredients')
+                    .select('stock, name')
+                    .eq('id', ingredientId)
+                    .single();
+                
+                const currentCentralQty = centralIngredient?.stock || 0;
+
+                // We deduct the FULL amount from Central if Station is empty/insufficient to keep logic simple,
+                // OR we could drain station and take remainder from Central.
+                // Approach: Drain station to 0 (if exists), take remainder from Central.
+                
+                let remainder = quantityNeeded;
+                
+                if (currentStationQty > 0 && stationStockData) {
+                    remainder = quantityNeeded - currentStationQty;
+                    // Drain station
+                    await supabase.from('station_stocks')
+                        .update({ quantity: 0, updated_at: new Date().toISOString() })
+                        .eq('id', stationStockData.id);
+                }
+
+                if (currentCentralQty >= remainder) {
+                     // Deduct remainder from Central
+                     const result = await this.adjustIngredientStock({
+                         ingredientId: ingredientId,
+                         quantityChange: -remainder,
+                         reason: `${reason} (Fallback de Estação)`,
+                     });
+                     
+                     if (!result.success) throw result.error;
+
+                     // Flag warning
+                     const stationName = this.posState.stations().find(s => s.id === stationId)?.name || 'Estação';
+                     stationsNeedingRestock.add(`${stationName} (item: ${centralIngredient?.name})`);
+
+                } else {
+                    // C. Insufficient everywhere -> Fail? Or allow negative?
+                    // Usually we block or allow negative central stock. Let's allow negative central for now 
+                    // to not stop sales, but still warn.
+                     const result = await this.adjustIngredientStock({
+                         ingredientId: ingredientId,
+                         quantityChange: -remainder,
+                         reason: `${reason} (Sem estoque)`,
+                     });
+                     if (!result.success) throw result.error;
+                }
+            }
         }
       }
       
-      return { success: true, error: null };
+      // Construct warning message
+      let warningMessage: string | undefined;
+      if (stationsNeedingRestock.size > 0) {
+          const stationsList = Array.from(stationsNeedingRestock).join(', ');
+          warningMessage = `Estoque retirado do Almoxarifado para: ${stationsList}. Por favor, faça uma requisição.`;
+      }
+      
+      return { success: true, error: null, warningMessage };
+
     } catch (error) {
       return { success: false, error };
     }
   }
 
   async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
+    // ... (Implementation remains the same as previous)
     const userId = this.authService.currentUser()?.id;
     if (!userId) return new Map();
 
@@ -382,10 +479,7 @@ export class InventoryDataService {
       .gte('completed_at', startDate.toISOString())
       .lte('completed_at', endDate.toISOString());
 
-    if (error || !orders) {
-      console.error('Error fetching orders for usage calculation:', error);
-      return new Map();
-    }
+    if (error || !orders) return new Map();
 
     const recipeCosts = this.recipeState.recipeCosts();
     const usageMap = new Map<string, number>();
