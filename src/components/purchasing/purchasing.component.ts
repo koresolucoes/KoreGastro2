@@ -100,7 +100,7 @@ export class PurchasingComponent implements OnInit {
                 const itemsForThisOrder = suppliersInOrder.get(firstSupplierId);
     
                 this.openAddModal(itemsForThisOrder);
-                this.orderForm.update(form => ({ ...form, supplier_id: firstSupplierId }));
+                this.orderForm.update((form: any) => ({ ...form, supplier_id: firstSupplierId }));
             }
         }
     }

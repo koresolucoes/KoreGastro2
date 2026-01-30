@@ -395,7 +395,62 @@ export class PosDataService {
     }
   }
 
-  // ... (cancelOrder, deleteOrderAndItems, associateCustomerToOrder, redeemReward remain the same)
+  // --- Hall and Table Management Methods ---
+
+  async addHall(name: string): Promise<{ success: boolean; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const { error } = await supabase.from('halls').insert({ name, user_id: userId });
+    return { success: !error, error };
+  }
+
+  async updateHall(id: string, name: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('halls').update({ name }).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteHall(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('halls').delete().eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deleteTablesByHallId(hallId: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').delete().eq('hall_id', hallId);
+    return { success: !error, error };
+  }
+  
+  async upsertTables(tables: Partial<Table>[]): Promise<{ success: boolean; error: any }> {
+      const userId = this.authService.currentUser()?.id;
+      if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+      
+      const tablesToUpsert = tables.map(t => {
+          const { id, ...rest } = t;
+          // If id starts with temp-, remove it to let DB generate a new one, or handle it as insertion
+          if (id?.startsWith('temp-')) {
+              return { ...rest, user_id: userId };
+          }
+          return { id, ...rest, user_id: userId };
+      });
+
+      const { error } = await supabase.from('tables').upsert(tablesToUpsert);
+      return { success: !error, error };
+  }
+
+  async deleteTable(tableId: string): Promise<{ success: boolean; error: any }> {
+      const { error } = await supabase.from('tables').delete().eq('id', tableId);
+      return { success: !error, error };
+  }
+
+  async updateTableStatus(tableId: string, status: TableStatus): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').update({ status }).eq('id', tableId);
+    return { success: !error, error };
+  }
+  
+  async updateTableCustomerCount(tableId: string, count: number): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').update({ customer_count: count }).eq('id', tableId);
+    return { success: !error, error };
+  }
+
   async cancelOrder(orderId: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId);
     return { success: !error, error };
