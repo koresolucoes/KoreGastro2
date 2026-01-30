@@ -314,11 +314,21 @@ export class PosDataService {
       }
     }
     const { error } = await supabase.from('order_items').upsert(updates);
+
+    if (error && error.message.includes("Could not find the 'discount_type' column")) {
+       return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+    }
+
     return { success: !error, error };
   }
   
   async applyGlobalOrderDiscount(orderId: string, discountType: DiscountType | null, discountValue: number | null): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('orders').update({ discount_type: discountType, discount_value: discountValue, }).eq('id', orderId);
+
+    if (error && error.message.includes("Could not find the 'discount_type' column")) {
+       return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
+    }
+    
     return { success: !error, error };
   }
 

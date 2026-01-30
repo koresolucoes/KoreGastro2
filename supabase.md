@@ -106,3 +106,19 @@ CREATE POLICY "Users can delete requisition items of their own restaurant"
 ON requisition_items FOR DELETE 
 USING (auth.uid() = user_id);
 ```
+
+# Atualização de Descontos (Orders)
+
+Execute para habilitar descontos globais e por item:
+
+```sql
+-- Adiciona colunas de desconto na tabela de pedidos (Desconto Global)
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS discount_type TEXT CHECK (discount_type IN ('percentage', 'fixed_value')),
+ADD COLUMN IF NOT EXISTS discount_value NUMERIC;
+
+-- Adiciona colunas de desconto na tabela de itens (Desconto por Item)
+ALTER TABLE order_items 
+ADD COLUMN IF NOT EXISTS discount_type TEXT CHECK (discount_type IN ('percentage', 'fixed_value')),
+ADD COLUMN IF NOT EXISTS discount_value NUMERIC;
+```
