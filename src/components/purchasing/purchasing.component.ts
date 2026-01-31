@@ -63,9 +63,8 @@ export class PurchasingComponent implements OnInit {
     });
 
     updatePOFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
-        this.orderForm.update(f => {
-            // Fix: Cast updated to any to avoid "Property does not exist on type 'unknown'" error if inference fails
-            const updated: any = { ...f };
+        this.orderForm.update(form => {
+            const updated = { ...form };
             if (field === 'supplier_id') {
                 updated.supplier_id = value === 'null' ? null : value;
             } else if (field === 'status') {
@@ -100,7 +99,8 @@ export class PurchasingComponent implements OnInit {
                 const itemsForThisOrder = suppliersInOrder.get(firstSupplierId);
     
                 this.openAddModal(itemsForThisOrder);
-                this.orderForm.update((form: any) => ({ ...form, supplier_id: firstSupplierId }));
+                // Explicitly type form to avoid inference issues with unknown
+                this.orderForm.update((form: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string }) => ({ ...form, supplier_id: firstSupplierId }));
             }
         }
     }
@@ -278,7 +278,7 @@ export class PurchasingComponent implements OnInit {
         this.isAddingIngredient.set(false);
     }
 
-    // FIX: Replaced unsafe object update with a type-safe switch statement to handle different field types correctly. This resolves the "'supplier_id' does not exist on type 'unknown'" error.
+    // FIX: Replaced unsafe object update with a type-safe switch statement to handle different field types correctly.
     updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.newIngredientForm.update(form => {
             const newForm: Partial<Ingredient> = { ...form };
@@ -319,7 +319,6 @@ export class PurchasingComponent implements OnInit {
                     (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
                     break;
                 default: {
-                    // This should be unreachable if the type of `field` is correct
                     const _exhaustiveCheck: never = field;
                     break;
                 }

@@ -99,15 +99,28 @@ export class CashierComponent {
   tablesForPayment = computed(() => this.posState.tables().filter(t => t.status === 'PAGANDO'));
   openOrders = this.posState.openOrders;
   isTablePaymentModalOpen = signal(false);
-  selectedOrderForPayment = signal<Order | null>(null);
+  
   selectedTableForPayment = signal<Table | null>(null);
+  // Computed order ensures that when openOrders updates (e.g. due to discount application),
+  // this signal also updates, propagating changes to the payment modal.
+  selectedOrderForPayment = computed(() => {
+    const table = this.selectedTableForPayment();
+    if (!table) return null;
+    return this.openOrders().find(o => o.table_number === table.number) ?? null;
+  });
+  
   isTableOptionsModalOpen = signal(false);
   selectedTableForOptions = signal<Table | null>(null);
 
   // --- Pre-bill Modal Signals ---
   isPreBillModalOpen = signal(false);
-  selectedOrderForPreBill = signal<Order | null>(null);
   selectedTableForPreBill = signal<Table | null>(null);
+  // Computed order for reactivity
+  selectedOrderForPreBill = computed(() => {
+    const table = this.selectedTableForPreBill();
+    if (!table) return null;
+    return this.openOrders().find(o => o.table_number === table.number) ?? null;
+  });
   
   constructor() {
     const today = new Date().toISOString().split('T')[0];
@@ -372,10 +385,11 @@ export class CashierComponent {
   }
   
   async openPaymentForTable(table: Table) {
+    // Look up the order in the reactive list of open orders
     const order = this.openOrders().find(o => o.table_number === table.number);
     if (order) {
       this.selectedTableForPayment.set(table);
-      this.selectedOrderForPayment.set(order);
+      // We don't set a separate order signal anymore; the computed property derives it.
       this.isTablePaymentModalOpen.set(true);
     } else {
       await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
@@ -401,7 +415,7 @@ export class CashierComponent {
     const order = this.openOrders().find(o => o.table_number === table.number);
     if (order) {
       this.selectedTableForPreBill.set(table);
-      this.selectedOrderForPreBill.set(order);
+      // Computed derives the order
       this.isPreBillModalOpen.set(true);
     } else {
       await this.notificationService.alert(`Erro: Pedido para a mesa ${table.number} não encontrado.`);
@@ -411,14 +425,12 @@ export class CashierComponent {
   handlePaymentFinalized() {
     this.isTablePaymentModalOpen.set(false);
     this.selectedTableForPayment.set(null);
-    this.selectedOrderForPayment.set(null);
   }
 
   handlePaymentModalClosed(revertStatus: boolean) {
     this.isTablePaymentModalOpen.set(false);
     // In cashier, we don't revert status. The payment is either finalized or cancelled.
     this.selectedTableForPayment.set(null);
-    this.selectedOrderForPayment.set(null);
   }
 
   // --- Cash Drawer Computeds & Methods ---
