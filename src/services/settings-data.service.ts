@@ -7,6 +7,7 @@ import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebhookService } from './webhook.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +15,11 @@ import { WebhookService } from './webhook.service';
 export class SettingsDataService {
   private authService = inject(AuthService);
   private webhookService = inject(WebhookService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   private async uploadAsset(file: File, path: string): Promise<{ publicUrl: string | null; error: any }> {
     const { error: uploadError } = await supabase.storage
@@ -33,6 +39,7 @@ export class SettingsDataService {
 
   // --- Multi-Unit / Team Management RPCs ---
   
+  // Creates a new store (Needs AUTH user because it creates a new context)
   async createNewStore(storeName: string): Promise<{ success: boolean; message?: string; store_id?: string }> {
       const { data, error } = await supabase.rpc('create_new_store', { store_name: storeName });
       
@@ -44,11 +51,19 @@ export class SettingsDataService {
   }
 
   async getStoreManagers(): Promise<{ data: StoreManager[]; error: any }> {
+    // This RPC uses auth.uid() implicitly in the DB function to filter permissions.
+    // However, if we want to manage permissions for the ACTIVE STORE, we might need a different approach 
+    // if 'auth.uid()' is the user but we want managers of 'activeUnitId'.
+    // Currently, `get_store_managers` assumes the logged in user IS the store owner/context for simplistic query.
+    // Ideally, for proper delegation, we should query unit_permissions where store_id = activeUnitId.
+    // But since the current RLS setup and `get_store_managers` might rely on auth.uid() being the store owner, 
+    // let's stick to the RPC for now as it's for the "Owner" managing their own store.
     const { data, error } = await supabase.rpc('get_store_managers');
     return { data: data as StoreManager[] || [], error };
   }
 
   async inviteManager(email: string, role: string): Promise<{ success: boolean; message: string }> {
+    // Same note as above. Invites are for the store owned by auth.uid().
     const { data, error } = await supabase.rpc('invite_manager_by_email', { 
         email_input: email, 
         role_input: role 
@@ -57,7 +72,6 @@ export class SettingsDataService {
     if (error) {
         return { success: false, message: error.message };
     }
-    // RPC returns JSON object { success, message }
     return data as { success: boolean; message: string };
   }
 
@@ -66,10 +80,9 @@ export class SettingsDataService {
     return { success: data as boolean, error };
   }
 
-  // FIX: Updated method to return the created station object.
   async addStation(name: string): Promise<{ success: boolean; error: any; data?: Station }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('stations').insert({ name, user_id: userId }).select().single();
     return { success: !error, error, data };
   }
@@ -90,27 +103,23 @@ export class SettingsDataService {
   }
 
   async addEmployee(employee: Partial<Employee>, photoFile?: File | null): Promise<{ success: boolean, error: any, data?: Employee }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
-    // Insert employee without photo URL first to get the ID
     const { photo_url, ...employeeData } = employee;
     const { data: newEmployee, error } = await supabase.from('employees').insert({ ...employeeData, user_id: userId }).select().single();
     if (error) return { success: false, error, data: undefined };
 
-    // If there's a photo, upload it and update the employee record
     if (photoFile) {
       const fileExt = photoFile.name.split('.').pop();
       const path = `public/employee_photos/${newEmployee.id}.${fileExt}`;
       const { publicUrl, error: uploadError } = await this.uploadAsset(photoFile, path);
 
       if (uploadError) {
-        // Log error but don't fail the whole operation, user can re-upload
         console.error('Employee created, but photo upload failed:', uploadError);
         return { success: true, error: null, data: newEmployee };
       }
 
-      // Update the employee with the photo URL
       const { data: updatedEmployee, error: updateError } = await supabase.from('employees').update({ photo_url: publicUrl }).eq('id', newEmployee.id).select().single();
       if (updateError) {
         console.error('Employee created and photo uploaded, but updating record failed:', updateError);
@@ -145,8 +154,8 @@ export class SettingsDataService {
   }
   
   async updateCompanyProfile(profile: Partial<CompanyProfile>, logoFile?: File | null, coverFile?: File | null, headerFile?: File | null): Promise<{ success: boolean, error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const profileData = { ...profile };
 
@@ -181,6 +190,10 @@ export class SettingsDataService {
   }
 
   async regenerateExternalApiKey(): Promise<{ success: boolean; error: any; data: { external_api_key: string } | null }> {
+    // This RPC likely updates the 'auth.uid()' profile. 
+    // In multi-store, we should ensure it updates the active unit profile if possible.
+    // If the RPC relies strictly on auth.uid(), it might only work for the owner.
+    // For now, assume owner context.
     const { data, error } = await supabase.rpc('regenerate_external_api_key');
     if (error) {
       return { success: false, error, data: null };
@@ -189,8 +202,8 @@ export class SettingsDataService {
   }
 
   async updateFocusNFeToken(token: string, validUntil: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { error } = await supabase
       .from('company_profile')
       .update({ focusnfe_token: token, focusnfe_cert_valid_until: validUntil })
@@ -198,10 +211,9 @@ export class SettingsDataService {
     return { success: !error, error };
   }
 
-  // --- Roles and Permissions ---
   async addRole(name: string): Promise<{ success: boolean, error: any, data?: Role }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('roles').insert({ name, user_id: userId }).select().single();
     return { success: !error, error, data };
   }
@@ -212,18 +224,15 @@ export class SettingsDataService {
   }
 
   async deleteRole(id: string): Promise<{ success: boolean, error: any }> {
-    // We need to delete permissions first due to foreign key constraints
     await supabase.from('role_permissions').delete().eq('role_id', id);
     const { error } = await supabase.from('roles').delete().eq('id', id);
     return { success: !error, error };
   }
   
   async updateRolePermissions(roleId: string, permissions: string[], callerRoleId: string): Promise<{ success: boolean, error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
-    // Security Check: Only apply permission granting restrictions if the caller is editing a DIFFERENT role.
-    // A manager should always be able to add/remove any permission from their own role.
     if (roleId !== callerRoleId) {
       const { data: callerPermissionsData, error: fetchError } = await supabase
         .from('role_permissions')
@@ -242,7 +251,6 @@ export class SettingsDataService {
       }
     }
 
-    // Proceed with update
     const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
     if (deleteError) return { success: false, error: deleteError };
 
@@ -260,8 +268,8 @@ export class SettingsDataService {
   }
 
   async grantAllPermissionsToRole(roleId: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
     const permissionsToInsert = ALL_PERMISSION_KEYS.map(key => ({
       role_id: roleId,
@@ -270,15 +278,13 @@ export class SettingsDataService {
     }));
 
     await supabase.from('role_permissions').delete().eq('role_id', roleId);
-
     const { error } = await supabase.from('role_permissions').insert(permissionsToInsert);
-    
     return { success: !error, error };
   }
   
   async addCustomer(customer: Partial<Customer>): Promise<{ success: boolean; error: any; data?: Customer }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('customers').insert({ ...customer, user_id: userId }).select().single();
     
     if (data) {
@@ -300,8 +306,8 @@ export class SettingsDataService {
   }
 
   async getConsumptionHistory(customerId: string): Promise<{ data: Order[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     return supabase
       .from('orders')
@@ -312,10 +318,9 @@ export class SettingsDataService {
       .order('completed_at', { ascending: false });
   }
 
-  // --- Loyalty Program ---
   async upsertLoyaltySettings(settings: Partial<LoyaltySettings>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { error } = await supabase
       .from('loyalty_settings')
       .upsert({ ...settings, user_id: userId }, { onConflict: 'user_id' });
@@ -323,8 +328,8 @@ export class SettingsDataService {
   }
 
   async addLoyaltyReward(reward: Partial<LoyaltyReward>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { error } = await supabase.from('loyalty_rewards').insert({ ...reward, user_id: userId });
     return { success: !error, error };
   }
@@ -341,8 +346,8 @@ export class SettingsDataService {
   }
 
   async getLoyaltyMovements(customerId: string): Promise<{ data: LoyaltyMovement[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     return supabase
       .from('loyalty_movements')
@@ -352,20 +357,17 @@ export class SettingsDataService {
       .order('created_at', { ascending: false });
   }
   
-  // --- Webhook Management ---
-
   async getWebhooks(): Promise<{ data: Webhook[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     return supabase.from('webhooks').select('*').eq('user_id', userId).order('created_at');
   }
 
   async addWebhook(url: string, events: WebhookEvent[]): Promise<{ data: Webhook & { secret: string } | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
     
-    // Generate a secure random secret
     const secret = `whsec_${uuidv4().replace(/-/g, '')}`;
     
     const { data, error } = await supabase

@@ -1,17 +1,24 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Recipe, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Category } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RecipeDataService {
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean; error: any; data?: Recipe }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: undefined };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' }, data: undefined };
     const { data, error } = await supabase.from('recipes').insert({ ...recipe, user_id: userId }).select().single();
     return { success: !error, error, data };
   }
@@ -23,19 +30,16 @@ export class RecipeDataService {
     ingredients: Partial<RecipeIngredient>[],
     subRecipes: Partial<RecipeSubRecipe>[]
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    // 1. Update the main recipe details
     const { error: recipeError } = await supabase.from('recipes').update(recipeData).eq('id', recipeId);
     if (recipeError) return { success: false, error: recipeError };
 
-    // 2. Clear old technical sheet data
     await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
     await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', recipeId);
     await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId);
 
-    // 3. Insert new technical sheet data
     if (preparations.length > 0) {
         const prepsToInsert = preparations.map(p => ({ ...p, recipe_id: recipeId, user_id: userId }));
         const { error: prepError } = await supabase.from('recipe_preparations').insert(prepsToInsert);
@@ -68,8 +72,8 @@ export class RecipeDataService {
   }
 
   async updateRecipeImage(recipeId: string, imageFile: File): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
     const fileExt = imageFile.name.split('.').pop();
     const path = `public/recipes/${recipeId}.${fileExt}`;
@@ -104,7 +108,6 @@ export class RecipeDataService {
   }
 
   async deleteRecipe(recipeId: string): Promise<{ success: boolean; error: any }> {
-    // Must delete in order to respect foreign key constraints
     await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
     await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', recipeId);
     await supabase.from('recipe_sub_recipes').delete().eq('child_recipe_id', recipeId);
@@ -116,10 +119,9 @@ export class RecipeDataService {
     return { success: !error, error };
   }
 
-  // --- Recipe Category Management ---
   async addRecipeCategory(name: string, imageFile?: File | null): Promise<{ success: boolean, error: any, data?: Category }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
     
@@ -130,12 +132,10 @@ export class RecipeDataService {
     if (imageFile && data) {
         const { success, error: imageError } = await this.updateRecipeCategoryImage(data.id, imageFile);
         if (!success) {
-            // Optionally, decide if you want to delete the created category if image upload fails
             console.error("Category created, but image upload failed:", imageError);
         }
     }
     
-    // Refetch data to include the image_url if it was added
     const { data: finalData } = await supabase.from('categories').select('*').eq('id', data.id).single();
 
     return { success: true, error: null, data: finalData || data };
@@ -156,8 +156,8 @@ export class RecipeDataService {
   }
 
   async updateRecipeCategoryImage(id: string, imageFile: File): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const fileExt = imageFile.name.split('.').pop();
     const path = `public/categories/${id}.${fileExt}`;

@@ -1,7 +1,7 @@
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
-// FIX: Inject modular state services
 import { SupabaseStateService } from './supabase-state.service';
 import { RecipeStateService } from './recipe-state.service';
 import { PosStateService } from './pos-state.service';
@@ -11,6 +11,7 @@ import { PricingService } from './pricing.service';
 import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing, OrderItemStatus, DiscountType } from '../models/db.models';
 import { Payment } from '../components/cashier/cashier.component';
 import { v4 as uuidv4 } from 'uuid';
+import { UnitContextService } from './unit-context.service';
 
 interface CartItem {
   recipe: Recipe;
@@ -23,14 +24,11 @@ interface CartItem {
 }
 
 export interface ReportData {
-  // Sales Report
   grossRevenue?: number;
   totalOrders?: number;
   averageTicket?: number;
   paymentSummary?: { method: string; total: number; count: number }[];
-  // Items Report
   bestSellingItems?: { name: string; quantity: number; revenue: number; totalCost: number; totalProfit: number; profitMargin: number; }[];
-  // Financial Report
   cogs?: number;
   grossProfit?: number;
   totalExpenses?: number;
@@ -60,7 +58,7 @@ export interface PeakDaysData {
 }
 
 export interface DailySalesCogs {
-  date: string; // YYYY-MM-DD
+  date: string;
   sales: number;
   cogs: number;
 }
@@ -82,7 +80,6 @@ export interface CustomReportData {
   totals?: { [key: string]: number };
 }
 
-
 @Injectable({
   providedIn: 'root',
 })
@@ -91,14 +88,18 @@ export class CashierDataService {
   private stateService = inject(SupabaseStateService);
   private inventoryDataService = inject(InventoryDataService);
   private pricingService = inject(PricingService);
-  // FIX: Inject modular state services
   private recipeState = inject(RecipeStateService);
   private posState = inject(PosStateService);
   private hrState = inject(HrStateService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
   
   async getCompletedOrdersForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Order[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     const startDate = new Date(`${startDateStr}T00:00:00`);
     const endDate = new Date(`${endDateStr}T23:59:59`);
@@ -114,8 +115,8 @@ export class CashierDataService {
   }
 
   async getTransactionsForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Transaction[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     const startDate = new Date(`${startDateStr}T00:00:00`);
     const endDate = new Date(`${endDateStr}T23:59:59`);
@@ -130,8 +131,8 @@ export class CashierDataService {
   }
 
   async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items' | 'financial'): Promise<ReportData> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) throw new Error('User not authenticated');
+    const userId = this.getActiveUnitId();
+    if (!userId) throw new Error('Active unit not found');
 
     const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
@@ -150,7 +151,6 @@ export class CashierDataService {
     if (error) throw error;
     if (!orders) return {};
     
-    // FIX: Access recipeCosts from recipeState
     const recipeCosts = this.recipeState.recipeCosts();
 
     const calculateCOGS = (orderList: Order[]): number => {
@@ -237,7 +237,7 @@ export class CashierDataService {
   }
 
   private async getSalesDataForPeriod(startDate: Date, endDate: Date): Promise<PeriodSalesData> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { totalSales: 0, orderCount: 0, averageTicket: 0 };
 
     const { data: transactions, error } = await supabase
@@ -276,7 +276,7 @@ export class CashierDataService {
   }
 
   async getSalesByHourForPeriod(startDateStr: string, endDateStr: string): Promise<PeakHoursData[]> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return [];
 
     const startDate = new Date(`${startDateStr}T00:00:00`);
@@ -308,7 +308,7 @@ export class CashierDataService {
   }
 
   async getSalesByDayOfWeekForPeriod(startDateStr: string, endDateStr: string): Promise<PeakDaysData[]> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return [];
 
     const startDate = new Date(`${startDateStr}T00:00:00`);
@@ -342,8 +342,8 @@ export class CashierDataService {
   }
   
   async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[], customerId: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -360,10 +360,9 @@ export class CashierDataService {
     
     if (orderError) return { success: false, error: orderError };
 
-    // FIX: Access stations from posState
     const stations = this.posState.stations();
     if (stations.length === 0) {
-        await supabase.from('orders').delete().eq('id', order.id); // Rollback order
+        await supabase.from('orders').delete().eq('id', order.id); 
         return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
     }
     const fallbackStationId = stations[0].id;
@@ -429,7 +428,6 @@ export class CashierDataService {
         return { success: false, error: itemsError };
     }
 
-    // FIX: Access roles and employees from hrState
     const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
     const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
@@ -444,7 +442,6 @@ export class CashierDataService {
     if (transactionsToInsert.length > 0) {
       const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
       if (transactionError) {
-          // don't roll back, payment was made
           return { success: false, error: transactionError };
       }
     }
@@ -460,14 +457,13 @@ export class CashierDataService {
   }
 
   async createQuickSaleOrderForKitchen(cart: { recipe: Recipe; quantity: number; notes: string }[], customerId: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    // 1. Create the order
     const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-            table_number: 0, // Using 0 for cashier/quick sale
+            table_number: 0,
             order_type: 'QuickSale',
             status: 'OPEN',
             user_id: userId,
@@ -478,8 +474,6 @@ export class CashierDataService {
 
     if (orderError) return { success: false, error: orderError };
     
-    // 2. Create order items
-    // FIX: Access stations from posState
     const stations = this.posState.stations();
     if (stations.length === 0) return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
     const fallbackStationId = stations[0].id;
@@ -527,7 +521,7 @@ export class CashierDataService {
 
     const { error: itemsError } = await supabase.from('order_items').insert(allItemsToInsert);
     if (itemsError) {
-        await supabase.from('orders').delete().eq('id', order.id); // Rollback
+        await supabase.from('orders').delete().eq('id', order.id);
         return { success: false, error: itemsError };
     }
 
@@ -535,8 +529,8 @@ export class CashierDataService {
   }
 
   async finalizeExistingQuickSalePayment(orderId: string, payments: Payment[]): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -547,7 +541,6 @@ export class CashierDataService {
 
     if (orderError) return { success: false, error: orderError };
 
-    // FIX: Access roles and employees from hrState
     const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
     const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
@@ -577,10 +570,9 @@ export class CashierDataService {
 
 
   async logTransaction(description: string, amount: number, type: 'Despesa'): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    // FIX: Access roles and employees from hrState
     const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
     const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
 
@@ -596,8 +588,8 @@ export class CashierDataService {
   }
   
   async closeCashier(closingData: Omit<CashierClosing, 'id' | 'closed_at' | 'user_id'>): Promise<{ success: boolean; error: any, data: CashierClosing | null }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' }, data: null };
     
     const { data, error } = await supabase
         .from('cashier_closings')
@@ -607,7 +599,6 @@ export class CashierDataService {
     
     if (error) return { success: false, error, data: null };
 
-    // After closing, log the opening balance for the next session
     const { error: openError } = await supabase.from('transactions').insert({
         description: 'Abertura de Caixa',
         type: 'Abertura de Caixa',
@@ -621,7 +612,7 @@ export class CashierDataService {
   }
   
   async getSalesAndCogsForPeriod(startDate: Date, endDate: Date): Promise<DailySalesCogs[]> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return [];
     
     const [ordersRes, transactionsRes] = await Promise.all([
@@ -640,23 +631,20 @@ export class CashierDataService {
         return [];
     }
     
-    // FIX: Access recipeCosts from recipeState
     const recipeCosts = this.recipeState.recipeCosts();
     const dailyData = new Map<string, { sales: number; cogs: number }>();
 
-    // Initialize map for all days in the period
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     for (let i = 0; i <= diffDays; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        if (date > endDate) break; // Ensure we don't go past the end date
+        if (date > endDate) break; 
         const dateString = date.toISOString().split('T')[0];
         dailyData.set(dateString, { sales: 0, cogs: 0 });
     }
 
-    // Process transactions for sales data
     for (const t of transactionsRes.data || []) {
         const dateString = new Date(t.date).toISOString().split('T')[0];
         if (dailyData.has(dateString)) {
@@ -664,7 +652,6 @@ export class CashierDataService {
         }
     }
     
-    // Process orders for COGS data
     for (const o of ordersRes.data || []) {
         if (!o.completed_at) continue;
         const dateString = new Date(o.completed_at).toISOString().split('T')[0];
@@ -683,8 +670,8 @@ export class CashierDataService {
   }
   
   async buildCustomReport(config: CustomReportConfig): Promise<CustomReportData> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) throw new Error("Usuário não autenticado.");
+    const userId = this.getActiveUnitId();
+    if (!userId) throw new Error("Active unit not found.");
 
     const { dataSource, columns, filters, groupBy } = config;
     const { startDate, endDate, employeeId } = filters;
@@ -705,9 +692,6 @@ export class CashierDataService {
     const { data, error } = await query;
     if (error) throw error;
     
-    // FIX: Access employees from hrState
-    const availableColumnsMap = new Map(this.hrState.employees().map(e => [e.id, e.name]));
-
     const mappedData = data.map(d => ({
         ...d,
         employeeName: d.employees?.name || 'N/A'
@@ -748,7 +732,6 @@ export class CashierDataService {
         }, {});
         
         const rows = Object.values(grouped);
-        // FIX: Use 'employeeName' as the key when grouping by employee to match the data structure.
         const headers = [
             { key: groupBy === 'day' ? 'date' : (groupBy === 'employee' ? 'employeeName' : groupBy), label: 'Agrupado por' },
             { key: 'count', label: 'Nº Transações' },
@@ -759,8 +742,6 @@ export class CashierDataService {
             headers: headers,
             rows: rows,
             totals: {
-                // FIX: The `reduce` method with an `any` typed argument was causing incorrect type inference for the result.
-                // Providing an explicit generic argument `<number>` to `reduce` ensures the final result is correctly typed.
                 totalAmount: rows.reduce<number>((sum, r: any) => sum + (r.totalAmount || 0), 0)
             }
         };

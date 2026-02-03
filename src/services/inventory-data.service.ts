@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { WebhookService } from './webhook.service';
 import { InventoryStateService } from './inventory-state.service';
 import { PosStateService } from './pos-state.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -20,15 +21,19 @@ export class InventoryDataService {
   private webhookService = inject(WebhookService);
   private inventoryState = inject(InventoryStateService);
   private posState = inject(PosStateService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const initialStock = ingredient.stock || 0;
     const { stock, ...ingredientData } = ingredient;
 
-    // 1. Create the ingredient with stock 0. The RPC will update it later.
     const { data: newIngredient, error: ingredientError } = await supabase
       .from('ingredients')
       .insert({ ...ingredientData, stock: 0, user_id: userId })
@@ -37,7 +42,6 @@ export class InventoryDataService {
 
     if (ingredientError) return { success: false, error: ingredientError, data: undefined };
 
-    // --- Post-creation steps. If any fail, rollback. ---
     try {
         if (initialStock > 0) {
             const { success, error } = await this.adjustIngredientStock({
@@ -50,7 +54,6 @@ export class InventoryDataService {
         }
 
         if (newIngredient.is_sellable) {
-            // The service needs the full ingredient object. Refetch it after potential stock adjustment.
             const { data: updatedIngredient, error: refetchError } = await supabase.from('ingredients').select('*').eq('id', newIngredient.id).single();
             if (refetchError) throw refetchError;
             
@@ -58,14 +61,12 @@ export class InventoryDataService {
             if (!success) throw error;
         }
         
-        // Success, now refetch the final version of the ingredient to return
         const { data: finalIngredient, error: finalError } = await supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('id', newIngredient.id).single();
         if (finalError) throw finalError;
 
         return { success: true, error: null, data: finalIngredient as Ingredient };
 
     } catch (error) {
-        // Rollback: delete the ingredient if any post-creation step fails.
         await supabase.from('ingredients').delete().eq('id', newIngredient.id);
         return { success: false, error, data: undefined };
     }
@@ -75,35 +76,29 @@ export class InventoryDataService {
     const { data: currentIngredient, error: fetchError } = await supabase.from('ingredients').select('*').eq('id', ingredient.id!).single();
     if (fetchError) return { success: false, error: fetchError };
 
-    // IMPORTANT: Exclude 'stock' from the direct update payload.
-    // Stock is now only managed via adjustments, preventing data inconsistencies.
     const { id, stock, ...updateData } = ingredient;
 
-    // Handle proxy recipe logic based on changes to other fields
     const wasSellable = currentIngredient.is_sellable;
     const isNowSellable = updateData.is_sellable;
 
     if (wasSellable !== isNowSellable) {
-      if (isNowSellable) { // Becoming sellable
-        // We need the full object context for createOrUpdateProxyRecipe.
+      if (isNowSellable) {
         const fullIngredientDataForProxy = { ...currentIngredient, ...updateData };
         const { success, error, proxyRecipeId } = await this.createOrUpdateProxyRecipe(fullIngredientDataForProxy as Ingredient);
         if (!success) return { success, error };
         updateData.proxy_recipe_id = proxyRecipeId;
-      } else { // Becoming non-sellable
+      } else {
         if (currentIngredient.proxy_recipe_id) {
           await this.recipeDataService.deleteRecipe(currentIngredient.proxy_recipe_id);
         }
         updateData.proxy_recipe_id = null;
       }
     } else if (isNowSellable && currentIngredient.proxy_recipe_id) {
-      // If it's already sellable, just sync name and price
       if (updateData.name !== currentIngredient.name || updateData.price !== currentIngredient.price) {
         await supabase.from('recipes').update({ name: updateData.name, price: updateData.price }).eq('id', currentIngredient.proxy_recipe_id);
       }
     }
     
-    // Perform the final update with all changes except 'stock'
     const { error } = await supabase.from('ingredients').update(updateData).eq('id', id!);
     return { success: !error, error };
   }
@@ -131,7 +126,7 @@ export class InventoryDataService {
 
       if (recipeError) return { success: false, error: recipeError };
 
-      const userId = this.authService.currentUser()?.id!;
+      const userId = this.getActiveUnitId();
       const prep: RecipePreparation = {
           id: uuidv4(),
           recipe_id: recipe!.id,
@@ -139,7 +134,7 @@ export class InventoryDataService {
           name: 'Entrega',
           display_order: 0,
           created_at: new Date().toISOString(),
-          user_id: userId,
+          user_id: userId!,
       };
       
       const recipeIngredient: RecipeIngredient = {
@@ -147,23 +142,21 @@ export class InventoryDataService {
           ingredient_id: ingredient.id!,
           quantity: 1,
           preparation_id: prep.id,
-          user_id: userId,
+          user_id: userId!,
       };
       
       await this.recipeDataService.saveTechnicalSheet(recipe!.id, {}, [prep], [recipeIngredient], []);
 
-      // Update ingredient with proxy recipe ID
       const { error: updateError } = await supabase.from('ingredients').update({ proxy_recipe_id: recipe!.id }).eq('id', ingredient.id!);
       if (updateError) return { success: false, error: updateError };
       
       return { success: true, error: null, proxyRecipeId: recipe!.id };
   }
 
-  async deleteIngredient(id: string): Promise<{ success: boolean, error: any }> {
+  async deleteIngredient(id: string): Promise<{ success: boolean; error: any }> {
     const { data: ingredient, error: fetchError } = await supabase.from('ingredients').select('proxy_recipe_id').eq('id', id).single();
     if(fetchError) return { success: false, error: fetchError };
 
-    // If it's linked to a proxy recipe, delete that first
     if(ingredient?.proxy_recipe_id) {
         await this.recipeDataService.deleteRecipe(ingredient.proxy_recipe_id);
     }
@@ -180,8 +173,8 @@ export class InventoryDataService {
     lotNumberForEntry?: string | null;
     expirationDateForEntry?: string | null;
   }): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const {
         ingredientId,
@@ -216,7 +209,6 @@ export class InventoryDataService {
         return { success: !error, error };
     }
     
-    // Trigger webhook on success
     const newStock = originalIngredient.stock + quantityChange;
     const webhookPayload = {
         ingredientId: ingredientId,
@@ -232,8 +224,8 @@ export class InventoryDataService {
   }
 
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('ingredient_categories').insert({ name, user_id: userId }).select().single();
     return { success: !error, error, data };
   }
@@ -249,8 +241,8 @@ export class InventoryDataService {
   }
 
   async addSupplier(supplier: Partial<Supplier>): Promise<{ success: boolean, error: any, data?: Supplier }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('suppliers').insert({ ...supplier, user_id: userId }).select().single();
     return { success: !error, error, data };
   }
@@ -267,8 +259,8 @@ export class InventoryDataService {
   }
 
   async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const recipeComposition = this.recipeState.recipeCosts().get(subRecipeId);
     if (!recipeComposition) {
@@ -276,11 +268,6 @@ export class InventoryDataService {
     }
     
     try {
-      // 1. Deduct raw ingredients sequentially
-      // NOTE: In Phase 3, this should ideally also consume from station stocks, 
-      // but Mise En Place logic usually implies fetching from Central for preparation.
-      // We will keep it simple here and assume production happens with Central stock for now, 
-      // or we can enhance it later to check station stock first if needed.
       const deductionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
@@ -288,7 +275,6 @@ export class InventoryDataService {
         if (!result.success) throw result.error;
       }
 
-      // 2. Add produced sub-recipe to stock
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       const { success, error } = await this.adjustIngredientStock({ 
           ingredientId: sourceIngredientId, 
@@ -299,7 +285,6 @@ export class InventoryDataService {
       });
       if (!success) throw error;
       
-      // 3. Update cost
       const newUnitCost = recipeComposition.totalCost;
       const { error: costUpdateError } = await supabase
         .from('ingredients')
@@ -315,27 +300,17 @@ export class InventoryDataService {
     }
   }
 
-  /**
-   * SMART CONSUMPTION LOGIC:
-   * 1. Checks Station Stock first.
-   * 2. If insufficient, checks Central Stock (Ingredients).
-   * 3. If Central has stock but Station doesn't, it deducts from Central and returns a WARNING.
-   */
   async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const recipeCompositions = this.recipeState.recipeDirectComposition();
     const processedGroupIds = new Set<string>();
     
-    // Map to aggregate deductions: StationID -> IngredientID -> Quantity
     const stationDeductions = new Map<string, Map<string, number>>();
-    // Map to keep track of ingredient names for warnings
     const ingredientNames = new Map<string, string>();
-    // Set to collect stations that needed a fallback to central stock
     const stationsNeedingRestock = new Set<string>();
 
-    // 1. Calculate Requirements
     for (const item of orderItems) {
       if (!item.recipe_id) continue;
       if (item.group_id) {
@@ -345,7 +320,6 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        // Use the item's station_id to determine which station stock to check
         const targetStationId = item.station_id;
 
         if (!stationDeductions.has(targetStationId)) {
@@ -353,19 +327,15 @@ export class InventoryDataService {
         }
         const stationMap = stationDeductions.get(targetStationId)!;
 
-        // Helper to add to map
         const addToMap = (ingId: string, qty: number) => {
             stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-            // Cache name for later (optimization: could fetch from state)
             const ing = this.inventoryState.ingredients().find(i => i.id === ingId);
             if(ing) ingredientNames.set(ingId, ing.name);
         };
 
-        // Direct ingredients
         for (const ing of composition.directIngredients) {
           addToMap(ing.ingredientId, ing.quantity * item.quantity);
         }
-        // Sub-recipe ingredients (if they are tracked as stock items)
         for (const subIng of composition.subRecipeIngredients) {
             addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
         }
@@ -379,12 +349,10 @@ export class InventoryDataService {
     try {
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
 
-      // 2. Process Deductions
       for (const [stationId, ingredientsNeeded] of stationDeductions.entries()) {
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
 
-             // A. Check Station Stock
              const { data: stationStockData } = await supabase
                 .from('station_stocks')
                 .select('id, quantity')
@@ -395,12 +363,10 @@ export class InventoryDataService {
             const currentStationQty = stationStockData?.quantity || 0;
 
             if (currentStationQty >= quantityNeeded) {
-                // Happy Path: Deduct from Station
                 await supabase.from('station_stocks')
                     .update({ quantity: currentStationQty - quantityNeeded, updated_at: new Date().toISOString() })
                     .eq('id', stationStockData!.id);
             } else {
-                // B. Insufficient Station Stock -> Check Central (Fallback)
                 const { data: centralIngredient } = await supabase
                     .from('ingredients')
                     .select('stock, name')
@@ -408,23 +374,17 @@ export class InventoryDataService {
                     .single();
                 
                 const currentCentralQty = centralIngredient?.stock || 0;
-
-                // We deduct the FULL amount from Central if Station is empty/insufficient to keep logic simple,
-                // OR we could drain station and take remainder from Central.
-                // Approach: Drain station to 0 (if exists), take remainder from Central.
                 
                 let remainder = quantityNeeded;
                 
                 if (currentStationQty > 0 && stationStockData) {
                     remainder = quantityNeeded - currentStationQty;
-                    // Drain station
                     await supabase.from('station_stocks')
                         .update({ quantity: 0, updated_at: new Date().toISOString() })
                         .eq('id', stationStockData.id);
                 }
 
                 if (currentCentralQty >= remainder) {
-                     // Deduct remainder from Central
                      const result = await this.adjustIngredientStock({
                          ingredientId: ingredientId,
                          quantityChange: -remainder,
@@ -433,14 +393,10 @@ export class InventoryDataService {
                      
                      if (!result.success) throw result.error;
 
-                     // Flag warning
                      const stationName = this.posState.stations().find(s => s.id === stationId)?.name || 'Estação';
                      stationsNeedingRestock.add(`${stationName} (item: ${centralIngredient?.name})`);
 
                 } else {
-                    // C. Insufficient everywhere -> Fail? Or allow negative?
-                    // Usually we block or allow negative central stock. Let's allow negative central for now 
-                    // to not stop sales, but still warn.
                      const result = await this.adjustIngredientStock({
                          ingredientId: ingredientId,
                          quantityChange: -remainder,
@@ -452,7 +408,6 @@ export class InventoryDataService {
         }
       }
       
-      // Construct warning message
       let warningMessage: string | undefined;
       if (stationsNeedingRestock.size > 0) {
           const stationsList = Array.from(stationsNeedingRestock).join(', ');
@@ -467,8 +422,7 @@ export class InventoryDataService {
   }
 
   async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
-    // ... (Implementation remains the same as previous)
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return new Map();
 
     const { data: orders, error } = await supabase

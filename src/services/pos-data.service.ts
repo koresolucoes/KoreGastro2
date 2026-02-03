@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { InventoryDataService } from './inventory-data.service';
 import { WebhookService } from './webhook.service';
 import { DeliveryDataService } from './delivery-data.service';
+import { UnitContextService } from './unit-context.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -26,22 +27,27 @@ export class PosDataService {
   private posState = inject(PosStateService);
   private webhookService = inject(WebhookService);
   private deliveryDataService = inject(DeliveryDataService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {
     return this.posState.openOrders().find(o => o.table_number === tableNumber);
   }
 
   async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { data, error } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select('*, customers(*)').single();
     if (error) return { success: false, error };
     return { success: true, error: null, data: { ...data, order_items: [] } };
   }
 
   async addItemsToOrder(orderId: string, tableId: string, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const stations = this.posState.stations();
     if (stations.length === 0) return { success: false, error: { message: 'Nenhuma estação de produção configurada.' } };
@@ -90,6 +96,7 @@ export class PosDataService {
   }
   
   async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean; error: any }> {
+    // This can use standard supabase update, RLS handles security
     const { data: currentItem, error: fetchError } = await supabase
       .from('order_items')
       .select('status_timestamps, order_id')
@@ -111,7 +118,6 @@ export class PosDataService {
       .eq('id', itemId);
 
     if (!error && currentItem.order_id) {
-      // Fire and forget, let it run in the background.
       this.checkAndUpdateDeliveryOrderStatus(currentItem.order_id);
     }
 
@@ -145,8 +151,7 @@ export class PosDataService {
     const { error } = await supabase.from('order_items').upsert(updates);
     
     if (!error && items && items.length > 0) {
-        const orderId = items[0].order_id; // Assuming all items belong to the same order
-        // Fire and forget
+        const orderId = items[0].order_id;
         this.checkAndUpdateDeliveryOrderStatus(orderId);
     }
 
@@ -162,10 +167,9 @@ export class PosDataService {
             .single();
 
         if (error || !order || order.order_type !== 'External-Delivery') {
-            return; // Not an external delivery order, or error occurred
+            return;
         }
 
-        // Don't move status backwards
         if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') {
             return;
         }
@@ -223,7 +227,7 @@ export class PosDataService {
   async markOrderAsServed(orderId: string): Promise<{ success: boolean; error: any }> {
     const { data: items, error: fetchError } = await supabase
       .from('order_items')
-      .select('*') // Fetches all columns to ensure all NOT NULL fields are present.
+      .select('*')
       .eq('order_id', orderId);
 
     if (fetchError) return { success: false, error: fetchError };
@@ -235,8 +239,6 @@ export class PosDataService {
         ...(item.status_timestamps || {}),
         'SERVIDO': now,
       };
-      // Spreads the full item object to preserve all fields, then overwrites status and timestamps.
-      // This prevents 'violates not-null constraint' errors during upsert.
       return {
         ...item,
         status: 'SERVIDO' as OrderItemStatus,
@@ -282,8 +284,6 @@ export class PosDataService {
     return { success: true, error: null };
   }
 
-  // ... (Other standard CRUD methods omitted for brevity) ...
-
   async applyDiscountToOrderItems(
     itemIds: string[],
     discountType: DiscountType | null,
@@ -291,16 +291,13 @@ export class PosDataService {
   ): Promise<{ success: boolean; error: any }> {
     if (itemIds.length === 0) return { success: true, error: null };
     
-    // 1. Fetch current items to calculate discounts correctly
     const { data: items, error: fetchError } = await supabase.from('order_items').select('*').in('id', itemIds);
     if (fetchError) return { success: false, error: fetchError };
     if (!items) return { success: false, error: { message: 'Items not found' } };
 
     let updates: Partial<OrderItem>[];
 
-    // 2. Calculate new prices based on discount
     if (discountType === null || discountValue === null || discountValue < 0) {
-      // Remove discount: revert to original price
       updates = items.map(item => ({ 
           ...item, 
           price: item.original_price, 
@@ -308,7 +305,6 @@ export class PosDataService {
           discount_value: null 
       }));
     } else if (discountType === 'percentage') {
-      // Percentage discount
       updates = items.map(item => ({ 
           ...item, 
           price: item.original_price * (1 - discountValue / 100), 
@@ -316,7 +312,6 @@ export class PosDataService {
           discount_value: discountValue 
       }));
     } else { 
-      // Fixed value discount (prorated across items based on their original price share)
       const totalOriginalPrice = items.reduce((sum, i) => sum + i.original_price, 0);
       if (totalOriginalPrice > 0) {
         updates = items.map(item => {
@@ -334,29 +329,20 @@ export class PosDataService {
       }
     }
 
-    // 3. Update Database
     const { error } = await supabase.from('order_items').upsert(updates);
 
     if (error) {
-         if(error.message.includes("Could not find the 'discount_type' column")) {
-            return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
-         }
          return { success: false, error };
     }
 
-    // 4. Manually update local state immediately (Optimistic Update)
-    // This ensures UI reacts even if Realtime is slow or fails
     this.posState.orders.update(currentOrders => {
         return currentOrders.map(order => {
-            // Check if this order contains any of the modified items
             const orderHasItems = order.order_items.some(i => itemIds.includes(i.id));
             if (!orderHasItems) return order;
 
-            // Update the items within this order
             const newItems = order.order_items.map(item => {
                 const update = updates.find(u => u.id === item.id);
                 if (update) {
-                    // Merge existing item with update (which contains new prices and discount info)
                     return { ...item, ...update } as OrderItem;
                 }
                 return item;
@@ -370,20 +356,15 @@ export class PosDataService {
   }
   
   async applyGlobalOrderDiscount(orderId: string, discountType: DiscountType | null, discountValue: number | null): Promise<{ success: boolean; error: any }> {
-    // 1. Update Database
     const { error } = await supabase
         .from('orders')
         .update({ discount_type: discountType, discount_value: discountValue })
         .eq('id', orderId);
 
     if (error) {
-        if(error.message.includes("Could not find the 'discount_type' column")) {
-            return { success: false, error: { message: "Erro de Banco de Dados: Colunas de desconto não encontradas. Execute o script de migração no Supabase." } };
-        }
         return { success: false, error };
     }
     
-    // 2. Manually update local state immediately (Optimistic Update)
     this.posState.orders.update(currentOrders => 
         currentOrders.map(order => 
             order.id === orderId 
@@ -402,10 +383,9 @@ export class PosDataService {
     payments: PaymentInfo[],
     tipAmount: number
   ): Promise<{ success: boolean; error: any; warningMessage?: string }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    // 1. Update order status
     const { data: updatedOrder, error: orderUpdateError } = await supabase
       .from('orders')
       .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
@@ -418,13 +398,11 @@ export class PosDataService {
     let warningMessage: string | undefined;
 
     try {
-      // 2. Update table status
       await supabase
         .from('tables')
         .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
         .eq('id', tableId);
 
-      // 3. Insert transactions
       const employeeId = this.posState.tables().find(t => t.id === tableId)?.employee_id ?? null;
       const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
         description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
@@ -443,9 +421,7 @@ export class PosDataService {
         if (transactionError) console.error(`CRITICAL: Order ${orderId} finalized but failed to insert transactions.`, transactionError);
       }
 
-      // 4. Deduct stock (BLOCKING now to get warnings)
       if (updatedOrder.order_items) {
-         // We await this now to capture the warning
          const deductionResult = await this.inventoryDataService.deductStockForOrderItems(updatedOrder.order_items, orderId);
          if (!deductionResult.success) {
             console.error(`[POS Data Service] Stock deduction failed for order ${orderId}.`, deductionResult.error);
@@ -454,25 +430,22 @@ export class PosDataService {
          }
       }
       
-      // 5. Trigger webhook
       this.webhookService.triggerWebhook('order.updated', updatedOrder);
-
-      // 6. Refresh data
       await this.stateService.refreshDashboardAndCashierData();
 
       return { success: true, error: null, warningMessage };
 
     } catch (e) {
         console.error(`[POS Data Service] Post-payment processing failed for order ${orderId}.`, e);
-        return { success: true, error: null }; // Still success for payment, but maybe stock failed
+        return { success: true, error: null };
     }
   }
 
   // --- Hall and Table Management Methods ---
 
   async addHall(name: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     const { error } = await supabase.from('halls').insert({ name, user_id: userId });
     return { success: !error, error };
   }
@@ -493,14 +466,16 @@ export class PosDataService {
   }
   
   async upsertTables(tables: Partial<Table>[]): Promise<{ success: boolean; error: any }> {
-      const userId = this.authService.currentUser()?.id;
-      if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+      const userId = this.getActiveUnitId();
+      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
       
       const tablesToUpsert = tables.map(t => {
-          const { id, ...rest } = t;
-          // If id starts with temp-, remove it to let DB generate a new one, or handle it as insertion
+          let { id, ...rest } = t;
+          // FIX: If ID is temporary (generated by frontend), strip the 'temp-' prefix
+          // and use the UUID part as the actual ID. 
+          // We MUST ensure an ID is present for all rows when doing an upsert with mixed updates/inserts.
           if (id?.startsWith('temp-')) {
-              return { ...rest, user_id: userId };
+              id = id.replace('temp-', '');
           }
           return { id, ...rest, user_id: userId };
       });
