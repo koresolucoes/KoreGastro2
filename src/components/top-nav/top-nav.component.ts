@@ -6,6 +6,8 @@ import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
+import { UnitContextService } from '../../services/unit-context.service';
+import { AddStoreModalComponent } from '../sidebar/add-store-modal/add-store-modal.component';
 
 export interface NavLink {
   name: string;
@@ -27,7 +29,7 @@ export type CombinedNavItem = NavLink | NavGroup;
 @Component({
   selector: 'app-top-nav',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, AddStoreModalComponent],
   templateUrl: './top-nav.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -36,6 +38,7 @@ export class TopNavComponent {
   operationalAuthService = inject(OperationalAuthService);
   settingsState = inject(SettingsStateService);
   demoService = inject(DemoService);
+  unitContextService = inject(UnitContextService);
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
@@ -46,6 +49,10 @@ export class TopNavComponent {
   
   isMobileMenuOpen = signal(false);
   openDropdown = signal<string | null>(null);
+  
+  // Store Selector State
+  isStoreDropdownOpen = signal(false);
+  isAddStoreModalOpen = signal(false);
   
   allNavLinks: CombinedNavItem[] = [
     {
@@ -161,11 +168,14 @@ export class TopNavComponent {
       this.openDropdown.set(null);
     } else {
       this.openDropdown.set(groupName);
+      // Close store dropdown if nav dropdown opens
+      this.isStoreDropdownOpen.set(false);
     }
   }
 
   closeDropdowns() {
     this.openDropdown.set(null);
+    this.isStoreDropdownOpen.set(false);
   }
 
   handleLinkClick() {
@@ -175,6 +185,24 @@ export class TopNavComponent {
 
   toggleMobileMenu() {
     this.isMobileMenuOpen.update(value => !value);
+  }
+
+  // --- Multi-Unit Logic ---
+  toggleStoreDropdown() {
+      this.isStoreDropdownOpen.update(v => !v);
+      if (this.isStoreDropdownOpen()) {
+          this.openDropdown.set(null); // Close nav dropdowns
+      }
+  }
+
+  switchStore(unitId: string) {
+      this.unitContextService.setUnit(unitId);
+      this.isStoreDropdownOpen.set(false);
+  }
+
+  openAddStoreModal() {
+      this.isAddStoreModalOpen.set(true);
+      this.isStoreDropdownOpen.set(false);
   }
   
   async signOut() {
