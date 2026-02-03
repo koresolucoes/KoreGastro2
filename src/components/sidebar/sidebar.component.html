@@ -10,23 +10,41 @@
     </button>
   </div>
 
-  <!-- Store Switcher (New) -->
-  @if(isSidebarOpen() && unitContextService.isMultiUnit()) {
-    <div class="px-4 py-3 border-b border-gray-800">
+  <!-- Store Switcher (Custom Dropdown) -->
+  @if(isSidebarOpen()) {
+    <div class="px-4 py-3 border-b border-gray-800 relative">
         <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Loja Ativa</label>
-        <div class="relative">
-            <select 
-                [value]="unitContextService.activeUnitId()" 
-                (change)="unitContextService.setUnit($any($event.target).value)" 
-                class="w-full bg-gray-800 text-white text-sm rounded-md border border-gray-700 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
-                @for(unit of unitContextService.availableUnits(); track unit.id) {
-                    <option [value]="unit.id">{{ unit.name }}</option>
-                }
-            </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-400">
-                <span class="material-symbols-outlined text-sm">expand_more</span>
+        
+        <button (click)="toggleStoreDropdown()" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-md border border-gray-700 py-2 px-3 flex justify-between items-center transition-colors">
+            <span class="truncate">{{ unitContextService.activeUnitName() }}</span>
+            <span class="material-symbols-outlined text-sm text-gray-400 transition-transform duration-200" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        @if(isStoreDropdownOpen()) {
+            <div class="absolute left-4 right-4 top-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 overflow-hidden">
+                <ul class="max-h-48 overflow-y-auto">
+                    @for(unit of unitContextService.availableUnits(); track unit.id) {
+                        <li>
+                            <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 flex items-center justify-between group">
+                                <span [class.text-blue-400]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">{{ unit.name }}</span>
+                                @if(unitContextService.activeUnitId() === unit.id) {
+                                    <span class="material-symbols-outlined text-blue-400 text-xs">check</span>
+                                }
+                            </button>
+                        </li>
+                    }
+                </ul>
+                <div class="border-t border-gray-700 p-2 bg-gray-900/50">
+                    <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 py-1 rounded hover:bg-gray-800 transition-colors">
+                        <span class="material-symbols-outlined text-sm">add_business</span>
+                        Adicionar / Vincular Loja
+                    </button>
+                </div>
             </div>
-        </div>
+            <!-- Overlay to close dropdown -->
+            <div class="fixed inset-0 z-40" (click)="isStoreDropdownOpen.set(false)"></div>
+        }
     </div>
   }
 
@@ -132,3 +150,7 @@
     }
   </div>
 </aside>
+
+@if (isAddStoreModalOpen()) {
+    <app-add-store-modal (closeModal)="isAddStoreModalOpen.set(false)"></app-add-store-modal>
+}

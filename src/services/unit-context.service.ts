@@ -30,54 +30,65 @@ export class UnitContextService {
 
   constructor() {
     // Listen for auth changes to load permissions
-    // We use an effect in the AuthService or SupabaseService usually, but we can hook into the signal here
-    // However, to avoid circular deps or early triggers, we expose a load method called by SupabaseStateService
   }
 
   async loadContext(userId: string) {
     console.log('Loading unit context for user:', userId);
 
-    // 1. Fetch user's own profile (to act as the default store)
-    const { data: myProfile } = await supabase
-      .from('company_profile')
-      .select('company_name')
-      .eq('user_id', userId)
-      .single();
-
-    const myUnit = {
-      id: userId,
-      name: myProfile?.company_name || 'Minha Loja Principal',
-      role: 'owner'
-    };
-
-    // 2. Fetch delegated units from unit_permissions
-    // We join with company_profile to get the name of the store
+    // 1. Fetch delegated units from unit_permissions
     const { data: permissions, error } = await supabase
       .from('unit_permissions')
-      .select('store_id, role, company_profile:company_profile!store_id(company_name)')
+      .select('store_id, role')
       .eq('manager_id', userId);
 
     if (error) {
       console.error('Error fetching unit permissions:', error);
     }
 
+    const delegatedStoreIds = (permissions || []).map((p: any) => p.store_id);
+    const allStoreIds = Array.from(new Set([userId, ...delegatedStoreIds]));
+
+    // 2. Fetch profiles for all accessible stores (Own + Delegated)
+    const { data: profiles, error: profilesError } = await supabase
+      .from('company_profile')
+      .select('user_id, company_name')
+      .in('user_id', allStoreIds);
+
+    if (profilesError) {
+        console.error('Error fetching store profiles:', profilesError);
+    }
+
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p.company_name]));
+
+    // 3. Build the units list
+    const myUnit = {
+      id: userId,
+      name: profileMap.get(userId) || 'Minha Loja Principal',
+      role: 'owner'
+    };
+
     const delegatedUnits = (permissions || []).map((p: any) => ({
       id: p.store_id,
-      name: p.company_profile?.company_name || 'Loja Sem Nome',
+      name: profileMap.get(p.store_id) || 'Loja Sem Nome',
       role: p.role
     }));
 
-    const allUnits = [myUnit, ...delegatedUnits];
+    // Ensure uniqueness
+    const unitsMap = new Map();
+    unitsMap.set(myUnit.id, myUnit);
+    delegatedUnits.forEach(u => unitsMap.set(u.id, u));
+    
+    const allUnits = Array.from(unitsMap.values());
     this.availableUnits.set(allUnits);
 
-    // 3. Restore active unit from storage or default to own unit
+    // 4. Restore active unit from storage or default to own unit
     const storedUnitId = localStorage.getItem(ACTIVE_UNIT_KEY);
     
     if (storedUnitId && allUnits.some(u => u.id === storedUnitId)) {
         this.activeUnitId.set(storedUnitId);
     } else {
-        // Default to the user's own unit if valid, otherwise the first available
-        this.activeUnitId.set(allUnits[0]?.id || userId);
+        // Default to the user's own unit
+        this.activeUnitId.set(userId);
     }
   }
 
@@ -85,9 +96,7 @@ export class UnitContextService {
     if (this.availableUnits().some(u => u.id === unitId)) {
         this.activeUnitId.set(unitId);
         localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
-        // Reloading the page or triggering a data refresh is usually required here.
-        // The SupabaseStateService effect should catch the signal change if configured correctly,
-        // or we can reload the window to be safe and ensure a clean state.
+        // Force a hard reload to ensure all services and subscriptions reset cleanly with the new ID
         window.location.reload(); 
     }
   }
