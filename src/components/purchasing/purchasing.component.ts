@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -20,6 +21,12 @@ type FormItem = {
     expiration_date: string | null;
 };
 
+type PurchaseOrderFormState = {
+    supplier_id: string | null;
+    status: PurchaseOrderStatus;
+    notes: string;
+};
+
 @Component({
   selector: 'app-purchasing',
   standalone: true,
@@ -40,7 +47,7 @@ export class PurchasingComponent implements OnInit {
 
     isModalOpen = signal(false);
     editingOrder = signal<Partial<PurchaseOrder> | null>(null);
-    orderForm = signal<{ supplier_id: string | null, status: PurchaseOrderStatus, notes: string }>({ supplier_id: null, status: 'Rascunho', notes: '' });
+    orderForm = signal<PurchaseOrderFormState>({ supplier_id: null, status: 'Rascunho', notes: '' });
     orderItems = signal<FormItem[]>([]);
     itemSearchTerm = signal('');
     
@@ -63,7 +70,7 @@ export class PurchasingComponent implements OnInit {
     });
 
     updatePOFormField(field: 'supplier_id' | 'status' | 'notes', value: string) {
-        this.orderForm.update(form => {
+        this.orderForm.update((form: PurchaseOrderFormState) => {
             const updated = { ...form };
             if (field === 'supplier_id') {
                 updated.supplier_id = value === 'null' ? null : value;
@@ -100,7 +107,7 @@ export class PurchasingComponent implements OnInit {
     
                 this.openAddModal(itemsForThisOrder);
                 // Explicitly type form to avoid inference issues with unknown
-                this.orderForm.update((form: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string }) => ({ ...form, supplier_id: firstSupplierId }));
+                this.orderForm.update((form: PurchaseOrderFormState) => ({ ...form, supplier_id: firstSupplierId }));
             }
         }
     }

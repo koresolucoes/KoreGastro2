@@ -1,8 +1,10 @@
-import { Injectable, signal, computed, WritableSignal, inject, effect } from '@angular/core';
+
+import { Injectable, signal, computed, WritableSignal, inject, effect, untracked } from '@angular/core';
 import { ProductionPlan } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
+import { UnitContextService } from './unit-context.service';
 
 // Import all new state services
 import { PosStateService } from './pos-state.service';
@@ -25,6 +27,7 @@ import { DeliveryStateService } from './delivery-state.service';
 export class SupabaseStateService {
   private authService = inject(AuthService);
   private pricingService = inject(PricingService);
+  private unitContextService = inject(UnitContextService);
   
   // Inject all modular state services
   private posState = inject(PosStateService);
@@ -45,7 +48,7 @@ export class SupabaseStateService {
   isDataLoaded = signal(false);
 
   constructor() {
-    effect(() => {
+    effect(async () => {
         const user = this.currentUser();
         const isDemo = this.demoService.isDemoMode();
 
@@ -53,8 +56,16 @@ export class SupabaseStateService {
             this.loadMockData();
             this.unsubscribeFromChanges(); // Ensure no realtime listeners in demo
         } else if (user) {
-            this.loadInitialData(user.id);
-            this.subscribeToChanges(user.id);
+            // New Multi-Unit Logic: Load context first
+            // We use untracked to avoid loops if unitContext modifies signals
+            await this.unitContextService.loadContext(user.id);
+            
+            const activeUnitId = this.unitContextService.activeUnitId();
+            if (activeUnitId) {
+                console.log(`[SupabaseState] Loading data for Unit: ${activeUnitId}`);
+                await this.loadInitialData(activeUnitId);
+                this.subscribeToChanges(activeUnitId);
+            }
         } else {
             this.unsubscribeFromChanges();
             this.clearAllData();
@@ -113,7 +124,6 @@ export class SupabaseStateService {
         this.cashierState.cashierClosings.set([]);
 
         // Mock settings
-        // FIX: Added missing properties to the mock CompanyProfile object to match the interface.
         this.settingsState.companyProfile.set({ 
             company_name: 'Restaurante Demonstração', 
             cnpj: '00.000.000/0001-00', 
@@ -184,7 +194,7 @@ export class SupabaseStateService {
   }
   
   private async refetchOrdersAndFinished() {
-    const userId = this.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
     if (!userId) return;
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
@@ -209,8 +219,16 @@ export class SupabaseStateService {
 
   private handleChanges(payload: any) {
     console.log('Realtime change received:', payload);
-    const userId = this.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return;
+
+    // Filter changes relevant to the active unit
+    // Note: 'new' and 'old' objects in payload contain the row data.
+    // We should check if user_id matches activeUnitId to avoid cross-talk if RLS allows seeing multiple units
+    const relevantRow = payload.new || payload.old;
+    if (relevantRow && relevantRow.user_id && relevantRow.user_id !== userId) {
+        return; // Change belongs to another unit, ignore.
+    }
 
     switch (payload.table) {
         case 'orders':
@@ -302,12 +320,20 @@ export class SupabaseStateService {
       await this.refetchSubscriptionPermissions(userId);
       await this.refreshData(userId); 
     } 
-    catch (error) { this.clearAllData(); } 
+    catch (error) { 
+        console.error("Initial data load failed:", error);
+        // Don't clear active unit here, just data? 
+        // this.clearAllData(); 
+    } 
     finally { this.isDataLoaded.set(true); }
   }
 
   private async refreshData(userId: string) {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    
+    // NOTE: All queries here use 'user_id' = userId. 
+    // In multi-unit context, userId is the Store ID (activeUnitId).
+    
     const [
       halls, tables, stations, categories, orders, employees, ingredients,
       ingredientCategories, suppliers, recipeIngredients, recipePreparations, promotions,
@@ -357,8 +383,6 @@ export class SupabaseStateService {
       supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }),
     ]);
 
-    // Populate all state services
-    // FIX: Removed all `as any` casts to allow for proper type inference and fix downstream 'unknown' type errors.
     this.posState.halls.set(halls.data || []);
     this.posState.tables.set(tables.data || []);
     this.posState.stations.set(stations.data || []);
@@ -398,12 +422,12 @@ export class SupabaseStateService {
     this.inventoryState.stationStocks.set(stationStocks.data || []);
     this.inventoryState.requisitions.set(requisitions.data || []);
 
-
     await this.refreshDashboardAndCashierData();
   }
 
   public async refreshDashboardAndCashierData() {
-    const userId = this.currentUser()?.id; if (!userId) return;
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    if (!userId) return;
     const { data: closings } = await supabase.from('cashier_closings').select('*').eq('user_id', userId).order('closed_at', { ascending: false });
     this.cashierState.cashierClosings.set(closings || []);
     const today = new Date(); const isoEndDate = today.toISOString(); today.setHours(0, 0, 0, 0); const isoStartDate = today.toISOString();
@@ -421,7 +445,8 @@ export class SupabaseStateService {
   }
 
   private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>, orderByDesc = false, limit?: number) {
-    const userId = this.currentUser()?.id; if (!userId) return;
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery);
     if (tableName !== 'plans') {
       query = query.eq('user_id', userId);
@@ -442,14 +467,16 @@ export class SupabaseStateService {
   }
 
   private async refetchSingleRow<T>(tableName: string, selectQuery: string, signal: WritableSignal<T | null>) {
-    const userId = this.currentUser()?.id; if (!userId) return;
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    if (!userId) return;
     const { data, error } = await supabase.from(tableName).select(selectQuery).eq('user_id', userId).maybeSingle();
     if (!error) signal.set(data as T || null);
     else console.error(`Error refetching single row from ${tableName}:`, error);
   }
 
   private async refetchOrders() {
-    const userId = this.currentUser()?.id; if (!userId) return;
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    if (!userId) return;
     const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId);
     if (!error) this.setOrdersWithPrices(data || []);
     else console.error('Error refetching orders:', error);
@@ -492,7 +519,8 @@ export class SupabaseStateService {
   }
   
   async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean; error: any }> {
-    const userId = this.currentUser()?.id; if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     const [transactionsRes, productionPlansRes, completedOrdersRes] = await Promise.all([
       supabase.from('transactions').select('*').eq('user_id', userId).in('type', ['Gorjeta', 'Receita']).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()),

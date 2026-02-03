@@ -1,3 +1,4 @@
+
 // --- Basic Types ---
 // FIX: Add WebhookEvent type for webhook service
 export type WebhookEvent =
@@ -87,6 +88,16 @@ export interface RecipeIfoodOptionGroup {
   user_id: string;
 }
 
+// --- Multi-Unit / Organizations ---
+export interface UnitPermission {
+  id: string;
+  manager_id: string; // The logged in user
+  store_id: string;   // The store context
+  role: string;
+  created_at: string;
+  // Join fields (optional, if we join with profiles)
+  company_profile?: { company_name: string, logo_url: string | null }; 
+}
 
 // --- Main Entities ---
 
