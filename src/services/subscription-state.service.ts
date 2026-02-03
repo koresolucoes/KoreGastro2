@@ -21,6 +21,7 @@ export class SubscriptionStateService {
       // Effect to load subscription logic when the active unit changes
       effect(async () => {
           const activeUnitId = this.unitContextService.activeUnitId();
+          
           // Reset state when switching units to avoid stale data
           this.subscriptions.set([]); 
           
@@ -35,28 +36,29 @@ export class SubscriptionStateService {
       let ownerId: string | null = null;
       let subscriptionFound = false;
 
-      // --- ESTRATÉGIA 1: O ID da Loja é um Usuário com Assinatura? (Legado / Minha Loja) ---
-      // Verifica se existe uma assinatura ativa diretamente para este ID. 
-      // Isso cobre o caso "Minha Loja Principal" onde StoreID == UserID.
-      const { data: directSubs } = await supabase
+      // --- ESTRATÉGIA 1: Assinatura vinculada diretamente à LOJA (Novo Schema) ---
+      // Verifica se a assinatura tem o campo store_id preenchido com o ID atual
+      const { data: storeSubs, error: storeSubError } = await supabase
           .from('subscriptions')
           .select('*')
-          .eq('user_id', storeId)
+          .eq('store_id', storeId)
           .in('status', ['active', 'trialing'])
-          .limit(1);
+          .order('created_at', { ascending: false });
 
-      if (directSubs && directSubs.length > 0) {
-          console.log('[Subscription] Estratégia 1: Assinatura encontrada diretamente no ID da loja.');
-          this.subscriptions.set(directSubs);
-          ownerId = storeId;
+      if (storeSubs && storeSubs.length > 0) {
+          console.log('[Subscription] Sucesso: Assinatura encontrada vinculada diretamente à loja (store_id).');
+          this.subscriptions.set(storeSubs);
           subscriptionFound = true;
+          // Se achou por loja, o ownerId será o user_id dessa assinatura
+          ownerId = storeSubs[0].user_id;
       }
 
-      // --- ESTRATÉGIA 2: Buscar o Dono da Loja (Para novas lojas) ---
+      // --- ESTRATÉGIA 2: Assinatura do DONO da loja (Modelo Global) ---
       if (!subscriptionFound) {
-          // Tenta descobrir quem é o owner_id desta loja
-          // 2a. Via tabela 'stores'
-          const { data: store } = await supabase
+          // Precisamos descobrir quem é o dono desta loja
+          
+          // 2a. Tenta ler a tabela 'stores' diretamente
+          const { data: store, error: storeError } = await supabase
               .from('stores')
               .select('owner_id')
               .eq('id', storeId)
@@ -64,12 +66,10 @@ export class SubscriptionStateService {
 
           if (store?.owner_id) {
               ownerId = store.owner_id;
-              console.log(`[Subscription] Estratégia 2a: Dono identificado via tabela stores: ${ownerId}`);
-          } 
-          
-          // 2b. Via 'unit_permissions' (Fallback se RLS bloquear leitura de stores)
-          if (!ownerId) {
-              const { data: perm } = await supabase
+          } else {
+             // 2b. Fallback: Tenta descobrir via permissões se o RLS da tabela stores falhar
+             console.warn('[Subscription] Não foi possível ler owner_id da tabela stores. Tentando via permissões...');
+             const { data: perm } = await supabase
                   .from('unit_permissions')
                   .select('manager_id')
                   .eq('store_id', storeId)
@@ -78,13 +78,12 @@ export class SubscriptionStateService {
               
               if (perm?.manager_id) {
                   ownerId = perm.manager_id;
-                  console.log(`[Subscription] Estratégia 2b: Dono identificado via permissões: ${ownerId}`);
               }
           }
 
-          // Se achamos um dono, buscamos a assinatura DELE
+          // Se identificamos o dono, buscamos se ELE tem uma assinatura "global" (store_id is null ou user_id bate)
           if (ownerId) {
-              const { data: ownerSubs, error: subError } = await supabase
+              const { data: ownerSubs } = await supabase
                   .from('subscriptions')
                   .select('*')
                   .eq('user_id', ownerId)
@@ -92,38 +91,52 @@ export class SubscriptionStateService {
                   .order('created_at', { ascending: false });
 
               if (ownerSubs && ownerSubs.length > 0) {
-                  console.log(`[Subscription] Assinatura ativa encontrada para o dono ${ownerId}.`);
+                  console.log(`[Subscription] Sucesso: Assinatura encontrada para o dono da loja (${ownerId}).`);
                   this.subscriptions.set(ownerSubs);
                   subscriptionFound = true;
               } else {
-                  console.warn(`[Subscription] Dono encontrado (${ownerId}), mas SEM assinatura ativa.`);
+                  console.warn(`[Subscription] O dono (${ownerId}) foi identificado, mas NÃO possui assinatura ativa.`);
               }
           } else {
-              console.error('[Subscription] FALHA CRÍTICA: Não foi possível identificar o dono da loja.');
+              // 2c. Fallback Legado: Se tudo falhar, assume que StoreID = UserID (Single Store antiga)
+              // Tenta buscar assinatura onde user_id = storeId
+               const { data: legacySubs } = await supabase
+                  .from('subscriptions')
+                  .select('*')
+                  .eq('user_id', storeId)
+                  .in('status', ['active', 'trialing']);
+                
+                if (legacySubs && legacySubs.length > 0) {
+                    console.log('[Subscription] Sucesso: Modo legado (UserID = StoreID).');
+                    this.subscriptions.set(legacySubs);
+                    ownerId = storeId;
+                    subscriptionFound = true;
+                }
           }
       }
 
-      // --- Carregar Planos e Contagem (Apenas se achou dono ou assinatura) ---
+      if (!subscriptionFound) {
+          console.error('[Subscription] FALHA: Nenhuma assinatura ativa encontrada para esta loja ou seu dono.');
+          this.subscriptions.set([]);
+      }
+
+      // --- Carregar Planos e Limites (apenas se temos um contexto de dono/loja) ---
       if (ownerId || subscriptionFound) {
-          const targetUser = ownerId || storeId; // Fallback seguro
+          const targetUser = ownerId || storeId;
           
-          // Carregar planos (cache simples)
+          // Carregar definições de planos
           if (this.plans().length === 0) {
               const { data: plans } = await supabase.from('plans').select('*');
               if (plans) this.plans.set(plans);
           }
           
-          // Contar lojas (para validar limites do plano)
-          // Se falhar a leitura de stores, assumimos 1 para não bloquear injustamente
+          // Contagem de lojas (para validar limites do plano)
           const { count } = await supabase
             .from('stores')
             .select('*', { count: 'exact', head: true })
             .eq('owner_id', targetUser);
             
           this.ownerStoreCount.set(count || 1);
-      } else {
-          // Se chegou aqui, não achou dono nem assinatura. Limpa tudo.
-          this.subscriptions.set([]);
       }
   }
 
@@ -140,10 +153,9 @@ export class SubscriptionStateService {
     // Validação de Limite de Lojas
     const plan = this.plans().find(p => p.id === activeSub.plan_id);
     if (plan && plan.max_stores) {
-        // Se o usuário tem mais lojas do que o plano permite, poderíamos bloquear.
-        // Por enquanto, apenas logamos o aviso para não travar operação existente.
         if (this.ownerStoreCount() > plan.max_stores) {
-            console.warn(`[Subscription] Limite de lojas excedido. Plano: ${plan.max_stores}, Atual: ${this.ownerStoreCount()}`);
+            console.warn(`[Subscription] Limite de lojas excedido. Plano permite: ${plan.max_stores}, Atual: ${this.ownerStoreCount()}`);
+            // Opcional: retornar false aqui se quiser bloquear acesso rigorosamente
         }
     }
     
