@@ -1,0 +1,69 @@
+
+<div class="bg-gray-800 rounded-lg p-6">
+  <h2 class="text-xl font-semibold text-white mb-4">Gestão de Equipe (Gestores)</h2>
+  <p class="text-gray-400 text-sm mb-6">
+    Adicione outros usuários como gestores desta loja. Eles terão acesso a todas as configurações e dados desta unidade.
+    Para adicionar um usuário, ele já deve ter criado uma conta no ChefOS com o e-mail informado.
+  </p>
+
+  <!-- Invite Form -->
+  <div class="bg-gray-900/50 p-4 rounded-lg mb-6 border border-gray-700">
+    <h3 class="font-semibold text-white mb-3">Adicionar Novo Gestor</h3>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <input 
+        type="email" 
+        [value]="inviteEmail()" 
+        (input)="inviteEmail.set($any($event.target).value)" 
+        (keydown.enter)="inviteManager()"
+        placeholder="E-mail do usuário (ex: gerente@loja.com)" 
+        class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      
+      <button 
+        (click)="inviteManager()" 
+        [disabled]="!inviteEmail().trim() || isInviting()" 
+        class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]">
+        @if(isInviting()) {
+           <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+        } @else {
+           <span>Adicionar</span>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- Managers List -->
+  <div>
+    <h3 class="font-semibold text-white mb-3">Gestores com Acesso</h3>
+    @if (isLoading()) {
+       <div class="flex justify-center py-8">
+           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+       </div>
+    } @else if (managers().length === 0) {
+        <p class="text-gray-500 text-center py-6">Nenhum gestor adicional encontrado. Apenas você tem acesso.</p>
+    } @else {
+        <div class="space-y-3">
+            @for (manager of managers(); track manager.permission_id) {
+                <div class="flex items-center justify-between bg-gray-700/30 p-3 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-300 font-bold">
+                            {{ manager.manager_name.charAt(0).toUpperCase() }}
+                        </div>
+                        <div>
+                            <p class="text-white font-medium">{{ manager.manager_name }}</p>
+                            <p class="text-xs text-gray-400">{{ manager.manager_email }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-full border border-blue-800">
+                            {{ manager.role === 'admin' ? 'Admin' : 'Gestor' }}
+                        </span>
+                        <button (click)="removeManager(manager)" class="p-2 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors" title="Remover acesso">
+                            <span class="material-symbols-outlined text-lg">person_remove</span>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+  </div>
+</div>

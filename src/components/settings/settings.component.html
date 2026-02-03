@@ -1,3 +1,4 @@
+
 <div class="container mx-auto">
   <h1 class="text-3xl font-bold text-white mb-6">Configurações</h1>
 
@@ -13,6 +14,15 @@
                 [class.hover:bg-gray-700]="activeTab() !== 'empresa'">
           <span class="material-symbols-outlined">storefront</span>
           <span class="font-medium">Loja e Assinatura</span>
+        </button>
+        <button (click)="activeTab.set('equipe')"
+                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
+                [class.bg-blue-600]="activeTab() === 'equipe'"
+                [class.text-white]="activeTab() === 'equipe'"
+                [class.text-gray-300]="activeTab() !== 'equipe'"
+                [class.hover:bg-gray-700]="activeTab() !== 'equipe'">
+          <span class="material-symbols-outlined">group_add</span>
+          <span class="font-medium">Gestão de Equipe</span>
         </button>
         <button (click)="activeTab.set('cadastros')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
@@ -39,7 +49,7 @@
                 [class.text-gray-300]="activeTab() !== 'seguranca'"
                 [class.hover:bg-gray-700]="activeTab() !== 'seguranca'">
           <span class="material-symbols-outlined">security</span>
-          <span class="font-medium">Equipe e Segurança</span>
+          <span class="font-medium">Cargos e Permissões</span>
         </button>
       </nav>
     </div>
@@ -49,6 +59,9 @@
       @switch (activeTab()) {
         @case ('empresa') {
           <app-company-settings></app-company-settings>
+        }
+        @case ('equipe') {
+          <app-multi-unit-settings></app-multi-unit-settings>
         }
         @case ('cadastros') {
           <app-operation-settings></app-operation-settings>

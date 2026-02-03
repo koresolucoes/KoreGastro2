@@ -1,3 +1,4 @@
+
 import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit, Order, IfoodOrderStatus, OrderItem } from './db.models';
 
 // Represents the data structure for the technical sheet form
@@ -37,4 +38,13 @@ export interface ProcessedIfoodOrder extends Order {
   deliveryFee?: number;
   additionalFees?: number;
   disputeEvidences?: string[];
+}
+
+export interface StoreManager {
+  permission_id: string;
+  manager_id: string;
+  manager_email: string;
+  manager_name: string;
+  role: string;
+  created_at: string;
 }

@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -6,8 +7,9 @@ import { CompanySettingsComponent } from './company-settings/company-settings.co
 import { OperationSettingsComponent } from './operation-settings/operation-settings.component';
 import { FunctionalitySettingsComponent } from './functionality-settings/functionality-settings.component';
 import { SecuritySettingsComponent } from './security-settings/security-settings.component';
+import { MultiUnitSettingsComponent } from './multi-unit-settings/multi-unit-settings.component';
 
-type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca';
+type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe';
 
 @Component({
   selector: 'app-settings',
@@ -17,7 +19,8 @@ type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca';
     CompanySettingsComponent,
     OperationSettingsComponent,
     FunctionalitySettingsComponent,
-    SecuritySettingsComponent
+    SecuritySettingsComponent,
+    MultiUnitSettingsComponent
   ],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

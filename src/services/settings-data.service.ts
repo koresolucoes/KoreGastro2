@@ -1,5 +1,7 @@
+
 import { Injectable, inject } from '@angular/core';
 import { Employee, Station, CompanyProfile, Role, Customer, Order, LoyaltySettings, LoyaltyReward, LoyaltyMovement, Webhook, WebhookEvent } from '../models/db.models';
+import { StoreManager } from '../models/app.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
@@ -27,6 +29,31 @@ export class SettingsDataService {
       .getPublicUrl(path);
 
     return { publicUrl: data.publicUrl, error: null };
+  }
+
+  // --- Multi-Unit / Team Management RPCs ---
+  
+  async getStoreManagers(): Promise<{ data: StoreManager[]; error: any }> {
+    const { data, error } = await supabase.rpc('get_store_managers');
+    return { data: data as StoreManager[] || [], error };
+  }
+
+  async inviteManager(email: string, role: string): Promise<{ success: boolean; message: string }> {
+    const { data, error } = await supabase.rpc('invite_manager_by_email', { 
+        email_input: email, 
+        role_input: role 
+    });
+    
+    if (error) {
+        return { success: false, message: error.message };
+    }
+    // RPC returns JSON object { success, message }
+    return data as { success: boolean; message: string };
+  }
+
+  async removeManager(permissionId: string): Promise<{ success: boolean; error: any }> {
+    const { data, error } = await supabase.rpc('remove_store_manager', { permission_id_input: permissionId });
+    return { success: data as boolean, error };
   }
 
   // FIX: Updated method to return the created station object.
