@@ -33,6 +33,16 @@ export class SettingsDataService {
 
   // --- Multi-Unit / Team Management RPCs ---
   
+  async createNewStore(storeName: string): Promise<{ success: boolean; message?: string; store_id?: string }> {
+      const { data, error } = await supabase.rpc('create_new_store', { store_name: storeName });
+      
+      if (error) {
+          return { success: false, message: error.message };
+      }
+      
+      return data as { success: boolean; message?: string; store_id?: string };
+  }
+
   async getStoreManagers(): Promise<{ data: StoreManager[]; error: any }> {
     const { data, error } = await supabase.rpc('get_store_managers');
     return { data: data as StoreManager[] || [], error };
