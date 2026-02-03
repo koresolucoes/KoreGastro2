@@ -4,12 +4,14 @@ import { Subscription, Plan } from '../models/db.models';
 import { DemoService } from './demo.service';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { UnitContextService } from './unit-context.service';
+import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 
 @Injectable({ providedIn: 'root' })
 export class SubscriptionStateService {
   private demoService = inject(DemoService);
   private unitContextService = inject(UnitContextService);
+  private authService = inject(AuthService);
   
   plans = signal<Plan[]>([]);
   subscriptions = signal<Subscription[]>([]);
@@ -29,24 +31,58 @@ export class SubscriptionStateService {
   }
 
   async loadSubscriptionForUnit(storeId: string) {
-      // 1. Identify the OWNER of the current store
+      console.log(`[Subscription] Verificando assinatura para a Loja: ${storeId}`);
+      let ownerId: string | null = null;
+
+      // 1. Tentativa Direta: Ler tabela 'stores'
       const { data: store, error: storeError } = await supabase
           .from('stores')
           .select('owner_id')
           .eq('id', storeId)
           .single();
 
-      // If store table not found or error (maybe single store legacy mode), assume auth user is owner or fallback
-      let ownerId = store?.owner_id;
+      if (store?.owner_id) {
+          ownerId = store.owner_id;
+          console.log(`[Subscription] Dono identificado via tabela stores: ${ownerId}`);
+      } else {
+          console.warn('[Subscription] Falha ao ler owner_id da tabela stores. Tentando método alternativo...', storeError);
+
+          // 2. Tentativa via Permissões: Quem é o 'owner' desta loja nas permissões?
+          // Nota: Isso pode falhar se o usuário atual não puder ver quem é o dono (RLS), mas vale tentar.
+          const { data: perm } = await supabase
+              .from('unit_permissions')
+              .select('manager_id')
+              .eq('store_id', storeId)
+              .eq('role', 'owner')
+              .maybeSingle();
+          
+          if (perm?.manager_id) {
+              ownerId = perm.manager_id;
+              console.log(`[Subscription] Dono identificado via permissões: ${ownerId}`);
+          } else {
+              // 3. Tentativa via Usuário Logado (Se eu sou o dono, a assinatura é minha)
+              // Verificamos se temos permissão de 'owner' localmente no UnitContext
+              const myUnits = this.unitContextService.availableUnits();
+              const currentUnitContext = myUnits.find(u => u.id === storeId);
+              
+              if (currentUnitContext && currentUnitContext.role === 'owner') {
+                  const currentUser = this.authService.currentUser();
+                  if (currentUser) {
+                      ownerId = currentUser.id;
+                      console.log(`[Subscription] Usuário atual identificado como dono pelo contexto: ${ownerId}`);
+                  }
+              }
+          }
+      }
       
-      // Fallback for legacy single-store setup where store_id might be the user_id itself
+      // 4. Fallback Legado (Single Store): O ID da loja é o ID do usuário
       if (!ownerId) {
-          // If we can't find the store in 'stores' table, assume the ID itself is the user ID (legacy matrix)
+          console.warn('[Subscription] Não foi possível determinar o dono. Usando ID da loja como fallback (modo legado).');
           ownerId = storeId;
       }
 
       if (ownerId) {
-          // 2. Fetch Active Subscriptions for this OWNER
+          // Fetch Active Subscriptions for this OWNER
           const { data: subs, error: subError } = await supabase
               .from('subscriptions')
               .select('*')
@@ -54,17 +90,26 @@ export class SubscriptionStateService {
               .in('status', ['active', 'trialing'])
               .order('created_at', { ascending: false });
 
-          if (subs) {
+          if (subError) {
+              console.error('[Subscription] Erro ao buscar assinaturas:', subError);
+          }
+
+          if (subs && subs.length > 0) {
+             console.log(`[Subscription] Assinatura ativa encontrada para o dono ${ownerId}. Plano: ${subs[0].plan_id}`);
              this.subscriptions.set(subs);
+          } else {
+             console.warn(`[Subscription] Nenhuma assinatura ativa encontrada para o dono ${ownerId}.`);
+             this.subscriptions.set([]); // Garante que limpa se não achar
           }
           
-          // 3. Count total stores owned by this user to check against max_stores
+          // Count total stores owned by this user
+          // Se falhar a leitura de stores acima, isso também pode falhar, então usamos count seguro
           const { count, error: countError } = await supabase
             .from('stores')
             .select('*', { count: 'exact', head: true })
             .eq('owner_id', ownerId);
             
-          this.ownerStoreCount.set(count || 1); // Default to 1 if count fails or is 0
+          this.ownerStoreCount.set(count || 1);
       }
   }
 
@@ -86,9 +131,6 @@ export class SubscriptionStateService {
         if (plan.max_stores && this.ownerStoreCount() > plan.max_stores) {
             console.warn(`Plan limit exceeded. Max: ${plan.max_stores}, Current: ${this.ownerStoreCount()}`);
             // Strictly speaking, we might want to return false here, OR just warn. 
-            // For now, let's return true but maybe the UI should warn "Upgrade needed".
-            // Implementation Decision: If strict, return false. But usually, SaaS allows overage or blocks creation.
-            // Let's assume validity if subscription exists, but logic to block creation of NEW stores should handle the limit.
             return true;
         }
     }
