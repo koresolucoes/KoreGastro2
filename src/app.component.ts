@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { AuthService } from './services/auth.service';
@@ -29,20 +30,18 @@ export class AppComponent implements OnInit {
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
-  // FIX: Access properties from the injected `subscriptionStateService` instance.
+  
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
+  isSubscriptionLoading = this.subscriptionStateService.isLoading;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
-  // FIX: Access properties from the injected `subscriptionStateService` instance.
+  
   isTrialing = this.subscriptionStateService.isTrialing;
-  // FIX: Access properties from the injected `subscriptionStateService` instance.
   subscription = this.subscriptionStateService.subscription;
-  // FIX: Access properties from the injected `subscriptionStateService` instance.
   trialDaysRemaining = this.subscriptionStateService.trialDaysRemaining;
 
   isTutorialsRoute = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      // FIX: Explicitly cast event to NavigationEnd to resolve type inference issue on `urlAfterRedirects`.
       map(e => (e as NavigationEnd).urlAfterRedirects.startsWith('/tutorials'))
     ),
     { initialValue: this.router.url.startsWith('/tutorials') }
@@ -63,6 +62,11 @@ export class AppComponent implements OnInit {
 
   isFullLayoutVisible = computed(() => {
     return (this.authService.currentUser() || this.isDemoMode()) && this.operationalAuthService.activeEmployee();
+  });
+  
+  // Combine data loading and subscription loading for the main spinner
+  isAppReady = computed(() => {
+    return this.isDataLoaded() && !this.isSubscriptionLoading();
   });
 
   ngOnInit(): void {

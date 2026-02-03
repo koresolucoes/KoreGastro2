@@ -223,11 +223,9 @@ export class SupabaseStateService {
     if (!userId) return;
 
     // Filter changes relevant to the active unit
-    // Note: 'new' and 'old' objects in payload contain the row data.
-    // We should check if user_id matches activeUnitId to avoid cross-talk if RLS allows seeing multiple units
     const relevantRow = payload.new || payload.old;
     if (relevantRow && relevantRow.user_id && relevantRow.user_id !== userId) {
-        return; // Change belongs to another unit, ignore.
+        return; 
     }
 
     switch (payload.table) {
@@ -240,9 +238,9 @@ export class SupabaseStateService {
             break;
         case 'subscriptions':
         case 'plans':
-            this.refetchSubscriptionPermissions(userId);
-            this.refetchSimpleTable('subscriptions', '*', this.subscriptionState.subscriptions);
-            this.refetchSimpleTable('plans', '*', this.subscriptionState.plans, false);
+            // SubscriptionStateService now handles loading subscription data. 
+            // We just trigger a reload there if needed.
+            this.subscriptionState.loadSubscriptionForUnit(userId);
             break;
         case 'ifood_webhook_logs':
             this.refetchIfoodLogs();
@@ -322,8 +320,6 @@ export class SupabaseStateService {
     } 
     catch (error) { 
         console.error("Initial data load failed:", error);
-        // Don't clear active unit here, just data? 
-        // this.clearAllData(); 
     } 
     finally { this.isDataLoaded.set(true); }
   }
@@ -331,16 +327,13 @@ export class SupabaseStateService {
   private async refreshData(userId: string) {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
     
-    // NOTE: All queries here use 'user_id' = userId. 
-    // In multi-unit context, userId is the Store ID (activeUnitId).
-    
     const [
       halls, tables, stations, categories, orders, employees, ingredients,
       ingredientCategories, suppliers, recipeIngredients, recipePreparations, promotions,
       promotionRecipes, recipeSubRecipes, purchaseOrders, productionPlans, reservations,
       reservationSettings, schedules, leaveRequests, companyProfile, roles, rolePermissions,
       customers, loyaltySettings, loyaltyRewards, inventoryLots, ifoodWebhookLogs,
-      ifoodMenuSync, subscriptions, plans, recipes, finishedIfoodOrders, webhooks,
+      ifoodMenuSync, recipes, finishedIfoodOrders, webhooks,
       deliveryDrivers, portioningEvents, stationStocks, requisitions
     ] = await Promise.all([
       supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
@@ -372,8 +365,7 @@ export class SupabaseStateService {
       supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
       supabase.from('ifood_menu_sync').select('*').eq('user_id', userId),
-      supabase.from('subscriptions').select('*').eq('user_id', userId),
-      supabase.from('plans').select('*'),
+      // Removed subscription and plan fetching from here to prevent overwrite
       supabase.from('recipes').select('*').eq('user_id', userId),
       supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId),
       supabase.from('webhooks').select('*').eq('user_id', userId),
@@ -413,8 +405,6 @@ export class SupabaseStateService {
     this.inventoryState.inventoryLots.set(inventoryLots.data || []);
     this.ifoodState.ifoodWebhookLogs.set(ifoodWebhookLogs.data || []);
     this.ifoodState.ifoodMenuSync.set(ifoodMenuSync.data || []);
-    this.subscriptionState.subscriptions.set(subscriptions.data || []);
-    this.subscriptionState.plans.set(plans.data || []);
     this.recipeState.recipes.set(recipes.data || []);
     this.ifoodState.recentlyFinishedIfoodOrders.set(this.processOrdersWithPrices(finishedIfoodOrders.data || []));
     this.settingsState.webhooks.set(webhooks.data || []);
