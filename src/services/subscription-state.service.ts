@@ -35,30 +35,39 @@ export class SubscriptionStateService {
       console.log(`[Subscription] Iniciando verificação para a Loja: ${storeId}`);
       let ownerId: string | null = null;
       let subscriptionFound = false;
+      const currentUser = this.authService.currentUser();
+
+      // --- ESTRATÉGIA 0: Verificar Contexto Local (Mais rápido e ignora RLS) ---
+      // Se já sabemos pelo login que sou o 'owner' desta loja, não preciso perguntar ao banco quem é o dono.
+      const activeUnitContext = this.unitContextService.availableUnits().find(u => u.id === storeId);
+      
+      if (activeUnitContext && activeUnitContext.role === 'owner' && currentUser) {
+          ownerId = currentUser.id;
+          console.log(`[Subscription] Dono identificado via Contexto Local: ${ownerId}`);
+      }
 
       // --- ESTRATÉGIA 1: Assinatura vinculada diretamente à LOJA (Novo Schema) ---
       // Verifica se a assinatura tem o campo store_id preenchido com o ID atual
-      const { data: storeSubs, error: storeSubError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('store_id', storeId)
-          .in('status', ['active', 'trialing'])
-          .order('created_at', { ascending: false });
+      if (!subscriptionFound) {
+          const { data: storeSubs } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('store_id', storeId)
+              .in('status', ['active', 'trialing'])
+              .order('created_at', { ascending: false });
 
-      if (storeSubs && storeSubs.length > 0) {
-          console.log('[Subscription] Sucesso: Assinatura encontrada vinculada diretamente à loja (store_id).');
-          this.subscriptions.set(storeSubs);
-          subscriptionFound = true;
-          // Se achou por loja, o ownerId será o user_id dessa assinatura
-          ownerId = storeSubs[0].user_id;
+          if (storeSubs && storeSubs.length > 0) {
+              console.log('[Subscription] Sucesso: Assinatura encontrada vinculada diretamente à loja (store_id).');
+              this.subscriptions.set(storeSubs);
+              subscriptionFound = true;
+              if (!ownerId) ownerId = storeSubs[0].user_id;
+          }
       }
 
-      // --- ESTRATÉGIA 2: Assinatura do DONO da loja (Modelo Global) ---
-      if (!subscriptionFound) {
-          // Precisamos descobrir quem é o dono desta loja
-          
+      // --- ESTRATÉGIA 2: Buscar Dono no Banco (Fallback se contexto falhar) ---
+      if (!ownerId && !subscriptionFound) {
           // 2a. Tenta ler a tabela 'stores' diretamente
-          const { data: store, error: storeError } = await supabase
+          const { data: store } = await supabase
               .from('stores')
               .select('owner_id')
               .eq('id', storeId)
@@ -66,6 +75,7 @@ export class SubscriptionStateService {
 
           if (store?.owner_id) {
               ownerId = store.owner_id;
+              console.log(`[Subscription] Dono identificado via DB (stores): ${ownerId}`);
           } else {
              // 2b. Fallback: Tenta descobrir via permissões se o RLS da tabela stores falhar
              console.warn('[Subscription] Não foi possível ler owner_id da tabela stores. Tentando via permissões...');
@@ -78,45 +88,36 @@ export class SubscriptionStateService {
               
               if (perm?.manager_id) {
                   ownerId = perm.manager_id;
+                  console.log(`[Subscription] Dono identificado via DB (permissions): ${ownerId}`);
               }
           }
+      }
 
-          // Se identificamos o dono, buscamos se ELE tem uma assinatura "global" (store_id is null ou user_id bate)
-          if (ownerId) {
-              const { data: ownerSubs } = await supabase
-                  .from('subscriptions')
-                  .select('*')
-                  .eq('user_id', ownerId)
-                  .in('status', ['active', 'trialing'])
-                  .order('created_at', { ascending: false });
+      // --- ESTRATÉGIA 3: Buscar Assinatura do Dono (Modelo Global) ---
+      if (ownerId && !subscriptionFound) {
+          const { data: ownerSubs } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('user_id', ownerId)
+              .in('status', ['active', 'trialing'])
+              .order('created_at', { ascending: false });
 
-              if (ownerSubs && ownerSubs.length > 0) {
-                  console.log(`[Subscription] Sucesso: Assinatura encontrada para o dono da loja (${ownerId}).`);
-                  this.subscriptions.set(ownerSubs);
-                  subscriptionFound = true;
-              } else {
-                  console.warn(`[Subscription] O dono (${ownerId}) foi identificado, mas NÃO possui assinatura ativa.`);
-              }
+          if (ownerSubs && ownerSubs.length > 0) {
+              console.log(`[Subscription] Sucesso: Assinatura encontrada para o dono da loja (${ownerId}).`);
+              this.subscriptions.set(ownerSubs);
+              subscriptionFound = true;
           } else {
-              // 2c. Fallback Legado: Se tudo falhar, assume que StoreID = UserID (Single Store antiga)
-              // Tenta buscar assinatura onde user_id = storeId
-               const { data: legacySubs } = await supabase
-                  .from('subscriptions')
-                  .select('*')
-                  .eq('user_id', storeId)
-                  .in('status', ['active', 'trialing']);
-                
-                if (legacySubs && legacySubs.length > 0) {
-                    console.log('[Subscription] Sucesso: Modo legado (UserID = StoreID).');
-                    this.subscriptions.set(legacySubs);
-                    ownerId = storeId;
-                    subscriptionFound = true;
-                }
+              console.warn(`[Subscription] O dono (${ownerId}) foi identificado, mas NÃO possui assinatura ativa.`);
+              
+              // Última tentativa: Legado (UserID = StoreID)
+              if (ownerId === storeId) {
+                   console.log('[Subscription] Verificação legado falhou também.');
+              }
           }
       }
 
       if (!subscriptionFound) {
-          console.error('[Subscription] FALHA: Nenhuma assinatura ativa encontrada para esta loja ou seu dono.');
+          console.error('[Subscription] FALHA FINAL: Nenhuma assinatura ativa encontrada para esta loja.');
           this.subscriptions.set([]);
       }
 
@@ -155,7 +156,7 @@ export class SubscriptionStateService {
     if (plan && plan.max_stores) {
         if (this.ownerStoreCount() > plan.max_stores) {
             console.warn(`[Subscription] Limite de lojas excedido. Plano permite: ${plan.max_stores}, Atual: ${this.ownerStoreCount()}`);
-            // Opcional: retornar false aqui se quiser bloquear acesso rigorosamente
+            // Permite acesso mas loga o aviso. Em produção estrita, retornaria false.
         }
     }
     
@@ -179,7 +180,6 @@ export class SubscriptionStateService {
 
     if (sub.status === 'trialing') return true;
     
-    // Lógica para verificar período de trial "virtual" baseado na data de criação
     const plan = this.currentPlan();
     if (plan && plan.trial_period_days && plan.trial_period_days > 0 && sub.recurrent === false) {
       const createdAt = new Date(sub.created_at);
