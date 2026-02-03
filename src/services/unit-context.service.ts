@@ -25,7 +25,7 @@ export class UnitContextService {
   activeUnitName = computed(() => {
     const id = this.activeUnitId();
     if (!id) return '';
-    return this.availableUnits().find(u => u.id === id)?.name || 'Minha Loja';
+    return this.availableUnits().find(u => u.id === id)?.name || 'Loja Selecionada';
   });
 
   constructor() {
@@ -35,50 +35,57 @@ export class UnitContextService {
   async loadContext(userId: string) {
     console.log('Loading unit context for user:', userId);
 
-    // 1. Fetch delegated units from unit_permissions
-    const { data: permissions, error } = await supabase
+    // 1. Fetch stores owned by the user directly
+    const { data: ownedStores, error: ownedError } = await supabase
+      .from('stores')
+      .select('id, name')
+      .eq('owner_id', userId);
+
+    if (ownedError) console.error('Error fetching owned stores:', ownedError);
+
+    // 2. Fetch stores where user is a manager (delegated)
+    const { data: permissions, error: permError } = await supabase
       .from('unit_permissions')
-      .select('store_id, role')
+      .select('store_id, role, stores(name)')
       .eq('manager_id', userId);
 
-    if (error) {
-      console.error('Error fetching unit permissions:', error);
+    if (permError) console.error('Error fetching unit permissions:', permError);
+
+    const unitsMap = new Map<string, { id: string, name: string, role: string }>();
+
+    // Add Owned Stores
+    if (ownedStores) {
+        ownedStores.forEach(store => {
+            unitsMap.set(store.id, {
+                id: store.id,
+                name: store.name,
+                role: 'owner'
+            });
+        });
     }
 
-    const delegatedStoreIds = (permissions || []).map((p: any) => p.store_id);
-    const allStoreIds = Array.from(new Set([userId, ...delegatedStoreIds]));
-
-    // 2. Fetch profiles for all accessible stores (Own + Delegated)
-    const { data: profiles, error: profilesError } = await supabase
-      .from('company_profile')
-      .select('user_id, company_name')
-      .in('user_id', allStoreIds);
-
-    if (profilesError) {
-        console.error('Error fetching store profiles:', profilesError);
+    // Add Delegated Stores (avoid duplicates if permission also exists for owner)
+    if (permissions) {
+        permissions.forEach((p: any) => {
+            if (!unitsMap.has(p.store_id)) {
+                unitsMap.set(p.store_id, {
+                    id: p.store_id,
+                    name: p.stores?.name || 'Loja Compartilhada',
+                    role: p.role
+                });
+            }
+        });
     }
-
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p.company_name]));
-
-    // 3. Build the units list
-    const myUnit = {
-      id: userId,
-      name: profileMap.get(userId) || 'Minha Loja Principal',
-      role: 'owner'
-    };
-
-    const delegatedUnits = (permissions || []).map((p: any) => ({
-      id: p.store_id,
-      name: profileMap.get(p.store_id) || 'Loja Sem Nome',
-      role: p.role
-    }));
-
-    // Ensure uniqueness
-    const unitsMap = new Map();
-    unitsMap.set(myUnit.id, myUnit);
-    delegatedUnits.forEach(u => unitsMap.set(u.id, u));
     
     const allUnits = Array.from(unitsMap.values());
+    
+    // Sort: Main store (ID=UserID) first, then others alphabetical
+    allUnits.sort((a, b) => {
+        if (a.id === userId) return -1;
+        if (b.id === userId) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
     this.availableUnits.set(allUnits);
 
     // 4. Restore active unit from storage or default to own unit
@@ -87,8 +94,13 @@ export class UnitContextService {
     if (storedUnitId && allUnits.some(u => u.id === storedUnitId)) {
         this.activeUnitId.set(storedUnitId);
     } else {
-        // Default to the user's own unit
-        this.activeUnitId.set(userId);
+        // Default to the first available unit (usually the main store due to sort)
+        if (allUnits.length > 0) {
+            this.activeUnitId.set(allUnits[0].id);
+        } else {
+            // Fallback for edge cases (should happen rarely if DB setup is correct)
+            this.activeUnitId.set(userId);
+        }
     }
   }
 
