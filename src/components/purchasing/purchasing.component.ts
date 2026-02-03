@@ -87,12 +87,16 @@ export class PurchasingComponent implements OnInit {
         const navigationState = this.router.getCurrentNavigation()?.extras.state as any; // Cast to any to allow access
         if (navigationState && navigationState['newOrderItems']) {
             const prefillItems = navigationState['newOrderItems'] as { ingredientId: string, quantity: number }[];
-            const ingredientsMap = new Map(this.ingredients().map(i => [i.id, i] as [string, Ingredient]));
+            // FIX: Explicitly type the Map to ensure correct type inference
+            const ingredientsMap = new Map<string, Ingredient>(
+                this.ingredients().map(i => [i.id, i])
+            );
             
             const suppliersInOrder = new Map<string | null, { ingredientId: string, quantity: number }[]>();
             
             prefillItems.forEach(item => {
                 const ingredient = ingredientsMap.get(item.ingredientId);
+                // FIX: Ensure ingredient is defined before accessing properties
                 const supplierId = ingredient?.supplier_id || null;
                 
                 if (!suppliersInOrder.has(supplierId)) {

@@ -637,6 +637,7 @@ export interface Plan {
   slug: string;
   price: number | null;
   trial_period_days: number | null;
+  max_stores?: number | null; // Added max_stores
   created_at: string;
 }
 
@@ -649,6 +650,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_id: string;
+  store_id?: string | null; // Optional now in logic, used for legacy or specific overrides
   status: SubscriptionStatus;
   recurrent: boolean;
   current_period_end: string | null;
