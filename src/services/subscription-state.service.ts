@@ -2,7 +2,6 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Subscription, Plan } from '../models/db.models';
 import { DemoService } from './demo.service';
-import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { UnitContextService } from './unit-context.service';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
@@ -16,14 +15,15 @@ export class SubscriptionStateService {
   plans = signal<Plan[]>([]);
   subscriptions = signal<Subscription[]>([]);
   activeUserPermissions = signal<Set<string>>(new Set());
-
-  // Novo estado para controlar contagem de lojas do dono
   ownerStoreCount = signal<number>(0);
 
   constructor() {
       // Effect to load subscription logic when the active unit changes
       effect(async () => {
           const activeUnitId = this.unitContextService.activeUnitId();
+          // Reset state when switching units to avoid stale data
+          this.subscriptions.set([]); 
+          
           if (activeUnitId && !this.demoService.isDemoMode()) {
               await this.loadSubscriptionForUnit(activeUnitId);
           }
@@ -31,107 +31,119 @@ export class SubscriptionStateService {
   }
 
   async loadSubscriptionForUnit(storeId: string) {
-      console.log(`[Subscription] Verificando assinatura para a Loja: ${storeId}`);
+      console.log(`[Subscription] Iniciando verificação para a Loja: ${storeId}`);
       let ownerId: string | null = null;
+      let subscriptionFound = false;
 
-      // 1. Tentativa Direta: Ler tabela 'stores'
-      const { data: store, error: storeError } = await supabase
-          .from('stores')
-          .select('owner_id')
-          .eq('id', storeId)
-          .single();
+      // --- ESTRATÉGIA 1: O ID da Loja é um Usuário com Assinatura? (Legado / Minha Loja) ---
+      // Verifica se existe uma assinatura ativa diretamente para este ID. 
+      // Isso cobre o caso "Minha Loja Principal" onde StoreID == UserID.
+      const { data: directSubs } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', storeId)
+          .in('status', ['active', 'trialing'])
+          .limit(1);
 
-      if (store?.owner_id) {
-          ownerId = store.owner_id;
-          console.log(`[Subscription] Dono identificado via tabela stores: ${ownerId}`);
-      } else {
-          console.warn('[Subscription] Falha ao ler owner_id da tabela stores. Tentando método alternativo...', storeError);
+      if (directSubs && directSubs.length > 0) {
+          console.log('[Subscription] Estratégia 1: Assinatura encontrada diretamente no ID da loja.');
+          this.subscriptions.set(directSubs);
+          ownerId = storeId;
+          subscriptionFound = true;
+      }
 
-          // 2. Tentativa via Permissões: Quem é o 'owner' desta loja nas permissões?
-          // Nota: Isso pode falhar se o usuário atual não puder ver quem é o dono (RLS), mas vale tentar.
-          const { data: perm } = await supabase
-              .from('unit_permissions')
-              .select('manager_id')
-              .eq('store_id', storeId)
-              .eq('role', 'owner')
+      // --- ESTRATÉGIA 2: Buscar o Dono da Loja (Para novas lojas) ---
+      if (!subscriptionFound) {
+          // Tenta descobrir quem é o owner_id desta loja
+          // 2a. Via tabela 'stores'
+          const { data: store } = await supabase
+              .from('stores')
+              .select('owner_id')
+              .eq('id', storeId)
               .maybeSingle();
+
+          if (store?.owner_id) {
+              ownerId = store.owner_id;
+              console.log(`[Subscription] Estratégia 2a: Dono identificado via tabela stores: ${ownerId}`);
+          } 
           
-          if (perm?.manager_id) {
-              ownerId = perm.manager_id;
-              console.log(`[Subscription] Dono identificado via permissões: ${ownerId}`);
-          } else {
-              // 3. Tentativa via Usuário Logado (Se eu sou o dono, a assinatura é minha)
-              // Verificamos se temos permissão de 'owner' localmente no UnitContext
-              const myUnits = this.unitContextService.availableUnits();
-              const currentUnitContext = myUnits.find(u => u.id === storeId);
+          // 2b. Via 'unit_permissions' (Fallback se RLS bloquear leitura de stores)
+          if (!ownerId) {
+              const { data: perm } = await supabase
+                  .from('unit_permissions')
+                  .select('manager_id')
+                  .eq('store_id', storeId)
+                  .eq('role', 'owner')
+                  .maybeSingle();
               
-              if (currentUnitContext && currentUnitContext.role === 'owner') {
-                  const currentUser = this.authService.currentUser();
-                  if (currentUser) {
-                      ownerId = currentUser.id;
-                      console.log(`[Subscription] Usuário atual identificado como dono pelo contexto: ${ownerId}`);
-                  }
+              if (perm?.manager_id) {
+                  ownerId = perm.manager_id;
+                  console.log(`[Subscription] Estratégia 2b: Dono identificado via permissões: ${ownerId}`);
               }
           }
-      }
-      
-      // 4. Fallback Legado (Single Store): O ID da loja é o ID do usuário
-      if (!ownerId) {
-          console.warn('[Subscription] Não foi possível determinar o dono. Usando ID da loja como fallback (modo legado).');
-          ownerId = storeId;
-      }
 
-      if (ownerId) {
-          // Fetch Active Subscriptions for this OWNER
-          const { data: subs, error: subError } = await supabase
-              .from('subscriptions')
-              .select('*')
-              .eq('user_id', ownerId)
-              .in('status', ['active', 'trialing'])
-              .order('created_at', { ascending: false });
+          // Se achamos um dono, buscamos a assinatura DELE
+          if (ownerId) {
+              const { data: ownerSubs, error: subError } = await supabase
+                  .from('subscriptions')
+                  .select('*')
+                  .eq('user_id', ownerId)
+                  .in('status', ['active', 'trialing'])
+                  .order('created_at', { ascending: false });
 
-          if (subError) {
-              console.error('[Subscription] Erro ao buscar assinaturas:', subError);
-          }
-
-          if (subs && subs.length > 0) {
-             console.log(`[Subscription] Assinatura ativa encontrada para o dono ${ownerId}. Plano: ${subs[0].plan_id}`);
-             this.subscriptions.set(subs);
+              if (ownerSubs && ownerSubs.length > 0) {
+                  console.log(`[Subscription] Assinatura ativa encontrada para o dono ${ownerId}.`);
+                  this.subscriptions.set(ownerSubs);
+                  subscriptionFound = true;
+              } else {
+                  console.warn(`[Subscription] Dono encontrado (${ownerId}), mas SEM assinatura ativa.`);
+              }
           } else {
-             console.warn(`[Subscription] Nenhuma assinatura ativa encontrada para o dono ${ownerId}.`);
-             this.subscriptions.set([]); // Garante que limpa se não achar
+              console.error('[Subscription] FALHA CRÍTICA: Não foi possível identificar o dono da loja.');
+          }
+      }
+
+      // --- Carregar Planos e Contagem (Apenas se achou dono ou assinatura) ---
+      if (ownerId || subscriptionFound) {
+          const targetUser = ownerId || storeId; // Fallback seguro
+          
+          // Carregar planos (cache simples)
+          if (this.plans().length === 0) {
+              const { data: plans } = await supabase.from('plans').select('*');
+              if (plans) this.plans.set(plans);
           }
           
-          // Count total stores owned by this user
-          // Se falhar a leitura de stores acima, isso também pode falhar, então usamos count seguro
-          const { count, error: countError } = await supabase
+          // Contar lojas (para validar limites do plano)
+          // Se falhar a leitura de stores, assumimos 1 para não bloquear injustamente
+          const { count } = await supabase
             .from('stores')
             .select('*', { count: 'exact', head: true })
-            .eq('owner_id', ownerId);
+            .eq('owner_id', targetUser);
             
           this.ownerStoreCount.set(count || 1);
+      } else {
+          // Se chegou aqui, não achou dono nem assinatura. Limpa tudo.
+          this.subscriptions.set([]);
       }
   }
 
   hasActiveSubscription = computed(() => {
-    if (this.demoService.isDemoMode()) {
-      return true;
-    }
+    if (this.demoService.isDemoMode()) return true;
+
     const subs = this.subscriptions();
     if (subs.length === 0) return false;
     
-    // Get the first active/trialing subscription
+    // Pega a primeira assinatura válida
     const activeSub = subs.find(s => s.status === 'active' || s.status === 'trialing');
     if (!activeSub) return false;
 
-    // Check Max Stores Limit
+    // Validação de Limite de Lojas
     const plan = this.plans().find(p => p.id === activeSub.plan_id);
-    if (plan) {
-        // If plan has a max_stores limit, check if owner is within limit
-        if (plan.max_stores && this.ownerStoreCount() > plan.max_stores) {
-            console.warn(`Plan limit exceeded. Max: ${plan.max_stores}, Current: ${this.ownerStoreCount()}`);
-            // Strictly speaking, we might want to return false here, OR just warn. 
-            return true;
+    if (plan && plan.max_stores) {
+        // Se o usuário tem mais lojas do que o plano permite, poderíamos bloquear.
+        // Por enquanto, apenas logamos o aviso para não travar operação existente.
+        if (this.ownerStoreCount() > plan.max_stores) {
+            console.warn(`[Subscription] Limite de lojas excedido. Plano: ${plan.max_stores}, Atual: ${this.ownerStoreCount()}`);
         }
     }
     
@@ -148,27 +160,19 @@ export class SubscriptionStateService {
   });
 
   isTrialing = computed(() => {
-    if (this.demoService.isDemoMode()) {
-      return false;
-    }
-    const subs = this.subscriptions();
-    if (subs.length === 0) return false;
-
-    const userSub = subs[0];
-    if (!userSub) return false;
-
-    if (userSub.status === 'trialing') {
-      return true;
-    }
+    if (this.demoService.isDemoMode()) return false;
     
-    const plansMap = new Map<string, Plan>(this.plans().map(p => [p.id, p]));
-    const subPlan = plansMap.get(userSub.plan_id);
+    const sub = this.subscription();
+    if (!sub) return false;
+
+    if (sub.status === 'trialing') return true;
     
-    if (subPlan && subPlan.trial_period_days && subPlan.trial_period_days > 0 && userSub.recurrent === false) {
-      const createdAt = new Date(userSub.created_at);
+    // Lógica para verificar período de trial "virtual" baseado na data de criação
+    const plan = this.currentPlan();
+    if (plan && plan.trial_period_days && plan.trial_period_days > 0 && sub.recurrent === false) {
+      const createdAt = new Date(sub.created_at);
       const trialEndDate = new Date(createdAt);
-      trialEndDate.setDate(trialEndDate.getDate() + subPlan.trial_period_days!);
-      
+      trialEndDate.setDate(trialEndDate.getDate() + plan.trial_period_days);
       return new Date() < trialEndDate;
     }
     
@@ -177,35 +181,24 @@ export class SubscriptionStateService {
 
   trialDaysRemaining = computed(() => {
     const sub = this.subscription();
-    if (!this.isTrialing() || !sub) {
-        return null;
-    }
+    if (!this.isTrialing() || !sub) return null;
+
+    let endDate: Date;
 
     if (sub.status === 'trialing' && sub.current_period_end) {
-        const endDate = new Date(sub.current_period_end);
-        const now = new Date();
-        const diffTime = endDate.getTime() - now.getTime();
-        if (diffTime < 0) return 0;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
-    }
-    
-    const plansMap = new Map<string, Plan>(this.plans().map(p => [p.id, p]));
-    const subPlan = plansMap.get(sub.plan_id);
-
-    if (subPlan && subPlan.trial_period_days && sub.recurrent === false) {
-      const createdAt = new Date(sub.created_at);
-      const trialEndDate = new Date(createdAt);
-      trialEndDate.setDate(trialEndDate.getDate() + subPlan.trial_period_days!);
-      
-      const now = new Date();
-      const diffTime = trialEndDate.getTime() - now.getTime();
-      if (diffTime < 0) return 0;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays;
+        endDate = new Date(sub.current_period_end);
+    } else {
+        const plan = this.currentPlan();
+        if (!plan || !plan.trial_period_days) return 0;
+        const createdAt = new Date(sub.created_at);
+        endDate = new Date(createdAt);
+        endDate.setDate(endDate.getDate() + plan.trial_period_days);
     }
 
-    return 0; // Fallback
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    if (diffTime < 0) return 0;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   });
 
   clearData() {
