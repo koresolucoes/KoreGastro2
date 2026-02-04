@@ -1,14 +1,11 @@
 
-
-
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
-import { Employee, TimeClockEntry } from '../models/db.models';
+import { Employee, TimeClockEntry, Role } from '../models/db.models';
 import { Router } from '@angular/router';
 import { supabase } from './supabase-client';
 // FIX: Inject modular state services
 import { HrStateService } from './hr-state.service';
 import { SubscriptionStateService } from './subscription-state.service';
-import { SupabaseStateService } from './supabase-state.service';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DemoService } from './demo.service';
 import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
@@ -24,8 +21,7 @@ type ShiftButtonState = { text: string; action: 'start_break' | 'end_break' | 'e
 export class OperationalAuthService {
   // FIX: Explicitly type the injected Router to resolve property access errors.
   private router: Router = inject(Router);
-  // Keep SupabaseStateService for its methods, but inject others for direct state access
-  private stateService = inject(SupabaseStateService);
+  // Removido SupabaseStateService para evitar dependência circular
   private hrState = inject(HrStateService);
   private subscriptionState = inject(SubscriptionStateService);
   private demoService = inject(DemoService);
@@ -273,11 +269,15 @@ export class OperationalAuthService {
     this.loadActiveShift(employeeWithRole);
   }
 
+  resetSession() {
+      this.activeEmployee.set(null);
+      this.activeShift.set(null);
+      sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+  }
+
   switchEmployee() {
     this.demoService.disableDemoMode();
-    this.activeEmployee.set(null);
-    this.activeShift.set(null);
-    sessionStorage.removeItem(EMPLOYEE_STORAGE_KEY);
+    this.resetSession();
     this.router.navigate(['/employee-selection']);
   }
 
@@ -290,13 +290,11 @@ export class OperationalAuthService {
 
     // Special case for tutorials: bypass subscription check, only role permission matters.
     if (routeKey === '/tutorials') {
-        // FIX: Access rolePermissions from hrState
         const rolePermissions = this.hrState.rolePermissions();
         return rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     }
     
     // For all other routes, an active subscription is a prerequisite.
-    // FIX: Access hasActiveSubscription from subscriptionState
     const hasActiveSub = this.subscriptionState.hasActiveSubscription();
     if (!hasActiveSub) {
         return false;
@@ -308,9 +306,7 @@ export class OperationalAuthService {
     }
 
     // For all other regular routes, both plan and role permissions are required.
-    // FIX: Access activeUserPermissions from subscriptionState
     const hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
-    // FIX: Access rolePermissions from hrState
     const hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     
     return hasPlanPermission && hasRolePermission;
@@ -320,19 +316,35 @@ export class OperationalAuthService {
     const employee = this.activeEmployee();
     if (!employee || !employee.role_id) return '/employee-selection';
 
-    // In demo mode, always go to dashboard.
     if (this.demoService.isDemoMode()) {
         return '/dashboard';
     }
 
-    // Find the first available route for the user based on the master list
     for (const route of ALL_PERMISSION_KEYS) {
       if (this.hasPermission(route)) {
           return route;
       }
     }
 
-    // Fallback if no permissions are set
     return '/employee-selection';
+  }
+
+  // Novo método para tentar auto-login do gerente
+  attemptAutoLogin(employees: Employee[], roles: Role[]): boolean {
+    // 1. Encontrar cargo de Gerente
+    const managerRole = roles.find(r => r.name === 'Gerente');
+    if (!managerRole) return false;
+
+    // 2. Encontrar funcionário com esse cargo
+    // Prioriza "Gerente Principal" criado pelo sistema, ou qualquer gerente
+    const managerEmployee = employees.find(e => e.role_id === managerRole.id);
+    
+    if (managerEmployee) {
+        console.log('[OperationalAuth] Auto-login successful for:', managerEmployee.name);
+        this.login(managerEmployee);
+        return true;
+    }
+
+    return false;
   }
 }

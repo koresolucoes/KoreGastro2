@@ -131,7 +131,9 @@ export class SubscriptionStateService {
                       .eq('plan_id', activeSub.plan_id);
                   
                   if (planPerms && planPerms.length > 0) {
-                      const permSet = new Set<string>(planPerms.map((p: any) => p.permission_key as string));
+                      // Ensure types are handled correctly for Set
+                      const permKeys = planPerms.map((p: any) => String(p.permission_key));
+                      const permSet = new Set<string>(permKeys);
                       this.activeUserPermissions.set(permSet);
                       console.log(`[Subscription] Permissões carregadas: ${permSet.size}`);
                   }
@@ -158,6 +160,7 @@ export class SubscriptionStateService {
       } catch (err) {
           console.error('[Subscription] Erro fatal ao verificar assinatura:', err);
       } finally {
+          // IMPORTANT: Signal that loading is finished so guards can proceed
           this.isLoading.set(false);
       }
   }
