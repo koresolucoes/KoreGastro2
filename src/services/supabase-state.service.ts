@@ -48,27 +48,46 @@ export class SupabaseStateService {
   isDataLoaded = signal(false);
 
   constructor() {
+    // EFFECT 1: Handle User Authentication State & Demo Mode
+    // Responsible for:
+    // 1. Loading Mock Data if in Demo Mode
+    // 2. Loading Unit Context (Stores) if Logged In
+    // 3. Clearing data if Logged Out
     effect(async () => {
         const user = this.currentUser();
         const isDemo = this.demoService.isDemoMode();
 
         if (isDemo) {
             this.loadMockData();
-            this.unsubscribeFromChanges(); // Ensure no realtime listeners in demo
+            this.unsubscribeFromChanges();
         } else if (user) {
-            // New Multi-Unit Logic: Load context first
-            // We use untracked to avoid loops if unitContext modifies signals
+            // Load context based on user. This sets availableUnits and activeUnitId.
+            // IMPORTANT: We do NOT read activeUnitId here to avoid circular dependency loops.
             await this.unitContextService.loadContext(user.id);
-            
-            const activeUnitId = this.unitContextService.activeUnitId();
-            if (activeUnitId) {
-                console.log(`[SupabaseState] Loading data for Unit: ${activeUnitId}`);
-                await this.loadInitialData(activeUnitId);
-                this.subscribeToChanges(activeUnitId);
-            }
         } else {
+            // Logout scenario
             this.unsubscribeFromChanges();
             this.clearAllData();
+            if (this.unitContextService.activeUnitId()) {
+                this.unitContextService.activeUnitId.set(null);
+            }
+        }
+    });
+
+    // EFFECT 2: React to Active Unit Changes
+    // Responsible for:
+    // 1. Loading Database Data whenever the selected store changes (login or manual switch)
+    // 2. Setting up Realtime subscriptions for that store
+    effect(async () => {
+        const activeUnitId = this.unitContextService.activeUnitId();
+        const isDemo = this.demoService.isDemoMode();
+        
+        // Only load data if we have a unit and NOT in demo mode 
+        // (Demo mode handles its own static data loading in Effect 1)
+        if (activeUnitId && !isDemo) {
+            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading data...`);
+            await this.loadInitialData(activeUnitId);
+            this.subscribeToChanges(activeUnitId);
         }
     });
 
