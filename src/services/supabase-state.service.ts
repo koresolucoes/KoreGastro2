@@ -334,7 +334,7 @@ export class SupabaseStateService {
   private async loadInitialData(userId: string) {
     this.isDataLoaded.set(false);
     try { 
-      await this.refetchSubscriptionPermissions(userId);
+      // NOTE: refetchSubscriptionPermissions removed here because SubscriptionStateService now manages it.
       await this.refreshData(userId); 
     } 
     catch (error) { 
@@ -489,16 +489,6 @@ export class SupabaseStateService {
     const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId);
     if (!error) this.setOrdersWithPrices(data || []);
     else console.error('Error refetching orders:', error);
-  }
-  
-  private async refetchSubscriptionPermissions(userId: string) {
-    const { data: permissions, error } = await supabase.rpc('get_user_active_permissions', { p_user_id: userId });
-    if (!error && permissions) {
-        this.subscriptionState.activeUserPermissions.set(new Set((permissions as { permission_key: string }[]).map(p => p.permission_key)));
-    } else if (error) {
-        console.error('Error refetching subscription permissions:', error);
-        this.subscriptionState.activeUserPermissions.set(new Set());
-    }
   }
   
   private setOrdersWithPrices(orders: any[]) { this.posState.orders.set(this.processOrdersWithPrices(orders)); }

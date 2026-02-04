@@ -5,6 +5,7 @@ import { DemoService } from './demo.service';
 import { UnitContextService } from './unit-context.service';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { ALL_PERMISSION_KEYS } from '../config/permissions';
 
 @Injectable({ providedIn: 'root' })
 export class SubscriptionStateService {
@@ -26,6 +27,7 @@ export class SubscriptionStateService {
           const activeUnitId = this.unitContextService.activeUnitId();
           
           if (this.demoService.isDemoMode()) {
+              this.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
               this.isLoading.set(false);
               return;
           }
@@ -45,6 +47,7 @@ export class SubscriptionStateService {
       
       // Reset state clean
       this.subscriptions.set([]); 
+      this.activeUserPermissions.set(new Set()); // Reset permissions to prevent stale access
       
       let ownerId: string | null = null;
       let subscriptionFound = false;
@@ -118,6 +121,21 @@ export class SubscriptionStateService {
           if (!subscriptionFound) {
               console.warn('[Subscription] Nenhuma assinatura ativa encontrada para esta loja.');
               this.subscriptions.set([]);
+          } else {
+              // --- CRITICAL FIX: Load Permissions for the Found Plan ---
+              const activeSub = this.subscriptions()[0];
+              if (activeSub && activeSub.plan_id) {
+                  const { data: planPerms } = await supabase
+                      .from('plan_permissions')
+                      .select('permission_key')
+                      .eq('plan_id', activeSub.plan_id);
+                  
+                  if (planPerms && planPerms.length > 0) {
+                      const permSet = new Set<string>(planPerms.map((p: any) => p.permission_key as string));
+                      this.activeUserPermissions.set(permSet);
+                      console.log(`[Subscription] Permissões carregadas: ${permSet.size}`);
+                  }
+              }
           }
 
           // --- Carregar Planos e Limites ---
@@ -128,12 +146,14 @@ export class SubscriptionStateService {
           
           // Se achamos um dono ou loja, verificamos limites
           const targetUser = ownerId || storeId;
-          const { count } = await supabase
-            .from('stores')
-            .select('*', { count: 'exact', head: true })
-            .eq('owner_id', targetUser);
-            
-          this.ownerStoreCount.set(count || 1);
+          if (targetUser) {
+            const { count } = await supabase
+                .from('stores')
+                .select('*', { count: 'exact', head: true })
+                .eq('owner_id', targetUser);
+                
+            this.ownerStoreCount.set(count || 1);
+          }
           
       } catch (err) {
           console.error('[Subscription] Erro fatal ao verificar assinatura:', err);
