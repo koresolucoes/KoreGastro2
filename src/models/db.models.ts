@@ -89,6 +89,13 @@ export interface RecipeIfoodOptionGroup {
 }
 
 // --- Multi-Unit / Organizations ---
+export interface Store {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+}
+
 export interface UnitPermission {
   id: string;
   manager_id: string; // The logged in user

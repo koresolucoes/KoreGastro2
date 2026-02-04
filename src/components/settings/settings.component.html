@@ -13,7 +13,16 @@
                 [class.text-gray-300]="activeTab() !== 'empresa'"
                 [class.hover:bg-gray-700]="activeTab() !== 'empresa'">
           <span class="material-symbols-outlined">storefront</span>
-          <span class="font-medium">Loja e Assinatura</span>
+          <span class="font-medium">Dados da Empresa</span>
+        </button>
+        <button (click)="activeTab.set('stores')"
+                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
+                [class.bg-blue-600]="activeTab() === 'stores'"
+                [class.text-white]="activeTab() === 'stores'"
+                [class.text-gray-300]="activeTab() !== 'stores'"
+                [class.hover:bg-gray-700]="activeTab() !== 'stores'">
+          <span class="material-symbols-outlined">domain</span>
+          <span class="font-medium">Minhas Lojas</span>
         </button>
         <button (click)="activeTab.set('equipe')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
@@ -59,6 +68,9 @@
       @switch (activeTab()) {
         @case ('empresa') {
           <app-company-settings></app-company-settings>
+        }
+        @case ('stores') {
+          <app-store-management></app-store-management>
         }
         @case ('equipe') {
           <app-multi-unit-settings></app-multi-unit-settings>

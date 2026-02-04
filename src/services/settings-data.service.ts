@@ -47,17 +47,26 @@ export class SettingsDataService {
           return { success: false, message: error.message };
       }
       
-      return data as { success: boolean; message?: string; store_id?: string };
+      const response = data as { success: boolean; message?: string; store_id?: string };
+      return response;
+  }
+  
+  async deleteStore(storeId: string): Promise<{ success: boolean; message?: string }> {
+      const { data, error } = await supabase.rpc('delete_store', { target_store_id: storeId });
+      if (error) {
+          return { success: false, message: error.message };
+      }
+      return data as { success: boolean; message?: string };
   }
 
   async getStoreManagers(): Promise<{ data: StoreManager[]; error: any }> {
-    // This RPC uses auth.uid() implicitly in the DB function to filter permissions.
-    // However, if we want to manage permissions for the ACTIVE STORE, we might need a different approach 
-    // if 'auth.uid()' is the user but we want managers of 'activeUnitId'.
-    // Currently, `get_store_managers` assumes the logged in user IS the store owner/context for simplistic query.
-    // Ideally, for proper delegation, we should query unit_permissions where store_id = activeUnitId.
-    // But since the current RLS setup and `get_store_managers` might rely on auth.uid() being the store owner, 
-    // let's stick to the RPC for now as it's for the "Owner" managing their own store.
+    // Fetches managers for the CURRENT context (the store currently active)
+    // IMPORTANT: The backend RPC 'get_store_managers' currently uses auth.uid() as the filter.
+    // If we want managers for the ACTIVE unit (which might be different if I am a manager there),
+    // we need to adjust. However, standard flow is: Owner logs in -> Selects Store -> manages permissions.
+    // If the active unit ID != auth.uid() (delegated access), the current user might not have permission to list managers depending on role.
+    
+    // For now, assuming Owner context for management.
     const { data, error } = await supabase.rpc('get_store_managers');
     return { data: data as StoreManager[] || [], error };
   }

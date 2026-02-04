@@ -1,0 +1,115 @@
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-gray-800 rounded-lg p-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+      <div>
+        <h2 class="text-xl font-bold text-white">Minhas Lojas</h2>
+        <p class="text-gray-400 text-sm mt-1">Gerencie suas unidades e troque de contexto.</p>
+      </div>
+      <div class="flex items-center gap-4">
+        @if (ownerStoreCount() >= 0) {
+            <div class="text-sm bg-gray-700 px-3 py-1 rounded-full border border-gray-600">
+                <span class="text-gray-400">Plano:</span>
+                <span class="text-white font-semibold ml-1">
+                    {{ ownerStoreCount() }} / {{ maxStoresAllowed() }} lojas usadas
+                </span>
+            </div>
+        }
+        <button (click)="openCreateModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-sm transition-colors">
+            <span class="material-symbols-outlined text-lg">add_business</span>
+            Nova Loja
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store List -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    @for (store of stores(); track store.id) {
+        <div class="bg-gray-800 rounded-lg border-2 p-5 transition-all relative group" 
+             [class.border-blue-500]="activeStoreId() === store.id" 
+             [class.border-gray-700]="activeStoreId() !== store.id"
+             [class.hover:border-gray-600]="activeStoreId() !== store.id">
+            
+            <!-- Active Indicator -->
+            @if(activeStoreId() === store.id) {
+                <div class="absolute -top-3 left-4 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">
+                    ATIVA AGORA
+                </div>
+            }
+
+            <div class="flex justify-between items-start mb-4">
+                <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center text-white font-bold text-xl shadow-inner">
+                    {{ store.name.charAt(0).toUpperCase() }}
+                </div>
+                <div class="flex gap-2">
+                     @if (store.role === 'owner') {
+                         <button (click)="openEditModal(store)" class="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700 transition-colors" title="Editar Nome">
+                            <span class="material-symbols-outlined text-lg">edit</span>
+                        </button>
+                        <button (click)="deleteStore(store)" class="p-2 text-gray-400 hover:text-red-400 rounded-full hover:bg-gray-700 transition-colors" title="Excluir Loja">
+                            <span class="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                     }
+                </div>
+            </div>
+
+            <h3 class="text-lg font-bold text-white mb-1 truncate" [title]="store.name">{{ store.name }}</h3>
+            <p class="text-xs text-gray-400 mb-4 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">shield_person</span>
+                {{ store.role === 'owner' ? 'Proprietário' : 'Gestor Convidado' }}
+            </p>
+
+            <div class="mt-auto">
+                @if (activeStoreId() !== store.id) {
+                    <button (click)="switchToStore(store.id)" class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-colors border border-gray-600">
+                        Acessar Loja
+                    </button>
+                } @else {
+                    <button disabled class="w-full py-2 bg-blue-600/20 text-blue-300 rounded-lg text-sm font-semibold cursor-default border border-blue-500/30">
+                        Selecionada
+                    </button>
+                }
+            </div>
+        </div>
+    }
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+@if (isModalOpen()) {
+<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">{{ editingStore() ? 'Renomear Loja' : 'Criar Nova Loja' }}</h3>
+      <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="p-6">
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Loja</label>
+            <input type="text" [value]="storeNameInput()" (input)="storeNameInput.set($any($event.target).value)" (keydown.enter)="saveStore()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Filial Centro">
+        </div>
+
+        @if (!editingStore() && ownerStoreCount() >= maxStoresAllowed()) {
+            <div class="p-3 bg-red-900/30 border border-red-800 rounded-lg text-sm text-red-200 mb-4 flex items-start gap-2">
+                <span class="material-symbols-outlined text-lg">error</span>
+                <p>Você atingiu o limite de lojas do seu plano atual ({{ maxStoresAllowed() }}). Faça um upgrade para criar mais.</p>
+            </div>
+        }
+
+        <div class="flex justify-end gap-3 mt-6">
+            <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">Cancelar</button>
+            <button (click)="saveStore()" [disabled]="isSaving() || !storeNameInput().trim() || (!editingStore() && ownerStoreCount() >= maxStoresAllowed())" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                @if(isSaving()) {
+                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                }
+                <span>{{ editingStore() ? 'Salvar' : 'Criar' }}</span>
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+}

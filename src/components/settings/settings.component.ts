@@ -8,8 +8,9 @@ import { OperationSettingsComponent } from './operation-settings/operation-setti
 import { FunctionalitySettingsComponent } from './functionality-settings/functionality-settings.component';
 import { SecuritySettingsComponent } from './security-settings/security-settings.component';
 import { MultiUnitSettingsComponent } from './multi-unit-settings/multi-unit-settings.component';
+import { StoreManagementComponent } from './store-management/store-management.component';
 
-type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe';
+type SettingsTab = 'empresa' | 'stores' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe';
 
 @Component({
   selector: 'app-settings',
@@ -20,7 +21,8 @@ type SettingsTab = 'empresa' | 'cadastros' | 'funcionalidades' | 'seguranca' | '
     OperationSettingsComponent,
     FunctionalitySettingsComponent,
     SecuritySettingsComponent,
-    MultiUnitSettingsComponent
+    MultiUnitSettingsComponent,
+    StoreManagementComponent
   ],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
