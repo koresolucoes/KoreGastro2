@@ -6,7 +6,7 @@
     <!-- Vertical Navigation -->
     <div class="md:col-span-1">
       <nav class="space-y-2 sticky top-4">
-        <button (click)="activeTab.set('empresa')"
+        <button (click)="selectTab('empresa')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'empresa'"
                 [class.text-white]="activeTab() === 'empresa'"
@@ -15,7 +15,7 @@
           <span class="material-symbols-outlined">storefront</span>
           <span class="font-medium">Dados da Empresa</span>
         </button>
-        <button (click)="activeTab.set('stores')"
+        <button (click)="selectTab('stores')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'stores'"
                 [class.text-white]="activeTab() === 'stores'"
@@ -24,7 +24,7 @@
           <span class="material-symbols-outlined">domain</span>
           <span class="font-medium">Minhas Lojas</span>
         </button>
-        <button (click)="activeTab.set('equipe')"
+        <button (click)="selectTab('equipe')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'equipe'"
                 [class.text-white]="activeTab() === 'equipe'"
@@ -33,7 +33,7 @@
           <span class="material-symbols-outlined">group_add</span>
           <span class="font-medium">Gestão de Equipe</span>
         </button>
-        <button (click)="activeTab.set('cadastros')"
+        <button (click)="selectTab('cadastros')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'cadastros'"
                 [class.text-white]="activeTab() === 'cadastros'"
@@ -42,7 +42,7 @@
           <span class="material-symbols-outlined">database</span>
           <span class="font-medium">Cadastros</span>
         </button>
-        <button (click)="activeTab.set('funcionalidades')"
+        <button (click)="selectTab('funcionalidades')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'funcionalidades'"
                 [class.text-white]="activeTab() === 'funcionalidades'"
@@ -51,7 +51,7 @@
           <span class="material-symbols-outlined">extension</span>
           <span class="font-medium">Módulos e Integrações</span>
         </button>
-        <button (click)="activeTab.set('seguranca')"
+        <button (click)="selectTab('seguranca')"
                 class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
                 [class.bg-blue-600]="activeTab() === 'seguranca'"
                 [class.text-white]="activeTab() === 'seguranca'"

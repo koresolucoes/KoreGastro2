@@ -1,6 +1,7 @@
 
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 
 // Import new modular components
 import { CompanySettingsComponent } from './company-settings/company-settings.component';
@@ -28,5 +29,27 @@ type SettingsTab = 'empresa' | 'stores' | 'cadastros' | 'funcionalidades' | 'seg
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   activeTab = signal<SettingsTab>('empresa');
+
+  constructor() {
+    // Read initial tab from URL query params
+    const tabFromUrl = this.route.snapshot.queryParamMap.get('tab') as SettingsTab;
+    if (tabFromUrl && ['empresa', 'stores', 'cadastros', 'funcionalidades', 'seguranca', 'equipe'].includes(tabFromUrl)) {
+        this.activeTab.set(tabFromUrl);
+    }
+  }
+
+  selectTab(tab: SettingsTab) {
+    this.activeTab.set(tab);
+    // Update URL without reloading the page to persist state
+    this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: tab },
+        queryParamsHandling: 'merge', // keep other params if any
+        replaceUrl: true // don't clutter browser history
+    });
+  }
 }

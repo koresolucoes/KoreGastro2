@@ -108,8 +108,10 @@ export class UnitContextService {
     if (this.availableUnits().some(u => u.id === unitId)) {
         this.activeUnitId.set(unitId);
         localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
-        // Force a hard reload to ensure all services and subscriptions reset cleanly with the new ID
-        window.location.reload(); 
+        
+        // Removed hard reload. The application state services (SupabaseStateService) 
+        // are reactive to activeUnitId changes and will automatically refetch data.
+        // window.location.reload(); 
     }
   }
 }
