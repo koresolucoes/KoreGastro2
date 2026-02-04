@@ -42,11 +42,9 @@ export class StoreManagementComponent implements OnInit {
   isSaving = signal(false);
 
   ngOnInit() {
-      // Ensure latest data
-      const userId = this.authService.currentUser()?.id;
-      if (userId) {
-          this.subscriptionState.loadSubscriptionForUnit(this.activeStoreId() || userId);
-      }
+      // Logic removed: The SubscriptionStateService already has an effect that loads 
+      // subscription data whenever the active unit changes. Calling it here manually
+      // was causing a race condition/loop.
   }
 
   switchToStore(storeId: string) {
@@ -77,12 +75,6 @@ export class StoreManagementComponent implements OnInit {
       
       try {
           if (this.editingStore()) {
-              // Edit (Rename) - reusing updateCompanyProfile effectively updates store name in `stores` via trigger or we need a specific endpoint. 
-              // Currently `updateCompanyProfile` updates the `company_profile` table.
-              // Ideally, we should have a `updateStore` method. For V2, let's assume renaming company profile effectively renames the "display" name.
-              // But for correctness, let's just create a new store or assume renaming isn't fully implemented in DB layer for `stores` table yet without a specific RPC.
-              // Let's implement a simple update via company profile for now as it maps 1:1.
-              
               const { success, error } = await this.settingsDataService.updateCompanyProfile({ company_name: name });
               
               if (success) {

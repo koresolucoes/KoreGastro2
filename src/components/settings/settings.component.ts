@@ -1,7 +1,8 @@
 
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 // Import new modular components
 import { CompanySettingsComponent } from './company-settings/company-settings.component';
@@ -32,14 +33,21 @@ export class SettingsComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
+  // Use toSignal to reactively track query params
+  private queryParams = toSignal(this.route.queryParams);
   activeTab = signal<SettingsTab>('empresa');
 
   constructor() {
-    // Read initial tab from URL query params
-    const tabFromUrl = this.route.snapshot.queryParamMap.get('tab') as SettingsTab;
-    if (tabFromUrl && ['empresa', 'stores', 'cadastros', 'funcionalidades', 'seguranca', 'equipe'].includes(tabFromUrl)) {
-        this.activeTab.set(tabFromUrl);
-    }
+    effect(() => {
+        const params = this.queryParams();
+        const tabFromUrl = params?.['tab'] as SettingsTab;
+        if (tabFromUrl && ['empresa', 'stores', 'cadastros', 'funcionalidades', 'seguranca', 'equipe'].includes(tabFromUrl)) {
+            // Only update if different to avoid cycles
+            if (this.activeTab() !== tabFromUrl) {
+                this.activeTab.set(tabFromUrl);
+            }
+        }
+    });
   }
 
   selectTab(tab: SettingsTab) {

@@ -90,28 +90,30 @@ export class UnitContextService {
 
     // 4. Restore active unit from storage or default to own unit
     const storedUnitId = localStorage.getItem(ACTIVE_UNIT_KEY);
+    let targetId = storedUnitId;
     
-    if (storedUnitId && allUnits.some(u => u.id === storedUnitId)) {
-        this.activeUnitId.set(storedUnitId);
-    } else {
+    if (!targetId || !allUnits.some(u => u.id === targetId)) {
         // Default to the first available unit (usually the main store due to sort)
         if (allUnits.length > 0) {
-            this.activeUnitId.set(allUnits[0].id);
+            targetId = allUnits[0].id;
         } else {
             // Fallback for edge cases (should happen rarely if DB setup is correct)
-            this.activeUnitId.set(userId);
+            targetId = userId;
         }
+    }
+
+    // Only update if changed to prevent effect loops
+    if (this.activeUnitId() !== targetId) {
+        this.activeUnitId.set(targetId);
     }
   }
 
   setUnit(unitId: string) {
     if (this.availableUnits().some(u => u.id === unitId)) {
-        this.activeUnitId.set(unitId);
-        localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
-        
-        // Removed hard reload. The application state services (SupabaseStateService) 
-        // are reactive to activeUnitId changes and will automatically refetch data.
-        // window.location.reload(); 
+        if (this.activeUnitId() !== unitId) {
+            this.activeUnitId.set(unitId);
+            localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
+        }
     }
   }
 }
