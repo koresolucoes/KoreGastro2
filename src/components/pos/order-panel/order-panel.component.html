@@ -1,3 +1,4 @@
+
 <div class="flex flex-col h-full bg-gray-800 relative">
     @if (selectedTable(); as table) {
       <!-- Header -->
@@ -119,28 +120,37 @@
               <div class="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3">
                 <!-- Items already in order -->
                 @for (item of groupedOrderItems(); track (item.isGroup ? item.groupId : item.item.id)) {
-                  <div class="bg-gray-700/50 p-3 rounded-lg text-sm">
-                    <div class="flex justify-between items-start">
-                      <div>
-                        <p class="font-semibold text-white">{{ item.isGroup ? item.quantity + 'x ' + item.recipeName : item.item.quantity + 'x ' + item.item.name }}</p>
-                        @if (item.hasDiscount) {
-                          <p class="text-xs text-gray-400 line-through">{{ item.originalTotalPrice | currency:'BRL' }}</p>
-                        }
+                  @if (!isItemCancelled(item)) {
+                    <div class="bg-gray-700/50 p-3 rounded-lg text-sm relative group border border-transparent hover:border-gray-600">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <p class="font-semibold text-white">{{ item.isGroup ? item.quantity + 'x ' + item.recipeName : item.item.quantity + 'x ' + item.item.name }}</p>
+                          @if (item.hasDiscount) {
+                            <p class="text-xs text-gray-400 line-through">{{ item.originalTotalPrice | currency:'BRL' }}</p>
+                          }
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="font-bold text-white">{{ (item.isGroup ? item.totalPrice : item.item.price * item.item.quantity) | currency:'BRL' }}</span>
+                          <button (click)="openDiscountModal(item)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
+                          </button>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <span class="font-bold text-white">{{ (item.isGroup ? item.totalPrice : item.item.price * item.item.quantity) | currency:'BRL' }}</span>
-                        <button (click)="openDiscountModal(item)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
-                          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
-                        </button>
+                      <div class="text-xs mt-1" [class.text-yellow-400]="item.isGroup ? getOrderItemStatusClass(item.items[0].status) === 'text-yellow-400' : getOrderItemStatusClass(item.item.status) === 'text-yellow-400'">
+                        {{ item.isGroup ? item.items[0].status : item.item.status }}
                       </div>
+                      @if (item.isGroup ? item.items[0].notes : item.item.notes) {
+                        <p class="text-xs italic text-yellow-200 mt-1">"{{ item.isGroup ? item.items[0].notes : item.item.notes }}"</p>
+                      }
+                      <!-- Delete Button for Active Orders -->
+                      <button 
+                        (click)="initiateItemCancellation(item)" 
+                        class="absolute top-2 right-2 p-1 bg-red-900/80 text-red-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-800"
+                        title="Cancelar Item">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                      </button>
                     </div>
-                    <div class="text-xs mt-1" [class.text-yellow-400]="item.isGroup ? getOrderItemStatusClass(item.items[0].status) === 'text-yellow-400' : getOrderItemStatusClass(item.item.status) === 'text-yellow-400'">
-                      {{ item.isGroup ? item.items[0].status : item.item.status }}
-                    </div>
-                    @if (item.isGroup ? item.items[0].notes : item.item.notes) {
-                      <p class="text-xs italic text-yellow-200 mt-1">"{{ item.isGroup ? item.items[0].notes : item.item.notes }}"</p>
-                    }
-                  </div>
+                  }
                 }
                 <!-- Items in shopping cart -->
                 @for (item of shoppingCart(); track item.id) {
@@ -186,9 +196,10 @@
                   <button (click)="sendOrder()" [disabled]="shoppingCart().length === 0" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Enviar Pedido</button>
                   <button (click)="startCheckout()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors">Fechar Conta</button>
                 </div>
-                 <div class="grid grid-cols-2 gap-2 mt-2">
-                   <button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Mover Mesa</button>
-                   <button (click)="releaseTable.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Liberar Mesa</button>
+                 <div class="grid grid-cols-3 gap-2 mt-2">
+                   <button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Mover</button>
+                   <button (click)="releaseTable.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Liberar</button>
+                   <button (click)="initiateOrderCancellation()" class="w-full bg-red-900/80 text-red-200 font-medium py-2 rounded-lg hover:bg-red-800 transition-colors text-sm">Cancelar</button>
                  </div>
               </div>
             </div>
@@ -199,7 +210,7 @@
             </div>
         } @else {
             <div class="m-auto text-center text-gray-500">
-                <p>Carregando pedido...</p>
+                <p>Selecione uma mesa para começar.</p>
             </div>
         }
       </div>
@@ -235,28 +246,37 @@
               <!-- Cart Items -->
               <div class="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3">
                 @for (item of groupedOrderItems(); track (item.isGroup ? item.groupId : item.item.id)) {
-                  <div class="bg-gray-700/50 p-3 rounded-lg text-sm">
-                    <div class="flex justify-between items-start">
-                      <div>
-                        <p class="font-semibold text-white">{{ item.isGroup ? item.quantity + 'x ' + item.recipeName : item.item.quantity + 'x ' + item.item.name }}</p>
-                        @if (item.hasDiscount) {
-                          <p class="text-xs text-gray-400 line-through">{{ item.originalTotalPrice | currency:'BRL' }}</p>
-                        }
+                  @if (!isItemCancelled(item)) {
+                    <div class="bg-gray-700/50 p-3 rounded-lg text-sm relative group border border-transparent hover:border-gray-600">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <p class="font-semibold text-white">{{ item.isGroup ? item.quantity + 'x ' + item.recipeName : item.item.quantity + 'x ' + item.item.name }}</p>
+                          @if (item.hasDiscount) {
+                            <p class="text-xs text-gray-400 line-through">{{ item.originalTotalPrice | currency:'BRL' }}</p>
+                          }
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="font-bold text-white">{{ (item.isGroup ? item.totalPrice : item.item.price * item.item.quantity) | currency:'BRL' }}</span>
+                          <button (click)="openDiscountModal(item)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
+                          </button>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <span class="font-bold text-white">{{ (item.isGroup ? item.totalPrice : item.item.price * item.item.quantity) | currency:'BRL' }}</span>
-                        <button (click)="openDiscountModal(item)" class="text-gray-400 hover:text-white p-1" title="Aplicar desconto">
-                          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l5.854 5.853a1.5 1.5 0 010 2.122l-5.853 5.853a1.5 1.5 0 01-1.06.44H4.5A1.5 1.5 0 013 16.5v-13z" /><path d="M6.5 6.5a1 1 0 100-2 1 1 0 000 2z" /></svg>
-                        </button>
+                      <div class="text-xs mt-1" [class.text-yellow-400]="item.isGroup ? getOrderItemStatusClass(item.items[0].status) === 'text-yellow-400' : getOrderItemStatusClass(item.item.status) === 'text-yellow-400'">
+                        {{ item.isGroup ? item.items[0].status : item.item.status }}
                       </div>
+                      @if (item.isGroup ? item.items[0].notes : item.item.notes) {
+                        <p class="text-xs italic text-yellow-200 mt-1">"{{ item.isGroup ? item.items[0].notes : item.item.notes }}"</p>
+                      }
+                      <!-- Delete Button Mobile -->
+                      <button 
+                        (click)="initiateItemCancellation(item)" 
+                        class="absolute top-2 right-2 p-1 bg-red-900/80 text-red-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-800"
+                        title="Cancelar Item">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                      </button>
                     </div>
-                    <div class="text-xs mt-1" [class.text-yellow-400]="item.isGroup ? getOrderItemStatusClass(item.items[0].status) === 'text-yellow-400' : getOrderItemStatusClass(item.item.status) === 'text-yellow-400'">
-                      {{ item.isGroup ? item.items[0].status : item.item.status }}
-                    </div>
-                    @if (item.isGroup ? item.items[0].notes : item.item.notes) {
-                      <p class="text-xs italic text-yellow-200 mt-1">"{{ item.isGroup ? item.items[0].notes : item.item.notes }}"</p>
-                    }
-                  </div>
+                  }
                 }
                 @for (item of shoppingCart(); track item.id) {
                   <div class="bg-blue-900/40 p-3 rounded-lg text-sm border border-blue-800">
@@ -291,7 +311,7 @@
                   </div>
                 }
                 <div class="flex justify-between items-center text-2xl font-bold">
-                   <button (click)="openGlobalDiscountModal()" class="text-sm p-1 rounded-md hover:bg-gray-700">
+                  <button (click)="openGlobalDiscountModal()" class="text-sm p-1 rounded-md hover:bg-gray-700">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3.076A1.5 1.5 0 0110.5 2.25h3a1.5 1.5 0 011.432.826l.866 1.5a1.5 1.5 0 01-.284 1.776l-1.38 1.38A1.5 1.5 0 0113.5 8.25h-3a1.5 1.5 0 01-1.06-.44l-1.38-1.38a1.5 1.5 0 01-.285-1.776l.866-1.5zM9 12.75a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75zM9 16.5a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </button>
                   <span class="text-white">Total</span>
@@ -301,9 +321,10 @@
                   <button (click)="sendOrder()" [disabled]="shoppingCart().length === 0" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Enviar Pedido</button>
                   <button (click)="startCheckout()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors">Fechar Conta</button>
                 </div>
-                 <div class="grid grid-cols-2 gap-2 mt-2">
-                   <button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Mover Mesa</button>
-                   <button (click)="releaseTable.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Liberar Mesa</button>
+                 <div class="grid grid-cols-3 gap-2 mt-2">
+                   <button (click)="moveOrderClicked.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Mover</button>
+                   <button (click)="releaseTable.emit()" class="w-full bg-gray-600 text-white font-medium py-2 rounded-lg hover:bg-gray-500 transition-colors text-sm">Liberar</button>
+                   <button (click)="initiateOrderCancellation()" class="w-full bg-red-900/80 text-red-200 font-medium py-2 rounded-lg hover:bg-red-800 transition-colors text-sm">Cancelar</button>
                  </div>
               </div>
             </div>
@@ -413,3 +434,12 @@
     </div>
     }
 </div>
+
+<!-- Auth and Cancellation Modals -->
+@if (isManagerAuthModalOpen()) {
+  <app-manager-auth-modal (authorized)="handleManagerAuthorized($event)" (close)="isManagerAuthModalOpen.set(false)"></app-manager-auth-modal>
+}
+
+@if (isCancellationReasonModalOpen()) {
+  <app-cancellation-reason-modal [title]="cancellationModalTitle()" (confirm)="handleCancellationReasonConfirmed($event)" (close)="isCancellationReasonModalOpen.set(false)"></app-cancellation-reason-modal>
+}

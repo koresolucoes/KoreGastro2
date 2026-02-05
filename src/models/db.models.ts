@@ -1,4 +1,5 @@
 
+
 // --- Basic Types ---
 // FIX: Add WebhookEvent type for webhook service
 export type WebhookEvent =
@@ -10,7 +11,7 @@ export type WebhookEvent =
   | 'delivery.status_updated';
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
-export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO';
+export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO' | 'CANCELADO';
 export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de Caixa';
 export type DiscountType = 'percentage' | 'fixed_value';
 export type PurchaseOrderStatus = 'Rascunho' | 'Enviada' | 'Recebida';

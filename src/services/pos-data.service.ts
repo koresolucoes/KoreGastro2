@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -179,7 +180,7 @@ export class PosDataService {
             return;
         }
 
-        const allReady = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+        const allReady = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO' || i.status === 'CANCELADO');
         if (allReady) {
             if (order.delivery_status !== 'READY_FOR_DISPATCH') {
                 await this.deliveryDataService.updateDeliveryStatus(orderId, 'READY_FOR_DISPATCH');
@@ -228,7 +229,8 @@ export class PosDataService {
     const { data: items, error: fetchError } = await supabase
       .from('order_items')
       .select('*')
-      .eq('order_id', orderId);
+      .eq('order_id', orderId)
+      .neq('status', 'CANCELADO');
 
     if (fetchError) return { success: false, error: fetchError };
     
@@ -421,8 +423,11 @@ export class PosDataService {
         if (transactionError) console.error(`CRITICAL: Order ${orderId} finalized but failed to insert transactions.`, transactionError);
       }
 
-      if (updatedOrder.order_items) {
-         const deductionResult = await this.inventoryDataService.deductStockForOrderItems(updatedOrder.order_items, orderId);
+      // Filter out CANCELLED items before deducting stock
+      const itemsToDeduct = (updatedOrder.order_items || []).filter((i: OrderItem) => i.status !== 'CANCELADO');
+
+      if (itemsToDeduct.length > 0) {
+         const deductionResult = await this.inventoryDataService.deductStockForOrderItems(itemsToDeduct, orderId);
          if (!deductionResult.success) {
             console.error(`[POS Data Service] Stock deduction failed for order ${orderId}.`, deductionResult.error);
          } else if (deductionResult.warningMessage) {
@@ -439,6 +444,66 @@ export class PosDataService {
         console.error(`[POS Data Service] Post-payment processing failed for order ${orderId}.`, e);
         return { success: true, error: null };
     }
+  }
+
+  // --- Cancellation Methods ---
+
+  async cancelOrder(orderId: string, reason: string): Promise<{ success: boolean; error: any }> {
+    const formattedNotes = `CANCELAMENTO: ${reason}`;
+    const { error } = await supabase
+        .from('orders')
+        .update({ 
+            status: 'CANCELLED', 
+            completed_at: new Date().toISOString(),
+            notes: formattedNotes
+        })
+        .eq('id', orderId);
+        
+    return { success: !error, error };
+  }
+  
+  async cancelOrderItems(itemIds: string[], reason: string): Promise<{ success: boolean; error: any }> {
+      if (itemIds.length === 0) return { success: true, error: null };
+
+      // Append cancellation reason to current notes
+      // We can't easily append in one SQL query for multiple diverse items, so we'll just set it.
+      // Or cleaner: fetch, then update individually. For bulk efficiency, we'll try a simpler approach
+      // of setting status first. If we want detailed per-item notes appending, it's more complex.
+      // For this MVP, we will overwrite notes or prepend to them if we fetched them.
+      // Let's settle for updating status and a unified "CANCELADO: reason" note.
+
+      const updates = itemIds.map(id => ({
+          id,
+          status: 'CANCELADO' as OrderItemStatus,
+          notes: `CANCELADO: ${reason}`,
+          price: 0 // Refund price logic: usually canceled items shouldn't count towards total.
+      }));
+
+      const { error } = await supabase.from('order_items').upsert(updates);
+      
+      if (!error) {
+           // Also need to check if all items in the order are cancelled to auto-cancel order?
+           // Maybe later. For now just cancel items.
+           // Update local state immediately
+           this.posState.orders.update(orders => {
+               return orders.map(order => {
+                   const hasItem = order.order_items.some(i => itemIds.includes(i.id));
+                   if (!hasItem) return order;
+                   
+                   return {
+                       ...order,
+                       order_items: order.order_items.map(item => {
+                           if (itemIds.includes(item.id)) {
+                               return { ...item, status: 'CANCELADO', notes: `CANCELADO: ${reason}`, price: 0 };
+                           }
+                           return item;
+                       })
+                   };
+               });
+           });
+      }
+
+      return { success: !error, error };
   }
 
   // --- Hall and Table Management Methods ---
@@ -496,11 +561,6 @@ export class PosDataService {
   
   async updateTableCustomerCount(tableId: string, count: number): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('tables').update({ customer_count: count }).eq('id', tableId);
-    return { success: !error, error };
-  }
-
-  async cancelOrder(orderId: string): Promise<{ success: boolean; error: any }> {
-    const { error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId);
     return { success: !error, error };
   }
 

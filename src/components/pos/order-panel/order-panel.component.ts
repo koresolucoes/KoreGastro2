@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient } from '../../../models/db.models';
@@ -7,6 +8,8 @@ import { RecipeStateService } from '../../../services/recipe-state.service';
 import { InventoryStateService } from '../../../services/inventory-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ManagerAuthModalComponent } from '../../shared/manager-auth-modal/manager-auth-modal.component';
+import { CancellationReasonModalComponent } from '../cancellation-reason-modal/cancellation-reason-modal.component';
 
 interface CartItem {
     id: string;
@@ -22,9 +25,9 @@ interface GroupedOrderItem {
   recipeId: string;
   quantity: number;
   totalPrice: number;
+  originalTotalPrice: number;
   items: OrderItem[];
   hasDiscount: boolean;
-  originalTotalPrice: number;
 }
 
 interface SingleOrderItem {
@@ -39,7 +42,7 @@ type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
 @Component({
   selector: 'app-order-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ManagerAuthModalComponent, CancellationReasonModalComponent],
   templateUrl: './order-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -91,6 +94,12 @@ export class OrderPanelComponent {
   globalDiscountType = signal<DiscountType>('percentage');
   globalDiscountValue = signal<number | null>(null);
 
+  // Cancellation State
+  isManagerAuthModalOpen = signal(false);
+  isCancellationReasonModalOpen = signal(false);
+  pendingCancellationAction = signal<{ type: 'item' | 'order', item?: DisplayOrderItem } | null>(null);
+  cancellationModalTitle = signal('');
+
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
   hasCustomer = computed(() => !!this.currentOrder()?.customers);
@@ -110,9 +119,10 @@ export class OrderPanelComponent {
         quantities.set(item.recipe.id, (quantities.get(item.recipe.id) || 0) + item.quantity);
     }
     
-    // Items already in order
+    // Items already in order (excluding cancelled)
     const processedGroupIds = new Set<string>();
     for (const item of this.currentOrder()?.order_items || []) {
+        if (item.status === 'CANCELADO') continue;
         if (item.recipe_id) {
             if (item.group_id) {
                 if (!processedGroupIds.has(item.group_id)) {
@@ -142,6 +152,13 @@ export class OrderPanelComponent {
     const note = item.notes?.toLowerCase() ?? '';
     if (!note) return false;
     return this.criticalKeywords.some(keyword => note.includes(keyword));
+  }
+
+  isItemCancelled(item: DisplayOrderItem): boolean {
+    if ('items' in item) {
+        return item.items.every(i => i.status === 'CANCELADO');
+    }
+    return item.item.status === 'CANCELADO';
   }
   
   isAttentionAcknowledged(item: OrderItem): boolean {
@@ -201,26 +218,34 @@ export class OrderPanelComponent {
     return [...Array.from(grouped.values()), ...singles];
   });
   
-  orderSubtotal = computed(() => {
-    const currentItemsTotal = this.currentOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0;
-    const cartItemsTotal = this.shoppingCart().reduce((sum, item) => sum + (this.recipePrices().get(item.recipe.id)! * item.quantity), 0);
-    return currentItemsTotal + cartItemsTotal;
-  });
+  orderSubtotalBeforeDiscount = computed(() => 
+    this.currentOrder()?.order_items
+        .filter(item => item.status !== 'CANCELADO')
+        .reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0
+  );
   
   globalDiscountAmount = computed(() => {
     const order = this.currentOrder();
     if (!order || !order.discount_type || !order.discount_value) {
       return 0;
     }
-    const subtotal = this.orderSubtotal();
     if (order.discount_type === 'percentage') {
-      return subtotal * (order.discount_value / 100);
+      return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
     }
     return order.discount_value;
   });
 
+  orderSubtotal = computed(() => {
+    return this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount();
+  });
+  
   orderTotal = computed(() => {
-    return this.orderSubtotal() - this.globalDiscountAmount();
+      // Logic: If user clicks "Service Fee" toggle, apply 10%.
+      // Currently implemented via PreBillModal logic, but here we can calculate assuming simple subtotal.
+      // Or we assume standard flow: subtotal is what matters here.
+      // Actually, orderTotal should just be subtotal unless service fee logic is added to Order model or UI state.
+      // For now, return subtotal to be safe.
+      return this.orderSubtotal();
   });
 
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
@@ -245,10 +270,12 @@ export class OrderPanelComponent {
         }
     };
 
-    // 1. Ingredients already sent to kitchen
+    // 1. Ingredients already sent to kitchen (Active only)
     if (order) {
         const processedGroupIds = new Set<string>();
         for (const item of order.order_items) {
+            if (item.status === 'CANCELADO') continue;
+
             if (item.group_id) {
                 if (processedGroupIds.has(item.group_id)) continue;
                 processedGroupIds.add(item.group_id);
@@ -347,7 +374,7 @@ export class OrderPanelComponent {
     if (cartItem) {
         this.updateCartItemQuantity(cartItem.id, -1);
     } else {
-        this.notificationService.show("Não é possível remover itens já enviados para a cozinha a partir daqui.", 'warning');
+        this.notificationService.show("Não é possível remover itens já enviados para a cozinha a partir daqui. Use a lixeira no resumo do pedido.", 'warning');
     }
   }
 
@@ -428,6 +455,7 @@ export class OrderPanelComponent {
       case 'EM_PREPARO': return 'text-blue-400';
       case 'PRONTO': return 'text-green-400 font-bold';
       case 'AGUARDANDO': return 'text-gray-400';
+      case 'CANCELADO': return 'text-red-500 line-through';
       default: return 'text-gray-500';
     }
   }
@@ -516,7 +544,6 @@ export class OrderPanelComponent {
     const value = this.globalDiscountValue();
     const type = this.globalDiscountType();
     
-    // If value is 0 or null, it means we are removing the discount
     const finalValue = (value === null || value <= 0) ? null : value;
     const finalType = finalValue === null ? null : type;
 
@@ -532,4 +559,96 @@ export class OrderPanelComponent {
       await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
     }
   }
+
+  // --- Cancellation Methods ---
+  
+  checkManagerAuth(action: () => void) {
+    const employee = this.activeEmployee();
+    if (employee?.role === 'Gerente') {
+      action();
+    } else {
+      this.isManagerAuthModalOpen.set(true);
+    }
+  }
+
+  handleManagerAuthorized(manager: Employee) {
+    this.isManagerAuthModalOpen.set(false);
+    // Execute the pending action
+    const action = this.pendingCancellationAction();
+    if (action) {
+      if (action.type === 'item' && action.item) {
+        this.openItemCancellationReasonModal(action.item);
+      } else if (action.type === 'order') {
+        this.openOrderCancellationReasonModal();
+      }
+    }
+  }
+
+  initiateItemCancellation(item: DisplayOrderItem) {
+    this.pendingCancellationAction.set({ type: 'item', item });
+    this.checkManagerAuth(() => this.openItemCancellationReasonModal(item));
+  }
+
+  initiateOrderCancellation() {
+    this.pendingCancellationAction.set({ type: 'order' });
+    this.checkManagerAuth(() => this.openOrderCancellationReasonModal());
+  }
+
+  openItemCancellationReasonModal(item: DisplayOrderItem) {
+    const name = 'items' in item ? item.recipeName : item.item.name;
+    this.cancellationModalTitle.set(`Cancelar Item: ${name}`);
+    this.isCancellationReasonModalOpen.set(true);
+  }
+
+  openOrderCancellationReasonModal() {
+    const order = this.currentOrder();
+    const id = order ? `#${order.id.slice(0, 8)}` : '';
+    this.cancellationModalTitle.set(`Cancelar Pedido Completo ${id}`);
+    this.isCancellationReasonModalOpen.set(true);
+  }
+
+  async handleCancellationReasonConfirmed(reason: string) {
+    this.isCancellationReasonModalOpen.set(false);
+    const action = this.pendingCancellationAction();
+    
+    if (action?.type === 'item' && action.item) {
+        await this.cancelItem(action.item, reason);
+    } else if (action?.type === 'order') {
+        await this.cancelOrder(reason);
+    }
+    
+    this.pendingCancellationAction.set(null);
+  }
+
+  async cancelItem(item: DisplayOrderItem, reason: string) {
+    let itemIds: string[];
+    if ('items' in item) { // Grouped
+        itemIds = item.items.map(i => i.id);
+    } else { // Single
+        itemIds = [item.item.id];
+    }
+    
+    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason);
+    
+    if (success) {
+        this.notificationService.show('Item(ns) cancelado(s) com sucesso.', 'success');
+    } else {
+        this.notificationService.show(`Erro ao cancelar: ${error?.message}`, 'error');
+    }
+  }
+
+  async cancelOrder(reason: string) {
+    const order = this.currentOrder();
+    if (!order) return;
+
+    const { success, error } = await this.posDataService.cancelOrder(order.id, reason);
+    
+    if (success) {
+        this.notificationService.show('Pedido cancelado com sucesso.', 'success');
+        this.closePanel.emit();
+    } else {
+        this.notificationService.show(`Erro ao cancelar pedido: ${error?.message}`, 'error');
+    }
+  }
+
 }

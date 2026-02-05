@@ -1,0 +1,26 @@
+
+<div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="p-6 text-center">
+      <h3 class="text-xl font-bold text-white mb-2">Autorização Necessária</h3>
+      <p class="text-gray-400 mb-6">Apenas gerentes podem realizar esta ação. Digite seu PIN.</p>
+      
+      <div class="flex justify-center items-center gap-4 h-12 mb-6 text-4xl tracking-[1em]" [class.animate-pulse]="hasError()" [class.text-red-400]="hasError()" [class.text-white]="!hasError()">
+        {{ pinDisplay() }}
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        @for(digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track digit) {
+          <button (click)="handleInput(digit)" class="p-4 bg-gray-700 rounded-lg text-xl font-bold text-white hover:bg-gray-600 transition-colors">{{ digit }}</button>
+        }
+        <button (click)="clear()" class="p-4 bg-gray-700 rounded-lg text-sm font-semibold text-red-400 hover:bg-gray-600 transition-colors">C</button>
+        <button (click)="handleInput('0')" class="p-4 bg-gray-700 rounded-lg text-xl font-bold text-white hover:bg-gray-600 transition-colors">0</button>
+        <button (click)="deleteDigit()" class="p-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors flex items-center justify-center">
+          <span class="material-symbols-outlined">backspace</span>
+        </button>
+      </div>
+
+      <button (click)="close.emit()" class="w-full py-2 text-gray-400 hover:text-white transition-colors">Cancelar</button>
+    </div>
+  </div>
+</div>
