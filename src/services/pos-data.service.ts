@@ -521,14 +521,14 @@ export class PosDataService {
       // For this MVP, we will overwrite notes or prepend to them if we fetched them.
       // Let's settle for updating status and a unified "CANCELADO: reason" note.
 
-      const updates = itemIds.map(id => ({
-          id,
-          status: 'CANCELADO' as OrderItemStatus,
-          notes: `CANCELADO: ${reason}`,
-          price: 0 // Refund price logic: usually canceled items shouldn't count towards total.
-      }));
-
-      const { error } = await supabase.from('order_items').upsert(updates);
+      const { error } = await supabase
+        .from('order_items')
+        .update({ 
+            status: 'CANCELADO' as OrderItemStatus, 
+            notes: `CANCELADO: ${reason}`,
+            price: 0 // Refund price logic: usually canceled items shouldn't count towards total.
+        })
+        .in('id', itemIds);
       
       if (!error) {
            // Also need to check if all items in the order are cancelled to auto-cancel order?
