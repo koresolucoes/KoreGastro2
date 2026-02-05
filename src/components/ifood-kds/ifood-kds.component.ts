@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, untracked, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -598,7 +599,8 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       if (!apiSuccess) throw apiError;
       
       // The webhook will handle the DB update, but we can optimistically update to provide faster feedback.
-      const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id);
+      // Use details.reason here as the second argument
+      const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id, details.reason);
       if (!dbSuccess) throw dbError;
 
       this.notificationService.show(`Solicitação de cancelamento para #${order.ifood_display_id} enviada.`, 'success');
