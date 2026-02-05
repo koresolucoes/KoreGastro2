@@ -474,6 +474,18 @@ export class PosDataService {
 
   async cancelOrder(orderId: string, reason: string): Promise<{ success: boolean; error: any }> {
     const formattedNotes = `CANCELAMENTO: ${reason}`;
+    const userId = this.getActiveUnitId();
+
+    // 1. Fetch the order to get the table number
+    const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('table_number')
+        .eq('id', orderId)
+        .single();
+    
+    if (fetchError) return { success: false, error: fetchError };
+
+    // 2. Update Order Status
     const { error } = await supabase
         .from('orders')
         .update({ 
@@ -482,6 +494,19 @@ export class PosDataService {
             notes: formattedNotes
         })
         .eq('id', orderId);
+
+    if (error) return { success: false, error };
+
+    // 3. Free the table if it's a Dine-in order (table_number > 0)
+    if (order && order.table_number > 0 && userId) {
+        const { error: tableError } = await supabase
+            .from('tables')
+            .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
+            .eq('number', order.table_number)
+            .eq('user_id', userId);
+            
+        if (tableError) console.error("Failed to free table after cancellation:", tableError);
+    }
         
     return { success: !error, error };
   }
