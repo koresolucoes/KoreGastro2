@@ -24,6 +24,7 @@ interface BaseTicket {
   oldestTimestamp: string;
   orderType: OrderType;
   ifoodDisplayId?: string | null;
+  isOrderCancelled?: boolean; // Add cancelled flag
 }
 
 interface StationTicket extends BaseTicket {
@@ -45,6 +46,7 @@ type ProcessedOrderItem = OrderItem & {
   isHeld: boolean;
   timeToStart: number; // in seconds
   stationName?: string;
+  isCancelled?: boolean; // Add cancelled flag
 };
 
 @Component({
@@ -109,7 +111,9 @@ export class KdsComponent implements OnInit, OnDestroy {
                     if (!previouslyProcessed.has(item.id)) {
                         const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
                         if (isForThisView) {
-                            if (item.isCritical && !item.attention_acknowledged) {
+                            if (item.isCancelled) {
+                                this.soundNotificationService.playAllergyAlertSound(); // Urgent sound for cancellation
+                            } else if (item.isCritical && !item.attention_acknowledged) {
                                 this.soundNotificationService.playAllergyAlertSound();
                             } else {
                                 this.soundNotificationService.playNewOrderSound();
@@ -118,9 +122,9 @@ export class KdsComponent implements OnInit, OnDestroy {
                     }
                 }
                 
-                // 2. Check for newly late items
+                // 2. Check for newly late items (ignore if cancelled)
                 for (const item of allItems) {
-                    if (item.isLate && !previouslyLate.has(item.id)) {
+                    if (item.isLate && !item.isCancelled && !previouslyLate.has(item.id)) {
                          const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
                          if(isForThisView) {
                             this.soundNotificationService.playDelayedOrderSound();
@@ -156,49 +160,80 @@ export class KdsComponent implements OnInit, OnDestroy {
         const itemsByOrder = new Map<string, ProcessedOrderItem[]>();
 
         // 1. Group all relevant items by their order ID and process them
-        for (const order of this.posState.openOrders()) {
+        // Note: PosStateService.orders() now includes recently cancelled orders due to the Supabase query update
+        for (const order of this.posState.orders()) {
+            // Filter orders: Include OPEN, and CANCELLED (recent ones)
+            if (order.status !== 'OPEN' && order.status !== 'CANCELLED') continue;
+
+            const isOrderCancelled = order.status === 'CANCELLED';
+
             if (!itemsByOrder.has(order.id)) itemsByOrder.set(order.id, []);
             const orderItems = itemsByOrder.get(order.id)!;
 
             for (const item of order.order_items) {
+                // Ignore completed items for cancelled orders (unlikely but safe)
+                if (isOrderCancelled && (item.status === 'SERVIDO' || item.status === 'PRONTO')) {
+                    // Logic choice: Do we show cancelled orders that were already served? 
+                    // Usually no. We care about things currently being made.
+                    // But if the order was just cancelled, we might want to stop the line even if it was "Ready".
+                    // Let's assume if it's "SERVIDO", it's gone from KDS.
+                    if (item.status === 'SERVIDO') continue;
+                }
+
+                // If item is individually cancelled OR order is cancelled
+                const isItemCancelled = item.status === 'CANCELADO' || isOrderCancelled;
+                
+                // If cancelled, check if kitchen has acknowledged it
+                if (isItemCancelled && item.status_timestamps?.['CANCELLATION_ACKNOWLEDGED']) {
+                    continue; // Skip if already acknowledged/cleared
+                }
+
                 const recipe = recipesMap.get(item.recipe_id);
                 const prepTimeSecs = (recipe?.prep_time_in_minutes ?? 15) * 60;
-                const pendingTimestamp = new Date(item.status_timestamps?.['PENDENTE'] ?? item.created_at).getTime();
+                // Use PENDENTE timestamp, or created_at
+                const startTime = item.status_timestamps?.['PENDENTE'] ?? item.created_at;
+                const pendingTimestamp = new Date(startTime).getTime();
                 const elapsedTimeSeconds = Math.floor((now - pendingTimestamp) / 1000);
                 const percentage = prepTimeSecs > 0 ? (elapsedTimeSeconds / prepTimeSecs) * 100 : 0;
                 
                 let timerColor = 'text-green-300';
                 if (percentage > 50) timerColor = 'text-yellow-300';
                 if (percentage > 80) timerColor = 'text-red-300';
+                if (isItemCancelled) timerColor = 'text-gray-400'; // Cancelled items don't have active timers
                 
                 const note = item.notes?.toLowerCase() ?? '';
                 orderItems.push({
                     ...item,
                     elapsedTimeSeconds,
                     timerColor,
-                    isLate: elapsedTimeSeconds > prepTimeSecs,
+                    isLate: !isItemCancelled && elapsedTimeSeconds > prepTimeSecs,
                     isCritical: criticalKeywords.some(keyword => note.includes(keyword)),
                     prepTime: prepTimeSecs,
                     attention_acknowledged: !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'],
                     isHeld: false,
                     timeToStart: 0,
-                    stationName: stationsMap.get(item.station_id)
+                    stationName: stationsMap.get(item.station_id),
+                    isCancelled: isItemCancelled
                 });
             }
         }
 
-        // 2. Apply hold logic based on prep times for each order
+        // 2. Apply hold logic based on prep times for each order (Skipped for Cancelled items)
         const finalItems: ProcessedOrderItem[] = [];
         for (const orderItems of itemsByOrder.values()) {
             if (orderItems.length === 0) continue;
-
-            const longestPrepTime = Math.max(...orderItems.map(item => item.prepTime));
+            
+            // Only calculate hold times for non-cancelled items
+            const activeItems = orderItems.filter(i => !i.isCancelled);
+            const longestPrepTime = activeItems.length > 0 ? Math.max(...activeItems.map(item => item.prepTime)) : 0;
             
             for (const item of orderItems) {
-                const timeToStart = longestPrepTime - item.prepTime;
-                if (item.status === 'PENDENTE' && item.elapsedTimeSeconds < timeToStart) {
-                    item.isHeld = true;
-                    item.timeToStart = timeToStart - item.elapsedTimeSeconds;
+                if (!item.isCancelled) {
+                    const timeToStart = longestPrepTime - item.prepTime;
+                    if (item.status === 'PENDENTE' && item.elapsedTimeSeconds < timeToStart) {
+                        item.isHeld = true;
+                        item.timeToStart = timeToStart - item.elapsedTimeSeconds;
+                    }
                 }
                 finalItems.push(item);
             }
@@ -213,7 +248,7 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         const itemsForStation = this.allKdsItemsProcessed().filter(item => 
           item.station_id === station.id &&
-          (item.status === 'PENDENTE' || item.status === 'EM_PREPARO')
+          (item.status === 'PENDENTE' || item.status === 'EM_PREPARO' || item.isCancelled)
         );
         return this.groupItemsIntoTickets(itemsForStation);
     });
@@ -221,13 +256,17 @@ export class KdsComponent implements OnInit, OnDestroy {
     // Computed for Expo View
     expoViewTickets = computed<ExpoTicket[]>(() => {
         const allItems = this.allKdsItemsProcessed().filter(item => 
-          item.status === 'PENDENTE' || item.status === 'EM_PREPARO' || item.status === 'PRONTO'
+          item.status === 'PENDENTE' || item.status === 'EM_PREPARO' || item.status === 'PRONTO' || item.isCancelled
         );
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            const allOrderItems = this.posState.openOrders().find(o => o.id === ticket.orderId)?.order_items ?? [];
-            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO');
+            // Check readiness only if ticket is active
+            if (ticket.isOrderCancelled) {
+                return { ...ticket, isReadyForPickup: false };
+            }
+            const allOrderItems = this.posState.orders().find(o => o.id === ticket.orderId)?.order_items ?? [];
+            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO' || item.status === 'CANCELADO');
             return { ...ticket, isReadyForPickup };
         });
     });
@@ -247,7 +286,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         for (const [orderId, orderItems] of itemsByOrderId.entries()) {
             if (orderItems.length === 0) continue;
             
-            const order = this.posState.openOrders().find(o => o.id === orderId);
+            const order = this.posState.orders().find(o => o.id === orderId);
             if (!order) continue;
 
             orderItems.sort((a, b) => b.prepTime - a.prepTime);
@@ -264,6 +303,11 @@ export class KdsComponent implements OnInit, OnDestroy {
             let ticketTimerColor = 'bg-green-600';
             if (percentage > 50) ticketTimerColor = 'bg-yellow-600';
             if (percentage > 80) ticketTimerColor = 'bg-red-600';
+            
+            const isOrderCancelled = order.status === 'CANCELLED';
+            if (isOrderCancelled) {
+                ticketTimerColor = 'bg-red-800'; // Dark red for cancelled ticket header
+            }
 
             tickets.push({
                 orderId: order.id,
@@ -271,10 +315,11 @@ export class KdsComponent implements OnInit, OnDestroy {
                 items: orderItems,
                 ticketElapsedTime,
                 ticketTimerColor,
-                isTicketLate: ticketElapsedTime > avgPrepTime,
+                isTicketLate: !isOrderCancelled && ticketElapsedTime > avgPrepTime,
                 oldestTimestamp: new Date(oldestTimestamp).toISOString(),
                 orderType: order.order_type,
-                ifoodDisplayId: order.ifood_display_id
+                ifoodDisplayId: order.ifood_display_id,
+                isOrderCancelled
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
@@ -302,6 +347,17 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (!success) await this.notificationService.alert(`Erro ao confirmar ciência: ${error?.message}`);
         this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
     }
+
+    async acknowledgeCancellation(item: ProcessedOrderItem, event: MouseEvent) {
+        event.stopPropagation();
+        if (this.updatingItems().has(item.id)) return;
+
+        this.soundNotificationService.playConfirmationSound();
+        this.updatingItems.update(set => new Set(set).add(item.id));
+        const { success, error } = await this.posDataService.acknowledgeCancellation(item.id);
+        if (!success) await this.notificationService.alert(`Erro ao limpar cancelamento: ${error?.message}`);
+        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
+    }
     
     async markAsReady(item: OrderItem, event: MouseEvent) {
         event.stopPropagation();
@@ -324,7 +380,9 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     async updateStatus(item: OrderItem, forceStart = false, event?: MouseEvent) {
         event?.stopPropagation();
-        if (this.updatingItems().has(item.id) || ((item as ProcessedOrderItem).isHeld && !forceStart)) return;
+        const processedItem = item as ProcessedOrderItem;
+        if (processedItem.isCancelled) return; // Prevent status updates on cancelled items
+        if (this.updatingItems().has(item.id) || (processedItem.isHeld && !forceStart)) return;
 
         let nextStatus: OrderItemStatus;
         switch (item.status) {
@@ -351,7 +409,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     async markOrderAsServed(ticket: ExpoTicket) {
         if (this.updatingTickets().has(ticket.orderId)) return;
     
-        const order = this.posState.openOrders().find(o => o.id === ticket.orderId);
+        const order = this.posState.orders().find(o => o.id === ticket.orderId);
         if (!order) {
             await this.notificationService.alert('Erro: Pedido não encontrado.');
             return;
@@ -425,6 +483,7 @@ export class KdsComponent implements OnInit, OnDestroy {
       switch (status) {
         case 'PENDENTE': return 'border-yellow-500';
         case 'EM_PREPARO': return 'border-blue-500';
+        case 'CANCELADO': return 'border-red-600 bg-red-900/30';
         default: return 'border-gray-600';
       }
     }

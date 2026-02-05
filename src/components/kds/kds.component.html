@@ -1,5 +1,6 @@
 
 
+
 <div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -59,7 +60,7 @@
         <!-- Station View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 flex flex-col">
+            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-red-600]="ticket.isOrderCancelled" [class.border-gray-700]="!ticket.isOrderCancelled">
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
                 <div class="flex items-center gap-2">
                   @if (ticket.orderType.startsWith('iFood')) {
@@ -75,7 +76,12 @@
                     </svg>
                   </button>
                 </div>
-                <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                <div class="flex items-center gap-2">
+                    @if(ticket.isOrderCancelled) {
+                        <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded animate-pulse">Cancelado</span>
+                    }
+                    <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                </div>
               </div>
               <ul class="p-3 space-y-2 flex-1">
                 @for (item of ticket.items; track item.id) {
@@ -83,14 +89,14 @@
                       class="p-3 rounded-r-md transition-all relative cursor-pointer"
                       [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" 
                       [class.pointer-events-none]="updatingItems().has(item.id)"
-                      [class.border-l-4]="!item.isCritical"
-                      [class.border-l-8]="item.isCritical"
+                      [class.border-l-4]="!item.isCritical && !item.isCancelled"
+                      [class.border-l-8]="item.isCritical || item.isCancelled"
                       [class.bg-gray-700/50]="item.isHeld"
                       [class.border-gray-500]="item.isHeld"
-                      [class.bg-red-900/40]="!item.isHeld && item.isCritical"
-                      [class.border-red-500]="!item.isHeld && item.isCritical"
-                      [class.bg-blue-500/10]="!item.isHeld && !item.isCritical && item.status === 'EM_PREPARO'"
-                      [class.bg-yellow-500/10]="!item.isHeld && !item.isCritical && item.status === 'PENDENTE'"
+                      [class.bg-red-900/40]="!item.isHeld && (item.isCritical || item.isCancelled)"
+                      [class.border-red-500]="!item.isHeld && (item.isCritical || item.isCancelled)"
+                      [class.bg-blue-500/10]="!item.isHeld && !item.isCritical && !item.isCancelled && item.status === 'EM_PREPARO'"
+                      [class.bg-yellow-500/10]="!item.isHeld && !item.isCritical && !item.isCancelled && item.status === 'PENDENTE'"
                       [class]="!item.isHeld && !item.isCritical ? getItemStatusClass(item.status) : ''">
                     
                     @if(item.isHeld) {
@@ -103,21 +109,38 @@
                       </div>
                     }
 
-                    @if(item.isCritical) {
-                      <div class="flex items-center justify-between gap-2 mb-2 text-red-300">
-                        <div class="flex items-center gap-2">
-                          <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                          <span class="font-bold uppercase text-sm">Atenção</span>
-                        </div>
-                        @if(item.attention_acknowledged) {
-                          <span class="flex items-center gap-1 text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Ciente</span>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        @if(item.isCancelled) {
+                             <div class="flex items-center gap-2 text-red-400">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                <span class="font-bold uppercase text-sm">CANCELADO</span>
+                            </div>
+                        } @else if(item.isCritical) {
+                            <div class="flex items-center gap-2 text-red-300">
+                                <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                <span class="font-bold uppercase text-sm">Atenção</span>
+                                </div>
+                                @if(item.attention_acknowledged) {
+                                <span class="flex items-center gap-1 text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Ciente</span>
+                                }
+                            </div>
                         }
-                      </div>
-                    }
-                    <div class="flex justify-between items-center"><span class="font-bold text-lg text-white">{{ item.quantity }}x {{ item.name }}</span><span class="text-xs font-mono px-2 py-1 rounded" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'">{{ item.status.replace('_', ' ') }}</span></div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</span>
+                        <span class="text-xs font-mono px-2 py-1 rounded" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
+                            {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
+                        </span>
+                    </div>
                     @if (item.notes) { <p class="text-sm mt-1 italic" [class.text-red-300]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p> }
                     
-                    @if((item.isCritical && !item.attention_acknowledged) || (!item.isHeld && item.status !== 'PRONTO')) {
+                    @if(item.isCancelled) {
+                        <div class="mt-3 pt-3 border-t border-red-500/20">
+                             <button (click)="acknowledgeCancellation(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm">Ciente / Remover</button>
+                        </div>
+                    } @else if((item.isCritical && !item.attention_acknowledged) || (!item.isHeld && item.status !== 'PRONTO')) {
                       <div class="mt-3 pt-3 space-y-2" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-red-500/20' : 'border-t border-gray-600/50'">
                         @if(item.isCritical && !item.attention_acknowledged) {
                           <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Ciente da Atenção</button>
@@ -151,38 +174,45 @@
         <!-- Expo View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of expoViewTickets(); track ticket.orderId) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup" [class.border-gray-700]="!ticket.isReadyForPickup">
-              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor">
-                @if (ticket.orderType.startsWith('iFood')) {
-                  <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
-                } @else if (ticket.orderType === 'QuickSale') {
-                  <span>Caixa</span>
-                } @else {
-                  <span>Mesa {{ ticket.tableNumber }}</span>
-                }
+            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup && !ticket.isOrderCancelled" [class.border-gray-700]="!ticket.isReadyForPickup && !ticket.isOrderCancelled" [class.border-red-600]="ticket.isOrderCancelled">
+              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isOrderCancelled ? 'bg-red-800' : (ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor)">
+                <div class="flex items-center gap-2">
+                    @if (ticket.orderType.startsWith('iFood')) {
+                    <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                    } @else if (ticket.orderType === 'QuickSale') {
+                    <span>Caixa</span>
+                    } @else {
+                    <span>Mesa {{ ticket.tableNumber }}</span>
+                    }
+                    @if(ticket.isOrderCancelled) {
+                        <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded">Cancelado</span>
+                    }
+                </div>
                 <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               <ul class="p-3 space-y-2 flex-1">
                 @for (item of ticket.items; track item.id) {
                   <li class="p-2 rounded-md flex justify-between items-center gap-2" 
-                      [class.bg-blue-900/50]="item.status === 'EM_PREPARO'" 
-                      [class.bg-yellow-900/50]="item.status === 'PENDENTE'" 
-                      [class.bg-green-900/50]="item.status === 'PRONTO'"
-                      [class.bg-gray-700/50]="item.status !== 'EM_PREPARO' && item.status !== 'PENDENTE' && item.status !== 'PRONTO'">
+                      [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCancelled" 
+                      [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCancelled" 
+                      [class.bg-green-900/50]="item.status === 'PRONTO' && !item.isCancelled"
+                      [class.bg-red-900/40]="item.isCancelled"
+                      [class.bg-gray-700/50]="item.status !== 'EM_PREPARO' && item.status !== 'PENDENTE' && item.status !== 'PRONTO' && !item.isCancelled">
                     <div class="flex-1">
-                      <p class="font-semibold text-white">{{ item.quantity }}x {{ item.name }}</p>
+                      <p class="font-semibold text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</p>
                       <p class="text-xs text-gray-400 font-medium">{{ item.stationName }}</p>
                     </div>
                     <span class="text-xs font-mono px-2 py-1 rounded" 
                           [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" 
                           [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" 
-                          [class.bg-green-500/20]="item.status === 'PRONTO'" [class.text-green-300]="item.status === 'PRONTO'">
-                      {{ item.status.replace('_', ' ') }}
+                          [class.bg-green-500/20]="item.status === 'PRONTO'" [class.text-green-300]="item.status === 'PRONTO'"
+                          [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
+                      {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
                     </span>
                   </li>
                 }
               </ul>
-              @if(ticket.isReadyForPickup) {
+              @if(ticket.isReadyForPickup && !ticket.isOrderCancelled) {
                 <div class="p-2 border-t border-gray-700">
                   <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2">
                     @if(updatingTickets().has(ticket.orderId)) {
@@ -242,12 +272,19 @@
             <h4 class="font-semibold text-white mb-3">Itens do Pedido</h4>
             <ul class="space-y-3">
                 @for (item of ticket.items; track item.id) {
-                <li class="p-3 rounded-lg flex gap-4" [class.bg-red-900/40]="item.isCritical" [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCritical" [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCritical">
+                <li class="p-3 rounded-lg flex gap-4" [class.bg-red-900/40]="item.isCritical || item.isCancelled" [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCritical && !item.isCancelled" [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCritical && !item.isCancelled">
                   <div class="flex-1">
-                      @if(item.isCritical) {<div class="flex items-center gap-2 mb-2 text-red-300"><svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg><span class="font-bold uppercase text-sm">Atenção</span></div>}
-                      <p class="font-bold text-white">{{ item.quantity }}x {{ item.name }}</p>
+                      @if(item.isCancelled) {
+                        <div class="flex items-center gap-2 mb-2 text-red-400">
+                             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            <span class="font-bold uppercase text-sm">CANCELADO</span>
+                        </div>
+                      } @else if(item.isCritical) {
+                        <div class="flex items-center gap-2 mb-2 text-red-300"><svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg><span class="font-bold uppercase text-sm">Atenção</span></div>
+                      }
+                      <p class="font-bold text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</p>
                       @if(item.notes) { <p class="text-sm italic" [class.text-red-300]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p> }
-                      <p class="text-xs font-mono mt-1" [ngClass]="item.timerColor">{{ item.status.replace('_', ' ') }} - {{ formatTime(item.elapsedTimeSeconds) }}</p>
+                      <p class="text-xs font-mono mt-1" [ngClass]="item.timerColor">{{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }} - {{ formatTime(item.elapsedTimeSeconds) }}</p>
                   </div>
                   <div class="w-1/3 text-xs border-l border-gray-500 pl-4">
                     <p class="font-semibold text-gray-300 mb-1">Histórico do Item</p>

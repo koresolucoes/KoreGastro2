@@ -1,5 +1,4 @@
 
-
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -215,6 +214,31 @@ export class PosDataService {
     const newTimestamps = {
       ...currentItem.status_timestamps,
       'ATTENTION_ACKNOWLEDGED': new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('order_items')
+      .update({ status_timestamps: newTimestamps })
+      .eq('id', itemId);
+
+    return { success: !error, error };
+  }
+  
+  // NEW: Acknowledge Cancellation (clears item from KDS)
+  async acknowledgeCancellation(itemId: string): Promise<{ success: boolean; error: any }> {
+    const { data: currentItem, error: fetchError } = await supabase
+      .from('order_items')
+      .select('status_timestamps')
+      .eq('id', itemId)
+      .single();
+
+    if (fetchError) {
+      return { success: false, error: fetchError };
+    }
+
+    const newTimestamps = {
+      ...currentItem.status_timestamps,
+      'CANCELLATION_ACKNOWLEDGED': new Date().toISOString(),
     };
 
     const { error } = await supabase

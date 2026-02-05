@@ -228,9 +228,22 @@ export class SupabaseStateService {
     if (!userId) return;
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
+    // Calculate a recent window for cancelled orders (e.g., last 12 hours) to show on KDS
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+
     const [openOrdersRes, finishedIfoodOrdersRes] = await Promise.all([
-        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId),
-        supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').in('order_type', ['iFood-Delivery', 'iFood-Takeout']).in('status', ['COMPLETED', 'CANCELLED']).gte('completed_at', threeHoursAgo).eq('user_id', userId)
+        supabase.from('orders')
+            .select('*, order_items(*), customers(*), delivery_drivers(*)')
+            .eq('user_id', userId)
+            // Fetch OPEN orders OR CANCELLED orders from the last 12 hours
+            .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
+        
+        supabase.from('orders')
+            .select('*, order_items(*), customers(*), delivery_drivers(*)')
+            .in('order_type', ['iFood-Delivery', 'iFood-Takeout'])
+            .in('status', ['COMPLETED', 'CANCELLED'])
+            .gte('completed_at', threeHoursAgo)
+            .eq('user_id', userId)
     ]);
 
     if (!openOrdersRes.error) {
@@ -347,7 +360,8 @@ export class SupabaseStateService {
 
   private async refreshData(userId: string) {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+
     const [
       halls, tables, stations, categories, orders, employees, ingredients,
       ingredientCategories, suppliers, recipeIngredients, recipePreparations, promotions,
@@ -361,7 +375,13 @@ export class SupabaseStateService {
       supabase.from('tables').select('*').eq('user_id', userId),
       supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
       supabase.from('categories').select('*').eq('user_id', userId),
-      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId),
+      
+      // Fetch OPEN orders OR CANCELLED orders from the last 12 hours
+      supabase.from('orders')
+          .select('*, order_items(*), customers(*), delivery_drivers(*)')
+          .eq('user_id', userId)
+          .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
+
       supabase.from('employees').select('*').eq('user_id', userId),
       supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
       supabase.from('ingredient_categories').select('*').eq('user_id', userId),
@@ -486,9 +506,18 @@ export class SupabaseStateService {
   }
 
   private async refetchOrders() {
-    const userId = this.unitContextService.activeUnitId(); // Use context ID
+    // This is now redundant if the main refreshData handles status.
+    // However, if called separately, it should also include CANCELLED orders
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return;
-    const { data, error } = await supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('status', 'OPEN').eq('user_id', userId);
+    
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase.from('orders')
+        .select('*, order_items(*), customers(*), delivery_drivers(*)')
+        .eq('user_id', userId)
+        .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`);
+        
     if (!error) this.setOrdersWithPrices(data || []);
     else console.error('Error refetching orders:', error);
   }
