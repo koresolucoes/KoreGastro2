@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { LabelType } from '../models/db.models';
 import { DatePipe } from '@angular/common';
 
@@ -18,7 +18,8 @@ export interface LabelData {
   providedIn: 'root'
 })
 export class LabelPrintingService {
-  private datePipe = inject(DatePipe);
+  private locale = inject(LOCALE_ID);
+  private datePipe = new DatePipe(this.locale);
 
   // PVPS Color Standard (Segunda -> Domingo)
   private readonly DAY_COLORS: Record<number, string> = {
