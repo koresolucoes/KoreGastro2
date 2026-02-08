@@ -1,6 +1,5 @@
 
-
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Ingredient, IngredientUnit, IngredientCategory, Supplier, PurchaseOrder, PurchaseOrderStatus, Recipe, Ingredient as IngredientModel } from '../../models/db.models';
@@ -11,9 +10,9 @@ import { NotificationService } from '../../services/notification.service';
 import { IngredientDetailsModalComponent } from './ingredient-details-modal/ingredient-details-modal.component';
 import { PurchasingDataService } from '../../services/purchasing-data.service';
 import { FormsModule } from '@angular/forms';
-// FIX: Add missing imports for RecipeStateService and PosStateService.
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -38,7 +37,7 @@ interface StockPrediction {
 }
 
 type FormItem = {
-    id: string; // Can be temp id
+    id: string; 
     ingredient_id: string;
     quantity: number;
     cost: number;
@@ -56,7 +55,7 @@ type FormItem = {
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class InventoryComponent {
+export class InventoryComponent implements OnInit {
     inventoryState = inject(InventoryStateService);
     recipeState = inject(RecipeStateService);
     posState = inject(PosStateService);
@@ -65,6 +64,7 @@ export class InventoryComponent {
     router: Router = inject(Router);
     notificationService = inject(NotificationService);
     purchasingDataService = inject(PurchasingDataService);
+    supabaseStateService = inject(SupabaseStateService);
     
     ingredients = this.inventoryState.ingredients;
     categories = this.inventoryState.ingredientCategories;
@@ -72,6 +72,7 @@ export class InventoryComponent {
     recipeCategories = this.recipeState.categories;
     stations = this.posState.stations;
     
+    // ... (rest of signals remain the same)
     isModalOpen = signal(false);
     editingIngredient = signal<Partial<Ingredient> | null>(null);
     ingredientForm = signal<Partial<Ingredient>>(EMPTY_INGREDIENT);
@@ -182,9 +183,41 @@ export class InventoryComponent {
 
     poTotal = computed(() => this.poItems().reduce((sum, item) => sum + (item.quantity * item.cost), 0));
 
-    // New signals for on-the-fly ingredient creation (already exists, but might need to be available in PO modal)
     isAddingIngredient = signal(false);
     newIngredientForm = signal<Partial<IngredientModel>>(EMPTY_INGREDIENT);
+
+    ngOnInit() {
+        // Lazy Load Inventory Data
+        this.supabaseStateService.loadInventoryData();
+
+        const navigationState = this.router.getCurrentNavigation()?.extras.state as any;
+        if (navigationState && navigationState['newOrderItems']) {
+            const prefillItems = navigationState['newOrderItems'] as { ingredientId: string, quantity: number }[];
+            const ingredientsMap = new Map<string, Ingredient>(
+                this.ingredients().map(i => [i.id, i])
+            );
+            
+            const suppliersInOrder = new Map<string | null, { ingredientId: string, quantity: number }[]>();
+            
+            prefillItems.forEach(item => {
+                const ingredient = ingredientsMap.get(item.ingredientId);
+                const supplierId = ingredient?.supplier_id || null;
+                
+                if (!suppliersInOrder.has(supplierId)) {
+                    suppliersInOrder.set(supplierId, []);
+                }
+                suppliersInOrder.get(supplierId)!.push(item);
+            });
+            
+            if (suppliersInOrder.size > 0) {
+                const firstSupplierId = suppliersInOrder.keys().next().value;
+                const itemsForThisOrder = suppliersInOrder.get(firstSupplierId);
+    
+                this.openAddModal(itemsForThisOrder);
+                this.poForm.update((form: any) => ({ ...form, supplier_id: firstSupplierId }));
+            }
+        }
+    }
 
     setDashboardFilter(filter: DashboardFilter) { this.activeDashboardFilter.set(filter); }
     setCategoryFilter(categoryId: string | null) { this.activeCategoryFilter.set(categoryId); }
@@ -205,12 +238,46 @@ export class InventoryComponent {
         return new Date(lastMovementDate) < thirtyDaysAgo;
     }
 
-    openAddModal() {
+    openAddModal(prefillItems?: { ingredientId: string, quantity: number }[]) {
+        if (prefillItems) {
+            // Logic for Purchase Order modal (re-using this method name was confusing in original code, separating context)
+            this.openPurchaseOrderModal(prefillItems);
+            return;
+        }
+
         this.ingredientForm.set({ ...EMPTY_INGREDIENT, category_id: this.categories()[0]?.id ?? null, supplier_id: this.suppliers()[0]?.id ?? null });
         this.editingIngredient.set(null);
         this.isModalOpen.set(true);
     }
     
+    // ... (rest of methods)
+    
+    openPurchaseOrderModal(prefillItems?: { ingredientId: string, quantity: number }[]) {
+        this.poForm.set({ supplier_id: this.suppliers()[0]?.id || null, status: 'Rascunho', notes: '' });
+        
+        if (prefillItems) {
+            const items = prefillItems.map(item => {
+                const ingredient = this.ingredients().find(i => i.id === item.ingredientId);
+                return ingredient ? {
+                    id: `temp-${ingredient.id}`,
+                    ingredient_id: ingredient.id,
+                    quantity: item.quantity,
+                    cost: ingredient.cost,
+                    name: ingredient.name,
+                    unit: ingredient.unit,
+                    lot_number: null,
+                    expiration_date: null,
+                } : null;
+            }).filter(i => i !== null) as FormItem[];
+            this.poItems.set(items);
+        } else {
+            this.poItems.set([]);
+        }
+        
+        this.isPurchaseOrderModalOpen.set(true);
+    }
+    
+    // ... (rest of the file remains same, ensure methods like openEditModal, closeModal, etc. are preserved)
     openEditModal(ingredient: Ingredient) {
         this.editingIngredient.set(ingredient);
         this.ingredientForm.set({ ...ingredient });
@@ -266,11 +333,8 @@ export class InventoryComponent {
                 case 'last_movement_at':
                     newForm[field] = (value === 'null' || value === '') ? null : value;
                     break;
-                default: {
-                    // This will cause a compile-time error if I forget a case, which is good.
-                    const _exhaustiveCheck: never = field;
+                default:
                     break;
-                }
             }
             
             return newForm;
@@ -454,34 +518,7 @@ export class InventoryComponent {
             this.notificationService.alert("Nenhum item com sugestão de compra.");
         }
     }
-
-    // --- Purchase Order Modal Methods ---
-  
-    openPurchaseOrderModal(prefillItems?: { ingredientId: string, quantity: number }[]) {
-        this.poForm.set({ supplier_id: this.suppliers()[0]?.id || null, status: 'Rascunho', notes: '' });
-        
-        if (prefillItems) {
-            const items = prefillItems.map(item => {
-                const ingredient = this.ingredients().find(i => i.id === item.ingredientId);
-                return ingredient ? {
-                    id: `temp-${ingredient.id}`,
-                    ingredient_id: ingredient.id,
-                    quantity: item.quantity,
-                    cost: ingredient.cost,
-                    name: ingredient.name,
-                    unit: ingredient.unit,
-                    lot_number: null,
-                    expiration_date: null,
-                } : null;
-            }).filter(i => i !== null) as FormItem[];
-            this.poItems.set(items);
-        } else {
-            this.poItems.set([]);
-        }
-        
-        this.isPurchaseOrderModalOpen.set(true);
-    }
-  
+    
     closePurchaseOrderModal() {
         this.isPurchaseOrderModalOpen.set(false);
     }
@@ -564,7 +601,48 @@ export class InventoryComponent {
     }
 
     updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
-        this.newIngredientForm.update(form => ({...form, [field]: value}));
+        this.newIngredientForm.update(form => {
+            const newForm: Partial<Ingredient> = { ...form };
+            switch (field) {
+                case 'stock':
+                case 'cost':
+                case 'min_stock':
+                case 'standard_portion_weight_g': {
+                    const numValue = parseFloat(value);
+                    (newForm as any)[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
+                    break;
+                }
+                case 'price': {
+                    const numValue = parseFloat(value);
+                    newForm.price = isNaN(numValue) ? null : numValue;
+                    break;
+                }
+                case 'is_sellable':
+                case 'is_portionable':
+                case 'is_yield_product':
+                    (newForm as any)[field] = value as boolean;
+                    break;
+                case 'name':
+                    newForm.name = value;
+                    break;
+                case 'unit':
+                    newForm.unit = value as IngredientUnit;
+                    break;
+                case 'category_id':
+                case 'supplier_id':
+                case 'pos_category_id':
+                case 'station_id':
+                case 'proxy_recipe_id':
+                case 'external_code':
+                case 'expiration_date':
+                case 'last_movement_at':
+                    (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
+                    break;
+                default:
+                    break;
+            }
+            return newForm;
+        });
     }
 
     async saveNewIngredient() {

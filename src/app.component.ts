@@ -10,7 +10,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
 import { DemoService } from './services/demo.service';
-import { supabase } from './services/supabase-client';
 import { TopNavComponent } from './components/top-nav/top-nav.component';
 
 @Component({
@@ -21,7 +20,6 @@ import { TopNavComponent } from './components/top-nav/top-nav.component';
   imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent]
 })
 export class AppComponent implements OnInit {
-  // Inject services here to ensure they are initialized at the root level.
   authService = inject(AuthService);
   operationalAuthService = inject(OperationalAuthService);
   supabaseStateService = inject(SupabaseStateService);
@@ -32,7 +30,6 @@ export class AppComponent implements OnInit {
   isDemoMode = this.demoService.isDemoMode;
   
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
-  isSubscriptionLoading = this.subscriptionStateService.isLoading;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
   
   isTrialing = this.subscriptionStateService.isTrialing;
@@ -48,11 +45,9 @@ export class AppComponent implements OnInit {
   );
 
   isAuthLoading = computed(() => {
-    // In demo mode, loading is instantly finished as it's synchronous.
     if (this.isDemoMode()) {
       return false;
     }
-    // Otherwise, wait for both auth services to initialize.
     return !this.authService.authInitialized() || !this.operationalAuthService.operatorAuthInitialized();
   });
 
@@ -64,12 +59,12 @@ export class AppComponent implements OnInit {
     return (this.authService.currentUser() || this.isDemoMode()) && this.operationalAuthService.activeEmployee();
   });
   
-  // Combine data loading and subscription loading for the main spinner
+  // App is ready when Core Data is loaded. We don't block on subscription loading anymore 
+  // because core data load is fast and sufficient for initial paint.
   isAppReady = computed(() => {
-    return this.isDataLoaded() && !this.isSubscriptionLoading();
+    return this.isDataLoaded();
   });
 
   ngOnInit(): void {
-    // The token authentication logic has been moved to index.tsx to run before bootstrap.
   }
 }

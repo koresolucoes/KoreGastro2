@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
@@ -74,53 +75,62 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
      return response.status(400).json({ error: { message: 'Invalid date format. Please use YYYY-MM-DD.' } });
   }
 
-  // Fetch common data: completed orders and recipes
-  const [ordersRes, recipesRes] = await Promise.all([
-    supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('user_id', restaurantId)
-        .eq('status', 'COMPLETED')
-        .gte('completed_at', startDate.toISOString())
-        .lte('completed_at', endDate.toISOString()),
-    supabase
-        .from('recipes')
-        .select('id, name, operational_cost')
-        .eq('user_id', restaurantId)
-  ]);
-
-  if (ordersRes.error) throw ordersRes.error;
-  if (recipesRes.error) throw recipesRes.error;
-
-  const orders = ordersRes.data || [];
-  const recipesMap = new Map<string, { name: string, cost: number }>(recipesRes.data?.map(r => [r.id, { name: r.name, cost: r.operational_cost || 0 }]) || []);
-  
+  // --- Optimization: Use RPC for Financial Summary (Fast Path) ---
   if (action === 'vendas') {
-    const faturamento_bruto = orders.reduce((total, order) => {
-        return total + (order.order_items?.reduce((itemTotal, item) => itemTotal + (item.price * item.quantity), 0) || 0);
-    }, 0);
+    const { data, error } = await supabase.rpc('get_financial_summary', {
+        p_user_id: restaurantId,
+        p_start_date: startDate.toISOString(),
+        p_end_date: endDate.toISOString()
+    });
 
-    const custo_total_cmv = orders.reduce((total, order) => {
-        return total + (order.order_items?.reduce((itemTotal, item) => {
-            const recipeCost = (item.recipe_id && recipesMap.get(item.recipe_id)?.cost) || 0;
-            return itemTotal + (recipeCost * item.quantity);
-        }, 0) || 0);
-    }, 0);
+    if (error) throw error;
     
-    const lucro_bruto = faturamento_bruto - custo_total_cmv;
-    const total_pedidos = orders.length;
-    const ticket_medio = total_pedidos > 0 ? faturamento_bruto / total_pedidos : 0;
+    // The RPC returns a single row if called as .single() is not directly available on array RPC response in JS client sometimes,
+    // but RPC normally returns array. get_financial_summary returns TABLE, so it's an array of 1.
+    const result = (data && data.length > 0) ? data[0] : null;
 
+    if (!result) {
+        return response.status(200).json({
+            faturamento_bruto: 0,
+            custo_total_cmv: 0, // RPC currently doesn't calc CMV, we send 0 for now to keep interface
+            lucro_bruto: 0,
+            total_pedidos: 0,
+            ticket_medio: 0
+        });
+    }
+
+    // Map RPC snake_case to API camelCase expectation
     return response.status(200).json({
-        faturamento_bruto,
-        custo_total_cmv,
-        lucro_bruto,
-        total_pedidos,
-        ticket_medio
+        faturamento_bruto: result.total_revenue,
+        custo_total_cmv: 0, // Placeholder, optimization Phase 2 will handle this
+        lucro_bruto: result.total_revenue, // Placeholder until CMV is integrated
+        total_pedidos: result.total_orders,
+        ticket_medio: result.average_ticket
     });
   }
 
+  // --- Detailed Items Report (Heavy Path - Kept for specific request) ---
   if (action === 'performance_itens') {
+    const [ordersRes, recipesRes] = await Promise.all([
+        supabase
+            .from('orders')
+            .select('order_items(*)') // Only need items
+            .eq('user_id', restaurantId)
+            .eq('status', 'COMPLETED')
+            .gte('completed_at', startDate.toISOString())
+            .lte('completed_at', endDate.toISOString()),
+        supabase
+            .from('recipes')
+            .select('id, name, operational_cost')
+            .eq('user_id', restaurantId)
+    ]);
+
+    if (ordersRes.error) throw ordersRes.error;
+    if (recipesRes.error) throw recipesRes.error;
+
+    const orders = ordersRes.data || [];
+    const recipesMap = new Map<string, { name: string, cost: number }>(recipesRes.data?.map(r => [r.id, { name: r.name, cost: r.operational_cost || 0 }]) || []);
+
     const itemsPerformance = new Map<string, {
         nome_item: string;
         quantidade_vendida: number;

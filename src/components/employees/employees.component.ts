@@ -1,12 +1,13 @@
-import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee } from '../../models/db.models';
-// FIX: Import HrStateService to access HR-related data
 import { HrStateService } from '../../services/hr-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 import { EmployeeDetailsModalComponent } from './employee-details-modal/employee-details-modal.component';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-employees',
@@ -15,23 +16,20 @@ import { EmployeeDetailsModalComponent } from './employee-details-modal/employee
   templateUrl: './employees.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EmployeesComponent {
-  // FIX: Inject HrStateService
+export class EmployeesComponent implements OnInit {
   private hrState = inject(HrStateService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
+  private supabaseStateService = inject(SupabaseStateService);
 
   employees = computed(() => {
-    // FIX: Access roles from the correct state service
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-    // FIX: Access employees from the correct state service
     return this.hrState.employees().map(e => ({
       ...e,
       role: e.role_id ? rolesMap.get(e.role_id) || 'Cargo Excluído' : 'Sem Cargo'
     }));
   });
   
-  // FIX: Access roles from the correct state service
   roles = this.hrState.roles;
   employeeSearchTerm = signal('');
 
@@ -53,6 +51,10 @@ export class EmployeesComponent {
     if (!term) return this.employees();
     return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term));
   });
+
+  ngOnInit() {
+    this.supabaseStateService.loadHrData();
+  }
   
   openDetailsModal(employee: Employee & { role: string }) {
     this.selectedEmployeeForDetails.set(employee);
@@ -69,7 +71,6 @@ export class EmployeesComponent {
 
   openEditModal(e: Employee) {
     this.editingEmployee.set(e);
-    // Ensure bank_details is an object to avoid errors on the template
     this.employeeForm.set({ ...e, bank_details: e.bank_details || {} });
     this.photoFile.set(null);
     this.photoPreviewUrl.set(e.photo_url || null);

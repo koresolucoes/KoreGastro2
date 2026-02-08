@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee, Customer } from '../../models/db.models';
 
@@ -17,6 +18,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { PrintingService } from '../../services/printing.service';
 import { NotificationService } from '../../services/notification.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-pos',
@@ -34,7 +36,7 @@ import { NotificationService } from '../../services/notification.service';
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PosComponent {
+export class PosComponent implements OnInit {
   posState = inject(PosStateService);
   hrState = inject(HrStateService);
   posDataService = inject(PosDataService);
@@ -42,6 +44,7 @@ export class PosComponent {
   operationalAuthService = inject(OperationalAuthService);
   printingService = inject(PrintingService);
   notificationService = inject(NotificationService);
+  supabaseStateService = inject(SupabaseStateService);
   
   // Data Signals from State Service
   halls = this.posState.halls;
@@ -99,7 +102,6 @@ export class PosComponent {
   });
 
   constructor() {
-    // Effect to auto-select the first hall if none is selected
     effect(() => {
         const allHalls = this.halls();
         const currentHall = this.selectedHall();
@@ -114,8 +116,12 @@ export class PosComponent {
     });
   }
 
-  // --- Event Handlers from Child Components ---
+  ngOnInit() {
+    // Lazy Load POS Data
+    this.supabaseStateService.loadPosData();
+  }
 
+  // ... (Rest of the component remains unchanged)
   async handleTableClicked(table: Table) {
     if (this.isEditMode() || !this.activeEmployee()) return;
 
@@ -130,7 +136,6 @@ export class PosComponent {
         this.orderError.set(result.error?.message ?? 'Erro desconhecido ao criar pedido.');
         return;
       }
-      // Manually add the new order to the state to avoid waiting for refetch
       this.posState.orders.update(orders => [...orders, result.data!]);
     }
     
@@ -167,12 +172,12 @@ export class PosComponent {
   
   async moveOrder(destinationTable: Table) {
     const order = this.currentOrder();
-    const sourceTable = this.sourceTableForModals(); // Bug fix: use combined source
+    const sourceTable = this.sourceTableForModals();
     if (order && sourceTable && destinationTable) {
         await this.posDataService.moveOrderToTable(order, sourceTable, destinationTable);
         this.closeMoveModal();
         this.closeOrderPanel();
-        this.closeContextMenu(); // Ensure context menu is also closed
+        this.closeContextMenu();
     }
   }
   
@@ -203,15 +208,12 @@ export class PosComponent {
     }
   }
   
-  // --- UI State Changers ---
-  
   selectHall(hall: Hall) {
     this.selectedHall.set(hall);
     this.isContextMenuOpen.set(false);
   }
   
   openMoveModal() { 
-    // Logic from order panel or context menu ensures correct table is set before this is called
     this.isMoveModalOpen.set(true); 
     this.isContextMenuOpen.set(false); 
   }
@@ -225,7 +227,6 @@ export class PosComponent {
     this.closeContextMenu();
   }
 
-  // --- Customer Association ---
   async handleCustomerSelected(customer: Customer) {
     const order = this.currentOrder();
     if (order) {
