@@ -40,6 +40,9 @@ export class PaymentModalComponent {
   closeModal: OutputEmitterRef<boolean> = output<boolean>(); // Emits true to revert status
   paymentFinalized: OutputEmitterRef<void> = output<void>();
 
+  // Local cache of the order to persist data after it's completed (and removed from parent input)
+  lastKnownOrder = signal<Order | null>(null);
+
   splitMode = signal<'total' | 'item'>('total');
   paymentSuccess = signal(false);
   serviceFeeApplied = signal(true); // For 'total' mode
@@ -65,7 +68,7 @@ export class PaymentModalComponent {
   unassignedItems = signal<OrderItem[]>([]);
   selectedGroupId = signal<string | null>(null);
 
-  customer = computed(() => this.order()?.customers);
+  customer = computed(() => this.lastKnownOrder()?.customers);
 
   selectedGroup = computed(() => {
     if (this.splitMode() !== 'item') return null;
@@ -81,10 +84,10 @@ export class PaymentModalComponent {
     return this.serviceFeeApplied();
   });
   
-  orderSubtotalBeforeDiscount = computed(() => this.order()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
+  orderSubtotalBeforeDiscount = computed(() => this.lastKnownOrder()?.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) ?? 0);
 
   globalDiscountAmount = computed(() => {
-    const order = this.order();
+    const order = this.lastKnownOrder();
     if (!order || !order.discount_type || !order.discount_value) {
       return 0;
     }
@@ -158,17 +161,29 @@ export class PaymentModalComponent {
   });
 
   constructor() {
+    // Effect to keep lastKnownOrder updated as long as input order is valid
+    effect(() => {
+      const currentOrder = this.order();
+      if (currentOrder) {
+        this.lastKnownOrder.set(currentOrder);
+      }
+    }, { allowSignalWrites: true });
+
     effect(() => {
       this.splitMode(); // React to mode change
       this.resetPaymentState();
     });
 
     effect(() => {
-      const ord = this.order();
+      const ord = this.lastKnownOrder();
       if (this.splitMode() === 'item' && ord) {
-        this.itemGroups.set([]);
-        this.unassignedItems.set([...ord.order_items]);
-        this.selectedGroupId.set(null);
+        // Only re-initialize if we don't have groups yet, or if we switched modes.
+        // We rely on unassignedItems to track state, avoiding overwrite on every signal tick.
+        if (this.itemGroups().length === 0 && this.unassignedItems().length === 0) {
+            this.itemGroups.set([]);
+            this.unassignedItems.set([...ord.order_items]);
+            this.selectedGroupId.set(null);
+        }
       }
     });
 
@@ -292,7 +307,7 @@ export class PaymentModalComponent {
   }
 
   async finalizePayment() {
-    const order = this.order();
+    const order = this.lastKnownOrder();
     const table = this.table();
     if (!order || !table) return;
 
@@ -331,7 +346,8 @@ export class PaymentModalComponent {
   }
 
   printReceipt() {
-    const order = this.order();
+    // Use lastKnownOrder because 'order' input might be null after payment
+    const order = this.lastKnownOrder();
     const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
     if (order) {
       this.printingService.printCustomerReceipt(order, allPayments);
@@ -341,8 +357,6 @@ export class PaymentModalComponent {
   finishAndClose() {
       this.paymentFinalized.emit();
   }
-
-  // ... (rest of methods like selectGroup, assignItemToGroup, etc. remain unchanged)
 
   selectGroup(groupId: string) {
     const group = this.itemGroups().find(g => g.id === groupId);
@@ -409,7 +423,8 @@ export class PaymentModalComponent {
   }
   
   async emitNfce() {
-    const order = this.order();
+    // Use lastKnownOrder
+    const order = this.lastKnownOrder();
     if (!order) return;
     this.isEmittingNfce.set(true);
     const { success, error, data } = await this.focusNFeService.emitNfce(order.id);
@@ -423,7 +438,7 @@ export class PaymentModalComponent {
 
   // --- Global Discount Methods ---
   openGlobalDiscountModal() {
-    const order = this.order();
+    const order = this.lastKnownOrder();
     this.globalDiscountType.set(order?.discount_type || 'percentage');
     this.globalDiscountValue.set(order?.discount_value || null);
     this.isGlobalDiscountModalOpen.set(true);
@@ -434,7 +449,7 @@ export class PaymentModalComponent {
   }
 
   async saveGlobalDiscount() {
-    const order = this.order();
+    const order = this.lastKnownOrder();
     if (!order) return;
     
     const value = this.globalDiscountValue();
