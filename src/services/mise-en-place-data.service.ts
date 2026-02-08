@@ -1,3 +1,4 @@
+
 import { Injectable, inject } from '@angular/core';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -23,9 +24,9 @@ export class MiseEnPlaceDataService {
       .select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))')
       .eq('user_id', userId)
       .eq('plan_date', date)
-      .single();
+      .maybeSingle();
     
-    if (findError && findError.code !== 'PGRST116') { // PGRST116 = not found
+    if (findError) {
         console.error("Error finding production plan:", findError);
         return { success: false, error: findError, data: null };
     }
