@@ -1,0 +1,95 @@
+<div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">Gerar Etiqueta (ANVISA)</h3>
+      <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-6 flex-1 overflow-y-auto space-y-4">
+      <div class="bg-gray-900/50 p-4 rounded-lg text-center mb-4">
+        <p class="text-sm text-gray-400">Item</p>
+        <p class="text-lg font-bold text-white">{{ itemName() }}</p>
+      </div>
+
+      <!-- Settings -->
+      <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de Etiqueta</label>
+            <select [ngModel]="form().type" (ngModelChange)="updateType($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                <option value="OPENING">Abertura (Industrializado)</option>
+                <option value="PREPARED">Produção (Mise en Place)</option>
+                <option value="PORTION">Porcionamento</option>
+                <option value="DEFROST">Descongelamento</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Tamanho</label>
+            <select [ngModel]="printFormat()" (ngModelChange)="printFormat.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                <option value="standard">Padrão (60x40mm)</option>
+                <option value="compact">Compacto (40x25mm)</option>
+            </select>
+          </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Data Manipulação</label>
+             <input type="datetime-local" [ngModel]="form().manipulationDate" (ngModelChange)="updateField('manipulationDate', $event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+        </div>
+        <div>
+             <label class="block text-sm font-medium text-gray-300 mb-1">Validade</label>
+             <input type="datetime-local" [ngModel]="form().expirationDate" (ngModelChange)="updateField('expirationDate', $event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-bold text-yellow-300">
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="grid grid-cols-2 gap-4">
+         <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade / Peso</label>
+            <div class="flex gap-2">
+                 <input type="number" [ngModel]="form().quantity" (ngModelChange)="updateField('quantity', $event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                 <input type="text" [ngModel]="form().unit" (ngModelChange)="updateField('unit', $event)" class="w-16 bg-gray-700 border border-gray-600 rounded-lg px-2 py-2 text-white text-center">
+            </div>
+         </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Nº Lote (Opcional)</label>
+            <input type="text" [ngModel]="form().lotNumber" (ngModelChange)="updateField('lotNumber', $event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+         </div>
+      </div>
+
+      <div>
+         <label class="block text-sm font-medium text-gray-300 mb-1">Conservação</label>
+         <input type="text" [ngModel]="form().storageConditions" (ngModelChange)="updateField('storageConditions', $event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+      </div>
+      
+       <!-- Preview -->
+       <div class="mt-4 pt-4 border-t border-gray-600">
+           <p class="text-xs text-gray-400 mb-2">Pré-visualização (Cor do dia: <span [style.color]="dayColor()" class="font-bold">{{ dayName() }}</span>)</p>
+           <div class="border border-white bg-white text-black p-2 rounded w-full max-w-[250px] mx-auto text-xs">
+                <div [style.background-color]="dayColor()" class="text-center font-bold text-white p-1 mb-1">{{ dayName() }}</div>
+                <div class="font-bold text-center">{{ itemName() }}</div>
+                <div class="flex justify-between"><span>MANIP:</span><span>{{ form().manipulationDate | date:'dd/MM HH:mm' }}</span></div>
+                <div class="flex justify-between font-bold"><span>VAL:</span><span>{{ form().expirationDate | date:'dd/MM HH:mm' }}</span></div>
+                <div class="flex justify-between text-[10px]"><span>{{ form().quantity }}{{ form().unit }}</span><span>{{ responsibleName() }}</span></div>
+           </div>
+       </div>
+
+    </div>
+    
+    <div class="p-4 bg-gray-700/50 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+         <label class="text-sm text-gray-300">Cópias:</label>
+         <input type="number" [(ngModel)]="copies" min="1" max="50" class="w-16 bg-gray-600 text-white text-center rounded border border-gray-500">
+      </div>
+      <div class="flex gap-3">
+        <button (click)="close.emit()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+        <button (click)="print()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
+            <span class="material-symbols-outlined">print</span> Imprimir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

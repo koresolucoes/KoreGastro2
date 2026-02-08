@@ -1,3 +1,5 @@
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe, Ingredient } from '../../models/db.models';
@@ -11,13 +13,14 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
+import { LabelGeneratorModalComponent } from '../shared/label-generator-modal/label-generator-modal.component';
 
 type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user_id'>> & { task_type: 'recipe' | 'custom' };
 
 @Component({
   selector: 'app-mise-en-place',
   standalone: true,
-  imports: [CommonModule, MiseEnPlaceRecipeModalComponent],
+  imports: [CommonModule, MiseEnPlaceRecipeModalComponent, LabelGeneratorModalComponent],
   templateUrl: './mise-en-place.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -67,6 +70,10 @@ export class MiseEnPlaceComponent {
   // Recipe Modal State
   isRecipeModalOpen = signal(false);
   selectedTaskForRecipe = signal<ProductionTask | null>(null);
+  
+  // Label Modal State
+  isLabelModalOpen = signal(false);
+  selectedRecipeForLabel = signal<Recipe | null>(null);
 
   isManager = computed(() => this.activeEmployee()?.role === 'Gerente');
 
@@ -305,6 +312,18 @@ export class MiseEnPlaceComponent {
             const totalCost = this.getTaskCost(task);
             const { success, error } = await this.dataService.completeTask(task, lotNumber, totalCost);
             if (!success) throw error;
+
+            // Prompt for printing label
+            if (task.sub_recipe_id) {
+                const printLabel = await this.notificationService.confirm('Deseja imprimir a etiqueta de validade para este lote?');
+                if (printLabel) {
+                    const recipe = this.recipeState.recipes().find(r => r.id === task.sub_recipe_id);
+                    if (recipe) {
+                        this.selectedRecipeForLabel.set(recipe);
+                        this.isLabelModalOpen.set(true);
+                    }
+                }
+            }
         }
       }
     } catch (error: any) {

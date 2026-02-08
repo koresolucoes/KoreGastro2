@@ -1,5 +1,6 @@
 
 
+
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
@@ -62,218 +63,287 @@
     </div>
   </div>
   
-  <!-- AI Prediction Section -->
-  <div class="bg-gray-800 rounded-lg p-6 mb-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h2 class="text-xl font-semibold text-white">Análise e Previsão com IA</h2>
-            <p class="text-gray-400 mt-1 text-sm">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
-        </div>
-        <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
-          @if(isAnalyzingStock()) {
-            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span>Analisando...</span>
-          } @else {
-            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
-            <span>Analisar Estoque</span>
-          }
-        </button>
-    </div>
-    @if(stockPrediction(); as predictions) {
-      <div class="mt-4 pt-4 border-t border-gray-700">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-lg font-semibold text-white">Previsão para a Próxima Semana</h3>
-            <button (click)="generatePurchaseOrder()" [disabled]="!hasItemsToOrder()" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-green-500 transition-colors text-sm disabled:opacity-50">
-                Gerar Ordem de Compra
+  <!-- Tabs -->
+  <div class="mb-4 border-b border-gray-700">
+      <nav class="-mb-px flex space-x-6">
+          <button (click)="viewTab.set('inventory')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'inventory'" [class.text-white]="viewTab() === 'inventory'" [class.border-transparent]="viewTab() !== 'inventory'" [class.text-gray-400]="viewTab() !== 'inventory'">
+              Inventário
+          </button>
+          <button (click)="viewTab.set('labels')" (click)="loadLabelLogs()" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'labels'" [class.text-white]="viewTab() === 'labels'" [class.border-transparent]="viewTab() !== 'labels'" [class.text-gray-400]="viewTab() !== 'labels'">
+              Etiquetas (ANVISA)
+          </button>
+      </nav>
+  </div>
+  
+  @if (viewTab() === 'inventory') {
+
+      <!-- AI Prediction Section -->
+      <div class="bg-gray-800 rounded-lg p-6 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h2 class="text-xl font-semibold text-white">Análise e Previsão com IA</h2>
+                <p class="text-gray-400 mt-1 text-sm">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
+            </div>
+            <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+              @if(isAnalyzingStock()) {
+                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Analisando...</span>
+              } @else {
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+                <span>Analisar Estoque</span>
+              }
             </button>
         </div>
-        <div class="max-h-60 overflow-y-auto pr-2">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-gray-700/50 text-gray-300 uppercase sticky top-0"><tr>
-                <th class="px-4 py-2">Ingrediente</th>
-                <th class="px-4 py-2 text-center">Estoque Atual</th>
-                <th class="px-4 py-2 text-center">Uso Previsto</th>
-                <th class="px-4 py-2 text-center">Sugestão de Compra</th>
-            </tr></thead>
-            <tbody>@for(p of predictions; track p.ingredientId) {
-            <tr class="border-b border-gray-700">
-                <td class="px-4 py-2 font-medium text-white">{{p.ingredientName}}</td>
-                <td class="px-4 py-2 text-center text-gray-300">{{p.currentStock}} {{p.unit}}</td>
-                <td class="px-4 py-2 text-center text-yellow-300 font-medium">{{p.predictedUsage}} {{p.unit}}</td>
-                <td class="px-4 py-2 text-center text-blue-300 font-bold bg-gray-700/50">{{p.suggestedPurchase}} {{p.unit}}</td>
-            </tr>
-            }</tbody>
+        @if(stockPrediction(); as predictions) {
+          <div class="mt-4 pt-4 border-t border-gray-700">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-semibold text-white">Previsão para a Próxima Semana</h3>
+                <button (click)="generatePurchaseOrder()" [disabled]="!hasItemsToOrder()" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-green-500 transition-colors text-sm disabled:opacity-50">
+                    Gerar Ordem de Compra
+                </button>
+            </div>
+            <div class="max-h-60 overflow-y-auto pr-2">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-gray-700/50 text-gray-300 uppercase sticky top-0"><tr>
+                    <th class="px-4 py-2">Ingrediente</th>
+                    <th class="px-4 py-2 text-center">Estoque Atual</th>
+                    <th class="px-4 py-2 text-center">Uso Previsto</th>
+                    <th class="px-4 py-2 text-center">Sugestão de Compra</th>
+                </tr></thead>
+                <tbody>@for(p of predictions; track p.ingredientId) {
+                <tr class="border-b border-gray-700">
+                    <td class="px-4 py-2 font-medium text-white">{{p.ingredientName}}</td>
+                    <td class="px-4 py-2 text-center text-gray-300">{{p.currentStock}} {{p.unit}}</td>
+                    <td class="px-4 py-2 text-center text-yellow-300 font-medium">{{p.predictedUsage}} {{p.unit}}</td>
+                    <td class="px-4 py-2 text-center text-blue-300 font-bold bg-gray-700/50">{{p.suggestedPurchase}} {{p.unit}}</td>
+                </tr>
+                }</tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+
+      <!-- Search and Category Filters -->
+      <div class="mb-4 space-y-4">
+        <div class="relative">
+          <input 
+            type="text" 
+            [value]="searchTerm()" 
+            (input)="searchTerm.set($any($event.target).value)"
+            placeholder="Buscar ingrediente pelo nome..." 
+            class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg">
+            <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
+            <button (click)="setCategoryFilter(null)"
+                class="px-3 py-1 text-sm rounded-full transition-colors"
+                [class.bg-blue-600]="activeCategoryFilter() === null"
+                [class.text-white]="activeCategoryFilter() === null"
+                [class.bg-gray-700]="activeCategoryFilter() !== null"
+                [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
+                Todas
+            </button>
+            @for (category of categories(); track category.id) {
+                <button (click)="setCategoryFilter(category.id)"
+                    class="px-3 py-1 text-sm rounded-full transition-colors"
+                    [class.bg-blue-600]="activeCategoryFilter() === category.id"
+                    [class.text-white]="activeCategoryFilter() === category.id"
+                    [class.bg-gray-700]="activeCategoryFilter() !== category.id"
+                    [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
+                    {{ category.name }}
+                </button>
+            }
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-lg">
+        <!-- Desktop Table View -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-left min-w-max">
+            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+              <tr>
+                <th scope="col" class="px-6 py-3">Ingrediente</th>
+                <th scope="col" class="px-6 py-3">Estoque</th>
+                <th scope="col" class="px-6 py-3">Cód. Externo</th>
+                <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
+                <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
+                <th scope="col" class="px-6 py-3 text-center">Status</th>
+                <th scope="col" class="px-6 py-3 text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ingredient of filteredIngredients(); track ingredient.id) {
+                <tr (click)="openDetailsModal(ingredient)" class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150 cursor-pointer" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+                  <td class="px-6 py-4 font-medium text-white">
+                    <div>{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</div>
+                    <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
+                  </td>
+                  <td class="px-6 py-4">{{ ingredient.stock }} {{ ingredient.unit }}</td>
+                  <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ ingredient.external_code || '-' }}</td>
+                  <td class="px-6 py-4 text-right">{{ ingredient.cost | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-right font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</td>
+                  <td class="px-6 py-4 text-center">
+                    @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                      <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
+                    } @else {
+                      <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
+                    }
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <div (click)="$event.stopPropagation()">
+                      @if (ingredientPendingDeletion()?.id === ingredient.id) {
+                          <div class="flex gap-2 justify-center items-center">
+                              <span class="text-sm text-red-300">Certeza?</span>
+                              <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
+                              <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                          </div>
+                      } @else {
+                          <div class="flex gap-2 justify-center">
+                              <button (click)="openLabelModal(ingredient)" class="text-purple-400 hover:text-purple-300 font-medium text-sm p-2 rounded-md hover:bg-purple-500/10" title="Gerar Etiqueta"><span class="material-symbols-outlined text-lg">label</span></button>
+                              <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
+                              <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
+                              <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                          </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+               @if(filteredIngredients().length === 0) {
+                  <tr>
+                    <td colspan="8" class="text-center text-gray-500 py-16">
+                      Nenhum ingrediente encontrado com os filtros atuais.
+                    </td>
+                  </tr>
+               }
+            </tbody>
           </table>
         </div>
-      </div>
-    }
-  </div>
-
-
-  <!-- Search and Category Filters -->
-  <div class="mb-4 space-y-4">
-    <div class="relative">
-      <input 
-        type="text" 
-        [value]="searchTerm()" 
-        (input)="searchTerm.set($any($event.target).value)"
-        placeholder="Buscar ingrediente pelo nome..." 
-        class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-      </div>
-    </div>
-    <div class="flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg">
-        <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
-        <button (click)="setCategoryFilter(null)"
-            class="px-3 py-1 text-sm rounded-full transition-colors"
-            [class.bg-blue-600]="activeCategoryFilter() === null"
-            [class.text-white]="activeCategoryFilter() === null"
-            [class.bg-gray-700]="activeCategoryFilter() !== null"
-            [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
-            Todas
-        </button>
-        @for (category of categories(); track category.id) {
-            <button (click)="setCategoryFilter(category.id)"
-                class="px-3 py-1 text-sm rounded-full transition-colors"
-                [class.bg-blue-600]="activeCategoryFilter() === category.id"
-                [class.text-white]="activeCategoryFilter() === category.id"
-                [class.bg-gray-700]="activeCategoryFilter() !== category.id"
-                [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
-                {{ category.name }}
-            </button>
-        }
-    </div>
-  </div>
-
-  <div class="bg-gray-800 rounded-lg">
-    <!-- Desktop Table View -->
-    <div class="hidden md:block overflow-x-auto">
-      <table class="w-full text-left min-w-max">
-        <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
-          <tr>
-            <th scope="col" class="px-6 py-3">Ingrediente</th>
-            <th scope="col" class="px-6 py-3">Estoque</th>
-            <th scope="col" class="px-6 py-3">Cód. Externo</th>
-            <th scope="col" class="px-6 py-3 text-right">Custo Unit.</th>
-            <th scope="col" class="px-6 py-3 text-right">Custo Total</th>
-            <th scope="col" class="px-6 py-3 text-center">Status</th>
-            <th scope="col" class="px-6 py-3 text-center">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
+        
+        <!-- Mobile Card View -->
+        <div class="block md:hidden p-4 space-y-4">
           @for (ingredient of filteredIngredients(); track ingredient.id) {
-            <tr (click)="openDetailsModal(ingredient)" class="border-b border-gray-700 hover:bg-gray-700/40 transition-colors duration-150 cursor-pointer" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
-              <td class="px-6 py-4 font-medium text-white">
-                <div>{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</div>
-                <div class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
-              </td>
-              <td class="px-6 py-4">{{ ingredient.stock }} {{ ingredient.unit }}</td>
-              <td class="px-6 py-4 font-mono text-xs text-gray-400">{{ ingredient.external_code || '-' }}</td>
-              <td class="px-6 py-4 text-right">{{ ingredient.cost | currency:'BRL' }}</td>
-              <td class="px-6 py-4 text-right font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</td>
-              <td class="px-6 py-4 text-center">
-                @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
-                  <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
-                } @else {
-                  <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
-                }
-              </td>
-              <td class="px-6 py-4 text-center">
-                <div (click)="$event.stopPropagation()">
+            <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+              <!-- Top row: Name and Status -->
+              <div class="flex justify-between items-start">
+                  <div>
+                      <p class="font-semibold text-white">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</p>
+                      <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
+                  </div>
+                  @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                    <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
+                  } @else {
+                    <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
+                  }
+              </div>
+
+              <!-- Middle: Details Grid -->
+              <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
+                  <div>
+                      <p class="text-gray-400 text-xs">Estoque</p>
+                      <p class="text-white font-medium">{{ ingredient.stock }} {{ ingredient.unit }}</p>
+                  </div>
+                   <div>
+                      <p class="text-gray-400 text-xs">Custo Total</p>
+                      <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
+                  </div>
+                  <div>
+                      <p class="text-gray-400 text-xs">Cód. Externo</p>
+                      <p class="text-white font-mono text-xs">{{ ingredient.external_code || '-' }}</p>
+                  </div>
+                  <div>
+                      <p class="text-gray-400 text-xs">Últ. Mov.</p>
+                      <p class="text-white font-medium">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
+                  </div>
+              </div>
+
+              <!-- Bottom: Actions -->
+              <div (click)="$event.stopPropagation()" class="pt-3 border-t border-gray-600/50">
                   @if (ingredientPendingDeletion()?.id === ingredient.id) {
-                      <div class="flex gap-2 justify-center items-center">
+                      <div class="flex gap-2 justify-end items-center">
                           <span class="text-sm text-red-300">Certeza?</span>
                           <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
                           <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
                       </div>
                   } @else {
-                      <div class="flex gap-2 justify-center">
+                      <div class="flex gap-2 justify-end">
+                          <button (click)="openLabelModal(ingredient)" class="text-purple-400 hover:text-purple-300 font-medium text-sm p-1">
+                              <span class="material-symbols-outlined text-lg">label</span>
+                          </button>
                           <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
                           <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
                           <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
                       </div>
                   }
-                </div>
-              </td>
-            </tr>
+              </div>
+            </div>
           }
-           @if(filteredIngredients().length === 0) {
-              <tr>
-                <td colspan="8" class="text-center text-gray-500 py-16">
-                  Nenhum ingrediente encontrado com os filtros atuais.
-                </td>
-              </tr>
-           }
-        </tbody>
-      </table>
-    </div>
-    
-    <!-- Mobile Card View -->
-    <div class="block md:hidden p-4 space-y-4">
-      @for (ingredient of filteredIngredients(); track ingredient.id) {
-        <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
-          <!-- Top row: Name and Status -->
-          <div class="flex justify-between items-start">
-              <div>
-                  <p class="font-semibold text-white">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</p>
-                  <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
-              </div>
-              @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
-                <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
-              } @else {
-                <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
-              }
-          </div>
-
-          <!-- Middle: Details Grid -->
-          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
-              <div>
-                  <p class="text-gray-400 text-xs">Estoque</p>
-                  <p class="text-white font-medium">{{ ingredient.stock }} {{ ingredient.unit }}</p>
-              </div>
-               <div>
-                  <p class="text-gray-400 text-xs">Custo Total</p>
-                  <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
-              </div>
-              <div>
-                  <p class="text-gray-400 text-xs">Cód. Externo</p>
-                  <p class="text-white font-mono text-xs">{{ ingredient.external_code || '-' }}</p>
-              </div>
-              <div>
-                  <p class="text-gray-400 text-xs">Últ. Mov.</p>
-                  <p class="text-white font-medium">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
-              </div>
-          </div>
-
-          <!-- Bottom: Actions -->
-          <div (click)="$event.stopPropagation()" class="pt-3 border-t border-gray-600/50">
-              @if (ingredientPendingDeletion()?.id === ingredient.id) {
-                  <div class="flex gap-2 justify-end items-center">
-                      <span class="text-sm text-red-300">Certeza?</span>
-                      <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                      <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
-                  </div>
-              } @else {
-                  <div class="flex gap-2 justify-end">
-                      <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
-                      <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
-                      <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
-                  </div>
-              }
-          </div>
+          @if(filteredIngredients().length === 0) {
+            <div class="text-center text-gray-500 py-16">
+              Nenhum ingrediente encontrado com os filtros atuais.
+            </div>
+          }
         </div>
-      }
-      @if(filteredIngredients().length === 0) {
-        <div class="text-center text-gray-500 py-16">
-          Nenhum ingrediente encontrado com os filtros atuais.
-        </div>
-      }
-    </div>
-
-  </div>
+      </div>
+  
+  } @else {
+      <!-- Label Logs Tab -->
+      <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold text-white">Histórico de Etiquetas Geradas</h2>
+              <button (click)="openLabelModal(null)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                  <span class="material-symbols-outlined text-base">print</span>
+                  Nova Etiqueta Avulsa
+              </button>
+          </div>
+          
+          @if(labelLogs().length === 0) {
+              <p class="text-center text-gray-500 py-10">Nenhuma etiqueta gerada recentemente.</p>
+          } @else {
+              <div class="overflow-x-auto">
+                  <table class="w-full text-left text-sm text-gray-300">
+                      <thead class="text-xs uppercase bg-gray-700/50">
+                          <tr>
+                              <th class="px-4 py-3">Item</th>
+                              <th class="px-4 py-3">Tipo</th>
+                              <th class="px-4 py-3">Manipulação</th>
+                              <th class="px-4 py-3">Validade</th>
+                              <th class="px-4 py-3">Resp.</th>
+                              <th class="px-4 py-3">Lote</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          @for(log of labelLogs(); track log.id) {
+                              <tr class="border-b border-gray-700 hover:bg-gray-700/30">
+                                  <td class="px-4 py-3 font-medium text-white">{{ log.item_name }}</td>
+                                  <td class="px-4 py-3">
+                                      <span class="px-2 py-1 rounded text-xs font-bold" 
+                                        [class.bg-blue-900]="log.label_type === 'OPENING'" [class.text-blue-300]="log.label_type === 'OPENING'"
+                                        [class.bg-green-900]="log.label_type === 'PREPARED'" [class.text-green-300]="log.label_type === 'PREPARED'"
+                                        [class.bg-purple-900]="log.label_type === 'PORTION'" [class.text-purple-300]="log.label_type === 'PORTION'"
+                                        [class.bg-yellow-900]="log.label_type === 'DEFROST'" [class.text-yellow-300]="log.label_type === 'DEFROST'">
+                                          {{ log.label_type }}
+                                      </span>
+                                  </td>
+                                  <td class="px-4 py-3">{{ log.manipulation_date | date:'dd/MM/yy HH:mm' }}</td>
+                                  <td class="px-4 py-3 font-bold text-white">{{ log.expiration_date | date:'dd/MM/yy HH:mm' }}</td>
+                                  <td class="px-4 py-3">{{ log.employees?.name || '---' }}</td>
+                                  <td class="px-4 py-3 font-mono text-xs">{{ log.lot_number || '-' }}</td>
+                              </tr>
+                          }
+                      </tbody>
+                  </table>
+              </div>
+          }
+      </div>
+  }
 </div>
 
 <!-- Add/Edit Ingredient Modal -->
@@ -354,6 +424,21 @@
         <div>
             <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
             <input type="date" [value]="ingredientForm().expiration_date | date:'yyyy-MM-dd'" (input)="updateFormValue('expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Validade / Etiquetagem -->
+        <div class="pt-4 border-t border-gray-700">
+            <h4 class="text-md font-semibold text-white mb-3">Configuração de Validade (Etiquetagem)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Validade após aberto (dias)</label>
+                    <input type="number" [value]="ingredientForm().shelf_life_after_open_days ?? 3" (input)="updateFormValue('shelf_life_after_open_days', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                     <label class="block text-sm font-medium text-gray-300 mb-1">Condição de Armazenamento</label>
+                     <input type="text" [value]="ingredientForm().storage_conditions || 'Refrigerado'" (input)="updateFormValue('storage_conditions', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                </div>
+            </div>
         </div>
 
         <!-- Sellable Item Section -->
@@ -742,4 +827,13 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Label Generator Modal -->
+@if(isLabelModalOpen() && selectedLabelItem(); as item) {
+    <app-label-generator-modal 
+        [item]="item" 
+        [sourceType]="'INVENTORY'"
+        (close)="closeLabelModal()">
+    </app-label-generator-modal>
 }

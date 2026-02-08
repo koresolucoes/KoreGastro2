@@ -169,3 +169,12 @@
     (close)="closeRecipeModal()">
   </app-mise-en-place-recipe-modal>
 }
+
+<!-- Label Modal -->
+@if(isLabelModalOpen() && selectedRecipeForLabel(); as recipe) {
+    <app-label-generator-modal 
+        [item]="recipe" 
+        [sourceType]="'RECIPE'"
+        (close)="isLabelModalOpen.set(false)">
+    </app-label-generator-modal>
+}

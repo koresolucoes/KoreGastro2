@@ -1,8 +1,10 @@
 
+
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { Ingredient, IngredientUnit, IngredientCategory, Supplier, PurchaseOrder, PurchaseOrderStatus, Recipe, Ingredient as IngredientModel } from '../../models/db.models';
+import { Ingredient, IngredientUnit, IngredientCategory, Supplier, PurchaseOrder, PurchaseOrderStatus, Recipe, Ingredient as IngredientModel, LabelLog } from '../../models/db.models';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { AiRecipeService } from '../../services/ai-recipe.service';
@@ -13,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { LabelGeneratorModalComponent } from '../shared/label-generator-modal/label-generator-modal.component';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -22,7 +25,9 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
     min_stock: 0,
     is_portionable: false,
     is_yield_product: false,
-    standard_portion_weight_g: null
+    standard_portion_weight_g: null,
+    shelf_life_after_open_days: 3,
+    storage_conditions: 'Refrigerado (0º a 5ºC)'
 };
 
 type DashboardFilter = 'all' | 'low_stock' | 'expiring_soon' | 'stagnant';
@@ -51,7 +56,7 @@ type FormItem = {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink, FormsModule],
+  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink, FormsModule, LabelGeneratorModalComponent],
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,6 +77,10 @@ export class InventoryComponent implements OnInit {
     recipeCategories = this.recipeState.categories;
     stations = this.posState.stations;
     
+    // View State
+    viewTab = signal<'inventory' | 'labels'>('inventory');
+    labelLogs = signal<LabelLog[]>([]);
+
     // ... (rest of signals remain the same)
     isModalOpen = signal(false);
     editingIngredient = signal<Partial<Ingredient> | null>(null);
@@ -100,6 +109,10 @@ export class InventoryComponent implements OnInit {
     // Ingredient Details Modal State
     isDetailsModalOpen = signal(false);
     selectedIngredientForDetails = signal<Ingredient | null>(null);
+    
+    // Label Modal
+    isLabelModalOpen = signal(false);
+    selectedLabelItem = signal<Ingredient | null>(null);
 
     // --- Purchase Order Modal State ---
     isPurchaseOrderModalOpen = signal(false);
@@ -294,6 +307,26 @@ export class InventoryComponent implements OnInit {
         this.selectedIngredientForDetails.set(ingredient);
         this.isDetailsModalOpen.set(true);
     }
+    
+    // LABEL MODAL METHODS
+    openLabelModal(ingredient: Ingredient | null) {
+        this.selectedLabelItem.set(ingredient);
+        this.isLabelModalOpen.set(true);
+    }
+    
+    closeLabelModal() {
+        this.isLabelModalOpen.set(false);
+        this.selectedLabelItem.set(null);
+        // Refresh logs if tab is active
+        if (this.viewTab() === 'labels') {
+            this.loadLabelLogs();
+        }
+    }
+    
+    async loadLabelLogs() {
+        const { data, error } = await this.inventoryDataService.getLabelLogs();
+        if(!error) this.labelLogs.set(data);
+    }
 
     updateFormValue(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
         this.ingredientForm.update(form => {
@@ -302,7 +335,8 @@ export class InventoryComponent implements OnInit {
             switch (field) {
                 case 'stock':
                 case 'cost':
-                case 'min_stock': {
+                case 'min_stock':
+                case 'shelf_life_after_open_days': {
                     const numValue = parseFloat(value);
                     newForm[field] = isNaN(numValue) ? 0 : numValue;
                     break;
@@ -319,7 +353,8 @@ export class InventoryComponent implements OnInit {
                     newForm[field] = value as boolean;
                     break;
                 case 'name':
-                    newForm.name = value;
+                case 'storage_conditions':
+                    newForm[field] = value;
                     break;
                 case 'unit':
                     newForm.unit = value as IngredientUnit;
@@ -358,6 +393,7 @@ export class InventoryComponent implements OnInit {
         else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
     }
 
+    // ... (rest of existing adjustment/PO logic) ...
     openAdjustmentModal(ingredient: Ingredient) {
         this.adjustmentIngredient.set(ingredient);
         this.adjustmentQuantity.set(0);

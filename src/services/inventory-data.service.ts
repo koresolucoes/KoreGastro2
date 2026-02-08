@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem } from '../models/db.models';
+import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem, LabelLog } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { RecipeStateService } from './recipe-state.service';
@@ -26,6 +26,8 @@ export class InventoryDataService {
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
   }
+
+  // ... existing methods ...
 
   async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
     const userId = this.getActiveUnitId();
@@ -102,7 +104,8 @@ export class InventoryDataService {
     const { error } = await supabase.from('ingredients').update(updateData).eq('id', id!);
     return { success: !error, error };
   }
-
+  
+  // ... existing createOrUpdateProxyRecipe ...
   private async createOrUpdateProxyRecipe(ingredient: Ingredient): Promise<{ success: boolean, error: any, proxyRecipeId?: string }> {
      if (!ingredient.price || ingredient.price <= 0) {
         return { success: false, error: { message: 'Preço de venda deve ser definido para um item vendável.' } };
@@ -153,6 +156,7 @@ export class InventoryDataService {
       return { success: true, error: null, proxyRecipeId: recipe!.id };
   }
 
+  // ... existing deleteIngredient ...
   async deleteIngredient(id: string): Promise<{ success: boolean; error: any }> {
     const { data: ingredient, error: fetchError } = await supabase.from('ingredients').select('proxy_recipe_id').eq('id', id).single();
     if(fetchError) return { success: false, error: fetchError };
@@ -164,8 +168,9 @@ export class InventoryDataService {
     const { error } = await supabase.from('ingredients').delete().eq('id', id);
     return { success: !error, error };
   }
-  
-  async adjustIngredientStock(params: {
+
+  // ... existing adjustIngredientStock ...
+   async adjustIngredientStock(params: {
     ingredientId: string;
     quantityChange: number;
     reason: string;
@@ -223,6 +228,7 @@ export class InventoryDataService {
     return { success: true, error: null };
   }
 
+  // ... existing category / supplier CRUD ...
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
@@ -257,8 +263,9 @@ export class InventoryDataService {
     const { error } = await supabase.from('suppliers').delete().eq('id', id);
     return { success: !error, error };
   }
-
-  async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null): Promise<{ success: boolean; error: any }> {
+  
+  // ... existing adjustStockForProduction ...
+    async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -300,7 +307,8 @@ export class InventoryDataService {
     }
   }
 
-  async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
+  // ... existing deductStockForOrderItems ...
+   async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -358,7 +366,7 @@ export class InventoryDataService {
                 .select('id, quantity')
                 .eq('station_id', stationId)
                 .eq('ingredient_id', ingredientId)
-                .maybeSingle(); // Changed from single() to maybeSingle() to handle missing rows without error 406
+                .maybeSingle(); 
             
             const currentStationQty = stationStockData?.quantity || 0;
 
@@ -423,7 +431,8 @@ export class InventoryDataService {
     }
   }
 
-  async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
+  // ... existing calculateIngredientUsageForPeriod ...
+   async calculateIngredientUsageForPeriod(startDate: Date, endDate: Date): Promise<Map<string, number>> {
     const userId = this.getActiveUnitId();
     if (!userId) return new Map();
 
@@ -470,5 +479,35 @@ export class InventoryDataService {
       }
     }
     return usageMap;
+  }
+  
+  // --- NEW: Labeling Methods ---
+  
+  async logLabelCreation(labelData: Partial<LabelLog>): Promise<{ success: boolean; error: any }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+      const { error } = await supabase
+          .from('label_logs')
+          .insert({
+              ...labelData,
+              user_id: userId
+          });
+          
+      return { success: !error, error };
+  }
+
+  async getLabelLogs(limit = 50): Promise<{ data: LabelLog[]; error: any }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { data: [], error: { message: 'Active unit not found' } };
+
+      const { data, error } = await supabase
+          .from('label_logs')
+          .select('*, employees(name)')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+          
+      return { data: data || [], error };
   }
 }

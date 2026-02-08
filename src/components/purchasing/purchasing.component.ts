@@ -298,9 +298,11 @@ export class PurchasingComponent implements OnInit {
                 case 'stock':
                 case 'cost':
                 case 'min_stock':
-                case 'standard_portion_weight_g': {
+                case 'standard_portion_weight_g': 
+                case 'shelf_life_after_open_days': {
                     const numValue = parseFloat(value);
-                    (newForm as any)[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
+                    const isNullable = field === 'standard_portion_weight_g' || field === 'shelf_life_after_open_days';
+                    (newForm as any)[field] = isNaN(numValue) ? (isNullable ? null : 0) : numValue;
                     break;
                 }
                 case 'price': {
@@ -327,6 +329,7 @@ export class PurchasingComponent implements OnInit {
                 case 'external_code':
                 case 'expiration_date':
                 case 'last_movement_at':
+                case 'storage_conditions':
                     (newForm as any)[field] = (value === 'null' || value === '') ? null : value;
                     break;
                 default: {

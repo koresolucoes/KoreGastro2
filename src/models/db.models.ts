@@ -26,6 +26,7 @@ export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Take
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
+export type LabelType = 'OPENING' | 'PREPARED' | 'PORTION' | 'DEFROST' | 'GENERIC';
 
 
 // --- New Types for Settings ---
@@ -217,6 +218,9 @@ export interface Ingredient {
   is_portionable: boolean;
   is_yield_product: boolean;
   standard_portion_weight_g: number | null;
+  // New fields for labeling
+  shelf_life_after_open_days?: number | null;
+  storage_conditions?: string | null;
   created_at: string;
   user_id: string;
   ingredient_categories?: { name: string }; // Relation
@@ -256,6 +260,9 @@ export interface Recipe {
   operational_cost?: number;
   external_code: string | null;
   ncm_code?: string | null;
+  // New fields for labeling
+  shelf_life_prepared_days?: number | null;
+  storage_conditions?: string | null;
   created_at: string;
   user_id: string;
   hasStock?: boolean; // App-level property
@@ -753,4 +760,21 @@ export interface RequisitionItem {
   created_at: string;
   // Relations
   ingredients?: { name: string };
+}
+
+// --- Labeling (Etiquetagem) ---
+export interface LabelLog {
+    id: string;
+    user_id: string;
+    employee_id: string | null;
+    item_name: string;
+    quantity: number | null;
+    unit: string | null;
+    lot_number: string | null;
+    batch_id: string | null;
+    manipulation_date: string;
+    expiration_date: string;
+    label_type: LabelType;
+    created_at: string;
+    employees?: { name: string }; // Relation
 }

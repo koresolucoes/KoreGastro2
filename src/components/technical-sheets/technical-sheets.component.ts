@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { v4 as uuidv4 } from 'uuid';
@@ -429,9 +430,11 @@ export class TechnicalSheetsComponent {
         case 'stock':
         case 'cost':
         case 'min_stock':
-        case 'standard_portion_weight_g': {
+        case 'standard_portion_weight_g': 
+        case 'shelf_life_after_open_days': {
           const numValue = parseFloat(value);
-          newForm[field] = isNaN(numValue) ? (field === 'standard_portion_weight_g' ? null : 0) : numValue;
+          const isNullable = field === 'standard_portion_weight_g' || field === 'shelf_life_after_open_days';
+          newForm[field] = isNaN(numValue) ? (isNullable ? null : 0) : numValue;
           break;
         }
         case 'price': {
@@ -445,10 +448,10 @@ export class TechnicalSheetsComponent {
           newForm[field] = value as boolean;
           break;
         case 'name':
-          newForm[field] = value;
+          newForm.name = value;
           break;
         case 'unit':
-          newForm[field] = value as IngredientUnit;
+          newForm.unit = value as IngredientUnit;
           break;
         case 'category_id':
         case 'supplier_id':
@@ -458,6 +461,7 @@ export class TechnicalSheetsComponent {
         case 'external_code':
         case 'expiration_date':
         case 'last_movement_at':
+        case 'storage_conditions':
           newForm[field] = (value === 'null' || value === '') ? null : value;
           break;
         default: {
