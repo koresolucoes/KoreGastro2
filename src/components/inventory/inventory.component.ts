@@ -187,9 +187,9 @@ export class InventoryComponent implements OnInit {
     newIngredientForm = signal<Partial<IngredientModel>>(EMPTY_INGREDIENT);
 
     ngOnInit() {
-        // Data is loaded centrally by SupabaseStateService. No need to load here manually.
-        // But we still load the "Heavy History Data" which is not loaded on init.
-        this.supabaseStateService.loadHeavyHistoryData();
+        // Critical: Load heavy back-office data (POs, Lots) only when entering this component
+        // Ingredients themselves are already loaded by 'loadEssentialData' in SupabaseStateService
+        this.supabaseStateService.loadBackOfficeData();
 
         const navigationState = this.router.getCurrentNavigation()?.extras.state as any;
         if (navigationState && navigationState['newOrderItems']) {

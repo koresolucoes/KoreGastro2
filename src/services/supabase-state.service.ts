@@ -79,19 +79,18 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
         
         if (activeUnitId && !isDemo) {
-            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading Full Operational Data...`);
+            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading Essentials...`);
             
             // 1. Clear previous operator session immediately to prevent access leak
             this.operationalAuthService.resetSession();
             this.isDataLoaded.set(false);
 
             try {
-                // 2. Load Core Data (Permissions, Settings)
+                // 2. Load Core Data (Permissions, Settings, Roles) - Critical for Auth
                 await this.loadCoreData(activeUnitId);
                 
-                // 3. Load Operational Data (Ingredients, Recipes, Tables, Orders)
-                // We load this upfront to avoid "missing dependency" issues across screens
-                await this.loadOperationalData(activeUnitId);
+                // 3. Load Catalogs & Active State (Menu, Current Stock, Open Orders) - Critical for Operations
+                await this.loadEssentialData(activeUnitId);
 
                 // 4. Start Realtime
                 this.subscribeToChanges(activeUnitId);
@@ -123,8 +122,7 @@ export class SupabaseStateService {
     });
   }
 
-  // --- DATA LOADING METHODS ---
-
+  // --- 1. CORE DATA (Required for basic app structure) ---
   private async loadCoreData(userId: string) {
     const [
         companyProfile, roles, rolePermissions,
@@ -144,17 +142,17 @@ export class SupabaseStateService {
     this.settingsState.webhooks.set(webhooks.data || []);
   }
 
-  private async loadOperationalData(userId: string) {
+  // --- 2. ESSENTIAL DATA (Required for POS/KDS/Inventory to function) ---
+  private async loadEssentialData(userId: string) {
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
     const [
-        // POS & Layout
+        // Layout
         halls, tables, stations, 
-        // Menu & Recipe
+        // Menu & Stock Definition (Lightweight)
         categories, recipes, promotions, promotionRecipes, 
         recipeIngredients, recipePreparations, recipeSubRecipes,
-        // Inventory
-        ingredients, ingredientCategories, suppliers, inventoryLots, stationStocks,
+        ingredients, ingredientCategories, suppliers, stationStocks,
         // Active Operations
         customers, orders, deliveryDrivers
     ] = await Promise.all([
@@ -174,10 +172,10 @@ export class SupabaseStateService {
         supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
         supabase.from('ingredient_categories').select('*').eq('user_id', userId),
         supabase.from('suppliers').select('*').eq('user_id', userId),
-        supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('station_stocks').select('*, stations(name), ingredients(name, unit)').eq('user_id', userId),
 
         supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        // Only load OPEN orders or recently closed ones to keep memory low
         supabase.from('orders')
           .select('*, order_items(*), customers(*), delivery_drivers(*)')
           .eq('user_id', userId)
@@ -185,21 +183,11 @@ export class SupabaseStateService {
         supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true)
     ]);
 
-    // Set POS State
+    // Populate State
     this.posState.halls.set(halls.data || []);
     this.posState.tables.set(tables.data || []);
     this.posState.stations.set(stations.data || []);
-    this.posState.customers.set(customers.data || []);
-    this.setOrdersWithPrices(orders.data || []);
-
-    // Set Inventory State
-    this.inventoryState.ingredients.set(ingredients.data || []);
-    this.inventoryState.ingredientCategories.set(ingredientCategories.data || []);
-    this.inventoryState.suppliers.set(suppliers.data || []);
-    this.inventoryState.inventoryLots.set(inventoryLots.data || []);
-    this.inventoryState.stationStocks.set(stationStocks.data || []);
-
-    // Set Recipe/Menu State
+    
     this.recipeState.categories.set(categories.data || []);
     this.recipeState.recipes.set(recipes.data || []);
     this.recipeState.promotions.set(promotions.data || []);
@@ -207,18 +195,27 @@ export class SupabaseStateService {
     this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
     this.recipeState.recipePreparations.set(recipePreparations.data || []);
     this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
-    
-    // Set Delivery State
+
+    this.inventoryState.ingredients.set(ingredients.data || []);
+    this.inventoryState.ingredientCategories.set(ingredientCategories.data || []);
+    this.inventoryState.suppliers.set(suppliers.data || []);
+    this.inventoryState.stationStocks.set(stationStocks.data || []);
+
+    this.posState.customers.set(customers.data || []);
+    this.setOrdersWithPrices(orders.data || []);
     this.deliveryState.deliveryDrivers.set(deliveryDrivers.data || []);
   }
 
-  // Use this for heavy/paginated data that shouldn't be loaded on startup
-  public async loadHeavyHistoryData() {
+  // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
+  // Called by Inventory, Reports, HR components on init
+  public async loadBackOfficeData() {
      const userId = this.unitContextService.activeUnitId();
      if (!userId) return;
+     console.log('[SupabaseState] Loading BackOffice Data (Lazy)...');
 
-     const [purchaseOrders, productionPlans, requisitions, schedules, leaveRequests] = await Promise.all([
+     const [purchaseOrders, inventoryLots, productionPlans, requisitions, schedules, leaveRequests] = await Promise.all([
         supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('inventory_lots').select('*').eq('user_id', userId).gt('quantity', 0).order('created_at', { ascending: true }),
         supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
         supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
@@ -226,13 +223,263 @@ export class SupabaseStateService {
      ]);
 
      this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
+     this.inventoryState.inventoryLots.set(inventoryLots.data || []); // Lots needed for FIFO
      this.inventoryState.productionPlans.set(productionPlans.data || []);
      this.inventoryState.requisitions.set(requisitions.data || []);
      this.hrState.schedules.set(schedules.data || []);
      this.hrState.leaveRequests.set(leaveRequests.data || []);
   }
 
-  // --- MOCK DATA LOADING (Keep simplified) ---
+  public async refetchIfoodLogs() {
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return;
+    await this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodState.ifoodWebhookLogs, true, 100);
+  }
+
+  // --- REALTIME SUBSCRIPTION ---
+
+  private unsubscribeFromChanges() {
+    if (this.realtimeChannel) {
+        supabase.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+    }
+  }
+
+  private subscribeToChanges(userId: string) {
+    this.unsubscribeFromChanges();
+    
+    this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public' }, 
+        (payload: any) => this.handleChanges(payload)
+      )
+      .subscribe(status => {
+        console.log(`Supabase realtime subscription status: ${status}`);
+      });
+  }
+  
+  private handleChanges(payload: any) {
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return;
+
+    // Safety: ignore updates from other units
+    const relevantRow = payload.new || payload.old;
+    if (relevantRow && relevantRow.user_id && relevantRow.user_id !== userId) return;
+
+    switch (payload.table) {
+        case 'orders':
+            this.handleOrderChange(payload);
+            break;
+        case 'order_items':
+            this.handleOrderItemChange(payload);
+            break;
+        case 'tables': 
+            this.handleSimpleUpdate(this.posState.tables, payload); 
+            break;
+        case 'delivery_drivers':
+            this.handleSimpleUpdate(this.deliveryState.deliveryDrivers, payload);
+            break;
+        case 'halls': this.handleSimpleUpdate(this.posState.halls, payload); break;
+        case 'stations': this.handleSimpleUpdate(this.posState.stations, payload, '*, employees(*)'); break;
+        case 'categories': this.handleSimpleUpdate(this.recipeState.categories, payload); break;
+        case 'recipes': this.handleSimpleUpdate(this.recipeState.recipes, payload); break;
+        case 'employees': this.handleSimpleUpdate(this.hrState.employees, payload); break;
+        case 'ingredients': this.handleSimpleUpdate(this.inventoryState.ingredients, payload, '*, ingredient_categories(name), suppliers(name)'); break;
+        case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;
+        case 'requisitions': this.handleSimpleUpdate(this.inventoryState.requisitions, payload, '*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)'); break;
+        
+        // Transactional logs - append only if matching date
+        case 'transactions':
+            this.handleTransactionChange(payload);
+            break;
+        case 'cashier_closings':
+            this.refreshDashboardAndCashierData();
+            break;
+    }
+  }
+
+  // Generic Helper for simple flat lists
+  private async handleSimpleUpdate<T extends { id: string }>(
+      signal: WritableSignal<T[]>, 
+      payload: any, 
+      fetchQuery?: string
+  ) {
+      if (payload.eventType === 'DELETE') {
+          signal.update(items => items.filter(i => i.id !== payload.old.id));
+      } else if (payload.eventType === 'INSERT') {
+          let newItem = payload.new;
+          if (fetchQuery) {
+             const { data } = await supabase.from(payload.table).select(fetchQuery).eq('id', newItem.id).single();
+             if (data) newItem = data;
+          }
+          signal.update(items => [newItem as T, ...items]); // Prepend new items
+      } else if (payload.eventType === 'UPDATE') {
+           let updatedItem = payload.new;
+           if (fetchQuery) {
+              const { data } = await supabase.from(payload.table).select(fetchQuery).eq('id', updatedItem.id).single();
+              if (data) updatedItem = data;
+           }
+           signal.update(items => items.map(i => i.id === updatedItem.id ? updatedItem as T : i));
+      }
+  }
+
+  // Specific Handler for Orders (Deep Fetch Relations)
+  private async handleOrderChange(payload: any) {
+    if (payload.eventType === 'DELETE') {
+        this.posState.orders.update(orders => orders.filter(o => o.id !== payload.old.id));
+        return;
+    }
+
+    // Crucial: Fetch full order with relations (items, customer)
+    const { data: fullOrder, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*), customers(*), delivery_drivers(*)')
+        .eq('id', payload.new.id)
+        .single();
+    
+    if (error || !fullOrder) return;
+
+    const processedOrder = (this.processOrdersWithPrices([fullOrder]))[0];
+    const isRelevantForPos = 
+        processedOrder.status === 'OPEN' || 
+        (processedOrder.status === 'CANCELLED' && new Date().getTime() - new Date(processedOrder.completed_at || '').getTime() < 12 * 60 * 60 * 1000);
+
+    this.posState.orders.update(orders => {
+        const exists = orders.find(o => o.id === processedOrder.id);
+        if (isRelevantForPos) {
+            return exists ? orders.map(o => o.id === processedOrder.id ? processedOrder : o) : [...orders, processedOrder];
+        } else {
+            return orders.filter(o => o.id !== processedOrder.id);
+        }
+    });
+    
+    // Maintain recently finished list for iFood KDS
+    if (processedOrder.order_type.startsWith('iFood') && (processedOrder.status === 'COMPLETED' || processedOrder.status === 'CANCELLED')) {
+        this.ifoodState.recentlyFinishedIfoodOrders.update(orders => {
+             const exists = orders.find(o => o.id === processedOrder.id);
+             const list = exists ? orders.map(o => o.id === processedOrder.id ? processedOrder : o) : [processedOrder, ...orders];
+             return list.slice(0, 50);
+        });
+    }
+  }
+
+  // Specific Handler for Order Items
+  private async handleOrderItemChange(payload: any) {
+     // If an item is deleted, remove from local order
+     if (payload.eventType === 'DELETE') {
+         this.posState.orders.update(orders => orders.map(order => {
+             if (order.id === payload.old.order_id) {
+                 return { ...order, order_items: order.order_items.filter(i => i.id !== payload.old.id) };
+             }
+             return order;
+         }));
+         return;
+     }
+
+     // Use the payload.new directly for speed, but ideally we'd fetch full item if it had complex relations
+     const newItem = payload.new;
+     
+     // Update POS State
+     this.posState.orders.update(orders => orders.map(order => {
+         if (order.id === newItem.order_id) {
+             const existingItemIndex = order.order_items.findIndex(i => i.id === newItem.id);
+             let newItems = [...order.order_items];
+             
+             if (existingItemIndex >= 0) {
+                 // Preserve fields that might not be in payload if we didn't fetch relations, 
+                 // but typically raw payload has all DB fields. 
+                 // Important: Pricing might need re-calculation if not stored on item.
+                 const mergedItem = { ...newItems[existingItemIndex], ...newItem };
+                 newItems[existingItemIndex] = mergedItem;
+             } else {
+                 // For new items, we might miss the recipe relation if we don't fetch. 
+                 // But typically the Order panel adds it optimistically or refreshes via 'order.updated' event
+                 newItems.push(newItem);
+             }
+             return { ...order, order_items: newItems };
+         }
+         return order;
+     }));
+  }
+
+  private async handleTransactionChange(payload: any) {
+      if (payload.eventType === 'INSERT') {
+          const today = new Date().toISOString().split('T')[0];
+          if (payload.new.date.startsWith(today)) {
+              this.cashierState.transactions.update(txs => [...txs, payload.new]);
+              this.dashboardState.dashboardTransactions.update(txs => [...txs, payload.new]);
+          }
+      }
+  }
+
+  public async refreshDashboardAndCashierData() {
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return;
+    
+    const { data: closings } = await supabase.from('cashier_closings').select('*').eq('user_id', userId).order('closed_at', { ascending: false }).limit(5);
+    this.cashierState.cashierClosings.set(closings || []);
+    
+    const today = new Date();
+    const isoEndDate = today.toISOString();
+    today.setHours(0, 0, 0, 0); 
+    const isoStartDate = today.toISOString();
+    
+    const { data: transactions } = await supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId);
+    this.dashboardState.dashboardTransactions.set(transactions || []);
+  }
+
+  private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>, orderByDesc = false, limit?: number) {
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return;
+    let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
+    
+    // Heuristic for created_at or other date field
+    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs', 'portioning_events', 'requisitions'].includes(tableName) 
+        ? (tableName === 'production_plans' ? 'plan_date' : tableName === 'schedules' ? 'week_start_date' : tableName === 'leave_requests' ? 'start_date' : 'created_at')
+        : 'created_at';
+        
+    query = query.order(orderColumn, { ascending: !orderByDesc });
+    if (limit) query = query.limit(limit);
+    
+    const { data, error } = await query;
+    if (!error) signal.set(data as T[] || []);
+  }
+
+  private setOrdersWithPrices(orders: any[]) { this.posState.orders.set(this.processOrdersWithPrices(orders)); }
+  
+  private processOrdersWithPrices(orders: any[]): any[] {
+    return orders
+        .filter(o => !!o)
+        .map(o => ({ 
+            ...o, 
+            order_items: (o.order_items || []).map((item: any) => {
+                // If DB price is null (rare), fetch from recipe state
+                const effectivePrice = item.price ?? this.pricingService.getEffectivePrice(this.recipeState.recipesById().get(item.recipe_id)!) ?? 0;
+                return { ...item, price: effectivePrice };
+            }) 
+        }));
+  }
+
+  private processCompletedOrdersWithPrices(orders: any[]): any[] {
+    return orders.map(o => ({ ...o, order_items: (o.order_items || []).map((item: any) => ({ ...item, price: item.price ?? this.recipeState.recipesById().get(item.recipe_id)?.price ?? 0 })) }));
+  }
+
+  private clearAllData() {
+    this.posState.clearData();
+    this.inventoryState.clearData();
+    this.recipeState.clearData();
+    this.hrState.clearData();
+    this.cashierState.clearData();
+    this.settingsState.clearData();
+    this.ifoodState.clearData();
+    this.subscriptionState.clearData();
+    this.dashboardState.clearData();
+    this.deliveryState.clearData();
+    this.isDataLoaded.set(false);
+  }
+  
+  // --- MOCK DATA ---
   private loadMockData() {
     this.isDataLoaded.set(false);
     try {
@@ -275,270 +522,6 @@ export class SupabaseStateService {
     }
   }
 
-  public async refetchIfoodLogs() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
-    await this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodState.ifoodWebhookLogs, true, 100);
-  }
-
-  private unsubscribeFromChanges() {
-    if (this.realtimeChannel) {
-        supabase.removeChannel(this.realtimeChannel);
-        this.realtimeChannel = null;
-    }
-  }
-
-  private subscribeToChanges(userId: string) {
-    this.unsubscribeFromChanges();
-    
-    this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
-      .on(
-        'postgres_changes', 
-        { event: '*', schema: 'public' }, 
-        (payload: any) => this.handleChanges(payload)
-      )
-      .subscribe(status => {
-        console.log(`Supabase realtime subscription status: ${status}`);
-      });
-  }
-  
-  // --- REALTIME OPTIMIZATION: SURGICAL UPDATES ---
-
-  private handleChanges(payload: any) {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
-
-    // Safety check: ignore updates from other units if leaking (RLS should prevent this, but good practice)
-    const relevantRow = payload.new || payload.old;
-    if (relevantRow && relevantRow.user_id && relevantRow.user_id !== userId) return;
-
-    switch (payload.table) {
-        case 'orders':
-            this.handleOrderChange(payload);
-            break;
-        case 'order_items':
-            this.handleOrderItemChange(payload);
-            break;
-        case 'tables': 
-            this.handleSimpleUpdate(this.posState.tables, payload); 
-            break;
-        case 'delivery_drivers':
-            this.handleSimpleUpdate(this.deliveryState.deliveryDrivers, payload);
-            break;
-        case 'halls': this.handleSimpleUpdate(this.posState.halls, payload); break;
-        case 'stations': this.handleSimpleUpdate(this.posState.stations, payload, '*, employees(*)'); break; // Re-fetch needed for relation
-        case 'categories': this.handleSimpleUpdate(this.recipeState.categories, payload); break;
-        case 'recipes': this.handleSimpleUpdate(this.recipeState.recipes, payload); break;
-        case 'employees': this.handleSimpleUpdate(this.hrState.employees, payload); break;
-        case 'ingredients': this.handleSimpleUpdate(this.inventoryState.ingredients, payload, '*, ingredient_categories(name), suppliers(name)'); break;
-        case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;
-        
-        // Lists that depend on ordering or heavy logic often prefer refetch or simple append
-        case 'transactions':
-            this.handleTransactionChange(payload);
-            break;
-        case 'cashier_closings':
-            this.refreshDashboardAndCashierData(); // Keep heavy for now, closings are rare
-            break;
-    }
-  }
-
-  // 1. Generic Helper for simple flat lists
-  private async handleSimpleUpdate<T extends { id: string }>(
-      signal: WritableSignal<T[]>, 
-      payload: any, 
-      fetchQuery?: string // If relations are needed, we fetch specific row. If null, we use payload.new
-  ) {
-      if (payload.eventType === 'DELETE') {
-          signal.update(items => items.filter(i => i.id !== payload.old.id));
-      } else if (payload.eventType === 'INSERT') {
-          let newItem = payload.new;
-          if (fetchQuery) {
-             const { data } = await supabase.from(payload.table).select(fetchQuery).eq('id', newItem.id).single();
-             if (data) newItem = data;
-          }
-          signal.update(items => [...items, newItem as T]);
-      } else if (payload.eventType === 'UPDATE') {
-           let updatedItem = payload.new;
-           if (fetchQuery) {
-              // For updates with relations, we often need to re-fetch to ensure relations are up to date
-              // Optimization: Only fetch if we suspect relations might have changed, but here we prioritize consistency.
-              const { data } = await supabase.from(payload.table).select(fetchQuery).eq('id', updatedItem.id).single();
-              if (data) updatedItem = data;
-           }
-           signal.update(items => items.map(i => i.id === updatedItem.id ? updatedItem as T : i));
-      }
-  }
-
-  // 2. Specific Handler for Orders (Complex Relation)
-  private async handleOrderChange(payload: any) {
-    if (payload.eventType === 'DELETE') {
-        this.posState.orders.update(orders => orders.filter(o => o.id !== payload.old.id));
-        return;
-    }
-
-    // For INSERT or UPDATE, we fetch the SINGLE order with all relations
-    // This is much lighter than fetching all orders.
-    const { data: fullOrder, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*), customers(*), delivery_drivers(*)')
-        .eq('id', payload.new.id)
-        .single();
-    
-    if (error || !fullOrder) return;
-
-    // Process prices helper
-    const processedOrder = (this.processOrdersWithPrices([fullOrder]))[0];
-
-    // Logic: Is it OPEN or recently CANCELLED? Keep in posState.orders
-    // Is it COMPLETED? Remove from posState.orders (if it was there) and maybe add to finished list
-    const isRelevantForPos = 
-        processedOrder.status === 'OPEN' || 
-        (processedOrder.status === 'CANCELLED' && new Date().getTime() - new Date(processedOrder.completed_at || '').getTime() < 12 * 60 * 60 * 1000);
-
-    this.posState.orders.update(orders => {
-        const exists = orders.find(o => o.id === processedOrder.id);
-        
-        if (isRelevantForPos) {
-            if (exists) {
-                // Update existing
-                return orders.map(o => o.id === processedOrder.id ? processedOrder : o);
-            } else {
-                // Insert new
-                return [...orders, processedOrder];
-            }
-        } else {
-            // Remove if exists (e.g. moved to completed)
-            return orders.filter(o => o.id !== processedOrder.id);
-        }
-    });
-    
-    // Manage Recently Finished (iFood)
-    if (processedOrder.order_type.startsWith('iFood') && (processedOrder.status === 'COMPLETED' || processedOrder.status === 'CANCELLED')) {
-        this.ifoodState.recentlyFinishedIfoodOrders.update(orders => {
-             const exists = orders.find(o => o.id === processedOrder.id);
-             if (exists) return orders.map(o => o.id === processedOrder.id ? processedOrder : o);
-             return [processedOrder, ...orders].slice(0, 50); // Keep list size manageable
-        });
-    }
-  }
-
-  // 3. Specific Handler for Order Items (Nested)
-  private async handleOrderItemChange(payload: any) {
-     if (payload.eventType === 'DELETE') {
-         this.posState.orders.update(orders => orders.map(order => {
-             if (order.id === payload.old.order_id) {
-                 return { ...order, order_items: order.order_items.filter(i => i.id !== payload.old.id) };
-             }
-             return order;
-         }));
-         return;
-     }
-
-     // Fetch full item with prices logic if needed, but mostly we just need raw data + local price calc
-     // NOTE: Order Items in `posState` usually have `price` calculated or from DB.
-     // The raw payload has `price`. We just need to make sure we don't lose custom fields injected by frontend if any.
-     // In this app, `order_items` in signals match DB structure closely.
-     
-     const newItem = payload.new;
-     
-     // Update POS State
-     this.posState.orders.update(orders => orders.map(order => {
-         if (order.id === newItem.order_id) {
-             const existingItemIndex = order.order_items.findIndex(i => i.id === newItem.id);
-             let newItems = [...order.order_items];
-             
-             if (existingItemIndex >= 0) {
-                 // Update
-                 newItems[existingItemIndex] = { ...newItems[existingItemIndex], ...newItem };
-             } else {
-                 // Insert
-                 newItems.push(newItem);
-             }
-             return { ...order, order_items: newItems };
-         }
-         return order;
-     }));
-  }
-
-  // 4. Handle Transactions (Append-only usually)
-  private async handleTransactionChange(payload: any) {
-      if (payload.eventType === 'INSERT') {
-          // Add to dashboard/cashier lists if matches date
-          const today = new Date().toISOString().split('T')[0];
-          if (payload.new.date.startsWith(today)) {
-              this.cashierState.transactions.update(txs => [...txs, payload.new]);
-              this.dashboardState.dashboardTransactions.update(txs => [...txs, payload.new]);
-          }
-      }
-      // Updates/Deletes on transactions are rare in operation, can ignore for MVP optimization or handle simply
-  }
-
-  public async refreshDashboardAndCashierData() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
-    
-    const { data: closings } = await supabase.from('cashier_closings').select('*').eq('user_id', userId).order('closed_at', { ascending: false });
-    this.cashierState.cashierClosings.set(closings || []);
-    
-    const today = new Date();
-    const isoEndDate = today.toISOString();
-    today.setHours(0, 0, 0, 0); 
-    const isoStartDate = today.toISOString();
-    
-    const { data: transactions } = await supabase.from('transactions').select('*').gte('date', isoStartDate).lte('date', isoEndDate).eq('user_id', userId);
-    this.dashboardState.dashboardTransactions.set(transactions || []);
-  }
-
-  private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>, orderByDesc = false, limit?: number) {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
-    let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
-    
-    const orderColumn = ['purchase_orders', 'production_plans', 'schedules', 'leave_requests', 'ifood_webhook_logs', 'portioning_events', 'requisitions'].includes(tableName) 
-        ? (tableName === 'production_plans' ? 'plan_date' : tableName === 'schedules' ? 'week_start_date' : tableName === 'leave_requests' ? 'start_date' : 'created_at')
-        : 'created_at';
-    query = query.order(orderColumn, { ascending: !orderByDesc });
-    if (limit) query = query.limit(limit);
-    
-    const { data, error } = await query;
-    if (!error) signal.set(data as T[] || []);
-  }
-
-  private setOrdersWithPrices(orders: any[]) { this.posState.orders.set(this.processOrdersWithPrices(orders)); }
-  
-  private processOrdersWithPrices(orders: any[]): any[] {
-    // Ensure we handle potential missing recipe lookups gracefully and filtering out nulls
-    return orders
-        .filter(o => !!o)
-        .map(o => ({ 
-            ...o, 
-            order_items: (o.order_items || []).map((item: any) => {
-                // Price is usually fixed in DB order_items, but if null we try to get from recipe
-                const effectivePrice = item.price ?? this.pricingService.getEffectivePrice(this.recipeState.recipesById().get(item.recipe_id)!) ?? 0;
-                return { ...item, price: effectivePrice };
-            }) 
-        }));
-  }
-
-  private processCompletedOrdersWithPrices(orders: any[]): any[] {
-    return orders.map(o => ({ ...o, order_items: (o.order_items || []).map((item: any) => ({ ...item, price: item.price ?? this.recipeState.recipesById().get(item.recipe_id)?.price ?? 0 })) }));
-  }
-
-  private clearAllData() {
-    this.posState.clearData();
-    this.inventoryState.clearData();
-    this.recipeState.clearData();
-    this.hrState.clearData();
-    this.cashierState.clearData();
-    this.settingsState.clearData();
-    this.ifoodState.clearData();
-    this.subscriptionState.clearData();
-    this.dashboardState.clearData();
-    this.deliveryState.clearData();
-    this.isDataLoaded.set(false);
-  }
-  
   async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean; error: any }> {
     const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
