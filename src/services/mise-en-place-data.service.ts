@@ -4,7 +4,7 @@ import { ProductionPlan, ProductionTask, ProductionTaskStatus } from '../models/
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { InventoryDataService } from './inventory-data.service';
-import { SupabaseStateService } from './supabase-state.service';
+import { InventoryStateService } from './inventory-state.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +12,7 @@ import { SupabaseStateService } from './supabase-state.service';
 export class MiseEnPlaceDataService {
   private authService = inject(AuthService);
   private inventoryDataService = inject(InventoryDataService);
-  private stateService = inject(SupabaseStateService);
+  private inventoryState = inject(InventoryStateService);
 
   async getOrCreatePlanForDate(date: string): Promise<{ success: boolean, error: any, data: ProductionPlan | null }> {
     const userId = this.authService.currentUser()?.id;
@@ -32,6 +32,7 @@ export class MiseEnPlaceDataService {
     }
     
     if (existingPlan) {
+        this.syncPlanToState(existingPlan);
         return { success: true, error: null, data: existingPlan };
     }
     
@@ -47,25 +48,53 @@ export class MiseEnPlaceDataService {
         return { success: false, error: createError, data: null };
     }
     
-    return { success: true, error: null, data: { ...newPlan, production_tasks: [] } };
+    const newPlanWithTasks = { ...newPlan, production_tasks: [] };
+    this.syncPlanToState(newPlanWithTasks);
+    
+    return { success: true, error: null, data: newPlanWithTasks };
   }
 
   async addTask(planId: string, taskData: Partial<ProductionTask>): Promise<{ success: boolean; error: any }> {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
-    const { error } = await supabase.from('production_tasks').insert({
+    const { data: newTask, error } = await supabase.from('production_tasks').insert({
         ...taskData,
         production_plan_id: planId,
         user_id: userId,
         status: 'A Fazer'
-    });
+    }).select('*, recipes(name, source_ingredient_id), stations(name), employees(name)').single();
+
+    if (!error && newTask) {
+        // Manually update state to reflect change immediately in UI
+        this.inventoryState.productionPlans.update(plans => {
+            return plans.map(plan => {
+                if (plan.id === planId) {
+                    const currentTasks = plan.production_tasks || [];
+                    // Avoid duplicates if realtime hits fast
+                    if (currentTasks.some(t => t.id === newTask.id)) return plan;
+                    return { ...plan, production_tasks: [...currentTasks, newTask] };
+                }
+                return plan;
+            });
+        });
+    }
+
     return { success: !error, error };
   }
 
   async updateTask(taskId: string, taskData: Partial<ProductionTask>): Promise<{ success: boolean; error: any }> {
     const { id, ...updateData } = taskData;
-    const { error } = await supabase.from('production_tasks').update(updateData).eq('id', taskId);
+    const { data: updatedTask, error } = await supabase
+        .from('production_tasks')
+        .update(updateData)
+        .eq('id', taskId)
+        .select('*, recipes(name, source_ingredient_id), stations(name), employees(name)')
+        .single();
+    
+    if (!error && updatedTask) {
+        this.updateTaskInState(updatedTask);
+    }
     return { success: !error, error };
   }
   
@@ -94,16 +123,68 @@ export class MiseEnPlaceDataService {
     }
     
     // Now update the task itself
-    const { error: updateError } = await supabase
+    const { data: updatedTask, error: updateError } = await supabase
         .from('production_tasks')
         .update({ status: 'Concluído', lot_number: lotNumber, total_cost: totalCost })
-        .eq('id', task.id);
+        .eq('id', task.id)
+        .select('*, recipes(name, source_ingredient_id), stations(name), employees(name)')
+        .single();
         
+    if (!updateError && updatedTask) {
+        this.updateTaskInState(updatedTask);
+    }
+
     return { success: !updateError, error: updateError };
   }
 
   async deleteTask(taskId: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('production_tasks').delete().eq('id', taskId);
+    
+    if (!error) {
+         this.inventoryState.productionPlans.update(plans => {
+            return plans.map(plan => {
+                if (plan.production_tasks?.some(t => t.id === taskId)) {
+                    return {
+                        ...plan,
+                        production_tasks: plan.production_tasks.filter(t => t.id !== taskId)
+                    };
+                }
+                return plan;
+            });
+        });
+    }
+
     return { success: !error, error };
+  }
+
+  // Helper to ensure the plan exists in the global state
+  private syncPlanToState(plan: ProductionPlan) {
+     this.inventoryState.productionPlans.update(current => {
+         // Check if plan already exists to avoid overwriting newer data if present
+         const index = current.findIndex(p => p.id === plan.id);
+         if (index !== -1) {
+             // If it exists but has no tasks loaded (rare edge case), we might want to update it,
+             // but usually we trust the existing state or realtime. 
+             // For now, if it exists, we assume it's up to date via realtime.
+             return current; 
+         }
+         return [plan, ...current];
+     });
+  }
+
+  // Helper to update a single task in the state
+  private updateTaskInState(updatedTask: any) {
+      this.inventoryState.productionPlans.update(plans => {
+        return plans.map(plan => {
+            if (plan.id === updatedTask.production_plan_id) {
+                const currentTasks = plan.production_tasks || [];
+                return { 
+                    ...plan, 
+                    production_tasks: currentTasks.map(t => t.id === updatedTask.id ? updatedTask : t) 
+                };
+            }
+            return plan;
+        });
+    });
   }
 }
