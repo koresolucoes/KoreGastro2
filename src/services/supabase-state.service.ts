@@ -507,15 +507,17 @@ export class SupabaseStateService {
   private setOrdersWithPrices(orders: any[]) { this.posState.orders.set(this.processOrdersWithPrices(orders)); }
   
   private processOrdersWithPrices(orders: any[]): any[] {
-    // Ensure we handle potential missing recipe lookups gracefully
-    return orders.map(o => ({ 
-        ...o, 
-        order_items: (o.order_items || []).map((item: any) => {
-            // Price is usually fixed in DB order_items, but if null we try to get from recipe
-            const effectivePrice = item.price ?? this.pricingService.getEffectivePrice(this.recipeState.recipesById().get(item.recipe_id)!) ?? 0;
-            return { ...item, price: effectivePrice };
-        }) 
-    }));
+    // Ensure we handle potential missing recipe lookups gracefully and filtering out nulls
+    return orders
+        .filter(o => !!o)
+        .map(o => ({ 
+            ...o, 
+            order_items: (o.order_items || []).map((item: any) => {
+                // Price is usually fixed in DB order_items, but if null we try to get from recipe
+                const effectivePrice = item.price ?? this.pricingService.getEffectivePrice(this.recipeState.recipesById().get(item.recipe_id)!) ?? 0;
+                return { ...item, price: effectivePrice };
+            }) 
+        }));
   }
 
   private processCompletedOrdersWithPrices(orders: any[]): any[] {

@@ -358,14 +358,16 @@ export class InventoryDataService {
                 .select('id, quantity')
                 .eq('station_id', stationId)
                 .eq('ingredient_id', ingredientId)
-                .single();
+                .maybeSingle(); // Changed from single() to maybeSingle() to handle missing rows without error 406
             
             const currentStationQty = stationStockData?.quantity || 0;
 
             if (currentStationQty >= quantityNeeded) {
-                await supabase.from('station_stocks')
-                    .update({ quantity: currentStationQty - quantityNeeded, updated_at: new Date().toISOString() })
-                    .eq('id', stationStockData!.id);
+                if (stationStockData) {
+                    await supabase.from('station_stocks')
+                        .update({ quantity: currentStationQty - quantityNeeded, updated_at: new Date().toISOString() })
+                        .eq('id', stationStockData.id);
+                }
             } else {
                 const { data: centralIngredient } = await supabase
                     .from('ingredients')
