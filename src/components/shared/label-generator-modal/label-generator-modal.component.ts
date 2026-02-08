@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, input, output, InputSignal, OutputEmitterRef, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +30,7 @@ export class LabelGeneratorModalComponent implements OnInit {
   // Form State
   form = signal<{
     type: LabelType;
+    customName: string;
     manipulationDate: string; // ISO for input
     expirationDate: string; // ISO for input
     quantity: number | null;
@@ -37,6 +39,7 @@ export class LabelGeneratorModalComponent implements OnInit {
     storageConditions: string;
   }>({
     type: 'OPENING',
+    customName: '',
     manipulationDate: new Date().toISOString().slice(0, 16),
     expirationDate: '',
     quantity: null,
@@ -48,7 +51,7 @@ export class LabelGeneratorModalComponent implements OnInit {
   printFormat = signal<'standard' | 'compact'>('standard');
   copies = signal(1);
 
-  itemName = computed(() => this.item()?.name || 'Item Desconhecido');
+  itemName = computed(() => this.item()?.name || this.form().customName || 'Item Avulso');
   responsibleName = computed(() => this.authService.activeEmployee()?.name || 'Usuário');
 
   // Preview Helpers
@@ -91,6 +94,7 @@ export class LabelGeneratorModalComponent implements OnInit {
 
     this.form.set({
         type,
+        customName: '',
         manipulationDate: now.toISOString().slice(0, 16),
         expirationDate: expDate.toISOString().slice(0, 16),
         quantity: null,

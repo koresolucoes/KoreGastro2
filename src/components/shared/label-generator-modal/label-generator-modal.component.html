@@ -1,3 +1,4 @@
+
 <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="close.emit()">
   <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
     <div class="p-4 border-b border-gray-700 flex justify-between items-center">
@@ -9,8 +10,12 @@
     
     <div class="p-6 flex-1 overflow-y-auto space-y-4">
       <div class="bg-gray-900/50 p-4 rounded-lg text-center mb-4">
-        <p class="text-sm text-gray-400">Item</p>
-        <p class="text-lg font-bold text-white">{{ itemName() }}</p>
+        <p class="text-sm text-gray-400 mb-1">Item</p>
+        @if (item()) {
+            <p class="text-lg font-bold text-white">{{ item()?.name }}</p>
+        } @else {
+            <input type="text" [ngModel]="form().customName" (ngModelChange)="updateField('customName', $event)" placeholder="Nome do Item" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+        }
       </div>
 
       <!-- Settings -->
