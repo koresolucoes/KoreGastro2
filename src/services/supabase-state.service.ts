@@ -79,28 +79,41 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
         
         if (activeUnitId && !isDemo) {
-            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading Core Data...`);
+            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading Full Operational Data...`);
             
             // 1. Clear previous operator session immediately to prevent access leak
             this.operationalAuthService.resetSession();
+            this.isDataLoaded.set(false);
 
-            // 2. Load ONLY Core Data initially (Lazy Loading Strategy)
-            await this.loadCoreData(activeUnitId);
-            this.subscribeToChanges(activeUnitId);
+            try {
+                // 2. Load Core Data (Permissions, Settings)
+                await this.loadCoreData(activeUnitId);
+                
+                // 3. Load Operational Data (Ingredients, Recipes, Tables, Orders)
+                // We load this upfront to avoid "missing dependency" issues across screens
+                await this.loadOperationalData(activeUnitId);
 
-            // 3. Attempt Auto-Login for Manager
-            untracked(() => {
-                const employees = this.hrState.employees();
-                const roles = this.hrState.roles();
-                
-                const loggedIn = this.operationalAuthService.attemptAutoLogin(employees, roles);
-                
-                if (loggedIn) {
-                     this.router.navigate(['/dashboard']);
-                } else {
-                     this.router.navigate(['/employee-selection']);
-                }
-            });
+                // 4. Start Realtime
+                this.subscribeToChanges(activeUnitId);
+
+                // 5. Attempt Auto-Login for Manager
+                untracked(() => {
+                    const employees = this.hrState.employees();
+                    const roles = this.hrState.roles();
+                    
+                    const loggedIn = this.operationalAuthService.attemptAutoLogin(employees, roles);
+                    
+                    if (loggedIn) {
+                        this.router.navigate(['/dashboard']);
+                    } else {
+                        this.router.navigate(['/employee-selection']);
+                    }
+                });
+            } catch (err) {
+                console.error("Critical error loading unit data:", err);
+            } finally {
+                this.isDataLoaded.set(true);
+            }
         }
     });
 
@@ -110,128 +123,116 @@ export class SupabaseStateService {
     });
   }
 
-  // --- LAZY LOADING METHODS ---
+  // --- DATA LOADING METHODS ---
 
   private async loadCoreData(userId: string) {
-    this.isDataLoaded.set(false);
-    try {
-        const [
-            companyProfile, roles, rolePermissions,
-            employees, webhooks
-        ] = await Promise.all([
-            supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
-            supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-            supabase.from('role_permissions').select('*').eq('user_id', userId),
-            supabase.from('employees').select('*').eq('user_id', userId),
-            supabase.from('webhooks').select('*').eq('user_id', userId),
-        ]);
+    const [
+        companyProfile, roles, rolePermissions,
+        employees, webhooks
+    ] = await Promise.all([
+        supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        supabase.from('role_permissions').select('*').eq('user_id', userId),
+        supabase.from('employees').select('*').eq('user_id', userId),
+        supabase.from('webhooks').select('*').eq('user_id', userId),
+    ]);
 
-        this.settingsState.companyProfile.set(companyProfile.data || null);
-        this.hrState.roles.set(roles.data || []);
-        this.hrState.rolePermissions.set(rolePermissions.data || []);
-        this.hrState.employees.set(employees.data || []);
-        this.settingsState.webhooks.set(webhooks.data || []);
-        
-    } catch (error) {
-        console.error("Core data load failed:", error);
-    } finally {
-        this.isDataLoaded.set(true);
-    }
+    this.settingsState.companyProfile.set(companyProfile.data || null);
+    this.hrState.roles.set(roles.data || []);
+    this.hrState.rolePermissions.set(rolePermissions.data || []);
+    this.hrState.employees.set(employees.data || []);
+    this.settingsState.webhooks.set(webhooks.data || []);
   }
 
-  public async loadPosData() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId || this.demoService.isDemoMode()) return;
-
-    console.log('[LazyLoad] Loading POS Data...');
+  private async loadOperationalData(userId: string) {
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
     const [
-        halls, tables, stations, categories, recipes, 
-        promotions, promotionRecipes, customers, orders
+        // POS & Layout
+        halls, tables, stations, 
+        // Menu & Recipe
+        categories, recipes, promotions, promotionRecipes, 
+        recipeIngredients, recipePreparations, recipeSubRecipes,
+        // Inventory
+        ingredients, ingredientCategories, suppliers, inventoryLots, stationStocks,
+        // Active Operations
+        customers, orders, deliveryDrivers
     ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('tables').select('*').eq('user_id', userId),
         supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
+        
         supabase.from('categories').select('*').eq('user_id', userId),
         supabase.from('recipes').select('*').eq('user_id', userId),
         supabase.from('promotions').select('*').eq('user_id', userId),
         supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
+        
+        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
+        supabase.from('recipe_preparations').select('*').eq('user_id', userId),
+        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
+
+        supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
+        supabase.from('ingredient_categories').select('*').eq('user_id', userId),
+        supabase.from('suppliers').select('*').eq('user_id', userId),
+        supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        supabase.from('station_stocks').select('*, stations(name), ingredients(name, unit)').eq('user_id', userId),
+
         supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('orders')
           .select('*, order_items(*), customers(*), delivery_drivers(*)')
           .eq('user_id', userId)
           .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
+        supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true)
     ]);
 
+    // Set POS State
     this.posState.halls.set(halls.data || []);
     this.posState.tables.set(tables.data || []);
     this.posState.stations.set(stations.data || []);
-    this.recipeState.categories.set(categories.data || []);
-    this.recipeState.recipes.set(recipes.data || []);
-    this.recipeState.promotions.set(promotions.data || []);
-    this.recipeState.promotionRecipes.set(promotionRecipes.data || []);
     this.posState.customers.set(customers.data || []);
     this.setOrdersWithPrices(orders.data || []);
 
-    await this.loadRecipeComposition(userId);
-  }
-
-  public async loadInventoryData() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId || this.demoService.isDemoMode()) return;
-    
-    console.log('[LazyLoad] Loading Inventory Data...');
-    const [
-        ingredients, ingredientCategories, suppliers, inventoryLots, 
-        purchaseOrders, productionPlans, stationStocks, requisitions
-    ] = await Promise.all([
-        supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
-        supabase.from('ingredient_categories').select('*').eq('user_id', userId),
-        supabase.from('suppliers').select('*').eq('user_id', userId),
-        supabase.from('inventory_lots').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
-        supabase.from('station_stocks').select('*, stations(name), ingredients(name, unit)').eq('user_id', userId),
-        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-    ]);
-
+    // Set Inventory State
     this.inventoryState.ingredients.set(ingredients.data || []);
     this.inventoryState.ingredientCategories.set(ingredientCategories.data || []);
     this.inventoryState.suppliers.set(suppliers.data || []);
     this.inventoryState.inventoryLots.set(inventoryLots.data || []);
-    this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
-    this.inventoryState.productionPlans.set(productionPlans.data || []);
     this.inventoryState.stationStocks.set(stationStocks.data || []);
-    this.inventoryState.requisitions.set(requisitions.data || []);
+
+    // Set Recipe/Menu State
+    this.recipeState.categories.set(categories.data || []);
+    this.recipeState.recipes.set(recipes.data || []);
+    this.recipeState.promotions.set(promotions.data || []);
+    this.recipeState.promotionRecipes.set(promotionRecipes.data || []);
+    this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
+    this.recipeState.recipePreparations.set(recipePreparations.data || []);
+    this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
+    
+    // Set Delivery State
+    this.deliveryState.deliveryDrivers.set(deliveryDrivers.data || []);
   }
 
-  public async loadHrData() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId || this.demoService.isDemoMode()) return;
+  // Use this for heavy/paginated data that shouldn't be loaded on startup
+  public async loadHeavyHistoryData() {
+     const userId = this.unitContextService.activeUnitId();
+     if (!userId) return;
 
-    console.log('[LazyLoad] Loading HR Data...');
-    const [schedules, leaveRequests] = await Promise.all([
+     const [purchaseOrders, productionPlans, requisitions, schedules, leaveRequests] = await Promise.all([
+        supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
+        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
         supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }).limit(50),
-    ]);
+     ]);
 
-    this.hrState.schedules.set(schedules.data || []);
-    this.hrState.leaveRequests.set(leaveRequests.data || []);
+     this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
+     this.inventoryState.productionPlans.set(productionPlans.data || []);
+     this.inventoryState.requisitions.set(requisitions.data || []);
+     this.hrState.schedules.set(schedules.data || []);
+     this.hrState.leaveRequests.set(leaveRequests.data || []);
   }
 
-  private async loadRecipeComposition(userId: string) {
-      const [recipeIngredients, recipePreparations, recipeSubRecipes] = await Promise.all([
-        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
-        supabase.from('recipe_preparations').select('*').eq('user_id', userId),
-        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
-      ]);
-      
-      this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
-      this.recipeState.recipePreparations.set(recipePreparations.data || []);
-      this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
-  }
-
+  // --- MOCK DATA LOADING (Keep simplified) ---
   private loadMockData() {
     this.isDataLoaded.set(false);
     try {

@@ -53,7 +53,9 @@ export class EmployeesComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.supabaseStateService.loadHrData();
+    // Data is loaded centrally by SupabaseStateService
+    // We load heavy historical data here which is not critical for immediate rendering
+    this.supabaseStateService.loadHeavyHistoryData();
   }
   
   openDetailsModal(employee: Employee & { role: string }) {

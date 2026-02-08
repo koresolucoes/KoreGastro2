@@ -117,8 +117,7 @@ export class PosComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Lazy Load POS Data
-    this.supabaseStateService.loadPosData();
+    // Data is loaded centrally by SupabaseStateService
   }
 
   // ... (Rest of the component remains unchanged)

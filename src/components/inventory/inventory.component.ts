@@ -187,8 +187,9 @@ export class InventoryComponent implements OnInit {
     newIngredientForm = signal<Partial<IngredientModel>>(EMPTY_INGREDIENT);
 
     ngOnInit() {
-        // Lazy Load Inventory Data
-        this.supabaseStateService.loadInventoryData();
+        // Data is loaded centrally by SupabaseStateService. No need to load here manually.
+        // But we still load the "Heavy History Data" which is not loaded on init.
+        this.supabaseStateService.loadHeavyHistoryData();
 
         const navigationState = this.router.getCurrentNavigation()?.extras.state as any;
         if (navigationState && navigationState['newOrderItems']) {
