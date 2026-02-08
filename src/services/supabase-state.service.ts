@@ -296,6 +296,14 @@ export class SupabaseStateService {
         case 'cashier_closings':
             this.refreshDashboardAndCashierData();
             break;
+
+        // Mise en Place Realtime Updates
+        case 'production_plans':
+             this.handleSimpleUpdate(this.inventoryState.productionPlans, payload, '*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))');
+             break;
+        case 'production_tasks':
+             this.handleProductionTaskChange(payload);
+             break;
     }
   }
 
@@ -411,6 +419,43 @@ export class SupabaseStateService {
               this.dashboardState.dashboardTransactions.update(txs => [...txs, payload.new]);
           }
       }
+  }
+
+  // Handle updates to tasks within plans
+  private async handleProductionTaskChange(payload: any) {
+    const planId = payload.new?.production_plan_id || payload.old?.production_plan_id;
+    if (!planId) return;
+
+    let taskWithRelations: any = payload.new;
+
+    // Fetch full structure for INSERT/UPDATE to get joined fields
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+       const { data } = await supabase
+         .from('production_tasks')
+         .select('*, recipes(name, source_ingredient_id), stations(name), employees(name)')
+         .eq('id', taskWithRelations.id)
+         .single();
+       if (data) taskWithRelations = data;
+    }
+
+    this.inventoryState.productionPlans.update(plans => {
+        return plans.map(plan => {
+            if (plan.id === planId) {
+                const currentTasks = plan.production_tasks || [];
+                if (payload.eventType === 'INSERT') {
+                    // Prevent duplicates
+                    if (!currentTasks.find(t => t.id === taskWithRelations.id)) {
+                        return { ...plan, production_tasks: [...currentTasks, taskWithRelations] };
+                    }
+                } else if (payload.eventType === 'UPDATE') {
+                    return { ...plan, production_tasks: currentTasks.map(t => t.id === taskWithRelations.id ? taskWithRelations : t) };
+                } else if (payload.eventType === 'DELETE') {
+                    return { ...plan, production_tasks: currentTasks.filter(t => t.id !== payload.old.id) };
+                }
+            }
+            return plan;
+        });
+    });
   }
 
   public async refreshDashboardAndCashierData() {
