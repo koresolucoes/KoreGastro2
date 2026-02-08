@@ -154,7 +154,9 @@ export class SupabaseStateService {
         recipeIngredients, recipePreparations, recipeSubRecipes,
         ingredients, ingredientCategories, suppliers, stationStocks,
         // Active Operations
-        customers, orders, deliveryDrivers
+        customers, orders, deliveryDrivers,
+        // Loyalty
+        loyaltySettings, loyaltyRewards
     ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('tables').select('*').eq('user_id', userId),
@@ -180,7 +182,11 @@ export class SupabaseStateService {
           .select('*, order_items(*), customers(*), delivery_drivers(*)')
           .eq('user_id', userId)
           .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
-        supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true)
+        supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
+        
+        // Loyalty Data
+        supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true })
     ]);
 
     // Populate State
@@ -204,6 +210,9 @@ export class SupabaseStateService {
     this.posState.customers.set(customers.data || []);
     this.setOrdersWithPrices(orders.data || []);
     this.deliveryState.deliveryDrivers.set(deliveryDrivers.data || []);
+    
+    this.settingsState.loyaltySettings.set(loyaltySettings.data || null);
+    this.settingsState.loyaltyRewards.set(loyaltyRewards.data || []);
   }
 
   // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
@@ -289,6 +298,17 @@ export class SupabaseStateService {
         case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;
         case 'requisitions': this.handleSimpleUpdate(this.inventoryState.requisitions, payload, '*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)'); break;
         
+        // Loyalty Updates
+        case 'loyalty_settings':
+             // Loyalty settings is a single object, not a list, handle manually
+             if (payload.new) {
+                 this.settingsState.loyaltySettings.set(payload.new);
+             }
+             break;
+        case 'loyalty_rewards':
+             this.handleSimpleUpdate(this.settingsState.loyaltyRewards, payload);
+             break;
+
         // Transactional logs - append only if matching date
         case 'transactions':
             this.handleTransactionChange(payload);
