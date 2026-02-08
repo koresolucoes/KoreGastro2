@@ -155,8 +155,8 @@ export class SupabaseStateService {
         ingredients, ingredientCategories, suppliers, stationStocks,
         // Active Operations
         customers, orders, deliveryDrivers,
-        // Loyalty
-        loyaltySettings, loyaltyRewards
+        // Loyalty & Reservations
+        loyaltySettings, loyaltyRewards, reservationSettings
     ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('tables').select('*').eq('user_id', userId),
@@ -184,9 +184,10 @@ export class SupabaseStateService {
           .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
         supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
         
-        // Loyalty Data
+        // Settings
         supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true })
+        supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true }),
+        supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle()
     ]);
 
     // Populate State
@@ -213,6 +214,7 @@ export class SupabaseStateService {
     
     this.settingsState.loyaltySettings.set(loyaltySettings.data || null);
     this.settingsState.loyaltyRewards.set(loyaltyRewards.data || []);
+    this.settingsState.reservationSettings.set(reservationSettings.data || null);
   }
 
   // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
@@ -222,21 +224,31 @@ export class SupabaseStateService {
      if (!userId) return;
      console.log('[SupabaseState] Loading BackOffice Data (Lazy)...');
 
-     const [purchaseOrders, inventoryLots, productionPlans, requisitions, schedules, leaveRequests] = await Promise.all([
+     const today = new Date();
+     today.setHours(0, 0, 0, 0);
+
+     const [
+        purchaseOrders, inventoryLots, productionPlans, 
+        requisitions, schedules, leaveRequests, 
+        activeReservations
+     ] = await Promise.all([
         supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('inventory_lots').select('*').eq('user_id', userId).gt('quantity', 0).order('created_at', { ascending: true }),
         supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
         supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
         supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }).limit(50),
+        // Load only future or today's reservations to save bandwidth
+        supabase.from('reservations').select('*').eq('user_id', userId).gte('reservation_time', today.toISOString()).order('reservation_time', { ascending: true })
      ]);
 
      this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
-     this.inventoryState.inventoryLots.set(inventoryLots.data || []); // Lots needed for FIFO
+     this.inventoryState.inventoryLots.set(inventoryLots.data || []); 
      this.inventoryState.productionPlans.set(productionPlans.data || []);
      this.inventoryState.requisitions.set(requisitions.data || []);
      this.hrState.schedules.set(schedules.data || []);
      this.hrState.leaveRequests.set(leaveRequests.data || []);
+     this.settingsState.reservations.set(activeReservations.data || []);
   }
 
   public async refetchIfoodLogs() {
@@ -300,13 +312,22 @@ export class SupabaseStateService {
         
         // Loyalty Updates
         case 'loyalty_settings':
-             // Loyalty settings is a single object, not a list, handle manually
              if (payload.new) {
                  this.settingsState.loyaltySettings.set(payload.new);
              }
              break;
         case 'loyalty_rewards':
              this.handleSimpleUpdate(this.settingsState.loyaltyRewards, payload);
+             break;
+             
+        // Reservation Updates
+        case 'reservation_settings':
+             if (payload.new) {
+                 this.settingsState.reservationSettings.set(payload.new);
+             }
+             break;
+        case 'reservations':
+             this.handleSimpleUpdate(this.settingsState.reservations, payload);
              break;
 
         // Transactional logs - append only if matching date
