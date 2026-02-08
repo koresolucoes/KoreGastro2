@@ -121,7 +121,7 @@ export class SupabaseStateService {
     try {
         const [
             companyProfile, roles, rolePermissions,
-            employees, subscription, webhooks
+            employees, webhooks
         ] = await Promise.all([
             supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
             supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
