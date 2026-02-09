@@ -60,35 +60,23 @@ export class SettingsDataService {
   }
 
   async getStoreManagers(): Promise<{ data: StoreManager[]; error: any }> {
-    // Busca gestores da loja que está no contexto atual (activeUnitId)
-    // O RPC 'get_store_managers' usa auth.uid() (dono) para filtrar. 
-    // Se precisarmos listar gestores de uma loja onde somos apenas gerentes, precisariamos de outro RPC ou select direto.
-    // Por enquanto, assumimos que apenas o dono gerencia a equipe via RPC.
-    
-    // Se quisermos ser mais específicos, podemos fazer um select direto:
     const storeId = this.getActiveUnitId();
     if(!storeId) return { data: [], error: { message: 'No active unit' } };
 
-    const { data, error } = await supabase
-        .from('unit_permissions')
-        .select(`
-            id,
-            manager_id,
-            role,
-            created_at
-        `)
-        .eq('store_id', storeId);
-
-    // Precisamos buscar os dados dos usuários (email/nome) separadamente ou via join se RLS permitir leitura de users.
-    // Como a tabela 'users' geralmente é restrita, o RPC é mais seguro. Vamos tentar o RPC.
-    const { data: rpcData, error: rpcError } = await supabase.rpc('get_store_managers');
+    // Usando RPC atualizado que aceita store_id_input
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_store_managers', { store_id_input: storeId });
+    
     return { data: rpcData as StoreManager[] || [], error: rpcError };
   }
 
   async inviteManager(email: string, role: string): Promise<{ success: boolean; message: string }> {
+    const storeId = this.getActiveUnitId();
+    if(!storeId) return { success: false, message: 'No active unit' };
+
     const { data, error } = await supabase.rpc('invite_manager_by_email', { 
         email_input: email, 
-        role_input: role 
+        role_input: role,
+        store_id_input: storeId
     });
     
     if (error) {
@@ -252,8 +240,6 @@ export class SettingsDataService {
   async updateRolePermissions(roleId: string, permissions: string[], callerRoleId: string): Promise<{ success: boolean, error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-    
-    // Optional: Validation to ensure caller has permissions (skipped for brevity/admin context)
     
     const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
     if (deleteError) return { success: false, error: deleteError };
