@@ -307,7 +307,6 @@ export class InventoryDataService {
     }
   }
 
-  // ... existing deductStockForOrderItems ...
    async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };

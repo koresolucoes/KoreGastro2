@@ -1,7 +1,7 @@
 
 -- ==============================================================================
 -- FIX: FUNÇÕES RPC PARA GESTÃO DE EQUIPE (MULTI-LOJA)
--- Execute este script para corrigir o erro 404 ao carregar gestores.
+-- Correção do erro 42804 (type mismatch varchar vs text) e 42702 (ambiguous column)
 -- ==============================================================================
 
 -- 1. Função para buscar lista de gestores da loja
@@ -22,10 +22,14 @@ BEGIN
   target_store_id := COALESCE(store_id_input, auth.uid());
   
   -- Segurança: Apenas dono ou quem tem role 'owner' na loja pode ver a lista de gestores
+  -- USAMOS ALIASES (s, up_check) PARA EVITAR AMBIGUIDADE COM OS PARÂMETROS DE RETORNO
   IF NOT EXISTS (
-      SELECT 1 FROM stores WHERE id = target_store_id AND owner_id = auth.uid()
+      SELECT 1 FROM stores s WHERE s.id = target_store_id AND s.owner_id = auth.uid()
   ) AND NOT EXISTS (
-      SELECT 1 FROM unit_permissions WHERE store_id = target_store_id AND manager_id = auth.uid() AND role = 'owner'
+      SELECT 1 FROM unit_permissions up_check 
+      WHERE up_check.store_id = target_store_id 
+      AND up_check.manager_id = auth.uid() 
+      AND up_check.role = 'owner'
   ) THEN
       -- Se não tiver permissão, retorna vazio (segurança silenciosa)
       RETURN;
@@ -35,9 +39,9 @@ BEGIN
   SELECT 
     up.id as permission_id,
     up.manager_id,
-    u.email as manager_email,
-    COALESCE(u.raw_user_meta_data->>'name', 'Usuário') as manager_name,
-    up.role,
+    u.email::TEXT as manager_email, -- Cast explícito para TEXT para evitar erro de tipo
+    COALESCE(u.raw_user_meta_data->>'name', 'Usuário')::TEXT as manager_name,
+    up.role::TEXT,
     up.created_at
   FROM unit_permissions up
   JOIN auth.users u ON up.manager_id = u.id
@@ -58,9 +62,12 @@ BEGIN
   
   -- Segurança: Apenas Owner pode convidar
   IF NOT EXISTS (
-      SELECT 1 FROM stores WHERE id = target_store_id AND owner_id = auth.uid()
+      SELECT 1 FROM stores s WHERE s.id = target_store_id AND s.owner_id = auth.uid()
   ) AND NOT EXISTS (
-      SELECT 1 FROM unit_permissions WHERE store_id = target_store_id AND manager_id = auth.uid() AND role = 'owner'
+      SELECT 1 FROM unit_permissions up_check 
+      WHERE up_check.store_id = target_store_id 
+      AND up_check.manager_id = auth.uid() 
+      AND up_check.role = 'owner'
   ) THEN
       RETURN json_build_object('success', false, 'message', 'Permissão negada. Apenas proprietários podem convidar.');
   END IF;
@@ -71,7 +78,7 @@ BEGIN
     RETURN json_build_object('success', false, 'message', 'Usuário não encontrado com este e-mail. Peça para ele criar uma conta no ChefOS primeiro.');
   END IF;
 
-  IF EXISTS (SELECT 1 FROM unit_permissions WHERE manager_id = target_user_id AND store_id = target_store_id) THEN
+  IF EXISTS (SELECT 1 FROM unit_permissions up WHERE up.manager_id = target_user_id AND up.store_id = target_store_id) THEN
     RETURN json_build_object('success', false, 'message', 'Este usuário já é um gestor desta loja.');
   END IF;
 

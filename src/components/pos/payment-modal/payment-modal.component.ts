@@ -338,7 +338,8 @@ export class PaymentModalComponent {
     if (result.success) {
       this.paymentSuccess.set(true);
       if (result.warningMessage) {
-        this.notificationService.show(result.warningMessage, 'warning', 10000);
+        // Use a longer duration for stock warnings so the cashier sees it
+        this.notificationService.show(result.warningMessage, 'warning', 8000);
       }
     } else {
       await this.notificationService.alert(`Falha ao registrar pagamento. Erro: ${result.error?.message}`);
