@@ -228,6 +228,51 @@ export class InventoryDataService {
     return { success: true, error: null };
   }
 
+  // --- Helper to consume from station with fallback to central ---
+  private async consumeStockFromStation(stationId: string | null, ingredientId: string, quantityNeeded: number, reason: string): Promise<boolean> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return false;
+
+      let remainingNeeded = quantityNeeded;
+
+      // 1. Try to consume from Station Stock first
+      if (stationId) {
+          const { data: stationStock } = await supabase
+              .from('station_stocks')
+              .select('id, quantity')
+              .eq('station_id', stationId)
+              .eq('ingredient_id', ingredientId)
+              .maybeSingle();
+
+          if (stationStock) {
+              const consumedFromStation = Math.min(stationStock.quantity, remainingNeeded);
+              if (consumedFromStation > 0) {
+                  await supabase.from('station_stocks')
+                      .update({ 
+                          quantity: stationStock.quantity - consumedFromStation,
+                          updated_at: new Date().toISOString()
+                      })
+                      .eq('id', stationStock.id);
+                  
+                  remainingNeeded -= consumedFromStation;
+              }
+          }
+      }
+
+      // 2. If there is still need, consume from Central (Ingredients)
+      // This happens if station stock is empty or not enough.
+      if (remainingNeeded > 0) {
+          const result = await this.adjustIngredientStock({
+              ingredientId: ingredientId,
+              quantityChange: -remainingNeeded,
+              reason: `${reason} (Fallback Central/Sem Estoque Praça)`
+          });
+          if (!result.success) return false;
+      }
+      
+      return true;
+  }
+
   // ... existing category / supplier CRUD ...
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
     const userId = this.getActiveUnitId();
@@ -264,8 +309,8 @@ export class InventoryDataService {
     return { success: !error, error };
   }
   
-  // ... existing adjustStockForProduction ...
-    async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null): Promise<{ success: boolean; error: any }> {
+  // UPDATED: Now supports consuming from station
+    async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null, stationId?: string): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -276,12 +321,18 @@ export class InventoryDataService {
     
     try {
       const deductionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
+      
+      // Consume raw ingredients
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
-        const result = await this.adjustIngredientStock({ ingredientId, quantityChange: -totalDeduction, reason: deductionReason });
-        if (!result.success) throw result.error;
+        
+        // UPDATED: Use helper to try station first
+        const success = await this.consumeStockFromStation(stationId || null, ingredientId, totalDeduction, deductionReason);
+        if (!success) throw new Error(`Failed to consume stock for ingredient ${ingredientId}`);
       }
 
+      // Add the produced item (sub-recipe output) to Central Stock (or potentially station stock in future)
+      // For now, produced items go to central inventory (e.g. a big pot of sauce).
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       const { success, error } = await this.adjustIngredientStock({ 
           ingredientId: sourceIngredientId, 
@@ -307,6 +358,7 @@ export class InventoryDataService {
     }
   }
 
+   // UPDATED: Refactored to reuse consumeStockFromStation logic
    async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
@@ -314,9 +366,8 @@ export class InventoryDataService {
     const recipeCompositions = this.recipeState.recipeDirectComposition();
     const processedGroupIds = new Set<string>();
     
+    // Map: StationID -> { IngredientID -> TotalQty }
     const stationDeductions = new Map<string, Map<string, number>>();
-    const ingredientNames = new Map<string, string>();
-    const stationsNeedingRestock = new Set<string>();
 
     for (const item of orderItems) {
       if (!item.recipe_id) continue;
@@ -327,7 +378,7 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        const targetStationId = item.station_id;
+        const targetStationId = item.station_id; // The station that produced the item
 
         if (!stationDeductions.has(targetStationId)) {
             stationDeductions.set(targetStationId, new Map());
@@ -336,8 +387,6 @@ export class InventoryDataService {
 
         const addToMap = (ingId: string, qty: number) => {
             stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-            const ing = this.inventoryState.ingredients().find(i => i.id === ingId);
-            if(ing) ingredientNames.set(ingId, ing.name);
         };
 
         for (const ing of composition.directIngredients) {
@@ -355,75 +404,18 @@ export class InventoryDataService {
 
     try {
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
+      let missingStockCount = 0;
 
       for (const [stationId, ingredientsNeeded] of stationDeductions.entries()) {
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
 
-             const { data: stationStockData } = await supabase
-                .from('station_stocks')
-                .select('id, quantity')
-                .eq('station_id', stationId)
-                .eq('ingredient_id', ingredientId)
-                .maybeSingle(); 
-            
-            const currentStationQty = stationStockData?.quantity || 0;
-
-            if (currentStationQty >= quantityNeeded) {
-                if (stationStockData) {
-                    await supabase.from('station_stocks')
-                        .update({ quantity: currentStationQty - quantityNeeded, updated_at: new Date().toISOString() })
-                        .eq('id', stationStockData.id);
-                }
-            } else {
-                const { data: centralIngredient } = await supabase
-                    .from('ingredients')
-                    .select('stock, name')
-                    .eq('id', ingredientId)
-                    .single();
-                
-                const currentCentralQty = centralIngredient?.stock || 0;
-                
-                let remainder = quantityNeeded;
-                
-                if (currentStationQty > 0 && stationStockData) {
-                    remainder = quantityNeeded - currentStationQty;
-                    await supabase.from('station_stocks')
-                        .update({ quantity: 0, updated_at: new Date().toISOString() })
-                        .eq('id', stationStockData.id);
-                }
-
-                if (currentCentralQty >= remainder) {
-                     const result = await this.adjustIngredientStock({
-                         ingredientId: ingredientId,
-                         quantityChange: -remainder,
-                         reason: `${reason} (Fallback de Estação)`,
-                     });
-                     
-                     if (!result.success) throw result.error;
-
-                     const stationName = this.posState.stations().find(s => s.id === stationId)?.name || 'Estação';
-                     stationsNeedingRestock.add(`${stationName} (item: ${centralIngredient?.name})`);
-
-                } else {
-                     const result = await this.adjustIngredientStock({
-                         ingredientId: ingredientId,
-                         quantityChange: -remainder,
-                         reason: `${reason} (Sem estoque)`,
-                     });
-                     if (!result.success) throw result.error;
-                }
-            }
+             // Use the helper that checks station first, then central
+             await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason);
         }
       }
       
-      let warningMessage: string | undefined;
-      if (stationsNeedingRestock.size > 0) {
-          const stationsList = Array.from(stationsNeedingRestock).join(', ');
-          warningMessage = `Estoque retirado do Almoxarifado para: ${stationsList}. Por favor, faça uma requisição.`;
-      }
-      
-      return { success: true, error: null, warningMessage };
+      return { success: true, error: null };
 
     } catch (error) {
       return { success: false, error };

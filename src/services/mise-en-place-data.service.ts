@@ -1,4 +1,5 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
@@ -115,7 +116,8 @@ export class MiseEnPlaceDataService {
             fullTaskData.sub_recipe_id, 
             fullTaskData.recipes.source_ingredient_id, 
             fullTaskData.quantity_to_produce,
-            lotNumber
+            lotNumber,
+            fullTaskData.station_id // PASS STATION ID HERE
         );
         if (!success) {
             return { success: false, error };
