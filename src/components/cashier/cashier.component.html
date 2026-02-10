@@ -549,11 +549,11 @@
            <div class="grid grid-cols-2 gap-2">
              <div>
                <p class="text-gray-400 text-xs">Aberto por</p>
-               <p class="text-white font-medium">{{ (order as any).creator?.name || 'Sistema/Desconhecido' }}</p>
+               <p class="text-white font-medium">{{ $any(order).creator?.name || 'Sistema/Desconhecido' }}</p>
              </div>
              <div>
                <p class="text-gray-400 text-xs">Fechado por</p>
-               <p class="text-white font-medium">{{ (order as any).closer?.name || 'Sistema/Desconhecido' }}</p>
+               <p class="text-white font-medium">{{ $any(order).closer?.name || 'Sistema/Desconhecido' }}</p>
              </div>
            </div>
         </div>
