@@ -49,6 +49,18 @@ interface KdsDisplayItem {
   status_timestamps?: Record<string, string> | null; // From the representative item
 }
 
+// Interface for All Day Production View
+interface ProductionAggregateItem {
+  name: string;
+  quantity: number;
+  status: OrderItemStatus;
+  notes: string | null;
+  minElapsedTime: number; // Time of the oldest item in this group
+  maxElapsedTime: number;
+  isCritical: boolean;
+  ids: string[]; // All item IDs that make up this aggregate
+}
+
 
 interface StationTicket extends BaseTicket {
   items: KdsDisplayItem[]; // Changed from ProcessedOrderItem[]
@@ -96,7 +108,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     stationsById = computed(() => new Map(this.stations().map(s => [s.id, s.name])));
 
     selectedStation = signal<Station | null>(null);
-    viewMode = signal<'station' | 'expo'>('station');
+    viewMode = signal<'station' | 'expo' | 'production'>('station');
 
     private timerInterval: ReturnType<typeof setInterval> | undefined;
     currentTime = signal(Date.now());
@@ -283,6 +295,49 @@ export class KdsComponent implements OnInit, OnDestroy {
         });
     });
 
+    // Computed for Production View (All Day)
+    productionAggregates = computed<ProductionAggregateItem[]>(() => {
+        const station = this.selectedStation();
+        if (!station) return [];
+
+        const items = this.allKdsItemsProcessed().filter(item => 
+            item.station_id === station.id &&
+            !item.isCancelled &&
+            !item.isHeld &&
+            (item.status === 'PENDENTE' || item.status === 'EM_PREPARO')
+        );
+
+        const groups = new Map<string, ProductionAggregateItem>();
+
+        for (const item of items) {
+            // Group by Recipe ID + Notes + Status
+            const key = `${item.recipe_id}_${item.notes || ''}_${item.status}`;
+            
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    name: item.name,
+                    quantity: 0,
+                    status: item.status,
+                    notes: item.notes,
+                    minElapsedTime: item.elapsedTimeSeconds,
+                    maxElapsedTime: item.elapsedTimeSeconds,
+                    isCritical: item.isCritical,
+                    ids: []
+                });
+            }
+
+            const group = groups.get(key)!;
+            group.quantity += item.quantity;
+            group.ids.push(item.id);
+            group.minElapsedTime = Math.min(group.minElapsedTime, item.elapsedTimeSeconds);
+            group.maxElapsedTime = Math.max(group.maxElapsedTime, item.elapsedTimeSeconds);
+            if (item.isCritical) group.isCritical = true;
+        }
+
+        // Sort by longest wait time (maxElapsedTime) descending
+        return Array.from(groups.values()).sort((a, b) => b.maxElapsedTime - a.maxElapsedTime);
+    });
+
     // GROUPING LOGIC (SMART ROUTING)
     private groupItemsForDisplay(items: ProcessedOrderItem[]): KdsDisplayItem[] {
         const groupedMap = new Map<string, KdsDisplayItem>();
@@ -383,7 +438,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
 
     selectStation(station: Station) { this.selectedStation.set(station); }
-    setViewMode(mode: 'station' | 'expo') { this.viewMode.set(mode); }
+    setViewMode(mode: 'station' | 'expo' | 'production') { this.viewMode.set(mode); }
 
     async assignEmployeeToStation(employeeId: string | null) {
         const station = this.selectedStation();
@@ -468,6 +523,24 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (confirmed) {
             await this.updateStatus(item, true);
         }
+    }
+
+    // New: Batch actions for Production View
+    async advanceProductionItems(item: ProductionAggregateItem) {
+        if(this.updatingItems().has(item.ids[0])) return;
+        
+        let nextStatus: OrderItemStatus;
+        if (item.status === 'PENDENTE') nextStatus = 'EM_PREPARO';
+        else if (item.status === 'EM_PREPARO') nextStatus = 'PRONTO';
+        else return;
+
+        this.soundNotificationService.playConfirmationSound();
+        this.setUpdatingForGroup(item.ids, true);
+
+        const { success, error } = await this.posDataService.updateMultipleItemStatuses(item.ids, nextStatus);
+         if (!success) await this.notificationService.alert(`Erro ao atualizar itens: ${error?.message}`);
+        
+        this.setUpdatingForGroup(item.ids, false);
     }
 
     // Helper to manage loading state for groups

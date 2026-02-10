@@ -13,7 +13,7 @@
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
       <div class="flex-1">
         <h1 class="text-2xl font-bold text-white">Kitchen Display System (KDS)</h1>
-        @if(viewMode() === 'station') {
+        @if(viewMode() === 'station' || viewMode() === 'production') {
           <div class="flex items-center gap-2 mt-2 text-sm">
             <span class="text-gray-400">Responsável:</span>
             @if (selectedStation()?.employees; as employee) {
@@ -39,12 +39,13 @@
 
         <!-- View Mode Toggle -->
         <div class="flex gap-1 bg-gray-900/50 p-1 rounded-lg">
-          <button (click)="setViewMode('station')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'station'" [class.text-white]="viewMode() === 'station'">Estação</button>
+          <button (click)="setViewMode('station')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'station'" [class.text-white]="viewMode() === 'station'">Ticket</button>
+          <button (click)="setViewMode('production')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'production'" [class.text-white]="viewMode() === 'production'">Produção</button>
           <button (click)="setViewMode('expo')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'expo'" [class.text-white]="viewMode() === 'expo'">Expo</button>
         </div>
 
         <!-- Station Selector for Station View -->
-        @if(viewMode() === 'station') {
+        @if(viewMode() === 'station' || viewMode() === 'production') {
           <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
             @for (station of stations(); track station.id) {
               <button (click)="selectStation(station)" class="px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="selectedStation()?.id === station.id" [class.text-white]="selectedStation()?.id === station.id" [class.text-gray-300]="selectedStation()?.id !== station.id">
@@ -58,7 +59,7 @@
 
     <div class="flex-1 overflow-y-auto pr-2">
       @if (viewMode() === 'station') {
-        <!-- Station View Grid -->
+        <!-- Station View Grid (Ticket based) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
             <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-red-600]="ticket.isOrderCancelled" [class.border-gray-700]="!ticket.isOrderCancelled">
@@ -85,7 +86,6 @@
                 </div>
               </div>
               <ul class="p-3 space-y-2 flex-1">
-                <!-- Iterate over GROUPED items now -->
                 @for (item of ticket.items; track item.id) {
                   <li (click)="updateStatus(item, false, $event)" 
                       class="p-3 rounded-r-md transition-all relative cursor-pointer"
@@ -178,6 +178,45 @@
               </div>
             </div>
           }
+        </div>
+      } @else if (viewMode() === 'production') {
+        <!-- PRODUCTION VIEW (ALL DAY) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            @for (agg of productionAggregates(); track agg.name + agg.notes) {
+                <div 
+                    (click)="advanceProductionItems(agg)"
+                    class="bg-gray-800 rounded-lg border-2 p-4 cursor-pointer relative hover:scale-105 transition-transform flex flex-col justify-between aspect-square"
+                    [class]="getItemStatusClass(agg.status)"
+                    [class.border-red-500]="agg.isCritical"
+                    [class.animate-pulse]="agg.isCritical">
+                    
+                    @if(updatingItems().has(agg.ids[0])) {
+                         <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center rounded-md z-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div></div>
+                    }
+
+                    <div class="text-center">
+                        <span class="text-4xl font-extrabold text-white">{{ agg.quantity }}</span>
+                        <span class="text-sm font-bold text-gray-400 block uppercase mt-1">A Produzir</span>
+                    </div>
+
+                    <div class="text-center border-t border-gray-600/50 pt-2 mt-2">
+                         <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">{{ agg.name }}</h3>
+                         @if(agg.notes) {
+                             <p class="text-xs text-yellow-300 italic mt-1 line-clamp-2">{{ agg.notes }}</p>
+                         }
+                    </div>
+
+                    <div class="text-center mt-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-black/40 text-white font-mono">
+                            Wait: {{ formatTime(agg.maxElapsedTime) }}
+                        </span>
+                    </div>
+                </div>
+            } @empty {
+                <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
+                    <p class="text-gray-500">Nada para produzir no momento.</p>
+                </div>
+            }
         </div>
       } @else {
         <!-- Expo View Grid -->
