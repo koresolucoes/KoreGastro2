@@ -1,11 +1,11 @@
 
-
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RequisitionCreateComponent } from './requisition-create/requisition-create.component';
 import { RequisitionListComponent } from './requisition-list/requisition-list.component';
 import { StationStockComponent } from './station-stock/station-stock.component';
 import { RequisitionReportsComponent } from './requisition-reports/requisition-reports.component';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-requisitions',
@@ -82,6 +82,13 @@ import { RequisitionReportsComponent } from './requisition-reports/requisition-r
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RequisitionsComponent {
+export class RequisitionsComponent implements OnInit {
+  private supabaseState = inject(SupabaseStateService);
+  
   activeTab = signal<'create' | 'manage' | 'stock' | 'reports'>('create');
+
+  ngOnInit() {
+      // Force load of historical data (requisitions, logs) when entering this module
+      this.supabaseState.loadBackOfficeData();
+  }
 }
