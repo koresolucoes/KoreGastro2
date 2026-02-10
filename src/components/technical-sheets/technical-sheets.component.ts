@@ -131,10 +131,11 @@ export class TechnicalSheetsComponent {
 
   filteredRecipes = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    const costs = this.recipeCosts();
+    // Explicitly cast to Map to resolve type inference issues where it might be seen as unknown
+    const costs = this.recipeCosts() as Map<string, { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> }>;
     const recipes = this.allRecipes().map(r => ({
       ...r,
-      cost: (costs as any).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
+      cost: costs.get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
     }));
     if (!term) return recipes;
     return recipes.filter(r => r.name.toLowerCase().includes(term));
@@ -157,7 +158,8 @@ export class TechnicalSheetsComponent {
     let total = 0;
     // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
-    const subRecipeCostMap = this.recipeCosts();
+    // Explicitly cast to Map to resolve type inference issues where it might be seen as unknown
+    const subRecipeCostMap = this.recipeCosts() as Map<string, { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> }>;
 
     for (const item of form.ingredients) {
       // FIX: Add check for ingredient existence to satisfy compiler.
@@ -174,7 +176,7 @@ export class TechnicalSheetsComponent {
       }
     }
     for (const item of form.subRecipes) {
-      const subRecipeCost = (subRecipeCostMap as any).get(item.child_recipe_id)?.totalCost ?? 0;
+      const subRecipeCost = subRecipeCostMap.get(item.child_recipe_id)?.totalCost ?? 0;
       total += subRecipeCost * (item.quantity || 0);
     }
     return total;

@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient } from '../../../models/db.models';
@@ -76,8 +75,8 @@ export class OrderPanelComponent {
   selectedCategory: WritableSignal<Category | null> = signal(null);
   recipeSearchTerm = signal('');
 
-  // Mobile cart visibility
-  isCartVisible = signal(false);
+  // Mobile View State ('menu' = Product List, 'cart' = Order Details/Actions)
+  mobileTab = signal<'menu' | 'cart'>('menu');
 
   // Quick Add Modal (Spotlight Flow)
   isQuickAddModalOpen = signal(false);
@@ -156,6 +155,10 @@ export class OrderPanelComponent {
       this.selectedTable();
       untracked(() => this.shoppingCart.set([]));
     });
+  }
+
+  setMobileTab(tab: 'menu' | 'cart') {
+    this.mobileTab.set(tab);
   }
 
   isItemCritical(item: OrderItem): boolean {

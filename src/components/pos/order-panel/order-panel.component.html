@@ -48,10 +48,11 @@
       </div>
 
       <!-- Main Content Grid -->
-      <div class="flex-1 flex overflow-hidden">
+      <div class="flex-1 flex overflow-hidden relative">
         
         <!-- LEFT: Menu & Catalog -->
-        <div class="flex-1 flex flex-col min-w-0 bg-gray-900">
+        <!-- Logic: Always show on Desktop. On Mobile, show only if tab is 'menu' -->
+        <div class="flex-1 flex flex-col min-w-0 bg-gray-900 md:flex" [class.hidden]="mobileTab() === 'cart'">
             <!-- Spotlight Search -->
             <div class="p-4 pb-2">
                 <div class="relative group">
@@ -101,8 +102,9 @@
             </div>
 
             <!-- Recipe Grid -->
-            <div class="flex-1 overflow-y-auto p-4 pt-2">
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <!-- Adjusted grid cols for better desktop view: wider cards -->
+            <div class="flex-1 overflow-y-auto p-4 pt-2 mb-16 md:mb-0">
+                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     @for (recipe of filteredRecipes(); track recipe.id) {
                         <button 
                             (click)="openQuickAddModal(recipe)" 
@@ -110,7 +112,7 @@
                             [disabled]="!recipe.hasStock"
                             [class.opacity-50]="!recipe.hasStock"
                         >
-                            <div class="h-28 w-full bg-gray-700 relative overflow-hidden">
+                            <div class="h-32 w-full bg-gray-700 relative overflow-hidden">
                                 @if (recipe.image_url) {
                                     <img [src]="recipe.image_url" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500">
                                 } @else {
@@ -129,7 +131,7 @@
                             </div>
                             
                             <div class="p-3 flex-1 flex flex-col">
-                                <h3 class="font-bold text-white text-sm leading-tight mb-1 line-clamp-2">{{ recipe.name }}</h3>
+                                <h3 class="font-bold text-white text-base leading-tight mb-1 line-clamp-2">{{ recipe.name }}</h3>
                                 @if(recipe.external_code) {
                                     <p class="text-[10px] text-gray-500 font-mono">{{ recipe.external_code }}</p>
                                 }
@@ -147,8 +149,9 @@
             </div>
         </div>
 
-        <!-- RIGHT: Cart & Actions (Sidebar on Desktop) -->
-        <div class="w-96 bg-gray-800 border-l border-gray-700 flex flex-col shadow-xl z-10 hidden md:flex">
+        <!-- RIGHT: Cart & Actions (Sidebar on Desktop, Tab on Mobile) -->
+        <!-- Logic: Always show on Desktop (md:flex). On Mobile, show only if tab is 'cart' -->
+        <div class="w-full md:w-96 bg-gray-800 border-l border-gray-700 flex flex-col shadow-xl z-10 md:flex h-full" [class.hidden]="mobileTab() === 'menu'">
             <!-- Cart Header -->
             <div class="p-4 border-b border-gray-700 bg-gray-800">
                 <h3 class="font-bold text-white text-lg flex items-center gap-2">
@@ -158,7 +161,7 @@
             </div>
 
             <!-- Cart Items List -->
-            <div class="flex-1 overflow-y-auto p-2 space-y-2">
+            <div class="flex-1 overflow-y-auto p-2 space-y-2 mb-20 md:mb-0">
                 
                 <!-- Section 1: Sent Items (Read Only) -->
                 @if (groupedOrderItems().length > 0) {
@@ -248,7 +251,7 @@
             </div>
 
             <!-- Footer Actions -->
-            <div class="p-4 bg-gray-800 border-t border-gray-700 space-y-3 shadow-lg z-20">
+            <div class="p-4 bg-gray-800 border-t border-gray-700 space-y-3 shadow-lg z-20 md:relative fixed bottom-[60px] md:bottom-0 left-0 right-0">
                 <div class="flex justify-between items-end">
                     <span class="text-gray-400 text-sm">Total</span>
                     <span class="text-2xl font-bold text-white">{{ orderTotal() | currency:'BRL' }}</span>
@@ -273,6 +276,28 @@
                  </div>
             </div>
         </div>
+
+        <!-- Mobile Bottom Tabs Navigation -->
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 flex z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+            <button (click)="setMobileTab('menu')" class="flex-1 py-3 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'menu'" [class.text-gray-400]="mobileTab() !== 'menu'">
+                <span class="material-symbols-outlined text-2xl">restaurant_menu</span>
+                <span class="text-xs font-semibold mt-1">Cardápio</span>
+                @if (mobileTab() === 'menu') { <div class="absolute top-0 left-0 right-0 h-1 bg-blue-500"></div> }
+            </button>
+            <button (click)="setMobileTab('cart')" class="flex-1 py-3 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'cart'" [class.text-gray-400]="mobileTab() !== 'cart'">
+                <div class="relative">
+                    <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+                    @if (totalCartItems() > 0) {
+                        <span class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center border border-gray-900">
+                            {{ totalCartItems() }}
+                        </span>
+                    }
+                </div>
+                <span class="text-xs font-semibold mt-1">Ver Pedido / Pagar</span>
+                @if (mobileTab() === 'cart') { <div class="absolute top-0 left-0 right-0 h-1 bg-blue-500"></div> }
+            </button>
+        </div>
+
       </div>
     }
 </div>
