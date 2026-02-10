@@ -80,6 +80,19 @@ export interface CustomReportData {
   totals?: { [key: string]: number };
 }
 
+export interface CancellationData {
+    id: string;
+    type: 'ITEM' | 'ORDER';
+    itemName: string; // Or "Pedido Completo"
+    quantity: number;
+    valueLost: number;
+    reason: string;
+    cancelledBy: string; // Employee Name
+    cancelledAt: string;
+    orderId: string;
+    tableNumber: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -128,6 +141,85 @@ export class CashierDataService {
       .gte('date', startDate.toISOString())
       .lte('date', endDate.toISOString())
       .order('date', { ascending: true });
+  }
+
+  // --- AUDIT REPORT ---
+  async getCancellationReport(startDateStr: string, endDateStr: string): Promise<{ data: CancellationData[]; error: any }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { data: [], error: { message: 'Active unit not found' } };
+
+      const startDate = new Date(`${startDateStr}T00:00:00`);
+      const endDate = new Date(`${endDateStr}T23:59:59`);
+
+      const cancellations: CancellationData[] = [];
+
+      // 1. Fetch Cancelled Items (Individual items cancelled within orders)
+      const { data: cancelledItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+              id, name, quantity, original_price, notes, created_at, order_id, 
+              employees!cancelled_by(name),
+              orders(table_number)
+          `)
+          .eq('user_id', userId)
+          .eq('status', 'CANCELADO')
+          .gte('created_at', startDate.toISOString()) // Using created_at as proxy for cancellation time if update time not tracked separately yet
+          .lte('created_at', endDate.toISOString());
+
+      if (!itemsError && cancelledItems) {
+          cancelledItems.forEach((item: any) => {
+              cancellations.push({
+                  id: item.id,
+                  type: 'ITEM',
+                  itemName: item.name,
+                  quantity: item.quantity,
+                  valueLost: item.original_price * item.quantity,
+                  reason: item.notes || 'Sem motivo',
+                  cancelledBy: item.employees?.name || 'Sistema/Desconhecido',
+                  cancelledAt: item.created_at, // Ideally we'd have a cancelled_at column, but created_at is close enough for recent cancels
+                  orderId: item.order_id,
+                  tableNumber: item.orders?.table_number || 0
+              });
+          });
+      }
+
+      // 2. Fetch Cancelled Orders (Whole orders cancelled)
+      const { data: cancelledOrders, error: ordersError } = await supabase
+          .from('orders')
+          .select(`
+              id, table_number, notes, completed_at, 
+              employees!cancelled_by(name),
+              order_items(name, quantity, original_price)
+          `)
+          .eq('user_id', userId)
+          .eq('status', 'CANCELLED')
+          .gte('completed_at', startDate.toISOString())
+          .lte('completed_at', endDate.toISOString());
+
+      if (!ordersError && cancelledOrders) {
+          cancelledOrders.forEach((order: any) => {
+              const totalValue = order.order_items?.reduce((sum: number, i: any) => sum + (i.original_price * i.quantity), 0) || 0;
+              // Only add if not already captured by individual items (avoids duplication if logic changes)
+              // Currently, we treat whole order cancellation as a separate high-level event
+              cancellations.push({
+                  id: order.id,
+                  type: 'ORDER',
+                  itemName: `Pedido Completo (${order.order_items?.length || 0} itens)`,
+                  quantity: 1,
+                  valueLost: totalValue,
+                  reason: order.notes || 'Sem motivo',
+                  cancelledBy: order.employees?.name || 'Sistema/Desconhecido',
+                  cancelledAt: order.completed_at,
+                  orderId: order.id,
+                  tableNumber: order.table_number || 0
+              });
+          });
+      }
+
+      return { 
+          data: cancellations.sort((a, b) => new Date(b.cancelledAt).getTime() - new Date(a.cancelledAt).getTime()), 
+          error: itemsError || ordersError 
+      };
   }
 
   async generateReportData(startDateStr: string, endDateStr: string, reportType: 'sales' | 'items' | 'financial'): Promise<ReportData> {

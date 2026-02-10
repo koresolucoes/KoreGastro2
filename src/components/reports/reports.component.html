@@ -1,3 +1,4 @@
+
 <div class="container mx-auto">
   <div class="bg-gray-800 rounded-lg p-6 mb-6 no-print">
     <h1 class="text-3xl font-bold text-white mb-4">Relatórios</h1>
@@ -18,18 +19,21 @@
   </div>
 
   <!-- Tabs for Report Types -->
-  <div class="mb-6 border-b border-gray-700 no-print">
+  <div class="mb-6 border-b border-gray-700 no-print overflow-x-auto">
       <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-          <button (click)="activeReport.set('summary')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.border-transparent]="activeReport() !== 'summary'" [class.text-gray-400]="activeReport() !== 'summary'">
+          <button (click)="activeReport.set('summary')" class="py-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap" [class.border-blue-500]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.border-transparent]="activeReport() !== 'summary'" [class.text-gray-400]="activeReport() !== 'summary'">
               Resumo
           </button>
-           <button (click)="activeReport.set('comparative')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.border-transparent]="activeReport() !== 'comparative'" [class.text-gray-400]="activeReport() !== 'comparative'">
+           <button (click)="activeReport.set('comparative')" class="py-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap" [class.border-blue-500]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.border-transparent]="activeReport() !== 'comparative'" [class.text-gray-400]="activeReport() !== 'comparative'">
               Análise Comparativa
           </button>
-          <button (click)="activeReport.set('peakHours')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() !== 'peakHours'" [class.text-gray-400]="activeReport() !== 'peakHours'">
+          <button (click)="activeReport.set('peakHours')" class="py-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap" [class.border-blue-500]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() !== 'peakHours'" [class.text-gray-400]="activeReport() !== 'peakHours'">
               Horários de Pico
           </button>
-          <button (click)="activeReport.set('builder')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="activeReport() === 'builder'" [class.text-white]="activeReport() === 'builder'" [class.border-transparent]="activeReport() !== 'builder'" [class.text-gray-400]="activeReport() !== 'builder'">
+          <button (click)="activeReport.set('audit')" class="py-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap flex items-center gap-2" [class.border-red-500]="activeReport() === 'audit'" [class.text-red-400]="activeReport() === 'audit'" [class.border-transparent]="activeReport() !== 'audit'" [class.text-gray-400]="activeReport() !== 'audit'">
+              <span class="material-symbols-outlined text-lg">policy</span> Auditoria & Cancelamentos
+          </button>
+          <button (click)="activeReport.set('builder')" class="py-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap" [class.border-blue-500]="activeReport() === 'builder'" [class.text-white]="activeReport() === 'builder'" [class.border-transparent]="activeReport() !== 'builder'" [class.text-gray-400]="activeReport() !== 'builder'">
               Construtor
           </button>
       </nav>
@@ -152,6 +156,9 @@
     }
     @case('peakHours') {
         <app-peak-hours-report [startDate]="startDate()" [endDate]="endDate()"></app-peak-hours-report>
+    }
+    @case('audit') {
+        <app-cancellation-report [startDate]="startDate()" [endDate]="endDate()"></app-cancellation-report>
     }
     @case('builder') {
         <app-report-builder [startDate]="startDate()" [endDate]="endDate()"></app-report-builder>

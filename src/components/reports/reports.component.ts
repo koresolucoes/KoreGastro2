@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CashierDataService, ReportData } from '../../services/cashier-data.service';
@@ -5,15 +6,16 @@ import { NotificationService } from '../../services/notification.service';
 import { ComparativeReportComponent } from './comparative-report/comparative-report.component';
 import { PeakHoursReportComponent } from './peak-hours-report/peak-hours-report.component';
 import { ReportBuilderComponent } from './report-builder/report-builder.component';
+import { CancellationReportComponent } from './cancellation-report/cancellation-report.component';
 
 type ReportType = 'sales' | 'items' | 'financial';
-type ActiveReport = 'summary' | 'comparative' | 'peakHours' | 'builder';
+type ActiveReport = 'summary' | 'comparative' | 'peakHours' | 'audit' | 'builder';
 
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, ComparativeReportComponent, PeakHoursReportComponent, ReportBuilderComponent],
+  imports: [CommonModule, ComparativeReportComponent, PeakHoursReportComponent, ReportBuilderComponent, CancellationReportComponent],
   templateUrl: './reports.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

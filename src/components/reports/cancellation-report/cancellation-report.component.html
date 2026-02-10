@@ -1,0 +1,74 @@
+
+@if (isLoading()) {
+  <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+  </div>
+} @else {
+  <div class="space-y-6">
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-gray-800 p-6 rounded-lg border-l-4 border-red-500">
+        <p class="text-gray-400 text-sm font-medium uppercase">Prejuízo Total (Cancelamentos)</p>
+        <p class="text-3xl font-bold text-white mt-2">{{ totalLostValue() | currency:'BRL' }}</p>
+      </div>
+      <div class="bg-gray-800 p-6 rounded-lg border-l-4 border-orange-500">
+        <p class="text-gray-400 text-sm font-medium uppercase">Itens Cancelados</p>
+        <p class="text-3xl font-bold text-white mt-2">{{ totalCancelledItems() }}</p>
+      </div>
+      <div class="bg-gray-800 p-6 rounded-lg border-l-4 border-yellow-500">
+        <p class="text-gray-400 text-sm font-medium uppercase">Pedidos Inteiros Cancelados</p>
+        <p class="text-3xl font-bold text-white mt-2">{{ totalCancelledOrders() }}</p>
+      </div>
+    </div>
+
+    <!-- Details Table -->
+    <div class="bg-gray-800 rounded-lg overflow-hidden">
+      <div class="p-6 border-b border-gray-700">
+        <h3 class="text-lg font-semibold text-white">Detalhamento de Auditoria</h3>
+        <p class="text-sm text-gray-400">Lista completa de itens e pedidos cancelados no período.</p>
+      </div>
+      
+      @if (reportData().length === 0) {
+        <div class="p-16 text-center text-gray-500">
+          <p>Nenhum cancelamento registrado neste período.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-gray-700/50 text-xs uppercase font-bold text-gray-400">
+              <tr>
+                <th class="px-6 py-3">Data/Hora</th>
+                <th class="px-6 py-3">Responsável (Quem Cancelou)</th>
+                <th class="px-6 py-3">Tipo</th>
+                <th class="px-6 py-3">Item / Pedido</th>
+                <th class="px-6 py-3">Motivo (Obs)</th>
+                <th class="px-6 py-3 text-right">Valor Perdido</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+              @for (row of reportData(); track row.id) {
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap">{{ row.cancelledAt | date:'dd/MM/yy HH:mm' }}</td>
+                  <td class="px-6 py-4 font-semibold text-white">{{ row.cancelledBy }}</td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-1 rounded text-xs font-bold" 
+                      [class.bg-orange-900]="row.type === 'ITEM'" [class.text-orange-300]="row.type === 'ITEM'"
+                      [class.bg-red-900]="row.type === 'ORDER'" [class.text-red-300]="row.type === 'ORDER'">
+                      {{ getTypeLabel(row.type) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <p class="text-white">{{ row.quantity }}x {{ row.itemName }}</p>
+                    <p class="text-xs text-gray-500">Mesa {{ row.tableNumber || 'Balcão' }} - ID: #{{ row.orderId.slice(0,6) }}</p>
+                  </td>
+                  <td class="px-6 py-4 italic text-gray-400">"{{ row.reason }}"</td>
+                  <td class="px-6 py-4 text-right font-bold text-red-400">{{ row.valueLost | currency:'BRL' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}
