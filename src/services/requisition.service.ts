@@ -229,7 +229,9 @@ export class RequisitionService {
       let grandTotal = 0;
 
       data.forEach(req => {
-          const stationName = req.stations?.name || 'Estação Excluída';
+          // Fix for TS2339: Explicitly handle potential array return or single object
+          const stationData = req.stations as any;
+          const stationName = (Array.isArray(stationData) ? stationData[0]?.name : stationData?.name) || 'Estação Excluída';
           
           let reqCost = 0;
           req.requisition_items?.forEach((item: any) => {

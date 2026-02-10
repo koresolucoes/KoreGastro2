@@ -1,13 +1,13 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@angular/core';
-import { CommonModule, CurrencyPipe, DecimalPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RequisitionService, StationCostSummary } from '../../../services/requisition.service';
 
 @Component({
   selector: 'app-requisition-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, DatePipe],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe],
   templateUrl: './requisition-reports.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [CurrencyPipe, DecimalPipe]
