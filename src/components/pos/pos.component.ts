@@ -130,7 +130,8 @@ export class PosComponent implements OnInit {
     let order = this.posDataService.getOrderByTableNumber(table.number);
 
     if (!order && table.status === 'LIVRE') {
-      const result = await this.posDataService.createOrderForTable(table);
+      // AUDIT: Pass active employee ID
+      const result = await this.posDataService.createOrderForTable(table, this.activeEmployee()!.id);
       if (!result.success || !result.data) { 
         this.orderError.set(result.error?.message ?? 'Erro desconhecido ao criar pedido.');
         return;

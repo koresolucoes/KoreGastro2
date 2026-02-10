@@ -37,10 +37,18 @@ export class PosDataService {
     return this.posState.openOrders().find(o => o.table_number === tableNumber);
   }
 
-  async createOrderForTable(table: Table): Promise<{ success: boolean; error: any; data?: Order }> {
+  async createOrderForTable(table: Table, employeeId: string): Promise<{ success: boolean; error: any; data?: Order }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-    const { data, error } = await supabase.from('orders').insert({ table_number: table.number, order_type: 'Dine-in', user_id: userId }).select('*, customers(*)').single();
+    
+    // AUDIT: created_by_employee_id
+    const { data, error } = await supabase.from('orders').insert({ 
+        table_number: table.number, 
+        order_type: 'Dine-in', 
+        user_id: userId,
+        created_by_employee_id: employeeId 
+    }).select('*, customers(*)').single();
+    
     if (error) return { success: false, error };
     return { success: true, error: null, data: { ...data, order_items: [] } };
   }
@@ -64,6 +72,8 @@ export class PosDataService {
         const recipePreps = prepsByRecipeId.get(item.recipe.id);
         const effectivePrice = this.pricingService.getEffectivePrice(item.recipe);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
+        
+        // AUDIT: added_by_employee_id is set here
         if (recipePreps?.length > 0) {
             const groupId = uuidv4();
             return recipePreps.map((prep: any) => ({
@@ -72,7 +82,8 @@ export class PosDataService {
                 price: effectivePrice / recipePreps.length, 
                 original_price: effectivePrice / recipePreps.length,
                 group_id: groupId, user_id: userId,
-                discount_type: null, discount_value: null
+                discount_type: null, discount_value: null,
+                added_by_employee_id: employeeId
             }));
         }
         return [{
@@ -81,7 +92,8 @@ export class PosDataService {
             price: effectivePrice, 
             original_price: effectivePrice,
             group_id: null, user_id: userId,
-            discount_type: null, discount_value: null
+            discount_type: null, discount_value: null,
+            added_by_employee_id: employeeId
         }];
     });
 
@@ -407,14 +419,20 @@ export class PosDataService {
     tableId: string,
     total: number,
     payments: PaymentInfo[],
-    tipAmount: number
+    tipAmount: number,
+    closingEmployeeId: string // AUDIT: REQUIRED NOW
   ): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
+    // AUDIT: closed_by_employee_id
     const { data: updatedOrder, error: orderUpdateError } = await supabase
       .from('orders')
-      .update({ status: 'COMPLETED', completed_at: new Date().toISOString() })
+      .update({ 
+          status: 'COMPLETED', 
+          completed_at: new Date().toISOString(),
+          closed_by_employee_id: closingEmployeeId 
+      })
       .eq('id', orderId)
       .select('*, order_items(*), customers(*)')
       .single();
@@ -429,17 +447,23 @@ export class PosDataService {
         .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
         .eq('id', tableId);
 
-      const employeeId = this.posState.tables().find(t => t.id === tableId)?.employee_id ?? null;
+      // Use the closing employee for the transaction record as well (AUDIT)
       const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
         description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
         type: 'Receita' as TransactionType,
         amount: p.amount,
         user_id: userId,
-        employee_id: employeeId,
+        employee_id: closingEmployeeId, 
       }));
 
       if (tipAmount > 0) {
-        transactionsToInsert.push({ description: `Gorjeta Pedido #${orderId.slice(0, 8)}`, type: 'Gorjeta' as TransactionType, amount: tipAmount, user_id: userId, employee_id: employeeId, });
+        transactionsToInsert.push({ 
+            description: `Gorjeta Pedido #${orderId.slice(0, 8)}`, 
+            type: 'Gorjeta' as TransactionType, 
+            amount: tipAmount, 
+            user_id: userId, 
+            employee_id: closingEmployeeId, // Tips attributed to closer for now, or table owner logic could be kept if preferred
+        });
       }
 
       if (transactionsToInsert.length > 0) {

@@ -8,6 +8,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { RedeemRewardModalComponent } from '../../shared/redeem-reward-modal/redeem-reward-modal.component';
 import { v4 as uuidv4 } from 'uuid';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
+import { OperationalAuthService } from '../../../services/operational-auth.service';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -34,6 +35,7 @@ export class PaymentModalComponent {
   printingService = inject(PrintingService);
   notificationService = inject(NotificationService);
   focusNFeService = inject(FocusNFeService);
+  private operationalAuthService = inject(OperationalAuthService);
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -309,7 +311,12 @@ export class PaymentModalComponent {
   async finalizePayment() {
     const order = this.lastKnownOrder();
     const table = this.table();
-    if (!order || !table) return;
+    const closingEmployee = this.operationalAuthService.activeEmployee();
+
+    if (!order || !table || !closingEmployee) {
+        if (!closingEmployee) this.notificationService.show('Erro: Sessão inválida. Por favor, relogue.', 'error');
+        return;
+    }
 
     const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
     const totalPaid = allPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -333,7 +340,15 @@ export class PaymentModalComponent {
     );
     if (!confirmed) return;
 
-    const result = await this.posDataService.finalizeOrderPayment(order.id, table.id, finalOrderTotal, allPayments, finalTipAmount);
+    // AUDIT: Pass closingEmployee.id
+    const result = await this.posDataService.finalizeOrderPayment(
+        order.id, 
+        table.id, 
+        finalOrderTotal, 
+        allPayments, 
+        finalTipAmount, 
+        closingEmployee.id
+    );
 
     if (result.success) {
       this.paymentSuccess.set(true);

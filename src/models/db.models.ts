@@ -1,5 +1,4 @@
 
-
 // --- Basic Types ---
 // FIX: Add WebhookEvent type for webhook service
 export type WebhookEvent =
@@ -227,6 +226,21 @@ export interface Ingredient {
   suppliers?: { name: string }; // Relation
 }
 
+// NEW: Inventory Audit Log
+export interface InventoryLog {
+    id: string;
+    user_id: string;
+    ingredient_id: string;
+    employee_id: string | null;
+    quantity_change: number;
+    previous_balance: number | null;
+    new_balance: number | null;
+    reason: string;
+    created_at: string;
+    employees?: { name: string }; // Relation
+    ingredients?: { name: string, unit: string }; // Relation
+}
+
 export interface InventoryLot {
     id: string;
     ingredient_id: string;
@@ -315,6 +329,11 @@ export interface Order {
   discount_type?: DiscountType | null;
   discount_value?: number | null;
   
+  // Audit (New)
+  created_by_employee_id?: string | null;
+  closed_by_employee_id?: string | null;
+  cancelled_by?: string | null; // Already added in phase 1
+
   // iFood fields
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
@@ -363,6 +382,11 @@ export interface OrderItem {
   redeemed_reward_id?: string | null;
   created_at: string;
   user_id: string;
+
+  // Audit (New)
+  added_by_employee_id?: string | null;
+  cancelled_by?: string | null; // Already added
+  authorized_by_employee_id?: string | null; // For discounts/cancels
 }
 
 export interface RecipePreparation {
@@ -445,6 +469,10 @@ export interface PurchaseOrder {
   notes: string | null;
   created_at: string;
   user_id: string;
+  // Audit (New)
+  created_by_employee_id?: string | null;
+  received_by_employee_id?: string | null;
+
   suppliers?: { name: string }; // Relation
   purchase_order_items?: PurchaseOrderItem[]; // Relation
 }
