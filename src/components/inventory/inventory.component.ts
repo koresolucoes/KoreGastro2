@@ -14,7 +14,8 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { LabelGeneratorModalComponent } from '../shared/label-generator-modal/label-generator-modal.component';
-import { OperationalAuthService } from '../../services/operational-auth.service'; // Injected
+import { OperationalAuthService } from '../../services/operational-auth.service';
+import { InventoryLogsComponent } from './inventory-logs/inventory-logs.component';
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -55,7 +56,7 @@ type FormItem = {
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink, FormsModule, LabelGeneratorModalComponent],
+  imports: [CommonModule, IngredientDetailsModalComponent, RouterLink, FormsModule, LabelGeneratorModalComponent, InventoryLogsComponent],
   templateUrl: './inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -78,8 +79,8 @@ export class InventoryComponent implements OnInit {
     stations = this.posState.stations;
     activeEmployee = this.operationalAuthService.activeEmployee; // Used for audit
     
-    // View State
-    viewTab = signal<'inventory' | 'labels'>('inventory');
+    // View State - Added 'logs'
+    viewTab = signal<'inventory' | 'labels' | 'logs'>('inventory');
     labelLogs = signal<LabelLog[]>([]);
 
     // ... (rest of signals remain the same)

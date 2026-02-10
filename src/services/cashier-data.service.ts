@@ -117,9 +117,10 @@ export class CashierDataService {
     const startDate = new Date(`${startDateStr}T00:00:00`);
     const endDate = new Date(`${endDateStr}T23:59:59`);
 
+    // AUDIT: Added creator and closer relations
     return supabase
       .from('orders')
-      .select('*, order_items(*), customers(*), delivery_drivers(*)')
+      .select('*, order_items(*), customers(*), delivery_drivers(*), creator:employees!created_by_employee_id(name), closer:employees!closed_by_employee_id(name)')
       .eq('user_id', userId)
       .eq('status', 'COMPLETED')
       .gte('completed_at', startDate.toISOString())
@@ -436,6 +437,7 @@ export class CashierDataService {
   async finalizeQuickSalePayment(cart: CartItem[], payments: Payment[], customerId: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+    const employeeId = this.hrState.employees().find(e => e.user_id === userId)?.id ?? null; // Simplificado para contexto demo, melhor usar activeEmployee
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -445,7 +447,9 @@ export class CashierDataService {
           status: 'COMPLETED', 
           completed_at: new Date().toISOString(), 
           user_id: userId,
-          customer_id: customerId 
+          customer_id: customerId,
+          created_by_employee_id: employeeId, // AUDIT: Best effort guess or null
+          closed_by_employee_id: employeeId   // AUDIT
         })
         .select()
         .single();

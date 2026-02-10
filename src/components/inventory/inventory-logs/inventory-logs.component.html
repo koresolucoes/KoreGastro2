@@ -1,0 +1,72 @@
+
+<div class="flex flex-col h-full gap-4">
+    <!-- Filters -->
+    <div class="bg-gray-800 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-end border border-gray-700">
+        <div class="w-full md:w-1/4">
+            <label class="block text-xs font-medium text-gray-400 mb-1">Data Início</label>
+            <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="w-full md:w-1/4">
+            <label class="block text-xs font-medium text-gray-400 mb-1">Data Fim</label>
+            <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="w-full md:w-1/2">
+             <label class="block text-xs font-medium text-gray-400 mb-1">Filtrar por Ingrediente</label>
+             <select [ngModel]="selectedIngredientId()" (ngModelChange)="selectedIngredientId.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option [value]="null">Todos os Ingredientes</option>
+                @for(ing of ingredients(); track ing.id) {
+                    <option [value]="ing.id">{{ ing.name }}</option>
+                }
+             </select>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="flex-1 bg-gray-800 rounded-lg overflow-hidden border border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-700">
+            <h3 class="font-bold text-white text-lg">Histórico de Movimentações</h3>
+        </div>
+        
+        <div class="flex-1 overflow-auto">
+            @if(isLoading()) {
+                <div class="flex items-center justify-center h-full">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+            } @else if(logs().length === 0) {
+                 <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                    <span class="material-symbols-outlined text-4xl mb-2">history_edu</span>
+                    <p>Nenhum registro encontrado no período.</p>
+                </div>
+            } @else {
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="bg-gray-700/50 text-xs uppercase sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3">Data/Hora</th>
+                            <th class="px-4 py-3">Responsável</th>
+                            <th class="px-4 py-3">Ingrediente</th>
+                            <th class="px-4 py-3 text-right">Qtd.</th>
+                            <th class="px-4 py-3 text-right">Saldo Ant.</th>
+                            <th class="px-4 py-3 text-right">Saldo Novo</th>
+                            <th class="px-4 py-3">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        @for(log of logs(); track log.id) {
+                            <tr class="hover:bg-gray-700/30 transition-colors">
+                                <td class="px-4 py-3 whitespace-nowrap">{{ log.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                                <td class="px-4 py-3 font-medium text-white">{{ log.employees?.name || 'Sistema' }}</td>
+                                <td class="px-4 py-3">{{ log.ingredients?.name }}</td>
+                                <td class="px-4 py-3 text-right font-bold" [class.text-green-400]="log.quantity_change > 0" [class.text-red-400]="log.quantity_change < 0">
+                                    {{ log.quantity_change > 0 ? '+' : '' }}{{ log.quantity_change | number:'1.0-3' }} {{ log.ingredients?.unit }}
+                                </td>
+                                <td class="px-4 py-3 text-right text-gray-500">{{ log.previous_balance | number:'1.0-3' }}</td>
+                                <td class="px-4 py-3 text-right text-white">{{ log.new_balance | number:'1.0-3' }}</td>
+                                <td class="px-4 py-3 italic text-gray-400 max-w-xs truncate" [title]="log.reason">{{ log.reason }}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

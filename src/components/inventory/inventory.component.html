@@ -1,7 +1,4 @@
 
-
-
-
 <div class="container mx-auto">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
@@ -73,6 +70,9 @@
           <button (click)="viewTab.set('labels')" (click)="loadLabelLogs()" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'labels'" [class.text-white]="viewTab() === 'labels'" [class.border-transparent]="viewTab() !== 'labels'" [class.text-gray-400]="viewTab() !== 'labels'">
               Etiquetas (ANVISA)
           </button>
+          <button (click)="viewTab.set('logs')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'logs'" [class.text-white]="viewTab() === 'logs'" [class.border-transparent]="viewTab() !== 'logs'" [class.text-gray-400]="viewTab() !== 'logs'">
+              Logs de Movimentação
+          </button>
       </nav>
   </div>
   
@@ -132,7 +132,7 @@
           <input 
             type="text" 
             [value]="searchTerm()" 
-            (input)="searchTerm.set($any($event.target).value)"
+            (input)="searchTerm.set($any($event.target).value)" 
             placeholder="Buscar ingrediente pelo nome..." 
             class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -294,7 +294,7 @@
         </div>
       </div>
   
-  } @else {
+  } @else if (viewTab() === 'labels') {
       <!-- Label Logs Tab -->
       <div class="bg-gray-800 rounded-lg p-6">
           <div class="flex justify-between items-center mb-4">
@@ -344,6 +344,9 @@
               </div>
           }
       </div>
+  } @else if (viewTab() === 'logs') {
+      <!-- Logs de Movimentação Tab -->
+      <app-inventory-logs></app-inventory-logs>
   }
 </div>
 

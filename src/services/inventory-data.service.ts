@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem, LabelLog } from '../models/db.models';
+import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem, LabelLog, InventoryLog } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { RecipeStateService } from './recipe-state.service';
@@ -25,6 +25,32 @@ export class InventoryDataService {
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
+  }
+
+  // --- Audit: Logs de Estoque ---
+  async getInventoryLogs(startDateStr: string, endDateStr: string, ingredientId?: string | null): Promise<{ data: InventoryLog[], error: any }> {
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: [], error: { message: 'Active unit not found' } };
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+
+    let query = supabase
+      .from('inventory_logs')
+      .select('*, employees(name), ingredients(name, unit)')
+      .eq('user_id', userId)
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
+
+    if (ingredientId) {
+      query = query.eq('ingredient_id', ingredientId);
+    }
+    
+    // Order by newest first
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+    return { data: data || [], error };
   }
 
   // ... existing methods ...
