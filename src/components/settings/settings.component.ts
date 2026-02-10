@@ -30,8 +30,8 @@ type SettingsTab = 'empresa' | 'stores' | 'cadastros' | 'funcionalidades' | 'seg
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private router: Router = inject(Router);
 
   // Use toSignal to reactively track query params
   private queryParams = toSignal(this.route.queryParams);

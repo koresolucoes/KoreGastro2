@@ -62,10 +62,10 @@ export class TechnicalSheetsComponent {
   private route: ActivatedRoute = inject(ActivatedRoute);
   // FIX: Explicitly type the injected Router service.
   private router: Router = inject(Router);
-  // FIX: Inject feature-specific state services
-  private recipeState = inject(RecipeStateService);
-  private inventoryState = inject(InventoryStateService);
-  private posState = inject(PosStateService);
+  // FIX: Inject feature-specific state services with explicit types
+  private recipeState: RecipeStateService = inject(RecipeStateService);
+  private inventoryState: InventoryStateService = inject(InventoryStateService);
+  private posState: PosStateService = inject(PosStateService);
 
   // Data from state
   // FIX: Access state from the correct feature-specific services
@@ -131,10 +131,10 @@ export class TechnicalSheetsComponent {
 
   filteredRecipes = computed(() => {
     const term = this.searchTerm().toLowerCase();
+    const costs = this.recipeCosts();
     const recipes = this.allRecipes().map(r => ({
       ...r,
-      // FIX: Cast recipeCosts signal result to any to resolve 'get' does not exist error on unknown type.
-      cost: (this.recipeCosts() as any).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
+      cost: costs.get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
     }));
     if (!term) return recipes;
     return recipes.filter(r => r.name.toLowerCase().includes(term));

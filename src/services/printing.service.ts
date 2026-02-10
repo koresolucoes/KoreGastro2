@@ -1,5 +1,6 @@
+
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
-import { Order, OrderItem, Station } from '../models/db.models';
+import { Order, OrderItem, Station, Requisition, RequisitionItem } from '../models/db.models';
 import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { CashierClosing } from '../models/db.models';
 import { NotificationService } from './notification.service';
@@ -211,6 +212,79 @@ export class PrintingService {
       printWindow.print();
       printWindow.close();
     }, 250);
+  }
+  
+  async printRequisition(requisition: Requisition) {
+    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    if (!printWindow) {
+        this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+        return;
+    }
+    printWindow.document.title = `Requisição #${requisition.id.slice(0, 8)}`;
+    const html = this.generateRequisitionHtml(requisition);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+  }
+
+  private generateRequisitionHtml(req: Requisition): string {
+    const date = this.datePipe.transform(req.created_at, 'dd/MM/yyyy HH:mm');
+    const stationName = req.stations?.name || 'Desconhecida';
+    const requester = req.requester?.name || 'Sistema';
+
+    const itemsHtml = (req.requisition_items || []).map(item => `
+      <div class="item">
+        <div class="line">
+          <span style="font-weight: bold;">[ &nbsp;&nbsp;&nbsp; ] ${item.quantity_requested} ${item.unit}</span>
+          <span>${item.ingredients?.name}</span>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <html>
+        <head>
+          <title>Guia de Separação - #${req.id.slice(0, 8)}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; width: 280px; font-size: 12px; color: #000; margin: 0; padding: 10px; line-height: 1.4; }
+            .center { text-align: center; }
+            .header { font-size: 16px; font-weight: bold; }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .line { display: flex; gap: 10px; margin-bottom: 5px; }
+            .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
+            .item { margin-bottom: 8px; border-bottom: 1px dotted #ccc; padding-bottom: 4px; }
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0.5cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center header">GUIA DE SEPARAÇÃO</div>
+          <div class="center">REQUISIÇÃO INTERNA</div>
+          <div class="divider"></div>
+          <div><strong>ID:</strong> #${req.id.slice(0, 8)}</div>
+          <div><strong>Data:</strong> ${date}</div>
+          <div><strong>Destino:</strong> ${stationName}</div>
+          <div><strong>Solicitante:</strong> ${requester}</div>
+          ${req.notes ? `<div><strong>Obs:</strong> ${req.notes}</div>` : ''}
+          <div class="divider"></div>
+          
+          <div class="section-title">ITENS A SEPARAR</div>
+          ${itemsHtml}
+          
+          <div class="divider"></div>
+          <div style="margin-top: 20px;">
+            <div style="margin-bottom: 20px;">_________________________</div>
+            <div>Responsável Almoxarifado</div>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   private generateDeliveryGuideHtml(order: Order): string {

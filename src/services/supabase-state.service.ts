@@ -31,7 +31,7 @@ export class SupabaseStateService {
   private pricingService = inject(PricingService);
   private unitContextService = inject(UnitContextService);
   private operationalAuthService = inject(OperationalAuthService);
-  private router = inject(Router);
+  private router: Router = inject(Router);
   
   // Inject all modular state services
   private posState = inject(PosStateService);

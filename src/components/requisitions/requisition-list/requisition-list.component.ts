@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { InventoryStateService } from '../../../services/inventory-state.service';
 import { RequisitionService } from '../../../services/requisition.service';
 import { NotificationService } from '../../../services/notification.service';
+import { PrintingService } from '../../../services/printing.service';
 import { Requisition, RequisitionItem } from '../../../models/db.models';
 
 @Component({
@@ -27,7 +28,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                 <div class="flex justify-between items-start mb-3 cursor-pointer" (click)="toggleExpand(req.id)">
                    <div>
                       <h3 class="font-bold text-white text-lg">{{ req.stations?.name || 'Estação Desconhecida' }}</h3>
-                      <p class="text-sm text-gray-400">Solicitado em: {{ req.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                      <p class="text-sm text-gray-400">Solicitado em: {{ req.created_at | date:'dd/MM/yyyy HH:mm' }} por {{ req.requester?.name || 'Usuário' }}</p>
                       @if(req.notes) {
                          <p class="text-xs text-yellow-200 mt-1 italic">Obs: "{{ req.notes }}"</p>
                       }
@@ -50,19 +51,29 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                             <tr>
                                <th class="px-2 py-1">Insumo</th>
                                <th class="px-2 py-1 text-center">Solicitado</th>
+                               <th class="px-2 py-1 text-center" *ngIf="req.status === 'PENDING'">Estoque Central</th>
                                <th class="px-2 py-1 text-center" *ngIf="req.status === 'PENDING'">Entregar</th>
                                <th class="px-2 py-1 text-center" *ngIf="req.status !== 'PENDING'">Entregue</th>
                             </tr>
                          </thead>
                          <tbody>
                             @for(item of req.requisition_items; track item.id) {
+                               @let stock = getIngredientStock(item.ingredient_id);
+                               @let deliveryQty = getDeliveryQty(req.id, item.id, item.quantity_requested);
                                <tr class="border-b border-gray-700/30">
                                   <td class="px-2 py-2">{{ item.ingredients?.name }}</td>
                                   <td class="px-2 py-2 text-center font-mono">{{ item.quantity_requested }} {{ item.unit }}</td>
                                   
+                                  <!-- Stock Visibility for Pending -->
+                                  <td class="px-2 py-2 text-center" *ngIf="req.status === 'PENDING'">
+                                      <span class="font-mono font-bold" [class.text-red-400]="stock < item.quantity_requested" [class.text-green-400]="stock >= item.quantity_requested">
+                                          {{ stock | number:'1.0-2' }}
+                                      </span>
+                                  </td>
+
                                   <!-- Input for delivery amount if Pending -->
                                   <td class="px-2 py-2 text-center" *ngIf="req.status === 'PENDING'">
-                                     <input type="number" [value]="getDeliveryQty(req.id, item.id, item.quantity_requested)" (input)="updateDeliveryQty(req.id, item.id, $any($event.target).value)" class="w-20 bg-gray-900 border border-gray-600 rounded px-1 text-center text-white" min="0">
+                                     <input type="number" [value]="deliveryQty" (input)="updateDeliveryQty(req.id, item.id, $any($event.target).value)" class="w-20 bg-gray-900 border border-gray-600 rounded px-1 text-center text-white focus:outline-none focus:border-blue-500" min="0">
                                   </td>
                                   
                                   <!-- Display delivered amount if processed -->
@@ -74,18 +85,24 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                          </tbody>
                       </table>
 
-                      @if (req.status === 'PENDING') {
-                         <div class="flex justify-end gap-3 mt-4">
-                            <button (click)="rejectRequisition(req)" class="px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg text-sm font-semibold transition-colors">Rejeitar</button>
-                            <button (click)="approveDelivery(req)" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-                               <span class="material-symbols-outlined text-sm">check</span> Confirmar Entrega
-                            </button>
-                         </div>
-                      } @else if (req.status === 'DELIVERED') {
-                          <div class="text-xs text-right text-gray-500">
-                             Processado em: {{ req.processed_at | date:'dd/MM/yyyy HH:mm' }} por {{ req.processor?.name || 'Sistema' }}
-                          </div>
-                      }
+                      <div class="flex justify-between items-center mt-4">
+                         <button (click)="printGuide(req)" class="text-blue-400 hover:text-white flex items-center gap-1 text-sm font-medium">
+                            <span class="material-symbols-outlined text-base">print</span> Imprimir Guia
+                         </button>
+
+                         @if (req.status === 'PENDING') {
+                             <div class="flex gap-3">
+                                <button (click)="rejectRequisition(req)" class="px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg text-sm font-semibold transition-colors">Rejeitar</button>
+                                <button (click)="approveDelivery(req)" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+                                   <span class="material-symbols-outlined text-sm">check</span> Confirmar Entrega
+                                </button>
+                             </div>
+                         } @else if (req.status === 'DELIVERED') {
+                              <div class="text-xs text-right text-gray-500">
+                                 Processado em: {{ req.processed_at | date:'dd/MM/yyyy HH:mm' }} por {{ req.processor?.name || 'Sistema' }}
+                              </div>
+                         }
+                      </div>
                    </div>
                 }
              </div>
@@ -107,8 +124,11 @@ export class RequisitionListComponent {
   inventoryState = inject(InventoryStateService);
   requisitionService = inject(RequisitionService);
   notificationService = inject(NotificationService);
+  printingService = inject(PrintingService);
 
   requisitions = this.inventoryState.requisitions;
+  ingredients = this.inventoryState.ingredients;
+  
   filterStatus = signal<'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED'>('PENDING');
   expandedId = signal<string | null>(null);
 
@@ -126,6 +146,11 @@ export class RequisitionListComponent {
     } else {
       this.expandedId.set(id);
     }
+  }
+  
+  getIngredientStock(ingredientId: string): number {
+      const ing = this.ingredients().find(i => i.id === ingredientId);
+      return ing ? ing.stock : 0;
   }
 
   getDeliveryQty(reqId: string, itemId: string, defaultQty: number): number {
@@ -161,11 +186,32 @@ export class RequisitionListComponent {
   }
 
   async approveDelivery(req: Requisition) {
-      // Prepare items payload
-      const itemsToDeliver = (req.requisition_items || []).map(item => ({
-          id: item.id,
-          quantity_delivered: this.getDeliveryQty(req.id, item.id, item.quantity_requested)
-      }));
+      const itemsToDeliver: { id: string, quantity_delivered: number }[] = [];
+      const backorderItems: { ingredientId: string, quantity: number, unit: string }[] = [];
+      
+      let hasChange = false;
+
+      // Prepare items payload and check for backorders
+      for (const item of (req.requisition_items || [])) {
+          const qtyToDeliver = this.getDeliveryQty(req.id, item.id, item.quantity_requested);
+          
+          itemsToDeliver.push({
+              id: item.id,
+              quantity_delivered: qtyToDeliver
+          });
+          
+          if (qtyToDeliver < item.quantity_requested) {
+              hasChange = true;
+              const remaining = item.quantity_requested - qtyToDeliver;
+              if (remaining > 0) {
+                  backorderItems.push({
+                      ingredientId: item.ingredient_id,
+                      quantity: remaining,
+                      unit: item.unit
+                  });
+              }
+          }
+      }
 
       const confirmed = await this.notificationService.confirm(
           `Confirmar a entrega de ${itemsToDeliver.length} itens para ${req.stations?.name}? Isso irá baixar o estoque central.`,
@@ -178,6 +224,21 @@ export class RequisitionListComponent {
       
       if (success) {
           this.notificationService.show('Estoque transferido com sucesso!', 'success');
+          
+          // Logic for Backorder (Partial Delivery)
+          if (backorderItems.length > 0) {
+              const createBackorder = await this.notificationService.confirm(
+                  `Existem itens pendentes nesta requisição. Deseja criar uma nova requisição (Pendência/Backorder) para os itens restantes?`,
+                  'Criar Pendência?'
+              );
+              
+              if (createBackorder && req.station_id) {
+                  const note = `Pendência da Requisição #${req.id.slice(0,8)}. ${req.notes ? `(${req.notes})` : ''}`;
+                  await this.requisitionService.createRequisition(req.station_id, backorderItems, note);
+                  this.notificationService.show('Nova requisição de pendência criada.', 'info');
+              }
+          }
+
           // Clear local state for this req
           this.deliveryQuantities.update(map => {
               const newMap = new Map(map);
@@ -187,5 +248,9 @@ export class RequisitionListComponent {
       } else {
           this.notificationService.show(`Erro na entrega: ${error?.message}`, 'error');
       }
+  }
+
+  printGuide(req: Requisition) {
+      this.printingService.printRequisition(req);
   }
 }
