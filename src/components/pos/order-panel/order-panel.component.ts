@@ -99,6 +99,9 @@ export class OrderPanelComponent {
   isCancellationReasonModalOpen = signal(false);
   pendingCancellationAction = signal<{ type: 'item' | 'order', item?: DisplayOrderItem } | null>(null);
   cancellationModalTitle = signal('');
+  
+  // Holds the employee who authorized/performed the cancellation (Manager or Current User)
+  cancellationAuthorizer = signal<Employee | null>(null);
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
@@ -565,6 +568,7 @@ export class OrderPanelComponent {
   checkManagerAuth(action: () => void) {
     const employee = this.activeEmployee();
     if (employee?.role === 'Gerente') {
+      this.cancellationAuthorizer.set(employee);
       action();
     } else {
       this.isManagerAuthModalOpen.set(true);
@@ -573,6 +577,7 @@ export class OrderPanelComponent {
 
   handleManagerAuthorized(manager: Employee) {
     this.isManagerAuthModalOpen.set(false);
+    this.cancellationAuthorizer.set(manager);
     // Execute the pending action
     const action = this.pendingCancellationAction();
     if (action) {
@@ -610,17 +615,22 @@ export class OrderPanelComponent {
   async handleCancellationReasonConfirmed(reason: string) {
     this.isCancellationReasonModalOpen.set(false);
     const action = this.pendingCancellationAction();
+    const authorizer = this.cancellationAuthorizer();
     
+    // Safety check - should have authorizer by now (self or manager)
+    const authId = authorizer ? authorizer.id : null;
+
     if (action?.type === 'item' && action.item) {
-        await this.cancelItem(action.item, reason);
+        await this.cancelItem(action.item, reason, authId);
     } else if (action?.type === 'order') {
-        await this.cancelOrder(reason);
+        await this.cancelOrder(reason, authId);
     }
     
     this.pendingCancellationAction.set(null);
+    this.cancellationAuthorizer.set(null);
   }
 
-  async cancelItem(item: DisplayOrderItem, reason: string) {
+  async cancelItem(item: DisplayOrderItem, reason: string, employeeId: string | null) {
     let itemIds: string[];
     if ('items' in item) { // Grouped
         itemIds = item.items.map(i => i.id);
@@ -628,7 +638,7 @@ export class OrderPanelComponent {
         itemIds = [item.item.id];
     }
     
-    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason);
+    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason, employeeId);
     
     if (success) {
         this.notificationService.show('Item(ns) cancelado(s) com sucesso.', 'success');
@@ -637,11 +647,11 @@ export class OrderPanelComponent {
     }
   }
 
-  async cancelOrder(reason: string) {
+  async cancelOrder(reason: string, employeeId: string | null) {
     const order = this.currentOrder();
     if (!order) return;
 
-    const { success, error } = await this.posDataService.cancelOrder(order.id, reason);
+    const { success, error } = await this.posDataService.cancelOrder(order.id, reason, employeeId);
     
     if (success) {
         this.notificationService.show('Pedido cancelado com sucesso.', 'success');

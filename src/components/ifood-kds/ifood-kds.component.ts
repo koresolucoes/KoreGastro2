@@ -19,6 +19,7 @@ import { OrderDetailsModalComponent } from './order-details-modal/order-details-
 import { AssignDriverModalComponent } from './assign-driver-modal/assign-driver-modal.component';
 import { ProposeRefundModalComponent } from './propose-refund-modal/propose-refund-modal.component';
 import { ProcessedIfoodOrder, LogisticsStatus } from '../../models/app.models';
+import { OperationalAuthService } from '../../services/operational-auth.service'; // Added
 
 
 @Component({
@@ -37,6 +38,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   soundNotificationService = inject(SoundNotificationService);
   supabaseStateService = inject(SupabaseStateService);
   ifoodMenuService = inject(IfoodMenuService);
+  operationalAuthService = inject(OperationalAuthService); // Injected
 
   private timerInterval: any;
   currentTime = signal(Date.now());
@@ -593,6 +595,9 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
 
     // Spinner is already active from cancelOrder method
     this.soundNotificationService.playConfirmationSound();
+    
+    // AUDIT: Get current employee
+    const employeeId = this.operationalAuthService.activeEmployee()?.id || null;
 
     try {
       const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, 'CANCELLED', details);
@@ -600,7 +605,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
       
       // The webhook will handle the DB update, but we can optimistically update to provide faster feedback.
       // Use details.reason here as the second argument
-      const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id, details.reason);
+      const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id, details.reason, employeeId);
       if (!dbSuccess) throw dbError;
 
       this.notificationService.show(`Solicitação de cancelamento para #${order.ifood_display_id} enviada.`, 'success');

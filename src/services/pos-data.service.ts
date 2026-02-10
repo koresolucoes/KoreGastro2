@@ -470,9 +470,9 @@ export class PosDataService {
     }
   }
 
-  // --- Cancellation Methods ---
+  // --- Cancellation Methods (AUDITED) ---
 
-  async cancelOrder(orderId: string, reason: string): Promise<{ success: boolean; error: any }> {
+  async cancelOrder(orderId: string, reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
     const formattedNotes = `CANCELAMENTO: ${reason}`;
     const userId = this.getActiveUnitId();
 
@@ -485,13 +485,14 @@ export class PosDataService {
     
     if (fetchError) return { success: false, error: fetchError };
 
-    // 2. Update Order Status
+    // 2. Update Order Status - Now recording WHO performed the cancellation
     const { error } = await supabase
         .from('orders')
         .update({ 
             status: 'CANCELLED', 
             completed_at: new Date().toISOString(),
-            notes: formattedNotes
+            notes: formattedNotes,
+            cancelled_by: employeeId // AUDIT
         })
         .eq('id', orderId);
 
@@ -511,28 +512,21 @@ export class PosDataService {
     return { success: !error, error };
   }
   
-  async cancelOrderItems(itemIds: string[], reason: string): Promise<{ success: boolean; error: any }> {
+  async cancelOrderItems(itemIds: string[], reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
       if (itemIds.length === 0) return { success: true, error: null };
 
-      // Append cancellation reason to current notes
-      // We can't easily append in one SQL query for multiple diverse items, so we'll just set it.
-      // Or cleaner: fetch, then update individually. For bulk efficiency, we'll try a simpler approach
-      // of setting status first. If we want detailed per-item notes appending, it's more complex.
-      // For this MVP, we will overwrite notes or prepend to them if we fetched them.
-      // Let's settle for updating status and a unified "CANCELADO: reason" note.
-
+      // Update item status and record who did it
       const { error } = await supabase
         .from('order_items')
         .update({ 
             status: 'CANCELADO' as OrderItemStatus, 
             notes: `CANCELADO: ${reason}`,
-            price: 0 // Refund price logic: usually canceled items shouldn't count towards total.
+            price: 0, // Refund price
+            cancelled_by: employeeId // AUDIT
         })
         .in('id', itemIds);
       
       if (!error) {
-           // Also need to check if all items in the order are cancelled to auto-cancel order?
-           // Maybe later. For now just cancel items.
            // Update local state immediately
            this.posState.orders.update(orders => {
                return orders.map(order => {
