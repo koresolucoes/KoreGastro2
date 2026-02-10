@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed } from '@angular/core';
 import { Hall, Table, Station, Order, Customer } from '../models/db.models';
 
@@ -9,7 +10,11 @@ export class PosStateService {
   orders = signal<Order[]>([]);
   customers = signal<Customer[]>([]);
 
+  // Computed for tables that have open orders
   openOrders = computed(() => this.orders().filter(o => o.status === 'OPEN'));
+  
+  // Computed specifically for Tabs/Commands
+  openTabs = computed(() => this.orders().filter(o => o.status === 'OPEN' && o.order_type === 'Tab'));
 
   clearData() {
     this.halls.set([]);

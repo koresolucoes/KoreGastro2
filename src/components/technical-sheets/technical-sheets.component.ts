@@ -131,10 +131,10 @@ export class TechnicalSheetsComponent {
 
   filteredRecipes = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    const costs = this.recipeCosts() as Map<string, any>;
+    const costs = this.recipeCosts();
     const recipes = this.allRecipes().map(r => ({
       ...r,
-      cost: costs.get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
+      cost: (costs as any).get(r.id) ?? { totalCost: 0, ingredientCount: 0, rawIngredients: new Map() }
     }));
     if (!term) return recipes;
     return recipes.filter(r => r.name.toLowerCase().includes(term));

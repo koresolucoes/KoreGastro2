@@ -33,11 +33,47 @@ export class PosDataService {
       return this.unitContextService.activeUnitId();
   }
   
-  // ... (Existing Methods: getOrderByTableNumber, createOrderForTable, addItemsToOrder) ...
-
   getOrderByTableNumber(tableNumber: number): Order | undefined {
-    return this.posState.openOrders().find(o => o.table_number === tableNumber);
+    // Priority: Dine-in for tables > 0
+    if (tableNumber > 0) {
+        return this.posState.openOrders().find(o => o.table_number === tableNumber && o.order_type === 'Dine-in');
+    }
+    // For table 0, it could be QuickSale or Tab. 
+    // We usually don't use this method for Tabs (we use ID), so return QuickSale default.
+    return this.posState.openOrders().find(o => o.table_number === 0 && o.order_type === 'QuickSale');
   }
+
+  // --- TAB / COMMAND METHODS ---
+  
+  async createTabOrder(commandNumber: number, customerName: string, employeeId: string): Promise<{ success: boolean; error: any; data?: Order }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+      // Check if tab exists
+      const existingTab = this.posState.openTabs().find(o => o.command_number === commandNumber);
+      if (existingTab) {
+          return { success: false, error: { message: `A Comanda #${commandNumber} já está aberta.` } };
+      }
+
+      const { data, error } = await supabase.from('orders').insert({
+          table_number: 0, // 0 for tabs
+          command_number: commandNumber,
+          tab_name: customerName,
+          order_type: 'Tab',
+          status: 'OPEN',
+          user_id: userId,
+          created_by_employee_id: employeeId
+      }).select('*, customers(*)').single();
+
+      if (error) return { success: false, error };
+      
+      const newOrder = { ...data, order_items: [] };
+      this.posState.orders.update(orders => [...orders, newOrder]); // Optimistic update
+      
+      return { success: true, error: null, data: newOrder };
+  }
+  
+  // --- EXISTING METHODS ---
 
   async createOrderForTable(table: Table, employeeId: string): Promise<{ success: boolean; error: any; data?: Order }> {
     const userId = this.getActiveUnitId();
@@ -55,7 +91,7 @@ export class PosDataService {
     return { success: true, error: null, data: { ...data, order_items: [] } };
   }
 
-  async addItemsToOrder(orderId: string, tableId: string, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
+  async addItemsToOrder(orderId: string, tableId: string | null, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -104,7 +140,10 @@ export class PosDataService {
     const { data: inserted, error } = await supabase.from('order_items').insert(allItemsToInsert).select();
     if (error) return { success: false, error };
 
-    await supabase.from('tables').update({ status: 'OCUPADA' as TableStatus, employee_id: employeeId }).eq('id', tableId);
+    // Only update table status if it's a Dine-in order (tableId exists)
+    if (tableId) {
+        await supabase.from('tables').update({ status: 'OCUPADA' as TableStatus, employee_id: employeeId }).eq('id', tableId);
+    }
 
     return { success: true, error: null };
   }
@@ -267,7 +306,7 @@ export class PosDataService {
 
   async finalizeOrderPayment(
     orderId: string,
-    tableId: string,
+    tableId: string | null, // Nullable for Tabs
     total: number,
     payments: PaymentInfo[],
     tipAmount: number,
@@ -293,13 +332,19 @@ export class PosDataService {
     let warningMessage: string | undefined;
 
     try {
-      await supabase
-        .from('tables')
-        .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
-        .eq('id', tableId);
+      if (tableId) {
+        await supabase
+            .from('tables')
+            .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
+            .eq('id', tableId);
+      }
+
+      const orderRef = updatedOrder.command_number 
+        ? `Comanda #${updatedOrder.command_number}` 
+        : `Pedido #${orderId.slice(0, 8)}`;
 
       const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
-        description: `Receita Pedido #${orderId.slice(0, 8)} (${p.method})`,
+        description: `Receita ${orderRef} (${p.method})`,
         type: 'Receita' as TransactionType,
         amount: p.amount,
         user_id: userId,
@@ -308,7 +353,7 @@ export class PosDataService {
 
       if (tipAmount > 0) {
         transactionsToInsert.push({ 
-            description: `Gorjeta Pedido #${orderId.slice(0, 8)}`, 
+            description: `Gorjeta ${orderRef}`, 
             type: 'Gorjeta' as TransactionType, 
             amount: tipAmount, 
             user_id: userId, 

@@ -6,6 +6,7 @@ import { Hall, Table, Order, Employee, Customer } from '../../models/db.models';
 import { OrderPanelComponent } from './order-panel/order-panel.component';
 import { HallManagerModalComponent } from './hall-manager-modal/hall-manager-modal.component';
 import { TableLayoutComponent } from './table-layout/table-layout.component';
+import { CommandGridComponent } from './command-grid/command-grid.component'; // New
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.component';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
@@ -28,6 +29,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
     OrderPanelComponent,
     HallManagerModalComponent,
     TableLayoutComponent,
+    CommandGridComponent, // Added
     PreBillModalComponent,
     MoveOrderModalComponent,
     CustomerSelectModalComponent,
@@ -53,8 +55,14 @@ export class PosComponent implements OnInit {
 
   // Component State
   activeEmployee = this.operationalAuthService.activeEmployee;
+  viewMode = signal<'tables' | 'tabs'>('tables'); // Toggle state
+  
   selectedHall: WritableSignal<Hall | null> = signal(null);
   selectedTable: WritableSignal<Table | null> = signal(null);
+  
+  // For Tabs, we might emulate a "Table" object to reuse OrderPanel
+  selectedTabOrder = signal<Order | null>(null);
+
   orderError = signal<string | null>(null);
   
   // Modal/Panel Visibility State
@@ -71,17 +79,21 @@ export class PosComponent implements OnInit {
   contextMenuPosition = signal({ x: 0, y: 0 });
   contextMenuTable = signal<Table | null>(null);
   
-  // Combined source table for modals
-  sourceTableForModals = computed(() => this.selectedTable() ?? this.contextMenuTable());
-  
-  currentOrder = computed(() => {
-    const table = this.sourceTableForModals();
-    if (!table) return null;
-    return this.posDataService.getOrderByTableNumber(table.number) ?? null;
+  // Logic to determine which order is active for modals
+  activeOrder = computed(() => {
+      // Priority: Tab Order > Table Order > Context Menu Order
+      if (this.selectedTabOrder()) return this.selectedTabOrder();
+      
+      const table = this.selectedTable() ?? this.contextMenuTable();
+      if (!table) return null;
+      return this.posDataService.getOrderByTableNumber(table.number) ?? null;
   });
 
-  customerForModals = computed(() => this.currentOrder()?.customers);
-  orderIdForModals = computed(() => this.currentOrder()?.id);
+  // Source table for move logic (Tabs generally don't move like tables do, but could)
+  sourceTableForModals = computed(() => this.selectedTable() ?? this.contextMenuTable());
+
+  customerForModals = computed(() => this.activeOrder()?.customers);
+  orderIdForModals = computed(() => this.activeOrder()?.id);
 
   employeeNameMap = computed(() => {
     return new Map(this.employees().map(e => [e.id, e.name]));
@@ -89,7 +101,7 @@ export class PosComponent implements OnInit {
   
   availableTablesForMove = computed(() => {
     const sourceTable = this.sourceTableForModals();
-    if (!sourceTable) return [];
+    if (!sourceTable) return []; // Cannot move Tab orders to Tables yet in this simple logic
     
     const hallId = sourceTable.hall_id;
     return this.tables().filter(t => t.hall_id === hallId && t.status === 'LIVRE' && t.id !== sourceTable.id);
@@ -120,12 +132,35 @@ export class PosComponent implements OnInit {
     // Data is loaded centrally by SupabaseStateService
   }
 
+  // --- VIEW TOGGLE ---
+  toggleViewMode(mode: 'tables' | 'tabs') {
+      this.viewMode.set(mode);
+      this.closeOrderPanel(); // Reset panel when switching views
+  }
+
+  // --- TAB HANDLER ---
+  handleTabSelected(order: Order) {
+      this.selectedTabOrder.set(order);
+      // Construct a fake "Table" object so OrderPanel works seamlessly
+      const fakeTable: Table = {
+          id: 'tab-' + order.id,
+          number: 0, // 0 for tabs
+          hall_id: 'tabs',
+          status: 'OCUPADA',
+          x: 0, y: 0, width: 0, height: 0, created_at: '', user_id: ''
+      };
+      this.selectedTable.set(fakeTable);
+      this.isOrderPanelOpen.set(true);
+  }
+
+
   // ... (Rest of the component remains unchanged)
   async handleTableClicked(table: Table) {
     if (this.isEditMode() || !this.activeEmployee()) return;
 
     this.isContextMenuOpen.set(false);
     this.selectedTable.set(table);
+    this.selectedTabOrder.set(null); // Clear tab selection
     this.orderError.set(null);
     let order = this.posDataService.getOrderByTableNumber(table.number);
 
@@ -151,8 +186,18 @@ export class PosComponent implements OnInit {
   }
   
   async handleCheckoutStarted() {
+    // Check if it's a tab
+    if (this.selectedTabOrder()) {
+        // Tabs don't have "PAGANDO" status yet, we could just send to cashier logic, 
+        // but for now, let's just close the panel as "Sent".
+        // In V2 we might want a 'PAGANDO' status for orders too.
+        this.closeOrderPanel();
+        await this.notificationService.alert(`Comanda #${this.selectedTabOrder()?.command_number} disponível no Caixa.`, 'Info');
+        return;
+    }
+
     const table = this.selectedTable();
-    if (!table || !this.currentOrder() || this.currentOrder()?.order_items.length === 0) return;
+    if (!table || !this.activeOrder() || this.activeOrder()?.order_items.length === 0) return;
     
     const { success, error } = await this.posDataService.updateTableStatus(table.id, 'PAGANDO');
     if (success) { 
@@ -165,15 +210,18 @@ export class PosComponent implements OnInit {
 
   async handleCustomerCountChanged(count: number) {
       const table = this.selectedTable();
-      if (table) {
+      // Only applicable for physical tables
+      if (table && table.number > 0) {
           await this.posDataService.updateTableCustomerCount(table.id, count);
       }
   }
   
   async moveOrder(destinationTable: Table) {
-    const order = this.currentOrder();
+    const order = this.activeOrder();
     const sourceTable = this.sourceTableForModals();
-    if (order && sourceTable && destinationTable) {
+    
+    // Only allow moving Tables for now
+    if (order && sourceTable && destinationTable && order.order_type === 'Dine-in') {
         await this.posDataService.moveOrderToTable(order, sourceTable, destinationTable);
         this.closeMoveModal();
         this.closeOrderPanel();
@@ -182,28 +230,41 @@ export class PosComponent implements OnInit {
   }
   
   async closeOrderPanel() {
-    const order = this.currentOrder();
+    const order = this.activeOrder();
     const table = this.selectedTable();
 
-    if (order && table && table.status === 'LIVRE' && order.order_items.length === 0) {
-        await this.posDataService.deleteEmptyOrder(order.id);
+    // Check if empty order needs deleting
+    // For Tabs: if items == 0, we can delete the order but we might want to keep the "card" open? 
+    // Usually empty tabs are deleted to free up the number.
+    if (order && order.order_items.length === 0) {
+         if (table && table.status === 'LIVRE') {
+             // Logic for fresh table
+             await this.posDataService.deleteEmptyOrder(order.id);
+         } else if (order.order_type === 'Tab') {
+             // Logic for fresh tab
+             await this.posDataService.deleteEmptyOrder(order.id);
+         }
     }
 
     this.isOrderPanelOpen.set(false);
     this.selectedTable.set(null);
+    this.selectedTabOrder.set(null);
     this.orderError.set(null);
   }
 
   async handleReleaseTable() {
-    const order = this.currentOrder();
+    const order = this.activeOrder();
     const table = this.selectedTable();
 
-    if (order && table && table.status === 'OCUPADA' && order.order_items.length === 0) {
-        const { success, error } = await this.posDataService.releaseTable(table.id, order.id);
-        if (success) {
-            this.closeOrderPanel();
-        } else {
-            await this.notificationService.alert(`Falha ao liberar a mesa: ${error?.message}`);
+    if (order && order.order_items.length === 0) {
+        // Can only release if empty or paid (but here we assume forced release of empty)
+        if (table && table.status === 'OCUPADA') {
+            const { success, error } = await this.posDataService.releaseTable(table.id, order.id);
+            if (success) this.closeOrderPanel();
+            else await this.notificationService.alert(`Falha ao liberar: ${error?.message}`);
+        } else if (order.order_type === 'Tab') {
+             await this.posDataService.deleteEmptyOrder(order.id);
+             this.closeOrderPanel();
         }
     }
   }
@@ -228,7 +289,7 @@ export class PosComponent implements OnInit {
   }
 
   async handleCustomerSelected(customer: Customer) {
-    const order = this.currentOrder();
+    const order = this.activeOrder();
     if (order) {
         await this.posDataService.associateCustomerToOrder(order.id, customer.id);
     }
@@ -236,7 +297,7 @@ export class PosComponent implements OnInit {
   }
 
   async handleRemoveCustomerAssociation() {
-    const order = this.currentOrder();
+    const order = this.activeOrder();
     if (order) {
         await this.posDataService.associateCustomerToOrder(order.id, null);
     }
