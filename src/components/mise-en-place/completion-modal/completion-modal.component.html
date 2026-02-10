@@ -1,0 +1,54 @@
+
+<div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="close.emit()">
+  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h3 class="text-xl font-bold text-white">Finalizar Produção</h3>
+      <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="p-6 space-y-4 overflow-y-auto">
+        <div class="bg-gray-900/50 p-3 rounded-lg">
+            <p class="text-sm text-gray-400">Tarefa</p>
+            <p class="font-bold text-white text-lg">{{ taskName() }}</p>
+            <p class="text-sm text-gray-400 mt-1">Planejado: {{ task().quantity_to_produce }} un</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Qtd. Produzida (Real)</label>
+                <input type="number" [ngModel]="producedQuantity()" (ngModelChange)="producedQuantity.set(+$event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-bold text-lg text-center">
+                <p class="text-xs text-gray-400 mt-1 text-center">O estoque será atualizado com este valor.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
+                <input type="date" [ngModel]="expirationDate()" (ngModelChange)="expirationDate.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-bold text-yellow-300">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Nº do Lote</label>
+            <input type="text" [ngModel]="lotNumber()" (ngModelChange)="lotNumber.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-mono">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Observações (Opcional)</label>
+            <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="2" placeholder="Ex: Rendeu menos pois deixei reduzir mais." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+            <input type="checkbox" id="printLabel" [ngModel]="printLabel()" (ngModelChange)="printLabel.set($event)" class="h-5 w-5 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
+            <label for="printLabel" class="text-sm font-medium text-white cursor-pointer select-none">Imprimir Etiqueta ao Salvar</label>
+        </div>
+    </div>
+
+    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
+        <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+        <button (click)="confirm()" class="px-6 py-2 font-bold rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined">check_circle</span>
+            Concluir Produção
+        </button>
+    </div>
+  </div>
+</div>

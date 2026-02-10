@@ -1,3 +1,4 @@
+
 <div class="p-4 text-white h-full flex flex-col">
   <!-- Header -->
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -53,13 +54,19 @@
 
                                   <div class="flex justify-between items-start">
                                       <div class="flex-1">
-                                        <p class="font-bold text-white text-lg">{{ task.quantity_to_produce }}x {{ task.recipes?.name || task.custom_task_name }}</p>
+                                        <p class="font-bold text-white text-lg">
+                                            {{ task.status === 'Concluído' ? (task.quantity_produced || task.quantity_to_produce) : task.quantity_to_produce }}x 
+                                            {{ task.recipes?.name || task.custom_task_name }}
+                                        </p>
                                         @if(task.sub_recipe_id) {
                                           <div class="text-xs">
                                             <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-blue-400 hover:underline">Ver ficha técnica</button>
                                             <span class="text-gray-500 mx-1">|</span>
                                             <span class="text-gray-400">Custo: <span class="font-semibold text-yellow-300">{{ getTaskCost(task) | currency:'BRL' }}</span></span>
                                           </div>
+                                        }
+                                        @if (task.status === 'Concluído' && task.completion_notes) {
+                                            <p class="text-xs text-gray-400 mt-1 italic">"{{ task.completion_notes }}"</p>
                                         }
                                       </div>
                                       @if (isManager() && task.status === 'Concluído') {
@@ -75,9 +82,14 @@
                                           <span>{{ task.employees?.name || 'Não atribuído' }}</span>
                                       </div>
                                       @if (task.lot_number) {
-                                        <span class="text-xs text-gray-500 font-mono">Lote: {{ task.lot_number }}</span>
+                                        <div class="text-right">
+                                            <span class="block text-xs text-gray-500 font-mono">Lote: {{ task.lot_number }}</span>
+                                            @if(task.expiration_date) {
+                                                <span class="block text-[10px] text-gray-500">Val: {{ task.expiration_date | date:'dd/MM' }}</span>
+                                            }
+                                        </div>
                                       }
-                                      @if (isManager()) {
+                                      @if (isManager() && task.status !== 'Concluído') {
                                         <button (click)="$event.stopPropagation(); openTaskModal(task)" class="text-xs text-gray-400 hover:text-white hover:underline">Editar</button>
                                       }
                                   </div>
@@ -170,7 +182,17 @@
   </app-mise-en-place-recipe-modal>
 }
 
-<!-- Label Modal -->
+<!-- Completion Modal -->
+@if(isCompletionModalOpen() && taskToComplete(); as task) {
+    <app-mise-en-place-completion-modal
+        [task]="task"
+        [recipe]="recipeToComplete()"
+        (close)="isCompletionModalOpen.set(false)"
+        (save)="handleCompleteTask($event)">
+    </app-mise-en-place-completion-modal>
+}
+
+<!-- Label Modal (for re-print or direct access) -->
 @if(isLabelModalOpen() && selectedRecipeForLabel(); as recipe) {
     <app-label-generator-modal 
         [item]="recipe" 

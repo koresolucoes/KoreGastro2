@@ -514,7 +514,19 @@ export interface ProductionTask {
   total_cost: number | null;
   created_at: string;
   user_id: string;
-  recipes?: { name: string, source_ingredient_id: string | null }; // Relation
+  
+  // New Fields for Mise en Place improvements
+  quantity_produced?: number | null;
+  completion_notes?: string | null;
+  expiration_date?: string | null;
+
+  recipes?: { 
+    id: string;
+    name: string; 
+    source_ingredient_id: string | null;
+    unit?: IngredientUnit; // Helper from join
+    shelf_life_prepared_days?: number; // Helper from join
+  }; 
   stations?: { name: string }; // Relation
   employees?: { name: string }; // Relation
 }

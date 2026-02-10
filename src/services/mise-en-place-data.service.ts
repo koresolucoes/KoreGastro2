@@ -1,11 +1,11 @@
 
-
 import { Injectable, inject } from '@angular/core';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
+import { CompletionData } from '../components/mise-en-place/completion-modal/completion-modal.component'; // Import type (interface only)
 
 @Injectable({
   providedIn: 'root',
@@ -22,7 +22,7 @@ export class MiseEnPlaceDataService {
     // First, try to find an existing plan
     let { data: existingPlan, error: findError } = await supabase
       .from('production_plans')
-      .select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))')
+      .select('*, production_tasks(*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name))')
       .eq('user_id', userId)
       .eq('plan_date', date)
       .maybeSingle();
@@ -64,7 +64,7 @@ export class MiseEnPlaceDataService {
         production_plan_id: planId,
         user_id: userId,
         status: 'A Fazer'
-    }).select('*, recipes(name, source_ingredient_id), stations(name), employees(name)').single();
+    }).select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)').single();
 
     if (!error && newTask) {
         // Manually update state to reflect change immediately in UI
@@ -90,7 +90,7 @@ export class MiseEnPlaceDataService {
         .from('production_tasks')
         .update(updateData)
         .eq('id', taskId)
-        .select('*, recipes(name, source_ingredient_id), stations(name), employees(name)')
+        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)')
         .single();
     
     if (!error && updatedTask) {
@@ -99,7 +99,7 @@ export class MiseEnPlaceDataService {
     return { success: !error, error };
   }
   
-  async completeTask(task: ProductionTask, lotNumber: string, totalCost: number): Promise<{ success: boolean; error: any }> {
+  async completeTask(task: ProductionTask, data: CompletionData, totalCost: number): Promise<{ success: boolean; error: any }> {
     // Refetch task to be sure about source_ingredient_id
     const { data: fullTaskData, error: fetchError } = await supabase
         .from('production_tasks')
@@ -111,25 +111,33 @@ export class MiseEnPlaceDataService {
         return { success: false, error: fetchError };
     }
     
+    // UPDATED: Use quantityProduced from modal instead of task.quantity_to_produce
     if (fullTaskData.sub_recipe_id && fullTaskData.recipes?.source_ingredient_id) {
         const { success, error } = await this.inventoryDataService.adjustStockForProduction(
             fullTaskData.sub_recipe_id, 
             fullTaskData.recipes.source_ingredient_id, 
-            fullTaskData.quantity_to_produce,
-            lotNumber,
-            fullTaskData.station_id // PASS STATION ID HERE
+            data.quantityProduced, // Use Actual Quantity
+            data.lotNumber,
+            fullTaskData.station_id
         );
         if (!success) {
             return { success: false, error };
         }
     }
     
-    // Now update the task itself
+    // Now update the task itself with the completion details
     const { data: updatedTask, error: updateError } = await supabase
         .from('production_tasks')
-        .update({ status: 'Concluído', lot_number: lotNumber, total_cost: totalCost })
+        .update({ 
+            status: 'Concluído', 
+            lot_number: data.lotNumber, 
+            total_cost: totalCost,
+            quantity_produced: data.quantityProduced,
+            completion_notes: data.notes,
+            expiration_date: new Date(data.expirationDate).toISOString() // Convert to full ISO
+        })
         .eq('id', task.id)
-        .select('*, recipes(name, source_ingredient_id), stations(name), employees(name)')
+        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)')
         .single();
         
     if (!updateError && updatedTask) {

@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Employee, RecipeIngredient, IngredientUnit, RecipeSubRecipe, Ingredient } from '../../models/db.models';
@@ -8,6 +7,7 @@ import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.servic
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { MiseEnPlaceRecipeModalComponent } from './mise-en-place-recipe-modal/mise-en-place-recipe-modal.component';
+import { MiseEnPlaceCompletionModalComponent, CompletionData } from './completion-modal/completion-modal.component';
 // FIX: Import new state services
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
@@ -20,7 +20,7 @@ type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user
 @Component({
   selector: 'app-mise-en-place',
   standalone: true,
-  imports: [CommonModule, MiseEnPlaceRecipeModalComponent, LabelGeneratorModalComponent],
+  imports: [CommonModule, MiseEnPlaceRecipeModalComponent, LabelGeneratorModalComponent, MiseEnPlaceCompletionModalComponent],
   templateUrl: './mise-en-place.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -66,6 +66,11 @@ export class MiseEnPlaceComponent {
   isModalOpen = signal(false);
   editingTask = signal<ProductionTask | null>(null);
   taskForm = signal<TaskForm>({ task_type: 'recipe' });
+
+  // Completion Modal
+  isCompletionModalOpen = signal(false);
+  taskToComplete = signal<ProductionTask | null>(null);
+  recipeToComplete = signal<Recipe | null>(null);
 
   // Recipe Modal State
   isRecipeModalOpen = signal(false);
@@ -292,48 +297,71 @@ export class MiseEnPlaceComponent {
   async handleTaskClick(task: ProductionTask) {
     if (task.status === 'Concluído' || this.updatingStockTasks().has(task.id)) return;
 
-    this.updatingStockTasks.update(set => new Set(set).add(task.id));
-    
-    try {
-      if (task.status === 'A Fazer') {
-        const { success, error } = await this.dataService.updateTask(task.id, { status: 'Em Preparo' });
-        if (!success) throw error;
-      } else if (task.status === 'Em Preparo') {
-        const date = new Date();
-        const defaultLot = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
-        
-        const { confirmed, value: lotNumber } = await this.notificationService.prompt(
-            'Confirme ou edite o número do lote para esta produção.',
-            'Finalizar Produção',
-            { initialValue: defaultLot, confirmText: 'Confirmar', inputType: 'text' }
-        );
-        
-        if (confirmed && lotNumber) {
-            const totalCost = this.getTaskCost(task);
-            const { success, error } = await this.dataService.completeTask(task, lotNumber, totalCost);
+    if (task.status === 'A Fazer') {
+        this.updatingStockTasks.update(set => new Set(set).add(task.id));
+        try {
+            const { success, error } = await this.dataService.updateTask(task.id, { status: 'Em Preparo' });
             if (!success) throw error;
+        } catch (error: any) {
+            await this.notificationService.alert(`Ocorreu um erro: ${error.message}`);
+        } finally {
+            this.updatingStockTasks.update(set => { const newSet = new Set(set); newSet.delete(task.id); return newSet; });
+        }
+    } else if (task.status === 'Em Preparo') {
+        // Open Completion Modal
+        this.taskToComplete.set(task);
+        if (task.sub_recipe_id) {
+            const recipe = this.recipeState.recipes().find(r => r.id === task.sub_recipe_id) || null;
+            this.recipeToComplete.set(recipe);
+        } else {
+            this.recipeToComplete.set(null);
+        }
+        this.isCompletionModalOpen.set(true);
+    }
+  }
 
-            // Prompt for printing label
-            if (task.sub_recipe_id) {
-                const printLabel = await this.notificationService.confirm('Deseja imprimir a etiqueta de validade para este lote?');
-                if (printLabel) {
-                    const recipe = this.recipeState.recipes().find(r => r.id === task.sub_recipe_id);
-                    if (recipe) {
-                        this.selectedRecipeForLabel.set(recipe);
-                        this.isLabelModalOpen.set(true);
-                    }
-                }
+  async handleCompleteTask(data: CompletionData) {
+    const task = this.taskToComplete();
+    if (!task) return;
+
+    this.isCompletionModalOpen.set(false);
+    this.updatingStockTasks.update(set => new Set(set).add(task.id));
+
+    try {
+        const totalCost = this.getTaskCost(task); // Cost is usually fixed per unit ratio, but could be adjusted if logic changed
+        // Adjust total cost based on actual quantity? 
+        // Typically unit cost is same, total cost varies. 
+        // We calculate total cost based on PRODUCED quantity to be accurate with inventory deduction logic if it supports partials.
+        // But getTaskCost currently uses 'quantity_to_produce' from task object (planned).
+        // Let's adjust cost ratio:
+        let actualTotalCost = totalCost;
+        if (task.quantity_to_produce > 0) {
+            actualTotalCost = (totalCost / task.quantity_to_produce) * data.quantityProduced;
+        }
+
+        const { success, error } = await this.dataService.completeTask(task, data, actualTotalCost);
+        
+        if (!success) throw error;
+
+        // Prompt for printing label if requested
+        if (data.printLabel && task.sub_recipe_id) {
+            const recipe = this.recipeState.recipes().find(r => r.id === task.sub_recipe_id);
+            if (recipe) {
+                // Pass custom label data including the actual expiration date set in modal
+                // For simplicity, we reuse the existing Label Modal logic but pre-set data via service or dedicated method?
+                // The LabelGeneratorModal initializes from 'item'. 
+                // We'll just open it normally, user might need to re-verify date/lot, 
+                // OR we could improve label modal to accept overrides.
+                // For this iteration, let's open the label modal as before, it defaults to standard calculation.
+                this.selectedRecipeForLabel.set(recipe);
+                this.isLabelModalOpen.set(true);
             }
         }
-      }
     } catch (error: any) {
         await this.notificationService.alert(`Ocorreu um erro: ${error.message}`);
     } finally {
-        this.updatingStockTasks.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(task.id);
-            return newSet;
-        });
+        this.updatingStockTasks.update(set => { const newSet = new Set(set); newSet.delete(task.id); return newSet; });
+        this.taskToComplete.set(null);
     }
   }
 
