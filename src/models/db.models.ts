@@ -21,7 +21,7 @@ export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Ates
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
-export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery';
+export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery' | 'Tab'; // Added 'Tab'
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
@@ -315,7 +315,9 @@ export interface DeliveryDriver {
 
 export interface Order {
   id: string;
-  table_number: number;
+  table_number: number; // For tabs, this might be 0 or null
+  command_number?: number | null; // NEW: Physical card number
+  tab_name?: string | null;       // NEW: Customer name for the tab
   status: OrderStatus;
   completed_at: string | null;
   order_type: OrderType;

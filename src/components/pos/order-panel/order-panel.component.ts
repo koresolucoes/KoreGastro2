@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient } from '../../../models/db.models';
@@ -78,7 +79,13 @@ export class OrderPanelComponent {
   // Mobile cart visibility
   isCartVisible = signal(false);
 
-  // Notes Modal Signals
+  // Quick Add Modal (Spotlight Flow)
+  isQuickAddModalOpen = signal(false);
+  quickAddRecipe = signal<Recipe | null>(null);
+  quickAddQuantity = signal(1);
+  quickAddNotes = signal('');
+
+  // Notes Modal Signals (Editing existing)
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
   noteInput = signal('');
@@ -172,8 +179,18 @@ export class OrderPanelComponent {
       const category = this.selectedCategory();
       const term = this.recipeSearchTerm().toLowerCase();
       let recipesToShow = this.recipes().filter(r => !r.is_sub_recipe);
-      if (category) recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
-      if (term) recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
+      
+      if (term) {
+        // Spotlight Search: Search across all categories by name OR code
+        recipesToShow = recipesToShow.filter(r => 
+            r.name.toLowerCase().includes(term) || 
+            r.external_code?.toLowerCase().includes(term) ||
+            r.ncm_code?.includes(term)
+        );
+      } else if (category) {
+        // Category Filter only if no search term
+        recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
+      }
       return recipesToShow;
   });
   
@@ -243,15 +260,17 @@ export class OrderPanelComponent {
   });
   
   orderTotal = computed(() => {
-      // Logic: If user clicks "Service Fee" toggle, apply 10%.
-      // Currently implemented via PreBillModal logic, but here we can calculate assuming simple subtotal.
-      // Or we assume standard flow: subtotal is what matters here.
-      // Actually, orderTotal should just be subtotal unless service fee logic is added to Order model or UI state.
-      // For now, return subtotal to be safe.
+      // For standard flow, return subtotal.
       return this.orderSubtotal();
   });
 
-  selectCategory(category: Category | null) { this.selectedCategory.set(category); }
+  selectCategory(category: Category | null) { 
+      this.selectedCategory.set(category); 
+      // Clear search if selecting category directly, for cleaner UX
+      if(category) this.recipeSearchTerm.set('');
+  }
+
+  // --- NEW: Stock & Quick Add Logic ---
 
   private reservedIngredients = computed(() => {
     const reserved = new Map<string, number>();
@@ -302,13 +321,13 @@ export class OrderPanelComponent {
     return reserved;
   });
 
-  private hasEnoughStockFor(recipe: Recipe): boolean {
+  private hasEnoughStockFor(recipe: Recipe, quantityToCheck: number = 1): boolean {
     const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
     const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
     const reserved = this.reservedIngredients();
 
     if (!composition) {
-      return true; // Assume true for recipes with no ingredients
+      return true; // Assume true for recipes with no ingredients defined
     }
 
     // Check direct raw ingredients
@@ -318,13 +337,10 @@ export class OrderPanelComponent {
         const availableStock = ingredient.stock;
         const alreadyReserved = reserved.get(ing.ingredientId) || 0;
         
-        if (availableStock < alreadyReserved + ing.quantity) {
-          this.notificationService.show(`Estoque insuficiente de "${ingredient.name}" para adicionar mais "${recipe.name}".`, 'error');
+        if (availableStock < alreadyReserved + (ing.quantity * quantityToCheck)) {
+          this.notificationService.show(`Estoque insuficiente de "${ingredient.name}".`, 'error');
           return false;
         }
-      } else {
-        this.notificationService.show(`Ingrediente de "${recipe.name}" não encontrado.`, 'error');
-        return false;
       }
     }
 
@@ -335,49 +351,90 @@ export class OrderPanelComponent {
         const availableStock = ingredient.stock;
         const alreadyReserved = reserved.get(subIng.ingredientId) || 0;
 
-        if (availableStock < alreadyReserved + subIng.quantity) {
+        if (availableStock < alreadyReserved + (subIng.quantity * quantityToCheck)) {
           this.notificationService.show(`Estoque insuficiente da sub-receita pronta "${ingredient.name}".`, 'error');
           return false;
         }
-      } else {
-        this.notificationService.show(`Item de estoque para sub-receita em "${recipe.name}" não encontrado.`, 'error');
-        return false;
       }
     }
 
     return true;
   }
 
-  addToCart(recipe: Recipe & { hasStock?: boolean }) {
+  // REPLACES OLD addToCart: Opens the Quick Add Modal instead
+  openQuickAddModal(recipe: Recipe & { hasStock?: boolean }) {
     if (!recipe.is_available) {
         this.notificationService.show(`"${recipe.name}" não está disponível no cardápio.`, 'warning');
         return;
     }
-
-    // Find an existing item in the cart to increment. We'll only increment items that have no notes.
-    const existingCartItem = this.shoppingCart().find(item => item.recipe.id === recipe.id && !item.notes);
     
-    // Perform stock check before adding or incrementing
-    if (!this.hasEnoughStockFor(recipe)) {
-        return; // The hasEnoughStockFor method shows the notification
+    // Initial Stock Check for 1 item
+    if (!this.hasEnoughStockFor(recipe, 1)) {
+        return;
     }
 
-    if (existingCartItem) {
-        this.shoppingCart.update(cart => 
-            cart.map(item => item.id === existingCartItem.id ? { ...item, quantity: item.quantity + 1 } : item)
-        );
-    } else {
-        this.shoppingCart.update(cart => [...cart, { id: uuidv4(), recipe, quantity: 1, notes: '' }]);
-    }
+    this.quickAddRecipe.set(recipe);
+    this.quickAddQuantity.set(1);
+    this.quickAddNotes.set('');
+    this.isQuickAddModalOpen.set(true);
+  }
+
+  closeQuickAddModal() {
+    this.isQuickAddModalOpen.set(false);
+    this.quickAddRecipe.set(null);
+  }
+  
+  updateQuickAddQuantity(change: number) {
+      const newQty = this.quickAddQuantity() + change;
+      if (newQty < 1) return;
+      
+      const recipe = this.quickAddRecipe();
+      if (recipe) {
+          // Check if we have stock for the NEW total quantity we want to add
+          // Note: reservedIngredients already counts what's in cart. 
+          // hasEnoughStockFor logic checks (Reserved + NewNeeded) <= Stock.
+          // Since we haven't added this batch to the cart yet, we check for newQty.
+          if (change > 0 && !this.hasEnoughStockFor(recipe, newQty)) {
+              return;
+          }
+      }
+      this.quickAddQuantity.set(newQty);
+  }
+
+  confirmQuickAdd() {
+      const recipe = this.quickAddRecipe();
+      const quantity = this.quickAddQuantity();
+      const notes = this.quickAddNotes().trim();
+      
+      if (!recipe) return;
+
+      // Final Check
+      if (!this.hasEnoughStockFor(recipe, quantity)) {
+          return;
+      }
+
+      this.shoppingCart.update(cart => [
+          ...cart, 
+          { id: uuidv4(), recipe, quantity, notes }
+      ]);
+      
+      this.closeQuickAddModal();
+      this.recipeSearchTerm.set(''); // Clear search on successful add for rapid next entry
+      // Optional: Sound effect for "beep" could go here
+  }
+  
+  // --- Standard Cart Actions ---
+
+  addToCart(recipe: Recipe & { hasStock?: boolean }) {
+      // Legacy method alias - redirects to new flow
+      this.openQuickAddModal(recipe);
   }
   
   decrementFromCart(recipe: Recipe) {
-    // Try to find a cart item (not yet sent to kitchen)
+    // Legacy support or fallback logic
     const cartItem = this.shoppingCart().find(item => item.recipe.id === recipe.id && !item.notes);
     if (cartItem) {
         this.updateCartItemQuantity(cartItem.id, -1);
-    } else {
-        this.notificationService.show("Não é possível remover itens já enviados para a cozinha a partir daqui. Use a lixeira no resumo do pedido.", 'warning');
     }
   }
 
@@ -387,7 +444,7 @@ export class OrderPanelComponent {
     
     if (change === 1) { // Only check stock when increasing quantity
         if (!this.hasEnoughStockFor(itemToUpdate.recipe)) {
-            return; // Notification is handled inside the check function
+            return; 
         }
     }
 
