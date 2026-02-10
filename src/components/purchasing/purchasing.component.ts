@@ -9,6 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { v4 as uuidv4 } from 'uuid';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { FormsModule } from '@angular/forms';
+import { OperationalAuthService } from '../../services/operational-auth.service';
 
 type FormItem = {
     id: string; // Can be temp id
@@ -40,10 +41,12 @@ export class PurchasingComponent implements OnInit {
     router: Router = inject(Router);
     notificationService = inject(NotificationService);
     inventoryDataService = inject(InventoryDataService);
+    operationalAuthService = inject(OperationalAuthService);
 
     purchaseOrders = this.inventoryState.purchaseOrders;
     suppliers = this.inventoryState.suppliers;
     ingredients = this.inventoryState.ingredients;
+    activeEmployee = this.operationalAuthService.activeEmployee;
 
     isModalOpen = signal(false);
     editingOrder = signal<Partial<PurchaseOrder> | null>(null);
@@ -227,6 +230,9 @@ export class PurchasingComponent implements OnInit {
     async saveOrder() {
         const formValue = this.orderForm();
         const items = this.orderItems();
+        // AUDIT: Get current employee ID
+        const employeeId = this.activeEmployee()?.id;
+
         if (items.length === 0) {
             await this.notificationService.alert('Adicione pelo menos um item à ordem de compra.');
             return;
@@ -234,7 +240,7 @@ export class PurchasingComponent implements OnInit {
 
         const result = this.editingOrder()?.id
             ? await this.purchasingDataService.updatePurchaseOrder(this.editingOrder()!.id!, formValue, items)
-            : await this.purchasingDataService.createPurchaseOrder(formValue, items);
+            : await this.purchasingDataService.createPurchaseOrder(formValue, items, employeeId || null);
 
         if (result.success) this.closeModal();
         else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
@@ -260,7 +266,11 @@ export class PurchasingComponent implements OnInit {
         if (!confirmed) {
             return;
         }
-        const result = await this.purchasingDataService.receivePurchaseOrder(order);
+
+        // AUDIT: Get current employee ID
+        const employeeId = this.activeEmployee()?.id;
+
+        const result = await this.purchasingDataService.receivePurchaseOrder(order, employeeId || null);
         if (!result.success) {
             await this.notificationService.alert(`Falha ao receber pedido. Erro: ${result.error?.message}`);
         }

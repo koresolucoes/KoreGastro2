@@ -169,7 +169,7 @@ export class InventoryDataService {
     return { success: !error, error };
   }
 
-  // ... existing adjustIngredientStock ...
+  // ... existing adjustIngredientStock UPDATED ...
    async adjustIngredientStock(params: {
     ingredientId: string;
     quantityChange: number;
@@ -177,6 +177,7 @@ export class InventoryDataService {
     lotIdForExit?: string | null;
     lotNumberForEntry?: string | null;
     expirationDateForEntry?: string | null;
+    employeeId?: string | null; // AUDIT: Capture who performed the adjustment
   }): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
@@ -187,7 +188,8 @@ export class InventoryDataService {
         reason,
         lotIdForExit = null,
         lotNumberForEntry = null,
-        expirationDateForEntry = null
+        expirationDateForEntry = null,
+        employeeId = null // Default to null if not provided
     } = params;
 
     const { data: originalIngredient, error: fetchError } = await supabase
@@ -214,7 +216,23 @@ export class InventoryDataService {
         return { success: !error, error };
     }
     
+    // AUDIT: Insert into inventory_logs
     const newStock = originalIngredient.stock + quantityChange;
+    const { error: logError } = await supabase.from('inventory_logs').insert({
+        user_id: userId,
+        ingredient_id: ingredientId,
+        employee_id: employeeId,
+        quantity_change: quantityChange,
+        previous_balance: originalIngredient.stock,
+        new_balance: newStock,
+        reason: reason
+    });
+
+    if (logError) {
+        console.error("Failed to insert inventory log audit trail:", logError);
+        // We don't fail the transaction here to avoid blocking operations, but in a strict audit system we might.
+    }
+
     const webhookPayload = {
         ingredientId: ingredientId,
         ingredientName: originalIngredient.name,
@@ -229,7 +247,14 @@ export class InventoryDataService {
   }
 
   // --- Helper to consume from station with fallback to central ---
-  private async consumeStockFromStation(stationId: string | null, ingredientId: string, quantityNeeded: number, reason: string): Promise<boolean> {
+  // UPDATED: Pass employeeId
+  private async consumeStockFromStation(
+      stationId: string | null, 
+      ingredientId: string, 
+      quantityNeeded: number, 
+      reason: string,
+      employeeId: string | null // AUDIT
+  ): Promise<boolean> {
       const userId = this.getActiveUnitId();
       if (!userId) return false;
 
@@ -254,6 +279,10 @@ export class InventoryDataService {
                       })
                       .eq('id', stationStock.id);
                   
+                  // NOTE: Station stocks technically don't have a granular audit log table yet 
+                  // other than 'station_stock_logs' if we created one, but for now we assume 
+                  // central stock is the main audit point.
+                  
                   remainingNeeded -= consumedFromStation;
               }
           }
@@ -265,7 +294,8 @@ export class InventoryDataService {
           const result = await this.adjustIngredientStock({
               ingredientId: ingredientId,
               quantityChange: -remainingNeeded,
-              reason: `${reason} (Fallback Central/Sem Estoque Praça)`
+              reason: `${reason} (Fallback Central/Sem Estoque Praça)`,
+              employeeId: employeeId
           });
           if (!result.success) return false;
       }
@@ -309,8 +339,15 @@ export class InventoryDataService {
     return { success: !error, error };
   }
   
-  // UPDATED: Now supports consuming from station
-    async adjustStockForProduction(subRecipeId: string, sourceIngredientId: string, quantityProduced: number, lotNumberForEntry: string | null, stationId?: string): Promise<{ success: boolean; error: any }> {
+  // UPDATED: adjustStockForProduction
+    async adjustStockForProduction(
+        subRecipeId: string, 
+        sourceIngredientId: string, 
+        quantityProduced: number, 
+        lotNumberForEntry: string | null, 
+        stationId?: string,
+        employeeId?: string | null // AUDIT
+    ): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -326,13 +363,12 @@ export class InventoryDataService {
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
         
-        // UPDATED: Use helper to try station first
-        const success = await this.consumeStockFromStation(stationId || null, ingredientId, totalDeduction, deductionReason);
+        // UPDATED: Pass employeeId
+        const success = await this.consumeStockFromStation(stationId || null, ingredientId, totalDeduction, deductionReason, employeeId || null);
         if (!success) throw new Error(`Failed to consume stock for ingredient ${ingredientId}`);
       }
 
       // Add the produced item (sub-recipe output) to Central Stock (or potentially station stock in future)
-      // For now, produced items go to central inventory (e.g. a big pot of sauce).
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       const { success, error } = await this.adjustIngredientStock({ 
           ingredientId: sourceIngredientId, 
@@ -340,6 +376,7 @@ export class InventoryDataService {
           reason: additionReason,
           lotNumberForEntry: lotNumberForEntry,
           expirationDateForEntry: null,
+          employeeId: employeeId // AUDIT
       });
       if (!success) throw error;
       
@@ -358,8 +395,8 @@ export class InventoryDataService {
     }
   }
 
-   // UPDATED: Refactored to reuse consumeStockFromStation logic
-   async deductStockForOrderItems(orderItems: OrderItem[], orderId: string): Promise<{ success: boolean; error: any; warningMessage?: string }> {
+   // UPDATED: deductStockForOrderItems
+   async deductStockForOrderItems(orderItems: OrderItem[], orderId: string, closingEmployeeId?: string | null): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -410,8 +447,8 @@ export class InventoryDataService {
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
 
-             // Use the helper that checks station first, then central
-             await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason);
+             // UPDATED: Pass closingEmployeeId as the audit actor for sales consumption
+             await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason, closingEmployeeId || null);
         }
       }
       

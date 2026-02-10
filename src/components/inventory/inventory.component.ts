@@ -1,6 +1,4 @@
 
-
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -16,6 +14,7 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { LabelGeneratorModalComponent } from '../shared/label-generator-modal/label-generator-modal.component';
+import { OperationalAuthService } from '../../services/operational-auth.service'; // Injected
 
 const EMPTY_INGREDIENT: Partial<Ingredient> = {
     name: '',
@@ -70,12 +69,14 @@ export class InventoryComponent implements OnInit {
     notificationService = inject(NotificationService);
     purchasingDataService = inject(PurchasingDataService);
     supabaseStateService = inject(SupabaseStateService);
+    operationalAuthService = inject(OperationalAuthService);
     
     ingredients = this.inventoryState.ingredients;
     categories = this.inventoryState.ingredientCategories;
     suppliers = this.inventoryState.suppliers;
     recipeCategories = this.recipeState.categories;
     stations = this.posState.stations;
+    activeEmployee = this.operationalAuthService.activeEmployee; // Used for audit
     
     // View State
     viewTab = signal<'inventory' | 'labels'>('inventory');
@@ -420,6 +421,8 @@ export class InventoryComponent implements OnInit {
     async handleAdjustStock() {
         const ingredient = this.adjustmentIngredient();
         const quantity = this.adjustmentQuantity();
+        const employeeId = this.activeEmployee()?.id; // AUDIT: Get active employee ID
+
         if (!ingredient || quantity <= 0) {
           await this.notificationService.alert('A quantidade deve ser maior que zero.');
           return;
@@ -447,6 +450,7 @@ export class InventoryComponent implements OnInit {
             reason: finalReason,
             lotNumberForEntry: this.adjustmentType() === 'entry' ? this.adjustmentLotNumber() : null,
             expirationDateForEntry: this.adjustmentType() === 'entry' ? this.adjustmentExpirationDate() : null,
+            employeeId: employeeId // AUDIT: Pass it down
         };
         const result = await this.inventoryDataService.adjustIngredientStock(params);
         if (result.success) this.closeAdjustmentModal();
@@ -608,13 +612,17 @@ export class InventoryComponent implements OnInit {
     async savePurchaseOrder() {
         const formValue = this.poForm();
         const items = this.poItems();
+        // AUDIT: Get current employee
+        const employeeId = this.activeEmployee()?.id;
+        
         if (items.length === 0) {
             await this.notificationService.alert('Adicione pelo menos um item à ordem de compra.');
             return;
         }
 
         this.isSavingPO.set(true);
-        const result = await this.purchasingDataService.createPurchaseOrder(formValue, items);
+        // AUDIT: Pass employeeId
+        const result = await this.purchasingDataService.createPurchaseOrder(formValue, items, employeeId || null);
         
         if (result.success) {
           this.notificationService.show('Ordem de Compra criada com sucesso!', 'success');
