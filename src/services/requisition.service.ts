@@ -6,6 +6,7 @@ import { Requisition, RequisitionItem, RequisitionStatus, RequisitionTemplate } 
 import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
 import { UnitContextService } from './unit-context.service';
+import { OperationalAuthService } from './operational-auth.service';
 
 export interface StationCostSummary {
     stationName: string;
@@ -19,6 +20,7 @@ export interface StationCostSummary {
 })
 export class RequisitionService {
   private authService = inject(AuthService);
+  private operationalAuthService = inject(OperationalAuthService);
   private inventoryDataService = inject(InventoryDataService);
   private inventoryState = inject(InventoryStateService);
   private unitContextService = inject(UnitContextService);
@@ -84,13 +86,16 @@ export class RequisitionService {
 
   async createRequisition(stationId: string, items: { ingredientId: string; quantity: number; unit: string }[], notes?: string): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
+    // AUDIT: Capture the specific employee who requested this
+    const employeeId = this.operationalAuthService.activeEmployee()?.id;
+
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { data: requisition, error: reqError } = await supabase
       .from('requisitions')
       .insert({
         user_id: userId,
-        requested_by: null,
+        requested_by: employeeId || null, // Explicitly linking the employee
         station_id: stationId,
         status: 'PENDING',
         notes: notes
@@ -126,9 +131,16 @@ export class RequisitionService {
       return this.processDelivery(id, items, userId);
     }
 
+    // AUDIT: Capture who performed the status change (e.g., Rejection)
+    const employeeId = this.operationalAuthService.activeEmployee()?.id;
+
     const { error } = await supabase
       .from('requisitions')
-      .update({ status, processed_at: new Date().toISOString() })
+      .update({ 
+          status, 
+          processed_at: new Date().toISOString(),
+          processed_by: employeeId || null
+      })
       .eq('id', id);
 
     return { success: !error, error };
@@ -190,9 +202,16 @@ export class RequisitionService {
       }
     }
 
+    // AUDIT: Capture who performed the delivery
+    const employeeId = this.operationalAuthService.activeEmployee()?.id;
+
     const { error: updateError } = await supabase
         .from('requisitions')
-        .update({ status: 'DELIVERED', processed_at: new Date().toISOString() })
+        .update({ 
+            status: 'DELIVERED', 
+            processed_at: new Date().toISOString(),
+            processed_by: employeeId || null
+        })
         .eq('id', requisitionId);
 
     return { success: !updateError, error: updateError };
