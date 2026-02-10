@@ -2,6 +2,8 @@
 
 
 
+
+
 <div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -12,7 +14,17 @@
   } @else {
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
       <div class="flex-1">
-        <h1 class="text-2xl font-bold text-white">Kitchen Display System (KDS)</h1>
+        <div class="flex items-center gap-3">
+             <h1 class="text-2xl font-bold text-white">KDS</h1>
+             <!-- Recall Button -->
+             @if(viewMode() === 'station') {
+                 <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors border border-gray-600">
+                    <span class="material-symbols-outlined text-base">history</span>
+                    <span>Desfazer</span>
+                 </button>
+             }
+        </div>
+        
         @if(viewMode() === 'station' || viewMode() === 'production') {
           <div class="flex items-center gap-2 mt-2 text-sm">
             <span class="text-gray-400">Responsável:</span>
@@ -62,111 +74,141 @@
         <!-- Station View Grid (Ticket based) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-red-600]="ticket.isOrderCancelled" [class.border-gray-700]="!ticket.isOrderCancelled">
+            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col shadow-lg transition-transform" 
+                [class.border-red-600]="ticket.isOrderCancelled" 
+                [class.border-gray-700]="!ticket.isOrderCancelled"
+                [class.border-blue-500]="ticket.orderType.includes('iFood') && !ticket.isOrderCancelled"
+                [class.border-l-8]="ticket.orderType.includes('iFood')">
+              
+              <!-- Ticket Header -->
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
-                <div class="flex items-center gap-2">
-                  @if (ticket.orderType.startsWith('iFood')) {
-                    <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
-                  } @else if (ticket.orderType === 'QuickSale') {
-                    <span>Caixa</span>
-                  } @else {
-                    <span>Mesa {{ ticket.tableNumber }}</span>
-                  }
-                  <button (click)="openDetailModal(ticket); $event.stopPropagation()" class="p-1 rounded-full text-white/70 hover:bg-white/20 hover:text-white transition-colors" title="Ver Detalhes">
-                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                    </svg>
-                  </button>
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <!-- Context Icon -->
+                    @if (ticket.orderType.includes('Delivery')) {
+                         <span class="material-symbols-outlined text-white">two_wheeler</span>
+                    } @else if (ticket.orderType.includes('Takeout')) {
+                         <span class="material-symbols-outlined text-white">shopping_bag</span>
+                    } @else if (ticket.orderType === 'QuickSale') {
+                         <span class="material-symbols-outlined text-white">point_of_sale</span>
+                    } @else {
+                         <span class="material-symbols-outlined text-white">restaurant</span>
+                    }
+
+                    <div class="flex flex-col leading-tight min-w-0">
+                        @if (ticket.orderType.startsWith('iFood')) {
+                            <span class="truncate" title="iFood #{{ ticket.ifoodDisplayId }}">#{{ ticket.ifoodDisplayId }}</span>
+                        } @else if (ticket.orderType === 'QuickSale') {
+                            <span>Caixa</span>
+                        } @else {
+                            <span>Mesa {{ ticket.tableNumber }}</span>
+                        }
+                        @if(ticket.customerName) {
+                            <span class="text-[10px] font-normal opacity-90 truncate max-w-[120px]">{{ ticket.customerName }}</span>
+                        }
+                    </div>
                 </div>
+
                 <div class="flex items-center gap-2">
                     @if(ticket.isOrderCancelled) {
                         <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded animate-pulse">Cancelado</span>
                     }
-                    <span class="font-mono text-lg" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                    <span class="font-mono text-xl tracking-tight" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                    <button (click)="openDetailModal(ticket); $event.stopPropagation()" class="p-1 rounded-full text-white/70 hover:bg-white/20 hover:text-white transition-colors" title="Ver Detalhes">
+                        <span class="material-symbols-outlined text-base">info</span>
+                    </button>
                 </div>
               </div>
-              <ul class="p-3 space-y-2 flex-1">
+
+              <!-- Items List -->
+              <ul class="p-2 space-y-2 flex-1 bg-gray-900/30">
                 @for (item of ticket.items; track item.id) {
                   <li (click)="updateStatus(item, false, $event)" 
-                      class="p-3 rounded-r-md transition-all relative cursor-pointer"
+                      class="p-2 rounded border-l-4 transition-all relative cursor-pointer group"
                       [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" 
                       [class.pointer-events-none]="updatingItems().has(item.id)"
-                      [class.border-l-4]="!item.isCritical && !item.isCancelled"
-                      [class.border-l-8]="item.isCritical || item.isCancelled"
-                      [class.bg-gray-700/50]="item.isHeld"
-                      [class.border-gray-500]="item.isHeld"
+                      [class.bg-gray-700]="!item.isCritical && !item.isCancelled && !item.isHeld"
                       [class.bg-red-900/40]="!item.isHeld && (item.isCritical || item.isCancelled)"
+                      [class.border-gray-500]="item.isHeld"
                       [class.border-red-500]="!item.isHeld && (item.isCritical || item.isCancelled)"
-                      [class.bg-blue-500/10]="!item.isHeld && !item.isCritical && !item.isCancelled && item.status === 'EM_PREPARO'"
-                      [class.bg-yellow-500/10]="!item.isHeld && !item.isCritical && !item.isCancelled && item.status === 'PENDENTE'"
                       [class]="!item.isHeld && !item.isCritical ? getItemStatusClass(item.status) : ''">
                     
+                    <!-- Held Overlay -->
                     @if(item.isHeld) {
-                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/80 rounded-r-md p-2 text-center">
-                        <p class="text-white font-bold text-sm">Inicia em:</p>
-                        <p class="font-mono text-2xl text-yellow-300">{{ formatTime(item.timeToStart) }}</p>
-                        <button (click)="startHeldItemNow(item, $event)" class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-xs transition-colors">
-                          Preparar Agora
+                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90 rounded p-1 text-center z-10">
+                        <p class="text-white font-bold text-xs">Inicia em:</p>
+                        <p class="font-mono text-xl text-yellow-300">{{ formatTime(item.timeToStart) }}</p>
+                        <button (click)="startHeldItemNow(item, $event)" class="mt-1 px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] uppercase font-bold">
+                          Agora
                         </button>
                       </div>
                     }
 
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                        @if(item.isCancelled) {
-                             <div class="flex items-center gap-2 text-red-400">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                <span class="font-bold uppercase text-sm">CANCELADO</span>
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-baseline gap-2">
+                                <span class="font-bold text-lg text-white font-mono" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
+                                        {{ item.quantity }}
+                                </span>
+                                <span class="font-bold text-base text-white leading-tight" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
+                                        {{ item.name }}
+                                </span>
                             </div>
-                        } @else if(item.isCritical) {
-                            <div class="flex items-center gap-2 text-red-300">
-                                <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                                <span class="font-bold uppercase text-sm">Atenção</span>
-                                </div>
-                                @if(item.attention_acknowledged) {
-                                <span class="flex items-center gap-1 text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Ciente</span>
-                                }
-                            </div>
-                        }
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                           <span class="font-bold text-lg text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
-                                {{ item.quantity }}x
-                           </span>
-                           <span class="font-bold text-lg text-white truncate" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
-                                {{ item.name }}
-                           </span>
+                             @if (item.notes) { 
+                                <div class="mt-1 inline-block px-2 py-0.5 rounded text-sm font-bold border" 
+                                    [class.bg-yellow-900]="!item.isCancelled" [class.text-yellow-100]="!item.isCancelled" [class.border-yellow-600]="!item.isCancelled"
+                                    [class.bg-gray-800]="item.isCancelled" [class.text-gray-500]="item.isCancelled" [class.border-gray-600]="item.isCancelled">
+                                    <span class="mr-1">⚠️</span> {{ item.notes }}
+                                </div> 
+                             }
                         </div>
-                        <span class="text-xs font-mono px-2 py-1 rounded whitespace-nowrap" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
-                            {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
+                        
+                        <!-- Status Badge -->
+                        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ml-2 whitespace-nowrap border" 
+                              [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.border-blue-500/50]="item.status === 'EM_PREPARO'"
+                              [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.border-yellow-500/50]="item.status === 'PENDENTE'"
+                              [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled" [class.border-red-500/50]="item.isCancelled">
+                            {{ item.isCancelled ? 'CANCELADO' : (item.status === 'EM_PREPARO' ? 'PREPARANDO' : 'PENDENTE') }}
                         </span>
                     </div>
-                    @if (item.notes) { <p class="text-sm mt-1 italic" [class.text-red-300]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p> }
-                    
+
+                    <!-- Action Buttons -->
                     @if(item.isCancelled) {
-                        <div class="mt-3 pt-3 border-t border-red-500/20">
-                             <button (click)="acknowledgeCancellation(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-semibold text-sm">Ciente / Remover</button>
+                        <div class="mt-2 pt-2 border-t border-red-500/20">
+                             <button (click)="acknowledgeCancellation(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1 bg-red-800 hover:bg-red-700 text-white rounded text-xs font-bold uppercase tracking-wider">Ciente</button>
                         </div>
                     } @else if((item.isCritical && !item.attention_acknowledged) || (!item.isHeld && item.status !== 'PRONTO')) {
-                      <div class="mt-3 pt-3 space-y-2" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-red-500/20' : 'border-t border-gray-600/50'">
+                      <div class="mt-2 pt-2 space-y-1" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-red-500/20' : 'border-t border-gray-600/30'">
                         @if(item.isCritical && !item.attention_acknowledged) {
-                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm">Ciente da Atenção</button>
+                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-bold uppercase tracking-wider mb-1">! Atenção !</button>
                         }
                         @if(!item.isHeld && item.status !== 'PRONTO') {
-                          <button (click)="markAsReady(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1.5 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500">
-                            Marcar como Pronto
+                          <button (click)="markAsReady(item, ticket, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2 bg-green-700 hover:bg-green-600 text-white rounded text-xs font-bold uppercase tracking-wider shadow-sm active:translate-y-0.5 transition-all">
+                            PRONTO
                           </button>
                         }
                       </div>
                     }
 
-                    @if(updatingItems().has(item.id)) { <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center rounded-md"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div></div> }
+                    @if(updatingItems().has(item.id)) { <div class="absolute inset-0 bg-gray-900/60 flex items-center justify-center rounded z-20"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div></div> }
                   </li>
                 }
               </ul>
-              <div class="text-xs text-center text-gray-500 p-2 border-t border-gray-700">Recebido às {{ ticket.oldestTimestamp | date:'HH:mm' }}</div>
+              
+              <!-- Batch Actions Footer -->
+              @if(!ticket.isOrderCancelled) {
+                  <div class="p-2 bg-gray-800 border-t border-gray-700 grid grid-cols-2 gap-2">
+                      <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2 bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-xs font-bold uppercase rounded border border-blue-800 transition-colors">
+                          Iniciar Tudo
+                      </button>
+                       <button (click)="batchUpdateTicketStatus(ticket, 'FINISH_ALL')" class="py-2 bg-green-900/50 hover:bg-green-800 text-green-200 text-xs font-bold uppercase rounded border border-green-800 transition-colors">
+                          Pronto Tudo
+                      </button>
+                  </div>
+              }
+              
+              <div class="text-[10px] text-center text-gray-500 p-1 bg-gray-900">
+                  Recebido às {{ ticket.oldestTimestamp | date:'HH:mm' }}
+              </div>
             </div>
           }
           @if (groupedKdsTickets().length === 0) {
@@ -202,7 +244,7 @@
                     <div class="text-center border-t border-gray-600/50 pt-2 mt-2">
                          <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">{{ agg.name }}</h3>
                          @if(agg.notes) {
-                             <p class="text-xs text-yellow-300 italic mt-1 line-clamp-2">{{ agg.notes }}</p>
+                             <p class="text-xs text-yellow-300 italic mt-1 line-clamp-2 bg-yellow-900/30 px-1 rounded">{{ agg.notes }}</p>
                          }
                     </div>
 
@@ -238,6 +280,12 @@
                 </div>
                 <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
+              
+              <!-- Progress Bar -->
+              <div class="h-1 w-full bg-gray-700">
+                  <div class="h-1 bg-green-500 transition-all duration-500" [style.width.%]="ticket.progress"></div>
+              </div>
+              
               <ul class="p-3 space-y-2 flex-1">
                 @for (item of ticket.items; track item.id) {
                   <li class="p-2 rounded-md flex justify-between items-center gap-2" 
@@ -261,13 +309,14 @@
                 }
               </ul>
               @if(ticket.isReadyForPickup && !ticket.isOrderCancelled) {
-                <div class="p-2 border-t border-gray-700">
-                  <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full text-center py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2">
+                <div class="p-2 border-t border-gray-700 bg-green-900/20">
+                  <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full text-center py-3 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2 shadow-lg">
                     @if(updatingTickets().has(ticket.orderId)) {
                       <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                       <span>Enviando...</span>
                     } @else {
-                      <span>Marcar como Entregue</span>
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>PEDIDO COMPLETO - EXPEDIR</span>
                     }
                   </button>
                 </div>
@@ -293,6 +342,46 @@
       <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Atribuir Responsável - {{ selectedStation()?.name }}</h3></div>
       <div class="p-6 max-h-[70vh] overflow-y-auto"><div class="grid grid-cols-2 md:grid-cols-3 gap-4">@for(employee of employees(); track employee.id) {<button (click)="assignEmployeeToStation(employee.id)" class="flex flex-col items-center gap-2 p-4 rounded-lg transition-colors" [class.bg-blue-600]="selectedStation()?.employee_id === employee.id" [class.text-white]="selectedStation()?.employee_id === employee.id" [class.bg-gray-700]="selectedStation()?.employee_id !== employee.id" [class.hover:bg-gray-600]="selectedStation()?.employee_id !== employee.id"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span class="font-semibold text-center text-sm">{{ employee.name }}</span></button>}</div></div>
       <div class="p-4 bg-gray-700/50 flex justify-between gap-3"><button (click)="assignEmployeeToStation(null)" class="w-full px-4 py-2 font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors" [disabled]="!selectedStation()?.employee_id">Remover</button><button (click)="isAssignEmployeeModalOpen.set(false)" class="w-full px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button></div>
+    </div>
+  </div>
+}
+
+<!-- Recall / Undo Modal -->
+@if(isRecallModalOpen()) {
+  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 no-print" (click)="isRecallModalOpen.set(false)">
+    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-yellow-400">history</span>
+                Histórico Recente / Desfazer
+            </h3>
+            <button (click)="isRecallModalOpen.set(false)" class="p-1 rounded-full text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            @if(recentlyCompletedItems().length === 0) {
+                <div class="text-center text-gray-500 py-8">
+                    <p>Nenhum item finalizado recentemente nesta sessão.</p>
+                </div>
+            } @else {
+                <p class="text-xs text-gray-400 mb-3">Clique em "Restaurar" para trazer o item de volta para a fila.</p>
+                <div class="space-y-2">
+                    @for(recall of recentlyCompletedItems(); track recall.finishedAt) {
+                        <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center border border-gray-600">
+                            <div>
+                                <p class="font-bold text-white">{{ recall.displayItem.quantity }}x {{ recall.displayItem.name }}</p>
+                                <p class="text-xs text-gray-400">{{ recall.ticketInfo }} • {{ recall.finishedAt | date:'HH:mm:ss' }}</p>
+                            </div>
+                            <button (click)="restoreItem(recall)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded flex items-center gap-1 transition-colors">
+                                <span class="material-symbols-outlined text-sm">undo</span> Restaurar
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div class="p-3 bg-gray-900/50 text-center border-t border-gray-700">
+            <button (click)="isRecallModalOpen.set(false)" class="text-gray-400 hover:text-white text-sm">Fechar</button>
+        </div>
     </div>
   </div>
 }

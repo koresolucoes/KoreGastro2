@@ -24,6 +24,7 @@ interface BaseTicket {
   orderType: OrderType;
   ifoodDisplayId?: string | null;
   isOrderCancelled?: boolean; 
+  customerName?: string; // New: For better context
 }
 
 // New Interface for Grouped Items within a Ticket
@@ -63,12 +64,22 @@ interface ProductionAggregateItem {
 
 
 interface StationTicket extends BaseTicket {
-  items: KdsDisplayItem[]; // Changed from ProcessedOrderItem[]
+  items: KdsDisplayItem[];
 }
 
 interface ExpoTicket extends BaseTicket {
-  items: KdsDisplayItem[]; // Changed from ProcessedOrderItem[]
+  items: KdsDisplayItem[];
   isReadyForPickup: boolean;
+  progress: number; // 0 to 100
+  completedCount: number;
+  totalCount: number;
+}
+
+// For Recall Feature
+interface RecallItem {
+  displayItem: KdsDisplayItem;
+  ticketInfo: string; // e.g. "Mesa 5" or "#1234"
+  finishedAt: number;
 }
 
 type ProcessedOrderItem = OrderItem & {
@@ -118,6 +129,11 @@ export class KdsComponent implements OnInit, OnDestroy {
     isDetailModalOpen = signal(false);
     selectedTicketForDetail = signal<StationTicket | ExpoTicket | null>(null);
     isAssignEmployeeModalOpen = signal(false);
+
+    // RECALL / UNDO Feature
+    isRecallModalOpen = signal(false);
+    // Stores items finished in the current session for quick undo
+    recentlyCompletedItems = signal<RecallItem[]>([]);
 
     // State for sound alerts
     private processedNewItems = signal<Set<string>>(new Set());
@@ -286,12 +302,17 @@ export class KdsComponent implements OnInit, OnDestroy {
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            if (ticket.isOrderCancelled) {
-                return { ...ticket, isReadyForPickup: false };
-            }
             const allOrderItems = this.posState.orders().find(o => o.id === ticket.orderId)?.order_items ?? [];
-            const isReadyForPickup = allOrderItems.length > 0 && allOrderItems.every(item => item.status === 'PRONTO' || item.status === 'SERVIDO' || item.status === 'CANCELADO');
-            return { ...ticket, isReadyForPickup };
+            const totalCount = allOrderItems.length;
+            const completedCount = allOrderItems.filter(item => item.status === 'PRONTO' || item.status === 'SERVIDO' || item.status === 'CANCELADO').length;
+            const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+            if (ticket.isOrderCancelled) {
+                return { ...ticket, isReadyForPickup: false, progress: 100, completedCount, totalCount };
+            }
+            
+            const isReadyForPickup = totalCount > 0 && completedCount === totalCount;
+            return { ...ticket, isReadyForPickup, progress, completedCount, totalCount };
         });
     });
 
@@ -344,7 +365,6 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         for (const item of items) {
             // Create a unique key for grouping.
-            // Items are identical if they have same Recipe, Status, Notes, and Held Status/Criticality
             const key = `${item.recipe_id}_${item.status}_${item.notes || ''}_${item.isHeld}_${item.isCritical}_${item.isCancelled}`;
 
             if (groupedMap.has(key)) {
@@ -375,8 +395,6 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         }
         
-        // Return sorted (e.g., critical first)?
-        // Current logic preserves implicit order based on when the first item was encountered.
         return Array.from(groupedMap.values());
     }
 
@@ -431,7 +449,8 @@ export class KdsComponent implements OnInit, OnDestroy {
                 oldestTimestamp: new Date(oldestTimestamp).toISOString(),
                 orderType: order.order_type,
                 ifoodDisplayId: order.ifood_display_id,
-                isOrderCancelled
+                isOrderCancelled,
+                customerName: order.customers?.name
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
@@ -477,7 +496,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.setUpdatingForGroup(item.ids, false);
     }
     
-    async markAsReady(item: KdsDisplayItem, event: MouseEvent) {
+    async markAsReady(item: KdsDisplayItem, ticket: BaseTicket | null, event: MouseEvent) {
         event.stopPropagation();
         if (this.updatingItems().has(item.id) || item.status === 'PRONTO') {
             return;
@@ -490,6 +509,9 @@ export class KdsComponent implements OnInit, OnDestroy {
         
         if (!success) {
             await this.notificationService.alert(`Erro ao marcar como pronto: ${error?.message}`);
+        } else {
+             // Add to Recall list (Local session history)
+             this.addToRecallList(item, ticket);
         }
         
         this.setUpdatingForGroup(item.ids, false);
@@ -505,6 +527,15 @@ export class KdsComponent implements OnInit, OnDestroy {
             case 'PENDENTE': nextStatus = 'EM_PREPARO'; break;
             case 'EM_PREPARO': nextStatus = 'PRONTO'; break;
             default: return;
+        }
+        
+        // If finishing, use the specialized function to track for recall
+        if (nextStatus === 'PRONTO') {
+             // Find parent ticket if possible, otherwise pass null (affects recall display text)
+             // We can find it by searching groupedKdsTickets
+             const parentTicket = this.groupedKdsTickets().find(t => t.items.some(i => i.id === item.id));
+             await this.markAsReady(item, parentTicket || null, event || new MouseEvent('click'));
+             return;
         }
         
         this.soundNotificationService.playConfirmationSound();
@@ -524,6 +555,41 @@ export class KdsComponent implements OnInit, OnDestroy {
             await this.updateStatus(item, true);
         }
     }
+    
+    // Batch Actions for Ticket
+    async batchUpdateTicketStatus(ticket: StationTicket, action: 'START_ALL' | 'FINISH_ALL') {
+        const itemIdsToUpdate: string[] = [];
+        let itemsForRecall: KdsDisplayItem[] = [];
+
+        if (action === 'START_ALL') {
+            ticket.items.forEach(item => {
+                if (item.status === 'PENDENTE' && !item.isHeld && !item.isCancelled) {
+                    itemIdsToUpdate.push(...item.ids);
+                }
+            });
+            if (itemIdsToUpdate.length === 0) return;
+            
+            this.soundNotificationService.playConfirmationSound();
+            await this.posDataService.updateMultipleItemStatuses(itemIdsToUpdate, 'EM_PREPARO');
+            
+        } else if (action === 'FINISH_ALL') {
+             ticket.items.forEach(item => {
+                if ((item.status === 'PENDENTE' || item.status === 'EM_PREPARO') && !item.isHeld && !item.isCancelled) {
+                    itemIdsToUpdate.push(...item.ids);
+                    itemsForRecall.push(item);
+                }
+            });
+            if (itemIdsToUpdate.length === 0) return;
+
+            this.soundNotificationService.playConfirmationSound();
+            const { success } = await this.posDataService.updateMultipleItemStatuses(itemIdsToUpdate, 'PRONTO');
+            
+            if (success) {
+                itemsForRecall.forEach(item => this.addToRecallList(item, ticket));
+            }
+        }
+    }
+
 
     // New: Batch actions for Production View
     async advanceProductionItems(item: ProductionAggregateItem) {
@@ -551,6 +617,41 @@ export class KdsComponent implements OnInit, OnDestroy {
             return newSet;
         });
     }
+
+    // --- RECALL (UNDO) LOGIC ---
+    private addToRecallList(item: KdsDisplayItem, ticket: BaseTicket | null) {
+        let ticketInfo = 'Desconhecido';
+        if (ticket) {
+            if (ticket.orderType === 'Dine-in') ticketInfo = `Mesa ${ticket.tableNumber}`;
+            else if (ticket.orderType === 'QuickSale') ticketInfo = 'Caixa';
+            else if (ticket.ifoodDisplayId) ticketInfo = `#${ticket.ifoodDisplayId}`;
+            else ticketInfo = 'Delivery';
+        }
+
+        const recallItem: RecallItem = {
+            displayItem: item,
+            ticketInfo: ticketInfo,
+            finishedAt: Date.now()
+        };
+
+        this.recentlyCompletedItems.update(list => [recallItem, ...list].slice(0, 20)); // Keep last 20
+    }
+    
+    async restoreItem(recallItem: RecallItem) {
+        const item = recallItem.displayItem;
+        this.soundNotificationService.playConfirmationSound();
+        // Restore to 'EM_PREPARO' as a safe default, or 'PENDENTE' if it was very fast? 
+        // 'EM_PREPARO' is usually safer as it puts it back on screen immediately.
+        await this.posDataService.updateMultipleItemStatuses(item.ids, 'EM_PREPARO');
+        
+        // Remove from list
+        this.recentlyCompletedItems.update(list => list.filter(i => i !== recallItem));
+        
+        if (this.recentlyCompletedItems().length === 0) {
+            this.isRecallModalOpen.set(false);
+        }
+    }
+
 
     // ... (rest of methods like markOrderAsServed remain the same as they work on orderId) ...
     async markOrderAsServed(ticket: ExpoTicket) {
