@@ -1,5 +1,6 @@
+
 import { Injectable, signal } from '@angular/core';
-import { Ingredient, InventoryLot, IngredientCategory, Supplier, PurchaseOrder, ProductionPlan, PortioningEvent, StationStock, Requisition } from '../models/db.models';
+import { Ingredient, InventoryLot, IngredientCategory, Supplier, PurchaseOrder, ProductionPlan, PortioningEvent, StationStock, Requisition, RequisitionTemplate } from '../models/db.models';
 
 @Injectable({ providedIn: 'root' })
 export class InventoryStateService {
@@ -14,6 +15,9 @@ export class InventoryStateService {
   // New State for Stock Restructuring
   stationStocks = signal<StationStock[]>([]);
   requisitions = signal<Requisition[]>([]);
+  
+  // New State for Requisition Templates
+  requisitionTemplates = signal<RequisitionTemplate[]>([]);
 
   clearData() {
     this.ingredients.set([]);
@@ -26,5 +30,6 @@ export class InventoryStateService {
     
     this.stationStocks.set([]);
     this.requisitions.set([]);
+    this.requisitionTemplates.set([]);
   }
 }

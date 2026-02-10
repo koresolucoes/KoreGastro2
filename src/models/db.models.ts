@@ -762,6 +762,26 @@ export interface RequisitionItem {
   ingredients?: { name: string };
 }
 
+// --- Requisition Templates (Kits) ---
+export interface RequisitionTemplate {
+  id: string;
+  user_id: string;
+  station_id: string | null;
+  name: string;
+  created_at: string;
+  template_items?: RequisitionTemplateItem[]; // Relation
+}
+
+export interface RequisitionTemplateItem {
+  id: string;
+  template_id: string;
+  ingredient_id: string;
+  quantity: number;
+  created_at: string;
+  // Relations
+  ingredients?: { name: string, unit: string, cost: number };
+}
+
 // --- Labeling (Etiquetagem) ---
 export interface LabelLog {
     id: string;

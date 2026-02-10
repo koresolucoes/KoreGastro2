@@ -1,0 +1,131 @@
+
+    <div class="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+      <h2 class="text-xl font-bold text-white mb-4">Nova Requisição para Praça</h2>
+      
+      <!-- Top Controls -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Selecione a Estação (Destino)</label>
+          <select [ngModel]="selectedStationId()" (ngModelChange)="selectedStationId.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option [value]="null">Selecione...</option>
+            @for(station of stations(); track station.id) {
+              <option [value]="station.id">{{ station.name }}</option>
+            }
+          </select>
+        </div>
+        
+        <!-- Template Selector -->
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Carregar Kit / Template</label>
+            <div class="flex gap-2">
+                <select [ngModel]="selectedTemplateId()" (ngModelChange)="selectedTemplateId.set($event)" [disabled]="!selectedStationId()" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
+                    <option [value]="null">Selecione um Kit...</option>
+                    @for(tmpl of availableTemplates(); track tmpl.id) {
+                        <option [value]="tmpl.id">{{ tmpl.name }}</option>
+                    }
+                </select>
+                <button (click)="applyTemplate()" [disabled]="!selectedTemplateId()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:bg-gray-600 transition-colors" title="Carregar Itens">
+                    <span class="material-symbols-outlined text-base">download</span>
+                </button>
+                @if(selectedTemplateId()) {
+                    <button (click)="deleteTemplate()" class="px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors" title="Excluir Kit">
+                        <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                }
+            </div>
+        </div>
+      </div>
+      
+      <!-- Search -->
+      <div class="mb-4">
+           <label class="block text-sm font-medium text-gray-300 mb-1">Buscar Insumo</label>
+           <div class="relative">
+             <input 
+                type="text" 
+                [value]="searchTerm()" 
+                (input)="searchTerm.set($any($event.target).value)" 
+                placeholder="Digite para buscar..."
+                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                
+                @if(searchTerm().length > 0 && filteredIngredients().length > 0) {
+                   <div class="absolute top-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mt-1 z-10 max-h-48 overflow-y-auto shadow-xl">
+                      <ul>
+                        @for(ing of filteredIngredients(); track ing.id) {
+                           <li (click)="addItem(ing)" class="p-3 hover:bg-gray-500 cursor-pointer text-white flex justify-between">
+                              <span>{{ ing.name }}</span>
+                              <div class="text-right">
+                                  <span class="block text-xs text-gray-300">{{ ing.stock }} {{ ing.unit }} (Estoque)</span>
+                                  <span class="block text-xs text-green-300">{{ ing.cost | currency:'BRL' }} / un</span>
+                              </div>
+                           </li>
+                        }
+                      </ul>
+                   </div>
+                }
+           </div>
+      </div>
+
+      <!-- Items List -->
+      <div class="flex-1 overflow-y-auto bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-700">
+         @if(cartItems().length === 0) {
+            <p class="text-center text-gray-500 py-10">Nenhum item adicionado à requisição.</p>
+         } @else {
+            <table class="w-full text-left text-sm text-gray-300">
+               <thead>
+                  <tr class="border-b border-gray-700 text-xs uppercase">
+                     <th class="py-2">Item</th>
+                     <th class="py-2 w-24 text-center">Qtd.</th>
+                     <th class="py-2 w-16">Unid.</th>
+                     <th class="py-2 w-24 text-right">Custo Un.</th>
+                     <th class="py-2 w-24 text-right">Subtotal</th>
+                     <th class="py-2 w-10"></th>
+                  </tr>
+               </thead>
+               <tbody>
+                  @for(item of cartItems(); track item.ingredient.id; let i = $index) {
+                     <tr class="border-b border-gray-700/50">
+                        <td class="py-2 font-medium text-white">{{ item.ingredient.name }}</td>
+                        <td class="py-2">
+                           <input type="number" [(ngModel)]="item.quantity" class="w-full bg-gray-700 text-center text-white rounded p-1" min="0">
+                        </td>
+                        <td class="py-2">{{ item.ingredient.unit }}</td>
+                        <td class="py-2 text-right text-gray-400">{{ item.ingredient.cost | currency:'BRL' }}</td>
+                        <td class="py-2 text-right font-semibold text-white">{{ (item.ingredient.cost * item.quantity) | currency:'BRL' }}</td>
+                        <td class="py-2 text-right">
+                           <button (click)="removeItem(i)" class="text-red-400 hover:text-red-300">
+                              <span class="material-symbols-outlined text-lg">delete</span>
+                           </button>
+                        </td>
+                     </tr>
+                  }
+               </tbody>
+            </table>
+         }
+      </div>
+
+      <!-- Footer / Totals -->
+      <div class="flex flex-col gap-4 pt-2 border-t border-gray-700">
+          <div class="flex justify-between items-center text-lg font-bold">
+              <span class="text-gray-300">Custo Total Estimado:</span>
+              <span class="text-green-400">{{ totalEstimatedCost() | currency:'BRL' }}</span>
+          </div>
+
+          <div class="mb-2">
+             <label class="block text-sm font-medium text-gray-300 mb-1">Observações (Opcional)</label>
+             <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"></textarea>
+          </div>
+
+          <div class="flex justify-between items-center gap-4">
+             <button (click)="saveAsTemplate()" [disabled]="cartItems().length === 0 || !selectedStationId()" class="text-blue-400 hover:text-blue-300 text-sm font-semibold flex items-center gap-2 px-3 py-2 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                 <span class="material-symbols-outlined text-lg">save</span> Salvar como Kit
+             </button>
+          
+             <button (click)="submitRequisition()" [disabled]="!canSubmit() || isSubmitting()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center gap-2">
+                @if(isSubmitting()) {
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                }
+                Solicitar Estoque
+             </button>
+          </div>
+      </div>
+    </div>

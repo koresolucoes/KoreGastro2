@@ -1,9 +1,12 @@
 
+
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
-import { Requisition, RequisitionItem, RequisitionStatus } from '../models/db.models';
+import { Requisition, RequisitionItem, RequisitionStatus, RequisitionTemplate } from '../models/db.models';
 import { InventoryDataService } from './inventory-data.service';
+import { InventoryStateService } from './inventory-state.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,9 +14,71 @@ import { InventoryDataService } from './inventory-data.service';
 export class RequisitionService {
   private authService = inject(AuthService);
   private inventoryDataService = inject(InventoryDataService);
+  private inventoryState = inject(InventoryStateService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
+
+  async loadTemplates(): Promise<void> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return;
+
+      const { data, error } = await supabase
+          .from('requisition_templates')
+          .select('*, template_items:requisition_template_items(*, ingredients(name, unit, cost))')
+          .eq('user_id', userId);
+      
+      if (!error && data) {
+          // Cast correto para o tipo com relacionamentos
+          this.inventoryState.requisitionTemplates.set(data as any);
+      }
+  }
+
+  async createTemplate(name: string, stationId: string | null, items: { ingredientId: string; quantity: number }[]): Promise<{ success: boolean; error: any }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+      const { data: template, error: tmplError } = await supabase
+          .from('requisition_templates')
+          .insert({
+              user_id: userId,
+              station_id: stationId,
+              name: name
+          })
+          .select()
+          .single();
+      
+      if (tmplError) return { success: false, error: tmplError };
+
+      const itemsToInsert = items.map(item => ({
+          template_id: template.id,
+          ingredient_id: item.ingredientId,
+          quantity: item.quantity
+      }));
+
+      const { error: itemsError } = await supabase.from('requisition_template_items').insert(itemsToInsert);
+
+      if (itemsError) {
+          await supabase.from('requisition_templates').delete().eq('id', template.id);
+          return { success: false, error: itemsError };
+      }
+
+      await this.loadTemplates();
+      return { success: true, error: null };
+  }
+
+  async deleteTemplate(templateId: string): Promise<{ success: boolean; error: any }> {
+      const { error } = await supabase.from('requisition_templates').delete().eq('id', templateId);
+      if (!error) {
+          await this.loadTemplates();
+      }
+      return { success: !error, error };
+  }
 
   async createRequisition(stationId: string, items: { ingredientId: string; quantity: number; unit: string }[], notes?: string): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     // 1. Create Header
@@ -92,9 +157,6 @@ export class RequisitionService {
       const qty = item.quantity_delivered || 0;
       if (qty > 0) {
         // A. Deduct from Central (Ingredients)
-        // We use the general adjustment logic. 
-        // Note: For strict lot control, we might need a UI to select which LOT is being picked. 
-        // For now, we use a general FIFO-like deduction via the service if supported, or just simple stock adjustment.
         const deductResult = await this.inventoryDataService.adjustIngredientStock({
             ingredientId: item.ingredient_id,
             quantityChange: -qty,
@@ -103,11 +165,9 @@ export class RequisitionService {
 
         if (!deductResult.success) {
             console.error(`Failed to deduct stock for item ${item.id}`, deductResult.error);
-            // Continue or abort? Ideally transactional. We continue for this MVP.
         }
 
         // B. Add to Station Stock
-        // Check if record exists
         const { data: existingStock } = await supabase
             .from('station_stocks')
             .select('*')
