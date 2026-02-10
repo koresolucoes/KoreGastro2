@@ -1,6 +1,7 @@
 
 
 
+
 <div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -84,6 +85,7 @@
                 </div>
               </div>
               <ul class="p-3 space-y-2 flex-1">
+                <!-- Iterate over GROUPED items now -->
                 @for (item of ticket.items; track item.id) {
                   <li (click)="updateStatus(item, false, $event)" 
                       class="p-3 rounded-r-md transition-all relative cursor-pointer"
@@ -129,8 +131,15 @@
                     </div>
 
                     <div class="flex justify-between items-center">
-                        <span class="font-bold text-lg text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</span>
-                        <span class="text-xs font-mono px-2 py-1 rounded" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
+                        <div class="flex items-center gap-2">
+                           <span class="font-bold text-lg text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
+                                {{ item.quantity }}x
+                           </span>
+                           <span class="font-bold text-lg text-white truncate" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
+                                {{ item.name }}
+                           </span>
+                        </div>
+                        <span class="text-xs font-mono px-2 py-1 rounded whitespace-nowrap" [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
                             {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
                         </span>
                     </div>

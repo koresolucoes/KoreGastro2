@@ -1,5 +1,4 @@
 
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType, IfoodOrderStatus } from '../../models/db.models';
@@ -24,15 +23,39 @@ interface BaseTicket {
   oldestTimestamp: string;
   orderType: OrderType;
   ifoodDisplayId?: string | null;
-  isOrderCancelled?: boolean; // Add cancelled flag
+  isOrderCancelled?: boolean; 
 }
 
+// New Interface for Grouped Items within a Ticket
+interface KdsDisplayItem {
+  id: string; // ID of the first item in the group (used for tracking in UI)
+  ids: string[]; // List of all item IDs in this group (for batch updates)
+  name: string;
+  quantity: number; // Sum of quantities
+  status: OrderItemStatus;
+  notes: string | null;
+  
+  // Computed/Derived properties for display
+  timerColor: string;
+  isLate: boolean;
+  isCritical: boolean;
+  attention_acknowledged: boolean;
+  isHeld: boolean;
+  timeToStart: number;
+  stationName?: string;
+  isCancelled: boolean;
+  elapsedTimeSeconds: number;
+  
+  status_timestamps?: Record<string, string> | null; // From the representative item
+}
+
+
 interface StationTicket extends BaseTicket {
-  items: ProcessedOrderItem[];
+  items: KdsDisplayItem[]; // Changed from ProcessedOrderItem[]
 }
 
 interface ExpoTicket extends BaseTicket {
-  items: ProcessedOrderItem[];
+  items: KdsDisplayItem[]; // Changed from ProcessedOrderItem[]
   isReadyForPickup: boolean;
 }
 
@@ -46,7 +69,7 @@ type ProcessedOrderItem = OrderItem & {
   isHeld: boolean;
   timeToStart: number; // in seconds
   stationName?: string;
-  isCancelled?: boolean; // Add cancelled flag
+  isCancelled?: boolean; 
 };
 
 @Component({
@@ -160,9 +183,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const itemsByOrder = new Map<string, ProcessedOrderItem[]>();
 
         // 1. Group all relevant items by their order ID and process them
-        // Note: PosStateService.orders() now includes recently cancelled orders due to the Supabase query update
         for (const order of this.posState.orders()) {
-            // Filter orders: Include OPEN, and CANCELLED (recent ones)
             if (order.status !== 'OPEN' && order.status !== 'CANCELLED') continue;
 
             const isOrderCancelled = order.status === 'CANCELLED';
@@ -171,26 +192,19 @@ export class KdsComponent implements OnInit, OnDestroy {
             const orderItems = itemsByOrder.get(order.id)!;
 
             for (const item of order.order_items) {
-                // Ignore completed items for cancelled orders (unlikely but safe)
                 if (isOrderCancelled && (item.status === 'SERVIDO' || item.status === 'PRONTO')) {
-                    // Logic choice: Do we show cancelled orders that were already served? 
-                    // Usually no. We care about things currently being made.
-                    // But if the order was just cancelled, we might want to stop the line even if it was "Ready".
-                    // Let's assume if it's "SERVIDO", it's gone from KDS.
                     if (item.status === 'SERVIDO') continue;
                 }
 
-                // If item is individually cancelled OR order is cancelled
                 const isItemCancelled = item.status === 'CANCELADO' || isOrderCancelled;
                 
-                // If cancelled, check if kitchen has acknowledged it
                 if (isItemCancelled && item.status_timestamps?.['CANCELLATION_ACKNOWLEDGED']) {
-                    continue; // Skip if already acknowledged/cleared
+                    continue; 
                 }
 
                 const recipe = recipesMap.get(item.recipe_id);
                 const prepTimeSecs = (recipe?.prep_time_in_minutes ?? 15) * 60;
-                // Use PENDENTE timestamp, or created_at
+                
                 const startTime = item.status_timestamps?.['PENDENTE'] ?? item.created_at;
                 const pendingTimestamp = new Date(startTime).getTime();
                 const elapsedTimeSeconds = Math.floor((now - pendingTimestamp) / 1000);
@@ -199,7 +213,7 @@ export class KdsComponent implements OnInit, OnDestroy {
                 let timerColor = 'text-green-300';
                 if (percentage > 50) timerColor = 'text-yellow-300';
                 if (percentage > 80) timerColor = 'text-red-300';
-                if (isItemCancelled) timerColor = 'text-gray-400'; // Cancelled items don't have active timers
+                if (isItemCancelled) timerColor = 'text-gray-400';
                 
                 const note = item.notes?.toLowerCase() ?? '';
                 orderItems.push({
@@ -218,12 +232,11 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         }
 
-        // 2. Apply hold logic based on prep times for each order (Skipped for Cancelled items)
+        // 2. Apply hold logic
         const finalItems: ProcessedOrderItem[] = [];
         for (const orderItems of itemsByOrder.values()) {
             if (orderItems.length === 0) continue;
             
-            // Only calculate hold times for non-cancelled items
             const activeItems = orderItems.filter(i => !i.isCancelled);
             const longestPrepTime = activeItems.length > 0 ? Math.max(...activeItems.map(item => item.prepTime)) : 0;
             
@@ -261,7 +274,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         const tickets = this.groupItemsIntoTickets(allItems);
         
         return tickets.map(ticket => {
-            // Check readiness only if ticket is active
             if (ticket.isOrderCancelled) {
                 return { ...ticket, isReadyForPickup: false };
             }
@@ -270,6 +282,48 @@ export class KdsComponent implements OnInit, OnDestroy {
             return { ...ticket, isReadyForPickup };
         });
     });
+
+    // GROUPING LOGIC (SMART ROUTING)
+    private groupItemsForDisplay(items: ProcessedOrderItem[]): KdsDisplayItem[] {
+        const groupedMap = new Map<string, KdsDisplayItem>();
+
+        for (const item of items) {
+            // Create a unique key for grouping.
+            // Items are identical if they have same Recipe, Status, Notes, and Held Status/Criticality
+            const key = `${item.recipe_id}_${item.status}_${item.notes || ''}_${item.isHeld}_${item.isCritical}_${item.isCancelled}`;
+
+            if (groupedMap.has(key)) {
+                const group = groupedMap.get(key)!;
+                group.quantity += item.quantity;
+                group.ids.push(item.id);
+            } else {
+                groupedMap.set(key, {
+                    id: item.id, // ID of the first one
+                    ids: [item.id],
+                    name: item.name,
+                    quantity: item.quantity,
+                    status: item.status,
+                    notes: item.notes,
+                    
+                    // Display properties taken from the first item
+                    timerColor: item.timerColor,
+                    isLate: item.isLate,
+                    isCritical: item.isCritical,
+                    attention_acknowledged: item.attention_acknowledged,
+                    isHeld: item.isHeld,
+                    timeToStart: item.timeToStart,
+                    stationName: item.stationName,
+                    isCancelled: item.isCancelled,
+                    elapsedTimeSeconds: item.elapsedTimeSeconds,
+                    status_timestamps: item.status_timestamps
+                });
+            }
+        }
+        
+        // Return sorted (e.g., critical first)?
+        // Current logic preserves implicit order based on when the first item was encountered.
+        return Array.from(groupedMap.values());
+    }
 
     private groupItemsIntoTickets(items: ProcessedOrderItem[]): StationTicket[] {
         const now = this.currentTime();
@@ -306,13 +360,16 @@ export class KdsComponent implements OnInit, OnDestroy {
             
             const isOrderCancelled = order.status === 'CANCELLED';
             if (isOrderCancelled) {
-                ticketTimerColor = 'bg-red-800'; // Dark red for cancelled ticket header
+                ticketTimerColor = 'bg-red-800'; 
             }
+
+            // Apply Grouping Here
+            const groupedItems = this.groupItemsForDisplay(orderItems);
 
             tickets.push({
                 orderId: order.id,
                 tableNumber: order.table_number,
-                items: orderItems,
+                items: groupedItems,
                 ticketElapsedTime,
                 ticketTimerColor,
                 isTicketLate: !isOrderCancelled && ticketElapsedTime > avgPrepTime,
@@ -337,52 +394,56 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.isAssignEmployeeModalOpen.set(false);
     }
     
-    async acknowledgeAttention(item: ProcessedOrderItem, event: MouseEvent) {
+    // Batch Update Methods using IDs array
+    async acknowledgeAttention(item: KdsDisplayItem, event: MouseEvent) {
         event.stopPropagation();
         if (this.updatingItems().has(item.id)) return;
 
         this.soundNotificationService.playConfirmationSound();
-        this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.posDataService.acknowledgeOrderItemAttention(item.id);
-        if (!success) await this.notificationService.alert(`Erro ao confirmar ciência: ${error?.message}`);
-        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
+        this.setUpdatingForGroup(item.ids, true);
+
+        // Process all IDs concurrently
+        const promises = item.ids.map(id => this.posDataService.acknowledgeOrderItemAttention(id));
+        await Promise.all(promises);
+        
+        this.setUpdatingForGroup(item.ids, false);
     }
 
-    async acknowledgeCancellation(item: ProcessedOrderItem, event: MouseEvent) {
+    async acknowledgeCancellation(item: KdsDisplayItem, event: MouseEvent) {
         event.stopPropagation();
         if (this.updatingItems().has(item.id)) return;
 
         this.soundNotificationService.playConfirmationSound();
-        this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.posDataService.acknowledgeCancellation(item.id);
-        if (!success) await this.notificationService.alert(`Erro ao limpar cancelamento: ${error?.message}`);
-        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
+        this.setUpdatingForGroup(item.ids, true);
+        
+        const promises = item.ids.map(id => this.posDataService.acknowledgeCancellation(id));
+        await Promise.all(promises);
+        
+        this.setUpdatingForGroup(item.ids, false);
     }
     
-    async markAsReady(item: OrderItem, event: MouseEvent) {
+    async markAsReady(item: KdsDisplayItem, event: MouseEvent) {
         event.stopPropagation();
         if (this.updatingItems().has(item.id) || item.status === 'PRONTO') {
             return;
         }
 
         this.soundNotificationService.playConfirmationSound();
-        this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, 'PRONTO');
+        this.setUpdatingForGroup(item.ids, true);
+
+        const { success, error } = await this.posDataService.updateMultipleItemStatuses(item.ids, 'PRONTO');
+        
         if (!success) {
             await this.notificationService.alert(`Erro ao marcar como pronto: ${error?.message}`);
         }
-        this.updatingItems.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(item.id);
-            return newSet;
-        });
+        
+        this.setUpdatingForGroup(item.ids, false);
     }
 
-    async updateStatus(item: OrderItem, forceStart = false, event?: MouseEvent) {
+    async updateStatus(item: KdsDisplayItem, forceStart = false, event?: MouseEvent) {
         event?.stopPropagation();
-        const processedItem = item as ProcessedOrderItem;
-        if (processedItem.isCancelled) return; // Prevent status updates on cancelled items
-        if (this.updatingItems().has(item.id) || (processedItem.isHeld && !forceStart)) return;
+        if (item.isCancelled) return;
+        if (this.updatingItems().has(item.id) || (item.isHeld && !forceStart)) return;
 
         let nextStatus: OrderItemStatus;
         switch (item.status) {
@@ -392,20 +453,33 @@ export class KdsComponent implements OnInit, OnDestroy {
         }
         
         this.soundNotificationService.playConfirmationSound();
-        this.updatingItems.update(set => new Set(set).add(item.id));
-        const { success, error } = await this.posDataService.updateOrderItemStatus(item.id, nextStatus);
+        this.setUpdatingForGroup(item.ids, true);
+
+        const { success, error } = await this.posDataService.updateMultipleItemStatuses(item.ids, nextStatus);
+
         if (!success) await this.notificationService.alert(`Erro ao atualizar o status do item: ${error?.message}`);
-        this.updatingItems.update(set => { const newSet = new Set(set); newSet.delete(item.id); return newSet; });
+        
+        this.setUpdatingForGroup(item.ids, false);
     }
 
-    async startHeldItemNow(item: ProcessedOrderItem, event: MouseEvent) {
+    async startHeldItemNow(item: KdsDisplayItem, event: MouseEvent) {
         event.stopPropagation();
-        const confirmed = await this.notificationService.confirm(`Tem certeza que deseja iniciar o preparo de "${item.name}" antes do tempo programado?`, 'Iniciar Preparo?');
+        const confirmed = await this.notificationService.confirm(`Tem certeza que deseja iniciar o preparo de "${item.quantity}x ${item.name}" antes do tempo programado?`, 'Iniciar Preparo?');
         if (confirmed) {
             await this.updateStatus(item, true);
         }
     }
 
+    // Helper to manage loading state for groups
+    private setUpdatingForGroup(ids: string[], isUpdating: boolean) {
+        this.updatingItems.update(set => {
+            const newSet = new Set(set);
+            ids.forEach(id => isUpdating ? newSet.add(id) : newSet.delete(id));
+            return newSet;
+        });
+    }
+
+    // ... (rest of methods like markOrderAsServed remain the same as they work on orderId) ...
     async markOrderAsServed(ticket: ExpoTicket) {
         if (this.updatingTickets().has(ticket.orderId)) return;
     
@@ -419,7 +493,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.updatingTickets.update(set => new Set(set).add(ticket.orderId));
     
         try {
-            // Step 1: Communicate with iFood if necessary
             if (order.ifood_order_id) {
                 const targetStatus: IfoodOrderStatus = order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
                 const { success, error } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
@@ -428,16 +501,13 @@ export class KdsComponent implements OnInit, OnDestroy {
                 }
             }
     
-            // Step 2: Update internal status
             const { success, error } = await this.posDataService.markOrderAsServed(order.id);
             if (!success) {
                 throw error;
             }
-            // On success, realtime subscription will remove the ticket from view.
     
         } catch (e: any) {
             await this.notificationService.alert(`Ocorreu um erro: ${e.message}`);
-            // Reset loading state on any error
             this.updatingTickets.update(set => {
                 const newSet = new Set(set);
                 newSet.delete(ticket.orderId);
@@ -459,8 +529,17 @@ export class KdsComponent implements OnInit, OnDestroy {
     async printTicket(ticket: StationTicket | ExpoTicket) {
         const station = this.selectedStation();
         if (station) {
+            // Need to map KdsDisplayItem back to OrderItem structure for printing
+            // We use the properties available in KdsDisplayItem which cover basic printing needs
+            // Note: Printing service expects OrderItem[], KdsDisplayItem extends a subset but is compatible structurally for key fields
+             const itemsForPrint: any[] = ticket.items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                notes: item.notes
+             }));
+
             const orderShellForPrinting = { id: ticket.orderId, table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
-            this.printingService.printOrder(orderShellForPrinting, ticket.items, station);
+            this.printingService.printOrder(orderShellForPrinting, itemsForPrint, station);
         } else {
             await this.notificationService.alert('Erro: Nenhuma estação selecionada.');
         }

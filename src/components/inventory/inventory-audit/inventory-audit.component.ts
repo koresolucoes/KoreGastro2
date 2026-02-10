@@ -35,6 +35,9 @@ export class InventoryAuditComponent {
   activeCategoryFilter = signal<string | null>(null);
   searchTerm = signal('');
   isFinalizing = signal(false);
+  
+  // New: Blind Mode State (Default to true for better security/accuracy)
+  isBlindMode = signal(true);
 
   // Computed properties
   ingredientsWithCount = computed<CountedIngredient[]>(() => {
@@ -81,6 +84,10 @@ export class InventoryAuditComponent {
   // Methods
   setCategoryFilter(categoryId: string | null) {
     this.activeCategoryFilter.set(categoryId);
+  }
+  
+  toggleBlindMode() {
+    this.isBlindMode.update(v => !v);
   }
 
   updateCount(ingredientId: string, event: Event) {
