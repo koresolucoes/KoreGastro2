@@ -1,5 +1,4 @@
 
-
 import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
@@ -7,6 +6,13 @@ import { Requisition, RequisitionItem, RequisitionStatus, RequisitionTemplate } 
 import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
 import { UnitContextService } from './unit-context.service';
+
+export interface StationCostSummary {
+    stationName: string;
+    totalCost: number;
+    requisitionCount: number;
+    percentage: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -31,7 +37,6 @@ export class RequisitionService {
           .eq('user_id', userId);
       
       if (!error && data) {
-          // Cast correto para o tipo com relacionamentos
           this.inventoryState.requisitionTemplates.set(data as any);
       }
   }
@@ -81,12 +86,11 @@ export class RequisitionService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    // 1. Create Header
     const { data: requisition, error: reqError } = await supabase
       .from('requisitions')
       .insert({
         user_id: userId,
-        requested_by: null, // Ideally we link this to the logged in employee if available
+        requested_by: null,
         station_id: stationId,
         status: 'PENDING',
         notes: notes
@@ -96,7 +100,6 @@ export class RequisitionService {
 
     if (reqError) return { success: false, error: reqError };
 
-    // 2. Create Items
     const itemsToInsert = items.map(item => ({
       user_id: userId,
       requisition_id: requisition.id,
@@ -108,7 +111,6 @@ export class RequisitionService {
     const { error: itemsError } = await supabase.from('requisition_items').insert(itemsToInsert);
 
     if (itemsError) {
-      // Rollback header if items fail (basic cleanup)
       await supabase.from('requisitions').delete().eq('id', requisition.id);
       return { success: false, error: itemsError };
     }
@@ -120,12 +122,10 @@ export class RequisitionService {
     const userId = this.authService.currentUser()?.id;
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    // If we are delivering, we need to process stock movements
     if (status === 'DELIVERED' && items) {
       return this.processDelivery(id, items, userId);
     }
 
-    // Just a status update (e.g. REJECTED or APPROVED without immediate delivery)
     const { error } = await supabase
       .from('requisitions')
       .update({ status, processed_at: new Date().toISOString() })
@@ -135,7 +135,6 @@ export class RequisitionService {
   }
 
   private async processDelivery(requisitionId: string, itemsDelivered: { id: string, quantity_delivered: number }[], userId: string): Promise<{ success: boolean; error: any }> {
-    // 1. Update Items with delivered quantities
     for (const item of itemsDelivered) {
       await supabase
         .from('requisition_items')
@@ -143,7 +142,6 @@ export class RequisitionService {
         .eq('id', item.id);
     }
 
-    // 2. Fetch full requisition data to process stock
     const { data: requisition, error: fetchError } = await supabase
       .from('requisitions')
       .select('*, requisition_items(*)')
@@ -152,11 +150,9 @@ export class RequisitionService {
 
     if (fetchError || !requisition) return { success: false, error: fetchError || { message: 'Requisition not found' } };
 
-    // 3. Move Stock (Deduct from Central, Add to Station)
     for (const item of requisition.requisition_items) {
       const qty = item.quantity_delivered || 0;
       if (qty > 0) {
-        // A. Deduct from Central (Ingredients)
         const deductResult = await this.inventoryDataService.adjustIngredientStock({
             ingredientId: item.ingredient_id,
             quantityChange: -qty,
@@ -167,7 +163,6 @@ export class RequisitionService {
             console.error(`Failed to deduct stock for item ${item.id}`, deductResult.error);
         }
 
-        // B. Add to Station Stock
         const { data: existingStock } = await supabase
             .from('station_stocks')
             .select('*')
@@ -195,12 +190,66 @@ export class RequisitionService {
       }
     }
 
-    // 4. Mark Requisition as Delivered
     const { error: updateError } = await supabase
         .from('requisitions')
         .update({ status: 'DELIVERED', processed_at: new Date().toISOString() })
         .eq('id', requisitionId);
 
     return { success: !updateError, error: updateError };
+  }
+
+  // --- REPORTING ---
+  async getRequisitionStats(startDate: string, endDate: string): Promise<StationCostSummary[]> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return [];
+
+      // Fetch delivered requisitions with items and ingredient details
+      const { data, error } = await supabase
+          .from('requisitions')
+          .select(`
+            id, 
+            station_id, 
+            stations(name), 
+            requisition_items(
+                quantity_delivered, 
+                ingredients(cost)
+            )
+          `)
+          .eq('user_id', userId)
+          .eq('status', 'DELIVERED')
+          .gte('created_at', new Date(`${startDate}T00:00:00`).toISOString())
+          .lte('created_at', new Date(`${endDate}T23:59:59`).toISOString());
+
+      if (error || !data) {
+          console.error("Error fetching stats:", error);
+          return [];
+      }
+
+      const summaryMap = new Map<string, StationCostSummary>();
+      let grandTotal = 0;
+
+      data.forEach(req => {
+          const stationName = req.stations?.name || 'Estação Excluída';
+          
+          let reqCost = 0;
+          req.requisition_items?.forEach((item: any) => {
+              const qty = item.quantity_delivered || 0;
+              const cost = item.ingredients?.cost || 0;
+              reqCost += qty * cost;
+          });
+
+          if (!summaryMap.has(stationName)) {
+              summaryMap.set(stationName, { stationName, totalCost: 0, requisitionCount: 0, percentage: 0 });
+          }
+          const current = summaryMap.get(stationName)!;
+          current.totalCost += reqCost;
+          current.requisitionCount += 1;
+          grandTotal += reqCost;
+      });
+
+      return Array.from(summaryMap.values()).map(s => ({
+          ...s,
+          percentage: grandTotal > 0 ? (s.totalCost / grandTotal) * 100 : 0
+      })).sort((a, b) => b.totalCost - a.totalCost);
   }
 }

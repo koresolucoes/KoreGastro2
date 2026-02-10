@@ -1,20 +1,22 @@
 
+
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RequisitionCreateComponent } from './requisition-create/requisition-create.component';
 import { RequisitionListComponent } from './requisition-list/requisition-list.component';
 import { StationStockComponent } from './station-stock/station-stock.component';
+import { RequisitionReportsComponent } from './requisition-reports/requisition-reports.component';
 
 @Component({
   selector: 'app-requisitions',
   standalone: true,
-  imports: [CommonModule, RequisitionCreateComponent, RequisitionListComponent, StationStockComponent],
+  imports: [CommonModule, RequisitionCreateComponent, RequisitionListComponent, StationStockComponent, RequisitionReportsComponent],
   template: `
     <div class="container mx-auto h-full flex flex-col">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 class="text-3xl font-bold text-white">Requisições & Estoque de Praça</h1>
-          <p class="text-gray-400 mt-1">Solicite insumos, gerencie entregas e visualize o estoque local das estações.</p>
+          <p class="text-gray-400 mt-1">Solicite insumos, gerencie entregas e controle custos por setor.</p>
         </div>
       </div>
 
@@ -48,6 +50,15 @@ import { StationStockComponent } from './station-stock/station-stock.component';
                 <span class="material-symbols-outlined text-lg">manage_search</span>
                 Gerenciar Pedidos
             </button>
+            <button (click)="activeTab.set('reports')" 
+                    class="py-3 px-1 border-b-2 text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                    [class.border-blue-500]="activeTab() === 'reports'"
+                    [class.text-white]="activeTab() === 'reports'"
+                    [class.border-transparent]="activeTab() !== 'reports'"
+                    [class.text-gray-400]="activeTab() !== 'reports'">
+                <span class="material-symbols-outlined text-lg">pie_chart</span>
+                Custos por Setor
+            </button>
         </nav>
       </div>
 
@@ -62,6 +73,9 @@ import { StationStockComponent } from './station-stock/station-stock.component';
             @case ('manage') {
                 <app-requisition-list></app-requisition-list>
             }
+            @case ('reports') {
+                <app-requisition-reports></app-requisition-reports>
+            }
          }
       </div>
     </div>
@@ -69,5 +83,5 @@ import { StationStockComponent } from './station-stock/station-stock.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RequisitionsComponent {
-  activeTab = signal<'create' | 'manage' | 'stock'>('create');
+  activeTab = signal<'create' | 'manage' | 'stock' | 'reports'>('create');
 }
