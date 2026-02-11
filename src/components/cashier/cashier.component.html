@@ -1,629 +1,504 @@
 
-<div class="h-full flex flex-col">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
-    <h1 class="text-3xl font-bold text-white">Caixa</h1>
-    <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
-      <button (click)="view.set('payingTables')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'">Mesas p/ Cobrar</button>
-      <button (click)="view.set('quickSale')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'">Venda Rápida</button>
-      <button (click)="view.set('cashDrawer')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'">Fechamento de Caixa</button>
-      <button (click)="view.set('reprint')" class="flex-1 md:flex-initial px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="view() === 'reprint'" [class.text-white]="view() === 'reprint'">Vendas Finalizadas</button>
+<div class="h-full flex flex-col relative bg-gray-900">
+  
+  <!-- Top Header / Navigation (Desktop) -->
+  <div class="hidden md:flex justify-between items-center p-6 pb-2 no-print">
+    <div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">Caixa</h1>
+      <p class="text-gray-400 text-sm">Gerenciamento financeiro e pagamentos</p>
+    </div>
+    
+    <div class="flex bg-gray-800/50 p-1 rounded-xl border border-white/5 backdrop-blur-sm">
+      <button (click)="view.set('payingTables')" 
+              class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+              [class.bg-blue-600]="view() === 'payingTables'" 
+              [class.text-white]="view() === 'payingTables'" 
+              [class.text-gray-400]="view() !== 'payingTables'"
+              [class.hover:text-white]="view() !== 'payingTables'">
+        <span class="material-symbols-outlined text-lg">payments</span>
+        A Receber
+        @if(tablesForPayment().length > 0) {
+          <span class="ml-1 bg-white text-blue-600 text-xs font-bold px-1.5 rounded-full">{{ tablesForPayment().length }}</span>
+        }
+      </button>
+      <button (click)="view.set('quickSale')" 
+              class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+              [class.bg-blue-600]="view() === 'quickSale'" 
+              [class.text-white]="view() === 'quickSale'" 
+              [class.text-gray-400]="view() !== 'quickSale'"
+              [class.hover:text-white]="view() !== 'quickSale'">
+        <span class="material-symbols-outlined text-lg">point_of_sale</span>
+        Venda Rápida
+      </button>
+      <button (click)="view.set('cashDrawer')" 
+              class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+              [class.bg-blue-600]="view() === 'cashDrawer'" 
+              [class.text-white]="view() === 'cashDrawer'" 
+              [class.text-gray-400]="view() !== 'cashDrawer'"
+              [class.hover:text-white]="view() !== 'cashDrawer'">
+        <span class="material-symbols-outlined text-lg">account_balance_wallet</span>
+        Gaveta & Fechamento
+      </button>
+      <button (click)="view.set('reprint')" 
+              class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2"
+              [class.bg-blue-600]="view() === 'reprint'" 
+              [class.text-white]="view() === 'reprint'" 
+              [class.text-gray-400]="view() !== 'reprint'"
+              [class.hover:text-white]="view() !== 'reprint'">
+        <span class="material-symbols-outlined text-lg">history</span>
+        Histórico
+      </button>
     </div>
   </div>
 
-  <div class="flex-1 overflow-y-auto md:overflow-hidden">
+  <!-- Mobile Header -->
+  <div class="md:hidden p-4 pb-2 flex justify-between items-center bg-gray-900 border-b border-gray-800 sticky top-0 z-20">
+    <h1 class="text-xl font-bold text-white">Caixa</h1>
+    <div class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold border border-blue-500/30">
+      {{ view() === 'payingTables' ? 'A Receber' : (view() === 'quickSale' ? 'Venda Rápida' : (view() === 'cashDrawer' ? 'Fechamento' : 'Histórico')) }}
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 scroll-smooth">
     @if (isLoading()) {
       <div class="flex items-center justify-center h-full">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     } @else {
       @switch (view()) {
+        <!-- VIEW: A RECEBER (Mesas) -->
         @case ('payingTables') {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-            <!-- Tables for Payment -->
-            <div class="bg-gray-800 rounded-lg h-full flex flex-col">
-              <div class="p-6 border-b border-gray-700 flex-shrink-0">
-                <h2 class="text-xl font-semibold text-white">Mesas Aguardando Pagamento</h2>
-              </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+            <!-- Section: Tables -->
+            <div class="flex flex-col h-full">
+              <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-yellow-400">table_restaurant</span>
+                Mesas Aguardando
+              </h2>
+              
               @if(tablesForPayment().length > 0) {
-                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   @for(table of tablesForPayment(); track table.id) {
-                    <div 
-                      (click)="openTableOptionsModal(table)" 
-                      class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors border-blue-500 bg-blue-500/10 text-blue-300 md:cursor-default cursor-pointer hover:bg-blue-500/20">
-                      <div class="flex-1 flex flex-col items-center justify-center pointer-events-none">
-                          <span class="text-4xl font-bold">{{ table.number }}</span>
-                          <span class="text-sm uppercase font-semibold mt-1">{{ table.status }}</span>
-                      </div>
-                      <!-- Buttons visible only on medium screens and up -->
-                      <div class="hidden md:flex flex-col gap-2 mt-2">
-                          <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="w-full text-xs font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-2">Cobrar</button>
-                          <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="w-full text-xs font-semibold bg-blue-900/50 hover:bg-blue-900/80 rounded-md py-2">Pré-conta</button>
-                          <button (click)="$event.stopPropagation(); reopenTable(table)" class="w-full text-xs font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-2">Reabrir</button>
+                    <div class="group relative bg-gray-800 rounded-xl overflow-hidden border border-white/5 hover:border-blue-500/50 transition-all duration-300 shadow-lg hover:shadow-blue-900/10 cursor-pointer"
+                         (click)="openTableOptionsModal(table)">
+                      
+                      <!-- Ticket Perforation Effect Top -->
+                      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent to-transparent bg-[length:10px_100%] bg-[position:5px_0] before:content-[''] before:absolute before:top-[-5px] before:left-0 before:right-0 before:h-[10px] before:bg-gray-900 before:[mask-image:radial-gradient(circle,transparent_4px,black_5px)] before:[mask-size:10px_10px] before:[mask-repeat:repeat-x]"></div>
+
+                      <div class="p-5 flex flex-col items-center justify-center min-h-[160px]">
+                        <div class="text-4xl font-black text-white mb-1">{{ table.number }}</div>
+                        <div class="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-4 animate-pulse">Pagamento Solicitado</div>
+                        
+                        <!-- Actions Grid (Visible on Desktop Hover / Always on Mobile Modal) -->
+                        <div class="w-full grid grid-cols-2 gap-2 mt-auto opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                          <button (click)="$event.stopPropagation(); openPaymentForTable(table)" class="col-span-2 bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm font-bold shadow-lg shadow-green-900/20">
+                            Cobrar
+                          </button>
+                          <button (click)="$event.stopPropagation(); openPreBillForTable(table)" class="bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-xs font-medium">
+                            Pré-conta
+                          </button>
+                          <button (click)="$event.stopPropagation(); reopenTable(table)" class="bg-gray-700 hover:bg-gray-600 text-yellow-400 py-2 rounded-lg text-xs font-medium">
+                            Reabrir
+                          </button>
+                        </div>
+                        
+                        <!-- Wait Time Pill (Always Visible) -->
+                        <div class="absolute top-3 right-3 bg-gray-900/80 text-gray-400 text-[10px] px-2 py-0.5 rounded-full border border-gray-700 font-mono">
+                           {{ getElapsedTime(table) }}
+                        </div>
                       </div>
                     </div>
                   }
                 </div>
               } @else {
-                <div class="flex-1 flex items-center justify-center">
-                  <div class="text-center text-gray-500">
-                    <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <h3 class="mt-2 text-lg font-medium text-white">Nenhuma mesa aguardando</h3>
-                    <p class="mt-1 text-sm text-gray-500">Envie uma conta do PDV para que ela apareça aqui.</p>
+                <div class="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-800 rounded-2xl">
+                  <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-4 text-gray-600">
+                    <span class="material-symbols-outlined text-4xl">check</span>
                   </div>
+                  <h3 class="text-lg font-medium text-gray-300">Tudo limpo!</h3>
+                  <p class="text-sm text-gray-500 mt-1">Nenhuma mesa solicitou pagamento.</p>
                 </div>
               }
             </div>
-             <!-- Quick Sales for Payment -->
-            <div class="bg-gray-800 rounded-lg h-full flex flex-col">
-              <div class="p-6 border-b border-gray-700 flex-shrink-0">
-                <h2 class="text-xl font-semibold text-white">Vendas Rápidas para Pagar</h2>
-              </div>
-              @if(quickSalesForPayment().length > 0) {
-                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto">
+
+            <!-- Section: Quick Sales -->
+            <div class="flex flex-col h-full mt-8 lg:mt-0">
+               <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-400">fastfood</span>
+                Vendas Rápidas (Balcão)
+              </h2>
+               @if(quickSalesForPayment().length > 0) {
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                    @for(order of quickSalesForPayment(); track order.id) {
                     @let progress = getOrderProgress(order);
                     <div (click)="openPaymentForQuickSale(order)" 
-                         class="flex flex-col p-4 rounded-lg border-2 aspect-square transition-colors cursor-pointer"
-                         [class]="progress.isAllReady ? 'border-green-500 bg-green-500/10 hover:bg-green-500/20 text-green-300' : 'border-purple-500 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300'">
-                      
-                      <div class="flex-1 flex flex-col items-center justify-center">
-                          <span class="text-2xl font-bold">Caixa</span>
-                          <span class="text-sm font-semibold mt-1">#{{ order.id.slice(0, 4) }}</span>
-                          @if(order.customers) {
-                            <span class="text-xs text-gray-400 truncate mt-1">{{ order.customers.name }}</span>
+                         class="relative bg-gray-800 rounded-xl p-5 border border-gray-700 hover:border-purple-500/50 cursor-pointer transition-all hover:scale-[1.02]">
+                       
+                       <div class="flex justify-between items-start mb-2">
+                          <div>
+                             <span class="text-xs font-mono text-gray-500">#{{ order.id.slice(0, 4) }}</span>
+                             <h4 class="font-bold text-white text-lg">Caixa</h4>
+                          </div>
+                          @if(progress.isAllReady) {
+                             <span class="material-symbols-outlined text-green-400 animate-bounce">check_circle</span>
+                          } @else {
+                             <span class="material-symbols-outlined text-purple-400">skillet</span>
                           }
-                      </div>
+                       </div>
 
-                      <div class="mt-auto pt-2 border-t" [class.border-green-500/50]="progress.isAllReady" [class.border-purple-500/50]="!progress.isAllReady">
-                          <div class="text-xs mb-1 text-center font-semibold">
-                              {{ progress.isAllReady ? 'Pronto para Retirar' : 'Em Preparo' }}
-                          </div>
-                          <div class="w-full bg-gray-700 rounded-full h-2.5">
-                              <div class="bg-green-500 h-2.5 rounded-full" [style.width.%]="progress.percentage"></div>
-                          </div>
-                          <div class="flex justify-around text-xs mt-1.5 text-gray-400">
-                              <span><span class="text-yellow-400">{{ progress.pending }}</span> Pend.</span>
-                              <span><span class="text-blue-400">{{ progress.preparing }}</span> Prep.</span>
-                              <span><span class="text-green-400">{{ progress.ready }}</span> Pronto</span>
-                          </div>
-                      </div>
+                       @if(order.customers) {
+                         <p class="text-sm text-gray-300 mb-3 truncate">{{ order.customers.name }}</p>
+                       }
 
+                       <!-- Progress Bar -->
+                       <div class="w-full bg-gray-700 rounded-full h-1.5 mb-2 overflow-hidden">
+                          <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-full rounded-full transition-all duration-500" [style.width.%]="progress.percentage"></div>
+                       </div>
+                       
+                       <div class="flex justify-between text-[10px] text-gray-400 font-medium uppercase tracking-wide">
+                          <span>{{ progress.isAllReady ? 'Pronto p/ Retirar' : 'Em Preparo' }}</span>
+                          <span>{{ getOrderTotal(order) | currency:'BRL' }}</span>
+                       </div>
                     </div>
                   }
                 </div>
-              } @else {
-                <div class="flex-1 flex items-center justify-center">
-                  <div class="text-center text-gray-500">
-                    <svg class="mx-auto h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h3.5c.414 0 .75-.336.75-.75 0-.231-.035-.454-.1-.664M6.75 8.25h10.5M6.75 12h10.5m-10.5 3.75h10.5M4.5 21V5.25A2.25 2.25 0 016.75 3h10.5a2.25 2.25 0 012.25 2.25V21" /></svg>
-                    <h3 class="mt-2 text-lg font-medium text-white">Nenhuma venda rápida em aberto</h3>
-                    <p class="mt-1 text-sm text-gray-500">Envie um pedido da Venda Rápida para a cozinha.</p>
+               } @else {
+                  <div class="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-800 rounded-2xl">
+                     <p class="text-sm text-gray-500">Nenhuma venda rápida em aberto.</p>
                   </div>
-                </div>
-              }
+               }
             </div>
           </div>
         }
+
+        <!-- VIEW: VENDA RÁPIDA -->
         @case ('quickSale') {
-          <div class="h-full flex flex-col md:flex-row gap-4">
-            <!-- Left: Menu -->
-            <div class="w-full md:w-1/2 flex flex-col bg-gray-800 p-4 rounded-lg">
-              <div class="relative mb-2">
-                <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></div>
-              </div>
-              <div class="flex space-x-2 overflow-x-auto p-2 -mx-2 mb-2">
-                <button (click)="selectCategory(null)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory() === null" [class.bg-gray-700]="selectedCategory() !== null">Todas</button>
-                @for (category of categories(); track category.id) {
-                  <button (click)="selectCategory(category)" class="px-3 py-1 text-sm rounded-full whitespace-nowrap" [class.bg-blue-600]="selectedCategory()?.id === category.id" [class.bg-gray-700]="selectedCategory()?.id !== category.id">{{ category.name }}</button>
-                }
-              </div>
-              <div class="flex-1 grid grid-cols-3 sm:grid-cols-4 gap-2 overflow-y-auto pr-2 items-start">
-                 @for (recipe of filteredRecipes(); track recipe.id) {
-                  <div (click)="addToCart(recipe)" 
-                       class="bg-gray-700 p-3 rounded-lg text-center flex flex-col justify-center h-24 transition-opacity"
-                       [class.cursor-pointer]="recipe.hasStock"
-                       [class.hover:bg-gray-600]="recipe.hasStock"
-                       [class.opacity-50]="!recipe.hasStock"
-                       [class.pointer-events-none]="!recipe.hasStock"
-                       [title]="!recipe.hasStock ? 'Sem estoque' : ''">
-                    <p class="font-semibold text-sm">{{ recipe.name }}</p>
-                    <p class="text-xs text-gray-400 mt-1">{{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}</p>
-                  </div>
-                }
-              </div>
-            </div>
-            <!-- Right: Cart -->
-            <div class="w-full md:w-1/2 flex flex-col bg-gray-800 p-4 rounded-lg">
-              <div class="flex justify-between items-center mb-4">
-                  <h2 class="text-xl font-bold text-white">Carrinho</h2>
-                  @if(quickSaleCustomer(); as customer) {
-                    <div class="bg-gray-700/50 p-2 rounded-lg flex items-center gap-2">
-                        <span class="font-semibold text-sm text-white">{{ customer.name }}</span>
-                        <button (click)="removeQuickSaleCustomer()" class="text-xs text-red-400 hover:text-white p-1 rounded-md">X</button>
-                    </div>
-                  } @else {
-                    <button (click)="isCustomerSelectModalOpen.set(true)" class="text-sm text-blue-400 hover:underline">
-                        Associar Cliente
+          <div class="h-full flex flex-col lg:flex-row gap-6">
+            <!-- Left: Product Grid -->
+            <div class="flex-1 flex flex-col bg-gray-800/50 border border-gray-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+              <!-- Search & Filter -->
+              <div class="p-4 border-b border-gray-700/50 bg-gray-800/80 sticky top-0 z-10">
+                <div class="relative mb-4">
+                   <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">search</span>
+                   <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" 
+                          placeholder="Buscar item pelo nome ou código..." 
+                          class="w-full bg-gray-900 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500">
+                </div>
+                <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                  <button (click)="selectCategory(null)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap" 
+                          [class.bg-white]="selectedCategory() === null" [class.text-gray-900]="selectedCategory() === null"
+                          [class.bg-gray-700]="selectedCategory() !== null" [class.text-gray-300]="selectedCategory() !== null">
+                    Todos
+                  </button>
+                  @for (category of categories(); track category.id) {
+                    <button (click)="selectCategory(category)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap"
+                            [class.bg-white]="selectedCategory()?.id === category.id" [class.text-gray-900]="selectedCategory()?.id === category.id"
+                            [class.bg-gray-700]="selectedCategory()?.id !== category.id" [class.text-gray-300]="selectedCategory()?.id !== category.id">
+                      {{ category.name }}
                     </button>
                   }
-              </div>
-              <div class="flex-1 overflow-y-auto pr-2">
-                @if (quickSaleCart().length === 0) {
-                  <div class="flex items-center justify-center h-full text-center text-gray-500"><p>O carrinho está vazio.</p></div>
-                } @else {
-                  <ul class="space-y-3">
-                    @for(item of quickSaleCart(); track item.recipe.id) {
-                      <li class="flex justify-between items-center text-sm bg-gray-700/50 p-3 rounded-lg">
-                        <div>
-                          <p class="font-semibold text-white">{{ item.recipe.name }}</p>
-                          <p class="text-gray-400">{{ item.quantity }} x {{ item.recipe.price | currency:'BRL' }}</p>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                          <span class="font-bold text-lg text-white">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span>
-                          <button (click)="removeFromCart(item.recipe.id)" class="text-red-400 hover:text-red-300 p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                        </div>
-                      </li>
-                    }
-                  </ul>
-                }
-              </div>
-              <div class="pt-4 border-t border-gray-700">
-                <div class="flex justify-between items-center mb-4">
-                  <span class="text-2xl font-bold text-white">Total</span>
-                  <span class="text-2xl font-bold text-white">{{ cartTotal() | currency:'BRL' }}</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button (click)="sendQuickSaleToKitchen()" [disabled]="quickSaleCart().length === 0" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Enviar p/ Cozinha</button>
-                    <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">Pagamento Direto</button>
                 </div>
               </div>
-            </div>
-          </div>
-        }
-        @case ('cashDrawer') {
-          <div class="flex flex-col lg:flex-row gap-6 h-full">
-            <!-- Left Panel (Movement) -->
-            <div class="bg-gray-800 p-6 rounded-lg flex flex-col lg:w-1/2">
-              <h2 class="text-xl font-semibold text-white mb-4 flex-shrink-0">Movimentação do Caixa</h2>
-              
-              <div class="flex-1 overflow-y-auto -mr-4 pr-4 space-y-6">
-                <div>
-                  <h3 class="font-semibold text-white mb-2">Resumo do Caixa</h3>
-                  <div class="space-y-3">
-                    <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Saldo Inicial</span><span class="font-semibold text-white">{{ openingBalance() | currency:'BRL' }}</span></div>
-                    @for(summary of revenueSummary(); track summary.method) {
-                      <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Vendas em {{ summary.method }}</span><span class="font-semibold text-green-400">+ {{ summary.total | currency:'BRL' }}</span></div>
-                    }
-                    <div class="flex justify-between items-center bg-gray-700/50 p-3 rounded-lg"><span class="font-medium text-gray-300">Total de Despesas</span><span class="font-semibold text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
-                  </div>
-                </div>
 
-                <div class="flex flex-col">
-                  <div>
-                    <h3 class="font-semibold text-white mb-2">Registrar Despesa</h3>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                      <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Descrição (ex: Gelo)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                      <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="Valor" class="w-full sm:w-28 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                      <button (click)="handleLogExpense()" class="px-4 py-2 font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white">Lançar</button>
-                    </div>
-                  </div>
-                  <div class="flex flex-col mt-4">
-                    <h3 class="font-semibold text-white mb-2">Despesas do Dia</h3>
-                    <div>
-                      @if(expenseTransactions().length > 0) {
-                        <ul class="space-y-2">
-                          @for(expense of expenseTransactions(); track expense.id) {
-                            <li class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md text-sm">
-                              <span class="text-gray-300">{{ expense.description }}</span>
-                              <span class="font-semibold text-red-300">- {{ expense.amount | currency:'BRL' }}</span>
-                            </li>
+              <!-- Grid -->
+              <div class="flex-1 overflow-y-auto p-4">
+                 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                    @for (recipe of filteredRecipes(); track recipe.id) {
+                       <div (click)="addToCart(recipe)" 
+                            class="bg-gray-800 border border-gray-700 hover:border-blue-500 rounded-xl p-3 cursor-pointer transition-all active:scale-95 group flex flex-col justify-between h-28 relative overflow-hidden"
+                            [class.opacity-50]="!recipe.hasStock" [class.pointer-events-none]="!recipe.hasStock">
+                          
+                          @if(!recipe.hasStock) {
+                             <div class="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10 font-bold text-red-500 text-xs uppercase transform -rotate-12 border-2 border-red-500 rounded-lg m-2">Sem Estoque</div>
                           }
-                        </ul>
-                      } @else {
-                        <p class="text-sm text-center text-gray-500 py-4">Nenhuma despesa registrada.</p>
-                      }
-                    </div>
-                  </div>
-                </div>
+
+                          <h3 class="text-sm font-semibold text-white leading-tight line-clamp-2 group-hover:text-blue-300">{{ recipe.name }}</h3>
+                          <div class="flex justify-between items-end mt-2">
+                             <span class="text-xs text-gray-500 font-mono">{{ recipe.external_code }}</span>
+                             <span class="font-bold text-green-400">{{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}</span>
+                          </div>
+                       </div>
+                    }
+                 </div>
               </div>
             </div>
 
-            <!-- Right Panel (Closing) -->
-            <div class="bg-gray-800 p-6 rounded-lg flex flex-col lg:w-1/2">
-              <h2 class="text-xl font-semibold text-white mb-4 flex-shrink-0">Conferência e Fechamento</h2>
-              
-              <div class="flex-1 overflow-y-auto -mr-4 pr-4">
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300">Total Esperado em Caixa (Dinheiro)</label>
-                    <p class="text-3xl font-bold text-white p-3 bg-gray-700/50 rounded-lg mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300">Valor Contado em Caixa (Dinheiro)</label>
-                    <input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" placeholder="0,00" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white text-3xl font-bold mt-1">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-300">Diferença</label>
-                    <p class="text-3xl font-bold p-3 rounded-lg mt-1" [class.text-green-400]="cashDifference() > 0" [class.text-red-400]="cashDifference() < 0" [class.text-white]="cashDifference() === 0">
-                      {{ cashDifference() | currency:'BRL' }} 
-                      @if(countedCash() !== null) { 
-                        @if(cashDifference() > 0) { <span class="text-sm">(Sobra)</span> } 
-                        @if(cashDifference() < 0) { <span class="text-sm">(Falta)</span> } 
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <!-- Right: Cart (Always Visible on Desktop, toggleable on Mobile via logic or bottom sheet in future) -->
+            <div class="w-full lg:w-96 bg-gray-800 rounded-2xl flex flex-col border border-gray-700 shadow-2xl">
+               <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800 rounded-t-2xl">
+                  <h2 class="font-bold text-white flex items-center gap-2"><span class="material-symbols-outlined text-blue-400">shopping_cart</span> Carrinho</h2>
+                  @if(quickSaleCustomer(); as customer) {
+                     <div class="flex items-center gap-2 bg-blue-900/30 px-2 py-1 rounded text-xs text-blue-200 border border-blue-800">
+                        <span class="truncate max-w-[80px]">{{ customer.name }}</span>
+                        <button (click)="removeQuickSaleCustomer()" class="hover:text-white font-bold">&times;</button>
+                     </div>
+                  } @else {
+                     <button (click)="isCustomerSelectModalOpen.set(true)" class="text-xs font-semibold text-blue-400 hover:text-blue-300">+ Cliente</button>
+                  }
+               </div>
 
-              <div class="mt-6 flex-shrink-0">
-                <button (click)="openClosingModal()" [disabled]="countedCash() === null" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-500 transition-colors text-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
-                  Fechar Caixa
-                </button>
-              </div>
+               <div class="flex-1 overflow-y-auto p-2 space-y-2">
+                  @if(quickSaleCart().length === 0) {
+                     <div class="h-full flex flex-col items-center justify-center text-gray-600">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">remove_shopping_cart</span>
+                        <p class="text-sm">Carrinho vazio</p>
+                     </div>
+                  } @else {
+                     @for(item of quickSaleCart(); track item.recipe.id) {
+                        <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg group hover:bg-gray-700/60 transition-colors">
+                           <div class="flex flex-col flex-1 min-w-0 mr-2">
+                              <span class="text-white font-medium text-sm truncate">{{ item.recipe.name }}</span>
+                              <span class="text-xs text-gray-500">{{ (item.recipe.price) | currency:'BRL' }} un.</span>
+                           </div>
+                           <div class="flex items-center gap-3">
+                              <div class="flex items-center bg-gray-800 rounded-lg p-0.5 border border-gray-600">
+                                 <button (click)="removeFromCart(item.recipe.id)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded text-xs">-</button>
+                                 <span class="w-6 text-center text-xs font-bold text-white">{{ item.quantity }}</span>
+                                 <button (click)="addToCart(item.recipe)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded text-xs">+</button>
+                              </div>
+                              <span class="font-bold text-white text-sm w-16 text-right">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span>
+                           </div>
+                        </div>
+                     }
+                  }
+               </div>
+
+               <div class="p-4 bg-gray-900 border-t border-gray-700 rounded-b-2xl">
+                  <div class="flex justify-between items-end mb-4">
+                     <span class="text-gray-400 text-sm">Total</span>
+                     <span class="text-2xl font-black text-white">{{ cartTotal() | currency:'BRL' }}</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                     <button (click)="sendQuickSaleToKitchen()" [disabled]="quickSaleCart().length === 0" class="py-3 rounded-xl font-bold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-600">
+                        Cozinha
+                     </button>
+                     <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="py-3 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/30 transition-all hover:translate-y-[-1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed">
+                        Receber
+                     </button>
+                  </div>
+               </div>
             </div>
-
           </div>
         }
+
+        <!-- VIEW: FECHAMENTO DE CAIXA -->
+        @case ('cashDrawer') {
+           <div class="h-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Timeline (Left) -->
+              <div class="lg:col-span-1 bg-gray-800 rounded-2xl p-6 border border-gray-700/50 flex flex-col overflow-hidden">
+                 <h2 class="text-lg font-bold text-white mb-6 border-b border-gray-700 pb-2">Linha do Tempo</h2>
+                 <div class="flex-1 overflow-y-auto pr-2 relative">
+                    <!-- Vertical Line -->
+                    <div class="absolute left-3.5 top-2 bottom-2 w-0.5 bg-gray-700"></div>
+
+                    @if(revenueTransactions().length === 0 && expenseTransactions().length === 0) {
+                         <p class="text-center text-gray-500 mt-10">Nenhuma movimentação hoje.</p>
+                    }
+                    
+                    <div class="space-y-6">
+                        <!-- Initial Balance Node -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-1 top-1 w-5 h-5 rounded-full bg-blue-900 border-2 border-blue-500 z-10 flex items-center justify-center">
+                                <span class="block w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                            </div>
+                            <p class="text-xs text-gray-400 font-mono">Início do Dia</p>
+                            <p class="text-sm text-white font-medium">Abertura: {{ openingBalance() | currency:'BRL' }}</p>
+                        </div>
+
+                        <!-- Combined Transactions Sorted by Date (Assuming transactions are sorted in signal) -->
+                        @for(t of cashierState.transactions(); track t.id) {
+                            @if(t.type !== 'Abertura de Caixa') {
+                                <div class="relative pl-10 group">
+                                    <div class="absolute left-1 top-1 w-5 h-5 rounded-full border-2 z-10 flex items-center justify-center bg-gray-900" 
+                                         [class.border-green-500]="t.type === 'Receita'" 
+                                         [class.border-red-500]="t.type === 'Despesa'"
+                                         [class.border-yellow-500]="t.type === 'Gorjeta'">
+                                        <span class="material-symbols-outlined text-[10px]" [class.text-green-500]="t.type === 'Receita'" [class.text-red-500]="t.type === 'Despesa'" [class.text-yellow-500]="t.type === 'Gorjeta'">
+                                            {{ t.type === 'Receita' ? 'arrow_upward' : (t.type === 'Despesa' ? 'arrow_downward' : 'star') }}
+                                        </span>
+                                    </div>
+                                    <p class="text-[10px] text-gray-500 font-mono">{{ t.date | date:'HH:mm' }}</p>
+                                    <p class="text-sm text-gray-200 font-medium group-hover:text-white transition-colors">{{ t.description }}</p>
+                                    <p class="text-sm font-bold" [class.text-green-400]="t.type === 'Receita' || t.type === 'Gorjeta'" [class.text-red-400]="t.type === 'Despesa'">
+                                        {{ t.type === 'Despesa' ? '-' : '+' }} {{ t.amount | currency:'BRL' }}
+                                    </p>
+                                </div>
+                            }
+                        }
+                    </div>
+                 </div>
+              </div>
+
+              <!-- Summary & Actions (Center/Right) -->
+              <div class="lg:col-span-2 flex flex-col gap-6">
+                 <!-- Summary Cards -->
+                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-800 p-4 rounded-xl border-l-4 border-blue-500">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Saldo Inicial</p>
+                        <p class="text-2xl font-bold text-white mt-1">{{ openingBalance() | currency:'BRL' }}</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl border-l-4 border-green-500">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Entradas</p>
+                        <p class="text-2xl font-bold text-green-400 mt-1">{{ totalRevenue() | currency:'BRL' }}</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl border-l-4 border-red-500">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Saídas</p>
+                        <p class="text-2xl font-bold text-red-400 mt-1">{{ totalExpenses() | currency:'BRL' }}</p>
+                    </div>
+                     <div class="bg-gray-800 p-4 rounded-xl border-l-4 border-white">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Em Caixa (Previsto)</p>
+                        <p class="text-2xl font-bold text-white mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
+                    </div>
+                 </div>
+
+                 <!-- Expense Form -->
+                 <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">Lançar Despesa (Sangria)</h3>
+                    <div class="flex gap-3 items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Descrição</label>
+                            <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Ex: Compra de Gelo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
+                        </div>
+                         <div class="w-32">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Valor</label>
+                            <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
+                        </div>
+                        <button (click)="handleLogExpense()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px]">
+                            Lançar
+                        </button>
+                    </div>
+                 </div>
+
+                 <!-- Closing Action -->
+                 <div class="bg-gradient-to-r from-gray-800 to-gray-800/50 rounded-xl p-6 border border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 mt-auto">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Fechar o Caixa</h3>
+                        <p class="text-sm text-gray-400">Inicie o assistente de conferência para encerrar o dia.</p>
+                    </div>
+                    <button (click)="openClosingModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-transform active:scale-95">
+                        Iniciar Fechamento
+                    </button>
+                 </div>
+              </div>
+           </div>
+        }
+
+        <!-- VIEW: HISTÓRICO -->
         @case ('reprint') {
-          <div class="bg-gray-800 rounded-lg h-full flex flex-col">
-            <div class="p-4 border-b border-gray-700 flex-shrink-0 no-print">
-              <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                <h2 class="text-xl font-semibold text-white">Vendas Finalizadas</h2>
-                <div class="flex gap-1 bg-gray-900/50 p-1 rounded-lg">
-                  <button (click)="setCompletedOrdersPeriod('today')" class="px-3 py-1 text-xs rounded-md" [class.bg-blue-600]="isTodayFilterActive()">Hoje</button>
-                  <button (click)="setCompletedOrdersPeriod('yesterday')" class="px-3 py-1 text-xs rounded-md">Ontem</button>
-                  <button (click)="setCompletedOrdersPeriod('week')" class="px-3 py-1 text-xs rounded-md">Esta Semana</button>
+          <div class="bg-gray-800 rounded-2xl h-full flex flex-col border border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h2 class="text-xl font-bold text-white">Vendas Finalizadas</h2>
+                <div class="flex gap-2">
+                    <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                    <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
                 </div>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-                <input type="text" [value]="completedOrdersSearchTerm()" (input)="completedOrdersSearchTerm.set($any($event.target).value)" placeholder="Buscar por cliente, origem, ID..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
-              </div>
             </div>
             
-            @if(isFetchingCompletedOrders()) {
-              <div class="flex-1 flex items-center justify-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              </div>
-            } @else if (completedOrders().length === 0) {
-              <div class="flex-1 flex items-center justify-center">
-                <p class="text-center text-gray-500 py-16">Nenhuma venda finalizada encontrada para o período selecionado.</p>
-              </div>
-            } @else {
-              <!-- Mobile Card View -->
-              <div class="overflow-y-auto md:hidden p-4 space-y-3">
-                @for (order of completedOrders(); track order.id) {
-                  <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
-                    <div class="flex justify-between items-start">
-                      <div>
-                        <p class="font-mono text-xs text-gray-400">#{{ order.id.slice(0, 8) }}</p>
-                        <p class="font-medium text-white">{{ getOrderOrigin(order) }}</p>
-                        <p class="text-sm text-gray-300">{{ order.completed_at | date:'dd/MM/yy HH:mm' }}</p>
-                         @if(order.customers) { <p class="text-sm text-blue-300">{{ order.customers.name }}</p> }
-                      </div>
-                      <p class="text-xl font-semibold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</p>
-                    </div>
-                    <div class="pt-3 border-t border-gray-600/50 space-y-2">
-                        <!-- NFC-e Status & Actions (Mobile) -->
-                        <div class="flex flex-col gap-2">
-                            @if (!order.nfce_status) {
-                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-600 flex items-center justify-center">
-                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> } @else { <span>Emitir NFC-e</span> }
-                                </button>
-                            } @else if (order.nfce_status === 'autorizado') {
-                                <span class="text-sm font-semibold text-green-400 text-center">NFC-e Autorizada</span>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button (click)="viewDanfe(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Ver DANFE</button>
-                                    <button (click)="cancelNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-4 py-2 text-xs font-medium rounded-lg bg-red-800 hover:bg-red-700 text-white disabled:bg-gray-600 flex items-center justify-center">
-                                       @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> } @else { <span>Cancelar</span> }
-                                    </button>
+            <div class="flex-1 overflow-y-auto p-4">
+                @if(isFetchingCompletedOrders()) {
+                     <div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>
+                } @else if (completedOrders().length === 0) {
+                     <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">receipt_long</span>
+                        <p>Nenhuma venda encontrada no período.</p>
+                     </div>
+                } @else {
+                    <div class="space-y-3">
+                        @for (order of completedOrders(); track order.id) {
+                            <div class="bg-gray-700/30 border border-gray-700 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-700/50 transition-colors">
+                                <div class="flex items-center gap-4 w-full sm:w-auto">
+                                    <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-gray-500 font-mono text-xs">
+                                        {{ order.timestamp | date:'HH:mm' }}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white">{{ getOrderOrigin(order) }}</p>
+                                        <p class="text-xs text-gray-400 font-mono">#{{ order.id.slice(0, 8) }}</p>
+                                        @if(order.customers) { <p class="text-xs text-blue-300">{{ order.customers.name }}</p> }
+                                    </div>
                                 </div>
-                            } @else if (order.nfce_status === 'cancelado') {
-                                <span class="text-sm font-semibold text-gray-400 text-center">NFC-e Cancelada</span>
-                            } @else if (order.nfce_status === 'erro_autorizacao') {
-                                <span class="text-sm font-semibold text-red-400 text-center">Erro na NFC-e</span>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button (click)="viewNfceError(order)" class="px-4 py-2 text-xs font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Ver Erro</button>
-                                    <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 flex items-center justify-center">
-                                      @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> } @else { <span>Reenviar</span> }
-                                    </button>
+
+                                <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                                    <div class="text-right mr-4">
+                                        <p class="font-bold text-green-400 text-lg">{{ getOrderTotal(order) | currency:'BRL' }}</p>
+                                        @if(order.nfce_status === 'autorizado') {
+                                            <span class="text-[10px] bg-green-900/50 text-green-300 px-2 py-0.5 rounded border border-green-800">NFC-e Emitida</span>
+                                        }
+                                    </div>
+                                    <div class="flex gap-2">
+                                         <button (click)="reprintReceipt(order)" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white" title="Reimprimir">
+                                            <span class="material-symbols-outlined text-base">print</span>
+                                        </button>
+                                        <button (click)="openDetailsModal(order)" class="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white" title="Detalhes">
+                                            <span class="material-symbols-outlined text-base">visibility</span>
+                                        </button>
+                                        @if(!order.nfce_status) {
+                                            <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white" title="Emitir NFC-e">
+                                                @if(processingNfceOrders().has(order.id)) { <div class="animate-spin h-4 w-4 border-2 border-white rounded-full"></div> }
+                                                @else { <span class="material-symbols-outlined text-base">receipt_long</span> }
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
-                            }
-                        </div>
-                        <!-- General Actions (Mobile) -->
-                        <div class="flex gap-2">
-                            <button (click)="openDetailsModal(order)" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Detalhes</button>
-                            <button (click)="reprintReceipt(order)" class="flex-1 px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Recibo</button>
-                        </div>
+                            </div>
+                        }
                     </div>
-                  </div>
                 }
-              </div>
-              <!-- Desktop Table View -->
-              <div class="overflow-y-auto hidden md:block">
-                <table class="w-full text-left">
-                  <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-                    <tr>
-                      <th scope="col" class="px-6 py-3">Pedido</th>
-                      <th scope="col" class="px-6 py-3">Origem</th>
-                      <th scope="col" class="px-6 py-3">Cliente</th>
-                      <th scope="col" class="px-6 py-3">Horário</th>
-                      <th scope="col" class="px-6 py-3 text-right">Total</th>
-                      <th scope="col" class="px-6 py-3 text-center">NFC-e</th>
-                      <th scope="col" class="px-6 py-3 text-center">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (order of completedOrders(); track order.id) {
-                      <tr class="border-b border-gray-700 hover:bg-gray-700/30">
-                        <td class="px-6 py-4 font-mono text-xs text-white">#{{ order.id.slice(0, 8) }}</td>
-                        <td class="px-6 py-4 font-medium text-white">{{ getOrderOrigin(order) }}</td>
-                        <td class="px-6 py-4 text-gray-300">{{ order.customers?.name || 'N/A' }}</td>
-                        <td class="px-6 py-4">{{ order.completed_at | date:'dd/MM/yy HH:mm' }}</td>
-                        <td class="px-6 py-4 text-right font-semibold">{{ getOrderTotal(order) | currency:'BRL' }}</td>
-                        <td class="px-6 py-4 text-center">
-                            @if (!order.nfce_status) {
-                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 w-20 text-center">
-                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Emitir</span> }
-                                </button>
-                            } @else if (order.nfce_status === 'autorizado') {
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300">Autorizada</span>
-                            } @else if (order.nfce_status === 'cancelado') {
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-500/20 text-gray-300">Cancelada</span>
-                            } @else if (order.nfce_status === 'erro_autorizacao') {
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-300">Erro</span>
-                            } @else {
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-300">{{ order.nfce_status }}</span>
-                            }
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                          <div class="flex justify-center items-center gap-2">
-                             @if (order.nfce_status === 'autorizado') {
-                                <button (click)="viewDanfe(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">DANFE</button>
-                                <button (click)="cancelNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-red-800 hover:bg-red-700 text-white disabled:bg-gray-600 w-20 text-center">
-                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Cancelar</span> }
-                                </button>
-                            } @else if (order.nfce_status === 'erro_autorizacao') {
-                                <button (click)="viewNfceError(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Ver Erro</button>
-                                <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="px-3 py-1 text-xs font-semibold rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-600 w-20 text-center">
-                                    @if(processingNfceOrders().has(order.id)) { <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div> } @else { <span>Reenviar</span> }
-                                </button>
-                            }
-                            <button (click)="openDetailsModal(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Detalhes</button>
-                            <button (click)="reprintReceipt(order)" class="px-3 py-1 text-xs font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white">Recibo</button>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
+            </div>
           </div>
         }
       }
     }
   </div>
+
+  <!-- Mobile Bottom Floating Navigation (Only on Mobile) -->
+  <div class="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-gray-800/90 backdrop-blur-md border border-gray-700 p-1.5 rounded-full flex shadow-2xl">
+      <button (click)="view.set('payingTables')" class="p-3 rounded-full transition-colors relative" [class.bg-blue-600]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'" [class.text-gray-400]="view() !== 'payingTables'">
+         <span class="material-symbols-outlined text-xl">payments</span>
+         @if(tablesForPayment().length > 0) { <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> }
+      </button>
+      <button (click)="view.set('quickSale')" class="p-3 rounded-full transition-colors" [class.bg-blue-600]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'" [class.text-gray-400]="view() !== 'quickSale'">
+         <span class="material-symbols-outlined text-xl">point_of_sale</span>
+      </button>
+      <button (click)="view.set('cashDrawer')" class="p-3 rounded-full transition-colors" [class.bg-blue-600]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'" [class.text-gray-400]="view() !== 'cashDrawer'">
+         <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+      </button>
+       <button (click)="view.set('reprint')" class="p-3 rounded-full transition-colors" [class.bg-blue-600]="view() === 'reprint'" [class.text-white]="view() === 'reprint'" [class.text-gray-400]="view() !== 'reprint'">
+         <span class="material-symbols-outlined text-xl">history</span>
+      </button>
+  </div>
 </div>
 
-<!-- Quick Sale Payment Modal -->
+<!-- Quick Sale Payment Modal (Custom for Cashier) -->
 @if(isQuickSalePaymentModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeQuickSalePaymentModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white">Pagamento Venda Rápida</h3>
-        <button (click)="closeQuickSalePaymentModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="p-6 flex flex-col flex-1">
-        <div class="text-center mb-4 pb-4 border-b border-gray-700">
-            <p class="text-lg text-gray-400">Total a Pagar</p>
-            <p class="text-5xl font-bold text-white">{{ cartTotal() | currency:'BRL' }}</p>
-        </div>
-        <div class="grid grid-cols-3 gap-4 text-center mb-4 pb-4 border-b border-gray-700">
-          <div><p class="text-sm text-gray-400">Total Pago</p><p class="text-lg font-semibold text-green-400">{{ totalPaid() | currency:'BRL' }}</p></div>
-          <div><p class="text-sm text-gray-400">Restante</p><p class="text-lg font-semibold" [class.text-yellow-400]="balanceDue() > 0">{{ balanceDue() | currency:'BRL' }}</p></div>
-          <div><p class="text-sm text-gray-400">Troco</p><p class="text-lg font-semibold text-blue-400">{{ change() | currency:'BRL' }}</p></div>
-        </div>
-        <div class="space-y-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">{{ selectedPaymentMethod() === 'Dinheiro' ? 'Valor Recebido' : 'Valor a Pagar' }}</label>
-            <input type="number" [value]="paymentAmountInput()" (input)="paymentAmountInput.set($any($event.target).value)" (keydown.enter)="addPayment()" placeholder="0,00" class="w-full bg-gray-700 rounded-lg px-3 py-2 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button (click)="selectedPaymentMethod.set('Dinheiro')" class="px-2 py-2 text-xs font-semibold rounded-md" [class.bg-blue-600]="selectedPaymentMethod() === 'Dinheiro'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Dinheiro'">Dinheiro</button>
-              <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" class="px-2 py-2 text-xs font-semibold rounded-md" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Crédito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Crédito'">Crédito</button>
-              <button (click)="selectedPaymentMethod.set('Cartão de Débito')" class="px-2 py-2 text-xs font-semibold rounded-md" [class.bg-blue-600]="selectedPaymentMethod() === 'Cartão de Débito'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Cartão de Débito'">Débito</button>
-              <button (click)="selectedPaymentMethod.set('PIX')" class="px-2 py-2 text-xs font-semibold rounded-md" [class.bg-blue-600]="selectedPaymentMethod() === 'PIX'" [class.bg-gray-700]="selectedPaymentMethod() !== 'PIX'">PIX</button>
-              <button (click)="selectedPaymentMethod.set('Vale Refeição')" class="px-2 py-2 text-xs font-semibold rounded-md col-span-2" [class.bg-blue-600]="selectedPaymentMethod() === 'Vale Refeição'" [class.bg-gray-700]="selectedPaymentMethod() !== 'Vale Refeição'">Vale Refeição</button>
-            </div>
-          </div>
-          <button (click)="addPayment()" [disabled]="balanceDue() <= 0 && selectedPaymentMethod() !== 'Dinheiro'" class="w-full bg-indigo-600 font-bold py-2 rounded-lg hover:bg-indigo-500 disabled:bg-gray-600">Adicionar Pagamento</button>
-        </div>
-        <div class="flex-1 border-t border-gray-700 pt-4 overflow-y-auto">
-          <h4 class="font-semibold text-white mb-2">Pagamentos Adicionados</h4>
-          @if(payments().length === 0) {
-            <p class="text-sm text-center text-gray-500 py-4">Nenhum pagamento adicionado.</p>
-          } @else {
-            <ul class="space-y-2">
-              @for(payment of payments(); track $index) {
-                <li class="flex justify-between items-center bg-gray-700/50 p-2 rounded-md text-sm">
-                  <span class="font-medium">{{ payment.method }}</span>
-                  <div class="flex items-center gap-3">
-                    <span class="font-semibold">{{ payment.amount | currency:'BRL' }}</span>
-                    <button (click)="removePayment($index)" class="text-red-500 hover:text-red-400"><svg class="w-4 h-4" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                  </div>
-                </li>
-              }
-            </ul>
-          }
-        </div>
-        <div class="pt-4 mt-auto">
-          <button (click)="finalizePayment()" [disabled]="!isPaymentComplete()" class="w-full bg-green-600 font-bold py-3 rounded-lg hover:bg-green-500 text-lg disabled:bg-gray-600">Finalizar Venda</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-payment-modal
+    [order]="processingQuickSaleOrder()"
+    [table]="null"
+    (closeModal)="closeQuickSalePaymentModal()"
+    (paymentFinalized)="finalizePayment()">
+  </app-payment-modal>
 }
 
-@if (isCustomerSelectModalOpen()) {
-  <app-customer-select-modal
-    (closeModal)="isCustomerSelectModalOpen.set(false)"
-    (customerSelected)="handleCustomerSelected($event)">
-  </app-customer-select-modal>
-}
-
-<!-- Cash Closing Confirmation Modal -->
-@if(isClosingModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeClosingModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-        <div class="flex justify-between items-center p-4 border-b border-gray-700">
-            <h3 class="text-xl font-bold text-white">Confirmar Fechamento de Caixa</h3>
-            <button (click)="closeClosingModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
-        <div class="p-6 flex-1 overflow-y-auto space-y-4">
-            <h4 class="font-semibold text-lg text-white mb-2">Resumo Final</h4>
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between p-2 bg-gray-900/50 rounded-md"><span>Saldo Inicial:</span><span class="font-medium">{{ openingBalance() | currency:'BRL' }}</span></div>
-                <div class="flex justify-between p-2 bg-gray-900/50 rounded-md"><span>Total de Vendas:</span><span class="font-medium text-green-400">+ {{ totalRevenue() | currency:'BRL' }}</span></div>
-                <div class="flex justify-between p-2 bg-gray-900/50 rounded-md"><span>Total de Despesas:</span><span class="font-medium text-red-400">- {{ totalExpenses() | currency:'BRL' }}</span></div>
-                <div class="flex justify-between p-2 bg-gray-700 rounded-md text-base mt-2"><strong>Esperado em Caixa:</strong><strong class="text-lg">{{ expectedCashInDrawer() | currency:'BRL' }}</strong></div>
-                <div class="flex justify-between p-2 bg-gray-700 rounded-md text-base"><strong>Valor Contado:</strong><strong class="text-lg">{{ countedCash() | currency:'BRL' }}</strong></div>
-                <div class="flex justify-between p-2 rounded-md text-base" [class.bg-red-500/20]="cashDifference() !== 0" [class.bg-green-500/20]="cashDifference() === 0">
-                  <strong>Diferença:</strong>
-                  <strong class="text-lg">{{ cashDifference() | currency:'BRL' }}</strong>
-                </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Observações (Opcional)</label>
-              <textarea [value]="closingNotes()" (input)="closingNotes.set($any($event.target).value)" rows="3" placeholder="Ex: Deixado R$100 para troco no próximo dia." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
-            </div>
-        </div>
-        <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-            <button (click)="closeClosingModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-            <button (click)="confirmAndCloseCashier()" class="px-6 py-2 font-bold rounded-lg bg-green-600 hover:bg-green-500 text-white">Confirmar e Imprimir</button>
-        </div>
-    </div>
-  </div>
-}
-
-<!-- Order Details Modal -->
-@if(isDetailsModalOpen() && selectedOrderForDetails(); as order) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeDetailsModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
-        <div>
-            <h3 class="text-xl font-bold text-white">Detalhes da Venda</h3>
-            <p class="text-sm text-gray-400 font-mono">#{{ order.id.slice(0, 8) }}</p>
-        </div>
-        <button (click)="closeDetailsModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="p-6 flex-1 overflow-y-auto space-y-4">
-        <!-- Order Info -->
-        <div class="grid grid-cols-2 gap-4 text-sm bg-gray-900/50 p-3 rounded-lg">
-            <div>
-                <p class="text-gray-400">Origem</p>
-                <p class="font-semibold text-white">{{ getOrderOrigin(order) }}</p>
-            </div>
-            <div>
-                <p class="text-gray-400">Finalizada em</p>
-                <p class="font-semibold text-white">{{ order.completed_at | date:'dd/MM/yy HH:mm:ss' }}</p>
-            </div>
-             @if(order.customers) {
-              <div class="col-span-2">
-                  <p class="text-gray-400">Cliente</p>
-                  <p class="font-semibold text-white">{{ order.customers.name }}</p>
-              </div>
-            }
-        </div>
-        
-        <!-- AUDIT INFO -->
-        <div class="bg-blue-900/20 p-3 rounded-lg text-sm border border-blue-800/50">
-           <h4 class="font-bold text-blue-300 mb-2">Auditoria do Pedido</h4>
-           <div class="grid grid-cols-2 gap-2">
-             <div>
-               <p class="text-gray-400 text-xs">Aberto por</p>
-               <p class="text-white font-medium">{{ $any(order).creator?.name || 'Sistema/Desconhecido' }}</p>
-             </div>
-             <div>
-               <p class="text-gray-400 text-xs">Fechado por</p>
-               <p class="text-white font-medium">{{ $any(order).closer?.name || 'Sistema/Desconhecido' }}</p>
-             </div>
-           </div>
-        </div>
-
-        <!-- Items -->
-        <div>
-            <h4 class="font-semibold text-white mb-2">Itens Consumidos</h4>
-            <ul class="space-y-2">
-                @for(item of order.order_items; track item.id) {
-                    @if(item.price > 0) {
-                        <li class="flex justify-between items-start text-sm p-2 bg-gray-700/50 rounded-md">
-                            <div>
-                                <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
-                                <p class="text-xs text-gray-400">{{ item.price | currency:'BRL' }} cada</p>
-                            </div>
-                            <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                        </li>
-                    }
-                }
-            </ul>
-        </div>
-        
-        <!-- Payment -->
-        <div>
-            <h4 class="font-semibold text-white mb-2">Pagamento</h4>
-            <div class="space-y-1 text-sm">
-                @for(payment of getPaymentsForOrder(order.id); track $index) {
-                     <div class="flex justify-between p-2 bg-gray-700/50 rounded-md">
-                        <span class="text-gray-300">{{ payment.method }}</span>
-                        <span class="font-semibold text-white">{{ payment.amount | currency:'BRL' }}</span>
-                    </div>
-                }
-            </div>
-        </div>
-
-      </div>
-      <div class="p-4 bg-gray-700/50 flex justify-between items-center text-xl font-bold">
-         <span class="text-white">Total Pago</span>
-         <span class="text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</span>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Table Options Modal for Mobile -->
+<!-- Standard Modals Reuse -->
 @if(isTableOptionsModalOpen() && selectedTableForOptions(); as table) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isTableOptionsModalOpen.set(false)">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">Opções - Mesa {{ table.number }}</h3>
-        <button (click)="isTableOptionsModalOpen.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="p-4 space-y-3">
-        <button (click)="openPaymentForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-green-600 text-white hover:bg-green-500 rounded-md py-3 transition-colors">
-          Cobrar Conta
-        </button>
-        <button (click)="openPreBillForTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-blue-600 text-white hover:bg-blue-500 rounded-md py-3 transition-colors">
-          Gerar Pré-conta
-        </button>
-        <button (click)="reopenTable(table); isTableOptionsModalOpen.set(false)" class="w-full text-lg font-semibold bg-yellow-600 text-white hover:bg-yellow-500 rounded-md py-3 transition-colors">
-          Reabrir Mesa
-        </button>
-      </div>
-    </div>
-  </div>
+   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="isTableOptionsModalOpen.set(false)">
+     <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-2xl transform transition-all" (click)="$event.stopPropagation()">
+        <h3 class="text-xl font-bold text-white mb-4 text-center">Mesa {{ table.number }}</h3>
+        <div class="space-y-3">
+            <button (click)="openPaymentForTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-green-900/20 flex items-center justify-center gap-3">
+                <span class="material-symbols-outlined">payments</span> Cobrar Conta
+            </button>
+            <button (click)="openPreBillForTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold flex items-center justify-center gap-3">
+                <span class="material-symbols-outlined">receipt</span> Pré-conta
+            </button>
+             <button (click)="reopenTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-3 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 border border-yellow-600/50 rounded-xl font-semibold flex items-center justify-center gap-3">
+                <span class="material-symbols-outlined">lock_open</span> Reabrir Mesa
+            </button>
+        </div>
+     </div>
+   </div>
 }
 
-<!-- Table Payment Modal -->
 @if (isTablePaymentModalOpen()) {
   <app-payment-modal
     [order]="selectedOrderForPayment()"
@@ -633,11 +508,90 @@
   </app-payment-modal>
 }
 
-<!-- Pre-bill Modal -->
 @if (isPreBillModalOpen()) {
   <app-pre-bill-modal
     [order]="selectedOrderForPreBill()"
     [table]="selectedTableForPreBill()"
     (closeModal)="isPreBillModalOpen.set(false)">
   </app-pre-bill-modal>
+}
+
+@if(isClosingModalOpen()) {
+  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeClosingModal()">
+      <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-700" (click)="$event.stopPropagation()">
+          <div class="bg-gray-900 p-4 border-b border-gray-800 flex justify-between items-center">
+              <h3 class="text-lg font-bold text-white">Conferência de Caixa</h3>
+              <button (click)="closeClosingModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="p-6 space-y-6">
+              <div class="grid grid-cols-2 gap-4 text-center">
+                  <div class="bg-gray-700/30 p-3 rounded-xl">
+                      <p class="text-xs text-gray-400 uppercase font-bold">Esperado</p>
+                      <p class="text-xl font-bold text-white">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
+                  </div>
+                  <div class="bg-gray-700/30 p-3 rounded-xl border" [class.border-red-500]="cashDifference() < 0" [class.border-green-500]="cashDifference() > 0" [class.border-transparent]="cashDifference() === 0">
+                      <p class="text-xs text-gray-400 uppercase font-bold">Diferença</p>
+                      <p class="text-xl font-bold" [class.text-red-400]="cashDifference() < 0" [class.text-green-400]="cashDifference() > 0" [class.text-gray-400]="cashDifference() === 0">
+                        {{ cashDifference() | currency:'BRL' }}
+                      </p>
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-sm font-bold text-gray-300 mb-2 uppercase">Valor Contado (Dinheiro)</label>
+                  <div class="relative">
+                      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                      <input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" 
+                             class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-4 pl-10 text-white text-3xl font-bold focus:ring-2 focus:ring-blue-500 outline-none text-right" placeholder="0.00" autofocus>
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-sm font-medium text-gray-400 mb-1">Observações do Fechamento</label>
+                  <textarea [value]="closingNotes()" (input)="closingNotes.set($any($event.target).value)" rows="2" class="w-full bg-gray-700/50 border border-gray-600 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500"></textarea>
+              </div>
+          </div>
+          <div class="p-4 bg-gray-900 border-t border-gray-800 flex justify-end gap-3">
+              <button (click)="closeClosingModal()" class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">Cancelar</button>
+              <button (click)="confirmAndCloseCashier()" [disabled]="countedCash() === null" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Confirmar e Imprimir
+              </button>
+          </div>
+      </div>
+  </div>
+}
+
+@if (isDetailsModalOpen() && selectedOrderForDetails(); as order) {
+  <!-- Detail modal reused structure with updated styling -->
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeDetailsModal()">
+     <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-white">Detalhes da Venda</h3>
+            <button (click)="closeDetailsModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-4">
+             <!-- ... existing detail content structure but with p-4 bg-gray-700/30 rounded-lg classes ... -->
+             <div class="bg-gray-900/50 p-4 rounded-lg flex justify-between items-center">
+                 <span class="text-gray-400">Total Pago</span>
+                 <span class="text-xl font-bold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</span>
+             </div>
+             <!-- ... items list ... -->
+             <ul class="space-y-2">
+                @for(item of order.order_items; track item.id) {
+                    <li class="flex justify-between text-sm text-gray-300 border-b border-gray-700/50 pb-2">
+                        <span>{{ item.quantity }}x {{ item.name }}</span>
+                        <span>{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                    </li>
+                }
+             </ul>
+        </div>
+     </div>
+  </div>
+}
+
+@if (isCustomerSelectModalOpen()) {
+  <app-customer-select-modal
+    (closeModal)="isCustomerSelectModalOpen.set(false)"
+    (customerSelected)="handleCustomerSelected($event)">
+  </app-customer-select-modal>
 }
