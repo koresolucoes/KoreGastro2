@@ -4,6 +4,8 @@
 
 
 
+
+
 <div class="h-full flex flex-col no-print">
   @if (stations().length === 0) {
     <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
@@ -90,6 +92,8 @@
                          <span class="material-symbols-outlined text-white">shopping_bag</span>
                     } @else if (ticket.orderType === 'QuickSale') {
                          <span class="material-symbols-outlined text-white">point_of_sale</span>
+                    } @else if (ticket.orderType === 'Tab') {
+                        <span class="material-symbols-outlined text-white">id_card</span>
                     } @else {
                          <span class="material-symbols-outlined text-white">restaurant</span>
                     }
@@ -99,6 +103,8 @@
                             <span class="truncate" title="iFood #{{ ticket.ifoodDisplayId }}">#{{ ticket.ifoodDisplayId }}</span>
                         } @else if (ticket.orderType === 'QuickSale') {
                             <span>Caixa</span>
+                        } @else if (ticket.orderType === 'Tab') {
+                            <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
                         } @else {
                             <span>Mesa {{ ticket.tableNumber }}</span>
                         }
@@ -268,11 +274,13 @@
               <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isOrderCancelled ? 'bg-red-800' : (ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor)">
                 <div class="flex items-center gap-2">
                     @if (ticket.orderType.startsWith('iFood')) {
-                    <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                        <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
                     } @else if (ticket.orderType === 'QuickSale') {
-                    <span>Caixa</span>
+                        <span>Caixa</span>
+                    } @else if (ticket.orderType === 'Tab') {
+                        <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
                     } @else {
-                    <span>Mesa {{ ticket.tableNumber }}</span>
+                        <span>Mesa {{ ticket.tableNumber }}</span>
                     }
                     @if(ticket.isOrderCancelled) {
                         <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded">Cancelado</span>
@@ -398,6 +406,8 @@
                     <span>#{{ ticket.ifoodDisplayId }}</span>
                   } @else if (ticket.orderType === 'QuickSale') {
                     <span>Caixa</span>
+                  } @else if (ticket.orderType === 'Tab') {
+                    <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
                   } @else {
                     <span>Mesa {{ ticket.tableNumber }}</span>
                   }

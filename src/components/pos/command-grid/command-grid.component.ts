@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, output, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -113,6 +114,25 @@ export class CommandGridComponent {
           this.newTabName.set('');
           this.isNewTabModalOpen.set(true);
           this.searchTerm.set('');
+      }
+  }
+
+  async deleteTab(tab: Order) {
+      // Safety check: ensure it has no items (should be filtered by template anyway)
+      if (this.getOrderTotal(tab) > 0) {
+          this.notificationService.show('Não é possível excluir uma comanda com itens.', 'warning');
+          return;
+      }
+
+      const confirmed = await this.notificationService.confirm(`Deseja excluir a comanda #${tab.command_number}?`, 'Excluir Comanda');
+      if (confirmed) {
+          const { success, error } = await this.posDataService.deleteEmptyOrder(tab.id);
+          if (success) {
+              this.notificationService.show('Comanda excluída.', 'success');
+              // Optimistic update handled by realtime or simple re-fetch
+          } else {
+              this.notificationService.show(`Erro ao excluir: ${error?.message}`, 'error');
+          }
       }
   }
 }

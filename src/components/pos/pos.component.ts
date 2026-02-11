@@ -234,16 +234,14 @@ export class PosComponent implements OnInit {
     const table = this.selectedTable();
 
     // Check if empty order needs deleting
-    // For Tabs: if items == 0, we can delete the order but we might want to keep the "card" open? 
-    // Usually empty tabs are deleted to free up the number.
     if (order && order.order_items.length === 0) {
          if (table && table.status === 'LIVRE') {
-             // Logic for fresh table
+             // Logic for fresh table - cleanup is safe here
              await this.posDataService.deleteEmptyOrder(order.id);
-         } else if (order.order_type === 'Tab') {
-             // Logic for fresh tab
-             await this.posDataService.deleteEmptyOrder(order.id);
-         }
+         } 
+         // FIX: Removed automatic deletion for 'Tab' to prevent race condition 
+         // where items are added but not yet synced back to local state when closing panel.
+         // Empty tabs will now persist until manually deleted or paid.
     }
 
     this.isOrderPanelOpen.set(false);

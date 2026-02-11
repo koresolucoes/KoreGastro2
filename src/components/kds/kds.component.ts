@@ -17,6 +17,10 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 interface BaseTicket {
   orderId: string;
   tableNumber: number;
+  // FIX: Added fields for Command/Tab support in KDS
+  commandNumber?: number | null;
+  tabName?: string | null;
+  
   ticketElapsedTime: number;
   ticketTimerColor: string;
   isTicketLate: boolean;
@@ -24,7 +28,7 @@ interface BaseTicket {
   orderType: OrderType;
   ifoodDisplayId?: string | null;
   isOrderCancelled?: boolean; 
-  customerName?: string; // New: For better context
+  customerName?: string;
 }
 
 // New Interface for Grouped Items within a Ticket
@@ -442,6 +446,8 @@ export class KdsComponent implements OnInit, OnDestroy {
             tickets.push({
                 orderId: order.id,
                 tableNumber: order.table_number,
+                commandNumber: order.command_number, // Added
+                tabName: order.tab_name, // Added
                 items: groupedItems,
                 ticketElapsedTime,
                 ticketTimerColor,
@@ -623,6 +629,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         let ticketInfo = 'Desconhecido';
         if (ticket) {
             if (ticket.orderType === 'Dine-in') ticketInfo = `Mesa ${ticket.tableNumber}`;
+            else if (ticket.orderType === 'Tab') ticketInfo = ticket.tabName || `Comanda #${ticket.commandNumber}`;
             else if (ticket.orderType === 'QuickSale') ticketInfo = 'Caixa';
             else if (ticket.ifoodDisplayId) ticketInfo = `#${ticket.ifoodDisplayId}`;
             else ticketInfo = 'Delivery';
@@ -712,7 +719,14 @@ export class KdsComponent implements OnInit, OnDestroy {
                 notes: item.notes
              }));
 
-            const orderShellForPrinting = { id: ticket.orderId, table_number: ticket.tableNumber, timestamp: ticket.oldestTimestamp } as Order;
+            const orderShellForPrinting = { 
+                id: ticket.orderId, 
+                table_number: ticket.tableNumber, 
+                timestamp: ticket.oldestTimestamp,
+                command_number: ticket.commandNumber,
+                tab_name: ticket.tabName 
+            } as Order;
+            
             this.printingService.printOrder(orderShellForPrinting, itemsForPrint, station);
         } else {
             await this.notificationService.alert('Erro: Nenhuma estação selecionada.');
