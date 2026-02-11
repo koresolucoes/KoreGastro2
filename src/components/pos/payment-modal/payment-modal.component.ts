@@ -53,6 +53,7 @@ export class PaymentModalComponent {
   selectedPaymentMethod = signal<PaymentMethod>('Dinheiro');
   isRedeemModalOpen = signal(false);
   isEmittingNfce = signal(false);
+  showKeypad = signal(true); // Control visibility of virtual keypad
 
   // Discount signals
   isAddingDiscount = signal(false);
@@ -417,8 +418,24 @@ export class PaymentModalComponent {
     }
   }
 
+  async emitNfce() {
+    const order = this.lastKnownOrder();
+    if (!order) return;
+    
+    this.isEmittingNfce.set(true);
+    const { success, error, data } = await this.focusNFeService.emitNfce(order.id);
+    
+    if (success) {
+        this.notificationService.show(`NFC-e enviada! Status: ${data?.status}`, 'success');
+    } else {
+        this.notificationService.show(`Erro ao emitir NFC-e: ${error?.message}`, 'error');
+    }
+    this.isEmittingNfce.set(false);
+  }
+
   finishAndClose() {
       this.paymentFinalized.emit();
+      this.closeModal.emit(true);
   }
 
   selectGroup(groupId: string) {

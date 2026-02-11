@@ -4,7 +4,7 @@
 <!-- ======================= -->
 @if (!isEditMode()) {
   <!-- Mobile Card View -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:hidden pb-20">
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:hidden pb-20 select-none">
     @for(table of localTables(); track table.id) {
       <div
         (click)="tableClicked.emit(table)"
@@ -47,7 +47,7 @@
   </div>
 
   <!-- Desktop Positioned View (Read-Only) -->
-  <div class="hidden md:block relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden bg-gray-800/30 border border-gray-700">
+  <div class="hidden md:block relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden bg-gray-800/30 border border-gray-700 select-none">
     @for(table of localTables(); track table.id) {
       <div
         (click)="tableClicked.emit(table)"

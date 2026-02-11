@@ -1,253 +1,289 @@
 
 <div class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm" (click)="paymentSuccess() ? null : closeModal.emit(true)">
-  <div class="bg-gray-900 md:rounded-2xl shadow-2xl w-full max-w-5xl h-full md:h-[85vh] flex flex-col lg:flex-row overflow-hidden border border-gray-700" (click)="$event.stopPropagation()">
+  <div class="bg-gray-900 md:rounded-2xl shadow-2xl w-full max-w-5xl h-full md:h-[85vh] flex flex-col lg:flex-row overflow-hidden border border-gray-700 relative" (click)="$event.stopPropagation()">
     
-    <!-- LEFT SIDE: Order Summary & Split (Hidden on small mobile when paying to save space, or togglable) -->
-    <div class="w-full lg:w-1/2 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-700 bg-gray-800/50 h-1/3 lg:h-full">
-        <!-- Header -->
-        <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-gray-800">
-            <div>
-                <h3 class="text-base md:text-lg font-bold text-white">
-                    {{ table() ? 'Mesa ' + table()?.number : 'Pagamento' }}
-                </h3>
-                <p class="text-[10px] text-gray-400">Total de Itens: {{ lastKnownOrder()?.order_items?.length }}</p>
+    @if (!paymentSuccess()) {
+        <!-- LEFT SIDE: Order Summary & Split -->
+        <div class="w-full lg:w-1/2 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-700 bg-gray-800/50 h-1/3 lg:h-full">
+            <!-- Header -->
+            <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-gray-800">
+                <div>
+                    <h3 class="text-base md:text-lg font-bold text-white">
+                        {{ table() ? 'Mesa ' + table()?.number : 'Pagamento' }}
+                    </h3>
+                    <p class="text-[10px] text-gray-400">Total de Itens: {{ lastKnownOrder()?.order_items?.length }}</p>
+                </div>
+                <div class="flex bg-gray-700 p-1 rounded-lg">
+                    <button (click)="splitMode.set('total')" class="px-3 py-1 text-xs font-bold rounded-md transition-colors" [class.bg-blue-600]="splitMode() === 'total'" [class.text-white]="splitMode() === 'total'" [class.text-gray-400]="splitMode() !== 'total'">Total</button>
+                    <button (click)="splitMode.set('item')" class="px-3 py-1 text-xs font-bold rounded-md transition-colors" [class.bg-blue-600]="splitMode() === 'item'" [class.text-white]="splitMode() === 'item'" [class.text-gray-400]="splitMode() !== 'item'">Por Item</button>
+                </div>
             </div>
-            <div class="flex bg-gray-700 p-1 rounded-lg">
-                <button (click)="splitMode.set('total')" class="px-3 py-1 text-xs font-bold rounded-md transition-colors" [class.bg-blue-600]="splitMode() === 'total'" [class.text-white]="splitMode() === 'total'" [class.text-gray-400]="splitMode() !== 'total'">Total</button>
-                <button (click)="splitMode.set('item')" class="px-3 py-1 text-xs font-bold rounded-md transition-colors" [class.bg-blue-600]="splitMode() === 'item'" [class.text-white]="splitMode() === 'item'" [class.text-gray-400]="splitMode() !== 'item'">Por Item</button>
-            </div>
-        </div>
 
-        <!-- Items List (Scrollable) -->
-        <div class="flex-1 overflow-y-auto p-3 space-y-2">
-            @if(splitMode() === 'total') {
-                @for(item of lastKnownOrder()?.order_items; track item.id) {
-                    <div class="flex justify-between items-center p-2 bg-gray-700/30 rounded-lg text-sm">
-                        <div class="flex items-center gap-2">
-                            <span class="bg-gray-700 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded">{{ item.quantity }}</span>
-                            <span class="text-gray-200 truncate max-w-[150px]">{{ item.name }}</span>
-                        </div>
-                        <span class="font-bold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                    </div>
-                }
-            } @else {
-                <!-- Item Split Mode -->
-                <div class="space-y-4">
-                    <div class="bg-gray-900/50 p-2 rounded-xl border border-gray-700">
-                        <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Itens Restantes</p>
-                        @for(item of unassignedItems(); track item.id) {
-                            <div (click)="assignItemToGroup(item)" class="flex justify-between items-center p-2 mb-1 bg-gray-800 rounded cursor-pointer hover:bg-gray-700">
-                                <span class="text-xs text-white">{{item.quantity}}x {{item.name}}</span>
-                                <span class="text-xs font-bold text-gray-300">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+            <!-- Items List (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                @if(splitMode() === 'total') {
+                    @for(item of lastKnownOrder()?.order_items; track item.id) {
+                        <div class="flex justify-between items-center p-2 bg-gray-700/30 rounded-lg text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-gray-700 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded">{{ item.quantity }}</span>
+                                <span class="text-gray-200 truncate max-w-[150px]">{{ item.name }}</span>
                             </div>
-                        }
-                    </div>
-
-                    <div>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Pessoas / Grupos</p>
-                        <div class="space-y-2">
-                            @for(group of itemGroups(); track group.id) {
-                                <div (click)="selectGroup(group.id)" class="border rounded-xl p-2 cursor-pointer transition-all"
-                                     [class.border-blue-500]="selectedGroupId() === group.id"
-                                     [class.bg-blue-900/10]="selectedGroupId() === group.id"
-                                     [class.border-gray-700]="selectedGroupId() !== group.id"
-                                     [class.opacity-50]="group.isPaid">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-bold text-xs text-white">{{ group.name }}</span>
-                                        @if(group.isPaid) {
-                                            <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGO</span>
-                                        } @else {
-                                            <span class="font-bold text-xs text-blue-400">{{ group.total | currency:'BRL' }}</span>
-                                        }
-                                    </div>
+                            <span class="font-bold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                        </div>
+                    }
+                } @else {
+                    <!-- Item Split Mode -->
+                    <div class="space-y-4">
+                        <div class="bg-gray-900/50 p-2 rounded-xl border border-gray-700">
+                            <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Itens Restantes</p>
+                            @for(item of unassignedItems(); track item.id) {
+                                <div (click)="assignItemToGroup(item)" class="flex justify-between items-center p-2 mb-1 bg-gray-800 rounded cursor-pointer hover:bg-gray-700">
+                                    <span class="text-xs text-white">{{item.quantity}}x {{item.name}}</span>
+                                    <span class="text-xs font-bold text-gray-300">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
                                 </div>
                             }
                         </div>
-                        <button (click)="addGroup()" class="w-full mt-2 py-2 border border-dashed border-gray-600 text-gray-400 text-xs rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors">+ Adicionar Pessoa</button>
+
+                        <div>
+                            <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Pessoas / Grupos</p>
+                            <div class="space-y-2">
+                                @for(group of itemGroups(); track group.id) {
+                                    <div (click)="selectGroup(group.id)" class="border rounded-xl p-2 cursor-pointer transition-all"
+                                         [class.border-blue-500]="selectedGroupId() === group.id"
+                                         [class.bg-blue-900/10]="selectedGroupId() === group.id"
+                                         [class.border-gray-700]="selectedGroupId() !== group.id"
+                                         [class.opacity-50]="group.isPaid">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <span class="font-bold text-xs text-white">{{ group.name }}</span>
+                                            @if(group.isPaid) {
+                                                <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGO</span>
+                                            } @else {
+                                                <span class="font-bold text-xs text-blue-400">{{ group.total | currency:'BRL' }}</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <button (click)="addGroup()" class="w-full mt-2 py-2 border border-dashed border-gray-600 text-gray-400 text-xs rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors">+ Adicionar Pessoa</button>
+                        </div>
                     </div>
+                }
+            </div>
+
+            <!-- Totals Summary & Discount -->
+            <div class="p-3 bg-gray-800 border-t border-gray-700 text-sm">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-400">Subtotal</span>
+                    <span class="text-white font-medium">{{ displaySubtotal() | currency:'BRL' }}</span>
                 </div>
-            }
+                
+                <!-- Inline Discount Controls -->
+                @if(isAddingDiscount()) {
+                    <div class="bg-gray-900 p-2 rounded-lg mb-2 animate-fade-in">
+                        <div class="flex gap-2 mb-2">
+                             <button (click)="localDiscountType.set('percentage')" class="flex-1 py-1 text-xs rounded border" [class.bg-blue-600]="localDiscountType() === 'percentage'" [class.border-blue-600]="localDiscountType() === 'percentage'" [class.border-gray-600]="localDiscountType() !== 'percentage'">%</button>
+                             <button (click)="localDiscountType.set('fixed_value')" class="flex-1 py-1 text-xs rounded border" [class.bg-blue-600]="localDiscountType() === 'fixed_value'" [class.border-blue-600]="localDiscountType() === 'fixed_value'" [class.border-gray-600]="localDiscountType() !== 'fixed_value'">R$</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" [value]="localDiscountValue()" (input)="localDiscountValue.set(+$any($event.target).value)" class="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm border border-gray-600" placeholder="Valor">
+                            <button (click)="applyDiscount()" class="bg-green-600 text-white px-3 py-1 rounded text-xs">OK</button>
+                            <button (click)="isAddingDiscount.set(false)" class="bg-red-600 text-white px-3 py-1 rounded text-xs">X</button>
+                        </div>
+                    </div>
+                } @else {
+                     <div class="flex justify-between items-center mb-1">
+                        <button (click)="isAddingDiscount.set(true)" class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">local_offer</span> 
+                            {{ globalDiscountAmount() > 0 ? 'Alterar Desconto' : 'Aplicar Desconto' }}
+                        </button>
+                        @if (globalDiscountAmount() > 0) {
+                            <span class="text-red-400 font-medium">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
+                        }
+                    </div>
+                }
+
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-400">Serviço (10%)</span>
+                        <button (click)="toggleServiceFee()" [class.bg-green-600]="isServiceFeeToggleOn()" [class.bg-gray-600]="!isServiceFeeToggleOn()" class="w-8 h-4 rounded-full relative transition-colors">
+                            <div class="absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform" [class.left-4.5]="isServiceFeeToggleOn()" [class.left-0.5]="!isServiceFeeToggleOn()"></div>
+                        </button>
+                    </div>
+                    <span class="text-white font-medium">{{ displayTipAmount() | currency:'BRL' }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center pt-2 border-t border-gray-700">
+                    <span class="text-white font-bold text-base">Total a Pagar</span>
+                    <span class="text-blue-400 font-black text-xl">{{ displayTotal() | currency:'BRL' }}</span>
+                </div>
+                
+                @if(splitMode() === 'total') {
+                    <div class="mt-2 flex items-center justify-between bg-gray-900 rounded-lg p-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-gray-500 text-sm">group</span>
+                            <span class="text-[10px] text-gray-400">Dividir:</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button (click)="splitCount.set(Math.max(1, splitCount() - 1))" class="w-6 h-6 bg-gray-700 rounded text-white flex items-center justify-center">-</button>
+                            <span class="text-white font-bold text-sm">{{ splitCount() }}</span>
+                            <button (click)="splitCount.set(splitCount() + 1)" class="w-6 h-6 bg-gray-700 rounded text-white flex items-center justify-center">+</button>
+                        </div>
+                        <span class="text-green-400 font-bold text-xs">{{ splitTotalPerPerson() | currency:'BRL' }}</span>
+                    </div>
+                }
+            </div>
         </div>
 
-        <!-- Totals Summary & Discount -->
-        <div class="p-3 bg-gray-800 border-t border-gray-700 text-sm">
-            <div class="flex justify-between items-center mb-1">
-                <span class="text-gray-400">Subtotal</span>
-                <span class="text-white font-medium">{{ displaySubtotal() | currency:'BRL' }}</span>
+        <!-- RIGHT SIDE: Calculator & Payment Methods -->
+        <div class="w-full lg:w-1/2 bg-gray-900 p-4 flex flex-col h-2/3 lg:h-full">
+            <!-- Amount Input -->
+            <div class="bg-gray-800 rounded-2xl p-3 mb-3 border border-gray-700 flex flex-col items-end">
+                <div class="flex justify-between w-full items-center">
+                     <span class="text-gray-400 text-xs uppercase font-bold">Valor Recebido</span>
+                     <div class="flex items-center gap-2">
+                         <button (click)="showKeypad.update(v => !v)" class="text-gray-400 hover:text-white" title="Alternar Teclado">
+                            <span class="material-symbols-outlined text-lg">{{ showKeypad() ? 'keyboard_hide' : 'keyboard' }}</span>
+                         </button>
+                         <button (click)="closeModal.emit(true)" class="md:hidden text-gray-500"><span class="material-symbols-outlined">close</span></button>
+                     </div>
+                </div>
+                <div class="text-3xl lg:text-4xl font-mono font-bold text-white flex items-center gap-1 w-full">
+                    <span class="text-xl text-gray-500">R$</span>
+                    <input 
+                        #amountInput
+                        type="text" 
+                        inputmode="decimal"
+                        [value]="paymentAmountInput()" 
+                        (input)="handleManualInput($event)"
+                        class="bg-transparent text-right w-full outline-none placeholder-gray-600 text-white" 
+                        placeholder="0.00"
+                    >
+                </div>
+                @if(balanceDue() > 0) {
+                    <div class="text-xs text-red-400 mt-1 font-semibold">Faltam: {{ balanceDue() | currency:'BRL' }}</div>
+                }
+            </div>
+
+            <!-- Suggestion Chips -->
+            <div class="flex gap-2 mb-3 overflow-x-auto pb-1 hide-scrollbar flex-shrink-0">
+                @for(amount of suggestedAmounts(); track amount) {
+                    <button (click)="paymentAmountInput.set(amount.toFixed(2))" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-full text-white font-bold text-xs whitespace-nowrap transition-colors">
+                        {{ amount | currency:'BRL' }}
+                    </button>
+                }
+            </div>
+
+            <!-- Keypad & Methods Grid -->
+            <div class="flex-1 grid grid-cols-4 gap-2 min-h-0">
+                <!-- Numeric Keypad (Cols 1-3) -->
+                 @if(showKeypad()) {
+                    <div class="col-span-3 grid grid-cols-3 gap-2 h-full">
+                        <button (click)="appendDigit('7')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">7</button>
+                        <button (click)="appendDigit('8')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">8</button>
+                        <button (click)="appendDigit('9')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">9</button>
+                        
+                        <button (click)="appendDigit('4')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">4</button>
+                        <button (click)="appendDigit('5')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">5</button>
+                        <button (click)="appendDigit('6')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">6</button>
+                        
+                        <button (click)="appendDigit('1')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">1</button>
+                        <button (click)="appendDigit('2')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">2</button>
+                        <button (click)="appendDigit('3')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">3</button>
+                        
+                        <button (click)="clearInput()" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded-lg">C</button>
+                        <button (click)="appendDigit('0')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">0</button>
+                        <button (click)="appendDigit('.')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">,</button>
+                    </div>
+                }
+
+                <!-- Methods (Col 4 - or full width if keypad hidden) -->
+                <div class="flex flex-col gap-2 h-full overflow-y-auto" [class.col-span-4]="!showKeypad()">
+                    <button (click)="selectedPaymentMethod.set('Dinheiro')" [class.ring-2]="selectedPaymentMethod() === 'Dinheiro'" class="flex-1 min-h-[50px] bg-green-900/30 text-green-400 border border-green-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-green-500 active:scale-95">
+                        <span class="material-symbols-outlined text-lg">payments</span>
+                        <span class="text-[9px] font-bold uppercase">Dinheiro</span>
+                    </button>
+                    <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" [class.ring-2]="selectedPaymentMethod() === 'Cartão de Crédito'" class="flex-1 min-h-[50px] bg-blue-900/30 text-blue-400 border border-blue-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-blue-500 active:scale-95">
+                        <span class="material-symbols-outlined text-lg">credit_card</span>
+                        <span class="text-[9px] font-bold uppercase">Crédito</span>
+                    </button>
+                    <button (click)="selectedPaymentMethod.set('Cartão de Débito')" [class.ring-2]="selectedPaymentMethod() === 'Cartão de Débito'" class="flex-1 min-h-[50px] bg-cyan-900/30 text-cyan-400 border border-cyan-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-cyan-500 active:scale-95">
+                        <span class="material-symbols-outlined text-lg">credit_score</span>
+                        <span class="text-[9px] font-bold uppercase">Débito</span>
+                    </button>
+                    <button (click)="selectedPaymentMethod.set('PIX')" [class.ring-2]="selectedPaymentMethod() === 'PIX'" class="flex-1 min-h-[50px] bg-purple-900/30 text-purple-400 border border-purple-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-purple-500 active:scale-95">
+                        <span class="material-symbols-outlined text-lg">qr_code_2</span>
+                        <span class="text-[9px] font-bold uppercase">PIX</span>
+                    </button>
+                </div>
             </div>
             
-            <!-- Inline Discount Controls -->
-            @if(isAddingDiscount()) {
-                <div class="bg-gray-900 p-2 rounded-lg mb-2 animate-fade-in">
-                    <div class="flex gap-2 mb-2">
-                         <button (click)="localDiscountType.set('percentage')" class="flex-1 py-1 text-xs rounded border" [class.bg-blue-600]="localDiscountType() === 'percentage'" [class.border-blue-600]="localDiscountType() === 'percentage'" [class.border-gray-600]="localDiscountType() !== 'percentage'">%</button>
-                         <button (click)="localDiscountType.set('fixed_value')" class="flex-1 py-1 text-xs rounded border" [class.bg-blue-600]="localDiscountType() === 'fixed_value'" [class.border-blue-600]="localDiscountType() === 'fixed_value'" [class.border-gray-600]="localDiscountType() !== 'fixed_value'">R$</button>
+            <!-- Add Payment Button -->
+            <button (click)="addPayment()" class="w-full mt-3 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] flex-shrink-0"
+                    [disabled]="!paymentAmountInput()">
+                <span>Adicionar Pagamento</span>
+                <span class="material-symbols-outlined">add_circle</span>
+            </button>
+
+            <!-- Payments List -->
+            @if(payments().length > 0) {
+                <div class="mt-3 bg-gray-800 rounded-xl p-2 max-h-24 overflow-y-auto flex-shrink-0">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase">Pagamentos</span>
+                        <span class="text-[10px] text-green-400 font-bold">Total: {{ totalPaid() | currency:'BRL' }}</span>
                     </div>
-                    <div class="flex gap-2">
-                        <input type="number" [value]="localDiscountValue()" (input)="localDiscountValue.set(+$any($event.target).value)" class="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm border border-gray-600" placeholder="Valor">
-                        <button (click)="applyDiscount()" class="bg-green-600 text-white px-3 py-1 rounded text-xs">OK</button>
-                        <button (click)="isAddingDiscount.set(false)" class="bg-red-600 text-white px-3 py-1 rounded text-xs">X</button>
-                    </div>
-                </div>
-            } @else {
-                 <div class="flex justify-between items-center mb-1">
-                    <button (click)="isAddingDiscount.set(true)" class="text-blue-400 hover:text-blue-300 text-xs font-semibold flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">local_offer</span> 
-                        {{ globalDiscountAmount() > 0 ? 'Alterar Desconto' : 'Aplicar Desconto' }}
-                    </button>
-                    @if (globalDiscountAmount() > 0) {
-                        <span class="text-red-400 font-medium">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
+                    @for(p of payments(); track $index) {
+                        <div class="flex justify-between items-center text-xs py-1 border-b border-gray-700/50 last:border-0">
+                            <span class="text-gray-300">{{ p.method }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white">{{ p.amount | currency:'BRL' }}</span>
+                                <button (click)="removePayment($index)" class="text-red-500 hover:text-white"><span class="material-symbols-outlined text-xs">close</span></button>
+                            </div>
+                        </div>
+                    }
+                    @if(change() > 0) {
+                        <div class="flex justify-between items-center text-xs py-1 mt-1 text-yellow-300 font-bold">
+                            <span>Troco</span>
+                            <span>{{ change() | currency:'BRL' }}</span>
+                        </div>
                     }
                 </div>
             }
 
-            <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                    <span class="text-gray-400">Serviço (10%)</span>
-                    <button (click)="toggleServiceFee()" [class.bg-green-600]="isServiceFeeToggleOn()" [class.bg-gray-600]="!isServiceFeeToggleOn()" class="w-8 h-4 rounded-full relative transition-colors">
-                        <div class="absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform" [class.left-4.5]="isServiceFeeToggleOn()" [class.left-0.5]="!isServiceFeeToggleOn()"></div>
-                    </button>
-                </div>
-                <span class="text-white font-medium">{{ displayTipAmount() | currency:'BRL' }}</span>
-            </div>
-            
-            <div class="flex justify-between items-center pt-2 border-t border-gray-700">
-                <span class="text-white font-bold text-base">Total a Pagar</span>
-                <span class="text-blue-400 font-black text-xl">{{ displayTotal() | currency:'BRL' }}</span>
-            </div>
-            
-            @if(splitMode() === 'total') {
-                <div class="mt-2 flex items-center justify-between bg-gray-900 rounded-lg p-2">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-gray-500 text-sm">group</span>
-                        <span class="text-[10px] text-gray-400">Dividir:</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button (click)="splitCount.set(Math.max(1, splitCount() - 1))" class="w-6 h-6 bg-gray-700 rounded text-white flex items-center justify-center">-</button>
-                        <span class="text-white font-bold text-sm">{{ splitCount() }}</span>
-                        <button (click)="splitCount.set(splitCount() + 1)" class="w-6 h-6 bg-gray-700 rounded text-white flex items-center justify-center">+</button>
-                    </div>
-                    <span class="text-green-400 font-bold text-xs">{{ splitTotalPerPerson() | currency:'BRL' }}</span>
-                </div>
-            }
+            <!-- Finalize Button -->
+            <button (click)="finalizePayment()" 
+                    [disabled]="!isPaymentComplete()" 
+                    class="w-full mt-3 py-3 bg-green-600 hover:bg-green-500 text-white font-black text-lg rounded-xl shadow-lg shadow-green-900/40 transition-all active:scale-[0.98] disabled:bg-gray-700 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed flex-shrink-0">
+                FINALIZAR VENDA
+            </button>
         </div>
-    </div>
+    } @else {
+        <!-- SUCCESS SCREEN -->
+        <div class="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-gray-900 relative">
+             <!-- Background confetti effect can be added here -->
+             <div class="mb-6 bg-green-500/20 p-6 rounded-full border-4 border-green-500 animate-bounce">
+                <span class="material-symbols-outlined text-6xl text-green-500">check_circle</span>
+             </div>
+             
+             <h2 class="text-3xl font-black text-white mb-2">Venda Realizada!</h2>
+             <p class="text-gray-400 mb-8 text-lg">Total Pago: <span class="text-green-400 font-bold">{{ displayTotal() | currency:'BRL' }}</span></p>
+             
+             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl">
+                 <button (click)="printReceipt()" class="flex flex-col items-center justify-center p-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl transition-all hover:scale-105 active:scale-95 group">
+                     <span class="material-symbols-outlined text-4xl text-blue-400 mb-3 group-hover:text-blue-300">print</span>
+                     <span class="text-white font-bold">Imprimir Comprovante</span>
+                 </button>
+                 
+                 <button (click)="isEmittingNfce() ? null : null" class="flex flex-col items-center justify-center p-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl transition-all hover:scale-105 active:scale-95 group opacity-50 cursor-not-allowed" title="Em breve">
+                     <span class="material-symbols-outlined text-4xl text-purple-400 mb-3 group-hover:text-purple-300">receipt_long</span>
+                     <span class="text-white font-bold">Emitir NFC-e</span>
+                 </button>
 
-    <!-- RIGHT SIDE: Calculator & Payment Methods -->
-    <div class="w-full lg:w-1/2 bg-gray-900 p-4 flex flex-col h-2/3 lg:h-full">
-        <!-- Amount Input -->
-        <div class="bg-gray-800 rounded-2xl p-3 mb-3 border border-gray-700 flex flex-col items-end">
-            <div class="flex justify-between w-full">
-                 <span class="text-gray-400 text-xs uppercase font-bold">Valor Recebido</span>
-                 <button (click)="closeModal.emit(true)" class="md:hidden text-gray-500"><span class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="text-3xl lg:text-4xl font-mono font-bold text-white flex items-center gap-1 w-full">
-                <span class="text-xl text-gray-500">R$</span>
-                <input 
-                    #amountInput
-                    type="text" 
-                    inputmode="decimal"
-                    [value]="paymentAmountInput()" 
-                    (input)="handleManualInput($event)"
-                    class="bg-transparent text-right w-full outline-none placeholder-gray-600 text-white" 
-                    placeholder="0.00"
-                >
-            </div>
-            @if(balanceDue() > 0) {
-                <div class="text-xs text-red-400 mt-1 font-semibold">Faltam: {{ balanceDue() | currency:'BRL' }}</div>
-            }
+                 <button (click)="finishAndClose()" class="flex flex-col items-center justify-center p-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl transition-all hover:scale-105 active:scale-95 group">
+                     <span class="material-symbols-outlined text-4xl text-gray-400 mb-3 group-hover:text-white">close</span>
+                     <span class="text-white font-bold">Fechar & Novo Pedido</span>
+                 </button>
+             </div>
         </div>
-
-        <!-- Suggestion Chips -->
-        <div class="flex gap-2 mb-3 overflow-x-auto pb-1 hide-scrollbar flex-shrink-0">
-            @for(amount of suggestedAmounts(); track amount) {
-                <button (click)="paymentAmountInput.set(amount.toFixed(2))" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-full text-white font-bold text-xs whitespace-nowrap transition-colors">
-                    {{ amount | currency:'BRL' }}
-                </button>
-            }
-        </div>
-
-        <!-- Keypad & Methods Grid -->
-        <div class="flex-1 grid grid-cols-4 gap-2 min-h-0">
-            <!-- Numeric Keypad (Cols 1-3) -->
-            <div class="col-span-3 grid grid-cols-3 gap-2 h-full">
-                <button (click)="appendDigit('7')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">7</button>
-                <button (click)="appendDigit('8')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">8</button>
-                <button (click)="appendDigit('9')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">9</button>
-                
-                <button (click)="appendDigit('4')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">4</button>
-                <button (click)="appendDigit('5')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">5</button>
-                <button (click)="appendDigit('6')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">6</button>
-                
-                <button (click)="appendDigit('1')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">1</button>
-                <button (click)="appendDigit('2')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">2</button>
-                <button (click)="appendDigit('3')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">3</button>
-                
-                <button (click)="clearInput()" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold rounded-lg">C</button>
-                <button (click)="appendDigit('0')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">0</button>
-                <button (click)="appendDigit('.')" class="bg-gray-800 hover:bg-gray-700 text-white text-xl font-bold rounded-lg shadow-sm active:bg-gray-600">,</button>
-            </div>
-
-            <!-- Methods (Col 4) -->
-            <div class="flex flex-col gap-2 h-full overflow-y-auto">
-                <button (click)="selectedPaymentMethod.set('Dinheiro')" [class.ring-2]="selectedPaymentMethod() === 'Dinheiro'" class="flex-1 min-h-[50px] bg-green-900/30 text-green-400 border border-green-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-green-500 active:scale-95">
-                    <span class="material-symbols-outlined text-lg">payments</span>
-                    <span class="text-[9px] font-bold uppercase">Dinheiro</span>
-                </button>
-                <button (click)="selectedPaymentMethod.set('Cartão de Crédito')" [class.ring-2]="selectedPaymentMethod() === 'Cartão de Crédito'" class="flex-1 min-h-[50px] bg-blue-900/30 text-blue-400 border border-blue-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-blue-500 active:scale-95">
-                    <span class="material-symbols-outlined text-lg">credit_card</span>
-                    <span class="text-[9px] font-bold uppercase">Crédito</span>
-                </button>
-                <button (click)="selectedPaymentMethod.set('Cartão de Débito')" [class.ring-2]="selectedPaymentMethod() === 'Cartão de Débito'" class="flex-1 min-h-[50px] bg-cyan-900/30 text-cyan-400 border border-cyan-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-cyan-500 active:scale-95">
-                    <span class="material-symbols-outlined text-lg">credit_score</span>
-                    <span class="text-[9px] font-bold uppercase">Débito</span>
-                </button>
-                <button (click)="selectedPaymentMethod.set('PIX')" [class.ring-2]="selectedPaymentMethod() === 'PIX'" class="flex-1 min-h-[50px] bg-purple-900/30 text-purple-400 border border-purple-800 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all ring-purple-500 active:scale-95">
-                    <span class="material-symbols-outlined text-lg">qr_code_2</span>
-                    <span class="text-[9px] font-bold uppercase">PIX</span>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Add Payment Button -->
-        <button (click)="addPayment()" class="w-full mt-3 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] flex-shrink-0"
-                [disabled]="!paymentAmountInput()">
-            <span>Adicionar Pagamento</span>
-            <span class="material-symbols-outlined">add_circle</span>
-        </button>
-
-        <!-- Payments List -->
-        @if(payments().length > 0) {
-            <div class="mt-3 bg-gray-800 rounded-xl p-2 max-h-24 overflow-y-auto flex-shrink-0">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-[10px] text-gray-400 font-bold uppercase">Pagamentos</span>
-                    <span class="text-[10px] text-green-400 font-bold">Total: {{ totalPaid() | currency:'BRL' }}</span>
-                </div>
-                @for(p of payments(); track $index) {
-                    <div class="flex justify-between items-center text-xs py-1 border-b border-gray-700/50 last:border-0">
-                        <span class="text-gray-300">{{ p.method }}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-white">{{ p.amount | currency:'BRL' }}</span>
-                            <button (click)="removePayment($index)" class="text-red-500 hover:text-white"><span class="material-symbols-outlined text-xs">close</span></button>
-                        </div>
-                    </div>
-                }
-                @if(change() > 0) {
-                    <div class="flex justify-between items-center text-xs py-1 mt-1 text-yellow-300 font-bold">
-                        <span>Troco</span>
-                        <span>{{ change() | currency:'BRL' }}</span>
-                    </div>
-                }
-            </div>
-        }
-
-        <!-- Finalize Button -->
-        <button (click)="finalizePayment()" 
-                [disabled]="!isPaymentComplete()" 
-                class="w-full mt-3 py-3 bg-green-600 hover:bg-green-500 text-white font-black text-lg rounded-xl shadow-lg shadow-green-900/40 transition-all active:scale-[0.98] disabled:bg-gray-700 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed flex-shrink-0">
-            FINALIZAR VENDA
-        </button>
-
-    </div>
+    }
   </div>
 </div>
