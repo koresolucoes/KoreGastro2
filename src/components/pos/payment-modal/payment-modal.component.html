@@ -141,7 +141,7 @@
                 <div class="flex justify-between w-full items-center">
                      <span class="text-gray-400 text-xs uppercase font-bold">Valor Recebido</span>
                      <div class="flex items-center gap-2">
-                         <button (click)="showKeypad.update(v => !v)" class="text-gray-400 hover:text-white" title="Alternar Teclado">
+                         <button (click)="toggleKeypad()" class="text-gray-400 hover:text-white" title="Alternar Teclado">
                             <span class="material-symbols-outlined text-lg">{{ showKeypad() ? 'keyboard_hide' : 'keyboard' }}</span>
                          </button>
                          <button (click)="closeModal.emit(true)" class="md:hidden text-gray-500"><span class="material-symbols-outlined">close</span></button>

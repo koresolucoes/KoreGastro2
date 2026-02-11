@@ -5,7 +5,6 @@ import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models
 import { PosDataService, PaymentInfo } from '../../../services/pos-data.service';
 import { PrintingService } from '../../../services/printing.service';
 import { NotificationService } from '../../../services/notification.service';
-import { RedeemRewardModalComponent } from '../../shared/redeem-reward-modal/redeem-reward-modal.component';
 import { v4 as uuidv4 } from 'uuid';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
 import { OperationalAuthService } from '../../../services/operational-auth.service';
@@ -26,7 +25,7 @@ interface ItemGroup {
 @Component({
   selector: 'app-payment-modal',
   standalone: true,
-  imports: [CommonModule, RedeemRewardModalComponent],
+  imports: [CommonModule],
   templateUrl: './payment-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -211,6 +210,10 @@ export class PaymentModalComponent {
         this.paymentAmountInput.set(groupBalance > 0 ? groupBalance.toFixed(2) : '');
       });
     });
+  }
+
+  toggleKeypad() {
+    this.showKeypad.update(v => !v);
   }
 
   private resetPaymentState() {
