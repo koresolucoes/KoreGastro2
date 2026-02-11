@@ -74,26 +74,26 @@
             </div>
 
             <!-- Categories (Pills) -->
-            <div class="px-4 py-2 flex gap-2 overflow-x-auto hide-scrollbar flex-shrink-0">
+            <div class="px-4 py-2 flex gap-3 overflow-x-auto hide-scrollbar flex-shrink-0 pb-4">
                 <button (click)="selectCategory(null)" 
-                    class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border"
+                    class="px-6 py-3 rounded-xl text-base font-bold whitespace-nowrap transition-all border shadow-sm"
                     [class.bg-blue-600]="selectedCategory() === null" 
                     [class.text-white]="selectedCategory() === null"
                     [class.border-blue-500]="selectedCategory() === null"
                     [class.bg-gray-800]="selectedCategory() !== null"
-                    [class.text-gray-400]="selectedCategory() !== null"
+                    [class.text-gray-300]="selectedCategory() !== null"
                     [class.border-gray-700]="selectedCategory() !== null"
                     [class.hover:border-gray-500]="selectedCategory() !== null">
                     Todos
                 </button>
                 @for (category of categories(); track category.id) {
                     <button (click)="selectCategory(category)" 
-                        class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border"
+                        class="px-6 py-3 rounded-xl text-base font-bold whitespace-nowrap transition-all border shadow-sm"
                         [class.bg-blue-600]="selectedCategory()?.id === category.id" 
                         [class.text-white]="selectedCategory()?.id === category.id"
                         [class.border-blue-500]="selectedCategory()?.id === category.id"
                         [class.bg-gray-800]="selectedCategory()?.id !== category.id"
-                        [class.text-gray-400]="selectedCategory()?.id !== category.id"
+                        [class.text-gray-300]="selectedCategory()?.id !== category.id"
                         [class.border-gray-700]="selectedCategory()?.id !== category.id"
                         [class.hover:border-gray-500]="selectedCategory()?.id !== category.id">
                         {{ category.name }}
@@ -101,46 +101,52 @@
                 }
             </div>
 
-            <!-- Recipe Grid -->
-            <!-- FIX: Grid optimized for narrow sidebars. grid-cols-2 as base, wider only on huge screens -->
-            <div class="flex-1 overflow-y-auto p-4 pt-2 pb-24 md:pb-4">
-                <div class="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <!-- Recipe Grid (A Quadrilha) -->
+            <!-- pb-28 ensures space at bottom for mobile nav without cutting off -->
+            <div class="flex-1 overflow-y-auto p-4 pt-0 pb-28 md:pb-4">
+                <!-- Using auto-fill with minmax ensures items are never too thin -->
+                <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4">
                     @for (recipe of filteredRecipes(); track recipe.id) {
                         <button 
                             (click)="openQuickAddModal(recipe)" 
-                            class="relative flex flex-col bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-gray-500 hover:shadow-lg transition-all text-left group h-full"
+                            class="relative flex flex-col bg-gray-800 border-2 border-gray-700 rounded-2xl overflow-hidden hover:border-blue-500 hover:shadow-xl hover:scale-[1.02] transition-all text-left group h-full shadow-md active:scale-95"
                             [disabled]="!recipe.hasStock"
                             [class.opacity-50]="!recipe.hasStock"
                         >
-                            <!-- Increased image height -->
-                            <div class="h-40 w-full bg-gray-700 relative overflow-hidden">
+                            <!-- Image Container with Aspect Ratio -->
+                            <div class="aspect-[4/3] w-full bg-gray-700 relative overflow-hidden">
                                 @if (recipe.image_url) {
-                                    <img [src]="recipe.image_url" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500">
+                                    <img [src]="recipe.image_url" class="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500">
                                 } @else {
-                                    <div class="w-full h-full flex items-center justify-center text-gray-600">
-                                        <span class="material-symbols-outlined text-4xl">restaurant</span>
+                                    <div class="w-full h-full flex items-center justify-center text-gray-600 bg-gray-750">
+                                        <span class="material-symbols-outlined text-5xl">restaurant</span>
                                     </div>
                                 }
-                                @if (!recipe.hasStock) {
-                                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                        <span class="text-xs font-bold text-red-200 bg-red-900/80 px-2 py-1 rounded">ESGOTADO</span>
-                                    </div>
-                                }
-                                <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-md text-white font-bold text-sm shadow-sm">
+                                
+                                <!-- Price Tag -->
+                                <div class="absolute bottom-0 right-0 bg-black/80 text-white font-bold px-3 py-1.5 rounded-tl-xl text-sm md:text-base border-t border-l border-gray-600">
                                     {{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}
                                 </div>
-                            </div>
-                            
-                            <div class="p-3 flex-1 flex flex-col">
-                                <h3 class="font-bold text-white text-base leading-tight mb-1 line-clamp-2">{{ recipe.name }}</h3>
-                                @if(recipe.external_code) {
-                                    <p class="text-[10px] text-gray-500 font-mono mt-auto">{{ recipe.external_code }}</p>
+                                
+                                <!-- Stock Overlay -->
+                                @if (!recipe.hasStock) {
+                                    <div class="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                                        <span class="text-xs font-bold text-white bg-red-600 px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">Esgotado</span>
+                                    </div>
                                 }
                             </div>
                             
-                            <!-- Quantity Badge if in cart -->
+                            <!-- Content -->
+                            <div class="p-3 flex-1 flex flex-col justify-between">
+                                <h3 class="font-bold text-white text-sm md:text-base leading-snug line-clamp-2 mb-1">{{ recipe.name }}</h3>
+                                @if(recipe.external_code) {
+                                    <p class="text-[10px] text-gray-500 font-mono bg-gray-900/50 inline-block px-1 rounded self-start mt-1">{{ recipe.external_code }}</p>
+                                }
+                            </div>
+                            
+                            <!-- Quantity Badge -->
                             @if (cartItemQuantities().get(recipe.id); as qty) {
-                                <div class="absolute top-2 left-2 bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg border-2 border-blue-400 z-10">
+                                <div class="absolute top-2 left-2 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg border-2 border-white z-10 animate-bounce-in">
                                     {{ qty }}
                                 </div>
                             }
@@ -152,7 +158,7 @@
 
         <!-- RIGHT: Cart & Actions (Sidebar on Desktop, Tab on Mobile) -->
         <!-- Fixed width reduced slightly to 320px (w-80) to give more room to grid on desktop -->
-        <div class="w-full md:w-80 bg-gray-800 border-l border-gray-700 flex flex-col shadow-xl z-10 md:flex h-full" [class.hidden]="mobileTab() === 'menu'">
+        <div class="w-full md:w-80 bg-gray-800 border-l border-gray-700 flex flex-col shadow-2xl z-10 md:flex h-full" [class.hidden]="mobileTab() === 'menu'">
             <!-- Cart Header -->
             <div class="p-4 border-b border-gray-700 bg-gray-800 flex-shrink-0">
                 <h3 class="font-bold text-white text-lg flex items-center gap-2">
@@ -162,8 +168,8 @@
             </div>
 
             <!-- Cart Items List (Scrollable Area) -->
-            <!-- pb-20 added for mobile scroll access above bottom nav -->
-            <div class="flex-1 overflow-y-auto p-2 space-y-2 pb-32 md:pb-4">
+            <!-- pb-40 specifically for mobile to clear the fixed bottom actions AND navigation -->
+            <div class="flex-1 overflow-y-auto p-2 space-y-2 pb-40 md:pb-4">
                 
                 <!-- Section 1: Sent Items (Read Only) -->
                 @if (groupedOrderItems().length > 0) {
@@ -229,11 +235,11 @@
                                 </button>
                                 
                                 <div class="flex items-center bg-gray-800 rounded-lg p-0.5">
-                                    <button (click)="updateCartItemQuantity(item.id, -1)" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded">
+                                    <button (click)="updateCartItemQuantity(item.id, -1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded">
                                         <span class="material-symbols-outlined text-sm">remove</span>
                                     </button>
                                     <span class="w-8 text-center font-bold text-white text-sm">{{ item.quantity }}</span>
-                                    <button (click)="updateCartItemQuantity(item.id, 1)" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded">
+                                    <button (click)="updateCartItemQuantity(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 rounded">
                                         <span class="material-symbols-outlined text-sm">add</span>
                                     </button>
                                 </div>
@@ -253,7 +259,7 @@
             </div>
 
             <!-- Footer Actions -->
-            <!-- Fixed to bottom on Desktop, Fixed to bottom (above nav) on Mobile -->
+            <!-- Fixed bottom logic for mobile: Placed above the nav bar -->
             <div class="p-4 bg-gray-800 border-t border-gray-700 space-y-3 shadow-[0_-5px_10px_rgba(0,0,0,0.3)] z-20 absolute bottom-[60px] left-0 right-0 md:relative md:bottom-auto">
                 <div class="flex justify-between items-end">
                     <span class="text-gray-400 text-sm">Total</span>
@@ -281,13 +287,13 @@
         </div>
 
         <!-- Mobile Bottom Tabs Navigation -->
-        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 flex z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-            <button (click)="setMobileTab('menu')" class="flex-1 py-3 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'menu'" [class.text-gray-400]="mobileTab() !== 'menu'">
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 flex z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)] h-[60px]">
+            <button (click)="setMobileTab('menu')" class="flex-1 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'menu'" [class.text-gray-400]="mobileTab() !== 'menu'">
                 <span class="material-symbols-outlined text-2xl">restaurant_menu</span>
                 <span class="text-xs font-semibold mt-1">Cardápio</span>
                 @if (mobileTab() === 'menu') { <div class="absolute top-0 left-0 right-0 h-1 bg-blue-500"></div> }
             </button>
-            <button (click)="setMobileTab('cart')" class="flex-1 py-3 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'cart'" [class.text-gray-400]="mobileTab() !== 'cart'">
+            <button (click)="setMobileTab('cart')" class="flex-1 flex flex-col items-center justify-center transition-colors relative" [class.text-blue-500]="mobileTab() === 'cart'" [class.text-gray-400]="mobileTab() !== 'cart'">
                 <div class="relative">
                     <span class="material-symbols-outlined text-2xl">shopping_cart</span>
                     @if (totalCartItems() > 0) {
@@ -310,52 +316,51 @@
     <div class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" (click)="closeQuickAddModal()">
         <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100" (click)="$event.stopPropagation()">
             <!-- Header Image -->
-            <div class="h-32 bg-gray-700 relative">
+            <div class="h-40 bg-gray-700 relative">
                  @if (recipe.image_url) {
                     <img [src]="recipe.image_url" class="w-full h-full object-cover">
                 } @else {
                      <div class="w-full h-full flex items-center justify-center text-gray-600">
-                        <span class="material-symbols-outlined text-4xl">restaurant</span>
+                        <span class="material-symbols-outlined text-5xl">restaurant</span>
                     </div>
                 }
-                <button (click)="closeQuickAddModal()" class="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors">
+                <button (click)="closeQuickAddModal()" class="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors">
                     <span class="material-symbols-outlined">close</span>
                 </button>
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-4 pt-12">
-                    <h3 class="text-xl font-bold text-white leading-tight">{{ recipe.name }}</h3>
+                    <h3 class="text-2xl font-bold text-white leading-tight drop-shadow-md">{{ recipe.name }}</h3>
                 </div>
             </div>
             
             <div class="p-6 space-y-6">
                 <!-- Quantity Control -->
                 <div class="flex items-center justify-center gap-6">
-                    <button (click)="updateQuickAddQuantity(-1)" class="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition-colors">
-                        <span class="material-symbols-outlined">remove</span>
+                    <button (click)="updateQuickAddQuantity(-1)" class="w-14 h-14 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition-colors shadow-lg active:scale-95">
+                        <span class="material-symbols-outlined text-2xl">remove</span>
                     </button>
-                    <div class="text-center">
-                        <span class="text-4xl font-bold text-white">{{ quickAddQuantity() }}</span>
-                        <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Quantidade</p>
+                    <div class="text-center w-16">
+                        <span class="text-5xl font-bold text-white">{{ quickAddQuantity() }}</span>
                     </div>
-                    <button (click)="updateQuickAddQuantity(1)" class="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition-colors">
-                        <span class="material-symbols-outlined">add</span>
+                    <button (click)="updateQuickAddQuantity(1)" class="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition-colors active:scale-95">
+                        <span class="material-symbols-outlined text-2xl">add</span>
                     </button>
                 </div>
 
                 <!-- Notes Input -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Observações</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Observações</label>
                     <textarea 
                         [value]="quickAddNotes()"
                         (input)="quickAddNotes.set($any($event.target).value)"
                         rows="2"
                         placeholder="Ex: Sem cebola, bem passado..."
-                        class="w-full bg-gray-700 border-none rounded-lg p-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 resize-none"
+                        class="w-full bg-gray-700 border-none rounded-xl p-4 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 resize-none text-base"
                     ></textarea>
                 </div>
 
                 <!-- Add Button -->
-                <button (click)="confirmQuickAdd()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all flex justify-between items-center px-6">
-                    <span>Adicionar ao Pedido</span>
+                <button (click)="confirmQuickAdd()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all flex justify-between items-center px-6 text-lg">
+                    <span>Adicionar</span>
                     <span>{{ ((recipePrices().get(recipe.id) || recipe.price) * quickAddQuantity()) | currency:'BRL' }}</span>
                 </button>
             </div>
