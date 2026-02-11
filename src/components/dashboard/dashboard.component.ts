@@ -1,6 +1,7 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect, untracked, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -13,23 +14,34 @@ import { PosStateService } from '../../services/pos-state.service';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
+import { Order } from '../../models/db.models';
 
-interface KpiWidget {
-  type: 'kpi';
+interface BaseWidget {
   id: string;
+  cols: number; // 1 (small), 2 (medium), 3 (large/full width on desktop)
+}
+
+interface KpiWidget extends BaseWidget {
+  type: 'kpi';
   label: string;
   value: string | number;
+  subValue?: string;
   icon: string;
+  colorClass: string; // e.g. 'text-blue-400'
   route: string;
 }
 
-interface ChartWidget {
+interface ChartWidget extends BaseWidget {
   type: 'chart_sales' | 'chart_hourly';
-  id: string;
   title: string;
 }
 
-type DashboardWidget = KpiWidget | ChartWidget;
+interface ListWidget extends BaseWidget {
+  type: 'list_top_items' | 'list_recent_orders' | 'list_payment_methods' | 'list_low_stock';
+  title: string;
+}
+
+type DashboardWidget = KpiWidget | ChartWidget | ListWidget;
 type ReportPeriod = 'day' | 'week' | 'month';
 
 @Component({
@@ -41,7 +53,9 @@ type ReportPeriod = 'day' | 'week' | 'month';
     HourlySalesChartComponent,
     CdkDropList,
     CdkDrag,
-    RouterLink
+    RouterLink,
+    CurrencyPipe,
+    DatePipe
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,22 +84,14 @@ export class DashboardComponent implements OnInit {
   isHourlyChartLoading = signal(true);
   hourlySalesData = signal<PeakHoursData[]>([]);
 
-  // --- NEW STATE MANAGEMENT ---
+  // Layout Management
+  private defaultWidgetOrder = [
+    'kpi_sales', 'kpi_profit', 'kpi_ticket', 'kpi_orders', 
+    'chart_sales_1', 'list_top_items', 
+    'chart_hourly_1', 'list_payment_methods',
+    'list_recent_orders', 'list_low_stock'
+  ];
   private widgetOrder = signal<string[]>([]);
-  
-  private allWidgetsDataMap = computed(() => {
-    const widgets = this.buildWidgets();
-    return new Map(widgets.map(w => [w.id, w]));
-  });
-  
-  dashboardWidgets = computed(() => {
-    const order = this.widgetOrder();
-    const dataMap = this.allWidgetsDataMap();
-    if (order.length === 0) return [];
-    return order
-      .map(id => dataMap.get(id))
-      .filter((w): w is DashboardWidget => w !== undefined);
-  });
   
   constructor() {
     effect(() => {
@@ -134,52 +140,70 @@ export class DashboardComponent implements OnInit {
     return { startDate, endDate };
   }
 
-
-  private buildWidgets(): DashboardWidget[] {
-    const periodLabel = { day: '(Hoje)', week: '(Esta Semana)', month: '(Este Mês)' }[this.period()];
+  // --- Widget Definition ---
+  dashboardWidgets = computed(() => {
+    const order = this.widgetOrder();
+    const periodLabel = { day: 'Hoje', week: 'Esta Semana', month: 'Este Mês' }[this.period()];
     
-    return [
-      { 
-        type: 'kpi', id: 'Vendas Totais', label: `Vendas Totais ${periodLabel}`, 
-        value: this.totalSales().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'monetization_on', route: '/reports'
-      },
-      { 
-        type: 'kpi', id: 'Lucro Bruto', label: `Lucro Bruto ${periodLabel}`, 
-        value: this.grossProfit().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'trending_up', route: '/reports'
-      },
-      { 
-        type: 'kpi', id: 'Ticket Médio', label: `Ticket Médio ${periodLabel}`, 
-        value: this.averageTicket().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        icon: 'receipt_long', route: '/performance'
-      },
-      { 
-        type: 'kpi', id: 'Pedidos Totais', label: `Pedidos Totais ${periodLabel}`, 
-        value: this.totalOrders().toString(), 
-        icon: 'list_alt', route: '/cashier'
-      },
-      { 
-        type: 'kpi', id: 'Pedidos iFood (Abertos)', label: 'Pedidos iFood (Abertos)', 
-        value: this.openIfoodOrders().toString(), 
-        icon: 'delivery_dining', route: '/ifood-kds'
-      },
-      { 
-        type: 'kpi', id: 'Reservas (Hoje)', label: 'Reservas (Hoje)', 
-        value: this.reservationsToday().length.toString(), 
-        icon: 'event_available', route: '/reservations'
-      },
-      {
-        type: 'chart_sales', id: 'chart_sales_1',
-        title: 'Vendas vs. Custo (CMV)'
-      },
-      {
-        type: 'chart_hourly', id: 'chart_hourly_1',
-        title: 'Vendas por Hora'
-      }
-    ];
-  }
+    // KPI Data
+    const totalSales = this.totalSales();
+    const grossProfit = this.grossProfit();
+    const avgTicket = this.averageTicket();
+    const orderCount = this.totalOrders();
 
+    const allWidgets: Record<string, DashboardWidget> = {
+      'kpi_sales': { 
+        type: 'kpi', id: 'kpi_sales', cols: 1, label: 'Vendas Totais', 
+        value: totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
+        subValue: periodLabel, icon: 'monetization_on', colorClass: 'text-green-400', route: '/reports'
+      },
+      'kpi_profit': { 
+        type: 'kpi', id: 'kpi_profit', cols: 1, label: 'Lucro Bruto (Est.)', 
+        value: grossProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
+        subValue: 'Baseado no CMV', icon: 'trending_up', colorClass: 'text-blue-400', route: '/reports'
+      },
+      'kpi_ticket': { 
+        type: 'kpi', id: 'kpi_ticket', cols: 1, label: 'Ticket Médio', 
+        value: avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
+        subValue: 'Por pedido', icon: 'receipt_long', colorClass: 'text-purple-400', route: '/performance'
+      },
+      'kpi_orders': { 
+        type: 'kpi', id: 'kpi_orders', cols: 1, label: 'Pedidos Realizados', 
+        value: orderCount.toString(), 
+        subValue: `${this.openOrdersCount()} abertos agora`, icon: 'shopping_cart_checkout', colorClass: 'text-yellow-400', route: '/pos'
+      },
+      'chart_sales_1': {
+        type: 'chart_sales', id: 'chart_sales_1', cols: 2,
+        title: 'Evolução de Vendas vs. Custo'
+      },
+      'chart_hourly_1': {
+        type: 'chart_hourly', id: 'chart_hourly_1', cols: 2,
+        title: 'Horários de Pico'
+      },
+      'list_top_items': {
+        type: 'list_top_items', id: 'list_top_items', cols: 1,
+        title: 'Top 5 Mais Vendidos'
+      },
+      'list_recent_orders': {
+        type: 'list_recent_orders', id: 'list_recent_orders', cols: 1,
+        title: 'Últimos Pedidos Finalizados'
+      },
+      'list_payment_methods': {
+        type: 'list_payment_methods', id: 'list_payment_methods', cols: 1,
+        title: 'Formas de Pagamento'
+      },
+      'list_low_stock': {
+        type: 'list_low_stock', id: 'list_low_stock', cols: 1,
+        title: 'Alerta de Estoque'
+      }
+    };
+
+    return order
+      .map(id => allWidgets[id])
+      .filter(w => w !== undefined);
+  });
+
+  // --- Data Loading for Charts ---
   async loadChartData(startDate: Date, endDate: Date) {
     this.isChartLoading.set(true);
     try {
@@ -204,6 +228,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // --- Layout Management ---
   setPeriod(p: ReportPeriod) {
     this.period.set(p);
   }
@@ -226,51 +251,32 @@ export class DashboardComponent implements OnInit {
   }
   
   private saveLayout() {
-    localStorage.setItem('dashboardLayout', JSON.stringify(this.widgetOrder()));
+    localStorage.setItem('dashboardLayoutV2', JSON.stringify(this.widgetOrder()));
   }
   
   private loadLayout() {
-    const defaultOrder = this.buildWidgets().map(w => w.id);
-    const savedLayout = localStorage.getItem('dashboardLayout');
+    const savedLayout = localStorage.getItem('dashboardLayoutV2');
     
     if (savedLayout && savedLayout !== 'undefined') {
       try {
         const savedOrder: string[] = JSON.parse(savedLayout);
-        if (Array.isArray(savedOrder)) {
-          const savedOrderSet = new Set(savedOrder);
-          const newWidgetIds = defaultOrder.filter(id => !savedOrderSet.has(id));
-          this.widgetOrder.set([...savedOrder, ...newWidgetIds]);
-        } else {
-          this.widgetOrder.set(defaultOrder);
-        }
+        // Ensure new widgets are added if layout is old
+        const savedSet = new Set(savedOrder);
+        const missingWidgets = this.defaultWidgetOrder.filter(id => !savedSet.has(id));
+        
+        this.widgetOrder.set([...savedOrder, ...missingWidgets]);
       } catch (e) {
         console.error('Failed to parse dashboard layout, reverting to default.', e);
-        this.widgetOrder.set(defaultOrder);
+        this.widgetOrder.set(this.defaultWidgetOrder);
       }
     } else {
-      this.widgetOrder.set(defaultOrder);
+      this.widgetOrder.set(this.defaultWidgetOrder);
     }
-  }
-
-  getRouteForStat(label: string): string {
-    const widget = this.allWidgetsDataMap().get(label.split(' (')[0]) as KpiWidget | undefined;
-    return widget ? widget.route : '/dashboard';
-  }
-
-  hasComparison(label: string): boolean {
-    return false; // Comparison logic removed for simplicity, can be re-added later
-  }
-  
-  isPositiveComparison(label: string): boolean {
-    return true; 
-  }
-  
-  getComparisonText(label: string): string {
-    return ``; 
   }
 
   // --- Computed Data Signals ---
 
+  // Financials
   totalSales = computed(() => this.dashboardState.performanceTransactions().filter(t => t.type === 'Receita').reduce((sum, item) => sum + item.amount, 0));
   
   cogs = computed(() => {
@@ -282,27 +288,81 @@ export class DashboardComponent implements OnInit {
   });
 
   grossProfit = computed(() => this.totalSales() - this.cogs());
-
   totalOrders = computed(() => this.dashboardState.performanceCompletedOrders().length);
-
+  
   averageTicket = computed(() => {
     const totalOrders = this.totalOrders();
     return totalOrders > 0 ? this.totalSales() / totalOrders : 0;
   });
   
-  openIfoodOrders = computed(() => this.posState.openOrders().filter(o => o.order_type.startsWith('iFood')).length);
+  openOrdersCount = computed(() => this.posState.orders().filter(o => o.status === 'OPEN').length);
 
-  reservationsToday = computed(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return this.settingsState.reservations().filter(r => new Date(r.reservation_time).toISOString().split('T')[0] === todayStr && r.status === 'CONFIRMED');
+  // Lists Data
+  
+  topSellingItems = computed(() => {
+    const orders = this.dashboardState.performanceCompletedOrders();
+    const itemCounts = new Map<string, {name: string, quantity: number, revenue: number}>();
+
+    for (const order of orders) {
+      for (const item of order.order_items) {
+        if (!item.recipe_id) continue;
+        const existing = itemCounts.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0 };
+        existing.quantity += item.quantity;
+        existing.revenue += (item.price * item.quantity);
+        itemCounts.set(item.recipe_id, existing);
+      }
+    }
+
+    return Array.from(itemCounts.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
   });
 
-  lowStockItemsList = computed(() => this.inventoryState.ingredients().filter(i => i.stock < i.min_stock).slice(0, 5));
-
-  employeesOnLeaveToday = computed(() => {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayStr = today.toISOString().split('T')[0];
-    return this.hrState.leaveRequests().filter(r => r.status === 'Aprovada' && r.start_date <= todayStr && r.end_date >= todayStr);
+  recentCompletedOrders = computed(() => {
+    return this.dashboardState.performanceCompletedOrders()
+      .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
+      .slice(0, 5)
+      .map(o => ({
+         id: o.id.slice(0, 6),
+         time: o.completed_at,
+         total: o.order_items.reduce((s, i) => s + (i.price * i.quantity), 0),
+         type: o.order_type
+      }));
   });
+
+  paymentMethodsDistribution = computed(() => {
+    const transactions = this.dashboardState.performanceTransactions().filter(t => t.type === 'Receita');
+    const methodCounts = new Map<string, number>();
+    let totalValue = 0;
+
+    const methodRegex = /\(([^)]+)\)/; // Extracts text inside parentheses
+
+    for (const t of transactions) {
+        const match = t.description.match(methodRegex);
+        const method = match ? match[1] : 'Outros';
+        methodCounts.set(method, (methodCounts.get(method) || 0) + t.amount);
+        totalValue += t.amount;
+    }
+
+    return Array.from(methodCounts.entries())
+      .map(([method, value]) => ({ 
+        method, 
+        value, 
+        percentage: totalValue > 0 ? (value / totalValue) * 100 : 0 
+      }))
+      .sort((a, b) => b.value - a.value);
+  });
+
+  lowStockItems = computed(() => {
+     return this.inventoryState.ingredients()
+       .filter(i => i.stock < i.min_stock)
+       .slice(0, 5)
+       .map(i => ({
+         name: i.name,
+         stock: i.stock,
+         unit: i.unit,
+         min: i.min_stock
+       }));
+  });
+
 }

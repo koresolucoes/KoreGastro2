@@ -1,174 +1,252 @@
-<div class="p-4">
-  <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+<div class="container mx-auto h-full flex flex-col">
+  <!-- Header & Filters -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
     <div>
-      <h1 class="text-2xl font-bold text-white">Painel de Controle</h1>
-      <p class="text-gray-400">Bem-vindo de volta! Aqui está o resumo do seu negócio.</p>
+      <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+      <p class="text-gray-400 mt-1">Visão geral do seu negócio em tempo real.</p>
     </div>
-    <div class="flex items-center gap-4">
-      <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
-        <button (click)="setPeriod('day')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === 'day'">Hoje</button>
-        <button (click)="setPeriod('week')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === 'week'">Esta Semana</button>
-        <button (click)="setPeriod('month')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === 'month'">Este Mês</button>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex space-x-1 bg-gray-800 p-1 rounded-lg border border-gray-700">
+        <button (click)="setPeriod('day')" class="px-4 py-2 text-sm font-medium rounded-md transition-all" [class.bg-blue-600]="period() === 'day'" [class.text-white]="period() === 'day'" [class.text-gray-400]="period() !== 'day'" [class.hover:text-white]="period() !== 'day'">Hoje</button>
+        <button (click)="setPeriod('week')" class="px-4 py-2 text-sm font-medium rounded-md transition-all" [class.bg-blue-600]="period() === 'week'" [class.text-white]="period() === 'week'" [class.text-gray-400]="period() !== 'week'" [class.hover:text-white]="period() !== 'week'">Semana</button>
+        <button (click)="setPeriod('month')" class="px-4 py-2 text-sm font-medium rounded-md transition-all" [class.bg-blue-600]="period() === 'month'" [class.text-white]="period() === 'month'" [class.text-gray-400]="period() !== 'month'" [class.hover:text-white]="period() !== 'month'">Mês</button>
       </div>
       <button 
         (click)="toggleEditMode()" 
-        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-        [class]="editMode() ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'"
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors border"
+        [class.bg-yellow-600]="editMode()"
+        [class.text-white]="editMode()"
+        [class.border-yellow-500]="editMode()"
+        [class.bg-gray-800]="!editMode()"
+        [class.text-gray-300]="!editMode()"
+        [class.border-gray-700]="!editMode()"
+        [class.hover:bg-gray-700]="!editMode()"
       >
-        <span class="material-symbols-outlined text-base">{{ editMode() ? 'save' : 'edit' }}</span>
-        {{ editMode() ? 'Salvar Layout' : 'Personalizar' }}
+        <span class="material-symbols-outlined text-lg">{{ editMode() ? 'check' : 'dashboard_customize' }}</span>
+        <span class="hidden sm:inline">{{ editMode() ? 'Concluir Edição' : 'Personalizar' }}</span>
       </button>
     </div>
   </div>
 
-  <div 
-    cdkDropList 
-    (cdkDropListDropped)="drop($event)" 
-    class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-  >
-    @for (widget of dashboardWidgets(); track widget.id) {
-      
-      @switch (widget.type) {
-        
-        @case ('kpi') {
-          <div 
-            cdkDrag 
-            [cdkDragDisabled]="!editMode()"
-            class="group relative overflow-hidden rounded-lg transition-all"
-            [class.cursor-move]="editMode()"
-            [class.border-2]="editMode()"
-            [class.border-dashed]="editMode()"
-            [class.border-blue-400]="editMode()"
-          >
-            <a 
-              [routerLink]="getRouteForStat(widget.label)"
-              class="block h-full bg-gray-800 p-4 rounded-lg hover:shadow-lg hover:border-gray-600 border border-gray-700/50"
-              [class.cursor-pointer]="!editMode()"
-              [class.pointer-events-none]="editMode()">
-              
-              @if (editMode()) {
-                <div class="absolute right-2 top-2 z-10">
-                  <span class="material-symbols-outlined text-blue-400">drag_indicator</span>
-                </div>
-              }
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-400">{{ widget.label }}</p>
-                  <p class="mt-1 text-2xl font-bold text-white">{{ widget.value }}</p>
+  @if (isLoading()) {
+    <div class="flex-1 flex items-center justify-center bg-gray-800/30 rounded-xl border border-gray-700/50">
+      <div class="flex flex-col items-center gap-4">
+          <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+          <p class="text-gray-400 animate-pulse">Carregando dados...</p>
+      </div>
+    </div>
+  } @else {
+    <div 
+      cdkDropList 
+      (cdkDropListDropped)="drop($event)" 
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20"
+      [class.gap-6]="!editMode()"
+      [class.gap-8]="editMode()"
+    >
+      @for (widget of dashboardWidgets(); track widget.id) {
+        <div 
+          cdkDrag 
+          [cdkDragDisabled]="!editMode()"
+          class="relative transition-all duration-200"
+          [class.col-span-1]="widget.cols === 1"
+          [class.md:col-span-2]="widget.cols === 2"
+          [class.lg:col-span-2]="widget.cols === 2"
+          [class.xl:col-span-2]="widget.cols === 2"
+          [class.cursor-move]="editMode()"
+          [class.z-10]="editMode()"
+          [class.scale-95]="editMode()"
+          [class.opacity-90]="editMode()"
+        >
+          <!-- Drag Handle Overlay -->
+          @if(editMode()) {
+            <div class="absolute inset-0 border-2 border-yellow-500/50 bg-yellow-500/10 rounded-xl z-20 flex items-center justify-center backdrop-blur-[1px]">
+                <span class="material-symbols-outlined text-4xl text-yellow-500">drag_pan</span>
+            </div>
+          }
 
-                  @if (hasComparison(widget.label)) {
-                    <div class="mt-2 flex items-center text-xs">
-                      @if (isPositiveComparison(widget.label)) {
-                        <span class="material-symbols-outlined text-green-400 text-base">trending_up</span>
-                      } @else {
-                        <span class="material-symbols-outlined text-red-400 text-base">trending_down</span>
-                      }
-                      <span class="ml-1" [class.text-green-400]="isPositiveComparison(widget.label)" [class.text-red-400]="!isPositiveComparison(widget.label)">
-                        {{ getComparisonText(widget.label) }}
-                      </span>
-                    </div>
+          @switch (widget.type) {
+            
+            <!-- KPI WIDGET -->
+            @case ('kpi') {
+               <!-- Cast to any to access specific properties safely in template -->
+               @let kpi = $any(widget);
+               <a [routerLink]="!editMode() ? kpi.route : null" 
+                  class="block h-full bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-gray-600 transition-colors shadow-sm relative overflow-hidden group">
+                  
+                  <div class="flex justify-between items-start mb-4 relative z-10">
+                      <div>
+                          <p class="text-gray-400 text-sm font-medium uppercase tracking-wide">{{ kpi.label }}</p>
+                          <h3 class="text-3xl font-black text-white mt-1 tracking-tight">{{ kpi.value }}</h3>
+                      </div>
+                      <div class="p-3 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
+                          <span class="material-symbols-outlined text-2xl" [class]="kpi.colorClass">{{ kpi.icon }}</span>
+                      </div>
+                  </div>
+                  
+                  @if(kpi.subValue) {
+                      <div class="relative z-10 flex items-center gap-1 text-xs font-medium text-gray-500 group-hover:text-gray-400">
+                          <span class="material-symbols-outlined text-sm">info</span>
+                          {{ kpi.subValue }}
+                      </div>
                   }
-                </div>
-                <div class="rounded-full bg-gray-700/50 p-2">
-                   <span class="material-symbols-outlined text-blue-400">{{ widget.icon }}</span>
-                </div>
-              </div>
-            </a>
-          </div>
-        }
-
-        @case ('chart_sales') {
-          <a [routerLink]="['/reports']"
-            cdkDrag 
-            [cdkDragDisabled]="!editMode()"
-            class="block rounded-lg bg-gray-800 p-4 shadow-lg col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-3 border border-gray-700/50 hover:border-gray-600 transition-colors"
-            [class.cursor-pointer]="!editMode()"
-            [class.cursor-move]="editMode()">
-            <h2 class="mb-4 text-lg font-semibold text-white">{{ widget.title }}</h2>
-            @if (isChartLoading()) {
-              <div class="flex h-64 items-center justify-center">
-                <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
-              </div>
-            } @else {
-              <div class="h-64">
-                <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
-              </div>
+                  
+                  <!-- Decoratice background glow -->
+                  <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-gradient-to-br from-transparent to-white/5 rounded-full blur-xl pointer-events-none"></div>
+               </a>
             }
-          </a>
-        }
 
-        @case ('chart_hourly') {
-          <a [routerLink]="['/reports']"
-            cdkDrag 
-            [cdkDragDisabled]="!editMode()"
-            class="block rounded-lg bg-gray-800 p-4 shadow-lg text-white col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-3 border border-gray-700/50 hover:border-gray-600 transition-colors"
-            [class.cursor-pointer]="!editMode()"
-            [class.cursor-move]="editMode()">
-            <h2 class="mb-4 text-lg font-semibold">{{ widget.title }}</h2>
-            @if (isHourlyChartLoading()) {
-              <div class="flex h-64 items-center justify-center">
-                <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
-              </div>
-            } @else {
-              <div class="h-64">
-                <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
-              </div>
+            <!-- CHART SALES WIDGET -->
+            @case ('chart_sales') {
+                @let chart = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-400">show_chart</span>
+                        {{ chart.title }}
+                    </h3>
+                    <div class="flex-1 min-h-[250px] relative">
+                         @if(isChartLoading()) {
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                            </div>
+                         }
+                         <app-sales-cogs-chart [data]="salesCogsData()"></app-sales-cogs-chart>
+                    </div>
+                </div>
             }
-          </a>
-        }
+
+            <!-- CHART HOURLY WIDGET -->
+            @case ('chart_hourly') {
+                @let chart = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-400">schedule</span>
+                        {{ chart.title }}
+                    </h3>
+                    <div class="flex-1 min-h-[250px] relative">
+                        @if(isHourlyChartLoading()) {
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                            </div>
+                         }
+                        <app-hourly-sales-chart [data]="hourlySalesData()"></app-hourly-sales-chart>
+                    </div>
+                </div>
+            }
+            
+            <!-- TOP ITEMS LIST -->
+            @case ('list_top_items') {
+                @let list = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-yellow-400">trophy</span>
+                        {{ list.title }}
+                    </h3>
+                    <div class="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px]">
+                        @for(item of topSellingItems(); track item.name; let i = $index) {
+                            <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-700/30 transition-colors">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <span class="text-xs font-bold text-gray-500 w-4">#{{ i + 1 }}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-white truncate">{{ item.name }}</p>
+                                        <p class="text-xs text-gray-400">{{ item.quantity }} vendidos</p>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-bold text-green-400">{{ item.revenue | currency:'BRL' }}</span>
+                            </div>
+                        }
+                        @if(topSellingItems().length === 0) {
+                            <p class="text-center text-gray-500 text-sm py-4">Sem vendas no período.</p>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- RECENT ORDERS LIST -->
+             @case ('list_recent_orders') {
+                @let list = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-gray-400">history</span>
+                        {{ list.title }}
+                    </h3>
+                    <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[300px]">
+                         @for(order of recentCompletedOrders(); track order.id) {
+                            <div class="flex justify-between items-center p-2 border-b border-gray-700/50 last:border-0">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-mono bg-gray-700 px-1.5 rounded text-gray-300">#{{ order.id }}</span>
+                                        <span class="text-xs text-gray-400">{{ order.time | date:'HH:mm' }}</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-500 uppercase">{{ order.type }}</span>
+                                </div>
+                                <span class="text-sm font-bold text-white">{{ order.total | currency:'BRL' }}</span>
+                            </div>
+                         }
+                         @if(recentCompletedOrders().length === 0) {
+                            <p class="text-center text-gray-500 text-sm py-4">Nenhum pedido recente.</p>
+                         }
+                    </div>
+                </div>
+            }
+
+            <!-- PAYMENT METHODS LIST -->
+            @case ('list_payment_methods') {
+                @let list = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-green-400">payments</span>
+                        {{ list.title }}
+                    </h3>
+                    <div class="flex-1 space-y-3">
+                         @for(method of paymentMethodsDistribution(); track method.method) {
+                             <div>
+                                 <div class="flex justify-between text-xs text-gray-300 mb-1">
+                                     <span>{{ method.method }}</span>
+                                     <span class="font-bold">{{ method.value | currency:'BRL' }}</span>
+                                 </div>
+                                 <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                     <div class="bg-blue-500 h-1.5 rounded-full" [style.width.%]="method.percentage"></div>
+                                 </div>
+                             </div>
+                         }
+                         @if(paymentMethodsDistribution().length === 0) {
+                            <p class="text-center text-gray-500 text-sm py-4">Sem dados financeiros.</p>
+                         }
+                    </div>
+                </div>
+            }
+
+             <!-- LOW STOCK LIST -->
+            @case ('list_low_stock') {
+                @let list = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-red-400">warning</span>
+                        {{ list.title }}
+                    </h3>
+                    <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[300px]">
+                        @for(item of lowStockItems(); track item.name) {
+                            <div class="flex justify-between items-center p-2 bg-red-900/10 rounded border border-red-900/30">
+                                <span class="text-sm font-medium text-gray-200 truncate">{{ item.name }}</span>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-red-400">{{ item.stock }} {{ item.unit }}</span>
+                                    <span class="text-[10px] text-gray-500 block">Min: {{ item.min }}</span>
+                                </div>
+                            </div>
+                        }
+                        @if(lowStockItems().length === 0) {
+                             <div class="flex flex-col items-center justify-center h-full text-gray-500 py-4">
+                                <span class="material-symbols-outlined text-3xl mb-1 text-green-500/50">check_circle</span>
+                                <span class="text-xs">Estoque saudável</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+          }
+        </div>
       }
-    }
-  </div>
-
-  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <div class="overflow-hidden rounded-lg bg-gray-800 shadow border border-gray-700/50">
-      <div class="border-b border-gray-700 bg-gray-700/50 px-4 py-3">
-        <div class="flex items-center">
-          <span class="material-symbols-outlined text-yellow-400 mr-2">inventory_2</span>
-          <h3 class="text-sm font-medium text-yellow-300">Estoque Baixo</h3>
-        </div>
-      </div>
-      <div class="p-4">
-        @if (lowStockItemsList().length > 0) {
-          <ul class="space-y-2">
-            @for (item of lowStockItemsList(); track item.id) {
-              <li class="flex items-center justify-between rounded-md bg-gray-700/50 p-2">
-                <span class="text-sm font-medium text-gray-200">{{ item.name }}</span>
-                <span class="rounded-full bg-yellow-900/50 px-2 py-1 text-xs font-medium text-yellow-300">
-                  {{ item.stock }} {{ item.unit }}
-                </span>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="text-sm text-gray-500 text-center py-4">Nenhum item com estoque baixo.</p>
-        }
-      </div>
     </div>
-
-    <div class="overflow-hidden rounded-lg bg-gray-800 shadow border border-gray-700/50">
-      <div class="border-b border-gray-700 bg-gray-700/50 px-4 py-3">
-        <div class="flex items-center">
-          <span class="material-symbols-outlined text-red-400 mr-2">person_off</span>
-          <h3 class="text-sm font-medium text-red-300">Funcionários Ausentes (Hoje)</h3>
-        </div>
-      </div>
-      <div class="p-4">
-        @if (employeesOnLeaveToday().length > 0) {
-          <ul class="space-y-2">
-            @for (req of employeesOnLeaveToday(); track req.id) {
-              <li class="flex items-center justify-between rounded-md bg-gray-700/50 p-2">
-                <span class="text-sm font-medium text-gray-200">{{ req.employees?.name }}</span>
-                <span class="rounded-full bg-red-900/50 px-2 py-1 text-xs font-medium text-red-300">
-                  {{ req.request_type }}
-                </span>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="text-sm text-gray-500 text-center py-4">Nenhum funcionário de folga ou férias hoje.</p>
-        }
-      </div>
-    </div>
-  </div>
+  }
 </div>
