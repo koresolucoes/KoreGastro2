@@ -54,14 +54,12 @@ export class PaymentModalComponent {
   isRedeemModalOpen = signal(false);
   isEmittingNfce = signal(false);
 
-  // Discount signals omitted for brevity as they are managed via service mainly, but kept structure valid
-  isDiscountModalOpen = signal(false);
-  editingDiscountItem = signal<OrderItem | null>(null);
-  discountType = signal<DiscountType>('percentage');
-  discountValue = signal<number | null>(null);
+  // Discount signals
+  isAddingDiscount = signal(false);
+  localDiscountType = signal<DiscountType>('percentage');
+  localDiscountValue = signal<number>(0);
   
   // Global Discount
-  isGlobalDiscountModalOpen = signal(false);
   globalDiscountType = signal<DiscountType>('percentage');
   globalDiscountValue = signal<number | null>(null);
 
@@ -157,12 +155,6 @@ export class PaymentModalComponent {
 
   change = computed(() => {
     if (this.selectedPaymentMethod() !== 'Dinheiro' || this.isPaymentComplete()) return 0;
-    // Calculate based on all cash payments vs balance due logic
-    // Simplified: return 0 if exact or card, otherwise calc
-    // Since we are adding payments to the list, 'change' is strictly visual based on current input vs remaining
-    // But usually 'change' is calculated AFTER payment is added if it exceeds total.
-    // However, our logic caps the payment amount to balance for cash unless we want to record "change given".
-    // For this UI, let's show potential change based on input field if it exceeds balance.
     const amount = parseFloat(this.paymentAmountInput());
     const balance = this.balanceDue();
     if (isNaN(amount) || amount <= balance) return 0;
@@ -228,10 +220,24 @@ export class PaymentModalComponent {
     });
   }
   
+  // Input Handling
+  handleManualInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    // Replace comma with dot for standard parsing if typed manually
+    const sanitized = value.replace(',', '.').replace(/[^0-9.]/g, '');
+    
+    // Check for multiple dots
+    const parts = sanitized.split('.');
+    if (parts.length > 2) return; // invalid
+    
+    this.paymentAmountInput.set(sanitized);
+  }
+
   // Calculator Methods
   appendDigit(digit: string) {
       this.paymentAmountInput.update(val => {
-          if (val === '0') return digit;
+          if (val === '0' && digit !== '.') return digit;
+          if (val === '' && digit === '.') return '0.';
           // Prevent multiple decimals
           if (digit === '.' && val.includes('.')) return val;
           // Limit decimal places to 2
@@ -246,6 +252,43 @@ export class PaymentModalComponent {
   
   backspace() {
       this.paymentAmountInput.update(val => val.slice(0, -1));
+  }
+
+  // Discount Logic
+  async applyDiscount() {
+    const order = this.lastKnownOrder();
+    if (!order) return;
+    
+    const value = this.localDiscountValue();
+    const type = this.localDiscountType();
+    
+    const finalValue = (value === null || value <= 0) ? null : value;
+    const finalType = finalValue === null ? null : type;
+
+    // Apply via Service
+    const { success, error } = await this.posDataService.applyGlobalOrderDiscount(
+      order.id,
+      finalType,
+      finalValue
+    );
+
+    if (success) {
+      // Refresh local state by simulating order update since signal propagates
+      // Ideally the parent component updates 'order' input, triggering the effect.
+      // We manually update local state for immediate feedback
+      this.lastKnownOrder.update(o => o ? ({...o, discount_type: finalType, discount_value: finalValue}) : null);
+      this.isAddingDiscount.set(false);
+      this.localDiscountValue.set(0);
+      
+      // Recalculate balance for input
+      setTimeout(() => {
+           const balance = this.balanceDue();
+           this.paymentAmountInput.set(balance > 0 ? balance.toFixed(2) : '');
+      }, 50);
+
+    } else {
+      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+    }
   }
 
   addGroup() {
@@ -286,10 +329,8 @@ export class PaymentModalComponent {
       return;
     }
 
-    // Logic for cash change tracking could be complex, for now we cap payment
     const paymentAmount = (method === 'Dinheiro' && amount > balance) ? balance : amount;
     
-    // Safety check for non-cash overpayment
     if (method !== 'Dinheiro' && amount > balance + 0.01) {
         alert('Valor acima do saldo devedor.');
         return;
@@ -313,9 +354,7 @@ export class PaymentModalComponent {
       this.payments.update(p => [...p, newPayment]);
     }
     
-    // Auto clear input or set to remaining balance?
-    // Let's set to remaining balance for quick follow-up
-    const remaining = this.balanceDue() - paymentAmount; // Recalc based on just added
+    const remaining = this.balanceDue() - paymentAmount;
     this.paymentAmountInput.set(remaining > 0 ? remaining.toFixed(2) : '');
   }
 
@@ -342,7 +381,6 @@ export class PaymentModalComponent {
 
     if (!order || !closingEmployee) return;
 
-    // Use current state total. If table exists use table ID, else null (QuickSale/Tab)
     const tableId = table ? table.id : null; 
     
     const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
@@ -383,7 +421,6 @@ export class PaymentModalComponent {
       this.paymentFinalized.emit();
   }
 
-  // Item assignment methods (simplified for brevity, logic same as before)
   selectGroup(groupId: string) {
     const group = this.itemGroups().find(g => g.id === groupId);
     if (group && !group.isPaid) this.selectedGroupId.set(groupId);
@@ -419,15 +456,5 @@ export class PaymentModalComponent {
           return g;
       }));
       this.unassignedItems.update(items => [...items, item]);
-  }
-  
-  // Dummy methods for Discount (handled externally mostly or needs dedicated modal implementation)
-  openDiscountModal(item: any) { /* implementation same as before */ }
-  async emitNfce() {
-      const order = this.lastKnownOrder();
-      if (!order) return;
-      this.isEmittingNfce.set(true);
-      await this.focusNFeService.emitNfce(order.id);
-      this.isEmittingNfce.set(false);
   }
 }

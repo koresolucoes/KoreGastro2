@@ -1,52 +1,65 @@
 
 <div class="h-full flex flex-col" (click)="closeContextMenu()">
   <!-- Header -->
-  <header class="flex-shrink-0 bg-gray-800 p-4 rounded-t-lg shadow-md z-10">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div class="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <!-- View Toggle -->
-        <div class="bg-gray-900/50 p-1 rounded-lg flex gap-1">
-            <button (click)="toggleViewMode('tables')" class="px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors" [class.bg-blue-600]="viewMode() === 'tables'" [class.text-white]="viewMode() === 'tables'" [class.text-gray-400]="viewMode() !== 'tables'">
-                <span class="material-symbols-outlined text-lg">table_restaurant</span> Mesas
-            </button>
-            <button (click)="toggleViewMode('tabs')" class="px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors" [class.bg-blue-600]="viewMode() === 'tabs'" [class.text-white]="viewMode() === 'tabs'" [class.text-gray-400]="viewMode() !== 'tabs'">
-                <span class="material-symbols-outlined text-lg">id_card</span> Comandas
-            </button>
-        </div>
+  <header class="flex-shrink-0 bg-gray-800 shadow-md z-10 no-print">
+    <div class="flex flex-col">
+        <!-- Top Bar: Logo & Main Toggle & Actions -->
+        <div class="flex justify-between items-center p-3 border-b border-gray-700">
+            <div class="flex items-center gap-3">
+                 <div class="bg-gray-900/50 p-1 rounded-lg flex gap-1">
+                    <button (click)="toggleViewMode('tables')" class="px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors" [class.bg-blue-600]="viewMode() === 'tables'" [class.text-white]="viewMode() === 'tables'" [class.text-gray-400]="viewMode() !== 'tables'">
+                        <span class="material-symbols-outlined text-base">table_restaurant</span>
+                        <span class="hidden sm:inline">Mesas</span>
+                    </button>
+                    <button (click)="toggleViewMode('tabs')" class="px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors" [class.bg-blue-600]="viewMode() === 'tabs'" [class.text-white]="viewMode() === 'tabs'" [class.text-gray-400]="viewMode() !== 'tabs'">
+                        <span class="material-symbols-outlined text-base">id_card</span>
+                        <span class="hidden sm:inline">Comandas</span>
+                    </button>
+                </div>
+            </div>
 
+            <!-- Right Actions -->
+             <div class="flex items-center gap-2">
+                @if(viewMode() === 'tables') {
+                    <!-- Edit Layout (Icon Only on Mobile) -->
+                    <button (click)="isEditMode.set(!isEditMode())"
+                        class="p-2 rounded-md transition-colors"
+                        [class.bg-yellow-600]="isEditMode()"
+                        [class.text-white]="isEditMode()"
+                        [class.bg-gray-700]="!isEditMode()"
+                        [class.hover:bg-gray-600]="!isEditMode()"
+                        title="Editar Layout">
+                        <span class="material-symbols-outlined text-lg">dashboard_customize</span>
+                    </button>
+                    <!-- Manage Halls (Icon Only) -->
+                     <button (click)="isHallManagerOpen.set(true)" class="p-2 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors" title="Gerenciar Salões">
+                        <span class="material-symbols-outlined text-lg">meeting_room</span>
+                    </button>
+                }
+            </div>
+        </div>
+        
+        <!-- Bottom Bar: Hall Selector (Scrollable) -->
         @if(viewMode() === 'tables') {
-            <div class="flex flex-wrap items-center gap-2 bg-gray-900/50 p-1 rounded-lg self-start">
-            @for(hall of halls(); track hall.id) {
-                <button 
-                (click)="selectHall(hall)"
-                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
-                [class.bg-gray-700]="selectedHall()?.id === hall.id"
-                [class.text-white]="selectedHall()?.id === hall.id"
-                [class.text-gray-400]="selectedHall()?.id !== hall.id"
-                [class.hover:bg-gray-700/30]="selectedHall()?.id !== hall.id">
-                {{ hall.name }}
-                </button>
-            }
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar px-3 py-2 bg-gray-900/30">
+                @for(hall of halls(); track hall.id) {
+                    <button 
+                    (click)="selectHall(hall)"
+                    class="px-4 py-1.5 text-xs font-bold rounded-full transition-colors whitespace-nowrap border"
+                    [class.bg-gray-700]="selectedHall()?.id === hall.id"
+                    [class.text-white]="selectedHall()?.id === hall.id"
+                    [class.border-gray-500]="selectedHall()?.id === hall.id"
+                    [class.text-gray-400]="selectedHall()?.id !== hall.id"
+                    [class.border-gray-700]="selectedHall()?.id !== hall.id"
+                    [class.hover:bg-gray-700/50]="selectedHall()?.id !== hall.id">
+                    {{ hall.name }}
+                    </button>
+                }
+                 @if(halls().length === 0) {
+                     <span class="text-xs text-gray-500 italic px-2">Sem salões.</span>
+                 }
             </div>
         }
-      </div>
-      <div class="flex items-center gap-3">
-          @if(viewMode() === 'tables') {
-            <button (click)="isHallManagerOpen.set(true)" class="text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                <span>Salões</span>
-            </button>
-            <button (click)="isEditMode.set(!isEditMode())"
-                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2"
-                [class.bg-yellow-600]="isEditMode()"
-                [class.text-white]="isEditMode()"
-                [class.bg-gray-700]="!isEditMode()"
-                [class.hover:bg-gray-600]="!isEditMode()">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg>
-                <span>{{ isEditMode() ? 'Salvar Layout' : 'Editar Layout' }}</span>
-            </button>
-          }
-      </div>
     </div>
   </header>
 
@@ -70,9 +83,9 @@
             } @else {
                 <div class="flex items-center justify-center h-full">
                     <div class="text-center text-gray-500">
-                        <p>Nenhum salão cadastrado.</p>
+                        <p>Nenhum salão selecionado.</p>
                         <button (click)="isHallManagerOpen.set(true)" class="mt-2 text-blue-400 hover:underline">
-                            Clique aqui para gerenciar salões.
+                            Criar Salão
                         </button>
                     </div>
                 </div>
@@ -102,8 +115,7 @@
         </app-order-panel>
       </div>
 
-      <!-- Desktop: Side panel (Increased Width) -->
-      <!-- Changed from w-1/3 to w-[600px] or 50% to give more room -->
+      <!-- Desktop: Side panel -->
       <div class="hidden md:block w-full md:w-3/5 lg:w-1/2 xl:w-[600px] border-l-2 border-gray-700 shadow-2xl relative z-20">
         <app-order-panel
           [selectedTable]="selectedTable()"
