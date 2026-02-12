@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station } from '../../models/db.models';
+import { ProductionPlan, ProductionTask, ProductionTaskStatus, Recipe, Station, Ingredient } from '../../models/db.models';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { MiseEnPlaceDataService } from '../../services/mise-en-place-data.service';
 import { NotificationService } from '../../services/notification.service';
@@ -105,8 +105,8 @@ export class MiseEnPlaceComponent {
       const allPreparations = this.recipeState.recipePreparations();
       const allIngredients = this.recipeState.recipeIngredients();
       const allSubRecipes = this.recipeState.recipeSubRecipes();
-      const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
-      const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
+      const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+      const recipesMap = new Map<string, Recipe>(allRecipes.map(r => [r.id, r]));
 
       const recipePreps = allPreparations
         .filter(p => p.recipe_id === recipe.id)
