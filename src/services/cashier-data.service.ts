@@ -552,6 +552,106 @@ export class CashierDataService {
     return { success: true, error: null };
   }
 
+  // --- NEW METHOD FOR VIRTUAL ORDER CREATION ---
+  async createPendingQuickSale(cart: { recipe: Recipe; quantity: number; notes: string; effectivePrice: number; originalPrice: number; discountType: DiscountType | null; discountValue: number | null }[], customerId: string | null, userId: string): Promise<{ success: boolean; data?: Order; error: any }> {
+    const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+            table_number: 0,
+            order_type: 'QuickSale',
+            status: 'OPEN',
+            user_id: userId,
+            customer_id: customerId
+        })
+        .select('id')
+        .single();
+
+    if (orderError) return { success: false, error: orderError };
+
+    const stations = this.posState.stations();
+    // Assuming stations exist, otherwise handle error. 
+    // If no stations, this will just fail later or use fallback? 
+    // Best effort fallback:
+    const fallbackStationId = stations[0]?.id;
+
+    const recipeIds = cart.map(item => item.recipe.id);
+    const { data: preps } = await supabase
+        .from('recipe_preparations')
+        .select('*')
+        .in('recipe_id', recipeIds)
+        .eq('user_id', userId);
+        
+    const prepsByRecipeId = (preps || []).reduce((acc, p) => {
+        if (!acc.has(p.recipe_id)) acc.set(p.recipe_id, []);
+        acc.get(p.recipe_id)!.push(p);
+        return acc;
+    }, new Map<string, any[]>());
+
+    const allItemsToInsert = cart.flatMap(item => {
+        const recipePreps = prepsByRecipeId.get(item.recipe.id);
+        // Pending order, so items are PENDING
+        const status_timestamps = { 'PENDENTE': new Date().toISOString() };
+
+        if (recipePreps && recipePreps.length > 0) {
+            const groupId = uuidv4();
+            return recipePreps.map((prep: any) => ({
+                order_id: order.id, 
+                recipe_id: item.recipe.id, 
+                name: `${item.recipe.name} (${prep.name})`, 
+                quantity: item.quantity, 
+                notes: item.notes,
+                status: 'PENDENTE' as OrderItemStatus, 
+                station_id: prep.station_id, 
+                status_timestamps, 
+                price: (item.effectivePrice / recipePreps.length), 
+                original_price: (item.originalPrice / recipePreps.length),
+                group_id: groupId, 
+                user_id: userId,
+                discount_type: item.discountType, 
+                discount_value: item.discountValue
+            }));
+        } else if (fallbackStationId) {
+             return [{
+                order_id: order.id, 
+                recipe_id: item.recipe.id, 
+                name: item.recipe.name, 
+                quantity: item.quantity, 
+                notes: item.notes,
+                status: 'PENDENTE' as OrderItemStatus, 
+                station_id: fallbackStationId, 
+                status_timestamps,
+                price: item.effectivePrice, 
+                original_price: item.originalPrice,
+                group_id: null, 
+                user_id: userId,
+                discount_type: item.discountType, 
+                discount_value: item.discountValue
+            }];
+        } else {
+            return []; // Skip if no station
+        }
+    });
+
+    if (allItemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(allItemsToInsert);
+        if (itemsError) {
+             await supabase.from('orders').delete().eq('id', order.id);
+             return { success: false, error: itemsError };
+        }
+    }
+    
+    // Fetch complete order object
+    const { data: fullOrder, error: fetchError } = await supabase
+        .from('orders')
+        .select('*, order_items(*), customers(*)')
+        .eq('id', order.id)
+        .single();
+        
+    if (fetchError) return { success: false, error: fetchError };
+
+    return { success: true, data: fullOrder, error: null };
+  }
+
   async createQuickSaleOrderForKitchen(cart: { recipe: Recipe; quantity: number; notes: string }[], customerId: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
