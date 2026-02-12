@@ -1,6 +1,7 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Employee, Order, ProductionPlan, DeliveryDriver } from '../../models/db.models';
+import { Employee, Order, ProductionPlan, DeliveryDriver, ProductionTask } from '../../models/db.models';
 import { DashboardStateService } from '../../services/dashboard-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { PosStateService } from '../../services/pos-state.service';
@@ -36,6 +37,13 @@ interface DeliveryDriverPerformance {
   completedDeliveries: number;
   totalDistance: number;
   totalFeesEarned: number;
+}
+
+interface ProductionVariance {
+    task: ProductionTask;
+    variance: number; // diff amount
+    variancePercentage: number;
+    employeeName: string;
 }
 
 
@@ -196,11 +204,64 @@ export class PerformanceComponent implements OnInit {
     ]);
     
     // --- Kitchen Performance Computeds ---
-    kitchenStats = computed(() => [
+    kitchenStats = computed(() => {
+        const yieldData = this.productionYieldMetrics();
+        return [
         { label: 'Tarefas de Mise en Place Concluídas', value: this.totalMiseEnPlaceTasksCompleted() },
         { label: 'Tempo Médio de Preparo', value: this.formatTime(this.averagePrepTime()) },
-        { label: 'Itens Preparados no Período', value: this.performanceCompletedOrders().flatMap(o => o.order_items).length },
-    ]);
+        { label: 'Rendimento Médio da Produção', value: `${yieldData.averageYield.toFixed(1)}%` },
+    ]});
+
+    // NEW: Yield Metrics
+    productionYieldMetrics = computed(() => {
+        const tasks = this.performanceProductionPlans()
+            .flatMap(plan => plan.production_tasks || [])
+            .filter(t => t.status === 'Concluído' && t.quantity_produced !== null && t.quantity_produced !== undefined);
+        
+        if (tasks.length === 0) return { averageYield: 100, totalVariance: 0 };
+
+        let totalPlanned = 0;
+        let totalProduced = 0;
+
+        tasks.forEach(t => {
+            totalPlanned += t.quantity_to_produce;
+            totalProduced += t.quantity_produced || 0;
+        });
+
+        const averageYield = totalPlanned > 0 ? (totalProduced / totalPlanned) * 100 : 0;
+        
+        return { averageYield, totalVariance: totalProduced - totalPlanned };
+    });
+
+    // NEW: Production Variances List
+    productionVariances = computed((): ProductionVariance[] => {
+        const tasks = this.performanceProductionPlans()
+            .flatMap(plan => plan.production_tasks || [])
+            .filter(t => t.status === 'Concluído' && t.quantity_produced !== null);
+
+        const variances: ProductionVariance[] = [];
+
+        tasks.forEach(t => {
+            const produced = t.quantity_produced || 0;
+            const planned = t.quantity_to_produce;
+            
+            // Filter only significant variances (> 5% difference)
+            const diff = produced - planned;
+            const percentage = planned > 0 ? (produced / planned) * 100 : 0;
+
+            if (Math.abs(percentage - 100) > 5) {
+                variances.push({
+                    task: t,
+                    variance: diff,
+                    variancePercentage: percentage,
+                    employeeName: t.employees?.name || 'Desconhecido'
+                });
+            }
+        });
+
+        // Sort by worst variance (lowest percentage) first
+        return variances.sort((a, b) => a.variancePercentage - b.variancePercentage);
+    });
 
     miseEnPlacePerformance = computed((): { employee: Employee, completedTasks: number }[] => {
       const employeesMap = new Map<string, MiseEnPlacePerfData>(this.employees().map(e => [e.id, { employee: e, completedTasks: 0 }]));

@@ -1,6 +1,3 @@
-
-// --- Basic Types ---
-// FIX: Add WebhookEvent type for webhook service
 export type WebhookEvent =
   | 'order.created'
   | 'order.updated'
@@ -8,6 +5,7 @@ export type WebhookEvent =
   | 'customer.created'
   | 'delivery.created'
   | 'delivery.status_updated';
+
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
 export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO' | 'CANCELADO';
@@ -15,24 +13,96 @@ export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de C
 export type DiscountType = 'percentage' | 'fixed_value';
 export type PurchaseOrderStatus = 'Rascunho' | 'Enviada' | 'Recebida';
 export type ProductionTaskStatus = 'A Fazer' | 'Em Preparo' | 'Concluído' | 'Rascunho';
+export type TaskType = 'production' | 'thawing' | 'prep';
 export type PlanStatus = 'Planejado' | 'Em Andamento' | 'Concluído';
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Atestado';
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
 export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
-export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery' | 'Tab'; // Added 'Tab'
+export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery' | 'Tab';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
 export type LabelType = 'OPENING' | 'PREPARED' | 'PORTION' | 'DEFROST' | 'GENERIC';
 
+export interface Recipe {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category_id: string;
+  prep_time_in_minutes: number;
+  is_available: boolean;
+  is_sub_recipe: boolean;
+  source_ingredient_id: string | null;
+  proxy_recipe_id?: string | null;
+  image_url: string | null;
+  operational_cost?: number;
+  external_code: string | null;
+  ncm_code?: string | null;
+  shelf_life_prepared_days?: number | null;
+  storage_conditions?: string | null;
+  par_level?: number | null;
+  created_at: string;
+  user_id: string;
+  hasStock?: boolean;
+}
 
-// --- New Types for Settings ---
+export interface ProductionTask {
+  id: string;
+  production_plan_id: string;
+  sub_recipe_id: string | null;
+  predicted_demand_quantity?: number | null;
+  custom_task_name: string | null;
+  quantity_to_produce: number;
+  station_id: string;
+  employee_id: string | null;
+  status: ProductionTaskStatus;
+  lot_number: string | null;
+  total_cost: number | null;
+  created_at: string;
+  user_id: string;
+  task_type?: TaskType;
+  priority?: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+  batch_code?: string | null;
+  source_batches?: any[] | null;
+  quantity_produced?: number | null;
+  completion_notes?: string | null;
+  expiration_date?: string | null;
+  recipes?: { 
+    id: string;
+    name: string; 
+    source_ingredient_id: string | null;
+    unit?: IngredientUnit; 
+    shelf_life_prepared_days?: number; 
+    image_url?: string | null; 
+  }; 
+  stations?: { name: string }; 
+  employees?: { name: string }; 
+}
+
+export interface TimeClockEntry {
+  id: string;
+  user_id: string;
+  employee_id: string;
+  clock_in_time: string;
+  clock_out_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
+  notes: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
+  employees?: { name: string };
+}
+
 export interface OperatingHours {
-  day_of_week: number; // 0 for Sunday, 6 for Saturday
-  opening_time: string; // "HH:mm"
-  closing_time: string; // "HH:mm"
+  day_of_week: number;
+  opening_time: string;
+  closing_time: string;
   is_closed: boolean;
 }
 
@@ -56,7 +126,6 @@ export interface PaymentSummary {
   count: number;
 }
 
-// --- iFood Option Groups ---
 export interface IfoodOptionGroup {
   id: string;
   user_id: string;
@@ -66,8 +135,8 @@ export interface IfoodOptionGroup {
   max_options: number;
   sequence: number;
   created_at: string;
-  ifood_id: string | null; // From iFood API
-  ifood_options?: IfoodOption[]; // Relation
+  ifood_id: string | null;
+  ifood_options?: IfoodOption[];
 }
 
 export interface IfoodOption {
@@ -79,8 +148,8 @@ export interface IfoodOption {
   price: number;
   sequence: number;
   created_at: string;
-  ifood_product_id: string | null; // From iFood API
-  ifood_option_id: string | null; // From iFood API
+  ifood_product_id: string | null;
+  ifood_option_id: string | null;
 }
 
 export interface RecipeIfoodOptionGroup {
@@ -89,7 +158,6 @@ export interface RecipeIfoodOptionGroup {
   user_id: string;
 }
 
-// --- Multi-Unit / Organizations ---
 export interface Store {
   id: string;
   name: string;
@@ -99,15 +167,12 @@ export interface Store {
 
 export interface UnitPermission {
   id: string;
-  manager_id: string; // The logged in user
-  store_id: string;   // The store context
+  manager_id: string;
+  store_id: string;
   role: string;
   created_at: string;
-  // Join fields (optional, if we join with profiles)
   company_profile?: { company_name: string, logo_url: string | null }; 
 }
-
-// --- Main Entities ---
 
 export interface Role {
   id: string;
@@ -118,7 +183,7 @@ export interface Role {
 
 export interface RolePermission {
   role_id: string;
-  permission_key: string; // e.g., '/pos', '/inventory'
+  permission_key: string;
   user_id: string;
 }
 
@@ -145,7 +210,7 @@ export interface Employee {
   termination_date?: string | null;
   bank_details?: { bank?: string; agency?: string; account?: string; pix?: string } | null;
   photo_url?: string | null;
-  roles?: { id: string, name: string }; // Relation
+  roles?: { id: string, name: string };
 }
 
 export interface Station {
@@ -154,7 +219,7 @@ export interface Station {
   employee_id: string | null;
   created_at: string;
   user_id: string;
-  employees?: Employee; // Relation
+  employees?: Employee;
 }
 
 export interface Hall {
@@ -175,6 +240,8 @@ export interface Table {
   height: number;
   customer_count?: number;
   employee_id?: string | null;
+  command_number?: number | null;
+  tab_name?: string | null;
   created_at: string;
   user_id: string;
 }
@@ -217,16 +284,14 @@ export interface Ingredient {
   is_portionable: boolean;
   is_yield_product: boolean;
   standard_portion_weight_g: number | null;
-  // New fields for labeling
   shelf_life_after_open_days?: number | null;
   storage_conditions?: string | null;
   created_at: string;
   user_id: string;
-  ingredient_categories?: { name: string }; // Relation
-  suppliers?: { name: string }; // Relation
+  ingredient_categories?: { name: string };
+  suppliers?: { name: string };
 }
 
-// NEW: Inventory Audit Log
 export interface InventoryLog {
     id: string;
     user_id: string;
@@ -237,8 +302,8 @@ export interface InventoryLog {
     new_balance: number | null;
     reason: string;
     created_at: string;
-    employees?: { name: string }; // Relation
-    ingredients?: { name: string, unit: string }; // Relation
+    employees?: { name: string };
+    ingredients?: { name: string, unit: string };
 }
 
 export interface InventoryLot {
@@ -251,35 +316,12 @@ export interface InventoryLot {
     created_at: string;
 }
 
-export interface Category { // For Recipes/POS
+export interface Category {
   id: string;
   name: string;
   image_url: string | null;
   created_at: string;
   user_id: string;
-}
-
-export interface Recipe {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  category_id: string;
-  prep_time_in_minutes: number;
-  is_available: boolean;
-  is_sub_recipe: boolean;
-  source_ingredient_id: string | null;
-  proxy_recipe_id?: string | null;
-  image_url: string | null;
-  operational_cost?: number;
-  external_code: string | null;
-  ncm_code?: string | null;
-  // New fields for labeling
-  shelf_life_prepared_days?: number | null;
-  storage_conditions?: string | null;
-  created_at: string;
-  user_id: string;
-  hasStock?: boolean; // App-level property
 }
 
 export interface Customer {
@@ -315,9 +357,9 @@ export interface DeliveryDriver {
 
 export interface Order {
   id: string;
-  table_number: number; // For tabs, this might be 0 or null
-  command_number?: number | null; // NEW: Physical card number
-  tab_name?: string | null;       // NEW: Customer name for the tab
+  table_number: number;
+  command_number?: number | null;
+  tab_name?: string | null;
   status: OrderStatus;
   completed_at: string | null;
   order_type: OrderType;
@@ -325,45 +367,35 @@ export interface Order {
   customer_id: string | null;
   user_id: string;
   order_items: OrderItem[];
-  customers?: Customer; // Relation
-  
-  // Global Discount
+  customers?: Customer;
   discount_type?: DiscountType | null;
   discount_value?: number | null;
-  
-  // Audit (New)
   created_by_employee_id?: string | null;
   closed_by_employee_id?: string | null;
-  cancelled_by?: string | null; // Already added in phase 1
-
-  // iFood fields
+  cancelled_by?: string | null;
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
-  delivery_info?: IfoodOrderDelivery | null; // Stored as JSONB
-  notes?: string | null; // For API orders
+  delivery_info?: IfoodOrderDelivery | null;
+  notes?: string | null;
   ifood_order_timing?: string | null;
   ifood_scheduled_at?: string | null;
-  ifood_payments?: any | null; // JSONB
-  ifood_benefits?: any | null; // JSONB
+  ifood_payments?: any | null;
+  ifood_benefits?: any | null;
   ifood_delivery_observations?: string | null;
   ifood_pickup_code?: string | null;
   ifood_dispute_id?: string | null;
   ifood_dispute_details?: any | null;
-  
-  // External Delivery fields
   delivery_driver_id?: string | null;
   delivery_status?: string | null;
-  delivery_drivers?: DeliveryDriver; // Relation
+  delivery_drivers?: DeliveryDriver;
   delivery_distance_km?: number | null;
   delivery_cost?: number | null;
-
-  // NFC-e fields
   nfce_ref?: string | null;
   nfce_status?: string | null;
   nfce_url?: string | null;
   nfce_xml_path?: string | null;
   nfce_chave?: string | null;
-  nfce_last_response?: any | null; // JSONB
+  nfce_last_response?: any | null;
 }
 
 export interface OrderItem {
@@ -384,11 +416,9 @@ export interface OrderItem {
   redeemed_reward_id?: string | null;
   created_at: string;
   user_id: string;
-
-  // Audit (New)
   added_by_employee_id?: string | null;
-  cancelled_by?: string | null; // Already added
-  authorized_by_employee_id?: string | null; // For discounts/cancels
+  cancelled_by?: string | null;
+  authorized_by_employee_id?: string | null;
 }
 
 export interface RecipePreparation {
@@ -407,7 +437,7 @@ export interface RecipeIngredient {
   quantity: number;
   preparation_id: string;
   user_id: string;
-  ingredients?: { name: string; unit: string; cost: number }; // Relation
+  ingredients?: { name: string; unit: string; cost: number };
 }
 
 export interface RecipeSubRecipe {
@@ -415,7 +445,7 @@ export interface RecipeSubRecipe {
   child_recipe_id: string;
   quantity: number;
   user_id: string;
-  recipes?: { name: string, id: string }; // Relation
+  recipes?: { name: string, id: string };
 }
 
 export interface Promotion {
@@ -436,7 +466,7 @@ export interface PromotionRecipe {
   discount_type: DiscountType;
   discount_value: number;
   user_id: string;
-  recipes?: { name: string }; // Relation
+  recipes?: { name: string };
 }
 
 export interface Transaction {
@@ -471,12 +501,10 @@ export interface PurchaseOrder {
   notes: string | null;
   created_at: string;
   user_id: string;
-  // Audit (New)
   created_by_employee_id?: string | null;
   received_by_employee_id?: string | null;
-
-  suppliers?: { name: string }; // Relation
-  purchase_order_items?: PurchaseOrderItem[]; // Relation
+  suppliers?: { name: string };
+  purchase_order_items?: PurchaseOrderItem[];
 }
 
 export interface PurchaseOrderItem {
@@ -489,7 +517,7 @@ export interface PurchaseOrderItem {
   user_id: string;
   lot_number: string | null;
   expiration_date: string | null;
-  ingredients?: { name: string, unit: string }; // Relation
+  ingredients?: { name: string, unit: string };
 }
 
 export interface ProductionPlan {
@@ -499,38 +527,7 @@ export interface ProductionPlan {
   notes: string | null;
   created_at: string;
   user_id: string;
-  production_tasks: ProductionTask[]; // Relation
-}
-
-export interface ProductionTask {
-  id: string;
-  production_plan_id: string;
-  sub_recipe_id: string | null;
-  predicted_demand_quantity?: number | null;
-  custom_task_name: string | null;
-  quantity_to_produce: number;
-  station_id: string;
-  employee_id: string | null;
-  status: ProductionTaskStatus;
-  lot_number: string | null;
-  total_cost: number | null;
-  created_at: string;
-  user_id: string;
-  
-  // New Fields for Mise en Place improvements
-  quantity_produced?: number | null;
-  completion_notes?: string | null;
-  expiration_date?: string | null;
-
-  recipes?: { 
-    id: string;
-    name: string; 
-    source_ingredient_id: string | null;
-    unit?: IngredientUnit; // Helper from join
-    shelf_life_prepared_days?: number; // Helper from join
-  }; 
-  stations?: { name: string }; // Relation
-  employees?: { name: string }; // Relation
+  production_tasks: ProductionTask[];
 }
 
 export interface ReservationSettings {
@@ -552,36 +549,20 @@ export interface Reservation {
   customer_email: string | null;
   customer_phone: string | null;
   party_size: number;
-  reservation_time: string; // ISO string
+  reservation_time: string;
   notes: string | null;
   status: ReservationStatus;
   created_at: string;
 }
 
-export interface TimeClockEntry {
-  id: string;
-  user_id: string;
-  employee_id: string;
-  clock_in_time: string;
-  clock_out_time: string | null;
-  break_start_time: string | null;
-  break_end_time: string | null;
-  notes: string | null;
-  created_at: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  employees?: { name: string }; // Relation
-}
-
-// --- HR & Scheduling ---
 export interface Schedule {
   id: string;
   user_id: string;
-  week_start_date: string; // date string
+  week_start_date: string;
   is_published: boolean;
   notes: string | null;
   created_at: string;
-  shifts: Shift[]; // Relation from join
+  shifts: Shift[];
 }
 
 export interface Shift {
@@ -589,13 +570,13 @@ export interface Shift {
   user_id: string;
   schedule_id: string;
   employee_id: string;
-  start_time: string; // ISO string
-  end_time: string | null; // Can be null for day off
+  start_time: string;
+  end_time: string | null;
   notes: string | null;
   role_assigned: string | null;
   is_day_off?: boolean;
   created_at: string;
-  employees?: { name: string }; // Relation from join
+  employees?: { name: string };
 }
 
 export interface LeaveRequest {
@@ -604,14 +585,14 @@ export interface LeaveRequest {
   employee_id: string;
   request_type: LeaveRequestType;
   status: LeaveRequestStatus;
-  start_date: string; // date string
-  end_date: string; // date string
+  start_date: string;
+  end_date: string;
   reason: string | null;
   manager_notes: string | null;
   attachment_url?: string | null;
   created_at: string;
   updated_at: string;
-  employees?: { name: string, role: string }; // Relation
+  employees?: { name: string, role: string };
 }
 
 export interface CompanyProfile {
@@ -633,7 +614,6 @@ export interface CompanyProfile {
   focusnfe_cert_valid_until?: string | null;
 }
 
-// --- Loyalty Program ---
 export interface LoyaltySettings {
   user_id: string;
   is_enabled: boolean;
@@ -648,7 +628,7 @@ export interface LoyaltyReward {
   description: string | null;
   points_cost: number;
   reward_type: LoyaltyRewardType;
-  reward_value: string; // Can be a recipe ID or a numeric value as a string
+  reward_value: string;
   is_active: boolean;
   created_at: string;
 }
@@ -665,7 +645,7 @@ export interface LoyaltyMovement {
 }
 
 export interface IfoodMenuSync {
-    recipe_id: string; // PK
+    recipe_id: string;
     user_id: string;
     ifood_item_id: string;
     ifood_product_id: string;
@@ -682,19 +662,18 @@ export interface IfoodWebhookLog {
   merchant_id: string | null;
   ifood_order_id: string | null;
   event_code: string | null;
-  raw_payload: any; // jsonb
+  raw_payload: any;
   processing_status: string | null;
   error_message: string | null;
 }
 
-// --- Subscription Plan Models ---
 export interface Plan {
   id: string;
   name: string;
   slug: string;
   price: number | null;
   trial_period_days: number | null;
-  max_stores?: number | null; // Added max_stores
+  max_stores?: number | null;
   created_at: string;
 }
 
@@ -707,7 +686,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_id: string;
-  store_id?: string | null; // Optional now in logic, used for legacy or specific overrides
+  store_id?: string | null;
   status: SubscriptionStatus;
   recurrent: boolean;
   current_period_end: string | null;
@@ -715,7 +694,6 @@ export interface Subscription {
   updated_at: string;
 }
 
-// FIX: Add Webhook interface for webhook service
 export interface Webhook {
   id: string;
   user_id: string;
@@ -726,7 +704,6 @@ export interface Webhook {
   created_at: string;
 }
 
-// --- Portioning ---
 export interface PortioningEvent {
   id: string;
   user_id: string;
@@ -738,7 +715,6 @@ export interface PortioningEvent {
   total_input_cost: number;
   yield_percentage: number | null;
   created_at: string;
-  // relations
   employees?: { name: string };
   ingredients?: { name: string };
   portioning_event_outputs?: PortioningEventOutput[];
@@ -747,16 +723,13 @@ export interface PortioningEvent {
 export interface PortioningEventOutput {
   id: string;
   event_id: string;
-  ingredient_id: string | null; // null for WASTE
+  ingredient_id: string | null;
   output_type: PortioningOutputType;
-  description: string | null; // for WASTE or BYPRODUCT
+  description: string | null;
   quantity_produced: number;
   unit: IngredientUnit;
-  // relations
   ingredients?: { name: string };
 }
-
-// --- Stock Restructuring (Phase 1) ---
 
 export interface StationStock {
   id: string;
@@ -767,12 +740,9 @@ export interface StationStock {
   last_restock_date: string | null;
   created_at: string;
   updated_at: string;
-  // Relations
   stations?: { name: string };
   ingredients?: { name: string; unit: string };
 }
-
-export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL';
 
 export interface Requisition {
   id: string;
@@ -784,12 +754,13 @@ export interface Requisition {
   created_at: string;
   processed_at: string | null;
   processed_by: string | null;
-  // Relations
-  requester?: { name: string }; // Alias for employees!requested_by
-  processor?: { name: string }; // Alias for employees!processed_by
+  requester?: { name: string };
+  processor?: { name: string };
   stations?: { name: string };
   requisition_items?: RequisitionItem[];
 }
+
+export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL';
 
 export interface RequisitionItem {
   id: string;
@@ -800,18 +771,16 @@ export interface RequisitionItem {
   quantity_delivered: number | null;
   unit: string;
   created_at: string;
-  // Relations
   ingredients?: { name: string };
 }
 
-// --- Requisition Templates (Kits) ---
 export interface RequisitionTemplate {
   id: string;
   user_id: string;
   station_id: string | null;
   name: string;
   created_at: string;
-  template_items?: RequisitionTemplateItem[]; // Relation
+  template_items?: RequisitionTemplateItem[];
 }
 
 export interface RequisitionTemplateItem {
@@ -820,11 +789,9 @@ export interface RequisitionTemplateItem {
   ingredient_id: string;
   quantity: number;
   created_at: string;
-  // Relations
   ingredients?: { name: string, unit: string, cost: number };
 }
 
-// --- Labeling (Etiquetagem) ---
 export interface LabelLog {
     id: string;
     user_id: string;
@@ -838,5 +805,5 @@ export interface LabelLog {
     expiration_date: string;
     label_type: LabelType;
     created_at: string;
-    employees?: { name: string }; // Relation
+    employees?: { name: string };
 }

@@ -5,7 +5,8 @@ import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
-import { CompletionData } from '../components/mise-en-place/completion-modal/completion-modal.component'; // Import type (interface only)
+import { CompletionData } from '../components/mise-en-place/completion-modal/completion-modal.component'; 
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,15 +15,21 @@ export class MiseEnPlaceDataService {
   private authService = inject(AuthService);
   private inventoryDataService = inject(InventoryDataService);
   private inventoryState = inject(InventoryStateService);
+  private unitContextService = inject(UnitContextService);
 
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
+
+  // ... (getOrCreatePlanForDate remains the same, assuming it's correctly filtering by userId/storeId) ...
   async getOrCreatePlanForDate(date: string): Promise<{ success: boolean, error: any, data: ProductionPlan | null }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' }, data: null };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' }, data: null };
 
     // First, try to find an existing plan
     let { data: existingPlan, error: findError } = await supabase
       .from('production_plans')
-      .select('*, production_tasks(*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name))')
+      .select('*, production_tasks(*, recipes(name, source_ingredient_id, shelf_life_prepared_days, image_url), stations(name), employees(name))')
       .eq('user_id', userId)
       .eq('plan_date', date)
       .maybeSingle();
@@ -33,6 +40,10 @@ export class MiseEnPlaceDataService {
     }
     
     if (existingPlan) {
+        // Sort tasks by priority
+        if (existingPlan.production_tasks) {
+            existingPlan.production_tasks.sort((a: any, b: any) => (a.priority || 0) - (b.priority || 0));
+        }
         this.syncPlanToState(existingPlan);
         return { success: true, error: null, data: existingPlan };
     }
@@ -56,31 +67,63 @@ export class MiseEnPlaceDataService {
   }
 
   async addTask(planId: string, taskData: Partial<ProductionTask>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
+    // Get max priority
+    const plan = this.inventoryState.productionPlans().find(p => p.id === planId);
+    const maxPriority = plan?.production_tasks?.reduce((max, t) => Math.max(max, t.priority || 0), 0) ?? 0;
+
     const { data: newTask, error } = await supabase.from('production_tasks').insert({
         ...taskData,
         production_plan_id: planId,
         user_id: userId,
-        status: 'A Fazer'
-    }).select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)').single();
+        status: 'A Fazer',
+        priority: maxPriority + 1
+    }).select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days, image_url), stations(name), employees(name)').single();
 
     if (!error && newTask) {
-        // Manually update state to reflect change immediately in UI
-        this.inventoryState.productionPlans.update(plans => {
-            return plans.map(plan => {
-                if (plan.id === planId) {
-                    const currentTasks = plan.production_tasks || [];
-                    // Avoid duplicates if realtime hits fast
-                    if (currentTasks.some(t => t.id === newTask.id)) return plan;
-                    return { ...plan, production_tasks: [...currentTasks, newTask] };
-                }
-                return plan;
-            });
-        });
+        this.updateTaskInState(newTask);
     }
 
+    return { success: !error, error };
+  }
+
+  // New V2 Method: Update Priorities (Drag and Drop)
+  async updateTaskPriorities(tasks: { id: string; priority: number }[]): Promise<{ success: boolean; error: any }> {
+    const updates = tasks.map(t => ({ id: t.id, priority: t.priority }));
+    
+    // Supabase JS doesn't support bulk update with different values easily in one call without RPC
+    // For now, loop parallel updates (not atomic but OK for this scale) or use UPSERT if full object
+    // A better way is Upsert with just ID and priority, but requires all required fields or relaxed constraints
+    // Let's do parallel updates for simplicity in prototype
+    
+    const promises = updates.map(t => 
+        supabase.from('production_tasks').update({ priority: t.priority }).eq('id', t.id)
+    );
+
+    const results = await Promise.all(promises);
+    const error = results.find(r => r.error)?.error;
+
+    return { success: !error, error };
+  }
+
+  // New V2 Method: Start Task (Timer)
+  async startTask(taskId: string): Promise<{ success: boolean; error: any }> {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('production_tasks')
+        .update({ 
+            status: 'Em Preparo', 
+            started_at: now 
+        })
+        .eq('id', taskId)
+        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days, image_url), stations(name), employees(name)')
+        .single();
+    
+    if (!error && data) {
+        this.updateTaskInState(data);
+    }
     return { success: !error, error };
   }
 
@@ -90,7 +133,7 @@ export class MiseEnPlaceDataService {
         .from('production_tasks')
         .update(updateData)
         .eq('id', taskId)
-        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)')
+        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days, image_url), stations(name), employees(name)')
         .single();
     
     if (!error && updatedTask) {
@@ -134,10 +177,11 @@ export class MiseEnPlaceDataService {
             total_cost: totalCost,
             quantity_produced: data.quantityProduced,
             completion_notes: data.notes,
-            expiration_date: new Date(data.expirationDate).toISOString() // Convert to full ISO
+            expiration_date: new Date(data.expirationDate).toISOString(), // Convert to full ISO
+            completed_at: new Date().toISOString() // New V2
         })
         .eq('id', task.id)
-        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days), stations(name), employees(name)')
+        .select('*, recipes(name, source_ingredient_id, shelf_life_prepared_days, image_url), stations(name), employees(name)')
         .single();
         
     if (!updateError && updatedTask) {
@@ -167,31 +211,39 @@ export class MiseEnPlaceDataService {
     return { success: !error, error };
   }
 
-  // Helper to ensure the plan exists in the global state
   private syncPlanToState(plan: ProductionPlan) {
      this.inventoryState.productionPlans.update(current => {
-         // Check if plan already exists to avoid overwriting newer data if present
          const index = current.findIndex(p => p.id === plan.id);
          if (index !== -1) {
-             // If it exists but has no tasks loaded (rare edge case), we might want to update it,
-             // but usually we trust the existing state or realtime. 
-             // For now, if it exists, we assume it's up to date via realtime.
-             return current; 
+             // If plan exists, we replace it only if the tasks count is different or we forced a refresh
+             // For simple sync, replacing it is safer to ensure we have the latest
+             const newPlans = [...current];
+             newPlans[index] = plan;
+             return newPlans;
          }
          return [plan, ...current];
      });
   }
 
-  // Helper to update a single task in the state
   private updateTaskInState(updatedTask: any) {
       this.inventoryState.productionPlans.update(plans => {
         return plans.map(plan => {
             if (plan.id === updatedTask.production_plan_id) {
                 const currentTasks = plan.production_tasks || [];
-                return { 
-                    ...plan, 
-                    production_tasks: currentTasks.map(t => t.id === updatedTask.id ? updatedTask : t) 
-                };
+                // Check if task exists
+                const taskExists = currentTasks.some(t => t.id === updatedTask.id);
+                
+                let newTasks;
+                if (taskExists) {
+                    newTasks = currentTasks.map(t => t.id === updatedTask.id ? updatedTask : t);
+                } else {
+                    newTasks = [...currentTasks, updatedTask];
+                }
+                
+                // Re-sort locally
+                newTasks.sort((a,b) => (a.priority || 0) - (b.priority || 0));
+
+                return { ...plan, production_tasks: newTasks };
             }
             return plan;
         });
