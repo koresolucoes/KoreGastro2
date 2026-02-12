@@ -15,7 +15,8 @@ async function authenticateUser(request: VercelRequest): Promise<{ userId?: stri
     const token = authHeader.split(' ')[1];
     
     // Validar JWT com Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // Using cast to any to fix type error 'Property getUser does not exist...'
+    const { data: { user }, error } = await (supabase.auth as any).getUser(token);
     
     if (error || !user) {
         return { error: { message: 'Invalid or expired token.' }, status: 401 };

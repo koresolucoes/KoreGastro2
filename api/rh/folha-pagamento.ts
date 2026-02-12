@@ -1,31 +1,35 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { Employee, TimeClockEntry, Schedule } from '../../src/models/db.models.js';
+import { TimeClockEntry } from '../../src/models/db.models.js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    const token = authHeader.split(' ')[1];
+
+    const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
+    if (authError || !user) {
+        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
+
+    if (user.id !== restaurantId) {
+        const { data: perm } = await supabase
+            .from('unit_permissions')
+            .select('id')
+            .eq('manager_id', user.id)
+            .eq('store_id', restaurantId)
+            .single();
+        
+        if (!perm) {
+            return { success: false, error: { message: 'You do not have permission to access this store.' }, status: 403 };
+        }
     }
-    if (providedApiKey !== profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
+    return { success: true };
 }
 
 function calculateDurationInMs(entry: TimeClockEntry): number {
@@ -56,9 +60,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(request);
-        if (error) {
-            return response.status(status!).json({ error });
+        const restaurantId = request.query.restaurantId as string;
+        if (!restaurantId) {
+            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+        }
+
+        const auth = await authenticateUser(request, restaurantId);
+        if (!auth.success) {
+            return response.status(auth.status!).json({ error: auth.error });
         }
 
         const { action, mes, ano } = request.query;
@@ -99,8 +108,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const payrollResults = employees.map(employee => {
             const employeeEntries = timeEntries.filter(e => e.employee_id === employee.id);
-            if(employeeEntries.length === 0) return null;
-
+            // Even if no entries, return the employee structure with zero values if they exist in the system
+            
             let totalOvertimeMs = 0;
             const dailyRegularMsMap = new Map<string, number>();
             const entriesByDay = new Map<string, TimeClockEntry[]>();
@@ -132,7 +141,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             const totalWorkedMs = employeeEntries.reduce((acc, entry) => acc + calculateDurationInMs(entry), 0);
             const workedHours = totalWorkedMs / (1000 * 60 * 60);
             const overtimeHours = totalOvertimeMs / (1000 * 60 * 60);
-            const regularHours = workedHours - overtimeHours;
+            const regularHours = Math.max(0, workedHours - overtimeHours);
 
             const employeeShifts = schedules.flatMap(s => s.shifts).filter(sh => sh.employee_id === employee.id && !sh.is_day_off);
             const scheduledHours = employeeShifts.reduce((acc, shift) => {
@@ -148,7 +157,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (salary_type && salary_rate) {
                 if (salary_type === 'mensal') {
                     const effectiveHourlyRate = salary_rate / 220; 
-                    basePay = regularHours * effectiveHourlyRate;
+                    // Para mensalista, o base é fixo, mas ajustamos se houve horas trabalhadas.
+                    // Simplificação: basePay é o salário cheio. Faltas seriam descontadas.
+                    basePay = salary_rate; 
                     overtimePay = overtimeHours * effectiveHourlyRate * (overtime_rate_multiplier || 1.5);
                 } else { // horista
                     basePay = regularHours * salary_rate;
@@ -167,10 +178,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 pago_extra: overtimePay,
                 total_a_pagar: basePay + overtimePay,
             };
-        }).filter(Boolean);
+        });
         
         const totals = payrollResults.reduce((acc, curr) => {
-            if (!curr) return acc;
             acc.total_a_pagar += curr.total_a_pagar;
             acc.total_horas_extras += curr.horas_extras;
             acc.total_horas_trabalhadas += curr.horas_trabalhadas;

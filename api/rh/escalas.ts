@@ -1,30 +1,34 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    const token = authHeader.split(' ')[1];
+
+    const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
+    if (authError || !user) {
+        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
+
+    if (user.id !== restaurantId) {
+        const { data: perm } = await supabase
+            .from('unit_permissions')
+            .select('id')
+            .eq('manager_id', user.id)
+            .eq('store_id', restaurantId)
+            .single();
+        
+        if (!perm) {
+            return { success: false, error: { message: 'You do not have permission to access this store.' }, status: 403 };
+        }
     }
-    if (providedApiKey !== profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
+    return { success: true };
 }
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
@@ -37,9 +41,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(request);
-        if (error) {
-            return response.status(status!).json({ error });
+        const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+        if (!restaurantId) {
+            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+        }
+
+        const auth = await authenticateUser(request, restaurantId);
+        if (!auth.success) {
+            return response.status(auth.status!).json({ error: auth.error });
         }
 
         switch (request.method) {

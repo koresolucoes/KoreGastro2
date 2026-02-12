@@ -23,7 +23,8 @@ export class LeaveDataService {
     const restaurantId = this.getActiveUnitId();
     
     // FIX RISCO A: Obter a sessão atual do Supabase
-    const { data: { session } } = await supabase.auth.getSession();
+    // Using cast to any to fix type error 'Property getSession does not exist...'
+    const { data: { session } } = await (supabase.auth as any).getSession();
     const accessToken = session?.access_token;
 
     if (!restaurantId || !accessToken) {

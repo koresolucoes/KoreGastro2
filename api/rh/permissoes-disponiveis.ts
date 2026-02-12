@@ -1,33 +1,25 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ALL_PERMISSION_KEYS } from '../../src/config/permissions.js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+async function authenticateUser(request: VercelRequest): Promise<{ success: boolean; error?: any; status?: number }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    const token = authHeader.split(' ')[1];
+    
+    // Simples verificação se o token é válido para qualquer usuário, pois a lista de permissões é estática e global.
+    const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
+    if (authError || !user) {
+        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
-}
 
+    return { success: true };
+}
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,9 +36,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { error, status } = await authenticateAndGetRestaurantId(request);
-        if (error) {
-            return response.status(status!).json({ error });
+        const auth = await authenticateUser(request);
+        if (!auth.success) {
+            return response.status(auth.status!).json({ error: auth.error });
         }
         
         return response.status(200).json(ALL_PERMISSION_KEYS);
