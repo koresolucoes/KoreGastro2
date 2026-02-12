@@ -310,6 +310,14 @@ export class SupabaseStateService {
         case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;
         case 'requisitions': this.handleSimpleUpdate(this.inventoryState.requisitions, payload, '*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)'); break;
         
+        // HR Updates
+        case 'schedules':
+             this.handleSimpleUpdate(this.hrState.schedules, payload, '*, shifts(*, employees(name))');
+             break;
+        case 'shifts':
+             this.handleShiftChange(payload);
+             break;
+
         // Loyalty Updates
         case 'loyalty_settings':
              if (payload.new) {
@@ -495,6 +503,43 @@ export class SupabaseStateService {
                 }
             }
             return plan;
+        });
+    });
+  }
+
+  // Handle updates to shifts within schedules
+  private async handleShiftChange(payload: any) {
+    const scheduleId = payload.new?.schedule_id || payload.old?.schedule_id;
+    if (!scheduleId) return;
+
+    let shiftWithRelations: any = payload.new;
+
+    // Fetch full data for Insert/Update to get Employee Name
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        const { data } = await supabase
+            .from('shifts')
+            .select('*, employees(name)')
+            .eq('id', shiftWithRelations.id)
+            .single();
+        if (data) shiftWithRelations = data;
+    }
+
+    this.hrState.schedules.update(schedules => {
+        return schedules.map(schedule => {
+            if (schedule.id === scheduleId) {
+                const currentShifts = schedule.shifts || [];
+
+                if (payload.eventType === 'INSERT') {
+                     if (!currentShifts.find(s => s.id === shiftWithRelations.id)) {
+                         return { ...schedule, shifts: [...currentShifts, shiftWithRelations] };
+                     }
+                } else if (payload.eventType === 'UPDATE') {
+                    return { ...schedule, shifts: currentShifts.map(s => s.id === shiftWithRelations.id ? shiftWithRelations : s) };
+                } else if (payload.eventType === 'DELETE') {
+                    return { ...schedule, shifts: currentShifts.filter(s => s.id !== payload.old.id) };
+                }
+            }
+            return schedule;
         });
     });
   }
