@@ -16,7 +16,8 @@ import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 
-type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user_id'>> & { task_type: 'recipe' | 'custom' };
+// FIX: Omit task_type from ProductionTask to avoid type conflict with local 'recipe' | 'custom' type
+type TaskForm = Partial<Omit<ProductionTask, 'id' | 'production_plan_id' | 'user_id' | 'task_type'>> & { task_type: 'recipe' | 'custom' };
 
 @Component({
   selector: 'app-mise-en-place',
@@ -100,9 +101,39 @@ export class MiseEnPlaceComponent {
       const recipe = allRecipes.find(r => r.id === task.sub_recipe_id);
       if (!recipe) return null;
       
-      // ... simplified for brevity, assume existing logic maps relations correctly ...
-      // In real implementation, copy logic from original component
-      return { recipe, preparations: [], subRecipes: [] }; // Placeholder for compiler
+      // Re-implement logic to gather preparations and sub-recipes for the modal display
+      const allPreparations = this.recipeState.recipePreparations();
+      const allIngredients = this.recipeState.recipeIngredients();
+      const allSubRecipes = this.recipeState.recipeSubRecipes();
+      const ingredientsMap = new Map(this.inventoryState.ingredients().map(i => [i.id, i]));
+      const recipesMap = new Map(allRecipes.map(r => [r.id, r]));
+
+      const recipePreps = allPreparations
+        .filter(p => p.recipe_id === recipe.id)
+        .map(p => {
+          const prepIngredients = allIngredients
+            .filter(i => i.preparation_id === p.id)
+            .map(i => {
+              const ingredientDetails = ingredientsMap.get(i.ingredient_id);
+              return {
+                ...i,
+                name: ingredientDetails?.name || 'Ingrediente Excluído',
+                unit: ingredientDetails?.unit || 'un', // Fallback to recipe ingredient unit override or base unit
+                quantity: i.quantity
+              };
+            });
+          return { ...p, ingredients: prepIngredients };
+        })
+        .sort((a, b) => a.display_order - b.display_order);
+
+      const recipeSubRecipesData = allSubRecipes
+        .filter(sr => sr.parent_recipe_id === recipe.id)
+        .map(sr => ({
+          ...sr,
+          name: recipesMap.get(sr.child_recipe_id)?.name || '?'
+        }));
+
+      return { recipe, preparations: recipePreps, subRecipes: recipeSubRecipesData }; 
   });
 
   constructor() {
@@ -231,6 +262,16 @@ export class MiseEnPlaceComponent {
   }
 
   openRecipeModal(task: ProductionTask) {
-    // ... existing logic
+    if (!task.sub_recipe_id) {
+      this.notificationService.show('Esta é uma tarefa personalizada e não possui ficha técnica.', 'info');
+      return;
+    }
+    this.selectedTaskForRecipe.set(task);
+    this.isRecipeModalOpen.set(true);
+  }
+
+  closeRecipeModal() {
+    this.isRecipeModalOpen.set(false);
+    this.selectedTaskForRecipe.set(null);
   }
 }
