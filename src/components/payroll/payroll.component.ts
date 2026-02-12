@@ -1,5 +1,6 @@
+
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Employee, Schedule, Shift, TimeClockEntry, CompanyProfile, PayrollAdjustment } from '../../models/db.models';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
@@ -37,7 +38,7 @@ function calculateDurationInMs(entry: TimeClockEntry): number {
 @Component({
   selector: 'app-payroll',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe, DecimalPipe, FormsModule],
+  imports: [CommonModule, CurrencyPipe, DecimalPipe, FormsModule],
   templateUrl: './payroll.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

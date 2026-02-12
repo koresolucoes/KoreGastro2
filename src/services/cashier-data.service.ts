@@ -795,14 +795,27 @@ export class CashierDataService {
     
     if (error) return { success: false, error, data: null };
 
+    // Register opening balance for next session
     const { error: openError } = await supabase.from('transactions').insert({
         description: 'Abertura de Caixa',
-        type: 'Abertura de Caixa',
+        type: 'Abertura de Caixa', // Ensure DB enum supports this
         amount: closingData.counted_cash,
         user_id: userId,
     });
     
-    if (openError) console.error("Failed to log opening balance for next session", openError);
+    if (openError) {
+        console.error("Failed to log opening balance for next session", openError);
+        // Fallback for missing ENUM value in DB (Code 22P02 is Invalid Text Representation)
+        if (openError.code === '22P02') {
+             const { error: fallbackError } = await supabase.from('transactions').insert({
+                description: 'Abertura de Caixa (Saldo Inicial)',
+                type: 'Receita', // Fallback type that definitely exists
+                amount: closingData.counted_cash,
+                user_id: userId,
+            });
+            if (fallbackError) console.error("Fallback opening balance log failed", fallbackError);
+        }
+    }
     
     return { success: true, error: null, data };
   }
