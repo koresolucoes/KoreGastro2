@@ -1,318 +1,352 @@
 
-<div class="container mx-auto">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+<div class="container mx-auto h-full flex flex-col">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 flex-shrink-0">
     <div>
       <h1 class="text-3xl font-bold text-white">Fichas Técnicas</h1>
-      <p class="text-gray-400 mt-1">Gerencie o custo, preparo e logística de produção dos seus pratos.</p>
+      <p class="text-gray-400 mt-1">Gerencie custos, preparo e logística de produção.</p>
     </div>
-    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
-      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-lg shadow-blue-900/20">
+      <span class="material-symbols-outlined">add_circle</span>
       <span>Nova Ficha Técnica</span>
     </button>
   </div>
 
-  <div class="mb-4 relative">
+  <!-- Search Bar -->
+  <div class="mb-4 relative flex-shrink-0">
     <input 
       type="text" 
       [value]="searchTerm()" 
       (input)="searchTerm.set($any($event.target).value)"
       placeholder="Buscar receita pelo nome..." 
-      class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      <span class="material-symbols-outlined text-gray-500">search</span>
     </div>
   </div>
 
-  @if (filteredRecipes().length === 0) {
-    <div class="text-center bg-gray-800 rounded-lg py-16">
-      <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-      <h3 class="mt-2 text-lg font-medium text-white">Nenhuma ficha técnica encontrada</h3>
-      <p class="mt-1 text-sm text-gray-500">Comece criando uma para seus pratos.</p>
-    </div>
-  } @else {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      @for(recipe of filteredRecipes(); track recipe.id) {
-        <div class="bg-gray-800 rounded-lg p-4 flex flex-col border border-gray-700 hover:border-blue-600 transition-all group relative overflow-hidden">
-          
-          <!-- Image / Placeholder -->
-          <div class="h-40 w-full bg-gray-700 rounded-lg mb-4 overflow-hidden relative">
-             @if(recipe.image_url) {
-                <img [src]="recipe.image_url" [alt]="recipe.name" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500">
-             } @else {
-                <div class="w-full h-full flex items-center justify-center text-gray-500">
-                    <span class="material-symbols-outlined text-4xl">restaurant_menu</span>
-                </div>
-             }
-             @if(recipe.is_sub_recipe) {
-                <div class="absolute top-2 right-2 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md">Sub-receita</div>
-             }
-          </div>
+  <!-- Recipe Grid -->
+  <div class="flex-1 overflow-y-auto pr-2 pb-20">
+    @if (filteredRecipes().length === 0) {
+      <div class="h-full flex flex-col items-center justify-center text-gray-500">
+        <span class="material-symbols-outlined text-6xl mb-4 opacity-50">menu_book</span>
+        <h3 class="text-lg font-medium">Nenhuma ficha técnica encontrada</h3>
+        <p class="mt-1 text-sm">Comece criando uma para seus pratos.</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        @for(recipe of filteredRecipes(); track recipe.id) {
+          <div (click)="openEditModal(recipe)" class="bg-gray-800 rounded-xl border border-gray-700 hover:border-blue-500 transition-all cursor-pointer group relative overflow-hidden flex flex-col h-full shadow-lg hover:shadow-xl hover:shadow-blue-900/10">
+            
+            <!-- Image Area -->
+            <div class="h-48 w-full bg-gray-750 relative overflow-hidden">
+               @if(recipe.image_url) {
+                  <img [src]="recipe.image_url" [alt]="recipe.name" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+               } @else {
+                  <div class="w-full h-full flex items-center justify-center text-gray-600 bg-gray-700">
+                      <span class="material-symbols-outlined text-5xl">restaurant_menu</span>
+                  </div>
+               }
+               <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80"></div>
+               
+               <!-- Badges -->
+               <div class="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                   @if(recipe.is_sub_recipe) {
+                      <span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md uppercase tracking-wide">Sub-receita</span>
+                   }
+                   <span class="px-2 py-1 rounded text-[10px] font-bold uppercase shadow-sm border" 
+                        [class.bg-green-500]="recipe.is_available" [class.text-green-950]="recipe.is_available" [class.border-green-400]="recipe.is_available"
+                        [class.bg-red-500]="!recipe.is_available" [class.text-white]="!recipe.is_available" [class.border-red-400]="!recipe.is_available">
+                       {{ recipe.is_available ? 'Disponível' : 'Indisponível' }}
+                   </span>
+               </div>
+               
+               <div class="absolute bottom-2 left-3 right-3">
+                   <h2 class="font-bold text-white text-xl truncate leading-tight shadow-black drop-shadow-md">{{ recipe.name }}</h2>
+               </div>
+            </div>
 
-          <div class="flex-1 space-y-2">
-            <div class="flex justify-between items-start">
-                <h2 class="font-bold text-white text-lg truncate pr-2" [title]="recipe.name">{{ recipe.name }}</h2>
+            <!-- Content Area -->
+            <div class="p-4 flex-1 flex flex-col gap-3">
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="bg-gray-700/50 p-2 rounded border border-gray-600/50 text-center">
+                      <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Custo (CMV)</p>
+                      <p class="text-white font-mono font-bold">{{ recipe.cost.totalCost | currency:'BRL' }}</p>
+                  </div>
+                   <div class="bg-gray-700/50 p-2 rounded border border-gray-600/50 text-center">
+                      <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Venda</p>
+                      @if (!recipe.is_sub_recipe) {
+                          <p class="text-green-400 font-mono font-bold">{{ recipe.price | currency:'BRL' }}</p>
+                      } @else {
+                          <p class="text-gray-500">-</p>
+                      }
+                  </div>
+              </div>
             </div>
             
-            <div class="flex items-center justify-between bg-gray-700/50 rounded-md p-2 text-sm mt-2">
-                <span class="font-medium text-gray-300 text-xs uppercase">Disponível</span>
-                <button
-                    type="button"
-                    role="switch"
-                    [attr.aria-checked]="recipe.is_available"
-                    (click)="$event.stopPropagation(); toggleAvailability(recipe)"
-                    [class.bg-green-600]="recipe.is_available"
-                    [class.bg-gray-600]="!recipe.is_available"
-                    class="relative inline-flex flex-shrink-0 h-5 w-9 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
-                    <span
-                        aria-hidden="true"
-                        [class.translate-x-4]="recipe.is_available"
-                        [class.translate-x-0]="!recipe.is_available"
-                        class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200">
-                    </span>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mt-2">
-                <div class="bg-gray-700/30 p-2 rounded text-center">
-                    <p class="text-[10px] text-gray-400 uppercase">Custo</p>
-                    <p class="text-sm font-semibold text-white">{{ recipe.cost.totalCost | currency:'BRL' }}</p>
-                </div>
-                 <div class="bg-gray-700/30 p-2 rounded text-center">
-                    <p class="text-[10px] text-gray-400 uppercase">Venda</p>
-                    @if (!recipe.is_sub_recipe) {
-                        <p class="text-sm font-semibold text-green-400">{{ recipe.price | currency:'BRL' }}</p>
-                    } @else {
-                        <p class="text-sm text-gray-500">-</p>
-                    }
-                </div>
+            <!-- Footer Actions -->
+            <div class="px-4 pb-4 pt-0 flex justify-between items-center mt-auto">
+               <button (click)="$event.stopPropagation(); requestDelete(recipe)" class="text-gray-500 hover:text-red-400 p-2 rounded-full hover:bg-red-900/20 transition-colors" title="Excluir">
+                  <span class="material-symbols-outlined">delete</span>
+               </button>
+               <span class="text-blue-400 text-xs font-bold uppercase tracking-wider group-hover:underline">Editar Detalhes &rarr;</span>
             </div>
           </div>
-          
-          <div class="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center">
-             @if (recipePendingDeletion()?.id === recipe.id) {
-                 <div class="flex items-center gap-2 w-full justify-between bg-red-900/20 p-1 rounded">
-                    <span class="text-xs text-red-300 font-bold">Confirmar?</span>
-                    <div class="flex gap-2">
-                        <button (click)="$event.stopPropagation(); confirmDelete()" class="text-red-400 hover:text-white text-xs underline">Sim</button>
-                        <button (click)="$event.stopPropagation(); cancelDelete()" class="text-gray-400 hover:text-white text-xs underline">Não</button>
-                    </div>
-                 </div>
-             } @else {
-                <button (click)="$event.stopPropagation(); requestDelete(recipe)" class="text-gray-500 hover:text-red-400 p-1 rounded-full hover:bg-gray-700 transition-colors">
-                    <span class="material-symbols-outlined text-lg">delete</span>
-                </button>
-                <button (click)="openEditModal(recipe)" class="text-blue-400 hover:text-white text-sm font-bold flex items-center gap-1 hover:underline">
-                    Editar <span class="material-symbols-outlined text-sm">edit</span>
-                </button>
-             }
-          </div>
-        </div>
-      }
-    </div>
-  }
+        }
+      </div>
+    }
+  </div>
 </div>
 
-<!-- Add/Edit Modal (The Hub) -->
+<!-- ==================================================================================== -->
+<!-- MAIN EDIT MODAL - THE WORKSPACE -->
+<!-- ==================================================================================== -->
 @if (isModalOpen()) {
-  <div class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col border border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-0 md:p-4 backdrop-blur-sm" (click)="closeModal()">
+    <div class="bg-gray-900 md:rounded-2xl shadow-2xl w-full max-w-[95vw] h-full md:h-[90vh] flex flex-col border border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
       
-      <!-- Modal Header -->
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900">
-        <h3 class="text-xl font-bold text-white flex items-center gap-2">
-            <span class="material-symbols-outlined text-blue-500">restaurant_menu</span>
-            {{ editingRecipe() ? 'Editar Ficha Técnica' : 'Nova Ficha Técnica' }}
-        </h3>
-        <button (click)="closeModal()" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
+      <!-- Header -->
+      <div class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center gap-3">
+             <div class="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/50">
+                 <span class="material-symbols-outlined text-white">restaurant_menu</span>
+             </div>
+             <div>
+                 <h3 class="text-xl font-bold text-white leading-none">{{ editingRecipe() ? 'Editar Ficha Técnica' : 'Nova Ficha Técnica' }}</h3>
+                 <p class="text-xs text-gray-400 mt-1">{{ recipeForm().recipe.name || 'Nova Receita' }}</p>
+             </div>
+        </div>
+        <div class="flex items-center gap-3">
+             <!-- Delete confirmation inline -->
+             @if (recipePendingDeletion()) {
+                 <div class="flex items-center gap-2 bg-red-900/30 px-3 py-1.5 rounded-lg border border-red-800 mr-4">
+                    <span class="text-sm text-red-200 font-bold">Excluir receita?</span>
+                    <button (click)="confirmDelete()" class="text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-xs font-bold">Sim</button>
+                    <button (click)="cancelDelete()" class="text-gray-300 hover:text-white px-2 text-xs underline">Cancelar</button>
+                 </div>
+             } @else if (editingRecipe()) {
+                 <button (click)="requestDelete(editingRecipe()!)" class="text-gray-500 hover:text-red-400 p-2 rounded-full hover:bg-gray-700 transition-colors" title="Excluir">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+             }
+            <button (click)="closeModal()" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
       </div>
 
-      <!-- Modal Body (2 Columns) -->
+      <!-- Content Grid -->
       <div class="flex-1 overflow-hidden flex flex-col lg:flex-row">
         
-        <!-- Left Column: Inputs & Logistics -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-8 lg:border-r border-gray-700 bg-gray-800">
+        <!-- LEFT: BUILDER (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-900 custom-scrollbar">
           
-          <!-- Basic Info Section -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-               <span class="material-symbols-outlined text-base">info</span> Informações Básicas
-            </h4>
-            <div class="flex flex-col sm:flex-row gap-6">
-                <!-- Image Upload -->
-                <div class="flex-shrink-0 flex flex-col items-center">
-                    <label for="recipe-image-upload" class="cursor-pointer group relative block w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-600 border-dashed hover:border-blue-500 transition-colors bg-gray-700">
+          <!-- 1. Basic Info -->
+          <section class="bg-gray-800/50 p-5 rounded-xl border border-gray-700/50">
+             <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Image Upload Box -->
+                <div class="flex-shrink-0">
+                    <label class="cursor-pointer group relative block w-32 h-32 rounded-xl overflow-hidden bg-gray-800 border-2 border-dashed border-gray-600 hover:border-blue-500 hover:bg-gray-700 transition-all shadow-inner">
                         @if(recipeImagePreviewUrl()) {
                             <img [src]="recipeImagePreviewUrl()" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span class="material-symbols-outlined text-white">edit</span>
+                            <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="material-symbols-outlined text-white mb-1">edit</span>
+                                <span class="text-[10px] text-white font-bold uppercase">Alterar</span>
                             </div>
                         } @else {
-                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                <span class="material-symbols-outlined text-3xl">add_photo_alternate</span>
-                                <span class="text-[10px] mt-1">Adicionar</span>
+                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-500 group-hover:text-blue-400">
+                                <span class="material-symbols-outlined text-3xl mb-1">add_a_photo</span>
+                                <span class="text-[10px] font-bold uppercase">Foto</span>
                             </div>
                         }
+                        <input type="file" class="hidden" (change)="handleRecipeImageChange($event)" accept="image/*">
                     </label>
-                    <input id="recipe-image-upload" type="file" class="hidden" (change)="handleRecipeImageChange($event)" accept="image/*">
                 </div>
 
-                <!-- Form Fields -->
                 <div class="flex-1 space-y-4">
+                     <!-- Name & Category -->
                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Nome do Prato *</label>
-                            <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Nome do Prato *</label>
+                            <input type="text" [value]="recipeForm().recipe.name || ''" (input)="updateRecipeField('name', $any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all font-medium" placeholder="Ex: X-Salada">
                         </div>
                         <div>
-                             <label class="block text-xs font-medium text-gray-400 mb-1">Categoria *</label>
+                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Categoria *</label>
                              <div class="flex gap-2">
-                                <select [value]="recipeForm().recipe.category_id || ''" (change)="updateRecipeField('category_id', $any($event.target).value)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                                <select [value]="recipeForm().recipe.category_id || ''" (change)="updateRecipeField('category_id', $any($event.target).value)" class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer">
                                     <option value="" disabled>Selecione...</option>
                                     @for(cat of categories(); track cat.id) { <option [value]="cat.id">{{cat.name}}</option> }
                                 </select>
-                                <button (click)="openAddCategoryModal()" class="p-2 bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 text-gray-300" title="Nova Categoria"><span class="material-symbols-outlined text-base">add</span></button>
+                                <button (click)="openAddCategoryModal()" class="p-2.5 bg-gray-800 border border-gray-600 rounded-lg hover:bg-gray-700 text-blue-400 hover:text-white transition-colors" title="Nova Categoria">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
                              </div>
                         </div>
                      </div>
                      
+                     <!-- Details Row -->
                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                          <div>
-                             <label class="block text-xs font-medium text-gray-400 mb-1">Preço Venda</label>
-                             <input type="number" [value]="recipeForm().recipe.price" (input)="updateRecipeField('price', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Preço Venda</label>
+                             <div class="relative">
+                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>
+                                 <input type="number" [value]="recipeForm().recipe.price" (input)="updateRecipeField('price', +$any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg pl-8 pr-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-mono">
+                             </div>
                          </div>
                          <div>
-                             <label class="block text-xs font-medium text-gray-400 mb-1">Tempo (min)</label>
-                             <input type="number" [value]="recipeForm().recipe.prep_time_in_minutes" (input)="updateRecipeField('prep_time_in_minutes', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Tempo (min)</label>
+                             <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500 text-base">timer</span>
+                                <input type="number" [value]="recipeForm().recipe.prep_time_in_minutes" (input)="updateRecipeField('prep_time_in_minutes', +$any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg pl-9 pr-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-mono">
+                             </div>
                          </div>
                           <div>
-                             <label class="block text-xs font-medium text-gray-400 mb-1">Código PDV/iFood</label>
-                             <input type="text" [value]="recipeForm().recipe.external_code || ''" (input)="updateRecipeField('external_code', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Cód. PDV</label>
+                             <input type="text" [value]="recipeForm().recipe.external_code || ''" (input)="updateRecipeField('external_code', $any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none uppercase font-mono text-sm" placeholder="SKU-123">
                          </div>
-                         <div class="flex items-center pt-5">
-                             <label class="flex items-center cursor-pointer">
+                         <div class="flex items-end pb-2">
+                             <label class="flex items-center cursor-pointer group">
                                  <input type="checkbox" [checked]="recipeForm().recipe.is_sub_recipe" (change)="updateRecipeField('is_sub_recipe', $any($event.target).checked)" class="sr-only peer">
-                                 <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 relative"></div>
-                                 <span class="ml-2 text-sm text-gray-300">É Sub-receita?</span>
+                                 <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 relative border border-gray-600"></div>
+                                 <span class="ml-3 text-xs font-bold text-gray-400 uppercase group-hover:text-white transition-colors">É Sub-receita?</span>
                              </label>
                          </div>
                      </div>
                 </div>
-            </div>
-            
-            @if(recipeForm().recipe.is_sub_recipe) {
-                <div class="mt-4 bg-purple-900/20 border border-purple-800 p-4 rounded-lg flex items-center justify-between">
-                     <div>
-                         <h5 class="text-purple-300 font-bold text-sm">Produção & Estoque</h5>
-                         <p class="text-xs text-gray-400">Vincule esta receita a um item de estoque para que o sistema saiba o que dar baixa/entrada ao produzir.</p>
+             </div>
+             
+             <!-- Link to Stock Item (Only for sub-recipes usually) -->
+             @if(recipeForm().recipe.is_sub_recipe) {
+                <div class="mt-4 bg-purple-900/10 border border-purple-500/30 p-3 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+                     <div class="flex items-center gap-3">
+                         <div class="p-2 bg-purple-500/20 rounded-full text-purple-400">
+                             <span class="material-symbols-outlined">inventory_2</span>
+                         </div>
+                         <div>
+                             <h5 class="text-purple-300 font-bold text-sm">Controle de Estoque</h5>
+                             <p class="text-xs text-purple-200/60">Vincule a um ingrediente para dar entrada automática ao produzir.</p>
+                         </div>
                      </div>
                      @if (linkedIngredient(); as ingredient) {
-                        <div class="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded border border-gray-600">
+                        <div class="flex items-center gap-2 bg-purple-900/40 px-4 py-2 rounded-full border border-purple-500/50">
                              <span class="text-green-400 material-symbols-outlined text-sm">link</span>
-                             <span class="text-sm font-mono text-white">{{ ingredient.name }}</span>
-                             <button (click)="unlinkStockItem()" class="ml-2 text-red-400 hover:text-white"><span class="material-symbols-outlined text-sm">close</span></button>
+                             <span class="text-sm font-mono font-bold text-white">{{ ingredient.name }}</span>
+                             <button (click)="unlinkStockItem()" class="ml-2 text-red-400 hover:text-white transition-colors"><span class="material-symbols-outlined text-base">cancel</span></button>
                         </div>
                      } @else {
-                        <button (click)="linkOrCreateStockItem()" class="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1.5 rounded text-sm font-semibold transition-colors">
-                            Vincular / Criar Item
+                        <button (click)="linkOrCreateStockItem()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-purple-900/20 transition-all active:scale-95">
+                            Criar & Vincular Item
                         </button>
                      }
                 </div>
             }
           </section>
 
-          <!-- Logistics & Composition Section -->
-          <section>
-            <!-- 1. Sub-Recipes (Mise en Place Prévio) -->
-            <div class="mb-6">
-                 <div class="flex justify-between items-end mb-3">
+          <!-- 2. Logistics (Sub-recipes & Steps) -->
+          <section class="space-y-6">
+            
+            <!-- Pre-made Components (Sub-recipes) -->
+            <div>
+                 <div class="flex justify-between items-end mb-4 px-1">
                      <div>
-                        <h4 class="text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
-                             <span class="material-symbols-outlined text-base">widgets</span> Componentes Prontos
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                             <span class="material-symbols-outlined text-purple-400">layers</span> 
+                             Componentes Prontos (Mise en Place)
                         </h4>
-                        <p class="text-xs text-gray-500">Itens já preparados (sub-receitas) usados neste prato.</p>
+                        <p class="text-xs text-gray-500 mt-1">Molhos, bases e pré-preparos já feitos.</p>
                      </div>
-                     <button (click)="startAddingItem('sub-recipe')" class="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 bg-purple-900/20 px-3 py-1.5 rounded border border-purple-800/50 hover:bg-purple-900/40">
-                         <span class="material-symbols-outlined text-sm">add</span> Adicionar Componente
+                     <button (click)="startAddingItem('sub-recipe')" class="text-xs bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 font-bold px-3 py-1.5 rounded-lg border border-purple-600/30 transition-colors flex items-center gap-1">
+                         <span class="material-symbols-outlined text-sm">add</span> Adicionar
                      </button>
                 </div>
                 
                 @if(recipeForm().subRecipes.length > 0) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @for(sr of recipeForm().subRecipes; track sr.child_recipe_id) {
-                            <div class="flex items-center gap-3 bg-gray-700/30 p-2 rounded-lg border border-gray-700 group hover:border-purple-500/50 transition-colors">
-                                <div class="bg-purple-900/30 p-2 rounded text-purple-300">
-                                    <span class="material-symbols-outlined text-lg">layers</span>
+                            <div class="flex items-center gap-3 bg-gray-800 p-3 rounded-lg border border-gray-700 group hover:border-purple-500 transition-colors shadow-sm">
+                                <div class="bg-purple-900/30 p-2 rounded text-purple-400">
+                                    <span class="material-symbols-outlined">cookie</span>
                                 </div>
-                                <span class="text-gray-200 flex-1 font-medium text-sm">{{ getSubRecipeName(sr.child_recipe_id) }}</span>
-                                <div class="flex items-center gap-2 bg-gray-800 rounded px-2 py-1 border border-gray-600">
-                                    <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-white focus:outline-none font-mono text-sm">
-                                    <span class="text-gray-500 text-xs">un</span>
+                                <span class="text-gray-200 flex-1 font-semibold text-sm">{{ getSubRecipeName(sr.child_recipe_id) }}</span>
+                                <div class="flex items-center gap-2 bg-gray-900 rounded-md px-2 py-1 border border-gray-700">
+                                    <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-white focus:outline-none font-mono font-bold text-sm">
+                                    <span class="text-gray-500 text-xs font-bold">un</span>
                                 </div>
-                                <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-gray-500 hover:text-red-400 p-1"><span class="material-symbols-outlined text-lg">close</span></button>
+                                <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-gray-600 hover:text-red-400 p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
                             </div>
                         }
                     </div>
                 } @else {
-                    <div class="text-center py-4 border-2 border-dashed border-gray-700 rounded-lg">
-                        <p class="text-gray-500 text-xs">Nenhum componente pré-preparado (ex: molhos, pães) adicionado.</p>
+                    <div (click)="startAddingItem('sub-recipe')" class="border-2 border-dashed border-gray-700 rounded-xl p-6 text-center hover:border-purple-500/50 hover:bg-gray-800/30 transition-all cursor-pointer group">
+                        <span class="material-symbols-outlined text-gray-600 group-hover:text-purple-400 text-3xl mb-2">add_circle</span>
+                        <p class="text-gray-500 text-sm font-medium group-hover:text-gray-300">Nenhum componente pré-pronto. Clique para adicionar.</p>
                     </div>
                 }
             </div>
 
-            <!-- 2. Preparation Steps (The Core) -->
+            <div class="border-t border-gray-700/50 my-6"></div>
+
+            <!-- Preparation Steps -->
             <div>
-                <div class="flex justify-between items-end mb-3">
+                <div class="flex justify-between items-center mb-4 px-1">
                      <div>
-                        <h4 class="text-sm font-bold text-blue-300 uppercase tracking-wider flex items-center gap-2">
-                             <span class="material-symbols-outlined text-base">step</span> Etapas de Preparo
+                        <h4 class="text-base font-bold text-white flex items-center gap-2">
+                             <span class="material-symbols-outlined text-blue-400">list_alt</span> 
+                             Etapas de Preparo (Logística)
                         </h4>
-                        <p class="text-xs text-gray-500">O passo-a-passo logístico na cozinha.</p>
+                        <p class="text-xs text-gray-500 mt-1">Defina o fluxo passo-a-passo na cozinha.</p>
                      </div>
-                     <button (click)="addPreparation()" class="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 bg-blue-900/20 px-3 py-1.5 rounded border border-blue-800/50 hover:bg-blue-900/40">
-                         <span class="material-symbols-outlined text-sm">add</span> Nova Etapa
+                     <button (click)="addPreparation()" class="bg-blue-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-lg hover:bg-blue-500 transition-all flex items-center gap-2">
+                         <span class="material-symbols-outlined text-base">add</span> Nova Etapa
                      </button>
                 </div>
 
                 <div class="space-y-6">
                     @for(prep of recipeForm().preparations; track prep.id; let i = $index) {
-                        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
+                        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm relative transition-all hover:border-gray-600">
                             <!-- Step Header -->
-                            <div class="bg-gray-900/80 p-3 flex items-center gap-3 border-b border-gray-700">
-                                <div class="bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold">{{ i + 1 }}</div>
-                                <input type="text" [value]="prep.name" (input)="updatePreparationField(prep.id, 'name', $any($event.target).value)" placeholder="Nome da Etapa (ex: Grelhar Carne)" class="bg-transparent text-white font-bold focus:outline-none placeholder-gray-500 flex-1 border-b border-transparent focus:border-blue-500 transition-colors px-1">
+                            <div class="bg-gray-850 p-3 flex flex-wrap items-center gap-3 border-b border-gray-700">
+                                <div class="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-xs font-black shadow-md">{{ i + 1 }}</div>
                                 
-                                <div class="flex items-center gap-2 bg-gray-800 px-2 py-1 rounded border border-gray-600">
-                                    <span class="text-xs text-gray-400">Estação:</span>
+                                <div class="flex-1 min-w-[200px]">
+                                    <input type="text" [value]="prep.name" (input)="updatePreparationField(prep.id, 'name', $any($event.target).value)" placeholder="Nome da Etapa (ex: Grelhar Carne)" class="w-full bg-transparent text-white font-bold focus:outline-none placeholder-gray-500 border-b border-transparent focus:border-blue-500 transition-colors pb-0.5 text-base">
+                                </div>
+                                
+                                <div class="flex items-center gap-2 bg-gray-900/50 px-3 py-1.5 rounded-lg border border-gray-700">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase">Estação</span>
                                     <div class="flex items-center gap-1">
-                                        <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-transparent text-xs text-blue-300 font-semibold focus:outline-none cursor-pointer">
+                                        <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-transparent text-xs text-blue-300 font-bold focus:outline-none cursor-pointer">
                                             <option value="">Selecione...</option>
                                             @for(s of stations(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
                                         </select>
-                                        <button (click)="openAddStationModal(prep.id)" class="text-gray-500 hover:text-white" title="Nova Estação">+</button>
+                                        <button (click)="openAddStationModal(prep.id)" class="text-gray-400 hover:text-white w-5 h-5 flex items-center justify-center bg-gray-700 rounded-full text-xs" title="Nova Estação">+</button>
                                     </div>
                                 </div>
-                                <button (click)="removePreparation(prep.id)" class="text-gray-500 hover:text-red-400 ml-2" title="Remover Etapa"><span class="material-symbols-outlined text-lg">delete</span></button>
+                                
+                                <button (click)="removePreparation(prep.id)" class="text-gray-500 hover:text-red-400 p-2 hover:bg-gray-700 rounded-full transition-colors" title="Remover Etapa"><span class="material-symbols-outlined text-lg">delete</span></button>
                             </div>
 
-                            <!-- Ingredients in Step -->
+                            <!-- Ingredients List -->
                             <div class="p-3 bg-gray-800/50">
                                 <div class="space-y-2">
                                      @for(ing of getIngredientsForPreparation(prep.id); track ing.ingredient_id) {
-                                        <div class="flex items-center gap-3 text-sm bg-gray-700/30 p-2 rounded hover:bg-gray-700 transition-colors group border border-gray-700/50">
-                                            <span class="material-symbols-outlined text-gray-500 text-sm">grocery</span>
+                                        <div class="flex items-center gap-3 text-sm bg-gray-700/40 p-2 rounded-lg border border-gray-700/50 hover:bg-gray-700 hover:border-gray-600 transition-all group">
+                                            <div class="p-1.5 bg-green-500/10 rounded text-green-400">
+                                                <span class="material-symbols-outlined text-sm">grocery</span>
+                                            </div>
                                             <span class="text-gray-200 flex-1 font-medium">{{ getIngredientName(ing.ingredient_id) }}</span>
                                             
-                                            <div class="flex items-center gap-2">
-                                                <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-right text-white focus:outline-none font-mono text-xs">
-                                                <span class="text-gray-500 text-xs w-6">{{ getIngredientUnit(ing.ingredient_id) }}</span>
+                                            <div class="flex items-center gap-2 bg-gray-900 rounded px-2 py-1 border border-gray-600">
+                                                <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-transparent text-right text-white focus:outline-none font-mono font-bold text-xs">
+                                                <span class="text-gray-500 text-xs font-bold w-6 text-center">{{ getIngredientUnit(ing.ingredient_id) }}</span>
                                             </div>
                                             
-                                            <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
+                                            <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
                                         </div>
                                      }
                                      
-                                     <button (click)="startAddingItem(prep.id)" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/5 text-xs font-semibold transition-all flex items-center justify-center gap-2 mt-2">
-                                        <span class="material-symbols-outlined text-sm">add_circle</span> Adicionar Ingrediente a esta Etapa
+                                     <button (click)="startAddingItem(prep.id)" class="w-full py-3 border border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-900/10 text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 mt-2">
+                                        <span class="material-symbols-outlined text-lg">add_circle</span> Adicionar Ingrediente
                                      </button>
                                 </div>
                             </div>
@@ -324,33 +358,42 @@
 
         </div>
 
-        <!-- Right Column: Analysis & Actions -->
-        <div class="w-full lg:w-80 bg-gray-900 p-6 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-700">
-             <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Análise Financeira</h4>
+        <!-- RIGHT: Financial Sidebar -->
+        <div class="w-full lg:w-96 bg-gray-850 p-6 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-700 shadow-xl z-10">
+             <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                 <span class="material-symbols-outlined text-lg">payments</span> Análise Financeira
+             </h4>
              
              <div class="space-y-6 flex-1">
-                 <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                     <p class="text-gray-400 text-xs mb-1">Custo Total (CMV)</p>
-                     <p class="text-3xl font-bold text-white">{{ formTotalCost() | currency:'BRL' }}</p>
+                 <!-- Total Cost Card -->
+                 <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
+                     <p class="text-gray-400 text-xs font-bold uppercase mb-1">Custo Total (CMV)</p>
+                     <div class="flex items-baseline gap-2">
+                         <p class="text-4xl font-black text-white tracking-tight">{{ formTotalCost() | currency:'BRL' }}</p>
+                     </div>
                  </div>
 
                  @if (!recipeForm().recipe.is_sub_recipe) {
-                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                        <p class="text-gray-400 text-xs mb-1">Preço Sugerido (30% CMV)</p>
-                        <p class="text-xl font-bold text-blue-300">{{ (formTotalCost() / 0.3) | currency:'BRL' }}</p>
+                    <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-2 opacity-10">
+                            <span class="material-symbols-outlined text-6xl text-blue-500">sell</span>
+                        </div>
+                        <p class="text-gray-400 text-xs font-bold uppercase mb-1">Preço Sugerido (30%)</p>
+                        <p class="text-2xl font-bold text-blue-300">{{ (formTotalCost() / 0.3) | currency:'BRL' }}</p>
                     </div>
                     
                     @if (recipeForm().recipe.price && recipeForm().recipe.price > 0) {
-                        <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                            <p class="text-gray-400 text-xs mb-1">Margem de Lucro</p>
+                        <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
+                            <p class="text-gray-400 text-xs font-bold uppercase mb-1">Margem de Lucro</p>
                             @let margin = ((recipeForm().recipe.price! - formTotalCost()) / recipeForm().recipe.price!) * 100;
-                            <div class="flex items-end gap-2">
-                                <p class="text-3xl font-bold" [class.text-green-400]="margin >= 50" [class.text-yellow-400]="margin < 50 && margin >= 30" [class.text-red-400]="margin < 30">
+                            <div class="flex items-end gap-3 mb-2">
+                                <p class="text-4xl font-black" [class.text-green-400]="margin >= 50" [class.text-yellow-400]="margin < 50 && margin >= 30" [class.text-red-400]="margin < 30">
                                     {{ margin | number:'1.1-1' }}%
                                 </p>
+                                <span class="text-sm text-gray-500 font-medium mb-1.5">de {{ recipeForm().recipe.price | currency:'BRL' }}</span>
                             </div>
                             <!-- Progress Bar -->
-                            <div class="w-full bg-gray-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
                                 <div class="h-full rounded-full transition-all duration-500" 
                                     [style.width.%]="margin > 0 ? margin : 0"
                                     [class.bg-green-500]="margin >= 50" 
@@ -362,29 +405,32 @@
                     }
                  }
                  
-                 <!-- AI Button -->
-                 <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 mt-4">
-                    @if(isAiLoading()) {
-                        <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                    } @else {
-                        <span class="material-symbols-outlined">psychology</span>
-                    }
-                    <span>Gerar Dicas com IA</span>
-                 </button>
-                 
-                 @if(aiSuggestions(); as suggestions) {
-                    <div class="bg-indigo-900/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-indigo-200 leading-relaxed max-h-60 overflow-y-auto custom-scrollbar mt-4">
-                        <div [innerHTML]="suggestions"></div>
-                    </div>
-                 }
+                 <!-- AI Section -->
+                 <div class="mt-4 pt-4 border-t border-gray-700">
+                     <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg shadow-purple-900/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait group">
+                        @if(isAiLoading()) {
+                            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        } @else {
+                            <span class="material-symbols-outlined group-hover:rotate-12 transition-transform">psychology</span>
+                        }
+                        <span>Gerar Dicas com IA</span>
+                     </button>
+                     
+                     @if(aiSuggestions(); as suggestions) {
+                        <div class="mt-4 bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-4 animate-fade-in-up">
+                            <h5 class="text-indigo-300 font-bold text-xs uppercase mb-2 flex items-center gap-1"><span class="material-symbols-outlined text-sm">auto_awesome</span> Sugestões</h5>
+                            <div class="text-xs text-indigo-200 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar" [innerHTML]="suggestions"></div>
+                        </div>
+                     }
+                 </div>
              </div>
 
              <!-- Footer Actions -->
              <div class="mt-6 pt-6 border-t border-gray-700 flex flex-col gap-3">
-                 <button (click)="saveTechnicalSheet()" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
-                     <span class="material-symbols-outlined">save</span> Salvar Ficha
+                 <button (click)="saveTechnicalSheet()" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-900/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
+                     <span class="material-symbols-outlined">check_circle</span> Salvar Ficha
                  </button>
-                 <button (click)="closeModal()" class="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl transition-colors">
+                 <button (click)="closeModal()" class="w-full py-3 bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white font-bold rounded-xl transition-colors border border-transparent hover:border-gray-600">
                      Cancelar
                  </button>
              </div>
@@ -394,45 +440,60 @@
   </div>
 }
 
-<!-- Add Item Search Popover (Reused logic) -->
+<!-- Add Item Search Popover (Updated Style) -->
 @if(addingToPreparationId(); as prepId) {
-    <div class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" (click)="stopAddingItem()">
-      <div class="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up" (click)="$event.stopPropagation()">
-        <div class="p-4 bg-gray-900 border-b border-gray-700">
-          <h4 class="font-bold text-white text-lg">Adicionar a {{ getAddingToPreparationName(addingToPreparationId()) }}</h4>
+    <div class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" (click)="stopAddingItem()">
+      <div class="bg-gray-800 border border-gray-600 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up transform scale-100" (click)="$event.stopPropagation()">
+        <div class="p-4 bg-gray-900 border-b border-gray-700 flex justify-between items-center">
+          <h4 class="font-bold text-white text-lg">Adicionar a <span class="text-blue-400">{{ getAddingToPreparationName(addingToPreparationId()) }}</span></h4>
+          <button (click)="stopAddingItem()" class="text-gray-500 hover:text-white"><span class="material-symbols-outlined">close</span></button>
         </div>
+        
         <div class="p-4">
-          <input #searchInput type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Buscar ingrediente..." class="w-full bg-gray-700 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg p-3 mb-3 text-white transition-all auto-focus">
+          <div class="relative mb-4">
+               <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-500">search</span>
+               <input #searchInput type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Buscar ingrediente ou sub-receita..." class="w-full bg-gray-700 border-2 border-transparent focus:border-blue-500 focus:bg-gray-900 focus:ring-0 rounded-xl pl-10 pr-4 py-3 text-white transition-all outline-none font-medium">
+          </div>
           
-          <div class="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
+          <div class="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1 pr-1">
             @if(filteredItemsForAdding().ingredients.length > 0) {
-              <div class="px-2 py-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">Ingredientes</div>
+              <div class="px-2 py-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 sticky top-0 bg-gray-800 z-10">Ingredientes</div>
               <ul>
                 @for(ing of filteredItemsForAdding().ingredients; track ing.id){
-                  <li (click)="addIngredientToPrep(ing)" class="p-2 text-sm rounded-md hover:bg-blue-600 hover:text-white cursor-pointer text-gray-300 transition-colors flex justify-between">
-                      <span>{{ing.name}}</span>
-                      <span class="text-xs opacity-70">{{ ing.stock | number }} {{ ing.unit }}</span>
+                  <li (click)="addIngredientToPrep(ing)" class="p-3 rounded-lg hover:bg-blue-600 hover:text-white cursor-pointer text-gray-300 transition-colors flex justify-between items-center group">
+                      <span class="font-medium">{{ing.name}}</span>
+                      <span class="text-xs opacity-70 group-hover:text-blue-100 bg-gray-900/50 px-2 py-0.5 rounded">{{ ing.stock | number }} {{ ing.unit }}</span>
                   </li>
                 }
               </ul>
             }
             @if(filteredItemsForAdding().subRecipes.length > 0) {
-                <div class="px-2 py-1 text-[10px] text-purple-400 font-bold uppercase tracking-wider mt-2">Sub-Receitas</div>
+                <div class="px-2 py-1 text-[10px] text-purple-400 font-bold uppercase tracking-wider mt-3 mb-1 sticky top-0 bg-gray-800 z-10">Sub-Receitas</div>
                 <ul>
                     @for(sub of filteredItemsForAdding().subRecipes; track sub.id){
-                        <li (click)="addSubRecipeToPrep(sub)" class="p-2 text-sm rounded-md hover:bg-purple-600 hover:text-white cursor-pointer text-gray-300 transition-colors">{{sub.name}}</li>
+                        <li (click)="addSubRecipeToPrep(sub)" class="p-3 rounded-lg hover:bg-purple-600 hover:text-white cursor-pointer text-gray-300 transition-colors font-medium flex items-center gap-2">
+                             <span class="material-symbols-outlined text-sm">layers</span> {{sub.name}}
+                        </li>
                     }
                 </ul>
             }
-            @if(filteredItemsForAdding().ingredients.length === 0 && filteredItemsForAdding().subRecipes.length === 0 && itemSearchTerm().length > 0) {
-                <div class="text-center py-4 text-gray-500 text-sm">Nenhum item encontrado.</div>
+            @if(filteredItemsForAdding().ingredients.length === 0 && filteredItemsForAdding().subRecipes.length === 0) {
+                <div class="text-center py-8">
+                    <p class="text-gray-500 text-sm mb-3">Nenhum item encontrado.</p>
+                    @if(addingToPreparationId() !== 'sub-recipe' && itemSearchTerm().length > 0) {
+                         <button (click)="openAddIngredientModal()" class="text-sm bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                             Criar "{{ itemSearchTerm() }}"
+                        </button>
+                    }
+                </div>
             }
           </div>
         </div>
+        
         @if(addingToPreparationId() !== 'sub-recipe') {
           <div class="bg-gray-900 p-3 text-center border-t border-gray-700">
-              <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:text-blue-300 font-medium hover:underline">
-                  + Cadastrar Novo Ingrediente
+              <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:text-blue-300 font-bold hover:underline flex items-center justify-center gap-1">
+                  <span class="material-symbols-outlined text-base">add</span> Cadastrar Novo Ingrediente
               </button>
           </div>
         }
@@ -440,47 +501,47 @@
     </div>
 }
 
-<!-- "Add on the fly" Modals (Keep existing ones, they are fine) -->
+<!-- "Add on the fly" Modals (Preserved logic, updated style) -->
 @if (isAddingCategory()) {
-  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4" (click)="closeAddCategoryModal()">
-    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700" (click)="$event.stopPropagation()">
-      <h4 class="text-lg font-semibold text-white mb-4">Nova Categoria</h4>
-      <input type="text" [value]="newCategoryName()" (input)="newCategoryName.set($any($event.target).value)" (keydown.enter)="saveNewCategory()" placeholder="Ex: Bebidas" class="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-      <div class="flex justify-end gap-2">
-        <button (click)="closeAddCategoryModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-700 hover:bg-gray-600 text-white">Cancelar</button>
-        <button (click)="saveNewCategory()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold">Salvar</button>
+  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm" (click)="closeAddCategoryModal()">
+    <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm border border-gray-700 shadow-2xl" (click)="$event.stopPropagation()">
+      <h4 class="text-lg font-bold text-white mb-4">Nova Categoria</h4>
+      <input type="text" [value]="newCategoryName()" (input)="newCategoryName.set($any($event.target).value)" (keydown.enter)="saveNewCategory()" placeholder="Ex: Bebidas" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
+      <div class="flex justify-end gap-3">
+        <button (click)="closeAddCategoryModal()" class="px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-white hover:bg-gray-700">Cancelar</button>
+        <button (click)="saveNewCategory()" class="px-6 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold">Salvar</button>
       </div>
     </div>
   </div>
 }
 @if (isAddingStation()) {
-  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4" (click)="closeAddStationModal()">
-    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700" (click)="$event.stopPropagation()">
-      <h4 class="text-lg font-semibold text-white mb-4">Nova Estação</h4>
-      <input type="text" [value]="newStationName()" (input)="newStationName.set($any($event.target).value)" (keydown.enter)="saveNewStation()" placeholder="Ex: Grelha" class="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-      <div class="flex justify-end gap-2">
-        <button (click)="closeAddStationModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-700 hover:bg-gray-600 text-white">Cancelar</button>
-        <button (click)="saveNewStation()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold">Salvar</button>
+  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm" (click)="closeAddStationModal()">
+    <div class="bg-gray-800 rounded-xl p-6 w-full max-w-sm border border-gray-700 shadow-2xl" (click)="$event.stopPropagation()">
+      <h4 class="text-lg font-bold text-white mb-4">Nova Estação</h4>
+      <input type="text" [value]="newStationName()" (input)="newStationName.set($any($event.target).value)" (keydown.enter)="saveNewStation()" placeholder="Ex: Grelha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white mb-6 focus:ring-2 focus:ring-blue-500 outline-none">
+      <div class="flex justify-end gap-3">
+        <button (click)="closeAddStationModal()" class="px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-white hover:bg-gray-700">Cancelar</button>
+        <button (click)="saveNewStation()" class="px-6 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold">Salvar</button>
       </div>
     </div>
   </div>
 }
 @if (isAddingIngredient()) {
-  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4" (click)="closeAddIngredientModal()">
-    <div class="bg-gray-800 rounded-lg w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h4 class="text-lg font-semibold text-white">Novo Ingrediente Rápido</h4></div>
+  <div class="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm" (click)="closeAddIngredientModal()">
+    <div class="bg-gray-800 rounded-xl w-full max-w-md border border-gray-700 shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="p-4 border-b border-gray-700"><h4 class="text-lg font-bold text-white">Novo Ingrediente Rápido</h4></div>
       <div class="p-6 space-y-4">
-          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome (ex: Sal)" class="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome (ex: Sal)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
           <div class="grid grid-cols-2 gap-4">
-            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
-            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-700 rounded-lg p-2 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
                 @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
             </select>
           </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-2">
-        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-        <button (click)="saveNewIngredient()" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold">Salvar Ingrediente</button>
+      <div class="p-4 bg-gray-700/50 flex justify-end gap-3 rounded-b-xl">
+        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-white hover:bg-gray-600">Cancelar</button>
+        <button (click)="saveNewIngredient()" class="px-6 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold">Salvar Ingrediente</button>
       </div>
     </div>
   </div>

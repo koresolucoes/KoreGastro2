@@ -229,23 +229,16 @@ export class TechnicalSheetsComponent {
     const subRecipes = this.recipeSubRecipes().filter(sr => sr.parent_recipe_id === recipe.id);
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
 
-    // Map ingredients to form structure (handle unit conversions display if necessary)
+    // Map ingredients to form structure
     const mappedIngredients = ingredients.map(i => {
           const { recipe_id, user_id, ingredients, ...rest } = i;
           const baseIngredient = ingredientsMap.get(i.ingredient_id);
           const baseUnit = baseIngredient?.unit || 'un';
           
-          // Logic to keep unit same as DB or convert for display can be refined here.
-          // For now, we trust the unit stored in recipe_ingredients is what user chose.
-          // If recipe_ingredients doesn't store unit (schema doesn't have it), we assume baseUnit.
-          // The schema provided for RecipeIngredient doesn't list 'unit', so we assume it uses base ingredient unit logic implicitly or we should add it to app model.
-          // *Correction:* The `RecipeForm` interface uses `Omit<RecipeIngredient...> & { unit: IngredientUnit }`.
-          // We need to decide how to display. Let's default to baseUnit if we don't store override.
-          
           let displayUnit: IngredientUnit = baseUnit;
           let displayQuantity = rest.quantity;
 
-          // Heuristic: Display small KG amounts as G
+          // Heuristic: Display small KG amounts as G for better UX
           if (baseUnit === 'kg' && displayQuantity > 0 && displayQuantity < 1) {
               displayUnit = 'g';
               displayQuantity *= 1000;
@@ -482,8 +475,16 @@ export class TechnicalSheetsComponent {
   }
   
   openAddIngredientModal() { 
-      this.stopAddingItem();
+      // If the search popover is open, we need to know where to add the ingredient after creation
+      // We keep addingToPreparationId active if it exists, otherwise it's just a general add
       this.newIngredientForm.set({ ...EMPTY_INGREDIENT });
+      
+      // If user typed something in search, pre-fill the name
+      const searchTerm = this.itemSearchTerm();
+      if(searchTerm) {
+          this.newIngredientForm.update(f => ({ ...f, name: searchTerm }));
+      }
+      
       this.isAddingIngredient.set(true); 
   }
   closeAddIngredientModal() { this.isAddingIngredient.set(false); }
@@ -502,6 +503,7 @@ export class TechnicalSheetsComponent {
              this.addIngredientToPrep(data as Ingredient);
           }
           this.closeAddIngredientModal();
+          this.itemSearchTerm.set(''); // Clear search
       }
   }
   
