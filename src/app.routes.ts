@@ -19,6 +19,11 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./components/demo/demo-access.component').then(m => m.DemoAccessComponent) 
   },
   { 
+    path: 'onboarding', 
+    loadComponent: () => import('./components/onboarding/onboarding.component').then(m => m.OnboardingComponent),
+    canActivate: [authGuard]
+  },
+  { 
     path: 'employee-selection', 
     loadComponent: () => import('./components/auth/employee-selection.component').then(m => m.EmployeeSelectionComponent), 
     canActivate: [authGuard] 

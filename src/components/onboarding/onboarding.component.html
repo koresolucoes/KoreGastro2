@@ -1,0 +1,355 @@
+
+<div class="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+    
+    <!-- Background Elements -->
+    <div class="absolute inset-0 z-0 pointer-events-none">
+        <div class="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl flex overflow-hidden">
+        
+        <!-- Left Panel: Context & Progress -->
+        <div class="w-1/4 bg-gray-900/80 border-r border-gray-700 p-8 flex flex-col justify-between hidden md:flex">
+            <div>
+                <h1 class="text-3xl font-extrabold mb-2 tracking-tight">Chef<span class="text-blue-500">OS</span></h1>
+                <p class="text-gray-400 text-sm">Configuração Inicial</p>
+            </div>
+
+            <div class="space-y-1 overflow-y-auto pr-2 custom-scrollbar flex-1 py-6">
+                @for(stepItem of steps; track stepItem.id; let i = $index) {
+                    <div class="group flex items-center gap-3 p-2 rounded-lg transition-all duration-300" 
+                         [class.bg-blue-900/20]="currentStep() === i"
+                         [class.opacity-50]="currentStep() < i">
+                        
+                        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xs border-2 transition-colors duration-300"
+                            [class.bg-blue-600]="currentStep() > i"
+                            [class.border-blue-600]="currentStep() >= i"
+                            [class.border-gray-600]="currentStep() < i"
+                            [class.text-white]="currentStep() >= i"
+                            [class.text-gray-500]="currentStep() < i">
+                            @if(currentStep() > i) { <span class="material-symbols-outlined text-sm font-bold">check</span> }
+                            @else { {{ i + 1 }} }
+                        </div>
+                        
+                        <div class="min-w-0">
+                            <p class="font-semibold text-sm truncate transition-colors" [class.text-blue-400]="currentStep() === i">{{ stepItem.title }}</p>
+                        </div>
+                    </div>
+                    @if(i < steps.length - 1) {
+                        <div class="w-0.5 h-3 bg-gray-800 ml-5 my-0.5"></div>
+                    }
+                }
+            </div>
+
+            <div class="text-xs text-gray-500 pt-4 border-t border-gray-800">
+                <p>&copy; 2024 ChefOS</p>
+            </div>
+        </div>
+
+        <!-- Right Panel: Dynamic Forms -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden">
+            
+            <!-- Step Content Area -->
+            <div class="flex-1 overflow-y-auto p-8 md:p-12 relative">
+                @switch (currentStep()) {
+                    
+                    <!-- 0. WELCOME -->
+                    @case (0) {
+                        <div class="h-full flex flex-col items-center justify-center text-center animate-fade-in-up">
+                            <div class="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
+                                <span class="material-symbols-outlined text-6xl text-blue-500">rocket_launch</span>
+                            </div>
+                            <h2 class="text-4xl font-bold mb-4">Bem-vindo a bordo!</h2>
+                            <p class="text-gray-400 mb-8 text-xl max-w-lg">Vamos configurar seu restaurante completo em poucos minutos. Você terá um sistema profissional pronto para vender.</p>
+                            <button (click)="nextStep()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-1 flex items-center gap-2">
+                                Começar Configuração <span class="material-symbols-outlined">arrow_forward</span>
+                            </button>
+                        </div>
+                    }
+
+                    <!-- 1. IDENTIDADE -->
+                    @case (1) {
+                        <div class="max-w-xl mx-auto animate-fade-in-right pt-10">
+                            <div class="mb-8">
+                                <span class="material-symbols-outlined text-5xl text-purple-400 mb-4">storefront</span>
+                                <h2 class="text-3xl font-bold mb-2">Sobre seu Negócio</h2>
+                                <p class="text-gray-400 text-lg">Como seus clientes conhecerão seu restaurante?</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Nome do Restaurante</label>
+                                    <input type="text" [(ngModel)]="data.companyName" (keydown.enter)="nextStep()" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-xl placeholder-gray-500 transition-all" placeholder="Ex: Burguer King">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">CNPJ (Opcional)</label>
+                                    <input type="text" [(ngModel)]="data.cnpj" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg transition-all" placeholder="00.000.000/0000-00">
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 2. EQUIPE (CARGOS) -->
+                    @case (2) {
+                         <div class="max-w-2xl mx-auto animate-fade-in-right pt-4">
+                            <div class="mb-6">
+                                <span class="material-symbols-outlined text-5xl text-orange-400 mb-4">groups</span>
+                                <h2 class="text-3xl font-bold mb-2">Sua Equipe</h2>
+                                <p class="text-gray-400">Selecione quais funções operam no seu restaurante (nós criaremos os cargos para você).</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label class="cursor-pointer bg-gray-700/50 border-2 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-gray-700" [class.border-blue-500]="data.hasWaiters" [class.border-transparent]="!data.hasWaiters">
+                                    <input type="checkbox" [(ngModel)]="data.hasWaiters" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400">
+                                        <span class="material-symbols-outlined text-2xl">person_apron</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Garçons</h3>
+                                        <p class="text-xs text-gray-400">Atendimento nas mesas</p>
+                                    </div>
+                                    @if(data.hasWaiters) { <span class="material-symbols-outlined text-blue-500 ml-auto">check_circle</span> }
+                                </label>
+
+                                <label class="cursor-pointer bg-gray-700/50 border-2 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-gray-700" [class.border-blue-500]="data.hasKitchen" [class.border-transparent]="!data.hasKitchen">
+                                    <input type="checkbox" [(ngModel)]="data.hasKitchen" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                                        <span class="material-symbols-outlined text-2xl">skillet</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Cozinheiros</h3>
+                                        <p class="text-xs text-gray-400">Produção e KDS</p>
+                                    </div>
+                                    @if(data.hasKitchen) { <span class="material-symbols-outlined text-blue-500 ml-auto">check_circle</span> }
+                                </label>
+
+                                <label class="cursor-pointer bg-gray-700/50 border-2 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-gray-700" [class.border-blue-500]="data.hasDrivers" [class.border-transparent]="!data.hasDrivers">
+                                    <input type="checkbox" [(ngModel)]="data.hasDrivers" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                        <span class="material-symbols-outlined text-2xl">two_wheeler</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Entregadores</h3>
+                                        <p class="text-xs text-gray-400">Delivery próprio</p>
+                                    </div>
+                                    @if(data.hasDrivers) { <span class="material-symbols-outlined text-blue-500 ml-auto">check_circle</span> }
+                                </label>
+
+                                <label class="cursor-pointer bg-gray-700/50 border-2 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-gray-700" [class.border-blue-500]="data.hasCashiers" [class.border-transparent]="!data.hasCashiers">
+                                    <input type="checkbox" [(ngModel)]="data.hasCashiers" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                        <span class="material-symbols-outlined text-2xl">point_of_sale</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Caixas</h3>
+                                        <p class="text-xs text-gray-400">Pagamentos e fechamento</p>
+                                    </div>
+                                    @if(data.hasCashiers) { <span class="material-symbols-outlined text-blue-500 ml-auto">check_circle</span> }
+                                </label>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 3. SALÃO (LAYOUT) -->
+                    @case (3) {
+                         <div class="max-w-xl mx-auto animate-fade-in-right pt-10">
+                            <div class="mb-8">
+                                <span class="material-symbols-outlined text-5xl text-yellow-400 mb-4">table_restaurant</span>
+                                <h2 class="text-3xl font-bold mb-2">Ambiente Físico</h2>
+                                <p class="text-gray-400 text-lg">Configure seu primeiro salão de atendimento.</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Nome do Ambiente</label>
+                                    <input type="text" [(ngModel)]="data.hallName" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg placeholder-gray-500" placeholder="Ex: Salão Principal, Varanda...">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Quantidade de Mesas</label>
+                                    <div class="flex items-center gap-4">
+                                        <button (click)="data.tableCount = Math.max(1, data.tableCount - 1)" class="w-12 h-12 bg-gray-700 rounded-lg text-2xl hover:bg-gray-600">-</button>
+                                        <input type="number" [(ngModel)]="data.tableCount" class="w-24 bg-gray-700 border border-gray-600 rounded-xl px-2 py-4 text-white text-center font-bold text-2xl focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <button (click)="data.tableCount = data.tableCount + 1" class="w-12 h-12 bg-gray-700 rounded-lg text-2xl hover:bg-gray-600">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 4. PRODUÇÃO (KDS) -->
+                    @case (4) {
+                         <div class="max-w-2xl mx-auto animate-fade-in-right pt-4">
+                            <div class="mb-6">
+                                <span class="material-symbols-outlined text-5xl text-red-400 mb-4">soup_kitchen</span>
+                                <h2 class="text-3xl font-bold mb-2">Estações de Produção</h2>
+                                <p class="text-gray-400">Defina onde os pedidos serão preparados. Isso cria as telas do KDS.</p>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                @for(station of data.stations; track $index) {
+                                    <div class="flex gap-2">
+                                        <input type="text" [(ngModel)]="data.stations[$index]" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nome da Estação">
+                                        @if(data.stations.length > 1) {
+                                            <button (click)="removeStation($index)" class="p-3 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50"><span class="material-symbols-outlined">delete</span></button>
+                                        }
+                                    </div>
+                                }
+                                <button (click)="addStation()" class="text-blue-400 font-semibold hover:text-blue-300 flex items-center gap-2 mt-2">
+                                    <span class="material-symbols-outlined">add_circle</span> Adicionar outra estação
+                                </button>
+                            </div>
+                            
+                            <div class="mt-8 p-4 bg-gray-800 rounded-lg border border-gray-700 text-sm text-gray-400">
+                                <p><strong class="text-white">Dica:</strong> Se você tem bar e cozinha separados, crie duas estações: "Cozinha" e "Bar".</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 5. CARDÁPIO RÁPIDO -->
+                    @case (5) {
+                         <div class="max-w-3xl mx-auto animate-fade-in-right pt-4">
+                            <div class="mb-6">
+                                <span class="material-symbols-outlined text-5xl text-green-400 mb-4">restaurant_menu</span>
+                                <h2 class="text-3xl font-bold mb-2">Vamos montar um Cardápio Básico</h2>
+                                <p class="text-gray-400">Adicione alguns itens para começar. Você pode editar tudo depois.</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <!-- Categories -->
+                                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                    @for(cat of data.menuCategories; track $index) {
+                                        <button (click)="selectCategory($index)" 
+                                            class="px-4 py-2 rounded-full whitespace-nowrap transition-colors border"
+                                            [class.bg-blue-600]="selectedCategoryIndex() === $index"
+                                            [class.border-blue-600]="selectedCategoryIndex() === $index"
+                                            [class.bg-gray-800]="selectedCategoryIndex() !== $index"
+                                            [class.border-gray-600]="selectedCategoryIndex() !== $index">
+                                            {{ cat.name }}
+                                        </button>
+                                    }
+                                    <button (click)="addCategory()" class="px-3 py-2 bg-gray-700 rounded-full hover:bg-gray-600 text-gray-300 border border-dashed border-gray-500">
+                                        + Categoria
+                                    </button>
+                                </div>
+
+                                <!-- Active Category Editor -->
+                                @if(data.menuCategories.length > 0) {
+                                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                        <div class="mb-4">
+                                            <label class="text-xs text-gray-400 uppercase font-bold">Nome da Categoria</label>
+                                            <input type="text" [(ngModel)]="data.menuCategories[selectedCategoryIndex()].name" class="w-full bg-transparent border-b border-gray-600 py-2 text-xl font-bold text-white focus:border-blue-500 outline-none">
+                                        </div>
+
+                                        <div class="space-y-3">
+                                            <div class="grid grid-cols-12 gap-4 text-xs text-gray-500 uppercase font-bold mb-1 pl-2">
+                                                <div class="col-span-6">Nome do Produto</div>
+                                                <div class="col-span-3">Preço (R$)</div>
+                                                <div class="col-span-2"></div>
+                                            </div>
+                                            
+                                            @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
+                                                <div class="grid grid-cols-12 gap-3 items-center">
+                                                    <div class="col-span-6">
+                                                        <input type="text" [(ngModel)]="item.name" placeholder="Ex: X-Burguer" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                    </div>
+                                                    <div class="col-span-3">
+                                                        <input type="number" [(ngModel)]="item.price" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                    </div>
+                                                    <div class="col-span-3 flex justify-end">
+                                                        <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-2 text-red-400 hover:bg-gray-700 rounded-lg"><span class="material-symbols-outlined">delete</span></button>
+                                                    </div>
+                                                </div>
+                                            }
+                                            <button (click)="addItemToCategory(selectedCategoryIndex())" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-gray-400 transition-colors text-sm font-semibold mt-2">
+                                                + Adicionar Produto nesta Categoria
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 6. IFOOD -->
+                    @case (6) {
+                        <div class="max-w-xl mx-auto animate-fade-in-right pt-10 text-center">
+                            <img src="https://i.imgur.com/NzlCBGX.png" alt="iFood" class="h-20 mx-auto mb-6 opacity-90">
+                            <h2 class="text-3xl font-bold mb-4">Integração com iFood</h2>
+                            <p class="text-gray-400 mb-8">Se você já vende no iFood, podemos conectar seus pedidos diretamente no KDS.</p>
+                            
+                            <div class="text-left bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Merchant ID (Opcional)</label>
+                                <input type="text" [(ngModel)]="data.ifoodMerchantId" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-red-500 outline-none text-lg placeholder-gray-500" placeholder="Ex: e7364b-...">
+                                <p class="text-xs text-gray-500 mt-2">Você pode encontrar isso no Portal do Parceiro iFood ou configurar depois.</p>
+                            </div>
+                            
+                            <button (click)="nextStep()" class="text-gray-400 hover:text-white font-medium underline">Pular esta etapa por enquanto</button>
+                        </div>
+                    }
+
+                    <!-- 7. ACESSO (GERENTE) -->
+                    @case (7) {
+                         <div class="max-w-lg mx-auto animate-fade-in-right pt-10">
+                            <div class="mb-8">
+                                <span class="material-symbols-outlined text-5xl text-blue-400 mb-4">admin_panel_settings</span>
+                                <h2 class="text-3xl font-bold mb-2">Seu Acesso de Gerente</h2>
+                                <p class="text-gray-400 text-lg">Crie seu perfil operacional. Este PIN será usado para autorizar cancelamentos e abrir o caixa.</p>
+                            </div>
+                            
+                            <div class="space-y-6 bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Seu Nome</label>
+                                    <input type="text" [(ngModel)]="data.managerName" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nome completo">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Crie um PIN (4 dígitos)</label>
+                                    <input type="text" [(ngModel)]="data.managerPin" maxlength="4" (keydown.enter)="finish()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-center text-3xl tracking-[0.5em] font-mono focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••">
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 8. FINALIZING -->
+                    @case (8) {
+                         <div class="h-full flex flex-col items-center justify-center animate-fade-in text-center">
+                            <div class="relative w-24 h-24 mb-8">
+                                <div class="absolute inset-0 border-4 border-gray-700 rounded-full"></div>
+                                <div class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-4xl text-blue-400 animate-pulse">settings</span>
+                                </div>
+                            </div>
+                            <h2 class="text-3xl font-bold mb-2">Configurando seu ambiente...</h2>
+                            <p class="text-gray-400 max-w-md mx-auto">Estamos criando o banco de dados, configurando permissões e montando seu cardápio.</p>
+                            
+                            <div class="mt-8 text-sm text-gray-500 font-mono">
+                                <p class="animate-pulse">{{ loadingStatus() }}</p>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Footer Navigation -->
+            @if(currentStep() > 0 && currentStep() < 8) {
+                <div class="flex justify-between items-center p-6 md:px-12 border-t border-gray-700/50 bg-gray-800/50 backdrop-blur-md z-20">
+                    <button (click)="prevStep()" class="text-gray-400 hover:text-white font-medium flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span> Voltar
+                    </button>
+                    
+                    @if(currentStep() === 7) {
+                        <button (click)="finish()" [disabled]="!isStepValid()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:scale-105 active:scale-95">
+                            Finalizar Setup <span class="material-symbols-outlined">check_circle</span>
+                        </button>
+                    } @else {
+                        <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:translate-x-1">
+                            Próximo <span class="material-symbols-outlined">arrow_forward</span>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Employee } from '../../models/db.models';
@@ -23,7 +23,6 @@ export class EmployeeSelectionComponent {
   private operationalAuth = inject(OperationalAuthService);
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
-  // FIX: Explicitly type the injected Router to resolve property access errors.
   private router: Router = inject(Router);
   private subscriptionState = inject(SubscriptionStateService);
   private hrState = inject(HrStateService);
@@ -34,9 +33,7 @@ export class EmployeeSelectionComponent {
   trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
 
   employees = computed(() => {
-    // FIX: Access roles from the correct state service
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-    // FIX: Access employees from the correct state service
     return this.hrState.employees().map(e => ({
       ...e,
       role: e.role_id ? rolesMap.get(e.role_id) || 'Sem Cargo' : 'Sem Cargo'
@@ -51,10 +48,15 @@ export class EmployeeSelectionComponent {
   loginError = signal(false);
   pinDisplay = computed(() => '●'.repeat(this.pinInput().length));
 
-  // New state for first-time user onboarding
-  newManagerName = signal('');
-  newManagerPin = signal('');
-  isCreatingManager = signal(false);
+  constructor() {
+    effect(() => {
+        // Se os dados foram carregados e não há funcionários, redirecionar para onboarding
+        // Isso substitui o formulário "in-place" antigo
+        if (this.isDataLoaded() && this.employees().length === 0) {
+            this.router.navigate(['/onboarding']);
+        }
+    });
+  }
 
   selectEmployee(employee: Employee) {
     if (employee.pin) {
@@ -134,55 +136,5 @@ export class EmployeeSelectionComponent {
 
   cancelClockInConfirmation() {
     this.confirmationEmployee.set(null);
-  }
-
-  // --- Onboarding ---
-  async createFirstManager() {
-    const name = this.newManagerName().trim();
-    const pin = this.newManagerPin().trim();
-
-    if (!name) {
-      this.notificationService.show('Por favor, insira o nome do gerente.', 'warning');
-      return;
-    }
-    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      this.notificationService.show('O PIN deve conter exatamente 4 números.', 'warning');
-      return;
-    }
-
-    this.isCreatingManager.set(true);
-    
-    // FIX: Access roles from the correct state service
-    let gerenteRole = this.hrState.roles().find(r => r.name === 'Gerente');
-    if (!gerenteRole) {
-        const { data: newRole, error: roleError } = await this.settingsDataService.addRole('Gerente');
-        if (roleError || !newRole) {
-            this.notificationService.show(`Erro ao criar cargo de Gerente: ${roleError?.message}`, 'error');
-            this.isCreatingManager.set(false);
-            return;
-        }
-        this.hrState.roles.update(roles => [...roles, newRole]);
-        gerenteRole = newRole;
-
-        // Seed all permissions for the new manager role to ensure they are a super-admin
-        const { success: permSuccess, error: permError } = await this.settingsDataService.grantAllPermissionsToRole(gerenteRole.id);
-        if (!permSuccess) {
-            this.notificationService.show(`Aviso: Falha ao definir permissões para o Gerente: ${permError?.message}`, 'warning');
-        }
-    }
-    
-    const { success, error } = await this.settingsDataService.addEmployee({
-      name,
-      pin,
-      role_id: gerenteRole.id,
-    });
-
-    if (success) {
-      this.notificationService.show('Usuário Gerente criado com sucesso! Agora você pode selecioná-lo para começar.', 'success');
-    } else {
-      this.notificationService.show(`Erro ao criar usuário: ${error?.message}`, 'error');
-    }
-    
-    this.isCreatingManager.set(false);
   }
 }

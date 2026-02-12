@@ -219,6 +219,13 @@ export class SettingsDataService {
     return { success: !error, error };
   }
 
+  async getRoles(): Promise<{ data: Role[]; error: any }> {
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: [], error: { message: 'Active unit not found' } };
+    const { data, error } = await supabase.from('roles').select('*').eq('user_id', userId);
+    return { data: data || [], error };
+  }
+
   async addRole(name: string): Promise<{ success: boolean, error: any, data?: Role }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
