@@ -1,5 +1,6 @@
 
 
+
 <div class="h-full flex flex-col relative bg-gray-900">
   
   <!-- Top Header / Navigation (Desktop) -->
@@ -246,7 +247,7 @@
                         <p class="text-sm">Carrinho vazio</p>
                      </div>
                   } @else {
-                     @for(item of quickSaleCart(); track item.recipe.id) {
+                     @for(item of quickSaleCart(); track item.id) {
                         <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg group hover:bg-gray-700/60 transition-colors">
                            <div class="flex flex-col flex-1 min-w-0 mr-2">
                               <span class="text-white font-medium text-sm truncate">{{ item.recipe.name }}</span>
@@ -347,15 +348,12 @@
                         <p class="text-xs text-gray-400 uppercase font-bold">Saídas</p>
                         <p class="text-2xl font-bold text-red-400 mt-1">{{ totalExpenses() | currency:'BRL' }}</p>
                     </div>
-                     <div class="bg-gray-800 p-4 rounded-xl border-l-4 border-white">
-                        <p class="text-xs text-gray-400 uppercase font-bold">Em Caixa (Previsto)</p>
-                        <p class="text-2xl font-bold text-white mt-1">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
-                    </div>
+                     <!-- Removing "Expected" card to focus on closing modal detail -->
                  </div>
 
-                 <!-- Expense Form -->
+                 <!-- Expense/Sangria Form -->
                  <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-4">Lançar Despesa (Sangria)</h3>
+                    <h3 class="text-lg font-bold text-white mb-4">Lançamentos de Caixa (Sangria/Suprimento)</h3>
                     <div class="flex gap-3 items-end">
                         <div class="flex-1">
                             <label class="block text-xs font-medium text-gray-400 mb-1">Descrição</label>
@@ -365,8 +363,11 @@
                             <label class="block text-xs font-medium text-gray-400 mb-1">Valor</label>
                             <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
                         </div>
-                        <button (click)="handleLogExpense()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px]">
-                            Lançar
+                        <button (click)="handleLogExpense()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px]">
+                            Despesa
+                        </button>
+                        <button (click)="handleLogExpense(true)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px] flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">money_off</span> Sangria
                         </button>
                     </div>
                  </div>
@@ -375,7 +376,7 @@
                  <div class="bg-gradient-to-r from-gray-800 to-gray-800/50 rounded-xl p-6 border border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4 mt-auto">
                     <div>
                         <h3 class="text-lg font-bold text-white">Fechar o Caixa</h3>
-                        <p class="text-sm text-gray-400">Inicie o assistente de conferência para encerrar o dia.</p>
+                        <p class="text-sm text-gray-400">Inicie o assistente de conferência para encerrar o dia e zerar o painel.</p>
                     </div>
                     <button (click)="openClosingModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-transform active:scale-95">
                         Iniciar Fechamento
@@ -517,34 +518,51 @@
   </app-pre-bill-modal>
 }
 
+<!-- Detailed Closing Modal -->
 @if(isClosingModalOpen()) {
   <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeClosingModal()">
-      <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-700" (click)="$event.stopPropagation()">
+      <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-700" (click)="$event.stopPropagation()">
           <div class="bg-gray-900 p-4 border-b border-gray-800 flex justify-between items-center">
               <h3 class="text-lg font-bold text-white">Conferência de Caixa</h3>
               <button (click)="closeClosingModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
           </div>
-          <div class="p-6 space-y-6">
-              <div class="grid grid-cols-2 gap-4 text-center">
-                  <div class="bg-gray-700/30 p-3 rounded-xl">
-                      <p class="text-xs text-gray-400 uppercase font-bold">Esperado</p>
-                      <p class="text-xl font-bold text-white">{{ expectedCashInDrawer() | currency:'BRL' }}</p>
-                  </div>
-                  <div class="bg-gray-700/30 p-3 rounded-xl border" [class.border-red-500]="cashDifference() < 0" [class.border-green-500]="cashDifference() > 0" [class.border-transparent]="cashDifference() === 0">
-                      <p class="text-xs text-gray-400 uppercase font-bold">Diferença</p>
-                      <p class="text-xl font-bold" [class.text-red-400]="cashDifference() < 0" [class.text-green-400]="cashDifference() > 0" [class.text-gray-400]="cashDifference() === 0">
-                        {{ cashDifference() | currency:'BRL' }}
-                      </p>
-                  </div>
+          <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              <p class="text-sm text-gray-400 mb-4">Confira os valores de cada método de pagamento. A diferença será calculada automaticamente.</p>
+              
+              <div class="space-y-4">
+                  @for(item of closingBreakdown(); track item.method; let i = $index) {
+                      <div class="bg-gray-700/30 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div class="flex-1">
+                              <p class="font-bold text-white">{{ item.method }}</p>
+                              <p class="text-xs text-gray-400">Esperado: <span class="font-mono text-blue-300">{{ item.expected | currency:'BRL' }}</span></p>
+                          </div>
+                          
+                          <div class="flex items-center gap-3">
+                              <div class="relative">
+                                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-xs">R$</span>
+                                  <input type="number" 
+                                         [value]="item.counted" 
+                                         (input)="updateCountedValue(i, +$any($event.target).value)" 
+                                         class="w-32 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 pl-8 text-white font-mono text-right focus:outline-none focus:border-blue-500"
+                                         placeholder="0.00">
+                              </div>
+                              <div class="w-24 text-right">
+                                  <p class="text-xs text-gray-500">Diferença</p>
+                                  <p class="font-bold font-mono" [class.text-green-400]="item.difference >= 0" [class.text-red-400]="item.difference < 0">
+                                      {{ item.difference | currency:'BRL' }}
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+                  }
               </div>
 
-              <div>
-                  <label class="block text-sm font-bold text-gray-300 mb-2 uppercase">Valor Contado (Dinheiro)</label>
-                  <div class="relative">
-                      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
-                      <input type="number" [value]="countedCash()" (input)="countedCash.set(+$any($event.target).value)" 
-                             class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-4 pl-10 text-white text-3xl font-bold focus:ring-2 focus:ring-blue-500 outline-none text-right" placeholder="0.00" autofocus>
-                  </div>
+              <!-- Total Difference Summary -->
+              <div class="mt-4 p-4 bg-gray-900 rounded-xl border border-gray-800 flex justify-between items-center">
+                  <span class="text-gray-300 font-bold">Diferença Total (Quebra)</span>
+                  <span class="text-xl font-bold" [class.text-green-400]="totalDifference() >= 0" [class.text-red-400]="totalDifference() < 0">
+                      {{ totalDifference() | currency:'BRL' }}
+                  </span>
               </div>
 
               <div>
@@ -554,8 +572,8 @@
           </div>
           <div class="p-4 bg-gray-900 border-t border-gray-800 flex justify-end gap-3">
               <button (click)="closeClosingModal()" class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">Cancelar</button>
-              <button (click)="confirmAndCloseCashier()" [disabled]="countedCash() === null" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                  Confirmar e Imprimir
+              <button (click)="confirmAndCloseCashier()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 transition-transform active:scale-95">
+                  Confirmar e Fechar
               </button>
           </div>
       </div>

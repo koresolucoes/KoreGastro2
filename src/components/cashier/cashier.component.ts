@@ -19,6 +19,7 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { CashierStateService } from '../../services/cashier-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
+import { FormsModule } from '@angular/forms';
 
 type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
 type CashDrawerView = 'movement' | 'closing';
@@ -39,16 +40,17 @@ export interface Payment {
   amount: number;
 }
 
-interface PaymentSummary {
+interface PaymentBreakdownItem {
   method: string;
-  count: number;
-  total: number;
+  expected: number;
+  counted: number | null;
+  difference: number;
 }
 
 @Component({
   selector: 'app-cashier',
   standalone: true,
-  imports: [CommonModule, PaymentModalComponent, PreBillModalComponent, CustomerSelectModalComponent],
+  imports: [CommonModule, PaymentModalComponent, PreBillModalComponent, CustomerSelectModalComponent, FormsModule],
   templateUrl: './cashier.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -86,8 +88,13 @@ export class CashierComponent implements OnInit, OnDestroy {
   // --- Cash Drawer Signals ---
   cashDrawerView: WritableSignal<CashDrawerView> = signal('movement');
   isClosingModalOpen = signal(false);
-  countedCash = signal<number | null>(null);
+  
+  // NEW: Detailed Breakdown for Closing
+  closingBreakdown = signal<PaymentBreakdownItem[]>([]);
+  
   closingNotes = signal('');
+  
+  // Expenses / Sangria
   newExpenseDescription = signal('');
   newExpenseAmount = signal<number | null>(null);
 
@@ -107,8 +114,6 @@ export class CashierComponent implements OnInit, OnDestroy {
   isTablePaymentModalOpen = signal(false);
   
   selectedTableForPayment = signal<Table | null>(null);
-  // Computed order ensures that when openOrders updates (e.g. due to discount application),
-  // this signal also updates, propagating changes to the payment modal.
   selectedOrderForPayment = computed(() => {
     const table = this.selectedTableForPayment();
     if (!table) return null;
@@ -121,7 +126,6 @@ export class CashierComponent implements OnInit, OnDestroy {
   // --- Pre-bill Modal Signals ---
   isPreBillModalOpen = signal(false);
   selectedTableForPreBill = signal<Table | null>(null);
-  // Computed order for reactivity
   selectedOrderForPreBill = computed(() => {
     const table = this.selectedTableForPreBill();
     if (!table) return null;
@@ -130,8 +134,6 @@ export class CashierComponent implements OnInit, OnDestroy {
   
   currentTime = signal(Date.now());
   private timer: any;
-  
-  // Track if payment was successful to avoid rollback
   private quickSaleSuccess = false;
 
   constructor() {
@@ -142,8 +144,6 @@ export class CashierComponent implements OnInit, OnDestroy {
     effect(() => {
         const startDate = this.completedOrdersStartDate();
         const endDate = this.completedOrdersEndDate();
-        // This will automatically trigger when the component is initialized
-        // or when the date range changes.
         this.fetchCompletedOrdersForPeriod(startDate, endDate);
     }, { allowSignalWrites: true });
   }
@@ -151,7 +151,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   ngOnInit() {
       this.timer = setInterval(() => {
           this.currentTime.set(Date.now());
-      }, 60000); // Update every minute
+      }, 60000);
   }
   
   ngOnDestroy() {
@@ -202,12 +202,12 @@ export class CashierComponent implements OnInit, OnDestroy {
   });
   
   selectCategory(category: Category | null) { this.selectedCategory.set(category); }
+  
   addToCart(recipe: Recipe) {
     this.quickSaleCart.update(cart => {
       const item = cart.find(i => i.recipe.id === recipe.id);
       const effectivePrice = this.recipePrices().get(recipe.id) || recipe.price;
       
-      // Generate ID for cart items to be consistent
       if (item) {
           return cart.map(i => i.recipe.id === recipe.id ? { ...i, quantity: i.quantity + 1 } : i);
       } else {
@@ -224,6 +224,7 @@ export class CashierComponent implements OnInit, OnDestroy {
       }
     });
   }
+
   removeFromCart(recipeId: string) {
     this.quickSaleCart.update(cart => {
       const item = cart.find(i => i.recipe.id === recipeId);
@@ -233,14 +234,10 @@ export class CashierComponent implements OnInit, OnDestroy {
 
   async openQuickSalePaymentModal() {
     if (this.quickSaleCart().length === 0) return;
-
-    this.quickSaleSuccess = false; // Reset success flag
-    
-    // We reuse isLoading for the UI indicator if needed, or rely on button disabled state
+    this.quickSaleSuccess = false;
     const userId = this.unitContextService.activeUnitId();
     if (!userId) return;
     
-    // 1. Create a real Pending Order in DB so PaymentModal works correctly
     const { success, data, error } = await this.cashierDataService.createPendingQuickSale(
         this.quickSaleCart(), 
         this.quickSaleCustomer()?.id || null, 
@@ -255,29 +252,18 @@ export class CashierComponent implements OnInit, OnDestroy {
     }
   }
   
-  // Called by (paymentFinalized) event from modal
   onQuickSalePaymentFinalized() {
       this.quickSaleSuccess = true;
       this.quickSaleCart.set([]);
       this.quickSaleCustomer.set(null);
       this.notificationService.show('Venda registrada com sucesso!', 'success');
-      // The modal will close itself after this event via its own logic or we close it here.
-      // Ideally PaymentModal emits, then we handle logic.
-      // But PaymentModal stays open on success state until user closes.
-      // When user clicks "Fechar & Novo Pedido" in modal success screen, it emits paymentFinalized AND closeModal.
   }
   
-  // Called by (closeModal) event from modal
   closeQuickSalePaymentModal() { 
-    // If the modal is closed WITHOUT success (user cancelled), we should rollback the pending order.
-    // If success happened, onQuickSalePaymentFinalized would have run.
     const order = this.processingQuickSaleOrder();
-    
     if (!this.quickSaleSuccess && order) {
-         // Rollback: Delete the pending order so it doesn't stay as "Open" forever
          this.posDataService.deleteOrderAndItems(order.id);
     }
-
     this.isQuickSalePaymentModalOpen.set(false);
     this.processingQuickSaleOrder.set(null);
   }
@@ -314,90 +300,37 @@ export class CashierComponent implements OnInit, OnDestroy {
     }
   }
   
-  // Logic to pay an EXISTING Quick Sale (from the "A Receber" list)
   openPaymentForQuickSale(order: Order) {
-     // This is an existing order from DB, so it has a valid ID.
-     // We can just set it and open the modal.
-     // Reuse logic: treating existing order same as pending one.
-     // However, ensure rollback logic doesn't delete VALID existing orders if user cancels payment on them.
-     // Logic check: "processingQuickSaleOrder" is used.
-     // If I set processingQuickSaleOrder = order, closing modal might delete it if !quickSaleSuccess.
-     // BAD.
-     
-     // FIX: The modal closing logic above deletes the order if !success. 
-     // We need to know if it was a *newly created temp order* or an *existing* order.
-     // Strategy: Use a different state or flag.
-     
-     // Actually, standard PaymentModal usage in TableLayout DOES NOT delete order on close.
-     // The deletion logic in closeQuickSalePaymentModal is SPECIFIC to the "New Quick Sale" flow.
-     
-     // Therefore, for existing orders, we should probably NOT use `isQuickSalePaymentModalOpen`.
-     // We should use `isTablePaymentModalOpen` but with a fake table object, similar to how we did before,
-     // OR make `closeQuickSalePaymentModal` smarter.
-     
-     // Let's use `isTablePaymentModalOpen` for existing orders to avoid the deletion logic.
-     // The template uses `selectedTableForPayment` to check for `isTablePaymentModalOpen`.
-     
      const fakeTable: Table = { 
-         id: 'qs-existing', 
-         number: 0, 
-         status: 'LIVRE', 
-         hall_id: '', 
-         x: 0, y: 0, width: 0, height: 0, 
-         created_at: '', user_id: '' 
+         id: 'qs-existing', number: 0, status: 'LIVRE', hall_id: '', x: 0, y: 0, width: 0, height: 0, created_at: '', user_id: '' 
     };
-    
-    // We need `selectedOrderForPayment` computed to resolve to this order.
-    // `selectedOrderForPayment` finds order by table number.
-    // For QuickSale, table_number is 0. 
-    // If we have multiple QuickSales, `find` gets the first one. This is buggy for multiple QS.
-    
-    // BETTER FIX: Use a dedicated signal `specificOrderForPayment` that overrides table lookup if set.
-    // In `CashierComponent`:
-    // Update `selectedOrderForPayment` computed.
-    
     this.selectedTableForPayment.set(fakeTable);
-    // AND we need to ensure the modal gets the RIGHT order. 
-    // Since `selectedOrderForPayment` derives from `openOrders` list based on table number, 
-    // and all QS have table 0, it might pick wrong one.
-    
-    // HACK for now to avoid massive refactor: 
-    // Use `processingQuickSaleOrder` BUT add a flag `isNewQuickSale`.
     this.processingQuickSaleOrder.set(order);
     this.isQuickSalePaymentModalOpen.set(true);
-    this.isNewQuickSaleFlow = false; // Flag to prevent deletion
+    this.isNewQuickSaleFlow = false;
   }
   
-  // Track if we are in the flow of a new quick sale (needs cleanup) or existing one
   private isNewQuickSaleFlow = true;
 
-  // Overridden method to handle logic
   overrideCloseQuickSalePaymentModal() {
       const order = this.processingQuickSaleOrder();
-      
-      // Only delete if it was a NEW flow and payment wasn't successful
       if (this.isNewQuickSaleFlow && !this.quickSaleSuccess && order) {
           this.posDataService.deleteOrderAndItems(order.id);
       }
-      
       this.isQuickSalePaymentModalOpen.set(false);
       this.processingQuickSaleOrder.set(null);
-      this.isNewQuickSaleFlow = true; // Reset to default
+      this.isNewQuickSaleFlow = true;
       this.quickSaleSuccess = false;
   }
   
   getOrderProgress(order: Order) {
     const items = order.order_items || [];
-    if (items.length === 0) return { ready: 0, preparing: 0, pending: 0, total: 0, percentage: 100, isAllReady: true };
+    if (items.length === 0) return { percentage: 100, isAllReady: true };
     const total = items.length;
     const ready = items.filter(item => item.status === 'PRONTO' || item.status === 'SERVIDO').length;
-    const preparing = items.filter(item => item.status === 'EM_PREPARO').length;
-    const pending = items.filter(item => item.status === 'PENDENTE').length;
     const percentage = total > 0 ? (ready / total) * 100 : 0;
-    const isAllReady = ready === total;
-    return { ready, preparing, pending, total, percentage, isAllReady };
+    return { percentage, isAllReady: ready === total };
   }
-
 
   // --- Table Payment Methods ---
   openTableOptionsModal(table: Table) {
@@ -441,7 +374,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   handlePaymentFinalized() {
     this.isTablePaymentModalOpen.set(false);
     this.selectedTableForPayment.set(null);
-    this.processingQuickSaleOrder.set(null); // Clear if it was quick sale
+    this.processingQuickSaleOrder.set(null);
   }
 
   handlePaymentModalClosed(revertStatus: boolean) {
@@ -450,28 +383,25 @@ export class CashierComponent implements OnInit, OnDestroy {
     this.processingQuickSaleOrder.set(null);
   }
 
-  // --- Cash Drawer Computeds & Methods ---
+  // --- Cash Drawer & Closing Logic ---
   openingBalance = computed(() => this.cashierState.transactions().find(t => t.type === 'Abertura de Caixa')?.amount ?? 0);
-  revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita' || t.type === 'Gorjeta')); // Included Tips in Revenue for visual
+  revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita' || t.type === 'Gorjeta'));
   expenseTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Despesa'));
 
   totalRevenue = computed(() => this.revenueTransactions().reduce((sum, t) => sum + t.amount, 0));
   totalExpenses = computed(() => this.expenseTransactions().reduce((sum, t) => sum + t.amount, 0));
 
-  expectedCashInDrawer = computed(() => {
-    // Only count CASH transactions for drawer verification
-    const cashRevenue = this.revenueTransactions().filter(t => t.description.toLowerCase().includes('dinheiro')).reduce((sum,t) => sum + t.amount, 0);
-    return this.openingBalance() + cashRevenue - this.totalExpenses();
-  });
+  totalDifference = computed(() => this.closingBreakdown().reduce((sum, item) => sum + item.difference, 0));
 
-  cashDifference = computed(() => {
-    const counted = this.countedCash();
-    if (counted === null) return 0;
-    return counted - this.expectedCashInDrawer();
-  });
-  
-  async handleLogExpense() {
-    const description = this.newExpenseDescription().trim();
+  async handleLogExpense(isSangria = false) {
+    const descriptionInput = this.newExpenseDescription().trim();
+    let description = descriptionInput;
+    
+    if (isSangria) {
+        if (!description) description = "Sangria de Caixa";
+        else description = `Sangria: ${description}`;
+    }
+
     const amount = this.newExpenseAmount();
     if (!description || !amount || amount <= 0) {
         await this.notificationService.alert('Preencha descrição e valor.');
@@ -481,43 +411,108 @@ export class CashierComponent implements OnInit, OnDestroy {
     if (success) {
         this.newExpenseDescription.set('');
         this.newExpenseAmount.set(null);
-        this.notificationService.show('Despesa lançada.', 'success');
+        this.notificationService.show(isSangria ? 'Sangria registrada com sucesso!' : 'Despesa lançada.', 'success');
     } else {
         await this.notificationService.alert(`Erro: ${error?.message}`);
     }
   }
 
-  openClosingModal() { this.isClosingModalOpen.set(true); }
-  closeClosingModal() { this.isClosingModalOpen.set(false); this.countedCash.set(null); this.closingNotes.set(''); }
+  openClosingModal() { 
+      // Initialize detailed breakdown
+      const breakdown = new Map<string, number>();
+      const methodRegex = /\(([^)]+)\)/; // Extracts text inside parentheses in transaction desc
+      
+      // Initialize Dinheiro with Opening Balance
+      breakdown.set('Dinheiro', this.openingBalance());
+
+      // Aggregate Revenues
+      for (const t of this.revenueTransactions()) {
+          const match = t.description.match(methodRegex);
+          let method = match ? match[1] : 'Outros';
+          // Normalize some common names
+          if (method.toLowerCase().includes('dinheiro')) method = 'Dinheiro';
+          else if (method.toLowerCase().includes('crédito')) method = 'Cartão de Crédito';
+          else if (method.toLowerCase().includes('débito')) method = 'Cartão de Débito';
+          
+          breakdown.set(method, (breakdown.get(method) || 0) + t.amount);
+      }
+
+      // Subtract Expenses (Assuming mostly Cash, but theoretically could be others. For now subtract from Cash)
+      // If we had expense type, we'd use it. Currently defaulting expenses to reduce Cash expected.
+      const cashTotal = breakdown.get('Dinheiro') || 0;
+      breakdown.set('Dinheiro', Math.max(0, cashTotal - this.totalExpenses()));
+
+      const breakdownList: PaymentBreakdownItem[] = Array.from(breakdown.entries()).map(([method, expected]) => ({
+          method,
+          expected,
+          counted: null, // User must input
+          difference: 0
+      }));
+
+      this.closingBreakdown.set(breakdownList);
+      this.isClosingModalOpen.set(true); 
+  }
+
+  updateCountedValue(index: number, value: number | null) {
+      this.closingBreakdown.update(items => {
+          const newItems = [...items];
+          const item = { ...newItems[index] };
+          item.counted = value;
+          item.difference = (value || 0) - item.expected;
+          newItems[index] = item;
+          return newItems;
+      });
+  }
+
+  closeClosingModal() { 
+      this.isClosingModalOpen.set(false); 
+      this.closingNotes.set(''); 
+  }
 
   async confirmAndCloseCashier() {
-    const counted = this.countedCash();
-    if (counted === null || counted < 0) return;
+    // Check if all fields are filled
+    const breakdown = this.closingBreakdown();
+    if (breakdown.some(i => i.counted === null)) {
+        this.notificationService.show('Por favor, informe o valor contado para todos os métodos (use 0 se necessário).', 'warning');
+        return;
+    }
+
+    const totalCounted = breakdown.reduce((acc, i) => acc + (i.counted || 0), 0);
+    const totalExpected = breakdown.reduce((acc, i) => acc + i.expected, 0);
 
     const closingData = {
         opening_balance: this.openingBalance(),
         total_revenue: this.totalRevenue(),
         total_expenses: this.totalExpenses(),
-        expected_cash_in_drawer: this.expectedCashInDrawer(),
-        counted_cash: counted,
-        difference: this.cashDifference(),
-        payment_summary: null, // Summary calculation handled in backend or improved later
+        expected_cash_in_drawer: totalExpected,
+        counted_cash: totalCounted,
+        difference: this.totalDifference(),
+        payment_summary: breakdown.map(i => ({ method: i.method, total: i.expected, count: 0 })), // Backend expects this structure roughly
         notes: this.closingNotes().trim() || null,
     };
+    
+    // We send just the aggregated data for the closing record, but the breakdown logic happens here visually.
     
     const { success, error, data } = await this.cashierDataService.closeCashier(closingData);
 
     if (success && data) {
         this.notificationService.show('Caixa fechado com sucesso!', 'success');
         this.printingService.printCashierClosingReport(data, this.expenseTransactions());
+        
+        // Reset UI for next shift
+        this.cashierState.clearData();
+        this.closingBreakdown.set([]);
+        
         this.closeClosingModal();
+        
+        // Optionally reload page or navigate to reset state fully
+        // window.location.reload(); // Simple brute force reset
     } else {
         await this.notificationService.alert(`Erro: ${error?.message}`);
     }
   }
-  
-  // --- Reprint / Details Methods ---
 
+  // --- Reprint / Details Methods ---
   isTodayFilterActive = computed(() => {
     const today = new Date().toISOString().split('T')[0];
     return this.completedOrdersStartDate() === today && this.completedOrdersEndDate() === today;
@@ -539,9 +534,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   completedOrders = computed(() => {
     const orders = this.completedOrdersForPeriod();
     const term = this.completedOrdersSearchTerm().toLowerCase();
-
     if (!term) return orders;
-
     return orders.filter(order => 
         order.id.slice(0, 8).includes(term) ||
         this.getOrderOrigin(order).toLowerCase().includes(term) ||
@@ -562,10 +555,6 @@ export class CashierComponent implements OnInit, OnDestroy {
   }
 
   reprintReceipt(order: Order) {
-      // Fetch payments from transactions since they are not stored on Order
-      // This is a simplified approach; ideally Order would store Payment Summary snapshot
-      // or we query transactions table.
-      // For now, simple reprint of items.
       this.printingService.printCustomerReceipt(order, []);
   }
 
