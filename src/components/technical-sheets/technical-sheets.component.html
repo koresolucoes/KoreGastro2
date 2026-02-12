@@ -3,7 +3,7 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
       <h1 class="text-3xl font-bold text-white">Fichas Técnicas</h1>
-      <p class="text-gray-400 mt-1">Gerencie o custo, preparo e ingredientes de seus pratos.</p>
+      <p class="text-gray-400 mt-1">Gerencie o custo, preparo e logística de produção dos seus pratos.</p>
     </div>
     <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
       <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -129,12 +129,14 @@
       <!-- Modal Body (2 Columns) -->
       <div class="flex-1 overflow-hidden flex flex-col lg:flex-row">
         
-        <!-- Left Column: Inputs -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-6 lg:border-r border-gray-700 bg-gray-800">
+        <!-- Left Column: Inputs & Logistics -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-8 lg:border-r border-gray-700 bg-gray-800">
           
           <!-- Basic Info Section -->
           <section>
-            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Detalhes Básicos</h4>
+            <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+               <span class="material-symbols-outlined text-base">info</span> Informações Básicas
+            </h4>
             <div class="flex flex-col sm:flex-row gap-6">
                 <!-- Image Upload -->
                 <div class="flex-shrink-0 flex flex-col items-center">
@@ -168,7 +170,7 @@
                                     <option value="" disabled>Selecione...</option>
                                     @for(cat of categories(); track cat.id) { <option [value]="cat.id">{{cat.name}}</option> }
                                 </select>
-                                <button (click)="openAddCategoryModal()" class="p-2 bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 text-gray-300" title="Nova Categoria">+</button>
+                                <button (click)="openAddCategoryModal()" class="p-2 bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 text-gray-300" title="Nova Categoria"><span class="material-symbols-outlined text-base">add</span></button>
                              </div>
                         </div>
                      </div>
@@ -218,70 +220,104 @@
             }
           </section>
 
-          <!-- Composition Section -->
+          <!-- Logistics & Composition Section -->
           <section>
-            <div class="flex justify-between items-end mb-3">
-                 <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Composição & Preparo</h4>
-                 <button (click)="addPreparation()" class="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">
-                     <span class="material-symbols-outlined text-sm">add</span> Nova Etapa
-                 </button>
-            </div>
-
-            <div class="space-y-4">
-                @for(prep of recipeForm().preparations; track prep.id; let i = $index) {
-                    <div class="bg-gray-700/30 border border-gray-700 rounded-xl overflow-hidden">
-                        <!-- Step Header -->
-                        <div class="bg-gray-800 p-3 flex items-center gap-3 border-b border-gray-700">
-                            <span class="bg-gray-700 text-gray-400 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold">{{ i + 1 }}</span>
-                            <input type="text" [value]="prep.name" (input)="updatePreparationField(prep.id, 'name', $any($event.target).value)" placeholder="Nome da Etapa (ex: Molho)" class="bg-transparent text-white font-medium focus:outline-none placeholder-gray-500 flex-1">
-                            <div class="h-4 w-[1px] bg-gray-600 mx-2"></div>
-                            <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer">
-                                <option value="">Sem estação</option>
-                                @for(s of stations(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
-                            </select>
-                            <button (click)="removePreparation(prep.id)" class="text-gray-500 hover:text-red-400 ml-2"><span class="material-symbols-outlined text-lg">delete</span></button>
-                        </div>
-
-                        <!-- Ingredients in Step -->
-                        <div class="p-3 space-y-2">
-                             @for(ing of getIngredientsForPreparation(prep.id); track ing.ingredient_id) {
-                                <div class="flex items-center gap-2 text-sm bg-gray-800/50 p-2 rounded hover:bg-gray-800 transition-colors group">
-                                    <span class="text-gray-300 flex-1">{{ getIngredientName(ing.ingredient_id) }}</span>
-                                    <div class="flex items-center gap-1 bg-gray-900 rounded px-2 py-1 border border-gray-700">
-                                        <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-transparent text-right text-white focus:outline-none font-mono">
-                                        <span class="text-gray-500 text-xs">{{ getIngredientUnit(ing.ingredient_id) }}</span>
-                                    </div>
-                                    <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
+            <!-- 1. Sub-Recipes (Mise en Place Prévio) -->
+            <div class="mb-6">
+                 <div class="flex justify-between items-end mb-3">
+                     <div>
+                        <h4 class="text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                             <span class="material-symbols-outlined text-base">widgets</span> Componentes Prontos
+                        </h4>
+                        <p class="text-xs text-gray-500">Itens já preparados (sub-receitas) usados neste prato.</p>
+                     </div>
+                     <button (click)="startAddingItem('sub-recipe')" class="text-xs text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 bg-purple-900/20 px-3 py-1.5 rounded border border-purple-800/50 hover:bg-purple-900/40">
+                         <span class="material-symbols-outlined text-sm">add</span> Adicionar Componente
+                     </button>
+                </div>
+                
+                @if(recipeForm().subRecipes.length > 0) {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @for(sr of recipeForm().subRecipes; track sr.child_recipe_id) {
+                            <div class="flex items-center gap-3 bg-gray-700/30 p-2 rounded-lg border border-gray-700 group hover:border-purple-500/50 transition-colors">
+                                <div class="bg-purple-900/30 p-2 rounded text-purple-300">
+                                    <span class="material-symbols-outlined text-lg">layers</span>
                                 </div>
-                             }
-                             
-                             <button (click)="startAddingItem(prep.id)" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/5 text-xs font-semibold transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">add_circle</span> Adicionar Ingrediente
-                             </button>
-                        </div>
-                    </div>
-                }
-
-                <!-- Sub-Recipes Section -->
-                <div class="bg-gray-700/30 border border-gray-700 rounded-xl overflow-hidden">
-                    <div class="bg-gray-800 p-3 border-b border-gray-700">
-                         <h5 class="text-sm font-bold text-purple-300">Sub-receitas Incorporadas</h5>
-                    </div>
-                    <div class="p-3 space-y-2">
-                         @for(sr of recipeForm().subRecipes; track sr.child_recipe_id) {
-                            <div class="flex items-center gap-2 text-sm bg-gray-800/50 p-2 rounded hover:bg-gray-800 transition-colors group">
-                                <span class="text-gray-300 flex-1">{{ getSubRecipeName(sr.child_recipe_id) }}</span>
-                                <div class="flex items-center gap-1 bg-gray-900 rounded px-2 py-1 border border-gray-700">
-                                    <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-16 bg-transparent text-right text-white focus:outline-none font-mono">
+                                <span class="text-gray-200 flex-1 font-medium text-sm">{{ getSubRecipeName(sr.child_recipe_id) }}</span>
+                                <div class="flex items-center gap-2 bg-gray-800 rounded px-2 py-1 border border-gray-600">
+                                    <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-white focus:outline-none font-mono text-sm">
                                     <span class="text-gray-500 text-xs">un</span>
                                 </div>
-                                <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
+                                <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-gray-500 hover:text-red-400 p-1"><span class="material-symbols-outlined text-lg">close</span></button>
                             </div>
-                         }
-                         <button (click)="startAddingItem('sub-recipe')" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-purple-400 hover:text-purple-300 hover:border-purple-500/50 hover:bg-purple-500/5 text-xs font-semibold transition-all flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">post_add</span> Adicionar Sub-receita
-                         </button>
+                        }
                     </div>
+                } @else {
+                    <div class="text-center py-4 border-2 border-dashed border-gray-700 rounded-lg">
+                        <p class="text-gray-500 text-xs">Nenhum componente pré-preparado (ex: molhos, pães) adicionado.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- 2. Preparation Steps (The Core) -->
+            <div>
+                <div class="flex justify-between items-end mb-3">
+                     <div>
+                        <h4 class="text-sm font-bold text-blue-300 uppercase tracking-wider flex items-center gap-2">
+                             <span class="material-symbols-outlined text-base">step</span> Etapas de Preparo
+                        </h4>
+                        <p class="text-xs text-gray-500">O passo-a-passo logístico na cozinha.</p>
+                     </div>
+                     <button (click)="addPreparation()" class="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 bg-blue-900/20 px-3 py-1.5 rounded border border-blue-800/50 hover:bg-blue-900/40">
+                         <span class="material-symbols-outlined text-sm">add</span> Nova Etapa
+                     </button>
+                </div>
+
+                <div class="space-y-6">
+                    @for(prep of recipeForm().preparations; track prep.id; let i = $index) {
+                        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
+                            <!-- Step Header -->
+                            <div class="bg-gray-900/80 p-3 flex items-center gap-3 border-b border-gray-700">
+                                <div class="bg-blue-600 text-white w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold">{{ i + 1 }}</div>
+                                <input type="text" [value]="prep.name" (input)="updatePreparationField(prep.id, 'name', $any($event.target).value)" placeholder="Nome da Etapa (ex: Grelhar Carne)" class="bg-transparent text-white font-bold focus:outline-none placeholder-gray-500 flex-1 border-b border-transparent focus:border-blue-500 transition-colors px-1">
+                                
+                                <div class="flex items-center gap-2 bg-gray-800 px-2 py-1 rounded border border-gray-600">
+                                    <span class="text-xs text-gray-400">Estação:</span>
+                                    <div class="flex items-center gap-1">
+                                        <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-transparent text-xs text-blue-300 font-semibold focus:outline-none cursor-pointer">
+                                            <option value="">Selecione...</option>
+                                            @for(s of stations(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
+                                        </select>
+                                        <button (click)="openAddStationModal(prep.id)" class="text-gray-500 hover:text-white" title="Nova Estação">+</button>
+                                    </div>
+                                </div>
+                                <button (click)="removePreparation(prep.id)" class="text-gray-500 hover:text-red-400 ml-2" title="Remover Etapa"><span class="material-symbols-outlined text-lg">delete</span></button>
+                            </div>
+
+                            <!-- Ingredients in Step -->
+                            <div class="p-3 bg-gray-800/50">
+                                <div class="space-y-2">
+                                     @for(ing of getIngredientsForPreparation(prep.id); track ing.ingredient_id) {
+                                        <div class="flex items-center gap-3 text-sm bg-gray-700/30 p-2 rounded hover:bg-gray-700 transition-colors group border border-gray-700/50">
+                                            <span class="material-symbols-outlined text-gray-500 text-sm">grocery</span>
+                                            <span class="text-gray-200 flex-1 font-medium">{{ getIngredientName(ing.ingredient_id) }}</span>
+                                            
+                                            <div class="flex items-center gap-2">
+                                                <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-right text-white focus:outline-none font-mono text-xs">
+                                                <span class="text-gray-500 text-xs w-6">{{ getIngredientUnit(ing.ingredient_id) }}</span>
+                                            </div>
+                                            
+                                            <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
+                                        </div>
+                                     }
+                                     
+                                     <button (click)="startAddingItem(prep.id)" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-blue-400 hover:border-blue-500/50 hover:bg-blue-500/5 text-xs font-semibold transition-all flex items-center justify-center gap-2 mt-2">
+                                        <span class="material-symbols-outlined text-sm">add_circle</span> Adicionar Ingrediente a esta Etapa
+                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
           </section>
@@ -327,7 +363,7 @@
                  }
                  
                  <!-- AI Button -->
-                 <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
+                 <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 mt-4">
                     @if(isAiLoading()) {
                         <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     } @else {
@@ -337,7 +373,7 @@
                  </button>
                  
                  @if(aiSuggestions(); as suggestions) {
-                    <div class="bg-indigo-900/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-indigo-200 leading-relaxed max-h-60 overflow-y-auto custom-scrollbar">
+                    <div class="bg-indigo-900/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-indigo-200 leading-relaxed max-h-60 overflow-y-auto custom-scrollbar mt-4">
                         <div [innerHTML]="suggestions"></div>
                     </div>
                  }

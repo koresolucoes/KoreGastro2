@@ -1,13 +1,14 @@
 
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withHashLocation } from '@angular/router';
-import { provideZonelessChangeDetection, LOCALE_ID } from '@angular/core';
+import { provideZonelessChangeDetection, LOCALE_ID, ErrorHandler } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 
 import { AppComponent } from './src/app.component';
 import { APP_ROUTES } from './src/app.routes';
 import { supabase } from './src/services/supabase-client';
+import { GlobalErrorHandler } from './src/services/global-error-handler';
 
 // Register the locale data for pt-BR
 registerLocaleData(localePt);
@@ -61,6 +62,7 @@ function bootstrap() {
         provideZonelessChangeDetection(),
         provideRouter(APP_ROUTES, withHashLocation()),
         { provide: LOCALE_ID, useValue: 'pt-BR' },
+        { provide: ErrorHandler, useClass: GlobalErrorHandler } // Register Global Error Handler
       ],
     });
   } catch (err) {
