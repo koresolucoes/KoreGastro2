@@ -39,7 +39,7 @@
   </div>
 
   <!-- Entries Table/List -->
-  <div class="bg-gray-800 rounded-lg">
+  <div class="bg-gray-800 rounded-lg overflow-hidden">
     @if (isLoading()) {
       <div class="text-center py-16 text-gray-500">Carregando registros...</div>
     } @else if (filteredEntries().length === 0) {
@@ -53,10 +53,9 @@
               <th class="px-6 py-3">Funcionário</th>
               <th class="px-6 py-3">Data</th>
               <th class="px-6 py-3">Entrada</th>
-              <th class="px-6 py-3">Início Pausa</th>
-              <th class="px-6 py-3">Fim Pausa</th>
               <th class="px-6 py-3">Saída</th>
               <th class="px-6 py-3">Duração Líquida</th>
+              <th class="px-6 py-3 text-center">Info</th>
               <th class="px-6 py-3 text-center">Ações</th>
             </tr>
           </thead>
@@ -65,14 +64,24 @@
               <tr class="border-b border-gray-700 hover:bg-gray-700/40">
                 <td class="px-6 py-4 font-medium text-white">{{ entry.employees?.name }}</td>
                 <td class="px-6 py-4">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</td>
-                <td class="px-6 py-4 font-mono text-green-400">{{ entry.clock_in_time | date:'HH:mm' }}</td>
-                <td class="px-6 py-4 font-mono text-yellow-400">{{ entry.break_start_time ? (entry.break_start_time | date:'HH:mm') : '--:--' }}</td>
-                <td class="px-6 py-4 font-mono text-yellow-400">{{ entry.break_end_time ? (entry.break_end_time | date:'HH:mm') : '--:--' }}</td>
+                <td class="px-6 py-4">
+                    <span class="font-mono text-green-400">{{ entry.clock_in_time | date:'HH:mm' }}</span>
+                    @if(isLate(entry)) {
+                        <span class="ml-2 bg-red-900/50 text-red-300 text-[10px] px-1.5 py-0.5 rounded border border-red-800">ATRASO</span>
+                    }
+                </td>
                 <td class="px-6 py-4 font-mono text-red-400">
                   @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm' }} }
                   @else { <span class="text-yellow-400">--:--</span> }
                 </td>
                 <td class="px-6 py-4 font-mono font-semibold">{{ getFormattedDuration(entry) }}</td>
+                <td class="px-6 py-4 text-center">
+                    @if(entry.latitude && entry.longitude) {
+                        <button (click)="openMapModal(entry)" class="text-blue-400 hover:text-white" title="Ver Localização">
+                            <span class="material-symbols-outlined">map</span>
+                        </button>
+                    }
+                </td>
                 <td class="px-6 py-4 text-center">
                   @if (entryPendingDeletion()?.id === entry.id) {
                     <div class="flex justify-center gap-2"><span class="text-sm text-red-300">Certeza?</span><button (click)="confirmDeleteEntry()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button><button (click)="cancelDeleteEntry()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button></div>
@@ -89,7 +98,7 @@
       <!-- Mobile Cards -->
       <div class="md:hidden p-4 space-y-4">
         @for (entry of filteredEntries(); track entry.id) {
-          <div class="bg-gray-700/50 p-4 rounded-lg">
+          <div class="bg-gray-700/50 p-4 rounded-lg border-l-4" [class.border-red-500]="isLate(entry)" [class.border-gray-600]="!isLate(entry)">
             <div class="flex justify-between items-start mb-2">
               <div>
                 <p class="font-bold text-white">{{ entry.employees?.name }}</p>
@@ -101,6 +110,7 @@
               <div class="text-center bg-gray-900/50 p-2 rounded">
                 <p class="text-xs text-green-400">Entrada</p>
                 <p class="font-mono font-semibold">{{ entry.clock_in_time | date:'HH:mm' }}</p>
+                 @if(isLate(entry)) { <span class="text-[10px] text-red-400 font-bold">ATRASO</span> }
               </div>
                <div class="text-center bg-gray-900/50 p-2 rounded">
                 <p class="text-xs text-red-400">Saída</p>
@@ -108,31 +118,18 @@
                   @if(entry.clock_out_time) { {{ entry.clock_out_time | date:'HH:mm' }} } @else { <span>--:--</span> }
                 </p>
               </div>
-              <div class="text-center bg-gray-900/50 p-2 rounded">
-                <p class="text-xs text-yellow-400">Início Pausa</p>
-                <p class="font-mono font-semibold">
-                  @if(entry.break_start_time) { {{ entry.break_start_time | date:'HH:mm' }} } @else { <span>--:--</span> }
-                </p>
-              </div>
-               <div class="text-center bg-gray-900/50 p-2 rounded">
-                <p class="text-xs text-yellow-400">Fim Pausa</p>
-                <p class="font-mono font-semibold">
-                  @if(entry.break_end_time) { {{ entry.break_end_time | date:'HH:mm' }} } @else { <span>--:--</span> }
-                </p>
-              </div>
             </div>
-            @if (entry.notes) {
-              <p class="text-xs italic text-gray-300 bg-gray-900/50 p-2 rounded-md">"{{ entry.notes }}"</p>
-            }
-            <div class="flex justify-end gap-2 pt-3 border-t border-gray-600/50">
-                @if (entryPendingDeletion()?.id === entry.id) {
-                  <span class="text-sm text-red-300">Certeza?</span>
-                  <button (click)="confirmDeleteEntry()" class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-500">Sim</button>
-                  <button (click)="cancelDeleteEntry()" class="px-2 py-1 text-xs rounded bg-gray-600 hover:bg-gray-500">Não</button>
-                } @else {
-                  <button (click)="openEditModal(entry)" class="text-blue-400 hover:underline text-sm">Editar</button>
-                  <button (click)="requestDeleteEntry(entry)" class="text-red-400 hover:underline text-sm">Excluir</button>
-                }
+            <div class="flex justify-between items-center pt-3 border-t border-gray-600/50">
+                 @if(entry.latitude && entry.longitude) {
+                    <button (click)="openMapModal(entry)" class="text-blue-400 text-sm flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">map</span> Ver Mapa
+                    </button>
+                } @else { <span></span> }
+
+                <div class="flex gap-3">
+                     <button (click)="openEditModal(entry)" class="text-blue-400 text-sm">Editar</button>
+                     <button (click)="requestDeleteEntry(entry)" class="text-red-400 text-sm">Excluir</button>
+                </div>
             </div>
           </div>
         }
@@ -141,7 +138,20 @@
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Map Modal -->
+@if(isMapModalOpen()) {
+    <div class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" (click)="closeMapModal()">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl h-[500px] flex flex-col" (click)="$event.stopPropagation()">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">Localização do Registro</h3>
+                <button (click)="closeMapModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div #mapContainer class="flex-1 w-full bg-gray-900 z-0 relative"></div>
+        </div>
+    </div>
+}
+
+<!-- Add/Edit Modal (Existing) -->
 @if(isModalOpen()) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
@@ -168,19 +178,6 @@
             <label class="block text-sm font-medium text-gray-300 mb-1">Saída</label>
             <input type="datetime-local" [value]="formatForInput(entryForm().clock_out_time)" (input)="updateEntryFormDateTime('clock_out_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
           </div>
-        </div>
-        <div class="p-4 bg-gray-700/50 rounded-lg space-y-4">
-            <h4 class="text-md font-semibold text-white">Registro de Pausa (Opcional)</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Início da Pausa</label>
-                <input type="datetime-local" [value]="formatForInput(entryForm().break_start_time)" (input)="updateEntryFormDateTime('break_start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Fim da Pausa</label>
-                <input type="datetime-local" [value]="formatForInput(entryForm().break_end_time)" (input)="updateEntryFormDateTime('break_end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-              </div>
-            </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>

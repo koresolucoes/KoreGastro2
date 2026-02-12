@@ -1,21 +1,20 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Employee, TimeClockEntry } from '../../models/db.models';
-// FIX: Import HrStateService to access employee data
+import { Employee, TimeClockEntry, Shift } from '../../models/db.models';
 import { HrStateService } from '../../services/hr-state.service';
 import { TimeClockService } from '../../services/time-clock.service';
 import { NotificationService } from '../../services/notification.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 
-// Helper to format ISO string to datetime-local input value
+declare var L: any; // Leaflet
+
 function formatISOToInput(isoString: string | null | undefined): string {
     if (!isoString) return '';
     const date = new Date(isoString);
-    // Adjust for timezone offset
     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return localDate.toISOString().slice(0, 16);
 }
 
-// Helper to parse datetime-local input value back to ISO string (UTC)
 function parseInputToISO(inputString: string | null | undefined): string | null {
     if (!inputString) return null;
     return new Date(inputString).toISOString();
@@ -30,18 +29,17 @@ function parseInputToISO(inputString: string | null | undefined): string | null 
   providers: [DatePipe]
 })
 export class TimeClockComponent {
-    // FIX: Inject HrStateService
     private hrState = inject(HrStateService);
     private timeClockService = inject(TimeClockService);
     private notificationService = inject(NotificationService);
+    private settingsState = inject(SettingsStateService);
 
-    // Data signals
-    // FIX: Access employees from the correct state service
     employees = this.hrState.employees;
+    schedules = this.hrState.schedules;
+    companyProfile = this.settingsState.companyProfile;
+
     isLoading = signal(true);
     filteredEntries = signal<TimeClockEntry[]>([]);
-
-    // Filter signals
     filterEmployeeId = signal<string>('all');
     
     private today = new Date();
@@ -51,11 +49,16 @@ export class TimeClockComponent {
     filterStartDate = signal(this.startOfMonth.toISOString().split('T')[0]);
     filterEndDate = signal(this.endOfMonth.toISOString().split('T')[0]);
 
-    // Modal state
     isModalOpen = signal(false);
     editingEntry = signal<TimeClockEntry | null>(null);
     entryForm = signal<Partial<TimeClockEntry>>({});
     entryPendingDeletion = signal<TimeClockEntry | null>(null);
+
+    // Map Modal
+    isMapModalOpen = signal(false);
+    selectedEntryForMap = signal<TimeClockEntry | null>(null);
+    @ViewChild('mapContainer') mapContainer!: ElementRef;
+    private map: any;
 
     constructor() {
         effect(() => {
@@ -86,7 +89,7 @@ export class TimeClockComponent {
                 return sum + duration;
             }, 0);
         
-        return totalMilliseconds / (1000 * 60 * 60); // Convert to hours
+        return totalMilliseconds / (1000 * 60 * 60); 
     });
 
     private calculateDurationInMs(entry: TimeClockEntry): number {
@@ -104,17 +107,14 @@ export class TimeClockComponent {
                 breakDuration = breakEnd - breakStart;
             }
         }
-        
         return Math.max(0, totalDuration - breakDuration);
     }
 
     formatDuration(durationMs: number): string {
         if (durationMs <= 0) return '00:00:00';
-
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
@@ -122,6 +122,76 @@ export class TimeClockComponent {
         if (!entry.clock_out_time) return 'Em andamento';
         const durationMs = this.calculateDurationInMs(entry);
         return this.formatDuration(durationMs);
+    }
+
+    // --- Lateness Logic ---
+    isLate(entry: TimeClockEntry): boolean {
+        // Find schedule for this day/employee
+        const entryDate = new Date(entry.clock_in_time);
+        // Find schedule week
+        const schedules = this.schedules();
+        
+        // Very basic search, ideally should index by date
+        // Find shift matching employee and date
+        for (const schedule of schedules) {
+             const shift = schedule.shifts.find(s => 
+                s.employee_id === entry.employee_id && 
+                new Date(s.start_time).toISOString().split('T')[0] === entryDate.toISOString().split('T')[0]
+             );
+             if (shift && !shift.is_day_off) {
+                 const scheduledStart = new Date(shift.start_time);
+                 const actualStart = new Date(entry.clock_in_time);
+                 // Tolerance: 10 minutes
+                 const diffMinutes = (actualStart.getTime() - scheduledStart.getTime()) / 60000;
+                 return diffMinutes > 10;
+             }
+        }
+        return false;
+    }
+    
+    // --- Map Logic ---
+    openMapModal(entry: TimeClockEntry) {
+        if (!entry.latitude || !entry.longitude) {
+            this.notificationService.show('Localização não registrada para este ponto.', 'warning');
+            return;
+        }
+        this.selectedEntryForMap.set(entry);
+        this.isMapModalOpen.set(true);
+        
+        setTimeout(() => this.initMap(), 100);
+    }
+    
+    closeMapModal() {
+        this.isMapModalOpen.set(false);
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
+    }
+
+    private initMap() {
+        const entry = this.selectedEntryForMap();
+        if (!entry || !this.mapContainer) return;
+        
+        const lat = entry.latitude!;
+        const lon = entry.longitude!;
+        
+        this.map = L.map(this.mapContainer.nativeElement).setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+        
+        // Employee Marker
+        L.marker([lat, lon]).addTo(this.map).bindPopup(`Ponto: ${entry.employees?.name}`).openPopup();
+        
+        // Store Marker (if available)
+        const profile = this.companyProfile();
+        if (profile?.latitude && profile.longitude) {
+             L.circle([profile.latitude, profile.longitude], {
+                color: 'blue',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.2,
+                radius: profile.time_clock_radius || 100
+            }).addTo(this.map).bindPopup('Área Permitida');
+        }
     }
     
     openAddModal() {
@@ -161,7 +231,6 @@ export class TimeClockComponent {
         if (result.success) {
             await this.notificationService.alert(this.editingEntry() ? 'Registro atualizado!' : 'Registro adicionado!', 'Sucesso');
             this.closeModal();
-            // Re-fetch data to show the new/updated entry
             this.loadEntries(this.filterStartDate(), this.filterEndDate(), this.filterEmployeeId());
         } else {
             await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
@@ -176,7 +245,6 @@ export class TimeClockComponent {
         if (entry) {
             const result = await this.timeClockService.deleteEntry(entry.id);
             if (result.success) {
-                 // Re-fetch data to remove the deleted entry
                 this.loadEntries(this.filterStartDate(), this.filterEndDate(), this.filterEmployeeId());
             } else {
                 await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
@@ -185,7 +253,7 @@ export class TimeClockComponent {
         }
     }
 
-    updateEntryFormField(field: keyof Omit<TimeClockEntry, 'id' | 'created_at' | 'user_id' | 'employees' | 'clock_in_time' | 'clock_out_time' | 'break_start_time' | 'break_end_time'>, value: string | null) {
+    updateEntryFormField(field: string, value: any) {
         this.entryForm.update(form => ({...form, [field]: value}));
     }
 

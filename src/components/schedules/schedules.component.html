@@ -37,9 +37,15 @@
                       <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
                   }
               </div>
-              <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                  {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
-              </button>
+              <div class="flex gap-2">
+                  <button (click)="copyFromPreviousWeek()" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2">
+                      <span class="material-symbols-outlined text-base">content_copy</span>
+                      Copiar Semana Anterior
+                  </button>
+                  <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                      {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
+                  </button>
+              </div>
           } @else {
               <div class="text-center text-gray-500 py-2 w-full">
                 <p>Nenhuma escala para esta semana. Adicione turnos para criar uma.</p>
@@ -90,7 +96,7 @@
                         </div>
                       }
                     } @else if (approvedLeave) {
-                      <div class="bg-purple-800 text-center text-purple-200 p-2 rounded-md text-sm font-semibold">
+                      <div class="bg-purple-900/50 border border-purple-800 text-center text-purple-200 p-2 rounded-md text-sm font-semibold">
                           {{ approvedLeave.request_type }}
                       </div>
                     }
@@ -122,6 +128,14 @@
         <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
       </div>
       <div class="p-6 space-y-4">
+        
+        @if (shiftConflictWarning()) {
+            <div class="bg-red-900/40 border border-red-700 text-red-200 p-3 rounded-lg flex items-center gap-2">
+                <span class="material-symbols-outlined">warning</span>
+                <span class="text-sm font-semibold">{{ shiftConflictWarning() }}</span>
+            </div>
+        }
+
         <div class="flex items-center">
             <input type="checkbox" id="is_day_off" [checked]="shiftForm().is_day_off" (change)="updateShiftFormField('is_day_off', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600">
             <label for="is_day_off" class="ml-2 text-sm text-gray-200">Marcar como dia de Folga</label>

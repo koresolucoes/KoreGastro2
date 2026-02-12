@@ -1,13 +1,14 @@
 
 import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Employee } from '../../models/db.models';
+import { Employee, TimeClockEntry } from '../../models/db.models';
 import { HrStateService } from '../../services/hr-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 import { EmployeeDetailsModalComponent } from './employee-details-modal/employee-details-modal.component';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { TimeClockService } from '../../services/time-clock.service';
 
 @Component({
   selector: 'app-employees',
@@ -21,6 +22,7 @@ export class EmployeesComponent implements OnInit {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
   private supabaseStateService = inject(SupabaseStateService);
+  private timeClockService = inject(TimeClockService);
 
   employees = computed(() => {
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
@@ -31,20 +33,53 @@ export class EmployeesComponent implements OnInit {
   });
   
   roles = this.hrState.roles;
-  employeeSearchTerm = signal('');
+  leaveRequests = this.hrState.leaveRequests;
+  
+  // Dashboard Signals
+  activeTimeEntries = signal<TimeClockEntry[]>([]);
+  isLoadingDashboard = signal(true);
 
+  employeeSearchTerm = signal('');
   isModalOpen = signal(false);
   editingEmployee = signal<Partial<Employee> | null>(null);
   employeeForm = signal<Partial<Employee>>({});
   employeePendingDeletion = signal<(Employee & { role: string }) | null>(null);
-  
-  // Photo upload state
   photoFile = signal<File | null>(null);
   photoPreviewUrl = signal<string | null>(null);
-
-  // State for details modal
   isDetailsModalOpen = signal(false);
   selectedEmployeeForDetails = signal<(Employee & { role: string }) | null>(null);
+
+  // DASHBOARD COMPUTEDS
+  workingNowCount = computed(() => this.activeTimeEntries().filter(e => !e.clock_out_time).length);
+  pendingLeavesCount = computed(() => this.leaveRequests().filter(r => r.status === 'Pendente').length);
+  
+  alerts = computed(() => {
+      const emps = this.employees();
+      const alertsList: string[] = [];
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentDay = today.getDate();
+
+      emps.forEach(emp => {
+          // Birthday check
+          if (emp.birth_date) {
+              const bday = new Date(emp.birth_date);
+              if (bday.getMonth() === currentMonth) {
+                  alertsList.push(`🎂 Aniversário de ${emp.name} em ${bday.getDate()}/${currentMonth + 1}`);
+              }
+          }
+          // Probation check (e.g., 90 days from hire)
+          if (emp.hire_date) {
+             const hire = new Date(emp.hire_date);
+             const diffTime = Math.abs(today.getTime() - hire.getTime());
+             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+             if (diffDays >= 80 && diffDays <= 90) {
+                 alertsList.push(`📄 Contrato de experiência de ${emp.name} vencendo (${diffDays} dias)`);
+             }
+          }
+      });
+      return alertsList;
+  });
 
   filteredEmployees = computed(() => {
     const term = this.employeeSearchTerm().toLowerCase();
@@ -53,9 +88,20 @@ export class EmployeesComponent implements OnInit {
   });
 
   ngOnInit() {
-    // Data is loaded centrally by SupabaseStateService
-    // We load heavy historical data here which is not critical for immediate rendering
     this.supabaseStateService.loadBackOfficeData();
+    this.loadDashboardData();
+  }
+
+  async loadDashboardData() {
+      this.isLoadingDashboard.set(true);
+      const today = new Date().toISOString().split('T')[0];
+      // Get entries for today to see who is clocked in
+      const { data } = await this.timeClockService.getEntriesForPeriod(today, today, 'all');
+      if (data) {
+          // Filter only those without clock out time
+          this.activeTimeEntries.set(data.filter(e => !e.clock_out_time));
+      }
+      this.isLoadingDashboard.set(false);
   }
   
   openDetailsModal(employee: Employee & { role: string }) {

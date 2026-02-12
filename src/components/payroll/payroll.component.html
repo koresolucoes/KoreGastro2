@@ -17,9 +17,15 @@
             <option [value]="year">{{ year }}</option>
           }
         </select>
+        
+        <button (click)="openAdjustmentModal()" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+           <span class="material-symbols-outlined text-base">attach_money</span>
+           Lançar Ajuste
+        </button>
+
         <button (click)="printReport()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
-          Imprimir Resumo
+          <span class="material-symbols-outlined text-base">print</span>
+          Imprimir
         </button>
       </div>
     </div>
@@ -35,7 +41,7 @@
     @if (isLoading()) {
       <div class="text-center py-20 text-gray-500">Calculando...</div>
     } @else if (payrollData().length === 0) {
-      <div class="text-center py-20 text-gray-500">Nenhum dado de ponto ou escala encontrado para este período.</div>
+      <div class="text-center py-20 text-gray-500">Nenhum dado encontrado para este período.</div>
     } @else {
       <!-- Desktop Table -->
       <div class="overflow-x-auto hidden md:block">
@@ -43,11 +49,11 @@
           <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
             <tr>
               <th class="px-6 py-3">Funcionário</th>
-              <th class="px-6 py-3 text-center">H. Agendadas</th>
-              <th class="px-6 py-3 text-center">H. Trabalhadas</th>
+              <th class="px-6 py-3 text-center">H. Trab</th>
               <th class="px-6 py-3 text-center">H. Extras</th>
               <th class="px-6 py-3 text-right">Salário Base</th>
               <th class="px-6 py-3 text-right">Valor H. Extra</th>
+              <th class="px-6 py-3 text-right">Ajustes</th>
               <th class="px-6 py-3 text-right font-bold">Total a Pagar</th>
               <th class="px-6 py-3 text-center no-print">Ações</th>
             </tr>
@@ -56,11 +62,13 @@
             @for (data of payrollData(); track data.employee.id) {
               <tr class="border-b border-gray-700">
                 <td class="px-6 py-4"><p class="font-medium text-white">{{ data.employee.name }}</p><p class="text-xs text-gray-400">{{ data.employee.role }}</p></td>
-                <td class="px-6 py-4 text-center text-gray-300">{{ data.scheduledHours | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-center font-semibold text-white">{{ data.workedHours | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-center font-semibold" [class.text-yellow-400]="data.overtimeHours > 0">{{ data.overtimeHours | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-right text-gray-300">{{ data.basePay | currency:'BRL' }}</td>
                 <td class="px-6 py-4 text-right text-yellow-400">{{ data.overtimePay | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right font-medium" [class.text-green-400]="data.adjustmentsTotal > 0" [class.text-red-400]="data.adjustmentsTotal < 0">
+                    {{ data.adjustmentsTotal | currency:'BRL' }}
+                </td>
                 <td class="px-6 py-4 text-right font-bold text-lg text-green-400">{{ data.totalPay | currency:'BRL' }}</td>
                 <td class="px-6 py-4 text-center no-print"><button (click)="openPayslip(data)" class="text-blue-400 hover:underline text-sm">Gerar Contracheque</button></td>
               </tr>
@@ -69,11 +77,11 @@
            <tfoot>
             <tr class="bg-gray-900/50">
                 <td class="px-6 py-4 font-bold text-white text-lg">TOTAIS</td>
-                <td class="px-6 py-4 text-center font-bold text-white">{{ totalScheduledHours() | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-center font-bold text-white">{{ totalWorkedHours() | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-center font-bold text-yellow-400">{{ totalOvertimeHours() | number:'1.2-2' }}h</td>
                 <td class="px-6 py-4 text-right font-bold text-white">{{ totalBasePay() | currency:'BRL' }}</td>
                 <td class="px-6 py-4 text-right font-bold text-yellow-400">{{ totalOvertimePay() | currency:'BRL' }}</td>
+                <td class="px-6 py-4 text-right font-bold text-white">{{ totalAdjustments() | currency:'BRL' }}</td>
                 <td class="px-6 py-4 text-right font-bold text-2xl text-green-400">{{ grandTotalPay() | currency:'BRL' }}</td>
                 <td class="no-print"></td>
             </tr>
@@ -95,10 +103,9 @@
               </div>
             </div>
             <div class="grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-gray-600/50 text-sm">
-              <div><p class="text-gray-400">H. Agendadas</p><p class="text-white font-medium">{{ data.scheduledHours | number:'1.2-2' }}h</p></div>
               <div><p class="text-gray-400">H. Trabalhadas</p><p class="text-white font-medium">{{ data.workedHours | number:'1.2-2' }}h</p></div>
               <div><p class="text-gray-400">H. Extras</p><p class="font-medium" [class.text-yellow-400]="data.overtimeHours > 0">{{ data.overtimeHours | number:'1.2-2' }}h</p></div>
-              <div><p class="text-gray-400">Valor H. Extra</p><p class="text-yellow-400 font-medium">{{ data.overtimePay | currency:'BRL' }}</p></div>
+              <div><p class="text-gray-400">Ajustes</p><p class="font-medium" [class.text-red-400]="data.adjustmentsTotal < 0">{{ data.adjustmentsTotal | currency:'BRL' }}</p></div>
             </div>
             <div class="pt-3 mt-3 border-t border-gray-600/50">
               <button (click)="openPayslip(data)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Gerar Contracheque</button>
@@ -110,6 +117,49 @@
   </div>
 </div>
 
+<!-- Adjustment Modal -->
+@if(isAdjustmentModalOpen()) {
+    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAdjustmentModal()">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white">Lançamento Avulso ({{ periodString() }})</h3>
+                <button (click)="closeAdjustmentModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
+                    <select [value]="adjustmentForm().employeeId" (change)="updateAdjustmentForm('employeeId', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        @for (data of payrollData(); track data.employee.id) {
+                            <option [value]="data.employee.id">{{ data.employee.name }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                     <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
+                        <select [value]="adjustmentForm().type" (change)="updateAdjustmentForm('type', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                            <option value="BONUS">Bônus / Adicional</option>
+                            <option value="DEDUCTION">Desconto / Vale</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Valor (R$)</label>
+                        <input type="number" [value]="adjustmentForm().amount" (input)="updateAdjustmentForm('amount', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="0.00">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                    <input type="text" [value]="adjustmentForm().description" (input)="updateAdjustmentForm('description', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="Ex: Quebra de caixa, Gorjeta extra...">
+                </div>
+            </div>
+             <div class="p-4 bg-gray-700/50 flex justify-end gap-3 rounded-b-lg">
+                <button (click)="closeAdjustmentModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
+                <button (click)="saveAdjustment()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Payslip Modal -->
 @if(employeeForPayslip(); as payslip) {
   <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="closePayslip()">
@@ -119,7 +169,7 @@
             <div class="flex gap-2">
                 <button (click)="printPayslip()" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-500">Imprimir</button>
                 <button (click)="closePayslip()" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
         </div>
@@ -130,8 +180,6 @@
                     <!-- Header -->
                     <div class="text-center border-b border-gray-400 pb-2">
                         <h2 class="text-base font-bold">{{ companyProfile()?.company_name || 'Nome da Empresa' }}</h2>
-                        <p class="text-xs">{{ companyProfile()?.address || 'Endereço da Empresa' }}</p>
-                        <p class="text-xs">CNPJ: {{ companyProfile()?.cnpj || '00.000.000/0000-00' }}</p>
                         <h3 class="font-semibold mt-2 text-sm">Recibo de Pagamento de Salário - {{ payslipReferenceMonth() }}</h3>
                     </div>
                     <!-- Employee Info -->
@@ -141,10 +189,6 @@
                                 <td class="p-1 border border-gray-400"><strong>Funcionário:</strong><br>{{ payslip.employee.name }}</td>
                                 <td class="p-1 border border-gray-400"><strong>Cargo:</strong><br>{{ payslip.employee.role }}</td>
                             </tr>
-                            <tr>
-                                <td class="p-1 border border-gray-400"><strong>CPF:</strong><br>{{ payslip.employee.cpf || 'Não informado' }}</td>
-                                <td class="p-1 border border-gray-400"><strong>Admissão:</strong><br>{{ payslip.employee.hire_date | date:'dd/MM/yyyy' }}</td>
-                            </tr>
                         </tbody>
                     </table>
                     <!-- Details Table -->
@@ -152,53 +196,60 @@
                         <thead class="bg-gray-200">
                             <tr class="font-bold">
                                 <td class="p-1 border border-gray-400 w-[45%]">Descrição</td>
-                                <td class="p-1 border border-gray-400 text-center w-[15%]">Referência</td>
+                                <td class="p-1 border border-gray-400 text-center w-[15%]">Ref</td>
                                 <td class="p-1 border border-gray-400 text-center w-[20%]">Proventos</td>
                                 <td class="p-1 border border-gray-400 text-center w-[20%]">Descontos</td>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Proventos -->
+                            <!-- Salario Base -->
                             <tr>
                                 <td class="p-1 border border-gray-400">Salário Base</td>
-                                <td class="p-1 border border-gray-400 text-right">
-                                  @if (payslip.employee.salary_type === 'mensal') {
-                                    <span>30d / {{ payslipNormalHoursWorked() | number:'1.2-2' }}h</span>
-                                  } @else {
-                                    <span>{{ payslipNormalHoursWorked() | number:'1.2-2' }}h</span>
-                                  }
-                                </td>
+                                <td class="p-1 border border-gray-400 text-right">{{ payslipNormalHoursWorked() | number:'1.1-1' }}h</td>
                                 <td class="p-1 border border-gray-400 text-right">{{ payslip.basePay | currency:'BRL' }}</td>
                                 <td class="p-1 border border-gray-400"></td>
                             </tr>
+                            
+                            <!-- Horas Extras -->
                             @if(payslip.overtimePay > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">Horas Extras ({{ ((payslip.employee.overtime_rate_multiplier || 1.5) - 1) * 100 | number:'1.0-0' }}%)</td>
+                                    <td class="p-1 border border-gray-400">Horas Extras</td>
                                     <td class="p-1 border border-gray-400 text-right">{{ payslip.overtimeHours | number:'1.2-2' }}h</td>
                                     <td class="p-1 border border-gray-400 text-right">{{ payslip.overtimePay | currency:'BRL' }}</td>
                                     <td class="p-1 border border-gray-400"></td>
                                 </tr>
                             }
                             
-                            <!-- Descontos -->
+                            <!-- Ajustes -->
+                            @for(adj of payslipAdjustments(); track adj.id) {
+                                <tr>
+                                    <td class="p-1 border border-gray-400">{{ adj.description }}</td>
+                                    <td class="p-1 border border-gray-400 text-right"></td>
+                                    <td class="p-1 border border-gray-400 text-right">{{ adj.type === 'BONUS' ? (adj.amount | currency:'BRL') : '' }}</td>
+                                    <td class="p-1 border border-gray-400 text-right">{{ adj.type === 'DEDUCTION' ? (adj.amount | currency:'BRL') : '' }}</td>
+                                </tr>
+                            }
+
+                            <!-- Descontos Fixos Simulados -->
                              @if(payslipINSS() > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">INSS (Alíquota simulada 9%)</td>
-                                    <td class="p-1 border border-gray-400 text-right">9,00%</td>
+                                    <td class="p-1 border border-gray-400">INSS (Simulado)</td>
+                                    <td class="p-1 border border-gray-400 text-right">9%</td>
                                     <td class="p-1 border border-gray-400"></td>
                                     <td class="p-1 border border-gray-400 text-right">{{ payslipINSS() | currency:'BRL' }}</td>
                                 </tr>
                             }
-                            @if(payslipVT() > 0) {
+                             @if(payslipVT() > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">Vale Transporte (Alíquota simulada 6%)</td>
-                                    <td class="p-1 border border-gray-400 text-right">6,00%</td>
+                                    <td class="p-1 border border-gray-400">Vale Transporte</td>
+                                    <td class="p-1 border border-gray-400 text-right">6%</td>
                                     <td class="p-1 border border-gray-400"></td>
                                     <td class="p-1 border border-gray-400 text-right">{{ payslipVT() | currency:'BRL' }}</td>
                                 </tr>
                             }
-                            <!-- Empty rows for spacing -->
-                            @for (_ of [1,2,3,4,5]; track _) {
+
+                            <!-- Empty rows -->
+                            @for (_ of [1,2,3]; track _) {
                                <tr><td class="p-1 border border-gray-400 h-4"></td><td class="p-1 border border-gray-400"></td><td class="p-1 border border-gray-400"></td><td class="p-1 border border-gray-400"></td></tr>
                             }
                         </tbody>
@@ -211,17 +262,12 @@
                         </tfoot>
                     </table>
                     
-                    <!-- Summary -->
-                     <div class="grid grid-cols-3 gap-[-1px] mt-[-1px] text-xs">
-                        <div class="border border-gray-400 p-1"><strong>Base FGTS:</strong><br>{{ payslipBaseFGTS() | currency:'BRL' }}</div>
-                        <div class="border-y border-r border-gray-400 p-1"><strong>FGTS do Mês:</strong><br>{{ payslipFGTSMes() | currency:'BRL' }}</div>
-                        <div class="border-y border-r border-gray-400 p-1 font-bold"><strong>Líquido a Receber:</strong><br><span class="text-sm">{{ payslipLiquido() | currency:'BRL' }}</span></div>
+                    <div class="border border-gray-400 p-2 mt-[-1px] font-bold text-right text-sm">
+                        LÍQUIDO A RECEBER: {{ payslipLiquido() | currency:'BRL' }}
                     </div>
 
-                    <!-- Signature -->
                     <div class="mt-8 pt-4 text-center">
                         <div class="inline-block w-80 border-t border-gray-500 pt-1 text-sm">Assinatura do Funcionário</div>
-                        <p class="text-xs mt-2">Declaro ter recebido a importância líquida discriminada neste recibo.</p>
                     </div>
                      <p class="text-xs text-center text-gray-500 mt-2">{{ copy === 1 ? 'Via da Empresa' : 'Via do Empregado' }}</p>
                 </div>

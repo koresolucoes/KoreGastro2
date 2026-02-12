@@ -10,6 +10,68 @@
     </button>
   </div>
 
+  <!-- HR Dashboard Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Card: Working Now -->
+      <div class="bg-gray-800 rounded-lg p-5 border-l-4 border-green-500">
+          <div class="flex justify-between items-start">
+              <div>
+                  <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">Trabalhando Agora</p>
+                  <p class="text-3xl font-bold text-white mt-1">{{ workingNowCount() }}</p>
+              </div>
+              <div class="p-2 bg-gray-700 rounded-lg">
+                  <span class="material-symbols-outlined text-green-400">group</span>
+              </div>
+          </div>
+          @if(workingNowCount() > 0) {
+              <div class="mt-3 text-xs text-gray-400">
+                  <p class="truncate">Equipe ativa no momento.</p>
+              </div>
+          }
+      </div>
+
+      <!-- Card: Pending Leaves -->
+      <div class="bg-gray-800 rounded-lg p-5 border-l-4 border-yellow-500">
+          <div class="flex justify-between items-start">
+              <div>
+                  <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">Solicitações Pendentes</p>
+                  <p class="text-3xl font-bold text-white mt-1">{{ pendingLeavesCount() }}</p>
+              </div>
+              <div class="p-2 bg-gray-700 rounded-lg">
+                  <span class="material-symbols-outlined text-yellow-400">pending_actions</span>
+              </div>
+          </div>
+          @if(pendingLeavesCount() > 0) {
+              <div class="mt-3">
+                  <a routerLink="/leave-management" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">Ver solicitações &rarr;</a>
+              </div>
+          }
+      </div>
+
+      <!-- Card: Alerts -->
+      <div class="bg-gray-800 rounded-lg p-5 border-l-4 border-red-500">
+          <div class="flex justify-between items-start mb-2">
+              <div>
+                  <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">Alertas do Mês</p>
+              </div>
+              <div class="p-2 bg-gray-700 rounded-lg">
+                  <span class="material-symbols-outlined text-red-400">notifications</span>
+              </div>
+          </div>
+          <div class="mt-1 max-h-20 overflow-y-auto pr-1">
+              @if(alerts().length > 0) {
+                  <ul class="space-y-1">
+                      @for(alert of alerts(); track $index) {
+                          <li class="text-xs text-white bg-gray-700/50 px-2 py-1 rounded border border-gray-600">{{ alert }}</li>
+                      }
+                  </ul>
+              } @else {
+                  <p class="text-sm font-bold text-white">Nenhum alerta.</p>
+              }
+          </div>
+      </div>
+  </div>
+
   <div class="bg-gray-800 rounded-lg">
     <div class="p-4">
       <input type="text" [value]="employeeSearchTerm()" (input)="employeeSearchTerm.set($any($event.target).value)" placeholder="Buscar funcionário por nome ou cargo..." class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-4 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -92,7 +154,7 @@
                 <span>{{ employee.phone || 'Não informado' }}</span>
               </div>
                <div class="flex items-center gap-2 text-gray-300">
-                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                 <span>{{ employee.email || 'Não informado' }}</span>
               </div>
             </div>

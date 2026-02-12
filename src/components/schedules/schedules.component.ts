@@ -1,15 +1,12 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Employee, LeaveRequest, Schedule, Shift } from '../../models/db.models';
-// FIX: Import HrStateService to access HR-related data
 import { HrStateService } from '../../services/hr-state.service';
 import { ScheduleDataService } from '../../services/schedule-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
-// FIX: Import SupabaseStateService to check data load status
 import { SupabaseStateService } from '../../services/supabase-state.service';
 
-// Helper to format ISO string to datetime-local input value
 function formatISOToInput(isoString: string | null | undefined): string {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -17,7 +14,6 @@ function formatISOToInput(isoString: string | null | undefined): string {
     return localDate.toISOString().slice(0, 16);
 }
 
-// Helper to parse datetime-local input value back to ISO string (UTC)
 function parseInputToISO(inputString: string | null | undefined): string | null {
     if (!inputString) return null;
     return new Date(inputString).toISOString();
@@ -31,28 +27,26 @@ function parseInputToISO(inputString: string | null | undefined): string | null 
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchedulesComponent {
-  // FIX: Inject HrStateService instead of SupabaseStateService for HR data
   private hrState = inject(HrStateService);
   private scheduleDataService = inject(ScheduleDataService);
   private notificationService = inject(NotificationService);
   private operationalAuthService = inject(OperationalAuthService);
   private supabaseStateService = inject(SupabaseStateService);
 
-  // Data
-  // FIX: Access employees from the correct state service
   allEmployees = this.hrState.employees;
   availableRoles: string[] = ['Gerente', 'Caixa', 'Garçom', 'Cozinha'];
 
-  // View State
   isLoading = signal(true);
   weekStartDate = signal(this.getStartOfWeek(new Date()));
   
-  // Modal State
   isModalOpen = signal(false);
   editingShift = signal<Shift | null>(null);
   shiftForm = signal<Partial<Shift>>({});
   
   isManager = computed(() => this.operationalAuthService.activeEmployee()?.role === 'Gerente');
+
+  // Warning state for conflict
+  shiftConflictWarning = signal<string | null>(null);
 
   employeesToDisplay = computed(() => {
     if (this.isManager()) {
@@ -63,17 +57,15 @@ export class SchedulesComponent {
   });
 
   activeSchedule = computed(() => {
-    // FIX: Access schedules from the correct state service
     const schedule = this.hrState.schedules().find(s => s.week_start_date === this.weekStartDate());
     if (this.isManager()) {
-        return schedule; // Manager sees published and drafts
+        return schedule; 
     }
-    // Other roles only see published schedules
     return schedule?.is_published ? schedule : null;
   });
 
   weekDays = computed(() => {
-    const start = new Date(this.weekStartDate() + 'T00:00:00'); // Treat as local
+    const start = new Date(this.weekStartDate() + 'T00:00:00');
     return Array.from({ length: 7 }).map((_, i) => {
         const date = new Date(start);
         date.setDate(start.getDate() + i);
@@ -83,7 +75,6 @@ export class SchedulesComponent {
 
   approvedLeaveByDateAndEmployee = computed(() => {
     const map = new Map<string, Map<string, LeaveRequest>>();
-    // FIX: Access leaveRequests from the correct state service
     const approved = this.hrState.leaveRequests().filter(r => r.status === 'Aprovada');
     for (const req of approved) {
       let currentDate = new Date(req.start_date + 'T00:00:00');
@@ -125,27 +116,22 @@ export class SchedulesComponent {
 
   weekInputValue = computed(() => {
     const startOfWeekStr = this.weekStartDate();
-    const date = new Date(startOfWeekStr + 'T12:00:00Z'); // Use UTC and noon to avoid timezone issues
-
-    // Thursday of the week determines the week number and year
+    const date = new Date(startOfWeekStr + 'T12:00:00Z');
     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
     const year = date.getUTCFullYear();
     const yearStart = new Date(Date.UTC(year, 0, 1));
-    // Calculate week number
     const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-    
     return `${year}-W${String(weekNo).padStart(2, '0')}`;
   });
 
   constructor() {
     effect(() => {
       const date = this.weekStartDate();
-      // FIX: Check if data is loaded using the injected service property.
       const isDataLoaded = this.supabaseStateService.isDataLoaded();
 
       if (!isDataLoaded) {
         this.isLoading.set(true);
-        return; // Wait for initial data load
+        return; 
       }
       
       if (this.isManager()) {
@@ -154,8 +140,6 @@ export class SchedulesComponent {
           if (error) {
             this.notificationService.alert(`Erro ao carregar ou criar escala: ${error.message}`);
           }
-          // The creation will trigger a realtime event which updates the stateService.productionPlans signal.
-          // Our `activePlan` computed will then pick it up. We just need to stop loading.
           this.isLoading.set(false);
         });
       } else {
@@ -180,7 +164,6 @@ export class SchedulesComponent {
   handleDateChange(event: Event) {
     const weekValue = (event.target as HTMLInputElement).value;
     if (!weekValue) return;
-
     const [year, week] = weekValue.split('-W').map(Number);
     const dayInWeek = new Date(year, 0, 4 + (week - 1) * 7);
     this.weekStartDate.set(this.getStartOfWeek(dayInWeek));
@@ -192,6 +175,8 @@ export class SchedulesComponent {
       return;
     }
 
+    this.checkConflict(day, employeeId); // Initial check
+
     if (shift) {
       this.editingShift.set(shift);
       this.shiftForm.set({ ...shift });
@@ -201,10 +186,9 @@ export class SchedulesComponent {
       startTime.setHours(9, 0, 0, 0);
       const endTime = new Date(day);
       endTime.setHours(17, 0, 0, 0);
-      const employee = this.allEmployees().find(e => e.id === employeeId);
       
+      const employee = this.allEmployees().find(e => e.id === employeeId);
       const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-      // FIX: Ensure role_id is a string before using it as a map key
       const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
 
       this.shiftForm.set({
@@ -219,27 +203,47 @@ export class SchedulesComponent {
 
   closeModal() {
     this.isModalOpen.set(false);
+    this.shiftConflictWarning.set(null);
+  }
+
+  // Check for conflicts with approved leaves
+  checkConflict(date: Date, employeeId: string) {
+      const dateString = date.toISOString().split('T')[0];
+      const leave = this.approvedLeaveByDateAndEmployee().get(dateString)?.get(employeeId);
+      if (leave) {
+          this.shiftConflictWarning.set(`Atenção: Este funcionário está de ${leave.request_type} neste dia.`);
+      } else {
+          this.shiftConflictWarning.set(null);
+      }
   }
 
   updateShiftFormField(field: keyof Omit<Shift, 'id' | 'created_at' | 'user_id' | 'schedule_id' | 'start_time' | 'end_time' | 'is_day_off'>, value: string | boolean) {
       this.shiftForm.update(form => {
         const newForm = { ...form, [field]: value };
         
-        // If the employee is changed, automatically update the assigned role.
         if (field === 'employee_id') {
             const employee = this.allEmployees().find(e => e.id === value);
             const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
-            // FIX: Ensure role_id is a string before using it as a map key
             const employeeRoleName = employee?.role_id ? rolesMap.get(employee.role_id) ?? null : null;
             newForm.role_assigned = employeeRoleName;
+            
+            // Re-check conflict if date is set
+            if (newForm.start_time) {
+                this.checkConflict(new Date(newForm.start_time), value as string);
+            }
         }
-
         return newForm;
       });
   }
 
   updateShiftFormDateTime(field: 'start_time' | 'end_time', value: string) {
-      this.shiftForm.update(form => ({ ...form, [field]: parseInputToISO(value) }));
+      this.shiftForm.update(form => {
+          const newForm = { ...form, [field]: parseInputToISO(value) };
+          if (field === 'start_time' && newForm.start_time && newForm.employee_id) {
+              this.checkConflict(new Date(newForm.start_time), newForm.employee_id);
+          }
+          return newForm;
+      });
   }
   
   async saveShift() {
@@ -285,6 +289,22 @@ export class SchedulesComponent {
     if(confirmed) {
         await this.scheduleDataService.publishSchedule(schedule.id, !schedule.is_published);
     }
+  }
+
+  async copyFromPreviousWeek() {
+      const schedule = this.activeSchedule();
+      if (!schedule) return;
+      
+      const confirmed = await this.notificationService.confirm('Copiar os turnos da semana anterior para a semana atual? Isso pode duplicar turnos se já existirem.');
+      if (confirmed) {
+          const { success, error, count } = await this.scheduleDataService.copyScheduleFromPreviousWeek(schedule.week_start_date, schedule.id);
+          if (success) {
+              this.notificationService.show(`${count} turnos copiados com sucesso!`, 'success');
+              // Refresh logic typically handled by realtime subscription
+          } else {
+              this.notificationService.alert(`Erro ao copiar: ${error?.message}`);
+          }
+      }
   }
   
   getApprovedLeave(day: Date, employee: Employee): LeaveRequest | undefined {

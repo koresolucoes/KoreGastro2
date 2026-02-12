@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 // FIX: Import and inject HrStateService to access schedule data
 import { HrStateService } from './hr-state.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,10 +13,15 @@ export class ScheduleDataService {
   private authService = inject(AuthService);
   // FIX: Inject HrStateService instead of SupabaseStateService
   private hrState = inject(HrStateService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   async getOrCreateScheduleForDate(weekStartDate: string): Promise<{ data: Schedule | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { data: null, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { data: null, error: { message: 'Active unit not found' } };
 
     // Check if it exists in local state first
     // FIX: Access schedules from the correct state service
@@ -64,8 +70,8 @@ export class ScheduleDataService {
   }
 
   async saveShift(scheduleId: string, shift: Partial<Omit<Shift, 'user_id'>>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const shiftData: Partial<Shift> = {
       ...shift,
@@ -95,5 +101,60 @@ export class ScheduleDataService {
       .update({ is_published: isPublished })
       .eq('id', scheduleId);
     return { success: !error, error };
+  }
+
+  // --- New Feature: Copy Schedule ---
+  async copyScheduleFromPreviousWeek(currentWeekStart: string, targetScheduleId: string): Promise<{ success: boolean; error: any; count?: number }> {
+      const userId = this.getActiveUnitId();
+      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+      const currentDate = new Date(currentWeekStart);
+      const prevWeekDate = new Date(currentDate);
+      prevWeekDate.setDate(prevWeekDate.getDate() - 7);
+      const prevWeekStart = prevWeekDate.toISOString().split('T')[0];
+
+      // 1. Fetch previous schedule
+      const { data: prevSchedule, error: fetchError } = await supabase
+          .from('schedules')
+          .select('id, shifts(*)')
+          .eq('user_id', userId)
+          .eq('week_start_date', prevWeekStart)
+          .single();
+      
+      if (fetchError || !prevSchedule || !prevSchedule.shifts || prevSchedule.shifts.length === 0) {
+          return { success: false, error: { message: 'Nenhuma escala encontrada na semana anterior para copiar.' } };
+      }
+
+      // 2. Prepare new shifts
+      const newShifts = prevSchedule.shifts.map(shift => {
+          const oldStart = new Date(shift.start_time);
+          const oldEnd = shift.end_time ? new Date(shift.end_time) : null;
+          
+          // Add 7 days
+          const newStart = new Date(oldStart);
+          newStart.setDate(newStart.getDate() + 7);
+          
+          let newEnd = null;
+          if (oldEnd) {
+              newEnd = new Date(oldEnd);
+              newEnd.setDate(newEnd.getDate() + 7);
+          }
+
+          return {
+              schedule_id: targetScheduleId,
+              user_id: userId,
+              employee_id: shift.employee_id,
+              start_time: newStart.toISOString(),
+              end_time: newEnd ? newEnd.toISOString() : null,
+              role_assigned: shift.role_assigned,
+              is_day_off: shift.is_day_off,
+              notes: shift.notes
+          };
+      });
+
+      // 3. Bulk Insert
+      const { error: insertError } = await supabase.from('shifts').insert(newShifts);
+      
+      return { success: !insertError, error: insertError, count: newShifts.length };
   }
 }

@@ -807,3 +807,14 @@ export interface LabelLog {
     created_at: string;
     employees?: { name: string };
 }
+
+export interface PayrollAdjustment {
+    id: string;
+    user_id: string;
+    employee_id: string;
+    period: string; // MM/YYYY
+    description: string;
+    amount: number;
+    type: 'BONUS' | 'DEDUCTION';
+    created_at: string;
+}
