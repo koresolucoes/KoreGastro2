@@ -10,7 +10,7 @@ import { AiRecipeService } from '../../services/ai-recipe.service';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, ParamMap } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { RecipeStateService } from '../../services/recipe-state.service';
@@ -109,7 +109,7 @@ export class TechnicalSheetsComponent {
   availableUnits: IngredientUnit[] = ['g', 'kg', 'ml', 'l', 'un'];
 
   private recipeIdFromParams = toSignal(
-    this.route.queryParamMap.pipe(map(params => params.get('recipeId')))
+    this.route.queryParamMap.pipe(map((params: ParamMap) => params.get('recipeId')))
   );
 
   constructor() {
@@ -464,7 +464,46 @@ export class TechnicalSheetsComponent {
       }
   }
   
-  // ... (Station and Ingredient on-the-fly similar to previous code, omitted for brevity but should be included) ...
+  // -- Helper placeholders for missing methods --
+  openAddStationModal(prepId: string) { 
+      this.editingPrepForStationId.set(prepId); 
+      this.newStationName.set(''); 
+      this.isAddingStation.set(true); 
+  }
+  closeAddStationModal() { this.isAddingStation.set(false); this.editingPrepForStationId.set(null); }
+  async saveNewStation() {
+     const name = this.newStationName().trim();
+     if(!name) return;
+     const { success, data } = await this.settingsDataService.addStation(name);
+     if(success && data) {
+         this.updatePreparationField(this.editingPrepForStationId()!, 'station_id', data.id);
+         this.closeAddStationModal();
+     }
+  }
+  
+  openAddIngredientModal() { 
+      this.stopAddingItem();
+      this.newIngredientForm.set({ ...EMPTY_INGREDIENT });
+      this.isAddingIngredient.set(true); 
+  }
+  closeAddIngredientModal() { this.isAddingIngredient.set(false); }
+  
+  updateNewIngredientField(field: string, value: any) {
+      this.newIngredientForm.update(f => ({ ...f, [field]: value }));
+  }
+  async saveNewIngredient() {
+      const form = this.newIngredientForm();
+      if(!form.name) return;
+      const { success, data } = await this.inventoryDataService.addIngredient(form);
+      if(success && data) {
+          // If we were adding to a prep, add it immediately
+          const prepId = this.addingToPreparationId();
+          if(prepId && prepId !== 'sub-recipe') {
+             this.addIngredientToPrep(data as Ingredient);
+          }
+          this.closeAddIngredientModal();
+      }
+  }
   
   // --- Saving & Deleting ---
 
@@ -608,47 +647,6 @@ export class TechnicalSheetsComponent {
           this.notificationService.show(`Erro na IA: ${e.message}`, 'error');
       } finally {
           this.isAiLoading.set(false);
-      }
-  }
-  
-  // -- Helper placeholders for missing methods --
-  openAddStationModal(prepId: string) { 
-      this.editingPrepForStationId.set(prepId); 
-      this.newStationName.set(''); 
-      this.isAddingStation.set(true); 
-  }
-  closeAddStationModal() { this.isAddingStation.set(false); this.editingPrepForStationId.set(null); }
-  async saveNewStation() {
-     const name = this.newStationName().trim();
-     if(!name) return;
-     const { success, data } = await this.settingsDataService.addStation(name);
-     if(success && data) {
-         this.updatePreparationField(this.editingPrepForStationId()!, 'station_id', data.id);
-         this.closeAddStationModal();
-     }
-  }
-  
-  openAddIngredientModal() { 
-      this.stopAddingItem();
-      this.newIngredientForm.set({ ...EMPTY_INGREDIENT });
-      this.isAddingIngredient.set(true); 
-  }
-  closeAddIngredientModal() { this.isAddingIngredient.set(false); }
-  
-  updateNewIngredientField(field: string, value: any) {
-      this.newIngredientForm.update(f => ({ ...f, [field]: value }));
-  }
-  async saveNewIngredient() {
-      const form = this.newIngredientForm();
-      if(!form.name) return;
-      const { success, data } = await this.inventoryDataService.addIngredient(form);
-      if(success && data) {
-          // If we were adding to a prep, add it immediately
-          const prepId = this.addingToPreparationId();
-          if(prepId && prepId !== 'sub-recipe') {
-             this.addIngredientToPrep(data as Ingredient);
-          }
-          this.closeAddIngredientModal();
       }
   }
 }

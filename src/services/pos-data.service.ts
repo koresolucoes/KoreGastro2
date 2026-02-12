@@ -34,12 +34,9 @@ export class PosDataService {
   }
   
   getOrderByTableNumber(tableNumber: number): Order | undefined {
-    // Priority: Dine-in for tables > 0
     if (tableNumber > 0) {
         return this.posState.openOrders().find(o => o.table_number === tableNumber && o.order_type === 'Dine-in');
     }
-    // For table 0, it could be QuickSale or Tab. 
-    // We usually don't use this method for Tabs (we use ID), so return QuickSale default.
     return this.posState.openOrders().find(o => o.table_number === 0 && o.order_type === 'QuickSale');
   }
 
@@ -49,14 +46,13 @@ export class PosDataService {
       const userId = this.getActiveUnitId();
       if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-      // Check if tab exists
       const existingTab = this.posState.openTabs().find(o => o.command_number === commandNumber);
       if (existingTab) {
           return { success: false, error: { message: `A Comanda #${commandNumber} já está aberta.` } };
       }
 
       const { data, error } = await supabase.from('orders').insert({
-          table_number: 0, // 0 for tabs
+          table_number: 0, 
           command_number: commandNumber,
           tab_name: customerName,
           order_type: 'Tab',
@@ -68,7 +64,7 @@ export class PosDataService {
       if (error) return { success: false, error };
       
       const newOrder = { ...data, order_items: [] };
-      this.posState.orders.update(orders => [...orders, newOrder]); // Optimistic update
+      this.posState.orders.update(orders => [...orders, newOrder]);
       
       return { success: true, error: null, data: newOrder };
   }
@@ -79,7 +75,6 @@ export class PosDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
-    // AUDIT: created_by_employee_id
     const { data, error } = await supabase.from('orders').insert({ 
         table_number: table.number, 
         order_type: 'Dine-in', 
@@ -111,7 +106,6 @@ export class PosDataService {
         const effectivePrice = this.pricingService.getEffectivePrice(item.recipe);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
         
-        // AUDIT: added_by_employee_id is set here
         if (recipePreps?.length > 0) {
             const groupId = uuidv4();
             return recipePreps.map((prep: any) => ({
@@ -140,7 +134,6 @@ export class PosDataService {
     const { data: inserted, error } = await supabase.from('order_items').insert(allItemsToInsert).select();
     if (error) return { success: false, error };
 
-    // Only update table status if it's a Dine-in order (tableId exists)
     if (tableId) {
         await supabase.from('tables').update({ status: 'OCUPADA' as TableStatus, employee_id: employeeId }).eq('id', tableId);
     }
@@ -148,22 +141,13 @@ export class PosDataService {
     return { success: true, error: null };
   }
 
-  // ... (Other order status updates methods, kept mostly same) ...
+  // ... (Other status update methods kept same) ...
   async updateOrderItemStatus(itemId: string, status: OrderItemStatus): Promise<{ success: boolean; error: any }> {
-    const { data: currentItem, error: fetchError } = await supabase
-      .from('order_items')
-      .select('status_timestamps, order_id')
-      .eq('id', itemId)
-      .single();
-
+    const { data: currentItem, error: fetchError } = await supabase.from('order_items').select('status_timestamps, order_id').eq('id', itemId).single();
     if (fetchError) return { success: false, error: fetchError };
-
     const newTimestamps = { ...currentItem.status_timestamps, [status.toUpperCase()]: new Date().toISOString() };
     const { error } = await supabase.from('order_items').update({ status, status_timestamps: newTimestamps }).eq('id', itemId);
-
-    if (!error && currentItem.order_id) {
-      this.checkAndUpdateDeliveryOrderStatus(currentItem.order_id);
-    }
+    if (!error && currentItem.order_id) { this.checkAndUpdateDeliveryOrderStatus(currentItem.order_id); }
     return { success: !error, error };
   }
   
@@ -191,7 +175,6 @@ export class PosDataService {
         if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') return;
         const items = order.order_items;
         if (!items || items.length === 0) return;
-
         const allReady = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO' || i.status === 'CANCELADO');
         if (allReady) {
             if (order.delivery_status !== 'READY_FOR_DISPATCH') await this.deliveryDataService.updateDeliveryStatus(orderId, 'READY_FOR_DISPATCH');
@@ -257,7 +240,6 @@ export class PosDataService {
     return { success: true, error: null };
   }
 
-  // ... (discount methods same as before) ...
   async applyDiscountToOrderItems(itemIds: string[], discountType: DiscountType | null, discountValue: number | null): Promise<{ success: boolean; error: any }> {
     if (itemIds.length === 0) return { success: true, error: null };
     const { data: items, error: fetchError } = await supabase.from('order_items').select('*').in('id', itemIds);
@@ -304,92 +286,75 @@ export class PosDataService {
     return { success: true, error: null };
   }
 
+  // --- UPDATED METHOD: TRANSACTIONAL PAYMENT ---
   async finalizeOrderPayment(
     orderId: string,
-    tableId: string | null, // Nullable for Tabs
+    tableId: string | null,
     total: number,
     payments: PaymentInfo[],
     tipAmount: number,
-    closingEmployeeId: string // AUDIT: REQUIRED
+    closingEmployeeId: string 
   ): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    // AUDIT: closed_by_employee_id
-    const { data: updatedOrder, error: orderUpdateError } = await supabase
-      .from('orders')
-      .update({ 
-          status: 'COMPLETED', 
-          completed_at: new Date().toISOString(),
-          closed_by_employee_id: closingEmployeeId 
-      })
-      .eq('id', orderId)
-      .select('*, order_items(*), customers(*)')
-      .single();
-
-    if (orderUpdateError) return { success: false, error: orderUpdateError };
-    
-    let warningMessage: string | undefined;
-
     try {
-      if (tableId) {
-        await supabase
-            .from('tables')
-            .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
-            .eq('id', tableId);
-      }
-
-      const orderRef = updatedOrder.command_number 
-        ? `Comanda #${updatedOrder.command_number}` 
-        : `Pedido #${orderId.slice(0, 8)}`;
-
-      const transactionsToInsert: Partial<Transaction>[] = payments.map(p => ({
-        description: `Receita ${orderRef} (${p.method})`,
-        type: 'Receita' as TransactionType,
-        amount: p.amount,
-        user_id: userId,
-        employee_id: closingEmployeeId, // Audit on financial transaction too
-      }));
-
-      if (tipAmount > 0) {
-        transactionsToInsert.push({ 
-            description: `Gorjeta ${orderRef}`, 
-            type: 'Gorjeta' as TransactionType, 
-            amount: tipAmount, 
-            user_id: userId, 
-            employee_id: closingEmployeeId,
+        // 1. Chamar RPC Transacional (Garante integridade financeira e de status)
+        // Isso atualiza o Order, a Mesa e insere as Transações em uma única operação.
+        const { data, error: rpcError } = await supabase.rpc('finalize_order_transaction', {
+            p_order_id: orderId,
+            p_user_id: userId,
+            p_table_id: tableId,
+            p_payments: payments, // Passa JSONB
+            p_closed_by_employee_id: closingEmployeeId,
+            p_tip_amount: tipAmount
         });
-      }
 
-      if (transactionsToInsert.length > 0) {
-        const { error: transactionError } = await supabase.from('transactions').insert(transactionsToInsert);
-        if (transactionError) console.error(`CRITICAL: Order ${orderId} finalized but failed to insert transactions.`, transactionError);
-      }
+        if (rpcError) throw rpcError;
+        
+        const rpcResult = data as { success: boolean, message: string };
+        if (!rpcResult.success) {
+            throw new Error(rpcResult.message);
+        }
 
-      const itemsToDeduct = (updatedOrder.order_items || []).filter((i: OrderItem) => i.status !== 'CANCELADO');
+        // 2. Atualizar Estoque (Isso ainda fica fora da transação principal por complexidade, mas é menos crítico)
+        // Se falhar aqui, o dinheiro já está no caixa, o que é o mais importante para "não perder venda".
+        // A correção de estoque pode ser feita via auditoria depois.
+        
+        // Precisamos buscar os itens atualizados (que não foram cancelados)
+        const { data: orderItemsData } = await supabase.from('order_items')
+            .select('*')
+            .eq('order_id', orderId)
+            .neq('status', 'CANCELADO');
 
-      if (itemsToDeduct.length > 0) {
-         // AUDIT: Pass the employee ID to inventory service for logs
-         const deductionResult = await this.inventoryDataService.deductStockForOrderItems(itemsToDeduct, orderId, closingEmployeeId);
-         if (!deductionResult.success) {
-            console.error(`[POS Data Service] Stock deduction failed for order ${orderId}.`, deductionResult.error);
-         } else if (deductionResult.warningMessage) {
-            warningMessage = deductionResult.warningMessage;
-         }
-      }
-      
-      this.webhookService.triggerWebhook('order.updated', updatedOrder);
-      await this.stateService.refreshDashboardAndCashierData();
+        let warningMessage: string | undefined;
 
-      return { success: true, error: null, warningMessage };
+        if (orderItemsData && orderItemsData.length > 0) {
+             const deductionResult = await this.inventoryDataService.deductStockForOrderItems(orderItemsData, orderId, closingEmployeeId);
+             if (!deductionResult.success) {
+                console.error(`[POS Data Service] Stock deduction failed for order ${orderId}.`, deductionResult.error);
+                warningMessage = "Venda registrada, mas houve erro na baixa de estoque.";
+             } else if (deductionResult.warningMessage) {
+                warningMessage = deductionResult.warningMessage;
+             }
+        }
+        
+        // 3. Notificar Frontend e Webhooks
+        const { data: updatedOrder } = await supabase.from('orders').select('*, order_items(*), customers(*)').eq('id', orderId).single();
+        if (updatedOrder) {
+            this.webhookService.triggerWebhook('order.updated', updatedOrder);
+        }
+        await this.stateService.refreshDashboardAndCashierData();
 
-    } catch (e) {
-        console.error(`[POS Data Service] Post-payment processing failed for order ${orderId}.`, e);
-        return { success: true, error: null };
+        return { success: true, error: null, warningMessage };
+
+    } catch (e: any) {
+        console.error(`[POS Data Service] Payment transaction failed for order ${orderId}.`, e);
+        return { success: false, error: e };
     }
   }
 
-  // --- Cancellation Methods (AUDITED) ---
+  // --- Cancellation Methods ---
 
   async cancelOrder(orderId: string, reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
     const formattedNotes = `CANCELAMENTO: ${reason}`;
@@ -398,7 +363,6 @@ export class PosDataService {
     const { data: order, error: fetchError } = await supabase.from('orders').select('table_number').eq('id', orderId).single();
     if (fetchError) return { success: false, error: fetchError };
 
-    // Update Order Status - Now recording WHO performed the cancellation
     const { error } = await supabase
         .from('orders')
         .update({ 
@@ -422,7 +386,6 @@ export class PosDataService {
   async cancelOrderItems(itemIds: string[], reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
       if (itemIds.length === 0) return { success: true, error: null };
 
-      // Update item status and record who did it
       const { error } = await supabase
         .from('order_items')
         .update({ 

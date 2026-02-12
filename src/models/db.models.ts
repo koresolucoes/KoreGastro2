@@ -296,7 +296,7 @@ export interface InventoryLog {
     id: string;
     user_id: string;
     ingredient_id: string;
-    employee_id: string | null;
+    employee_id: string | null; // AUDIT: Who did it?
     quantity_change: number;
     previous_balance: number | null;
     new_balance: number | null;
@@ -370,9 +370,9 @@ export interface Order {
   customers?: Customer;
   discount_type?: DiscountType | null;
   discount_value?: number | null;
-  created_by_employee_id?: string | null;
-  closed_by_employee_id?: string | null;
-  cancelled_by?: string | null;
+  created_by_employee_id?: string | null; // AUDIT
+  closed_by_employee_id?: string | null; // AUDIT
+  cancelled_by?: string | null; // AUDIT
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
   delivery_info?: IfoodOrderDelivery | null;
@@ -416,9 +416,9 @@ export interface OrderItem {
   redeemed_reward_id?: string | null;
   created_at: string;
   user_id: string;
-  added_by_employee_id?: string | null;
-  cancelled_by?: string | null;
-  authorized_by_employee_id?: string | null;
+  added_by_employee_id?: string | null; // AUDIT
+  cancelled_by?: string | null; // AUDIT
+  authorized_by_employee_id?: string | null; // AUDIT
 }
 
 export interface RecipePreparation {
@@ -501,8 +501,8 @@ export interface PurchaseOrder {
   notes: string | null;
   created_at: string;
   user_id: string;
-  created_by_employee_id?: string | null;
-  received_by_employee_id?: string | null;
+  created_by_employee_id?: string | null; // AUDIT
+  received_by_employee_id?: string | null; // AUDIT
   suppliers?: { name: string };
   purchase_order_items?: PurchaseOrderItem[];
 }

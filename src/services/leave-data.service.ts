@@ -1,31 +1,39 @@
+
 import { Injectable, inject } from '@angular/core';
 import { LeaveRequest } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
-import { SettingsStateService } from './settings-state.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LeaveDataService {
   private authService = inject(AuthService);
-  private settingsState = inject(SettingsStateService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
 
   async addLeaveRequest(
     request: Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id'>>,
     attachment?: { file: string; filename: string; }
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
-    const apiKey = this.settingsState.companyProfile()?.external_api_key;
+    const restaurantId = this.getActiveUnitId();
+    
+    // FIX RISCO A: Obter a sessão atual do Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
 
-    if (!userId || !apiKey) {
-      return { success: false, error: { message: 'Usuário ou chave de API não encontrados.' } };
+    if (!restaurantId || !accessToken) {
+      return { success: false, error: { message: 'Usuário não autenticado ou unidade não selecionada.' } };
     }
 
     const body: any = {
       ...request,
       employeeId: request.employee_id, // API expects employeeId
-      restaurantId: userId,
+      restaurantId: restaurantId, // Agora enviado no corpo, mas validado via JWT
     };
     if (attachment) {
       body.attachment = attachment.file;
@@ -37,7 +45,7 @@ export class LeaveDataService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${accessToken}`, // Token Seguro
         },
         body: JSON.stringify(body),
       });
@@ -47,11 +55,10 @@ export class LeaveDataService {
         throw new Error(errorBody.error?.message || `API error (${response.status})`);
       }
       
-      // The realtime subscription will update the state, so we just return success.
       return { success: true, error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calling leave request API:', error);
-      return { success: false, error };
+      return { success: false, error: { message: error.message } };
     }
   }
 

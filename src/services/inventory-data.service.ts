@@ -182,7 +182,6 @@ export class InventoryDataService {
       return { success: true, error: null, proxyRecipeId: recipe!.id };
   }
 
-  // ... existing deleteIngredient ...
   async deleteIngredient(id: string): Promise<{ success: boolean; error: any }> {
     const { data: ingredient, error: fetchError } = await supabase.from('ingredients').select('proxy_recipe_id').eq('id', id).single();
     if(fetchError) return { success: false, error: fetchError };
@@ -195,7 +194,7 @@ export class InventoryDataService {
     return { success: !error, error };
   }
 
-  // ... existing adjustIngredientStock UPDATED ...
+  // --- CRITICAL UPDATE: AUDIT LOGGING ---
    async adjustIngredientStock(params: {
     ingredientId: string;
     quantityChange: number;
@@ -242,12 +241,12 @@ export class InventoryDataService {
         return { success: !error, error };
     }
     
-    // AUDIT: Insert into inventory_logs
+    // AUDIT: Insert into inventory_logs (Phase 2 Requirement)
     const newStock = originalIngredient.stock + quantityChange;
     const { error: logError } = await supabase.from('inventory_logs').insert({
         user_id: userId,
         ingredient_id: ingredientId,
-        employee_id: employeeId,
+        employee_id: employeeId, // Traceability!
         quantity_change: quantityChange,
         previous_balance: originalIngredient.stock,
         new_balance: newStock,
@@ -256,7 +255,6 @@ export class InventoryDataService {
 
     if (logError) {
         console.error("Failed to insert inventory log audit trail:", logError);
-        // We don't fail the transaction here to avoid blocking operations, but in a strict audit system we might.
     }
 
     const webhookPayload = {
@@ -273,7 +271,6 @@ export class InventoryDataService {
   }
 
   // --- Helper to consume from station with fallback to central ---
-  // UPDATED: Pass employeeId
   private async consumeStockFromStation(
       stationId: string | null, 
       ingredientId: string, 
@@ -305,10 +302,6 @@ export class InventoryDataService {
                       })
                       .eq('id', stationStock.id);
                   
-                  // NOTE: Station stocks technically don't have a granular audit log table yet 
-                  // other than 'station_stock_logs' if we created one, but for now we assume 
-                  // central stock is the main audit point.
-                  
                   remainingNeeded -= consumedFromStation;
               }
           }
@@ -321,7 +314,7 @@ export class InventoryDataService {
               ingredientId: ingredientId,
               quantityChange: -remainingNeeded,
               reason: `${reason} (Fallback Central/Sem Estoque Praça)`,
-              employeeId: employeeId
+              employeeId: employeeId // Audit passed
           });
           if (!result.success) return false;
       }
@@ -365,7 +358,7 @@ export class InventoryDataService {
     return { success: !error, error };
   }
   
-  // UPDATED: adjustStockForProduction
+  // UPDATED: adjustStockForProduction with Audit
     async adjustStockForProduction(
         subRecipeId: string, 
         sourceIngredientId: string, 
@@ -389,12 +382,12 @@ export class InventoryDataService {
       for (const [ingredientId, quantityNeeded] of recipeComposition.rawIngredients.entries()) {
         const totalDeduction = quantityNeeded * quantityProduced;
         
-        // UPDATED: Pass employeeId
+        // Audit passed down
         const success = await this.consumeStockFromStation(stationId || null, ingredientId, totalDeduction, deductionReason, employeeId || null);
         if (!success) throw new Error(`Failed to consume stock for ingredient ${ingredientId}`);
       }
 
-      // Add the produced item (sub-recipe output) to Central Stock (or potentially station stock in future)
+      // Add the produced item
       const additionReason = `Produção da sub-receita (ID: ${subRecipeId.slice(0, 8)})`;
       const { success, error } = await this.adjustIngredientStock({ 
           ingredientId: sourceIngredientId, 
@@ -402,7 +395,7 @@ export class InventoryDataService {
           reason: additionReason,
           lotNumberForEntry: lotNumberForEntry,
           expirationDateForEntry: null,
-          employeeId: employeeId // AUDIT
+          employeeId: employeeId // Audit
       });
       if (!success) throw error;
       
@@ -421,7 +414,7 @@ export class InventoryDataService {
     }
   }
 
-   // UPDATED: deductStockForOrderItems
+   // UPDATED: deductStockForOrderItems with Audit
    async deductStockForOrderItems(orderItems: OrderItem[], orderId: string, closingEmployeeId?: string | null): Promise<{ success: boolean; error: any; warningMessage?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
@@ -441,7 +434,7 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        const targetStationId = item.station_id; // The station that produced the item
+        const targetStationId = item.station_id; 
 
         if (!stationDeductions.has(targetStationId)) {
             stationDeductions.set(targetStationId, new Map());
@@ -467,13 +460,12 @@ export class InventoryDataService {
 
     try {
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
-      let missingStockCount = 0;
 
       for (const [stationId, ingredientsNeeded] of stationDeductions.entries()) {
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
 
-             // UPDATED: Pass closingEmployeeId as the audit actor for sales consumption
+             // AUDIT: Pass the employee who closed the order
              await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason, closingEmployeeId || null);
         }
       }
@@ -534,8 +526,6 @@ export class InventoryDataService {
     }
     return usageMap;
   }
-  
-  // --- NEW: Labeling Methods ---
   
   async logLabelCreation(labelData: Partial<LabelLog>): Promise<{ success: boolean; error: any }> {
       const userId = this.getActiveUnitId();

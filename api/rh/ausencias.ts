@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { LeaveRequestType, LeaveRequestStatus } from '../../src/models/db.models.js';
@@ -5,34 +6,41 @@ import { Buffer } from 'buffer';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+// FIX RISCO A: Autenticação Segura via JWT
+async function authenticateUser(request: VercelRequest): Promise<{ userId?: string; error?: { message: string }; status?: number }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
     }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    const token = authHeader.split(' ')[1];
+    
+    // Validar JWT com Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+        return { error: { message: 'Invalid or expired token.' }, status: 401 };
     }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
+    
+    return { userId: user.id };
+}
+
+// Verifica se o usuário tem acesso à loja solicitada
+async function checkStoreAccess(userId: string, restaurantId: string): Promise<boolean> {
+    if (userId === restaurantId) return true; // Dono
+
+    // Verificar se existe permissão delegada
+    const { data } = await supabase
+        .from('unit_permissions')
+        .select('id')
+        .eq('manager_id', userId)
+        .eq('store_id', restaurantId)
+        .single();
+    
+    return !!data;
 }
 
 /**
  * Sanitizes a filename to be URL-friendly for Supabase Storage.
- * @param filename The original filename.
- * @returns A safe version of the filename.
  */
 function sanitizeFilename(filename: string): string {
     const extensionMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
@@ -40,15 +48,14 @@ function sanitizeFilename(filename: string): string {
     const name = extensionMatch ? filename.slice(0, -extension.length) : filename;
 
     const sanitizedName = name
-        .normalize('NFD') // Decompose accented characters into base characters and diacritics
-        .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
-        .replace(/[^a-zA-Z0-9\s_.-]/g, '') // Remove non-alphanumeric chars except for spaces, underscores, dots, hyphens
-        .replace(/\s+/g, '_') // Replace spaces with underscores
-        .substring(0, 100); // Truncate to a reasonable length
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9\s_.-]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 100);
 
     return `${sanitizedName}${extension}`;
 }
-
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -60,9 +67,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(request);
+        // 1. Autenticar Usuário via JWT
+        const { userId, error, status } = await authenticateUser(request);
         if (error) {
             return response.status(status!).json({ error });
+        }
+
+        // 2. Identificar Loja Alvo (Enviada no Body ou Query)
+        const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+        if (!restaurantId) {
+             return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+        }
+
+        // 3. Verificar Permissão (Multi-Loja)
+        const hasAccess = await checkStoreAccess(userId!, restaurantId);
+        if (!hasAccess) {
+             return response.status(403).json({ error: { message: 'You do not have permission to access this store.' } });
         }
 
         switch (request.method) {
@@ -116,7 +136,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         return res.status(400).json({ error: { message: `Invalid \`request_type\`. Must be one of: ${validTypes.join(', ')}` } });
     }
 
-    // 1. Insert the request without the attachment URL first to get an ID
     const { data: newRequest, error } = await supabase
         .from('leave_requests')
         .insert({
@@ -135,7 +154,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 
     let finalRequest = newRequest;
 
-    // 2. If an attachment is provided, upload it and update the request
     if (attachment && attachment_filename) {
         try {
             const fileBuffer = Buffer.from(attachment, 'base64');
@@ -152,7 +170,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
                 .from('restaurant_assets')
                 .getPublicUrl(filePath);
             
-            // 3. Update the request with the public URL
             const { data: updatedRequest, error: updateError } = await supabase
                 .from('leave_requests')
                 .update({ attachment_url: urlData.publicUrl })
@@ -164,8 +181,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
             
             finalRequest = updatedRequest;
         } catch (uploadError: any) {
-            // Log the error but don't fail the entire request.
-            // The leave request is still valid, only the attachment failed.
             console.error(`[API /rh/ausencias] Failed to upload attachment for leave request ${newRequest.id}:`, uploadError.message);
         }
     }
@@ -204,7 +219,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         .single();
     
     if (error) {
-        if (error.code === 'PGRST116') { // Not found
+        if (error.code === 'PGRST116') {
             return res.status(404).json({ error: { message: `Leave request with id "${id}" not found.` } });
         }
         throw error;
