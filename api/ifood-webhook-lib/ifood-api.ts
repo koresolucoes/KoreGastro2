@@ -1,79 +1,111 @@
+
+import { createClient } from '@supabase/supabase-js';
+
 const iFoodApiBaseUrl = process.env.IFOOD_API_URL || 'https://merchant-api.ifood.com.br';
 
-let cachedToken: { accessToken: string; expiresAt: number; } | null = null;
+// Initialize Supabase client for token caching
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 /**
- * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
- * This is the central function for all outgoing iFood API calls.
+ * Obtém um token de acesso válido, usando cache do banco de dados ou solicitando um novo.
  */
-async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET', body: any = null, options: { isImageRequest?: boolean } = {}) {
-  console.log(`[iFood API] Initiating call to endpoint: ${endpoint}`);
+export async function getIFoodAccessToken(): Promise<string> {
+    const cacheKey = 'ifood_access_token';
+    const now = new Date();
 
-  const clientId = process.env.IFOOD_CLIENT_ID;
-  const clientSecret = process.env.IFOOD_CLIENT_SECRET;
+    // 1. Tentar buscar do cache do banco de dados
+    const { data: cached } = await supabase
+        .from('system_cache')
+        .select('value, expires_at')
+        .eq('key', cacheKey)
+        .single();
 
-  if (!clientId || !clientSecret) {
-    console.error('[iFood API] CRITICAL: iFood environment variables not set.');
-    throw new Error('Server configuration error: iFood credentials missing.');
-  }
+    if (cached && new Date(cached.expires_at) > new Date(now.getTime() + 60000)) { // Buffer de 60s
+        console.log('[iFood API] Using DB cached access token.');
+        return cached.value;
+    }
 
-  // 1. Get Access Token (with Caching)
-  const now = Date.now();
-  let accessToken: string;
+    // 2. Solicitar novo token
+    console.log('[iFood API] Requesting new access token from iFood...');
+    const clientId = process.env.IFOOD_CLIENT_ID;
+    const clientSecret = process.env.IFOOD_CLIENT_SECRET;
 
-  // Use token if it exists and is not expired (with a 60-second buffer for safety)
-  if (cachedToken && cachedToken.expiresAt > now + 60000) {
-    console.log('[iFood API] Using cached access token.');
-    accessToken = cachedToken.accessToken;
-  } else {
-    console.log('[iFood API] Requesting new access token...');
+    if (!clientId || !clientSecret) {
+        throw new Error('Server configuration error: iFood credentials missing.');
+    }
+
     const tokenParams = new URLSearchParams({
-      grantType: 'client_credentials',
-      clientId: clientId,
-      clientSecret: clientSecret,
+        grantType: 'client_credentials',
+        clientId: clientId,
+        clientSecret: clientSecret,
     });
 
     const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: tokenParams,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenParams,
     });
 
     if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('[iFood API] Failed to get access token:', errorText);
-      throw new Error(`iFood authentication failed: ${errorText}`);
+        const errorText = await tokenResponse.text();
+        console.error('[iFood API] Failed to get access token:', errorText);
+        throw new Error(`iFood authentication failed: ${errorText}`);
     }
 
     const tokenData = await tokenResponse.json();
-    accessToken = tokenData.accessToken;
+    const accessToken = tokenData.accessToken;
+    const expiresInSeconds = tokenData.expiresIn;
+    
+    // Calcular expiração
+    const expiresAt = new Date(now.getTime() + (expiresInSeconds * 1000));
 
-    // `expiresIn` is in seconds. Convert to a future timestamp in milliseconds.
-    const expiresAt = now + (tokenData.expiresIn * 1000);
-    cachedToken = { accessToken, expiresAt };
-    console.log('[iFood API] New access token received and cached successfully.');
-  }
+    // 3. Salvar no cache do banco
+    await supabase.from('system_cache').upsert({
+        key: cacheKey,
+        value: accessToken,
+        expires_at: expiresAt.toISOString(),
+        updated_at: new Date().toISOString()
+    });
+
+    console.log('[iFood API] New access token cached in DB.');
+    return accessToken;
+}
+
+/**
+ * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
+ */
+async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET', body: any = null, options: { isImageRequest?: boolean } = {}) {
+  const fullUrl = endpoint.startsWith('http') ? endpoint : `${iFoodApiBaseUrl}${endpoint}`;
+  console.log(`[iFood API] Initiating call to: ${fullUrl}`);
+
+  // 1. Get Access Token (Centralized)
+  const accessToken = await getIFoodAccessToken();
 
   // 2. Make the authenticated API call
-  const fullUrl = `${iFoodApiBaseUrl}${endpoint}`;
-  console.log(`[iFood API] Making ${method} request to ${fullUrl}`);
+  const headers: any = {
+      'Authorization': `Bearer ${accessToken}`
+  };
+
+  if (!options.isImageRequest) {
+      headers['Content-Type'] = 'application/json';
+  }
 
   const apiResponse = await fetch(fullUrl, {
     method,
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: body ? JSON.stringify(body) : null,
   });
 
   if (!apiResponse.ok) {
     const errorText = await apiResponse.text();
-    console.error(`[iFood API] API call to ${endpoint} failed with status ${apiResponse.status}:`, errorText);
+    console.error(`[iFood API] API call failed with status ${apiResponse.status}:`, errorText);
     throw new Error(`iFood API error (${apiResponse.status}): ${errorText}`);
   }
 
-  console.log(`[iFood API] Call to ${endpoint} successful with status ${apiResponse.status}.`);
+  console.log(`[iFood API] Call successful with status ${apiResponse.status}.`);
   
   if (options.isImageRequest) {
     const imageBuffer = await apiResponse.arrayBuffer();
@@ -82,13 +114,11 @@ async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' = 'GET'
   }
   
   if (apiResponse.status === 201 || apiResponse.status === 202 || apiResponse.status === 204) {
-    // Return an empty object for 201 Created to signify success, 
-    // as some dispute actions return this status with a body we might parse later if needed.
-    // For 202 and 204, there's no body.
     try {
-        return await apiResponse.json();
+        const text = await apiResponse.text();
+        return text ? JSON.parse(text) : null;
     } catch (e) {
-        return null; // No JSON body to parse
+        return null;
     }
   }
   
@@ -113,7 +143,6 @@ export async function getIFoodOrderDetails(orderId: string): Promise<any> {
         console.log(`[iFood API] Attempt ${attempt}: Order ${orderId} not found (404). Retrying in ${retryDelay / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       } else {
-        // Fail fast on other errors (e.g., 401 Unauthorized, 500 Server Error)
         break;
       }
     }
@@ -152,7 +181,6 @@ export async function sendIFoodLogisticsAction(orderId: string, action: string, 
         dispatch: `/logistics/v1.0/orders/${orderId}/dispatch`,
         arrivedAtDestination: `/logistics/v1.0/orders/${orderId}/arrivedAtDestination`,
         verifyDeliveryCode: `/logistics/v1.0/orders/${orderId}/verifyDeliveryCode`,
-        // ADDED: Endpoint for validating pickup code, assuming it follows a similar path structure.
         validatePickupCode: `/order/v1.0/orders/${orderId}/validatePickupCode`,
     };
 
