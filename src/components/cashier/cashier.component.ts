@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer } from '../../models/db.models';
+import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
@@ -13,6 +13,7 @@ import { PosDataService } from '../../services/pos-data.service';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 import { FocusNFeService } from '../../services/focus-nfe.service';
 import { UnitContextService } from '../../services/unit-context.service';
+import { FinancialDataService } from '../../services/financial-data.service';
 
 // Import new state services
 import { RecipeStateService } from '../../services/recipe-state.service';
@@ -63,6 +64,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   notificationService = inject(NotificationService);
   focusNFeService = inject(FocusNFeService);
   unitContextService = inject(UnitContextService);
+  financialDataService = inject(FinancialDataService);
 
   // Inject new state services
   recipeState = inject(RecipeStateService);
@@ -97,6 +99,9 @@ export class CashierComponent implements OnInit, OnDestroy {
   // Expenses / Sangria
   newExpenseDescription = signal('');
   newExpenseAmount = signal<number | null>(null);
+  newExpenseCategoryId = signal<string | null>(null);
+  newExpenseCompetenceDate = signal<string>(new Date().toISOString().split('T')[0]);
+  financialCategories = signal<FinancialCategory[]>([]);
 
   // --- Reprint / Details Signals ---
   isDetailsModalOpen = signal(false);
@@ -152,6 +157,14 @@ export class CashierComponent implements OnInit, OnDestroy {
       this.timer = setInterval(() => {
           this.currentTime.set(Date.now());
       }, 60000);
+      this.loadFinancialCategories();
+  }
+
+  async loadFinancialCategories() {
+      const { data, error } = await this.financialDataService.getFinancialCategories();
+      if (data) {
+          this.financialCategories.set(data);
+      }
   }
   
   ngOnDestroy() {
@@ -403,14 +416,19 @@ export class CashierComponent implements OnInit, OnDestroy {
     }
 
     const amount = this.newExpenseAmount();
+    const categoryId = this.newExpenseCategoryId();
+    const competenceDate = this.newExpenseCompetenceDate();
+
     if (!description || !amount || amount <= 0) {
         await this.notificationService.alert('Preencha descrição e valor.');
         return;
     }
-    const { success, error } = await this.cashierDataService.logTransaction(description, amount, 'Despesa');
+    const { success, error } = await this.cashierDataService.logTransaction(description, amount, 'Despesa', categoryId, competenceDate);
     if (success) {
         this.newExpenseDescription.set('');
         this.newExpenseAmount.set(null);
+        this.newExpenseCategoryId.set(null);
+        this.newExpenseCompetenceDate.set(new Date().toISOString().split('T')[0]);
         this.notificationService.show(isSangria ? 'Sangria registrada com sucesso!' : 'Despesa lançada.', 'success');
     } else {
         await this.notificationService.alert(`Erro: ${error?.message}`);

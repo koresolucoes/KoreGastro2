@@ -478,6 +478,10 @@ export interface Transaction {
   employee_id: string | null;
   created_at: string;
   user_id: string;
+  financial_category_id?: string | null;
+  competence_date?: string | null;
+  is_recurring?: boolean;
+  recurrence_period?: string | null;
 }
 
 export interface CashierClosing {
@@ -499,6 +503,8 @@ export interface PurchaseOrder {
   supplier_id: string | null;
   status: PurchaseOrderStatus;
   notes: string | null;
+  total_cost?: number | null;
+  financial_category_id?: string | null;
   created_at: string;
   user_id: string;
   created_by_employee_id?: string | null; // AUDIT
@@ -770,6 +776,8 @@ export interface RequisitionItem {
   quantity_requested: number;
   quantity_delivered: number | null;
   unit: string;
+  unit_cost?: number | null;
+  total_cost?: number | null;
   created_at: string;
   ingredients?: { name: string };
 }
@@ -817,4 +825,74 @@ export interface PayrollAdjustment {
     amount: number;
     type: 'BONUS' | 'DEDUCTION';
     created_at: string;
+}
+
+export interface FinancialCategory {
+  id: string;
+  user_id: string;
+  name: string;
+  type: 'Receita' | 'Despesa';
+  parent_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface InventoryAdjustment {
+  id: string;
+  user_id: string;
+  ingredient_id: string;
+  quantity_change: number;
+  unit_cost: number;
+  total_value: number;
+  reason: string;
+  employee_id: string | null;
+  created_at: string;
+}
+
+export interface AssetDepreciation {
+  id: string;
+  user_id: string;
+  asset_name: string;
+  purchase_value: number;
+  purchase_date: string;
+  lifespan_months: number;
+  monthly_depreciation: number;
+  financial_category_id: string | null;
+  created_at: string;
+}
+
+export interface DailyCmv {
+  id: string;
+  user_id: string;
+  date: string;
+  total_sales: number;
+  total_cogs: number;
+  gross_profit: number;
+  cmv_percentage: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentRepair {
+  id: string;
+  user_id: string;
+  equipment_name: string;
+  description: string;
+  cost: number;
+  repair_date: string;
+  financial_category_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentPurchase {
+  id: string;
+  user_id: string;
+  equipment_name: string;
+  description: string;
+  cost: number;
+  purchase_date: string;
+  financial_category_id: string | null;
+  created_at: string;
+  updated_at: string;
 }

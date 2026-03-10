@@ -765,7 +765,7 @@ export class CashierDataService {
   }
 
 
-  async logTransaction(description: string, amount: number, type: 'Despesa'): Promise<{ success: boolean; error: any }> {
+  async logTransaction(description: string, amount: number, type: 'Despesa', financialCategoryId?: string | null, competenceDate?: string | null): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -777,7 +777,9 @@ export class CashierDataService {
         amount,
         type,
         user_id: userId,
-        employee_id: cashierEmployeeId
+        employee_id: cashierEmployeeId,
+        financial_category_id: financialCategoryId || null,
+        competence_date: competenceDate || null
     });
     
     return { success: !error, error };
