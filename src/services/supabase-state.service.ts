@@ -48,6 +48,7 @@ export class SupabaseStateService {
 
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
+  private retryTimeout: any;
 
   // Flag to indicate Core data (permissions, profile) is ready
   isDataLoaded = signal(false);
@@ -264,19 +265,35 @@ export class SupabaseStateService {
         supabase.removeChannel(this.realtimeChannel);
         this.realtimeChannel = null;
     }
+    if (this.retryTimeout) {
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = null;
+    }
   }
 
   private subscribeToChanges(userId: string) {
     this.unsubscribeFromChanges();
     
+    console.log(`[SupabaseState] Initializing Realtime subscription for ${userId}...`);
     this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
       .on(
         'postgres_changes', 
         { event: '*', schema: 'public' }, 
         (payload: any) => this.handleChanges(payload)
       )
-      .subscribe(status => {
+      .subscribe((status, err) => {
         console.log(`Supabase realtime subscription status: ${status}`);
+        
+        if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn(`[SupabaseState] Realtime connection failed (${status}). Retrying in 5s...`, err);
+            
+            // Cleanup and retry
+            if (this.retryTimeout) clearTimeout(this.retryTimeout);
+            this.retryTimeout = setTimeout(() => {
+                console.log('[SupabaseState] Retrying Realtime connection...');
+                this.subscribeToChanges(userId);
+            }, 5000);
+        }
       });
   }
   

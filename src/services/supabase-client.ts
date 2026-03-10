@@ -29,6 +29,12 @@ export const supabase: SupabaseClient = createClient(environment.supabaseUrl, en
         autoRefreshToken: true,
         persistSession: true,
     },
+    realtime: {
+        params: {
+            eventsPerSecond: 10,
+        },
+        timeout: 20000, // Aumentado para 20s para evitar TIMED_OUT em redes lentas
+    }
 });
 
 /**
