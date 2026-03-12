@@ -12,6 +12,7 @@ import { InventoryDataService } from './inventory-data.service';
 import { WebhookService } from './webhook.service';
 import { DeliveryDataService } from './delivery-data.service';
 import { UnitContextService } from './unit-context.service';
+import { RecipeStateService } from './recipe-state.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -28,6 +29,7 @@ export class PosDataService {
   private webhookService = inject(WebhookService);
   private deliveryDataService = inject(DeliveryDataService);
   private unitContextService = inject(UnitContextService);
+  private recipeState = inject(RecipeStateService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -105,6 +107,8 @@ export class PosDataService {
         const recipePreps = prepsByRecipeId.get(item.recipe.id);
         const effectivePrice = this.pricingService.getEffectivePrice(item.recipe);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
+        // Furo 8: Congelar o custo no momento da venda
+        const currentCost = this.recipeState.recipeCosts().get(item.recipe.id)?.totalCost ?? 0;
         
         if (recipePreps?.length > 0) {
             const groupId = uuidv4();
@@ -115,7 +119,8 @@ export class PosDataService {
                 original_price: effectivePrice / recipePreps.length,
                 group_id: groupId, user_id: userId,
                 discount_type: null, discount_value: null,
-                added_by_employee_id: employeeId
+                added_by_employee_id: employeeId,
+                unit_cost: currentCost / recipePreps.length
             }));
         }
         return [{
@@ -125,7 +130,8 @@ export class PosDataService {
             original_price: effectivePrice,
             group_id: null, user_id: userId,
             discount_type: null, discount_value: null,
-            added_by_employee_id: employeeId
+            added_by_employee_id: employeeId,
+            unit_cost: currentCost
         }];
     });
 
@@ -356,11 +362,11 @@ export class PosDataService {
 
   // --- Cancellation Methods ---
 
-  async cancelOrder(orderId: string, reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
+  async cancelOrder(orderId: string, reason: string, employeeId: string | null = null, returnToStock: boolean = false): Promise<{ success: boolean; error: any }> {
     const formattedNotes = `CANCELAMENTO: ${reason}`;
     const userId = this.getActiveUnitId();
 
-    const { data: order, error: fetchError } = await supabase.from('orders').select('table_number').eq('id', orderId).single();
+    const { data: order, error: fetchError } = await supabase.from('orders').select('table_number, order_items(*)').eq('id', orderId).single();
     if (fetchError) return { success: false, error: fetchError };
 
     const { error } = await supabase
@@ -380,11 +386,24 @@ export class PosDataService {
         if (tableError) console.error("Failed to free table after cancellation:", tableError);
     }
         
+    if (returnToStock && order && order.order_items) {
+        const itemsToReturn = order.order_items.filter((i: any) => i.status !== 'CANCELADO');
+        if (itemsToReturn.length > 0) {
+            await this.inventoryDataService.returnStockForOrderItems(itemsToReturn, orderId, employeeId);
+        }
+    }
+
     return { success: !error, error };
   }
   
-  async cancelOrderItems(itemIds: string[], reason: string, employeeId: string | null = null): Promise<{ success: boolean; error: any }> {
+  async cancelOrderItems(itemIds: string[], reason: string, employeeId: string | null = null, returnToStock: boolean = false): Promise<{ success: boolean; error: any }> {
       if (itemIds.length === 0) return { success: true, error: null };
+
+      let itemsToReturn: any[] = [];
+      if (returnToStock) {
+          const { data } = await supabase.from('order_items').select('*').in('id', itemIds);
+          if (data) itemsToReturn = data;
+      }
 
       const { error } = await supabase
         .from('order_items')
@@ -397,6 +416,9 @@ export class PosDataService {
         .in('id', itemIds);
       
       if (!error) {
+           if (returnToStock && itemsToReturn.length > 0) {
+               await this.inventoryDataService.returnStockForOrderItems(itemsToReturn, itemsToReturn[0].order_id, employeeId);
+           }
            this.posState.orders.update(orders => {
                return orders.map(order => {
                    const hasItem = order.order_items.some(i => itemIds.includes(i.id));

@@ -47,6 +47,9 @@ export class AiRecipeService {
       });
 
       const jsonText = response.text;
+      if (!jsonText) {
+        throw new Error('No text returned from Gemini API');
+      }
       const parsed = JSON.parse(jsonText);
       return parsed;
     } catch (error) {

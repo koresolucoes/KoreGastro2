@@ -39,8 +39,12 @@ export class RecipeStateService {
             // FIX: Add a guard to ensure ingredient exists before accessing its properties.
             const ingredient = ingredientsMap.get(ri.ingredient_id);
             if (ingredient) {
-                totalCost += (ingredient.cost || 0) * ri.quantity;
-                rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + ri.quantity);
+                // Furo 5: Aplicar fator de correção (se existir, senão 1)
+                const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
+                const actualQuantity = ri.quantity * factor;
+                
+                totalCost += (ingredient.cost || 0) * actualQuantity;
+                rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
             }
         }
 
@@ -50,6 +54,21 @@ export class RecipeStateService {
             totalCost += subRecipeCost.totalCost * sr.quantity;
             for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
               rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
+            }
+        }
+        
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (recipe) {
+            // Furo 7: Custo de Mão de Obra
+            if (recipe.labor_cost) {
+                totalCost += recipe.labor_cost;
+            }
+            // Furo 4: Rendimento de Receitas
+            if (recipe.yield_quantity && recipe.yield_quantity > 0) {
+                totalCost = totalCost / recipe.yield_quantity;
+                for (const [ingId, qty] of rawIngredients.entries()) {
+                    rawIngredients.set(ingId, qty / recipe.yield_quantity);
+                }
             }
         }
         
@@ -81,9 +100,14 @@ export class RecipeStateService {
     const compositionMap = new Map<string, { directIngredients: { ingredientId: string, quantity: number }[], subRecipeIngredients: { ingredientId: string, quantity: number }[] }>();
 
     for (const recipe of recipes) {
+        const yieldQty = (recipe.yield_quantity && recipe.yield_quantity > 0) ? recipe.yield_quantity : 1;
+        
         const directIngredients = recipeIngredients
             .filter(ri => ri.recipe_id === recipe.id)
-            .map(ri => ({ ingredientId: ri.ingredient_id, quantity: ri.quantity }));
+            .map(ri => {
+                const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
+                return { ingredientId: ri.ingredient_id, quantity: (ri.quantity * factor) / yieldQty };
+            });
 
         const subRecipeIngredients = recipeSubRecipes
             .filter(rsr => rsr.parent_recipe_id === recipe.id)
@@ -92,7 +116,7 @@ export class RecipeStateService {
                 const childRecipe = recipesMap.get(rsr.child_recipe_id);
                 // The ingredient to deduct is the one linked to the sub-recipe via source_ingredient_id
                 if (childRecipe?.source_ingredient_id) {
-                    return { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity };
+                    return { ingredientId: childRecipe.source_ingredient_id, quantity: rsr.quantity / yieldQty };
                 }
                 return null;
             })

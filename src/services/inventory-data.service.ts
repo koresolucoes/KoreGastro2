@@ -203,6 +203,7 @@ export class InventoryDataService {
     lotNumberForEntry?: string | null;
     expirationDateForEntry?: string | null;
     employeeId?: string | null; // AUDIT: Capture who performed the adjustment
+    unitCostForEntry?: number; // Furo 2: Custo por lote
   }): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
@@ -214,7 +215,8 @@ export class InventoryDataService {
         lotIdForExit = null,
         lotNumberForEntry = null,
         expirationDateForEntry = null,
-        employeeId = null // Default to null if not provided
+        employeeId = null, // Default to null if not provided
+        unitCostForEntry
     } = params;
 
     const { data: originalIngredient, error: fetchError } = await supabase
@@ -239,6 +241,26 @@ export class InventoryDataService {
 
     if (error) {
         return { success: !error, error };
+    }
+
+    // Furo 2: Update lot unit cost if provided
+    if (quantityChange > 0 && unitCostForEntry !== undefined) {
+        const query = supabase.from('inventory_lots')
+            .select('id')
+            .eq('ingredient_id', ingredientId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+        if (lotNumberForEntry) {
+            query.eq('lot_number', lotNumberForEntry);
+        } else {
+            query.is('lot_number', null);
+        }
+        
+        const { data: lot } = await query.single();
+        if (lot) {
+            await supabase.from('inventory_lots').update({ unit_cost: unitCostForEntry }).eq('id', lot.id);
+        }
     }
     
     // AUDIT: Insert into inventory_logs (Phase 2 Requirement)
@@ -426,7 +448,7 @@ export class InventoryDataService {
     const stationDeductions = new Map<string, Map<string, number>>();
 
     for (const item of orderItems) {
-      if (!item.recipe_id) continue;
+      if (!item.recipe_id || item.status === 'CANCELADO') continue;
       if (item.group_id) {
         if (processedGroupIds.has(item.group_id)) continue; 
         processedGroupIds.add(item.group_id);
@@ -467,6 +489,88 @@ export class InventoryDataService {
 
              // AUDIT: Pass the employee who closed the order
              await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason, closingEmployeeId || null);
+        }
+      }
+      
+      return { success: true, error: null };
+
+    } catch (error) {
+      return { success: false, error };
+    }
+  }
+
+  async returnStockForOrderItems(orderItems: OrderItem[], orderId: string, employeeId?: string | null): Promise<{ success: boolean; error: any }> {
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+    const recipeCompositions = this.recipeState.recipeDirectComposition();
+    const processedGroupIds = new Set<string>();
+    
+    // Map: StationID -> { IngredientID -> TotalQty }
+    const stationAdditions = new Map<string, Map<string, number>>();
+
+    for (const item of orderItems) {
+      if (!item.recipe_id) continue;
+      if (item.group_id) {
+        if (processedGroupIds.has(item.group_id)) continue; 
+        processedGroupIds.add(item.group_id);
+      }
+      
+      const composition = recipeCompositions.get(item.recipe_id);
+      if (composition) {
+        const targetStationId = item.station_id; 
+
+        if (!stationAdditions.has(targetStationId)) {
+            stationAdditions.set(targetStationId, new Map());
+        }
+        const stationMap = stationAdditions.get(targetStationId)!;
+
+        const addToMap = (ingId: string, qty: number) => {
+            stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
+        };
+
+        for (const ing of composition.directIngredients) {
+          addToMap(ing.ingredientId, ing.quantity * item.quantity);
+        }
+        for (const subIng of composition.subRecipeIngredients) {
+            addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+        }
+      }
+    }
+
+    if (stationAdditions.size === 0) {
+      return { success: true, error: null };
+    }
+
+    try {
+      const reason = `Estorno Cancelamento #${orderId.slice(0, 8)}`;
+
+      for (const [stationId, ingredientsNeeded] of stationAdditions.entries()) {
+        for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
+             if (quantityNeeded <= 0) continue;
+
+             // Return to station stock if applicable, else main stock
+             if (stationId) {
+                 const { data: stationStock } = await supabase
+                     .from('station_stocks')
+                     .select('id, quantity')
+                     .eq('station_id', stationId)
+                     .eq('ingredient_id', ingredientId)
+                     .maybeSingle();
+                 
+                 if (stationStock) {
+                     await supabase.from('station_stocks').update({ quantity: stationStock.quantity + quantityNeeded }).eq('id', stationStock.id);
+                 } else {
+                     await supabase.from('station_stocks').insert({ station_id: stationId, ingredient_id: ingredientId, quantity: quantityNeeded, user_id: userId });
+                 }
+             } else {
+                 await this.adjustIngredientStock({
+                     ingredientId,
+                     quantityChange: quantityNeeded,
+                     reason,
+                     employeeId: employeeId || null
+                 });
+             }
         }
       }
       

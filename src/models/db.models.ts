@@ -47,6 +47,8 @@ export interface Recipe {
   created_at: string;
   user_id: string;
   hasStock?: boolean;
+  yield_quantity?: number; // Furo 4: Rendimento de Receitas
+  labor_cost?: number; // Furo 7: Custo de Mão de Obra
 }
 
 export interface ProductionTask {
@@ -314,6 +316,7 @@ export interface InventoryLot {
     quantity: number;
     user_id: string;
     created_at: string;
+    unit_cost?: number; // Furo 2: Rastreabilidade de custo por lote
 }
 
 export interface Category {
@@ -419,6 +422,7 @@ export interface OrderItem {
   added_by_employee_id?: string | null; // AUDIT
   cancelled_by?: string | null; // AUDIT
   authorized_by_employee_id?: string | null; // AUDIT
+  unit_cost?: number; // Furo 8: Congelar custo no Order Item
 }
 
 export interface RecipePreparation {
@@ -438,6 +442,7 @@ export interface RecipeIngredient {
   preparation_id: string;
   user_id: string;
   ingredients?: { name: string; unit: string; cost: number };
+  correction_factor?: number; // Furo 5: Fator de Correção/Cocção
 }
 
 export interface RecipeSubRecipe {
@@ -524,6 +529,7 @@ export interface PurchaseOrderItem {
   lot_number: string | null;
   expiration_date: string | null;
   ingredients?: { name: string, unit: string };
+  unit_cost?: number; // Furo 2: Rastreabilidade de custo por lote
 }
 
 export interface ProductionPlan {
@@ -735,6 +741,7 @@ export interface PortioningEventOutput {
   quantity_produced: number;
   unit: IngredientUnit;
   ingredients?: { name: string };
+  unit_cost?: number; // Furo 6: Custeio de Porcionamento
 }
 
 export interface StationStock {

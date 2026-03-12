@@ -141,8 +141,16 @@
         <!-- LEFT: BUILDER (Scrollable) -->
         <div class="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-900 custom-scrollbar">
           
+          <!-- Tabs Navigation -->
+          <div class="flex border-b border-gray-700 mb-6 gap-4">
+            <button (click)="activeTab.set('basic')" [class.border-blue-500]="activeTab() === 'basic'" [class.text-blue-400]="activeTab() === 'basic'" class="px-4 py-3 border-b-2 border-transparent text-gray-400 hover:text-white font-bold transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">info</span> Dados Básicos</button>
+            <button (click)="activeTab.set('ingredients')" [class.border-blue-500]="activeTab() === 'ingredients'" [class.text-blue-400]="activeTab() === 'ingredients'" class="px-4 py-3 border-b-2 border-transparent text-gray-400 hover:text-white font-bold transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">kitchen</span> Ingredientes & Custos</button>
+            <button (click)="activeTab.set('advanced')" [class.border-blue-500]="activeTab() === 'advanced'" [class.text-blue-400]="activeTab() === 'advanced'" class="px-4 py-3 border-b-2 border-transparent text-gray-400 hover:text-white font-bold transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">settings</span> Processo & MOD</button>
+          </div>
+
           <!-- 1. Basic Info -->
-          <section class="bg-gray-800/50 p-5 rounded-xl border border-gray-700/50">
+          @if (activeTab() === 'basic') {
+          <section class="bg-gray-800/50 p-5 rounded-xl border border-gray-700/50 animate-fade-in-up">
              <div class="flex flex-col sm:flex-row gap-6">
                 <!-- Image Upload Box -->
                 <div class="flex-shrink-0">
@@ -185,7 +193,7 @@
                      </div>
                      
                      <!-- Details Row -->
-                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                          <div>
                              <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Preço Venda</label>
                              <div class="relative">
@@ -204,7 +212,7 @@
                              <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Cód. PDV</label>
                              <input type="text" [value]="recipeForm().recipe.external_code || ''" (input)="updateRecipeField('external_code', $any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none uppercase font-mono text-sm" placeholder="SKU-123">
                          </div>
-                         <div class="flex items-end pb-2">
+                         <div class="flex items-end pb-2 col-span-2 md:col-span-3">
                              <label class="flex items-center cursor-pointer group">
                                  <input type="checkbox" [checked]="recipeForm().recipe.is_sub_recipe" (change)="updateRecipeField('is_sub_recipe', $any($event.target).checked)" class="sr-only peer">
                                  <div class="w-10 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 relative border border-gray-600"></div>
@@ -241,9 +249,11 @@
                 </div>
             }
           </section>
+          }
 
+          @if (activeTab() === 'ingredients') {
           <!-- 2. Logistics (Sub-recipes & Steps) -->
-          <section class="space-y-6">
+          <section class="space-y-6 animate-fade-in-up">
             
             <!-- Pre-made Components (Sub-recipes) -->
             <div>
@@ -341,6 +351,12 @@
                                                 <span class="text-gray-500 text-xs font-bold w-6 text-center">{{ getIngredientUnit(ing.ingredient_id) }}</span>
                                             </div>
                                             
+                                            <!-- Fator de Correção -->
+                                            <div class="flex items-center gap-2 bg-gray-900 rounded px-2 py-1 border border-gray-600" title="Fator de Correção (FC)">
+                                                <span class="text-gray-500 text-[10px] font-bold">FC</span>
+                                                <input type="number" [value]="ing.correction_factor || 1" (change)="updateFormIngredientFactor(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-white focus:outline-none font-mono font-bold text-xs" step="0.01">
+                                            </div>
+                                            
                                             <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-gray-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-base">close</span></button>
                                         </div>
                                      }
@@ -355,6 +371,37 @@
                 </div>
             </div>
           </section>
+          }
+
+          @if (activeTab() === 'advanced') {
+          <!-- 3. Processo & MOD -->
+          <section class="space-y-6 animate-fade-in-up">
+              <div class="bg-gray-800/50 p-5 rounded-xl border border-gray-700/50">
+                  <h4 class="text-base font-bold text-white flex items-center gap-2 mb-4">
+                      <span class="material-symbols-outlined text-orange-400">engineering</span> 
+                      Processo & Mão de Obra
+                  </h4>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                          <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Rendimento (Porções/Unidades)</label>
+                          <input type="number" [value]="recipeForm().recipe.yield_quantity || 1" (input)="updateFormRecipeYield(+$any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-mono" placeholder="1">
+                          <p class="text-[10px] text-gray-500 mt-1 ml-1">Quantas porções esta receita rende.</p>
+                      </div>
+                      <div>
+                          <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Custo MOD (Mão de Obra Direta) - R$</label>
+                          <input type="number" [value]="recipeForm().recipe.labor_cost || 0" (input)="updateFormRecipeLabor(+$any($event.target).value)" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-mono" placeholder="0.00">
+                          <p class="text-[10px] text-gray-500 mt-1 ml-1">Custo estimado de mão de obra para produzir.</p>
+                      </div>
+                  </div>
+
+                  <div class="mt-6">
+                      <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Modo de Preparo / Observações</label>
+                      <textarea [value]="recipeForm().recipe.description || ''" (input)="updateRecipeField('description', $any($event.target).value)" rows="4" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" placeholder="Descreva o processo de preparo, dicas, etc..."></textarea>
+                  </div>
+              </div>
+          </section>
+          }
 
         </div>
 
@@ -369,7 +416,16 @@
                  <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
                      <p class="text-gray-400 text-xs font-bold uppercase mb-1">Custo Total (CMV)</p>
                      <div class="flex items-baseline gap-2">
-                         <p class="text-4xl font-black text-white tracking-tight">{{ formTotalCost() | currency:'BRL' }}</p>
+                         <p class="text-4xl font-black text-white tracking-tight">{{ formTotalOverallCost() | currency:'BRL' }}</p>
+                     </div>
+                     
+                     <!-- Cost Composition Chart -->
+                     <div class="mt-4 h-40 w-full">
+                        <canvas baseChart
+                          [data]="costChartData()"
+                          [options]="chartOptions"
+                          [type]="'doughnut'">
+                        </canvas>
                      </div>
                  </div>
 
@@ -379,13 +435,13 @@
                             <span class="material-symbols-outlined text-6xl text-blue-500">sell</span>
                         </div>
                         <p class="text-gray-400 text-xs font-bold uppercase mb-1">Preço Sugerido (30%)</p>
-                        <p class="text-2xl font-bold text-blue-300">{{ (formTotalCost() / 0.3) | currency:'BRL' }}</p>
+                        <p class="text-2xl font-bold text-blue-300">{{ (formTotalOverallCost() / 0.3) | currency:'BRL' }}</p>
                     </div>
                     
                     @if (recipeForm().recipe.price && recipeForm().recipe.price > 0) {
                         <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-sm">
                             <p class="text-gray-400 text-xs font-bold uppercase mb-1">Margem de Lucro</p>
-                            @let margin = ((recipeForm().recipe.price! - formTotalCost()) / recipeForm().recipe.price!) * 100;
+                            @let margin = ((recipeForm().recipe.price! - formTotalOverallCost()) / recipeForm().recipe.price!) * 100;
                             <div class="flex items-end gap-3 mb-2">
                                 <p class="text-4xl font-black" [class.text-green-400]="margin >= 50" [class.text-yellow-400]="margin < 50 && margin >= 30" [class.text-red-400]="margin < 30">
                                     {{ margin | number:'1.1-1' }}%

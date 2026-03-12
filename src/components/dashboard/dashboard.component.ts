@@ -291,6 +291,7 @@ export class DashboardComponent implements OnInit {
   cogs = computed(() => {
     const recipeCosts = this.recipeState.recipeCosts();
     return this.dashboardState.performanceCompletedOrders().flatMap(o => o.order_items).reduce((sum, item) => {
+      if (item.status === 'CANCELADO') return sum;
       const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
       return sum + (cost * item.quantity);
     }, 0);
@@ -317,7 +318,7 @@ export class DashboardComponent implements OnInit {
 
     for (const order of orders) {
       for (const item of order.order_items) {
-        if (!item.recipe_id) continue;
+        if (!item.recipe_id || item.status === 'CANCELADO') continue;
         const existing = itemCounts.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0 };
         existing.quantity += item.quantity;
         existing.revenue += (item.price * item.quantity);

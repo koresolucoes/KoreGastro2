@@ -672,7 +672,7 @@ export class OrderPanelComponent {
     this.isCancellationReasonModalOpen.set(true);
   }
 
-  async handleCancellationReasonConfirmed(reason: string) {
+  async handleCancellationReasonConfirmed(result: { reason: string, returnToStock: boolean }) {
     this.isCancellationReasonModalOpen.set(false);
     const action = this.pendingCancellationAction();
     const authorizer = this.cancellationAuthorizer();
@@ -681,16 +681,16 @@ export class OrderPanelComponent {
     const authId = authorizer ? authorizer.id : null;
 
     if (action?.type === 'item' && action.item) {
-        await this.cancelItem(action.item, reason, authId);
+        await this.cancelItem(action.item, result.reason, authId, result.returnToStock);
     } else if (action?.type === 'order') {
-        await this.cancelOrder(reason, authId);
+        await this.cancelOrder(result.reason, authId, result.returnToStock);
     }
     
     this.pendingCancellationAction.set(null);
     this.cancellationAuthorizer.set(null);
   }
 
-  async cancelItem(item: DisplayOrderItem, reason: string, employeeId: string | null) {
+  async cancelItem(item: DisplayOrderItem, reason: string, employeeId: string | null, returnToStock: boolean) {
     let itemIds: string[];
     if ('items' in item) { // Grouped
         itemIds = item.items.map(i => i.id);
@@ -698,7 +698,7 @@ export class OrderPanelComponent {
         itemIds = [item.item.id];
     }
     
-    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason, employeeId);
+    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason, employeeId, returnToStock);
     
     if (success) {
         this.notificationService.show('Item(ns) cancelado(s) com sucesso.', 'success');
@@ -707,11 +707,11 @@ export class OrderPanelComponent {
     }
   }
 
-  async cancelOrder(reason: string, employeeId: string | null) {
+  async cancelOrder(reason: string, employeeId: string | null, returnToStock: boolean) {
     const order = this.currentOrder();
     if (!order) return;
 
-    const { success, error } = await this.posDataService.cancelOrder(order.id, reason, employeeId);
+    const { success, error } = await this.posDataService.cancelOrder(order.id, reason, employeeId, returnToStock);
     
     if (success) {
         this.notificationService.show('Pedido cancelado com sucesso.', 'success');

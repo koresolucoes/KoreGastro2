@@ -250,7 +250,9 @@ export class CashierDataService {
         return orderList
             .flatMap(o => o.order_items)
             .reduce((sum, item) => {
-                const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+                if (item.status === 'CANCELADO') return sum;
+                // Furo 8: Use frozen unit_cost if available, fallback to current recipe cost
+                const cost = item.unit_cost ?? (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
                 return sum + (cost * item.quantity);
             }, 0);
     };
@@ -867,7 +869,8 @@ export class CashierDataService {
         if (!o.completed_at) continue;
         const dateString = new Date(o.completed_at).toISOString().split('T')[0];
         if (dailyData.has(dateString)) {
-             const orderCogs = o.order_items.reduce((sum, item) => {
+             const orderCogs = o.order_items.reduce((sum: number, item: any) => {
+                if (item.status === 'CANCELADO') return sum;
                 const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
                 return sum + (cost * item.quantity);
             }, 0);

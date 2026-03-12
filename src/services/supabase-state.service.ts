@@ -675,7 +675,7 @@ export class SupabaseStateService {
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     const [transactionsRes, completedOrdersRes] = await Promise.all([
-      supabase.from('transactions').select('*').eq('user_id', userId).in('type', ['Gorjeta', 'Receita']).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()),
+      supabase.from('transactions').select('*').eq('user_id', userId).in('type', ['Gorjeta', 'Receita', 'Despesa']).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()),
       supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('user_id', userId).eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString())
     ]);
       

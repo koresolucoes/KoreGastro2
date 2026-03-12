@@ -16,6 +16,10 @@ import { map } from 'rxjs';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { PosStateService } from '../../services/pos-state.service';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType, Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 const EMPTY_RECIPE_FORM: RecipeForm = {
   recipe: {
@@ -29,6 +33,8 @@ const EMPTY_RECIPE_FORM: RecipeForm = {
     source_ingredient_id: null,
     external_code: null,
     ncm_code: null,
+    yield_quantity: 1, // Furo 4
+    labor_cost: 0, // Furo 7
   },
   preparations: [],
   ingredients: [],
@@ -46,7 +52,7 @@ const EMPTY_INGREDIENT: Partial<Ingredient> = {
 @Component({
   selector: 'app-technical-sheets',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BaseChartDirective],
   templateUrl: './technical-sheets.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -83,6 +89,7 @@ export class TechnicalSheetsComponent {
   isModalOpen = computed(() => this.viewMode() === 'edit');
   searchTerm = signal('');
   selectedRecipeId = signal<string | null>(null);
+  activeTab = signal<'basic' | 'ingredients' | 'advanced'>('basic');
   
   // Form State
   recipeForm = signal<RecipeForm>(EMPTY_RECIPE_FORM);
@@ -178,7 +185,9 @@ export class TechnicalSheetsComponent {
           else if (item.unit === 'ml' && ingredient.unit === 'l') convertedQuantity /= 1000;
           else if (item.unit === 'l' && ingredient.unit === 'ml') convertedQuantity *= 1000;
         }
-        total += ingredient.cost * (convertedQuantity || 0);
+        // Apply correction factor if exists
+        const fc = item.correction_factor || 1;
+        total += (ingredient.cost * (convertedQuantity || 0)) * fc;
       }
     }
 
@@ -189,6 +198,52 @@ export class TechnicalSheetsComponent {
 
     return total;
   });
+
+  formLaborCost = computed(() => this.recipeForm().recipe.labor_cost || 0);
+  formTotalOverallCost = computed(() => this.formTotalCost() + this.formLaborCost());
+
+  costChartData = computed<ChartData<'doughnut'>>(() => {
+    const ingCost = this.formTotalCost();
+    const labCost = this.formLaborCost();
+    
+    return {
+      labels: ['Ingredientes', 'Mão de Obra'],
+      datasets: [
+        {
+          data: [ingCost, labCost],
+          backgroundColor: ['#3b82f6', '#f97316'], // blue-500, orange-500
+          hoverBackgroundColor: ['#2563eb', '#ea580c'],
+          borderWidth: 0,
+        }
+      ]
+    };
+  });
+
+  chartOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#9ca3af', font: { family: 'Inter', size: 11 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed !== null) {
+              label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+            }
+            return label;
+          }
+        }
+      }
+    }
+  };
 
   // Filter items for the "Add Item" popover
   filteredItemsForAdding = computed(() => {
@@ -355,6 +410,34 @@ export class TechnicalSheetsComponent {
     }));
   }
 
+  updateFormIngredientFactor(prepId: string, ingredientId: string, factor: number) {
+    if (isNaN(factor) || factor < 0) return;
+    this.recipeForm.update(form => ({ 
+        ...form, 
+        ingredients: form.ingredients.map(i => 
+            i.preparation_id === prepId && i.ingredient_id === ingredientId 
+            ? { ...i, correction_factor: factor } 
+            : i 
+        ) 
+    }));
+  }
+
+  updateFormRecipeYield(yieldQty: number) {
+    if (isNaN(yieldQty) || yieldQty <= 0) return;
+    this.recipeForm.update(form => ({
+        ...form,
+        recipe: { ...form.recipe, yield_quantity: yieldQty }
+    }));
+  }
+
+  updateFormRecipeLabor(laborCost: number) {
+    if (isNaN(laborCost) || laborCost < 0) return;
+    this.recipeForm.update(form => ({
+        ...form,
+        recipe: { ...form.recipe, labor_cost: laborCost }
+    }));
+  }
+
   removeFormIngredient(prepId: string, ingredientId: string) {
     this.recipeForm.update(form => ({ 
         ...form, 
@@ -515,7 +598,7 @@ export class TechnicalSheetsComponent {
     if (!form.recipe.category_id) { await this.notificationService.alert('A categoria é obrigatória.'); return; }
 
     const { cost, hasStock, ...recipeData } = form.recipe as any;
-    const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalCost() };
+    const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalOverallCost() };
     
     // Prepare ingredients with unit conversion back to base unit if needed
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
@@ -532,7 +615,8 @@ export class TechnicalSheetsComponent {
         return {
             preparation_id: formIng.preparation_id,
             ingredient_id: formIng.ingredient_id,
-            quantity: qty
+            quantity: qty,
+            correction_factor: formIng.correction_factor || 1
         };
     }).filter((i): i is any => i !== null);
 
@@ -598,7 +682,7 @@ export class TechnicalSheetsComponent {
       const { success, error, data } = await this.inventoryDataService.addIngredient({
           name: recipe.name,
           unit: 'un',
-          cost: this.formTotalCost(),
+          cost: this.formTotalOverallCost(),
           stock: 0,
           min_stock: 0,
           is_yield_product: true // Mark as produced item
