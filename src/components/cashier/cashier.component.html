@@ -354,19 +354,28 @@
                  <!-- Expense/Sangria Form -->
                  <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                     <h3 class="text-lg font-bold text-white mb-4">Lançamentos de Caixa (Sangria/Suprimento)</h3>
-                    <div class="flex gap-3 items-end">
-                        <div class="flex-1">
+                    <div class="flex flex-wrap gap-3 items-end">
+                        <div class="flex-1 min-w-[200px]">
                             <label class="block text-xs font-medium text-gray-400 mb-1">Descrição</label>
                             <input type="text" [value]="newExpenseDescription()" (input)="newExpenseDescription.set($any($event.target).value)" placeholder="Ex: Compra de Gelo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
+                        </div>
+                        <div class="w-48">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Categoria Financeira</label>
+                            <select [value]="newExpenseCategoryId() || ''" (change)="newExpenseCategoryId.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
+                                <option value="" disabled selected>Selecione...</option>
+                                @for (cat of financialCategories(); track cat.id) {
+                                    <option [value]="cat.id">{{ cat.name }}</option>
+                                }
+                            </select>
                         </div>
                          <div class="w-32">
                             <label class="block text-xs font-medium text-gray-400 mb-1">Valor</label>
                             <input type="number" [value]="newExpenseAmount()" (input)="newExpenseAmount.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-red-500 outline-none">
                         </div>
-                        <button (click)="handleLogExpense()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px]">
+                        <button (click)="handleLogExpense()" [disabled]="!newExpenseCategoryId() || !newExpenseAmount()" class="bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px]">
                             Despesa
                         </button>
-                        <button (click)="handleLogExpense(true)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px] flex items-center gap-1">
+                        <button (click)="handleLogExpense(true)" [disabled]="!newExpenseCategoryId() || !newExpenseAmount()" class="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors h-[42px] flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">money_off</span> Sangria
                         </button>
                     </div>

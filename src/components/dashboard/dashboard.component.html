@@ -115,6 +115,41 @@
                 </div>
             }
 
+            <!-- DRE SUMMARY WIDGET -->
+            @case ('dre_summary') {
+                @let dre = $any(widget);
+                <div class="h-full bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-emerald-400">account_balance</span>
+                        {{ dre.title }}
+                    </h3>
+                    <div class="flex-1 flex flex-col gap-3">
+                        <div class="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+                            <span class="text-sm font-medium text-gray-300">Receita Bruta</span>
+                            <span class="text-lg font-bold text-green-400">{{ totalSales() | currency:'BRL' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+                            <span class="text-sm font-medium text-gray-300">CMV (Custo da Mercadoria)</span>
+                            <span class="text-lg font-bold text-red-400">-{{ cogs() | currency:'BRL' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+                            <span class="text-sm font-medium text-gray-300">Lucro Bruto</span>
+                            <span class="text-lg font-bold text-blue-400">{{ grossProfit() | currency:'BRL' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/50">
+                            <span class="text-sm font-medium text-gray-300">Despesas Operacionais (OPEX)</span>
+                            <span class="text-lg font-bold text-orange-400">-{{ opex() | currency:'BRL' }}</span>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-gray-700 flex justify-between items-center">
+                            <span class="text-base font-bold text-white uppercase tracking-wider">Lucro Líquido</span>
+                            <span class="text-2xl font-black" [class.text-emerald-400]="netProfit() >= 0" [class.text-red-500]="netProfit() < 0">
+                                {{ netProfit() | currency:'BRL' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- CHART HOURLY WIDGET -->
             @case ('chart_hourly') {
                 @let chart = $any(widget);

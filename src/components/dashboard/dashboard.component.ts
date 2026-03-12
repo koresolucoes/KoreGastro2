@@ -41,7 +41,12 @@ interface ListWidget extends BaseWidget {
   title: string;
 }
 
-type DashboardWidget = KpiWidget | ChartWidget | ListWidget;
+interface DreWidget extends BaseWidget {
+  type: 'dre_summary';
+  title: string;
+}
+
+type DashboardWidget = KpiWidget | ChartWidget | ListWidget | DreWidget;
 type ReportPeriod = 'day' | 'week' | 'month';
 
 @Component({
@@ -87,6 +92,7 @@ export class DashboardComponent implements OnInit {
   // Layout Management
   private defaultWidgetOrder = [
     'kpi_sales', 'kpi_profit', 'kpi_ticket', 'kpi_orders', 
+    'dre_summary',
     'chart_sales_1', 'list_top_items', 
     'chart_hourly_1', 'list_payment_methods',
     'list_recent_orders', 'list_low_stock'
@@ -171,6 +177,9 @@ export class DashboardComponent implements OnInit {
         type: 'kpi', id: 'kpi_orders', cols: 1, label: 'Pedidos Realizados', 
         value: orderCount.toString(), 
         subValue: `${this.openOrdersCount()} abertos agora`, icon: 'shopping_cart_checkout', colorClass: 'text-yellow-400', route: '/pos'
+      },
+      'dre_summary': {
+        type: 'dre_summary', id: 'dre_summary', cols: 2, title: 'DRE - Demonstrativo de Resultado'
       },
       'chart_sales_1': {
         type: 'chart_sales', id: 'chart_sales_1', cols: 2,
@@ -287,7 +296,10 @@ export class DashboardComponent implements OnInit {
     }, 0);
   });
 
+  opex = computed(() => this.dashboardState.performanceTransactions().filter(t => t.type === 'Despesa').reduce((sum, item) => sum + item.amount, 0));
+
   grossProfit = computed(() => this.totalSales() - this.cogs());
+  netProfit = computed(() => this.grossProfit() - this.opex());
   totalOrders = computed(() => this.dashboardState.performanceCompletedOrders().length);
   
   averageTicket = computed(() => {
