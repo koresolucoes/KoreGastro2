@@ -125,67 +125,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
         throw new Error(result.message);
     }
 
-    // 5. Stock Deduction (Async/Best Effort - outside of main transaction for performance/complexity reasons)
-    // In a V3 this should move to inside the RPC or a trigger.
-    if (orderItems.length > 0) {
-        deductStockForOrderItems(orderItems, orderId, restaurantId).catch(stockError => {
-            console.error(`[API /v2/payments] NON-FATAL: Stock deduction failed for order ${orderId}.`, stockError);
-        });
-    }
-    
-    // 6. Webhook
+    // 5. Webhook
     const { data: updatedOrder } = await supabase.from('orders').select('*, customers(*), order_items(*), delivery_drivers(*)').eq('id', orderId).single();
     if (updatedOrder) {
         await triggerWebhook(restaurantId, 'order.updated', updatedOrder).catch(console.error);
     }
 
-    return response.status(200).json({ success: true, message: 'Payment processed and order completed successfully.' });
+    return response.status(200).json({ success: true, message: 'Payment processed, stock deducted, and order completed successfully.' });
 
   } catch (error: any) {
     console.error('[API /v2/payments] Fatal error:', error);
     return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
   }
-}
-
-// Reuse logic for stock deduction (simplified for API)
-async function deductStockForOrderItems(orderItems: OrderItem[], orderId: string, userId: string) {
-    const recipeIds = [...new Set(orderItems.map(item => item.recipe_id).filter(Boolean))];
-    if (recipeIds.length === 0) return;
-    
-    // Fetch recipes to check for source ingredients (Simple items) vs Composed items
-    const { data: recipes } = await supabase.from('recipes').select('id, source_ingredient_id').in('id', recipeIds);
-    // Explicitly type the map to avoid 'unknown' type errors when accessing properties
-    const recipesMap = new Map<string, { id: string; source_ingredient_id: string | null }>(
-        (recipes || []).map((r: any) => [r.id, r])
-    );
-
-    const totalDeductions = new Map<string, number>();
-
-    // Note: This simplified version for V2 API assumes simple stock deduction for now.
-    // Full composite deduction logic exists in the Frontend Service but is heavy to replicate here without shared libs.
-    // We prioritize direct links (Simple Stock) first. 
-    // TODO: Move complex deduction logic to a Postgres Function (RPC) for shared use.
-
-    for (const item of orderItems) {
-        if (!item.recipe_id) continue;
-        const recipe = recipesMap.get(item.recipe_id);
-        
-        if (recipe && recipe.source_ingredient_id) {
-             totalDeductions.set(recipe.source_ingredient_id, (totalDeductions.get(recipe.source_ingredient_id) || 0) + item.quantity);
-        }
-        // Complex recipes (sub-recipes/ingredients) are skipped in this lightweight API version 
-        // until logic is moved to DB/RPC.
-    }
-    
-    const reason = `Venda API Pedido #${orderId.slice(0, 8)}`;
-    for (const [ingredientId, quantityChange] of totalDeductions.entries()) {
-        if (quantityChange > 0) {
-            await supabase.rpc('adjust_stock_by_lot', {
-                p_ingredient_id: ingredientId,
-                p_quantity_change: -quantityChange,
-                p_reason: reason,
-                p_user_id: userId,
-            });
-        }
-    }
 }
