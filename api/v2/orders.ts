@@ -112,40 +112,21 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         return res.status(400).json({ error: { message: '`tableNumber` and a non-empty `items` array are required.' } });
     }
 
-    const { data: table } = await supabase.from('tables').select('id').eq('user_id', restaurantId).eq('number', tableNumber).maybeSingle();
-    if (tableNumber > 0 && !table) {
-        return res.status(404).json({ error: { message: `Table #${tableNumber} not found.` } });
-    }
-    
-    const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
-        user_id: restaurantId,
-        table_number: tableNumber,
-        order_type: tableNumber > 0 ? 'Dine-in' : 'QuickSale',
-        status: 'OPEN',
-        customer_id: customerId || null,
-    }).select().single();
-    if (orderError) throw orderError;
-    
-    try {
-        const orderItemsToInsert = await buildOrderItems(restaurantId, newOrder.id, items);
-        const { data: insertedItems, error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert).select();
-        if (itemsError) throw itemsError;
+    const { data: finalOrder, error } = await supabase.rpc('create_order_with_items', {
+        p_restaurant_id: restaurantId,
+        p_order_data: { tableNumber, customerId },
+        p_items: items
+    });
 
-        if (table) {
-            await supabase.from('tables').update({ status: 'OCUPADA' }).eq('id', table.id);
-        }
-        
-        const finalOrder = { ...newOrder, order_items: insertedItems };
-        triggerWebhook(restaurantId, 'order.created', finalOrder).catch(console.error);
-        return res.status(201).json(finalOrder);
-
-    } catch (error: any) {
-        await supabase.from('orders').delete().eq('id', newOrder.id);
+    if (error) {
         if (error.message.includes('not found')) {
             return res.status(404).json({ error: { message: error.message } });
         }
         throw error;
     }
+
+    triggerWebhook(restaurantId, 'order.created', finalOrder).catch(console.error);
+    return res.status(201).json(finalOrder);
 }
 
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
