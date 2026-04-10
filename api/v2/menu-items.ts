@@ -1,51 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from '../utils/api-handler.js';
+import { z } from 'zod';
 
-async function authenticateRequest(request: VercelRequest): Promise<{ restaurantId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
-}
+const menuItemPatchSchema = z.object({
+  price: z.number().positive('Price must be positive').optional(),
+  is_available: z.boolean().optional()
+}).refine(data => data.price !== undefined || data.is_available !== undefined, {
+  message: "At least one field to update (`price` or `is_available`) is required."
+});
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
-  try {
-    const authResult = await authenticateRequest(request);
-    if (authResult.error) {
-        return response.status(authResult.status!).json({ error: authResult.error });
-    }
-    const restaurantId = authResult.restaurantId!;
-
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     switch (request.method) {
       case 'GET':
         await handleGet(request, response, restaurantId);
@@ -57,11 +23,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         response.setHeader('Allow', ['GET', 'PATCH']);
         response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
-  } catch (error: any) {
-    console.error('[API /v2/menu-items] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { itemId, isAvailable, categoryId } = req.query;
@@ -98,14 +60,13 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     if (!itemId || typeof itemId !== 'string') {
         return res.status(400).json({ error: { message: 'A menu item `itemId` is required in the query parameters.' } });
     }
-    const { price, is_available } = req.body;
-    const updatePayload: { [key: string]: any } = {};
-    if (price !== undefined) updatePayload.price = price;
-    if (is_available !== undefined) updatePayload.is_available = is_available;
     
-    if (Object.keys(updatePayload).length === 0) {
-        return res.status(400).json({ error: { message: 'At least one field to update (`price` or `is_available`) is required.' } });
+    const parsedBody = menuItemPatchSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
     }
+
+    const updatePayload = parsedBody.data;
 
     const { data, error } = await supabase.from('recipes').update(updatePayload).eq('id', itemId).eq('user_id', restaurantId).select().single();
     if (error) {

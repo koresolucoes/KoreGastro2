@@ -1,65 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from '../utils/api-handler.js';
+import { z } from 'zod';
 
-/**
- * Authenticates the request and retrieves the restaurant ID.
- * @param request The Vercel request object.
- * @returns An object with restaurantId on success, or error details on failure.
- */
-async function authenticateRequest(request: VercelRequest): Promise<{ restaurantId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-
-    if (profileError || !profile || !profile.external_api_key) {
-        return { error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-
-    if (providedApiKey !== profile.external_api_key) {
-        return { error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    
-    return { restaurantId };
-}
-
+const hallSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+});
 
 // Main handler function
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  // CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
-  try {
-    const authResult = await authenticateRequest(request);
-    if (authResult.error) {
-        return response.status(authResult.status!).json({ error: authResult.error });
-    }
-    const restaurantId = authResult.restaurantId!;
-
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     // Method Routing
     switch (request.method) {
       case 'GET':
@@ -78,11 +28,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
         response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
-  } catch (error: any) {
-    console.error('[API /v2/halls] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});
 
 // --- Handler for GET requests ---
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
@@ -127,10 +73,12 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 
 // --- Handler for POST requests ---
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-  const { name } = req.body;
-  if (!name || typeof name !== 'string') {
-    return res.status(400).json({ error: { message: '`name` is a required field.' } });
+  const parsedBody = hallSchema.safeParse(req.body);
+  if (!parsedBody.success) {
+      return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
   }
+
+  const { name } = parsedBody.data;
 
   const { data: newHall, error } = await supabase
     .from('halls')
@@ -145,14 +93,17 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 // --- Handler for PATCH requests ---
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
-    const { name } = req.body;
 
     if (!id || typeof id !== 'string') {
         return res.status(400).json({ error: { message: 'A hall `id` is required in the query parameters.' } });
     }
-     if (!name || typeof name !== 'string') {
-        return res.status(400).json({ error: { message: 'A `name` is required in the request body.' } });
+
+    const parsedBody = hallSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
     }
+
+    const { name } = parsedBody.data;
 
     const { data: updatedHall, error } = await supabase
         .from('halls')

@@ -4,69 +4,32 @@ import { createClient } from '@supabase/supabase-js';
 import { OrderItem } from '../../src/models/db.models.js';
 import { triggerWebhook } from '../webhook-emitter.js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from '../utils/api-handler.js';
+import { z } from 'zod';
 
-interface Payment {
-  method: string;
-  amount: number;
-}
+const paymentSchema = z.object({
+  method: z.string().min(1, 'Payment method is required'),
+  amount: z.number().positive('Payment amount must be positive')
+});
 
-interface RequestBody {
-  restaurantId: string;
-  orderId: string;
-  payments: Payment[];
-  tip?: number;
-}
+const requestBodySchema = z.object({
+  orderId: z.string().uuid('Invalid orderId format'),
+  payments: z.array(paymentSchema).min(1, 'At least one payment is required'),
+  tip: z.number().nonnegative('Tip cannot be negative').optional()
+});
 
-async function authenticateRequest(request: VercelRequest): Promise<{ restaurantId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = request.body.restaurantId as string;
-    if (!restaurantId) {
-        return { error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-    const { data: profile, error: profileError } = await supabase.from('company_profile').select('external_api_key').eq('user_id', restaurantId).single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
-}
-
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-  
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', ['POST']);
     return response.status(405).json({ error: { message: 'Method Not Allowed' } });
   }
 
-  try {
-    const authResult = await authenticateRequest(request);
-    if (authResult.error) {
-        return response.status(authResult.status!).json({ error: authResult.error });
-    }
-    const restaurantId = authResult.restaurantId!;
+  const parsedBody = requestBodySchema.safeParse(request.body);
+  if (!parsedBody.success) {
+      return response.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+  }
 
-    const { orderId, payments, tip } = request.body as RequestBody;
-
-    if (!orderId || !payments || !Array.isArray(payments) || payments.length === 0) {
-      return response.status(400).json({ error: { message: '`orderId` and a non-empty `payments` array are required.' } });
-    }
+  const { orderId, payments, tip } = parsedBody.data;
 
     // 1. Fetch order details for validation
     const { data: order, error: orderError } = await supabase
@@ -132,9 +95,4 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     return response.status(200).json({ success: true, message: 'Payment processed, stock deducted, and order completed successfully.' });
-
-  } catch (error: any) {
-    console.error('[API /v2/payments] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});

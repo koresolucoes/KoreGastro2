@@ -5,10 +5,7 @@ import { OrderItem, OrderItemStatus, Recipe, RecipePreparation } from '../../src
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from '../webhook-emitter.js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from '../utils/api-handler.js';
 
 interface RequestItem {
   externalCode: string;
@@ -16,42 +13,7 @@ interface RequestItem {
   notes?: string;
 }
 
-async function authenticateRequest(request: VercelRequest): Promise<{ restaurantId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-    const { data: profile, error: profileError } = await supabase.from('company_profile').select('external_api_key').eq('user_id', restaurantId).single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
-}
-
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
-  try {
-    const authResult = await authenticateRequest(request);
-    if (authResult.error) {
-        return response.status(authResult.status!).json({ error: authResult.error });
-    }
-    const restaurantId = authResult.restaurantId!;
-
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     // Custom subresource routing for POST
     const { orderId, subresource } = request.query;
     if (request.method === 'POST' && orderId && typeof orderId === 'string' && subresource) {
@@ -79,11 +41,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         response.setHeader('Allow', ['GET', 'POST', 'DELETE']);
         response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
-  } catch (error: any) {
-    console.error('[API /v2/orders] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { orderId, status, tableNumber, customerId } = req.query;

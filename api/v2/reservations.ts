@@ -1,47 +1,23 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from '../utils/api-handler.js';
+import { z } from 'zod';
 
-async function authenticateRequest(request: VercelRequest): Promise<{ restaurantId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-    const { data: profile, error: profileError } = await supabase.from('company_profile').select('external_api_key').eq('user_id', restaurantId).single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
-}
+const reservationSchema = z.object({
+  customer_name: z.string().min(1, 'Customer name is required'),
+  party_size: z.number().int().positive('Party size must be a positive integer'),
+  reservation_time: z.string().datetime('Invalid reservation time format'),
+  notes: z.string().optional(),
+  customer_phone: z.string().optional(),
+  customer_email: z.string().email('Invalid email format').optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']).optional(),
+  table_id: z.string().uuid('Invalid table_id format').optional()
+});
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+const reservationPatchSchema = reservationSchema.partial();
 
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
-  try {
-    const authResult = await authenticateRequest(request);
-    if (authResult.error) {
-        return response.status(authResult.status!).json({ error: authResult.error });
-    }
-    const restaurantId = authResult.restaurantId!;
-
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     switch (request.method) {
       case 'GET':
         await handleGet(request, response, restaurantId);
@@ -59,11 +35,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
         response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
-  } catch (error: any) {
-    console.error('[API /v2/reservations] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id, action, start_date, end_date } = req.query;
@@ -136,13 +108,17 @@ async function handleGetAvailability(req: VercelRequest, res: VercelResponse, re
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { customer_name, party_size, reservation_time, notes, customer_phone, customer_email } = req.body;
-    if (!customer_name || !party_size || !reservation_time) {
-        return res.status(400).json({ error: { message: '`customer_name`, `party_size`, and `reservation_time` are required.' } });
+    const parsedBody = reservationSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
     }
+
+    const { customer_name, party_size, reservation_time, notes, customer_phone, customer_email, status, table_id } = parsedBody.data;
+    
     const { data, error } = await supabase.from('reservations').insert({
         user_id: restaurantId, customer_name, party_size, reservation_time, notes, customer_phone, customer_email,
-        status: 'PENDING'
+        status: status || 'PENDING',
+        table_id
     }).select().single();
     if (error) throw error;
     return res.status(201).json(data);
@@ -153,8 +129,13 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     if (!id || typeof id !== 'string') {
         return res.status(400).json({ error: { message: 'A reservation `id` is required in the query parameters.' } });
     }
-    const updatePayload = req.body;
-    delete updatePayload.restaurantId;
+    
+    const parsedBody = reservationPatchSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+    }
+
+    const updatePayload = parsedBody.data;
     
     if (Object.keys(updatePayload).length === 0) {
         return res.status(400).json({ error: { message: 'At least one field to update is required.' } });

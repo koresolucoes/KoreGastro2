@@ -5,79 +5,36 @@ import { OrderItem, OrderStatus, OrderType, Customer, Recipe, RecipePreparation,
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from './webhook-emitter.js';
 
-// This is a separate client instance using the service role key for admin-level access
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { withAuth, supabase } from './utils/api-handler.js';
+import { z } from 'zod';
 
-// Payload validation interfaces
-interface RequestItem {
-  externalCode: string;
-  quantity: number;
-  notes?: string;
-  price?: number; // Optional price override
-}
+const requestItemSchema = z.object({
+  externalCode: z.string().min(1, 'External code is required'),
+  quantity: z.number().int().positive('Quantity must be a positive integer'),
+  notes: z.string().optional(),
+  price: z.number().nonnegative('Price cannot be negative').optional()
+});
 
-interface RequestBody {
-  restaurantId: string;
-  tableNumber: number; // For Dine-in, use 0 for QuickSale/takeout.
-  orderTypeLabel?: string; // Optional label for the origin (e.g., "Totem 1", "App de Entrega")
-  externalId?: string; // Optional ID from the external system
-  customer?: {
-    name: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
-  items: RequestItem[];
-}
+const requestBodySchema = z.object({
+  tableNumber: z.number().int().nonnegative('Table number must be a non-negative integer'),
+  orderTypeLabel: z.string().optional(),
+  externalId: z.string().optional(),
+  customer: z.object({
+    name: z.string().min(1, 'Customer name is required'),
+    phone: z.string().optional(),
+    email: z.string().email('Invalid email format').optional(),
+    address: z.string().optional()
+  }).optional(),
+  items: z.array(requestItemSchema).min(1, 'At least one item is required')
+});
 
-interface PatchRequestBody {
-    restaurantId: string;
-    orderId: string;
-    items: RequestItem[];
-}
+const patchRequestBodySchema = z.object({
+  orderId: z.string().uuid('Invalid orderId format'),
+  items: z.array(requestItemSchema).min(1, 'At least one item is required')
+});
 
 // Main handler
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  // CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, GET, PATCH, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
-  }
-
-  try {
-    // 1. Authentication
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return response.status(401).json({ error: { message: 'Authorization header is missing or invalid. Expected: Bearer YOUR_API_KEY' } });
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-
-    if (!restaurantId) {
-        return response.status(400).json({ error: { message: '`restaurantId` is required in the request body or query string.' } });
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-
-    if (profileError || !profile || !profile.external_api_key) {
-      return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key not configured for this restaurant.' } });
-    }
-
-    if (providedApiKey !== profile.external_api_key) {
-      return response.status(403).json({ error: { message: 'Invalid API key.' } });
-    }
-    
+export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     // 2. Method Routing
     switch (request.method) {
         case 'GET':
@@ -93,11 +50,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
             response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
-  } catch (error: any) {
-    console.error('[API /external-order] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
-  }
-}
+});
 
 async function handleGet(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     // --- Handle GET request to fetch menu ---
@@ -116,21 +69,13 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 }
 
 async function handlePost(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const body: RequestBody = request.body;
-    const { items } = body;
+    const parsedBody = requestBodySchema.safeParse(request.body);
+    if (!parsedBody.success) {
+        return response.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+    }
 
-    // Payload Validation for POST
-    if (body.tableNumber === undefined || body.tableNumber === null) {
-        return response.status(400).json({ error: { message: '`tableNumber` is required.' } });
-    }
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return response.status(400).json({ error: { message: '`items` array is required and cannot be empty.' } });
-    }
-    for (const item of items) {
-        if (!item.externalCode || !item.quantity || item.quantity <= 0) {
-            return response.status(400).json({ error: { message: 'Each item must have a valid `externalCode` and `quantity`.' } });
-        }
-    }
+    const body = parsedBody.data;
+    const { items } = body;
 
     // Data Processing for POST
     let customerId: string | null = null;
@@ -218,18 +163,13 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
 }
 
 async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const body: PatchRequestBody = request.body;
+    const parsedBody = patchRequestBodySchema.safeParse(request.body);
+    if (!parsedBody.success) {
+        return response.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+    }
+
+    const body = parsedBody.data;
     const { orderId, items } = body;
-    
-    if (!orderId) return response.status(400).json({ error: { message: '`orderId` is required.' } });
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return response.status(400).json({ error: { message: '`items` array is required and cannot be empty.' } });
-    }
-    for (const item of items) {
-        if (!item.externalCode || !item.quantity || item.quantity <= 0) {
-            return response.status(400).json({ error: { message: 'Each item must have a valid `externalCode` and `quantity`.' } });
-        }
-    }
     
     const { data: order, error: orderError } = await supabase
       .from('orders')
