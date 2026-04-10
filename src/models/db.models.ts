@@ -798,6 +798,50 @@ export interface RequisitionTemplate {
   template_items?: RequisitionTemplateItem[];
 }
 
+export interface ChecklistTemplate {
+  id: string;
+  store_id: string;
+  section: string;
+  checklist_type: 'opening' | 'closing' | 'custom';
+  task_description: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ChecklistLog {
+  id: string;
+  template_id: string;
+  store_id: string;
+  employee_id: string | null;
+  status: 'completed' | 'pending' | 'issue';
+  notes: string | null;
+  completed_at: string;
+  checklist_templates?: ChecklistTemplate;
+  employees?: { name: string };
+}
+
+export interface Equipment {
+  id: string;
+  store_id: string;
+  name: string;
+  min_temp: number | null;
+  max_temp: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TemperatureLog {
+  id: string;
+  equipment_id: string;
+  store_id: string;
+  employee_id: string | null;
+  temperature: number;
+  notes: string | null;
+  recorded_at: string;
+  equipment?: Equipment;
+  employees?: { name: string };
+}
+
 export interface RequisitionTemplateItem {
   id: string;
   template_id: string;

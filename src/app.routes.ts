@@ -197,6 +197,16 @@ export const APP_ROUTES: Routes = [
     canActivate: [roleGuard] 
   },
   { 
+    path: 'checklists', 
+    loadComponent: () => import('./components/checklists/checklists.component').then(m => m.ChecklistsComponent), 
+    canActivate: [roleGuard] 
+  },
+  { 
+    path: 'temperatures', 
+    loadComponent: () => import('./components/temperatures/temperatures.component').then(m => m.TemperaturesComponent), 
+    canActivate: [roleGuard] 
+  },
+  { 
     path: '**', 
     redirectTo: 'dashboard' 
   }

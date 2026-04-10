@@ -92,6 +92,14 @@ export class TopNavComponent {
       ]
     },
     {
+      name: 'Operacional',
+      icon: 'fact_check',
+      children: [
+        { name: 'Checklists', path: '/checklists', icon: 'checklist_rtl', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+        { name: 'Temperaturas', path: '/temperatures', icon: 'thermostat', roles: ['Gerente', 'Cozinha'] },
+      ]
+    },
+    {
       name: 'Gestão',
       icon: 'bar_chart_4_bars',
       children: [
@@ -125,8 +133,8 @@ export class TopNavComponent {
     if (!employee) return [];
     
     const isDemo = this.isDemoMode();
-    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions'];
+    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão', 'Operacional'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

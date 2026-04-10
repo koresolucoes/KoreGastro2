@@ -26,5 +26,7 @@ export const ALL_PERMISSION_KEYS = [
   '/time-clock',
   '/leave-management',
   '/tutorials',
-  '/delivery'
+  '/delivery',
+  '/checklists',
+  '/temperatures'
 ];
