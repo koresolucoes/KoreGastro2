@@ -64,7 +64,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { itemId } = req.query;
+    const { itemId, isAvailable, categoryId } = req.query;
 
     if (itemId && typeof itemId === 'string') {
         const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('user_id', restaurantId).eq('id', itemId).single();
@@ -75,62 +75,19 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json(data);
     }
     
-    // --- List all menu items with stock status ---
-    let query = supabase.from('recipes').select('*, categories(name)').eq('user_id', restaurantId).eq('is_sub_recipe', false);
-    if (req.query.isAvailable) query = query.eq('is_available', req.query.isAvailable === 'true');
-    if (req.query.categoryId) query = query.eq('category_id', req.query.categoryId as string);
-    
-    const [recipesRes, allRecipesRes, ingredientsRes, recipeIngredientsRes, recipeSubRecipesRes] = await Promise.all([
-        query,
-        supabase.from('recipes').select('id, source_ingredient_id').eq('user_id', restaurantId),
-        supabase.from('ingredients').select('id, stock').eq('user_id', restaurantId),
-        supabase.from('recipe_ingredients').select('*').eq('user_id', restaurantId),
-        supabase.from('recipe_sub_recipes').select('*').eq('user_id', restaurantId),
-    ]);
+    // --- List all menu items with stock status using RPC ---
+    const p_is_available = isAvailable === 'true' ? true : (isAvailable === 'false' ? false : null);
+    const p_category_id = typeof categoryId === 'string' ? categoryId : null;
 
-    if (recipesRes.error || ingredientsRes.error || recipeIngredientsRes.error || recipeSubRecipesRes.error || allRecipesRes.error) {
-        throw new Error('Failed to fetch menu data for stock calculation.');
+    const { data: detailedMenu, error } = await supabase.rpc('get_menu_with_stock', {
+        p_restaurant_id: restaurantId,
+        p_is_available: p_is_available,
+        p_category_id: p_category_id
+    });
+
+    if (error) {
+        throw new Error(`Failed to fetch menu data: ${error.message}`);
     }
-
-    const recipes = recipesRes.data || [];
-    const ingredientsMap = new Map<string, number>(ingredientsRes.data?.map(i => [i.id, i.stock]) || []);
-    const allRecipesMap = new Map<string, string | null>(allRecipesRes.data?.map(r => [r.id, r.source_ingredient_id]) || []);
-    const memo = new Map<string, boolean>();
-
-    const hasStock = (recipeId: string): boolean => {
-        if (memo.has(recipeId)) return memo.get(recipeId)!;
-        
-        const directIngredients = recipeIngredientsRes.data?.filter(ri => ri.recipe_id === recipeId) || [];
-        for (const ing of directIngredients) {
-            if ((ingredientsMap.get(ing.ingredient_id) ?? 0) < ing.quantity) {
-                memo.set(recipeId, false);
-                return false;
-            }
-        }
-        
-        const subRecipes = recipeSubRecipesRes.data?.filter(rsr => rsr.parent_recipe_id === recipeId) || [];
-        for (const sub of subRecipes) {
-            const childRecipeSourceIngredientId = allRecipesMap.get(sub.child_recipe_id);
-            if (childRecipeSourceIngredientId) {
-                if ((ingredientsMap.get(childRecipeSourceIngredientId) ?? 0) < sub.quantity) {
-                    memo.set(recipeId, false);
-                    return false;
-                }
-            } else {
-                 if (!hasStock(sub.child_recipe_id)) {
-                    memo.set(recipeId, false);
-                    return false;
-                 }
-            }
-        }
-        memo.set(recipeId, true);
-        return true;
-    };
-
-    const detailedMenu = recipes.map(recipe => ({
-        ...recipe,
-        has_stock: hasStock(recipe.id),
-    }));
 
     return res.status(200).json(detailedMenu);
 }

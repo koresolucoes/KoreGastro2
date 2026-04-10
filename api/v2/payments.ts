@@ -136,7 +136,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     // 6. Webhook
     const { data: updatedOrder } = await supabase.from('orders').select('*, customers(*), order_items(*), delivery_drivers(*)').eq('id', orderId).single();
     if (updatedOrder) {
-        triggerWebhook(restaurantId, 'order.updated', updatedOrder).catch(console.error);
+        await triggerWebhook(restaurantId, 'order.updated', updatedOrder).catch(console.error);
     }
 
     return response.status(200).json({ success: true, message: 'Payment processed and order completed successfully.' });

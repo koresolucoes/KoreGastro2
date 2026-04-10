@@ -116,7 +116,6 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 }
 
 async function handlePost(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    // --- Handle POST request to create an order ---
     const body: RequestBody = request.body;
     const { items } = body;
 
@@ -165,99 +164,37 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
         }
     }
 
-    // NEW LOGIC: Handle table existence and default to QuickSale if not found.
-    let effectiveTableNumber = body.tableNumber;
-    let effectiveOrderType: OrderType;
-    let tableIdToUpdate: string | null = null;
+    // Call the transactional RPC
+    const { data: finalOrder, error } = await supabase.rpc('create_order_with_items', {
+        p_restaurant_id: restaurantId,
+        p_order_data: { 
+            tableNumber: body.tableNumber, 
+            customerId: customerId,
+            // Pass external info as notes for the first item (handled in RPC or webhook)
+            notes: body.orderTypeLabel || body.externalId ? `Origem: ${body.orderTypeLabel || 'Desconhecida'}. ID Externo: ${body.externalId || 'N/A'}` : null
+        },
+        p_items: items
+    });
 
-    if (body.tableNumber > 0) {
-        effectiveOrderType = 'Dine-in';
-        const { data: table, error: tableError } = await supabase
-            .from('tables')
-            .select('id')
-            .eq('user_id', restaurantId)
-            .eq('number', body.tableNumber)
-            .maybeSingle();
-        
-        if (tableError) throw new Error(`Error checking for table: ${tableError.message}`);
-
-        if (!table) {
-            effectiveTableNumber = 0;
-            effectiveOrderType = 'QuickSale'; // Fallback to QuickSale if table number is invalid
-        } else {
-            tableIdToUpdate = table.id;
+    if (error) {
+        if (error.message.includes('not found')) {
+            return response.status(404).json({ error: { message: error.message } });
         }
-    } else {
-        // If it's a takeout/counter sale but has a customer with an address, it's a delivery.
-        if (body.customer?.address) {
-            effectiveOrderType = 'External-Delivery';
-        } else {
-            effectiveOrderType = 'QuickSale';
-        }
-    }
-
-
-    const externalCodes = items.map(i => i.externalCode);
-    const { data: recipes, error: recipeError } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('user_id', restaurantId)
-        .in('external_code', externalCodes);
-    if (recipeError) throw new Error(`Error fetching recipes: ${recipeError.message}`);
-
-    const recipesMap = new Map<string, Recipe>(recipes!.map(r => [r.external_code!, r]));
-    const missingCodes = externalCodes.filter(code => !recipesMap.has(code));
-    if (missingCodes.length > 0) {
-        return response.status(404).json({ error: { message: `Recipe(s) not found for external codes: ${missingCodes.join(', ')}` } });
-    }
-
-    const { data: newOrder, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-            user_id: restaurantId,
-            table_number: effectiveTableNumber, // Use effective number
-            order_type: effectiveOrderType,     // Use effective type
-            status: 'OPEN',
-            customer_id: customerId,
-            delivery_status: effectiveOrderType === 'External-Delivery' ? 'AWAITING_PREP' : null
-        })
-        .select('id, timestamp')
-        .single();
-    if (orderError) throw new Error(`Error creating order: ${orderError.message}`);
-
-    const orderItemsToInsert = await buildOrderItems(restaurantId, newOrder.id, items, recipesMap, body.orderTypeLabel, body.externalId);
-    
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
-    if (itemsError) {
-        await supabase.from('orders').delete().eq('id', newOrder.id);
-        throw new Error(`Error creating order items: ${itemsError.message}`);
-    }
-
-    // NEW LOGIC: Update table status if a valid table was found.
-    if (tableIdToUpdate) {
-    const { error: tableUpdateError } = await supabase
-        .from('tables')
-        .update({ status: 'OCUPADA' })
-        .eq('id', tableIdToUpdate);
-    
-    if (tableUpdateError) {
-        // The order was created, so we shouldn't fail the whole request.
-        // But we should log this critical error on the server.
-        console.error(`[API /external-order] CRITICAL: Order ${newOrder.id} created for table ${body.tableNumber}, but failed to update table status to OCUPADA. Error: ${tableUpdateError.message}`);
-    }
+        throw error;
     }
 
     // Trigger 'order.created' or 'delivery.created' webhook
     try {
+        const effectiveOrderType = finalOrder.order_type;
         const webhookEvent = effectiveOrderType === 'External-Delivery' ? 'delivery.created' : 'order.created';
         const webhookPayload = {
-            orderId: newOrder.id,
-            tableNumber: effectiveTableNumber,
-            orderType: effectiveOrderType,
-            status: 'OPEN',
-            timestamp: newOrder.timestamp,
+            orderId: finalOrder.id,
+            tableNumber: finalOrder.table_number,
+            orderType: finalOrder.order_type,
+            status: finalOrder.status,
+            timestamp: finalOrder.created_at,
             customer: customerDataForWebhook,
-            items: orderItemsToInsert.map(item => ({
+            items: finalOrder.order_items.map((item: any) => ({
                 name: item.name,
                 quantity: item.quantity,
                 price: item.price,
@@ -270,13 +207,13 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
         };
         await triggerWebhook(restaurantId, webhookEvent, webhookPayload);
     } catch (whError: any) {
-        console.error(`[API /external-order] Webhook trigger failed for order ${newOrder.id}:`, whError.message);
+        console.error(`[API /external-order] Webhook trigger failed for order ${finalOrder.id}:`, whError.message);
     }
 
     return response.status(201).json({
-    success: true,
-    message: 'Order created successfully and sent to KDS.',
-    orderId: newOrder.id
+        success: true,
+        message: 'Order created successfully and sent to KDS.',
+        orderId: finalOrder.id
     });
 }
 

@@ -31,7 +31,8 @@
     "ng2-charts": "^9.0.0",
     "rxjs": "^7.8.2",
     "tailwindcss": "latest",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.3.1",

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import { Customer } from '../../src/models/db.models.js';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
@@ -100,11 +101,25 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
   return res.status(200).json(data || []);
 }
 
+const postCustomerSchema = z.object({
+    name: z.string().min(1, "name is required"),
+    phone: z.string().optional().nullable(),
+    email: z.string().email("invalid email").optional().nullable(),
+    cpf: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
+    loyalty_points: z.number().optional().nullable(),
+    password: z.string().min(6, "password must be at least 6 characters").optional().nullable()
+});
+
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-  const body: Partial<Customer> & { password?: string } = req.body;
-  if (!body.name) {
-    return res.status(400).json({ error: { message: '`name` is a required field.' } });
+  const parsed = postCustomerSchema.safeParse(req.body);
+  if (!parsed.success) {
+      return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
   }
+  const body = parsed.data;
 
   const orConditions = [body.cpf && `cpf.eq.${body.cpf}`, body.phone && `phone.eq.${body.phone}`].filter(Boolean);
   if (orConditions.length > 0) {
@@ -130,9 +145,28 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 
   if (error) throw error;
   
-  triggerWebhook(restaurantId, 'customer.created', newCustomer).catch(console.error);
+  await triggerWebhook(restaurantId, 'customer.created', newCustomer).catch(console.error);
   return res.status(201).json(newCustomer);
 }
+
+const patchCustomerSchema = z.object({
+    name: z.string().min(1).optional(),
+    phone: z.string().optional().nullable(),
+    email: z.string().email().optional().nullable(),
+    cpf: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
+    loyalty_points_change: z.number().optional(),
+    description: z.string().optional(),
+    password: z.string().min(6).optional()
+}).refine(data => {
+    if (data.loyalty_points_change !== undefined && !data.description) {
+        return false;
+    }
+    return true;
+}, { message: "description is required when loyalty_points_change is provided", path: ["description"] });
 
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
@@ -140,12 +174,13 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         return res.status(400).json({ error: { message: 'A customer `id` is required in the query parameters.' } });
     }
 
-    const { loyalty_points_change, description, password, ...otherFields } = req.body;
+    const parsed = patchCustomerSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
+    }
+    const { loyalty_points_change, description, password, ...otherFields } = parsed.data;
 
     if (loyalty_points_change !== undefined) {
-        if (typeof loyalty_points_change !== 'number' || !description) {
-            return res.status(400).json({ error: { message: '`loyalty_points_change` (number) and `description` are required for loyalty updates.' } });
-        }
         const { data: customer, error: fetchError } = await supabase.from('customers').select('loyalty_points').eq('id', id).eq('user_id', restaurantId).single();
         if (fetchError) throw new Error(`Could not find customer: ${fetchError.message}`);
         
@@ -159,10 +194,9 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 
     const updatePayload: { [key: string]: any } = {};
     const allowedFields: (keyof Customer)[] = ['name', 'phone', 'email', 'cpf', 'notes', 'address', 'latitude', 'longitude'];
-    allowedFields.forEach(field => { if (req.body[field] !== undefined) updatePayload[field] = req.body[field]; });
+    allowedFields.forEach(field => { if (otherFields[field as keyof typeof otherFields] !== undefined) updatePayload[field] = otherFields[field as keyof typeof otherFields]; });
 
     if (password) {
-        if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ error: { message: 'Password must be at least 6 characters.' } });
         updatePayload.password_hash = createHash('sha256').update(password).digest('hex');
     }
 

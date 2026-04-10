@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import { OrderItem, OrderItemStatus, Recipe, RecipePreparation } from '../../src/models/db.models.js';
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from '../webhook-emitter.js';
@@ -106,11 +107,22 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     return res.status(200).json(data || []);
 }
 
+const postOrderSchema = z.object({
+    tableNumber: z.number().min(0, "tableNumber must be 0 or greater"),
+    customerId: z.string().uuid("customerId must be a valid UUID").optional().nullable(),
+    items: z.array(z.object({
+        externalCode: z.string().min(1, "externalCode is required"),
+        quantity: z.number().positive("quantity must be positive"),
+        notes: z.string().optional().nullable()
+    })).min(1, "items array cannot be empty")
+});
+
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { tableNumber, customerId, items } = req.body;
-    if (tableNumber === undefined || !items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: { message: '`tableNumber` and a non-empty `items` array are required.' } });
+    const parsed = postOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
     }
+    const { tableNumber, customerId, items } = parsed.data;
 
     const { data: finalOrder, error } = await supabase.rpc('create_order_with_items', {
         p_restaurant_id: restaurantId,
@@ -125,7 +137,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         throw error;
     }
 
-    triggerWebhook(restaurantId, 'order.created', finalOrder).catch(console.error);
+    await triggerWebhook(restaurantId, 'order.created', finalOrder).catch(console.error);
     return res.status(201).json(finalOrder);
 }
 
@@ -139,16 +151,25 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
         if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
         throw error;
     }
-    triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
+    await triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
     return res.status(200).json(data);
 }
 
 // --- Subresource Handlers ---
+const addItemsSchema = z.object({
+    items: z.array(z.object({
+        externalCode: z.string().min(1, "externalCode is required"),
+        quantity: z.number().positive("quantity must be positive"),
+        notes: z.string().optional().nullable()
+    })).min(1, "items array cannot be empty")
+});
+
 async function handleAddItems(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
-    const { items } = req.body;
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: { message: 'A non-empty `items` array is required.' } });
+    const parsed = addItemsSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
     }
+    const { items } = parsed.data;
     
     const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).eq('status', 'OPEN').single();
     if (orderError) return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
@@ -158,7 +179,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
         const { data: insertedItems, error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert).select();
         if (itemsError) throw itemsError;
         
-        triggerWebhook(restaurantId, 'order.updated', { orderId, itemsAdded: insertedItems }).catch(console.error);
+        await triggerWebhook(restaurantId, 'order.updated', { orderId, itemsAdded: insertedItems }).catch(console.error);
         return res.status(200).json(insertedItems);
     } catch (error: any) {
         if (error.message.includes('not found')) {
