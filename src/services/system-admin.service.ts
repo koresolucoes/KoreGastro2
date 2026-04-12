@@ -9,13 +9,10 @@ export class SystemAdminService {
   async checkAdminStatus(email: string): Promise<boolean> {
     this.isChecking.set(true);
     try {
-      const { data, error } = await supabase
-        .from('system_admins')
-        .select('email')
-        .eq('email', email)
-        .single();
-
-      const hasAccess = !!data && !error;
+      // Usamos uma função RPC para checar o status, ignorando o RLS e evitando loops infinitos
+      const { data, error } = await supabase.rpc('is_system_admin');
+      
+      const hasAccess = data === true;
       this.isAdmin.set(hasAccess);
       return hasAccess;
     } catch (e) {
