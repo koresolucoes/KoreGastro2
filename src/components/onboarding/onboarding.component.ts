@@ -10,6 +10,7 @@ import { NotificationService } from '../../services/notification.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../../services/supabase-client';
 
 interface MenuCategoryItem {
     name: string;
@@ -247,6 +248,28 @@ export class OnboardingComponent {
                 pin: this.data.managerPin,
                 role_id: managerRole.id
             });
+        }
+
+        // 7. Create 30-day free trial subscription
+        this.loadingStatus.set('Ativando período de teste de 30 dias...');
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        
+        const { data: plans } = await supabase.from('plans').select('id').limit(1);
+        const planId = plans && plans.length > 0 ? plans[0].id : null;
+
+        if (planId) {
+            const userId = this.settingsData.getActiveUnitId();
+            if (userId) {
+                await supabase.from('subscriptions').insert({
+                    user_id: userId,
+                    store_id: userId,
+                    plan_id: planId,
+                    status: 'trialing',
+                    recurrent: false,
+                    current_period_end: trialEndDate.toISOString()
+                });
+            }
         }
 
         // Success!

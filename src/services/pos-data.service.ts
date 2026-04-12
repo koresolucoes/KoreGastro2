@@ -442,11 +442,11 @@ export class PosDataService {
 
   // ... (Hall/Table mgmt methods kept unchanged) ...
 
-  async addHall(name: string): Promise<{ success: boolean; error: any }> {
+  async addHall(name: string): Promise<{ success: boolean; data?: any; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-    const { error } = await supabase.from('halls').insert({ name, user_id: userId });
-    return { success: !error, error };
+    const { data, error } = await supabase.from('halls').insert({ name, user_id: userId }).select().single();
+    return { success: !error, data, error };
   }
 
   async updateHall(id: string, name: string): Promise<{ success: boolean; error: any }> {
