@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SystemAdminService } from '../../services/system-admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -17,7 +18,13 @@ import { CommonModule } from '@angular/common';
             </div>
             <div>
               <p class="text-sm text-gray-400">Restaurantes Ativos</p>
-              <p class="text-2xl font-bold text-white">--</p>
+              <p class="text-2xl font-bold text-white">
+                @if(isLoading()) {
+                  <span class="animate-pulse">...</span>
+                } @else {
+                  {{ stats()?.total_restaurants || 0 }}
+                }
+              </p>
             </div>
           </div>
         </div>
@@ -28,7 +35,13 @@ import { CommonModule } from '@angular/common';
             </div>
             <div>
               <p class="text-sm text-gray-400">MRR Estimado</p>
-              <p class="text-2xl font-bold text-white">R$ --</p>
+              <p class="text-2xl font-bold text-white">
+                @if(isLoading()) {
+                  <span class="animate-pulse">...</span>
+                } @else {
+                  {{ (stats()?.total_mrr || 0) | currency:'BRL':'symbol':'1.2-2' }}
+                }
+              </p>
             </div>
           </div>
         </div>
@@ -39,7 +52,13 @@ import { CommonModule } from '@angular/common';
             </div>
             <div>
               <p class="text-sm text-gray-400">Erros Recentes</p>
-              <p class="text-2xl font-bold text-white">--</p>
+              <p class="text-2xl font-bold text-white">
+                @if(isLoading()) {
+                  <span class="animate-pulse">...</span>
+                } @else {
+                  {{ stats()?.recent_errors || 0 }}
+                }
+              </p>
             </div>
           </div>
         </div>
@@ -48,9 +67,22 @@ import { CommonModule } from '@angular/common';
       <div class="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
         <span class="material-symbols-outlined text-6xl text-gray-700 mb-4">construction</span>
         <h3 class="text-xl font-medium text-gray-300 mb-2">Módulo em Construção</h3>
-        <p class="text-gray-500 max-w-md mx-auto">Em breve, os dados reais de todos os tenants (restaurantes) aparecerão aqui através de funções RPC seguras.</p>
+        <p class="text-gray-500 max-w-md mx-auto">Em breve, você poderá ver a lista detalhada de todos os restaurantes e gerenciar suas assinaturas diretamente por aqui.</p>
       </div>
     </div>
   `
 })
-export class AdminDashboardComponent {}
+export class AdminDashboardComponent implements OnInit {
+  adminService = inject(SystemAdminService);
+  stats = signal<any>(null);
+  isLoading = signal(true);
+
+  async ngOnInit() {
+    this.isLoading.set(true);
+    const { data } = await this.adminService.getDashboardStats();
+    if (data) {
+      this.stats.set(data);
+    }
+    this.isLoading.set(false);
+  }
+}

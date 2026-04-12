@@ -40,4 +40,9 @@ export class SystemAdminService {
     const { error } = await supabase.from('system_admins').delete().eq('email', email);
     return { error };
   }
+
+  async getDashboardStats() {
+    const { data, error } = await supabase.rpc('get_admin_dashboard_stats');
+    return { data, error };
+  }
 }
