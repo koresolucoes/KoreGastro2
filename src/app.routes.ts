@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { loginGuard } from './guards/login.guard';
+import { systemAdminGuard } from './guards/system-admin.guard';
 
 export const APP_ROUTES: Routes = [
   { 
@@ -205,6 +206,16 @@ export const APP_ROUTES: Routes = [
     path: 'temperatures', 
     loadComponent: () => import('./components/temperatures/temperatures.component').then(m => m.TemperaturesComponent), 
     canActivate: [roleGuard] 
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./components/admin/admin-layout.component').then(m => m.AdminLayoutComponent),
+    canActivate: [systemAdminGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./components/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent) },
+      { path: 'manage', loadComponent: () => import('./components/admin/admin-manage.component').then(m => m.AdminManageComponent) }
+    ]
   },
   { 
     path: '**', 
