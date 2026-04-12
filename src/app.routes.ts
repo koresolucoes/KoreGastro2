@@ -12,6 +12,11 @@ export const APP_ROUTES: Routes = [
     canActivate: [loginGuard] 
   },
   { 
+    path: 'register', 
+    loadComponent: () => import('./components/auth/register.component').then(m => m.RegisterComponent),
+    canActivate: [loginGuard] 
+  },
+  { 
     path: 'reset-password', 
     loadComponent: () => import('./components/auth/reset-password.component').then(m => m.ResetPasswordComponent) 
   },

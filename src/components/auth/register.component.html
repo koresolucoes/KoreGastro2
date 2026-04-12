@@ -22,11 +22,11 @@
         <h1 class="text-5xl font-extrabold text-white mb-2 lg:hidden">
           Chef<span class="text-blue-500">OS</span>
         </h1>
-        <h2 class="text-3xl font-bold text-white">Acesse sua conta</h2>
-        <p class="mt-2 text-sm text-gray-400">Entre com seu e-mail e senha para continuar.</p>
+        <h2 class="text-3xl font-bold text-white">Crie sua conta</h2>
+        <p class="mt-2 text-sm text-gray-400">Cadastre-se para começar a usar o ChefOS.</p>
       </div>
       
-      <form class="mt-8 space-y-6" (ngSubmit)="handleLogin()" novalidate>
+      <form class="mt-8 space-y-6" (ngSubmit)="handleRegister()" novalidate>
         <div class="space-y-5">
           <div class="relative">
             <label for="email-address" class="sr-only">Endereço de e-mail</label>
@@ -43,17 +43,21 @@
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <span class="material-symbols-outlined text-gray-500">lock</span>
             </div>
-            <input id="password" name="password" type="password" autocomplete="current-password" required
+            <input id="password" name="password" type="password" autocomplete="new-password" required
               [value]="password()" (input)="password.set($any($event.target).value)"
               class="block w-full pl-12 pr-4 py-4 text-lg border rounded-xl bg-gray-900/50 border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-              placeholder="Sua senha">
+              placeholder="Sua senha (mín. 6 caracteres)">
           </div>
-        </div>
-
-        <div class="flex items-center justify-end text-sm">
-          <a (click)="forgotPassword()" class="font-medium text-blue-400 hover:text-blue-300 cursor-pointer transition-colors">
-            Esqueceu sua senha?
-          </a>
+          <div class="relative">
+            <label for="confirm-password" class="sr-only">Confirme a Senha</label>
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-gray-500">lock_reset</span>
+            </div>
+            <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required
+              [value]="confirmPassword()" (input)="confirmPassword.set($any($event.target).value)"
+              class="block w-full pl-12 pr-4 py-4 text-lg border rounded-xl bg-gray-900/50 border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+              placeholder="Confirme sua senha">
+          </div>
         </div>
 
         @if(authState() === 'error') {
@@ -69,18 +73,18 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Entrando...
+            Cadastrando...
           } @else {
-             Entrar <span class="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">arrow_forward</span>
+             Cadastrar <span class="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">person_add</span>
           }
         </button>
       </form>
 
       <div class="text-center pt-8 mt-8 border-t border-gray-800">
         <p class="text-sm text-gray-400">
-          Novo no ChefOS?
-          <a routerLink="/register" class="font-medium text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
-            Crie sua conta
+          Já tem uma conta?
+          <a routerLink="/login" class="font-medium text-blue-400 hover:text-blue-300 transition-colors">
+            Faça login
           </a>
         </p>
       </div>
