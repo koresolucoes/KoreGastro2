@@ -1,91 +1,89 @@
-<div class="relative flex items-center justify-center min-h-screen overflow-hidden">
-  <!-- Animated Background -->
-  <div class="absolute inset-0 z-0 animated-gradient-background"></div>
-
-  <!-- Login Form Container -->
-  <div class="relative z-10 w-full max-w-md p-8 space-y-8 bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-700/50">
-    <div>
-      <h1 class="text-6xl font-extrabold text-center text-white mb-4">
-        <span>Chef</span><span class="text-blue-500">OS</span>
+<div class="flex min-h-screen bg-gray-900">
+  <!-- Left Side: Branding (Hidden on Mobile) -->
+  <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden">
+    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 to-gray-900/95 backdrop-blur-[2px]"></div>
+    <div class="relative z-10 p-12 text-center">
+      <h1 class="text-7xl font-extrabold text-white mb-6 tracking-tight">
+        Chef<span class="text-blue-500">OS</span>
       </h1>
-      <h2 class="text-3xl font-extrabold text-center text-white">
-        Acesse sua conta
-      </h2>
-      <p class="mt-2 text-center text-sm text-gray-400">
-        Entre com seu e-mail e senha.
+      <p class="text-2xl text-gray-300 font-light max-w-lg mx-auto">
+        O Sistema Operacional definitivo para o seu restaurante.
       </p>
     </div>
+  </div>
+
+  <!-- Right Side: Form -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
+    <div class="absolute inset-0 z-0 animated-gradient-background lg:hidden"></div>
     
-    <form class="mt-8 space-y-6" (ngSubmit)="handleLogin()" novalidate>
-      <div>
-        <div class="rounded-md shadow-sm space-y-4">
-          <div>
+    <div class="relative z-10 w-full max-w-md space-y-8 bg-gray-800/90 lg:bg-transparent lg:backdrop-blur-none backdrop-blur-md p-8 lg:p-0 rounded-2xl shadow-2xl lg:shadow-none border border-gray-700/50 lg:border-none">
+      <div class="text-center lg:text-left">
+        <h1 class="text-5xl font-extrabold text-white mb-2 lg:hidden">
+          Chef<span class="text-blue-500">OS</span>
+        </h1>
+        <h2 class="text-3xl font-bold text-white">Acesse sua conta</h2>
+        <p class="mt-2 text-sm text-gray-400">Entre com seu e-mail e senha para continuar.</p>
+      </div>
+      
+      <form class="mt-8 space-y-6" (ngSubmit)="handleLogin()" novalidate>
+        <div class="space-y-5">
+          <div class="relative">
             <label for="email-address" class="sr-only">Endereço de e-mail</label>
-            <input 
-              id="email-address" 
-              name="email" 
-              type="email" 
-              autocomplete="email" 
-              required
-              [value]="email()"
-              (input)="email.set($any($event.target).value)"
-              class="relative block w-full px-3 py-3 text-lg border rounded-md bg-gray-700/80 border-gray-600 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10" 
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-gray-500">mail</span>
+            </div>
+            <input id="email-address" name="email" type="email" autocomplete="email" required
+              [value]="email()" (input)="email.set($any($event.target).value)"
+              class="block w-full pl-12 pr-4 py-4 text-lg border rounded-xl bg-gray-900/50 border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
               placeholder="seu-email@dominio.com">
           </div>
-          <div>
+          <div class="relative">
             <label for="password" class="sr-only">Senha</label>
-            <input 
-              id="password" 
-              name="password" 
-              type="password" 
-              autocomplete="current-password" 
-              required
-              [value]="password()"
-              (input)="password.set($any($event.target).value)"
-              class="relative block w-full px-3 py-3 text-lg border rounded-md bg-gray-700/80 border-gray-600 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10" 
-              placeholder="Senha">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-gray-500">lock</span>
+            </div>
+            <input id="password" name="password" type="password" autocomplete="current-password" required
+              [value]="password()" (input)="password.set($any($event.target).value)"
+              class="block w-full pl-12 pr-4 py-4 text-lg border rounded-xl bg-gray-900/50 border-gray-700 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+              placeholder="Sua senha">
           </div>
         </div>
 
-        <div class="flex items-center justify-end text-sm mt-4">
-            <a (click)="forgotPassword()" class="font-medium text-blue-400 hover:text-blue-300 cursor-pointer">
-              Esqueceu sua senha?
-            </a>
+        <div class="flex items-center justify-end text-sm">
+          <a (click)="forgotPassword()" class="font-medium text-blue-400 hover:text-blue-300 cursor-pointer transition-colors">
+            Esqueceu sua senha?
+          </a>
         </div>
-      </div>
 
+        @if(authState() === 'error') {
+          <div class="p-4 text-center bg-red-900/30 border border-red-800/50 rounded-xl animate-fade-in">
+            <p class="text-sm text-red-400">{{ errorMessage() }}</p>
+          </div>
+        }
 
-      @if(authState() === 'error') {
-        <div class="p-3 text-center bg-red-900/50 border border-red-700 rounded-md">
-          <p class="text-sm text-red-300">{{ errorMessage() }}</p>
-        </div>
-      }
-
-      <div>
-        <button 
-          type="submit" 
-          [disabled]="authState() === 'loading'"
-          class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 disabled:bg-gray-500 disabled:cursor-wait">
+        <button type="submit" [disabled]="authState() === 'loading'"
+          class="group relative w-full flex justify-center items-center gap-2 py-4 px-4 border border-transparent text-lg font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-blue-900/20">
           @if(authState() === 'loading') {
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Entrando...
           } @else {
-             Entrar
+             Entrar <span class="material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">arrow_forward</span>
           }
         </button>
-      </div>
-    </form>
+      </form>
 
-    <div class="text-center pt-6 border-t border-gray-700">
-      <p class="text-sm text-gray-400">
-        Novo no ChefOS?
-        <a href="https://app.chefos.online/#/auth" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-400 hover:text-blue-300">
-          Crie sua conta
-        </a>
-      </p>
+      <div class="text-center pt-8 mt-8 border-t border-gray-800">
+        <p class="text-sm text-gray-400">
+          Novo no ChefOS?
+          <a href="https://app.chefos.online/#/auth" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-400 hover:text-blue-300 transition-colors">
+            Crie sua conta
+          </a>
+        </p>
+      </div>
     </div>
   </div>
 </div>

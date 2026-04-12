@@ -8,10 +8,21 @@
     </div>
 
     <!-- Main Container -->
-    <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl flex overflow-hidden">
+    <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
         
-        <!-- Left Panel: Context & Progress -->
-        <div class="w-1/4 bg-gray-900/80 border-r border-gray-700 p-8 flex flex-col justify-between hidden md:flex">
+        <!-- Mobile Progress Bar (Visible only on small screens) -->
+        <div class="md:hidden w-full bg-gray-900/80 p-4 border-b border-gray-700 flex flex-col gap-2">
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-bold text-white">Passo {{ currentStep() + 1 }} de {{ steps.length }}</span>
+                <span class="text-blue-400 font-medium">{{ steps[currentStep()]?.title || 'Conclusão' }}</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" [style.width]="((currentStep() + 1) / steps.length) * 100 + '%'"></div>
+            </div>
+        </div>
+
+        <!-- Left Panel: Context & Progress (Hidden on Mobile) -->
+        <div class="w-1/4 bg-gray-900/80 border-r border-gray-700 p-8 flex-col justify-between hidden md:flex">
             <div>
                 <h1 class="text-3xl font-extrabold mb-2 tracking-tight">Chef<span class="text-blue-500">OS</span></h1>
                 <p class="text-gray-400 text-sm">Configuração Inicial</p>
@@ -52,7 +63,7 @@
         <div class="flex-1 flex flex-col h-full overflow-hidden">
             
             <!-- Step Content Area -->
-            <div class="flex-1 overflow-y-auto p-8 md:p-12 relative">
+            <div class="flex-1 overflow-y-auto p-6 md:p-12 relative">
                 @switch (currentStep()) {
                     
                     <!-- 0. WELCOME -->
@@ -61,9 +72,9 @@
                             <div class="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
                                 <span class="material-symbols-outlined text-6xl text-blue-500">rocket_launch</span>
                             </div>
-                            <h2 class="text-4xl font-bold mb-4">Bem-vindo a bordo!</h2>
-                            <p class="text-gray-400 mb-8 text-xl max-w-lg">Vamos configurar seu restaurante completo em poucos minutos. Você terá um sistema profissional pronto para vender.</p>
-                            <button (click)="nextStep()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-1 flex items-center gap-2">
+                            <h2 class="text-3xl md:text-4xl font-bold mb-4">Bem-vindo a bordo!</h2>
+                            <p class="text-gray-400 mb-8 text-lg md:text-xl max-w-lg">Vamos configurar seu restaurante completo em poucos minutos. Você terá um sistema profissional pronto para vender.</p>
+                            <button (click)="nextStep()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 md:px-10 rounded-full text-lg shadow-lg shadow-blue-900/30 transition-all hover:-translate-y-1 flex items-center gap-2">
                                 Começar Configuração <span class="material-symbols-outlined">arrow_forward</span>
                             </button>
                         </div>
@@ -71,17 +82,17 @@
 
                     <!-- 1. IDENTIDADE -->
                     @case (1) {
-                        <div class="max-w-xl mx-auto animate-fade-in-right pt-10">
+                        <div class="max-w-xl mx-auto animate-fade-in-right pt-4 md:pt-10">
                             <div class="mb-8">
                                 <span class="material-symbols-outlined text-5xl text-purple-400 mb-4">storefront</span>
-                                <h2 class="text-3xl font-bold mb-2">Sobre seu Negócio</h2>
-                                <p class="text-gray-400 text-lg">Como seus clientes conhecerão seu restaurante?</p>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Sobre seu Negócio</h2>
+                                <p class="text-gray-400 text-base md:text-lg">Como seus clientes conhecerão seu restaurante?</p>
                             </div>
                             
                             <div class="space-y-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Nome do Restaurante</label>
-                                    <input type="text" [(ngModel)]="data.companyName" (keydown.enter)="nextStep()" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-xl placeholder-gray-500 transition-all" placeholder="Ex: Burguer King">
+                                    <input type="text" [(ngModel)]="data.companyName" (keydown.enter)="nextStep()" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg md:text-xl placeholder-gray-500 transition-all" placeholder="Ex: Burguer King">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">CNPJ (Opcional)</label>
@@ -96,7 +107,7 @@
                          <div class="max-w-2xl mx-auto animate-fade-in-right pt-4">
                             <div class="mb-6">
                                 <span class="material-symbols-outlined text-5xl text-orange-400 mb-4">groups</span>
-                                <h2 class="text-3xl font-bold mb-2">Sua Equipe</h2>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Sua Equipe</h2>
                                 <p class="text-gray-400">Selecione quais funções operam no seu restaurante (nós criaremos os cargos para você).</p>
                             </div>
                             
@@ -154,11 +165,11 @@
 
                     <!-- 3. SALÃO (LAYOUT) -->
                     @case (3) {
-                         <div class="max-w-xl mx-auto animate-fade-in-right pt-10">
+                         <div class="max-w-xl mx-auto animate-fade-in-right pt-4 md:pt-10">
                             <div class="mb-8">
                                 <span class="material-symbols-outlined text-5xl text-yellow-400 mb-4">table_restaurant</span>
-                                <h2 class="text-3xl font-bold mb-2">Ambiente Físico</h2>
-                                <p class="text-gray-400 text-lg">Configure seu primeiro salão de atendimento.</p>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Ambiente Físico</h2>
+                                <p class="text-gray-400 text-base md:text-lg">Configure seu primeiro salão de atendimento.</p>
                             </div>
                             
                             <div class="space-y-6">
@@ -168,10 +179,10 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Quantidade de Mesas</label>
-                                    <div class="flex items-center gap-4">
-                                        <button (click)="data.tableCount = Math.max(1, data.tableCount - 1)" class="w-12 h-12 bg-gray-700 rounded-lg text-2xl hover:bg-gray-600">-</button>
-                                        <input type="number" [(ngModel)]="data.tableCount" class="w-24 bg-gray-700 border border-gray-600 rounded-xl px-2 py-4 text-white text-center font-bold text-2xl focus:ring-2 focus:ring-blue-500 outline-none">
-                                        <button (click)="data.tableCount = data.tableCount + 1" class="w-12 h-12 bg-gray-700 rounded-lg text-2xl hover:bg-gray-600">+</button>
+                                    <div class="flex items-center bg-gray-700 rounded-xl border border-gray-600 overflow-hidden h-16">
+                                        <button (click)="data.tableCount = Math.max(1, data.tableCount - 1)" class="w-20 h-full bg-gray-600 hover:bg-gray-500 text-white font-bold text-3xl transition-colors flex items-center justify-center">-</button>
+                                        <input type="number" [(ngModel)]="data.tableCount" class="w-full bg-transparent text-center text-white font-bold text-2xl outline-none appearance-none" min="1">
+                                        <button (click)="data.tableCount = data.tableCount + 1" class="w-20 h-full bg-gray-600 hover:bg-gray-500 text-white font-bold text-3xl transition-colors flex items-center justify-center">+</button>
                                     </div>
                                 </div>
                             </div>
@@ -183,7 +194,7 @@
                          <div class="max-w-2xl mx-auto animate-fade-in-right pt-4">
                             <div class="mb-6">
                                 <span class="material-symbols-outlined text-5xl text-red-400 mb-4">soup_kitchen</span>
-                                <h2 class="text-3xl font-bold mb-2">Estações de Produção</h2>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Estações de Produção</h2>
                                 <p class="text-gray-400">Defina onde os pedidos serão preparados. Isso cria as telas do KDS.</p>
                             </div>
                             
@@ -212,7 +223,7 @@
                          <div class="max-w-3xl mx-auto animate-fade-in-right pt-4">
                             <div class="mb-6">
                                 <span class="material-symbols-outlined text-5xl text-green-400 mb-4">restaurant_menu</span>
-                                <h2 class="text-3xl font-bold mb-2">Vamos montar um Cardápio Básico</h2>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Vamos montar um Cardápio Básico</h2>
                                 <p class="text-gray-400">Adicione alguns itens para começar. Você pode editar tudo depois.</p>
                             </div>
                             
@@ -236,33 +247,58 @@
 
                                 <!-- Active Category Editor -->
                                 @if(data.menuCategories.length > 0) {
-                                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                                    <div class="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
                                         <div class="mb-4">
                                             <label class="text-xs text-gray-400 uppercase font-bold">Nome da Categoria</label>
                                             <input type="text" [(ngModel)]="data.menuCategories[selectedCategoryIndex()].name" class="w-full bg-transparent border-b border-gray-600 py-2 text-xl font-bold text-white focus:border-blue-500 outline-none">
                                         </div>
 
                                         <div class="space-y-3">
-                                            <div class="grid grid-cols-12 gap-4 text-xs text-gray-500 uppercase font-bold mb-1 pl-2">
+                                            <div class="hidden md:grid grid-cols-12 gap-4 text-xs text-gray-500 uppercase font-bold mb-1 pl-2">
                                                 <div class="col-span-6">Nome do Produto</div>
                                                 <div class="col-span-3">Preço (R$)</div>
                                                 <div class="col-span-2"></div>
                                             </div>
                                             
-                                            @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
-                                                <div class="grid grid-cols-12 gap-3 items-center">
-                                                    <div class="col-span-6">
-                                                        <input type="text" [(ngModel)]="item.name" placeholder="Ex: X-Burguer" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                            <!-- Desktop Table View -->
+                                            <div class="hidden md:block">
+                                                @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
+                                                    <div class="grid grid-cols-12 gap-3 items-center mb-2">
+                                                        <div class="col-span-6">
+                                                            <input type="text" [(ngModel)]="item.name" placeholder="Ex: X-Burguer" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                        </div>
+                                                        <div class="col-span-3">
+                                                            <input type="number" [(ngModel)]="item.price" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                        </div>
+                                                        <div class="col-span-3 flex justify-end">
+                                                            <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-2 text-red-400 hover:bg-gray-700 rounded-lg"><span class="material-symbols-outlined">delete</span></button>
+                                                        </div>
                                                     </div>
-                                                    <div class="col-span-3">
-                                                        <input type="number" [(ngModel)]="item.price" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                                                }
+                                            </div>
+
+                                            <!-- Mobile Card View -->
+                                            <div class="md:hidden space-y-4">
+                                                @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
+                                                    <div class="bg-gray-700/30 p-4 rounded-lg border border-gray-600 relative">
+                                                        <button (click)="removeItem(selectedCategoryIndex(), $index)" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 p-1">
+                                                            <span class="material-symbols-outlined text-sm">close</span>
+                                                        </button>
+                                                        <div class="space-y-3">
+                                                            <div>
+                                                                <label class="block text-xs text-gray-400 mb-1">Nome do Produto</label>
+                                                                <input type="text" [(ngModel)]="item.name" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white outline-none focus:border-blue-500" placeholder="Ex: X-Burguer">
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-xs text-gray-400 mb-1">Preço (R$)</label>
+                                                                <input type="number" [(ngModel)]="item.price" class="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white outline-none focus:border-blue-500" placeholder="0.00" step="0.01">
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div class="col-span-3 flex justify-end">
-                                                        <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-2 text-red-400 hover:bg-gray-700 rounded-lg"><span class="material-symbols-outlined">delete</span></button>
-                                                    </div>
-                                                </div>
-                                            }
-                                            <button (click)="addItemToCategory(selectedCategoryIndex())" class="w-full py-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-gray-400 transition-colors text-sm font-semibold mt-2">
+                                                }
+                                            </div>
+
+                                            <button (click)="addItemToCategory(selectedCategoryIndex())" class="w-full py-3 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-gray-400 transition-colors text-sm font-semibold mt-4">
                                                 + Adicionar Produto nesta Categoria
                                             </button>
                                         </div>
@@ -274,9 +310,9 @@
 
                     <!-- 6. IFOOD -->
                     @case (6) {
-                        <div class="max-w-xl mx-auto animate-fade-in-right pt-10 text-center">
+                        <div class="max-w-xl mx-auto animate-fade-in-right pt-4 md:pt-10 text-center">
                             <img src="https://i.imgur.com/NzlCBGX.png" alt="iFood" class="h-20 mx-auto mb-6 opacity-90">
-                            <h2 class="text-3xl font-bold mb-4">Integração com iFood</h2>
+                            <h2 class="text-2xl md:text-3xl font-bold mb-4">Integração com iFood</h2>
                             <p class="text-gray-400 mb-8">Se você já vende no iFood, podemos conectar seus pedidos diretamente no KDS.</p>
                             
                             <div class="text-left bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
@@ -291,12 +327,13 @@
 
                     <!-- 7. ACESSO (GERENTE) -->
                     @case (7) {
-                         <div class="max-w-lg mx-auto animate-fade-in-right pt-10">
+                         <div class="max-w-lg mx-auto animate-fade-in-right pt-4 md:pt-10">
                             <div class="mb-8">
                                 <span class="material-symbols-outlined text-5xl text-blue-400 mb-4">admin_panel_settings</span>
-                                <h2 class="text-3xl font-bold mb-2">Seu Acesso de Gerente</h2>
-                                <p class="text-gray-400 text-lg">Crie seu perfil operacional. Este PIN será usado para autorizar cancelamentos e abrir o caixa.</p>
+                                <h2 class="text-2xl md:text-3xl font-bold mb-2">Seu Acesso de Gerente</h2>
+                                <p class="text-gray-400 text-base md:text-lg">Crie seu perfil operacional. Este PIN será usado para autorizar cancelamentos e abrir o caixa.</p>
                             </div>
+                            
                             
                             <div class="space-y-6 bg-gray-800 p-6 rounded-xl border border-gray-700">
                                 <div>
