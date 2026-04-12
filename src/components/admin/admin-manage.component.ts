@@ -61,13 +61,13 @@ import { SystemAdminService } from '../../services/system-admin.service';
                     {{ admin.email.charAt(0) }}
                   </div>
                   {{ admin.email }}
-                  @if(admin.email === 'koresoluciones@gmail.com') {
+                  @if(admin.email === 'koresoluciones@outlook.com') {
                     <span class="bg-purple-500/20 text-purple-400 text-[10px] px-2 py-0.5 rounded-full font-bold">Master</span>
                   }
                 </td>
                 <td class="p-4 text-gray-400 text-sm">{{ admin.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
                 <td class="p-4 text-right">
-                  @if(admin.email !== 'koresoluciones@gmail.com') {
+                  @if(admin.email !== 'koresoluciones@outlook.com') {
                     <button (click)="removeAdmin(admin.email)" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Remover acesso">
                       <span class="material-symbols-outlined text-sm">delete</span>
                     </button>
