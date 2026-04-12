@@ -196,8 +196,17 @@ export class PrintingService {
   private generatePreBillHtml(order: Order, options: PreBillOptions): string {
     const date = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm');
     const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const serviceFee = options.includeServiceFee ? subtotal * 0.1 : 0;
-    const total = subtotal + serviceFee;
+    
+    let discountAmount = 0;
+    if (order.discount_type === 'percentage') {
+      discountAmount = subtotal * ((order.discount_value || 0) / 100);
+    } else if (order.discount_type === 'fixed_value') {
+      discountAmount = order.discount_value || 0;
+    }
+    
+    const subtotalAfterDiscount = subtotal - discountAmount;
+    const serviceFee = options.includeServiceFee ? subtotalAfterDiscount * 0.1 : 0;
+    const total = options.total;
     const identifier = this.getOrderIdentifier(order);
 
     const itemsHtml = order.order_items
@@ -221,6 +230,16 @@ export class PrintingService {
                 <span>TOTAL POR PESSOA</span>
                 <span>${this.currencyPipe.transform(total / options.splitBy, 'BRL', 'R$')}</span>
             </div>
+        `;
+    }
+
+    let discountHtml = '';
+    if (discountAmount > 0) {
+        discountHtml = `
+            <tr>
+              <td colspan="2">Desconto</td>
+              <td style="text-align: right;">-${this.currencyPipe.transform(discountAmount, 'BRL', 'R$', '1.2-2')}</td>
+            </tr>
         `;
     }
 
@@ -266,6 +285,7 @@ export class PrintingService {
               <td colspan="2">Subtotal</td>
               <td style="text-align: right;">${this.currencyPipe.transform(subtotal, 'BRL', 'R$', '1.2-2')}</td>
             </tr>
+            ${discountHtml}
              <tr>
               <td colspan="2">Serviço (10%)</td>
               <td style="text-align: right;">${options.includeServiceFee ? this.currencyPipe.transform(serviceFee, 'BRL', 'R$', '1.2-2') : 'Opcional'}</td>
@@ -360,5 +380,133 @@ export class PrintingService {
   async printPayslip(payslipHtml: string, employeeName: string) { /* ... */ }
   async printIfoodReceipt(order: ProcessedIfoodOrder) { /* ... */ }
   async printDeliveryGuide(order: Order) { /* ... */ }
-  async printRequisition(requisition: Requisition) { /* ... */ }
+  async printRequisition(requisition: Requisition) {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      return;
+    }
+
+    const date = this.datePipe.transform(requisition.created_at, 'dd/MM/yyyy HH:mm');
+    const processedDate = requisition.processed_at ? this.datePipe.transform(requisition.processed_at, 'dd/MM/yyyy HH:mm') : 'N/A';
+    const identifier = `Requisição #${requisition.id.substring(0, 8).toUpperCase()}`;
+    
+    printWindow.document.title = identifier;
+
+    const itemsHtml = (requisition.requisition_items || []).map(item => `
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.ingredients?.name || 'Item Desconhecido'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${this.decimalPipe.transform(item.quantity_requested, '1.0-3')} ${item.unit}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${item.quantity_delivered !== null ? this.decimalPipe.transform(item.quantity_delivered, '1.0-3') + ' ' + item.unit : '-'}</td>
+        </tr>
+    `).join('');
+
+    const statusMap: Record<string, string> = {
+      'PENDING': 'Pendente',
+      'APPROVED': 'Aprovada',
+      'REJECTED': 'Rejeitada',
+      'DELIVERED': 'Entregue',
+      'PARTIAL': 'Parcial'
+    };
+
+    const statusText = statusMap[requisition.status] || requisition.status;
+
+    const receiptHtml = `
+      <html>
+        <head>
+          <title>${identifier}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { margin: 0 0 10px 0; font-size: 24px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 8px; }
+            .info-item { margin-bottom: 5px; }
+            .info-label { font-weight: bold; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+            .info-value { font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th { background-color: #f3f4f6; padding: 10px 8px; text-align: left; font-weight: bold; border-bottom: 2px solid #e5e7eb; }
+            th.right { text-align: right; }
+            .notes { margin-top: 20px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px; }
+            .notes-title { font-weight: bold; margin-bottom: 5px; color: #b45309; }
+            @media print {
+              @page { margin: 1cm; }
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${identifier}</h1>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Data da Solicitação</div>
+              <div class="info-value">${date}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Status</div>
+              <div class="info-value">${statusText}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Solicitante</div>
+              <div class="info-value">${requisition.requester?.name || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Estação Destino</div>
+              <div class="info-value">${requisition.stations?.name || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Processado Por</div>
+              <div class="info-value">${requisition.processor?.name || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Data de Processamento</div>
+              <div class="info-value">${processedDate}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Qtd. Solicitada</th>
+                <th class="right">Qtd. Entregue</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          ${requisition.notes ? `
+          <div class="notes">
+            <div class="notes-title">Observações:</div>
+            <div>${requisition.notes}</div>
+          </div>
+          ` : ''}
+          
+          <div style="margin-top: 50px; display: flex; justify-content: space-around;">
+            <div style="text-align: center; width: 200px;">
+              <div style="border-bottom: 1px solid #000; height: 30px; margin-bottom: 5px;"></div>
+              <div style="font-size: 12px;">Assinatura do Solicitante</div>
+            </div>
+            <div style="text-align: center; width: 200px;">
+              <div style="border-bottom: 1px solid #000; height: 30px; margin-bottom: 5px;"></div>
+              <div style="font-size: 12px;">Assinatura do Estoquista</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  }
 }
