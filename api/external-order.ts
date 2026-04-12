@@ -228,7 +228,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
 async function buildOrderItems(
     restaurantId: string,
     orderId: string,
-    items: RequestItem[],
+    items: { externalCode: string; quantity: number; notes?: string; price?: number }[],
     recipesMap: Map<string, Recipe>,
     orderTypeLabel?: string,
     externalId?: string

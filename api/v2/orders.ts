@@ -78,7 +78,7 @@ const postOrderSchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const parsed = postOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
     }
     const { tableNumber, customerId, items } = parsed.data;
 
@@ -125,7 +125,7 @@ const addItemsSchema = z.object({
 async function handleAddItems(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
     const parsed = addItemsSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
     }
     const { items } = parsed.data;
     

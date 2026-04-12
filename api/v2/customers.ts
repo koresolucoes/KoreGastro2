@@ -75,7 +75,7 @@ const postCustomerSchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
   const parsed = postCustomerSchema.safeParse(req.body);
   if (!parsed.success) {
-      return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
+      return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
   }
   const body = parsed.data;
 
@@ -134,7 +134,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 
     const parsed = patchCustomerSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.errors } });
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
     }
     const { loyalty_points_change, description, password, ...otherFields } = parsed.data;
 
