@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,6 +8,7 @@ import { PublicDataService } from '../../services/public-data.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { DemoService } from '../../services/demo.service';
+import { PublicCartService } from '../../services/public-cart.service';
 
 // Import new state services
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -21,7 +23,7 @@ interface MenuGroup {
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -36,6 +38,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
   private viewportScroller = inject(ViewportScroller);
+  public cartService = inject(PublicCartService);
   
   private routeSub: Subscription | undefined;
 
@@ -43,8 +46,14 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = signal('');
   isPublicView = signal(false);
   isLoading = signal(true);
-  view = signal<'cover' | 'menu' | 'info'>('cover');
+  view = signal<'cover' | 'menu' | 'info' | 'checkout'>('cover');
   activeCategorySlug = signal<string | null>(null);
+  
+  // Cart UI state
+  isCartOpen = signal(false);
+  selectedRecipeForCart = signal<(Recipe & { effectivePrice: number }) | null>(null);
+  cartItemQuantity = signal(1);
+  cartItemNotes = signal('');
   
   // For template display
   daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -260,11 +269,16 @@ export class MenuComponent implements OnInit, OnDestroy {
     return false;
   });
   
-  setView(newView: 'cover' | 'menu' | 'info') {
+  setView(newView: 'cover' | 'menu' | 'info' | 'checkout') {
     this.view.set(newView);
-    if (newView === 'menu' || newView === 'cover') {
+    if (newView === 'menu' || newView === 'cover' || newView === 'checkout') {
         setTimeout(() => (this.viewportScroller as any).scrollToPosition([0, 0]), 0);
     }
+  }
+
+  goToCheckout() {
+    this.isCartOpen.set(false);
+    this.setView('checkout');
   }
   
   setSelectedCategory(slug: string | null) {
@@ -286,5 +300,39 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   createSlug(text: string): string {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  }
+
+  // Cart Methods
+  openCartModal(recipe: Recipe & { effectivePrice: number }) {
+    this.selectedRecipeForCart.set(recipe);
+    this.cartItemQuantity.set(1);
+    this.cartItemNotes.set('');
+  }
+
+  closeCartModal() {
+    this.selectedRecipeForCart.set(null);
+  }
+
+  increaseQuantity() {
+    this.cartItemQuantity.update(q => q + 1);
+  }
+
+  decreaseQuantity() {
+    if (this.cartItemQuantity() > 1) {
+      this.cartItemQuantity.update(q => q - 1);
+    }
+  }
+
+  addToCart() {
+    const recipe = this.selectedRecipeForCart();
+    if (recipe) {
+      this.cartService.addToCart(recipe, this.cartItemQuantity(), this.cartItemNotes());
+      this.closeCartModal();
+      // Optional: Show a toast notification here
+    }
+  }
+
+  toggleCart() {
+    this.isCartOpen.update(v => !v);
   }
 }
