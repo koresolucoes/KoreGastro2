@@ -7,9 +7,6 @@ import { PublicDataService } from '../../services/public-data.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { DemoService } from '../../services/demo.service';
-import { PublicCartService } from '../../services/public-cart.service';
-import { PublicCustomerService } from '../../services/public-customer.service';
-import { PublicOrderService } from '../../services/public-order.service';
 
 // Import new state services
 import { SupabaseStateService } from '../../services/supabase-state.service';
@@ -39,9 +36,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
   private viewportScroller = inject(ViewportScroller);
-  public cartService = inject(PublicCartService);
-  public customerService = inject(PublicCustomerService);
-  private publicOrderService = inject(PublicOrderService);
   
   private routeSub: Subscription | undefined;
 
@@ -49,20 +43,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = signal('');
   isPublicView = signal(false);
   isLoading = signal(true);
-  view = signal<'cover' | 'menu' | 'info' | 'checkout' | 'success'>('cover');
+  view = signal<'cover' | 'menu' | 'info'>('cover');
   activeCategorySlug = signal<string | null>(null);
-  
-  // Cart UI state
-  isCartOpen = signal(false);
-  selectedRecipeForCart = signal<(Recipe & { effectivePrice: number }) | null>(null);
-  cartItemQuantity = signal(1);
-  cartItemNotes = signal('');
-  
-  // Checkout UI state
-  deliveryMethod = signal<'delivery' | 'pickup'>('delivery');
-  paymentMethod = signal<string>('PIX');
-  isSubmittingOrder = signal(false);
-  lastOrderId = signal<string | null>(null);
   
   // For template display
   daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -278,50 +260,10 @@ export class MenuComponent implements OnInit, OnDestroy {
     return false;
   });
   
-  setView(newView: 'cover' | 'menu' | 'info' | 'checkout' | 'success') {
+  setView(newView: 'cover' | 'menu' | 'info') {
     this.view.set(newView);
-    if (newView === 'menu' || newView === 'cover' || newView === 'checkout' || newView === 'success') {
+    if (newView === 'menu' || newView === 'cover') {
         setTimeout(() => (this.viewportScroller as any).scrollToPosition([0, 0]), 0);
-    }
-  }
-
-  goToCheckout() {
-    this.isCartOpen.set(false);
-    this.setView('checkout');
-  }
-  
-  async submitOrder() {
-    if (this.isSubmittingOrder()) return;
-    
-    const state = this.customerService.customerState();
-    if (!state.name || !state.phone) {
-      alert('Por favor, preencha seu nome e WhatsApp.');
-      return;
-    }
-    
-    if (this.deliveryMethod() === 'delivery' && (!state.street || !state.number || !state.neighborhood)) {
-      alert('Por favor, preencha os campos obrigatórios do endereço.');
-      return;
-    }
-
-    try {
-      this.isSubmittingOrder.set(true);
-      const restaurantUserId = this.route.snapshot.paramMap.get('userId');
-      if (!restaurantUserId) throw new Error('Restaurante não encontrado');
-
-      const order = await this.publicOrderService.submitOrder(
-        restaurantUserId,
-        this.deliveryMethod(),
-        this.paymentMethod()
-      );
-      
-      this.lastOrderId.set(order.id);
-      this.setView('success');
-    } catch (error: any) {
-      console.error('Error submitting order:', error);
-      alert('Erro ao enviar pedido: ' + (error.message || 'Tente novamente.'));
-    } finally {
-      this.isSubmittingOrder.set(false);
     }
   }
   
@@ -344,39 +286,5 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   createSlug(text: string): string {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-  }
-
-  // Cart Methods
-  openCartModal(recipe: Recipe & { effectivePrice: number }) {
-    this.selectedRecipeForCart.set(recipe);
-    this.cartItemQuantity.set(1);
-    this.cartItemNotes.set('');
-  }
-
-  closeCartModal() {
-    this.selectedRecipeForCart.set(null);
-  }
-
-  increaseQuantity() {
-    this.cartItemQuantity.update(q => q + 1);
-  }
-
-  decreaseQuantity() {
-    if (this.cartItemQuantity() > 1) {
-      this.cartItemQuantity.update(q => q - 1);
-    }
-  }
-
-  addToCart() {
-    const recipe = this.selectedRecipeForCart();
-    if (recipe) {
-      this.cartService.addToCart(recipe, this.cartItemQuantity(), this.cartItemNotes());
-      this.closeCartModal();
-      // Optional: Show a toast notification here
-    }
-  }
-
-  toggleCart() {
-    this.isCartOpen.update(v => !v);
   }
 }
