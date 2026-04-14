@@ -42,10 +42,29 @@ CREATE POLICY "Permitir leitura pública de configurações de reserva" ON "publ
 FOR SELECT USING (is_enabled = true);
 
 -- 9. Criação de Pedidos (Delivery/Pickup Público)
+GRANT SELECT ON TABLE "public"."company_profile" TO anon;
+GRANT SELECT ON TABLE "public"."recipes" TO anon;
+GRANT SELECT ON TABLE "public"."categories" TO anon;
+GRANT SELECT ON TABLE "public"."promotions" TO anon;
+GRANT SELECT ON TABLE "public"."promotion_recipes" TO anon;
+GRANT SELECT ON TABLE "public"."loyalty_settings" TO anon;
+GRANT SELECT ON TABLE "public"."loyalty_rewards" TO anon;
+GRANT SELECT ON TABLE "public"."reservation_settings" TO anon;
+GRANT INSERT, SELECT ON TABLE "public"."orders" TO anon;
+GRANT INSERT, SELECT ON TABLE "public"."order_items" TO anon;
+
 DROP POLICY IF EXISTS "Permitir criação pública de pedidos" ON "public"."orders";
 CREATE POLICY "Permitir criação pública de pedidos" ON "public"."orders"
 FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Permitir leitura pública de pedidos" ON "public"."orders";
+CREATE POLICY "Permitir leitura pública de pedidos" ON "public"."orders"
+FOR SELECT USING (true);
+
 DROP POLICY IF EXISTS "Permitir criação pública de itens de pedido" ON "public"."order_items";
 CREATE POLICY "Permitir criação pública de itens de pedido" ON "public"."order_items"
 FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir leitura pública de itens de pedido" ON "public"."order_items";
+CREATE POLICY "Permitir leitura pública de itens de pedido" ON "public"."order_items"
+FOR SELECT USING (true);

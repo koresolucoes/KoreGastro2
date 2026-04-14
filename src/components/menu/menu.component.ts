@@ -307,7 +307,9 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.isSubmittingOrder.set(true);
 
     try {
+      const orderId = crypto.randomUUID();
       const orderData: Partial<Order> = {
+        id: orderId,
         user_id: userId,
         status: 'OPEN',
         order_type: this.orderType() === 'Pickup' ? 'QuickSale' : 'External-Delivery',
@@ -316,16 +318,14 @@ export class MenuComponent implements OnInit, OnDestroy {
         timestamp: new Date().toISOString(),
       };
 
-      const { data: order, error: orderError } = await supabase
+      const { error: orderError } = await supabase
         .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+        .insert(orderData);
 
       if (orderError) throw orderError;
 
       const orderItemsData: Partial<OrderItem>[] = this.cartService.items().map(item => ({
-        order_id: order.id,
+        order_id: orderId,
         user_id: userId,
         recipe_id: item.recipe.id,
         name: item.recipe.name,
@@ -333,7 +333,7 @@ export class MenuComponent implements OnInit, OnDestroy {
         price: item.effectivePrice,
         original_price: item.recipe.price,
         status: 'PENDENTE',
-        station_id: item.recipe.category_id, // Default to category_id as station_id if not specified
+        station_id: item.recipe.category_id,
       }));
 
       const { error: itemsError } = await supabase
