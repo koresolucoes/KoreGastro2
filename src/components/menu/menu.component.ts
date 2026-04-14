@@ -1,14 +1,17 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { DemoService } from '../../services/demo.service';
+import { CartService } from '../../services/cart.service';
+import { supabase } from '../../services/supabase-client';
+import { FormsModule } from '@angular/forms';
 
-// Import new state services
+// Import state services
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { SettingsStateService } from '../../services/settings-state.service';
@@ -21,7 +24,7 @@ interface MenuGroup {
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -36,6 +39,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
   private viewportScroller = inject(ViewportScroller);
+  public cartService = inject(CartService);
   
   private routeSub: Subscription | undefined;
 
@@ -43,8 +47,16 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = signal('');
   isPublicView = signal(false);
   isLoading = signal(true);
-  view = signal<'cover' | 'menu' | 'info'>('cover');
+  view = signal<'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout'>('cover');
   activeCategorySlug = signal<string | null>(null);
+  
+  // Checkout state
+  orderType = signal<'External-Delivery' | 'Pickup'>('External-Delivery');
+  customerName = signal('');
+  customerPhone = signal('');
+  deliveryAddress = signal('');
+  isSubmittingOrder = signal(false);
+  orderSuccess = signal(false);
   
   // For template display
   daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -260,9 +272,9 @@ export class MenuComponent implements OnInit, OnDestroy {
     return false;
   });
   
-  setView(newView: 'cover' | 'menu' | 'info') {
+  setView(newView: 'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout') {
     this.view.set(newView);
-    if (newView === 'menu' || newView === 'cover') {
+    if (newView === 'menu' || newView === 'cover' || newView === 'loyalty' || newView === 'cart' || newView === 'checkout') {
         setTimeout(() => (this.viewportScroller as any).scrollToPosition([0, 0]), 0);
     }
   }
@@ -282,6 +294,67 @@ export class MenuComponent implements OnInit, OnDestroy {
       if (slug === 'top') {
          window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+  }
+  
+  addToCart(recipe: Recipe, effectivePrice: number) {
+    this.cartService.addToCart(recipe, effectivePrice);
+  }
+
+  async submitOrder() {
+    const userId = this.route.snapshot.paramMap.get('userId');
+    if (!userId || this.cartService.items().length === 0) return;
+
+    this.isSubmittingOrder.set(true);
+
+    try {
+      const orderData: Partial<Order> = {
+        user_id: userId,
+        status: 'OPEN',
+        order_type: this.orderType() === 'Pickup' ? 'QuickSale' : 'External-Delivery',
+        table_number: 0,
+        notes: `Cliente: ${this.customerName()} | Tel: ${this.customerPhone()} ${this.orderType() === 'External-Delivery' ? '| Endereço: ' + this.deliveryAddress() : '| Retirada no local'}`,
+        timestamp: new Date().toISOString(),
+      };
+
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      const orderItemsData: Partial<OrderItem>[] = this.cartService.items().map(item => ({
+        order_id: order.id,
+        user_id: userId,
+        recipe_id: item.recipe.id,
+        name: item.recipe.name,
+        quantity: item.quantity,
+        price: item.effectivePrice,
+        original_price: item.recipe.price,
+        status: 'PENDENTE',
+        station_id: item.recipe.category_id, // Default to category_id as station_id if not specified
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsData);
+
+      if (itemsError) throw itemsError;
+
+      this.orderSuccess.set(true);
+      this.cartService.clearCart();
+      setTimeout(() => {
+        this.orderSuccess.set(false);
+        this.setView('cover');
+      }, 5000);
+
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      alert('Erro ao enviar pedido. Por favor, tente novamente.');
+    } finally {
+      this.isSubmittingOrder.set(false);
+    }
   }
 
   createSlug(text: string): string {

@@ -18,6 +18,15 @@
           <button (click)="scrollToCategory('top')" class="bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
              <span class="material-symbols-outlined">arrow_upward</span>
           </button>
+          
+          @if(cartService.totalItems() > 0) {
+            <button (click)="setView('cart')" class="bg-green-600 text-white px-6 h-12 rounded-full shadow-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform relative">
+              <span class="material-symbols-outlined text-xl">shopping_cart</span>
+              <span>Carrinho</span>
+              <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">{{ cartService.totalItems() }}</span>
+            </button>
+          }
+
            @if(reservationSettings()?.is_enabled) {
             <a [href]="publicBookingUrl()" class="bg-blue-600 text-white px-6 h-12 rounded-full shadow-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
               <span class="material-symbols-outlined text-xl">calendar_month</span>
@@ -27,6 +36,31 @@
           <button (click)="setView('info')" class="bg-white text-gray-900 w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform border border-gray-100">
              <span class="material-symbols-outlined">storefront</span>
           </button>
+        </div>
+      }
+
+      <!-- Desktop Floating Cart -->
+      @if(view() === 'menu' && cartService.totalItems() > 0) {
+        <div class="fixed bottom-8 right-8 z-50 hidden md:block">
+            <button (click)="setView('cart')" class="bg-green-600 text-white px-8 py-4 rounded-full shadow-2xl font-bold flex items-center gap-3 hover:bg-green-700 transition-all transform hover:-translate-y-1 relative">
+                <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+                <span class="text-lg">Ver Carrinho ({{ cartService.totalItems() }})</span>
+                <span class="bg-white/20 px-2 py-1 rounded-lg text-sm">{{ cartService.subtotal() | currency:'BRL' }}</span>
+            </button>
+        </div>
+      }
+
+      <!-- Order Success Overlay -->
+      @if(orderSuccess()) {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-bounce-in">
+                <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="material-symbols-outlined text-5xl">check_circle</span>
+                </div>
+                <h2 class="text-2xl font-black text-gray-900 mb-2">Pedido Enviado!</h2>
+                <p class="text-gray-500 mb-6">Seu pedido foi recebido com sucesso. Em breve entraremos em contato se necessário.</p>
+                <button (click)="orderSuccess.set(false); setView('cover')" class="w-full bg-black text-white py-4 rounded-full font-bold">Entendido</button>
+            </div>
         </div>
       }
 
@@ -61,6 +95,11 @@
                         <button (click)="setView('menu')" class="flex-1 bg-white text-black hover:bg-gray-100 font-bold py-4 px-8 rounded-full shadow-xl transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
                             <span class="material-symbols-outlined">restaurant_menu</span> Ver Cardápio
                         </button>
+                        @if(publicLoyaltySettings()?.is_enabled) {
+                            <button (click)="setView('loyalty')" class="flex-1 bg-amber-500 text-white hover:bg-amber-600 font-bold py-4 px-8 rounded-full shadow-xl transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined">loyalty</span> Fidelidade
+                            </button>
+                        }
                         @if(reservationSettings()?.is_enabled) {
                             <a [href]="publicBookingUrl()" class="flex-1 bg-blue-600/90 backdrop-blur-md text-white hover:bg-blue-600 font-bold py-4 px-8 rounded-full shadow-xl transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2 border border-white/20">
                                 <span class="material-symbols-outlined">calendar_today</span> Reservar Mesa
@@ -191,11 +230,16 @@
                                                 <p class="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-3">{{ recipe.description }}</p>
                                             }
                                         </div>
-                                        <div class="flex items-end gap-2">
-                                            <span class="font-black text-lg text-gray-900">{{ recipe.effectivePrice | currency:'BRL' }}</span>
-                                            @if (recipe.effectivePrice < recipe.price) {
-                                                <span class="text-sm text-gray-400 line-through mb-1">{{ recipe.price | currency:'BRL' }}</span>
-                                            }
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-end gap-2">
+                                                <span class="font-black text-lg text-gray-900">{{ recipe.effectivePrice | currency:'BRL' }}</span>
+                                                @if (recipe.effectivePrice < recipe.price) {
+                                                    <span class="text-sm text-gray-400 line-through mb-1">{{ recipe.price | currency:'BRL' }}</span>
+                                                }
+                                            </div>
+                                            <button (click)="addToCart(recipe, recipe.effectivePrice)" class="bg-black text-white p-2 rounded-full shadow-md active:scale-90 transition-transform flex items-center justify-center">
+                                                <span class="material-symbols-outlined text-xl">add_shopping_cart</span>
+                                            </button>
                                         </div>
                                     </div>
                                     
@@ -220,7 +264,60 @@
           </div>
         }
 
-        <!-- Case 3: Info Page -->
+        <!-- Case 3: Loyalty Page -->
+        @case ('loyalty') {
+          <div class="min-h-screen bg-gray-50 pb-12">
+            <header class="bg-white sticky top-0 z-40 shadow-sm px-4 py-4 flex items-center gap-4">
+                <button (click)="setView('cover')" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">Programa de Fidelidade</h1>
+            </header>
+
+            <main class="max-w-2xl mx-auto px-4 py-8">
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 class="text-3xl font-black mb-2">Ganhe Prêmios!</h2>
+                        <p class="text-amber-100 mb-6">A cada R$ 1,00 gasto, você ganha {{ publicLoyaltySettings()?.points_per_real || 1 }} ponto(s).</p>
+                        <div class="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-4 py-2 w-fit">
+                            <span class="material-symbols-outlined">info</span>
+                            <span class="text-sm font-medium">Acumule pontos e troque por recompensas</span>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-20 rotate-12">loyalty</span>
+                </div>
+
+                <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-500">redeem</span> Recompensas Disponíveis
+                </h3>
+
+                <div class="space-y-4">
+                    @for(reward of loyaltyRewardsDisplay(); track reward.id) {
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-lg">{{ reward.name }}</h4>
+                                <p class="text-gray-500 text-sm mb-2">{{ reward.description }}</p>
+                                <div class="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold w-fit">
+                                    {{ reward.valueLabel }}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-black text-amber-600">{{ reward.points_cost }}</div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pontos</div>
+                            </div>
+                        </div>
+                    } @empty {
+                        <div class="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200">
+                            <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">sentiment_dissatisfied</span>
+                            <p class="text-gray-500">Nenhuma recompensa ativa no momento.</p>
+                        </div>
+                    }
+                </div>
+            </main>
+          </div>
+        }
+
+        <!-- Case 4: Info Page -->
         @case ('info') {
           <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
               <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
@@ -285,6 +382,159 @@
                   </div>
               </div>
           </div>
+        }
+
+        <!-- Case 5: Cart Page -->
+        @case ('cart') {
+            <div class="min-h-screen bg-gray-50 pb-32">
+                <header class="bg-white sticky top-0 z-40 shadow-sm px-4 py-4 flex items-center gap-4">
+                    <button (click)="setView('menu')" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <h1 class="text-xl font-bold text-gray-900">Seu Carrinho</h1>
+                </header>
+
+                <main class="max-w-2xl mx-auto px-4 py-8">
+                    @if(cartService.items().length > 0) {
+                        <div class="space-y-4 mb-8">
+                            @for(item of cartService.items(); track item.recipe.id) {
+                                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4">
+                                    @if(item.recipe.image_url) {
+                                        <img [src]="item.recipe.image_url" class="w-20 h-20 rounded-xl object-cover">
+                                    }
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-900">{{ item.recipe.name }}</h4>
+                                        <p class="text-blue-600 font-bold text-sm">{{ item.effectivePrice | currency:'BRL' }}</p>
+                                        
+                                        <div class="flex items-center gap-4 mt-3">
+                                            <div class="flex items-center bg-gray-100 rounded-full px-2 py-1">
+                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black">
+                                                    <span class="material-symbols-outlined text-lg">remove</span>
+                                                </button>
+                                                <span class="w-8 text-center font-bold text-sm">{{ item.quantity }}</span>
+                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity + 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black">
+                                                    <span class="material-symbols-outlined text-lg">add</span>
+                                                </button>
+                                            </div>
+                                            <button (click)="cartService.removeFromCart(item.recipe.id)" class="text-red-500 text-xs font-bold uppercase tracking-wider">Remover</button>
+                                        </div>
+                                    </div>
+                                    <div class="text-right font-bold text-gray-900">
+                                        {{ (item.effectivePrice * item.quantity) | currency:'BRL' }}
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-500">Subtotal</span>
+                                <span class="text-xl font-bold text-gray-900">{{ cartService.subtotal() | currency:'BRL' }}</span>
+                            </div>
+                            <button (click)="setView('checkout')" class="w-full bg-black text-white py-4 rounded-full font-bold text-lg shadow-xl active:scale-95 transition-transform">
+                                Finalizar Pedido
+                            </button>
+                        </div>
+                    } @else {
+                        <div class="text-center py-20">
+                            <span class="material-symbols-outlined text-6xl text-gray-200 mb-4">shopping_basket</span>
+                            <h3 class="text-xl font-bold text-gray-900">Carrinho Vazio</h3>
+                            <p class="text-gray-500 mt-2 mb-8">Você ainda não adicionou nenhum item.</p>
+                            <button (click)="setView('menu')" class="bg-black text-white px-8 py-3 rounded-full font-bold">Ver Cardápio</button>
+                        </div>
+                    }
+                </main>
+            </div>
+        }
+
+        <!-- Case 6: Checkout Page -->
+        @case ('checkout') {
+            <div class="min-h-screen bg-gray-50 pb-32">
+                <header class="bg-white sticky top-0 z-40 shadow-sm px-4 py-4 flex items-center gap-4">
+                    <button (click)="setView('cart')" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <h1 class="text-xl font-bold text-gray-900">Finalizar Pedido</h1>
+                </header>
+
+                <main class="max-w-xl mx-auto px-4 py-8">
+                    <div class="space-y-6">
+                        <!-- Order Type Selection -->
+                        <div class="bg-white rounded-3xl p-2 shadow-sm border border-gray-100 flex">
+                            <button 
+                                (click)="orderType.set('External-Delivery')" 
+                                class="flex-1 py-3 rounded-2xl font-bold transition-all"
+                                [class.bg-black]="orderType() === 'External-Delivery'"
+                                [class.text-white]="orderType() === 'External-Delivery'"
+                                [class.text-gray-500]="orderType() !== 'External-Delivery'"
+                            >
+                                Delivery
+                            </button>
+                            <button 
+                                (click)="orderType.set('Pickup')" 
+                                class="flex-1 py-3 rounded-2xl font-bold transition-all"
+                                [class.bg-black]="orderType() === 'Pickup'"
+                                [class.text-white]="orderType() === 'Pickup'"
+                                [class.text-gray-500]="orderType() !== 'Pickup'"
+                            >
+                                Retirada
+                            </button>
+                        </div>
+
+                        <!-- Customer Info -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
+                            <h3 class="font-bold text-gray-900 mb-2">Seus Dados</h3>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Nome Completo</label>
+                                <input type="text" [(ngModel)]="customerName" placeholder="Como devemos te chamar?" class="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 focus:ring-2 focus:ring-black outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Telefone / WhatsApp</label>
+                                <input type="tel" [(ngModel)]="customerPhone" placeholder="(00) 00000-0000" class="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 focus:ring-2 focus:ring-black outline-none">
+                            </div>
+                            
+                            @if(orderType() === 'External-Delivery') {
+                                <div class="animate-fade-in">
+                                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Endereço de Entrega</label>
+                                    <textarea [(ngModel)]="deliveryAddress" placeholder="Rua, número, bairro e complemento" rows="3" class="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 focus:ring-2 focus:ring-black outline-none resize-none"></textarea>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                            <h3 class="font-bold text-gray-900 mb-4">Resumo do Pedido</h3>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Itens ({{ cartService.totalItems() }})</span>
+                                    <span class="font-bold">{{ cartService.subtotal() | currency:'BRL' }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Taxa de Entrega</span>
+                                    <span class="font-bold text-green-600">{{ orderType() === 'External-Delivery' ? 'A combinar' : 'Grátis' }}</span>
+                                </div>
+                                <div class="pt-4 border-t border-gray-100 flex justify-between items-center">
+                                    <span class="font-bold text-gray-900">Total</span>
+                                    <span class="text-2xl font-black text-gray-900">{{ cartService.subtotal() | currency:'BRL' }}</span>
+                                </div>
+                            </div>
+
+                            <button 
+                                (click)="submitOrder()" 
+                                [disabled]="isSubmittingOrder() || !customerName() || !customerPhone() || (orderType() === 'External-Delivery' && !deliveryAddress())"
+                                class="w-full bg-green-600 text-white py-4 rounded-full font-bold text-lg shadow-xl active:scale-95 transition-transform disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
+                            >
+                                @if(isSubmittingOrder()) {
+                                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                    <span>Enviando...</span>
+                                } @else {
+                                    <span>Confirmar Pedido</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
         }
       }
     }
