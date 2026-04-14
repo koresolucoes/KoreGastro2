@@ -17,7 +17,7 @@ export class SettingsDataService {
   private webhookService = inject(WebhookService);
   private unitContextService = inject(UnitContextService);
 
-  private getActiveUnitId(): string | null {
+  public getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
   }
 
