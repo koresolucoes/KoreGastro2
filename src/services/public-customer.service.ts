@@ -34,11 +34,12 @@ export class PublicCustomerService {
 
   private loadFromStorage() {
     const stored = localStorage.getItem(this.STORAGE_KEY);
-    if (stored) {
+    if (stored && stored !== 'undefined' && stored !== 'null') {
       try {
         this.customerState.set(JSON.parse(stored));
       } catch (e) {
         console.error('Error parsing stored customer data', e);
+        localStorage.removeItem(this.STORAGE_KEY); // Clear invalid data
       }
     }
   }

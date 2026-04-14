@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,7 +24,7 @@ interface MenuGroup {
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

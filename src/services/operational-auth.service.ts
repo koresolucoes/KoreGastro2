@@ -44,7 +44,7 @@ export class OperationalAuthService {
   private async initializeOperator() {
     try {
         const storedEmployee = sessionStorage.getItem(EMPLOYEE_STORAGE_KEY);
-        if (storedEmployee) {
+        if (storedEmployee && storedEmployee !== 'undefined' && storedEmployee !== 'null') {
             const employee = JSON.parse(storedEmployee) as (Employee & { role: string });
             this.activeEmployee.set(employee);
             await this.loadActiveShift(employee);

@@ -266,7 +266,7 @@ export class DashboardComponent implements OnInit {
   private loadLayout() {
     const savedLayout = localStorage.getItem('dashboardLayoutV2');
     
-    if (savedLayout && savedLayout !== 'undefined') {
+    if (savedLayout && savedLayout !== 'undefined' && savedLayout !== 'null') {
       try {
         const savedOrder: string[] = JSON.parse(savedLayout);
         // Ensure new widgets are added if layout is old
