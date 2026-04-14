@@ -445,11 +445,11 @@
                           <span class="material-symbols-outlined text-blue-600">local_shipping</span> Como deseja receber?
                       </h2>
                       <div class="grid grid-cols-2 gap-4">
-                          <button class="border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors border-blue-600 bg-blue-50 text-blue-700">
+                          <button (click)="deliveryMethod.set('delivery')" class="border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors" [class.border-blue-600]="deliveryMethod() === 'delivery'" [class.bg-blue-50]="deliveryMethod() === 'delivery'" [class.text-blue-700]="deliveryMethod() === 'delivery'" [class.border-gray-200]="deliveryMethod() !== 'delivery'" [class.text-gray-600]="deliveryMethod() !== 'delivery'">
                               <span class="material-symbols-outlined text-3xl">two_wheeler</span>
                               <span class="font-bold text-sm">Delivery</span>
                           </button>
-                          <button class="border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors border-gray-200 hover:border-gray-300 text-gray-600">
+                          <button (click)="deliveryMethod.set('pickup')" class="border-2 rounded-xl p-4 flex flex-col items-center gap-2 transition-colors" [class.border-blue-600]="deliveryMethod() === 'pickup'" [class.bg-blue-50]="deliveryMethod() === 'pickup'" [class.text-blue-700]="deliveryMethod() === 'pickup'" [class.border-gray-200]="deliveryMethod() !== 'pickup'" [class.text-gray-600]="deliveryMethod() !== 'pickup'">
                               <span class="material-symbols-outlined text-3xl">storefront</span>
                               <span class="font-bold text-sm">Retirar no Local</span>
                           </button>
@@ -464,41 +464,43 @@
                       <div class="space-y-4">
                           <div>
                               <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                              <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                              <input type="text" [ngModel]="customerService.customerState().name" (ngModelChange)="customerService.updateState({name: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                           </div>
                           <div>
                               <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                              <input type="tel" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                              <input type="tel" [ngModel]="customerService.customerState().phone" (ngModelChange)="customerService.updateState({phone: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                           </div>
                       </div>
                   </section>
 
                   <!-- Address Info (Only if Delivery) -->
-                  <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                      <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                          <span class="material-symbols-outlined text-blue-600">location_on</span> Endereço de Entrega
-                      </h2>
-                      <div class="space-y-4">
-                          <div class="grid grid-cols-3 gap-4">
-                              <div class="col-span-2">
-                                  <label class="block text-sm font-medium text-gray-700 mb-1">Rua</label>
-                                  <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  @if(deliveryMethod() === 'delivery') {
+                      <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-fade-in">
+                          <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                              <span class="material-symbols-outlined text-blue-600">location_on</span> Endereço de Entrega
+                          </h2>
+                          <div class="space-y-4">
+                              <div class="grid grid-cols-3 gap-4">
+                                  <div class="col-span-2">
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Rua</label>
+                                      <input type="text" [ngModel]="customerService.customerState().street" (ngModelChange)="customerService.updateState({street: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                  </div>
+                                  <div>
+                                      <label class="block text-sm font-medium text-gray-700 mb-1">Número</label>
+                                      <input type="text" [ngModel]="customerService.customerState().number" (ngModelChange)="customerService.updateState({number: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                  </div>
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-1">Número</label>
-                                  <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+                                  <input type="text" [ngModel]="customerService.customerState().neighborhood" (ngModelChange)="customerService.updateState({neighborhood: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                              </div>
+                              <div>
+                                  <label class="block text-sm font-medium text-gray-700 mb-1">Complemento / Referência</label>
+                                  <input type="text" [ngModel]="customerService.customerState().complement" (ngModelChange)="customerService.updateState({complement: $event})" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                               </div>
                           </div>
-                          <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
-                              <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                          </div>
-                          <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-1">Complemento / Referência</label>
-                              <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                          </div>
-                      </div>
-                  </section>
+                      </section>
+                  }
                   
                   <!-- Payment Method -->
                   <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -506,16 +508,16 @@
                           <span class="material-symbols-outlined text-blue-600">payments</span> Pagamento na Entrega
                       </h2>
                       <div class="space-y-3">
-                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
-                              <input type="radio" name="payment" class="w-5 h-5 text-blue-600">
+                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50" [class.bg-blue-50]="paymentMethod() === 'PIX'" [class.border-blue-200]="paymentMethod() === 'PIX'">
+                              <input type="radio" name="payment" value="PIX" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" class="w-5 h-5 text-blue-600">
                               <span class="font-medium text-gray-900">PIX</span>
                           </label>
-                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
-                              <input type="radio" name="payment" class="w-5 h-5 text-blue-600">
+                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50" [class.bg-blue-50]="paymentMethod() === 'Cartão'" [class.border-blue-200]="paymentMethod() === 'Cartão'">
+                              <input type="radio" name="payment" value="Cartão" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" class="w-5 h-5 text-blue-600">
                               <span class="font-medium text-gray-900">Cartão de Crédito / Débito</span>
                           </label>
-                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
-                              <input type="radio" name="payment" class="w-5 h-5 text-blue-600">
+                          <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50" [class.bg-blue-50]="paymentMethod() === 'Dinheiro'" [class.border-blue-200]="paymentMethod() === 'Dinheiro'">
+                              <input type="radio" name="payment" value="Dinheiro" [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" class="w-5 h-5 text-blue-600">
                               <span class="font-medium text-gray-900">Dinheiro</span>
                           </label>
                       </div>
@@ -529,11 +531,35 @@
                           <p class="text-sm text-gray-500">Total a pagar</p>
                           <p class="text-2xl font-black text-gray-900">{{ cartService.cartTotal() | currency:'BRL' }}</p>
                       </div>
-                      <button class="bg-green-600 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-green-700 transition-transform transform hover:-translate-y-1 flex items-center gap-2">
-                          Confirmar Pedido <span class="material-symbols-outlined">check_circle</span>
+                      <button (click)="submitOrder()" [disabled]="isSubmittingOrder()" class="bg-green-600 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-green-700 transition-transform transform hover:-translate-y-1 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          @if(isSubmittingOrder()) {
+                              <span class="material-symbols-outlined animate-spin">refresh</span> Processando...
+                          } @else {
+                              Confirmar Pedido <span class="material-symbols-outlined">check_circle</span>
+                          }
                       </button>
                   </div>
               </div>
+          </div>
+        }
+        
+        <!-- Case 5: Success Page -->
+        @case ('success') {
+          <div class="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+              <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                  <span class="material-symbols-outlined text-5xl text-green-600">check_circle</span>
+              </div>
+              <h1 class="text-3xl font-black text-gray-900 mb-2">Pedido Confirmado!</h1>
+              <p class="text-gray-500 mb-8 max-w-md">Seu pedido foi enviado para a cozinha. Em breve você receberá atualizações sobre o status.</p>
+              
+              <div class="bg-gray-50 rounded-2xl p-6 w-full max-w-sm mb-8 border border-gray-100">
+                  <p class="text-sm text-gray-500 mb-1">Número do Pedido</p>
+                  <p class="text-xl font-mono font-bold text-gray-900">{{ lastOrderId()?.split('-')?.[0] | uppercase }}</p>
+              </div>
+              
+              <button (click)="setView('cover')" class="bg-gray-900 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:bg-black transition-transform transform hover:-translate-y-1">
+                  Voltar ao Início
+              </button>
           </div>
         }
       }
