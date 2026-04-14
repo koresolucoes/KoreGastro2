@@ -50,6 +50,7 @@ GRANT SELECT ON TABLE "public"."promotion_recipes" TO anon;
 GRANT SELECT ON TABLE "public"."loyalty_settings" TO anon;
 GRANT SELECT ON TABLE "public"."loyalty_rewards" TO anon;
 GRANT SELECT ON TABLE "public"."reservation_settings" TO anon;
+GRANT SELECT ON TABLE "public"."stations" TO anon;
 GRANT INSERT, SELECT ON TABLE "public"."orders" TO anon;
 GRANT INSERT, SELECT ON TABLE "public"."order_items" TO anon;
 
@@ -67,4 +68,9 @@ FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir leitura pública de itens de pedido" ON "public"."order_items";
 CREATE POLICY "Permitir leitura pública de itens de pedido" ON "public"."order_items"
+FOR SELECT USING (true);
+
+-- 10. Estações de Produção (Leitura Pública)
+DROP POLICY IF EXISTS "Permitir leitura pública de estações" ON "public"."stations";
+CREATE POLICY "Permitir leitura pública de estações" ON "public"."stations"
 FOR SELECT USING (true);

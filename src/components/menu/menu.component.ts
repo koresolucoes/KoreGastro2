@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { SettingsStateService } from '../../services/settings-state.service';
+import { PosStateService } from '../../services/pos-state.service';
 
 interface MenuGroup {
   category: Category;
@@ -32,6 +33,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private supabaseStateService = inject(SupabaseStateService);
   private recipeState = inject(RecipeStateService);
   private settingsState = inject(SettingsStateService);
+  private posState = inject(PosStateService);
   private pricingService = inject(PricingService);
   private route: ActivatedRoute = inject(ActivatedRoute);
   private router: Router = inject(Router);
@@ -68,6 +70,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   publicLoyaltySettings = signal<LoyaltySettings | null>(null);
   private publicLoyaltyRewards = signal<LoyaltyReward[]>([]);
   publicReservationSettings = signal<ReservationSettings | null>(null);
+  private publicStations = signal<Station[]>([]);
 
   ngOnInit() {
     this.routeSub = this.route.paramMap.subscribe(params => {
@@ -92,7 +95,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   async loadPublicData(userId: string) {
     this.isLoading.set(true);
-    const [companyProfile, recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards, reservationSettings] = await Promise.all([
+    const [companyProfile, recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards, reservationSettings, stations] = await Promise.all([
       this.publicDataService.getPublicCompanyProfile(userId),
       this.publicDataService.getPublicRecipes(userId),
       this.publicDataService.getPublicCategories(userId),
@@ -101,6 +104,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.publicDataService.getPublicLoyaltySettings(userId),
       this.publicDataService.getPublicLoyaltyRewards(userId),
       this.publicDataService.getPublicReservationSettings(userId),
+      this.publicDataService.getPublicStations(userId),
     ]);
     
     // Set data for pricing service to use
@@ -113,6 +117,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.publicLoyaltySettings.set(loyaltySettings);
     this.publicLoyaltyRewards.set(loyaltyRewards);
     this.publicReservationSettings.set(reservationSettings);
+    this.publicStations.set(stations);
     
     this.isLoading.set(false);
   }
@@ -324,6 +329,20 @@ export class MenuComponent implements OnInit, OnDestroy {
 
       if (orderError) throw orderError;
 
+      // Get a valid station ID
+      let fallbackStationId = '';
+      if (this.isPublicView()) {
+        fallbackStationId = this.publicStations()[0]?.id || '';
+      } else {
+        fallbackStationId = this.posState.stations()[0]?.id || '';
+      }
+
+      if (!fallbackStationId) {
+        // If no station is found, we might have a problem if the DB requires it.
+        // However, most systems have at least one station.
+        console.warn('No production station found. Order items might fail if station_id is mandatory.');
+      }
+
       const orderItemsData: Partial<OrderItem>[] = this.cartService.items().map(item => ({
         order_id: orderId,
         user_id: userId,
@@ -333,7 +352,7 @@ export class MenuComponent implements OnInit, OnDestroy {
         price: item.effectivePrice,
         original_price: item.recipe.price,
         status: 'PENDENTE',
-        station_id: item.recipe.category_id,
+        station_id: fallbackStationId,
       }));
 
       const { error: itemsError } = await supabase

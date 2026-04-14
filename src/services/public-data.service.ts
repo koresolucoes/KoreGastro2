@@ -1,11 +1,23 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Station } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PublicDataService {
+  async getPublicStations(userId: string): Promise<Station[]> {
+    const { data, error } = await supabase
+      .from('stations')
+      .select('*')
+      .eq('user_id', userId);
+    if (error) {
+      console.error('Error fetching public stations:', error);
+      return [];
+    }
+    return data || [];
+  }
+
   async getPublicRecipes(userId: string): Promise<Recipe[]> {
     const { data, error } = await supabase
       .from('recipes')
