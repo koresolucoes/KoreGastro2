@@ -190,18 +190,101 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       throw new Error(`Failed to insert order into DB: ${orderError.message}`);
   }
   
-  const orderItems: Partial<OrderItem>[] = (payload.items || []).map((item: any) => ({
-      order_id: newOrder.id,
-      name: item.name,
-      quantity: item.quantity,
-      price: item.unitPrice,
-      original_price: item.unitPrice,
-      notes: item.observations,
-      status: 'PENDENTE',
-      station_id: fallbackStationId,
-      status_timestamps: { 'PENDENTE': new Date().toISOString() },
-      user_id: userId
-  }));
+  // Fetch recipes to map externalCode to recipe_id
+  const externalCodes = (payload.items || []).map((item: any) => item.externalCode).filter(Boolean);
+  let recipesMap = new Map<string, any>();
+  
+  if (externalCodes.length > 0) {
+      const { data: recipes } = await supabase
+          .from('recipes')
+          .select('id, external_code, price')
+          .eq('user_id', userId)
+          .in('external_code', externalCodes);
+          
+      if (recipes) {
+          recipes.forEach(r => {
+              if (r.external_code) recipesMap.set(r.external_code, r);
+          });
+      }
+  }
+
+  // Create missing recipes and sync prices
+  let fallbackRecipeId: string | undefined;
+
+  for (const item of payload.items || []) {
+      if (item.externalCode) {
+          const existingRecipe = recipesMap.get(item.externalCode);
+          if (!existingRecipe) {
+              // Create new recipe
+              const { data: newRecipe, error: createError } = await supabase
+                  .from('recipes')
+                  .insert({
+                      user_id: userId,
+                      name: item.name,
+                      price: item.unitPrice,
+                      external_code: item.externalCode,
+                      is_available: true
+                  })
+                  .select('id, external_code, price')
+                  .single();
+                  
+              if (!createError && newRecipe) {
+                  recipesMap.set(item.externalCode, newRecipe);
+              }
+          } else if (existingRecipe.price !== item.unitPrice) {
+              // Sync price if different
+              await supabase
+                  .from('recipes')
+                  .update({ price: item.unitPrice })
+                  .eq('id', existingRecipe.id);
+          }
+      } else {
+          // Handle items without externalCode using a generic fallback recipe
+          if (!fallbackRecipeId) {
+              const { data: fallbackRecipe } = await supabase
+                  .from('recipes')
+                  .select('id')
+                  .eq('user_id', userId)
+                  .eq('name', 'Item iFood Não Mapeado')
+                  .single();
+                  
+              if (fallbackRecipe) {
+                  fallbackRecipeId = fallbackRecipe.id;
+              } else {
+                  const { data: newFallback } = await supabase
+                      .from('recipes')
+                      .insert({
+                          user_id: userId,
+                          name: 'Item iFood Não Mapeado',
+                          price: 0,
+                          is_available: true
+                      })
+                      .select('id')
+                      .single();
+                  if (newFallback) fallbackRecipeId = newFallback.id;
+              }
+          }
+      }
+  }
+
+  const orderItems: Partial<OrderItem>[] = (payload.items || []).map((item: any) => {
+      const recipe = item.externalCode ? recipesMap.get(item.externalCode) : undefined;
+      const finalRecipeId = recipe?.id || fallbackRecipeId;
+      
+      return {
+          order_id: newOrder.id,
+          recipe_id: finalRecipeId,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          original_price: item.unitPrice,
+          notes: item.observations,
+          status: 'PENDENTE',
+          station_id: fallbackStationId,
+          status_timestamps: { 'PENDENTE': new Date().toISOString() },
+          user_id: userId
+      };
+  });
 
   if (orderItems.length > 0) {
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
