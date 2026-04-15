@@ -43,8 +43,13 @@ export class LoginComponent {
         throw error;
       }
       // On successful login, auth service's onAuthStateChange will trigger.
-      // We will now redirect to the employee selection screen.
-      this.router.navigate(['/employee-selection']);
+      // We will now redirect to the intended URL or the default employee selection screen.
+      const returnUrl = this.router.routerState.snapshot.root.queryParams['returnUrl'];
+      if (returnUrl) {
+        this.router.navigateByUrl(returnUrl);
+      } else {
+        this.router.navigate(['/employee-selection']);
+      }
     } catch (error: any) {
       this.errorMessage.set('E-mail ou senha inválidos.');
       this.authState.set('error');

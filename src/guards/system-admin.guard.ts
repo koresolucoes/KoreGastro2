@@ -17,7 +17,7 @@ export const systemAdminGuard: CanActivateFn = () => {
     switchMap(() => {
       const user = authService.currentUser();
       if (!user || !user.email) {
-        return of(router.createUrlTree(['/login']));
+        return of(router.createUrlTree(['/login'], { queryParams: { returnUrl: '/admin' } }));
       }
       return adminService.checkAdminStatus(user.email).then(isAdmin => {
         if (isAdmin) return true;

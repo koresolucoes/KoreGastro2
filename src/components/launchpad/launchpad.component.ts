@@ -54,6 +54,13 @@ interface LaunchpadItem {
             <p class="text-gray-400">Você não tem permissões para acessar nenhuma funcionalidade.</p>
           </div>
         }
+
+        <footer class="mt-16 pt-8 border-t border-gray-800 flex justify-center">
+          <a routerLink="/admin" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-blue-400 transition-colors uppercase tracking-widest">
+            <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+            Painel de Controle do Sistema
+          </a>
+        </footer>
       </div>
     </div>
   `,

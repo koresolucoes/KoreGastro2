@@ -42,4 +42,23 @@ export class SystemAdminService {
     const { data, error } = await supabase.rpc('get_admin_dashboard_stats');
     return { data, error };
   }
+
+  async getAllRestaurants() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        full_name,
+        avatar_url,
+        role,
+        updated_at,
+        bars (
+          id,
+          name,
+          created_at
+        )
+      `)
+      .order('updated_at', { ascending: false });
+    return { data, error };
+  }
 }

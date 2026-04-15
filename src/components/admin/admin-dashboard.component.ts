@@ -64,10 +64,69 @@ import { SystemAdminService } from '../../services/system-admin.service';
         </div>
       </div>
 
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-        <span class="material-symbols-outlined text-6xl text-gray-700 mb-4">construction</span>
-        <h3 class="text-xl font-medium text-gray-300 mb-2">Módulo em Construção</h3>
-        <p class="text-gray-500 max-w-md mx-auto">Em breve, você poderá ver a lista detalhada de todos os restaurantes e gerenciar suas assinaturas diretamente por aqui.</p>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+          <h3 class="text-lg font-bold text-white">Restaurantes e Proprietários</h3>
+          <button (click)="loadData()" class="text-gray-400 hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-sm" [class.animate-spin]="isLoading()">sync</span>
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-950 border-b border-gray-800 text-gray-400 text-sm">
+                <th class="p-4 font-medium">Proprietário</th>
+                <th class="p-4 font-medium">Restaurante</th>
+                <th class="p-4 font-medium">Data Cadastro</th>
+                <th class="p-4 font-medium text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(profile of restaurants(); track profile.id) {
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors">
+                  <td class="p-4">
+                    <div class="flex items-center gap-3">
+                      <img [src]="profile.avatar_url || 'https://ui-avatars.com/api/?name=' + profile.full_name" 
+                           class="w-8 h-8 rounded-full border border-gray-700" referrerpolicy="no-referrer">
+                      <div>
+                        <p class="text-sm font-medium text-white">{{ profile.full_name || 'Sem nome' }}</p>
+                        <p class="text-xs text-gray-500">{{ profile.role }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-4">
+                    @if(profile.bars && profile.bars.length > 0) {
+                      <div class="flex flex-col gap-1">
+                        @for(bar of profile.bars; track bar.id) {
+                          <span class="text-sm text-gray-300">{{ bar.name }}</span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-xs text-gray-600 italic">Nenhum restaurante</span>
+                    }
+                  </td>
+                  <td class="p-4 text-sm text-gray-400">
+                    {{ (profile.bars?.[0]?.created_at || profile.updated_at) | date:'dd/MM/yyyy' }}
+                  </td>
+                  <td class="p-4 text-right">
+                    <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-400/10 transition-colors" title="Ver detalhes">
+                      <span class="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @if(restaurants().length === 0 && !isLoading()) {
+                <tr>
+                  <td colspan="4" class="p-12 text-center">
+                    <span class="material-symbols-outlined text-4xl text-gray-700 mb-2">search_off</span>
+                    <p class="text-gray-500">Nenhum restaurante encontrado.</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `
@@ -75,14 +134,27 @@ import { SystemAdminService } from '../../services/system-admin.service';
 export class AdminDashboardComponent implements OnInit {
   adminService = inject(SystemAdminService);
   stats = signal<any>(null);
+  restaurants = signal<any[]>([]);
   isLoading = signal(true);
 
   async ngOnInit() {
+    await this.loadData();
+  }
+
+  async loadData() {
     this.isLoading.set(true);
-    const { data } = await this.adminService.getDashboardStats();
-    if (data) {
-      this.stats.set(data);
+    try {
+      const [statsRes, restaurantsRes] = await Promise.all([
+        this.adminService.getDashboardStats(),
+        this.adminService.getAllRestaurants()
+      ]);
+      
+      if (statsRes.data) this.stats.set(statsRes.data);
+      if (restaurantsRes.data) this.restaurants.set(restaurantsRes.data);
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    } finally {
+      this.isLoading.set(false);
     }
-    this.isLoading.set(false);
   }
 }
