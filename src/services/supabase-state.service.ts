@@ -180,7 +180,7 @@ export class SupabaseStateService {
         supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         // Only load OPEN orders or recently closed ones to keep memory low
         supabase.from('orders')
-          .select('*, order_items(*), customers(*), delivery_drivers(*)')
+          .select('*, order_items(*), customers(*), delivery_drivers(*), waiter:employees!created_by_employee_id(name)')
           .eq('user_id', userId)
           .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
         supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
@@ -411,7 +411,7 @@ export class SupabaseStateService {
     // Crucial: Fetch full order with relations (items, customer)
     const { data: fullOrder, error } = await supabase
         .from('orders')
-        .select('*, order_items(*), customers(*), delivery_drivers(*)')
+        .select('*, order_items(*), customers(*), delivery_drivers(*), waiter:employees!created_by_employee_id(name)')
         .eq('id', payload.new.id)
         .single();
     
@@ -679,7 +679,7 @@ export class SupabaseStateService {
     
     const [transactionsRes, completedOrdersRes] = await Promise.all([
       supabase.from('transactions').select('*').eq('user_id', userId).in('type', ['Gorjeta', 'Receita', 'Despesa']).gte('date', startDate.toISOString()).lte('date', endDate.toISOString()),
-      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*)').eq('user_id', userId).eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString())
+      supabase.from('orders').select('*, order_items(*), customers(*), delivery_drivers(*), waiter:employees!created_by_employee_id(name)').eq('user_id', userId).eq('status', 'COMPLETED').gte('completed_at', startDate.toISOString()).lte('completed_at', endDate.toISOString())
     ]);
       
     if (transactionsRes.error || completedOrdersRes.error) { 

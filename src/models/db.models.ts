@@ -400,6 +400,7 @@ export interface Order {
   nfce_xml_path?: string | null;
   nfce_chave?: string | null;
   nfce_last_response?: any | null;
+  waiter?: { name: string };
 }
 
 export interface OrderItem {

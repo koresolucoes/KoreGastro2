@@ -111,6 +111,9 @@
                         @if(ticket.customerName) {
                             <span class="text-[10px] font-normal opacity-90 truncate max-w-[120px]">{{ ticket.customerName }}</span>
                         }
+                        @if(ticket.waiterName) {
+                            <span class="text-[10px] font-normal opacity-80 truncate max-w-[120px]">Garçom: {{ ticket.waiterName }}</span>
+                        }
                     </div>
                 </div>
 
@@ -414,6 +417,9 @@
             </p></div>
             <div><p class="text-sm text-gray-400">Recebido</p><p class="text-lg font-semibold text-white">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p></div>
             <div><p class="text-sm text-gray-400">Tempo Total</p><p class="text-lg font-semibold font-mono" [class.text-red-400]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p></div>
+            @if(ticket.waiterName) {
+                <div><p class="text-sm text-gray-400">Garçom</p><p class="text-lg font-semibold text-white">{{ ticket.waiterName }}</p></div>
+            }
         </div>
         <div>
             <h4 class="font-semibold text-white mb-3">Itens do Pedido</h4>

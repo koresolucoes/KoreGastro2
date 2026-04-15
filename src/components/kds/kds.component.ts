@@ -29,6 +29,7 @@ interface BaseTicket {
   ifoodDisplayId?: string | null;
   isOrderCancelled?: boolean; 
   customerName?: string;
+  waiterName?: string;
 }
 
 // New Interface for Grouped Items within a Ticket
@@ -456,7 +457,8 @@ export class KdsComponent implements OnInit, OnDestroy {
                 orderType: order.order_type,
                 ifoodDisplayId: order.ifood_display_id,
                 isOrderCancelled,
-                customerName: order.customers?.name
+                customerName: order.customers?.name,
+                waiterName: order.waiter?.name
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
