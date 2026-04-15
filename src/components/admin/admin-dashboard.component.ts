@@ -78,6 +78,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
               <tr class="bg-gray-950 border-b border-gray-800 text-gray-400 text-sm">
                 <th class="p-4 font-medium">Proprietário</th>
                 <th class="p-4 font-medium">Restaurante</th>
+                <th class="p-4 font-medium">Plano / Status</th>
                 <th class="p-4 font-medium">Data Cadastro</th>
                 <th class="p-4 font-medium text-right">Ações</th>
               </tr>
@@ -106,19 +107,46 @@ import { SystemAdminService } from '../../services/system-admin.service';
                       <span class="text-xs text-gray-600 italic">Nenhum restaurante</span>
                     }
                   </td>
+                  <td class="p-4">
+                    @if(profile.subscriptions && profile.subscriptions.length > 0) {
+                      <div class="flex flex-col gap-1">
+                        <span class="text-sm font-medium" 
+                              [class.text-green-400]="profile.subscriptions[0].status === 'active' || profile.subscriptions[0].status === 'trialing'"
+                              [class.text-red-400]="profile.subscriptions[0].status === 'canceled' || profile.subscriptions[0].status === 'past_due'">
+                          {{ profile.subscriptions[0].status | uppercase }}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                          Vence: {{ profile.subscriptions[0].current_period_end | date:'dd/MM/yyyy' }}
+                        </span>
+                      </div>
+                    } @else {
+                      <span class="text-xs text-gray-600 italic">Sem assinatura</span>
+                    }
+                  </td>
                   <td class="p-4 text-sm text-gray-400">
                     {{ (profile.bars?.[0]?.created_at || profile.updated_at) | date:'dd/MM/yyyy' }}
                   </td>
                   <td class="p-4 text-right">
-                    <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-400/10 transition-colors" title="Ver detalhes">
-                      <span class="material-symbols-outlined text-sm">visibility</span>
-                    </button>
+                    <div class="flex items-center justify-end gap-2">
+                      @if(profile.subscriptions && profile.subscriptions.length > 0 && profile.subscriptions[0].status === 'active') {
+                        <button (click)="toggleSubscription(profile.id, 'canceled')" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Cancelar Assinatura">
+                          <span class="material-symbols-outlined text-sm">cancel</span>
+                        </button>
+                      } @else {
+                        <button (click)="toggleSubscription(profile.id, 'active')" class="text-green-400 hover:text-green-300 p-2 rounded-lg hover:bg-green-400/10 transition-colors" title="Ativar Assinatura">
+                          <span class="material-symbols-outlined text-sm">check_circle</span>
+                        </button>
+                      }
+                      <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-400/10 transition-colors" title="Ver detalhes">
+                        <span class="material-symbols-outlined text-sm">visibility</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }
               @if(restaurants().length === 0 && !isLoading()) {
                 <tr>
-                  <td colspan="4" class="p-12 text-center">
+                  <td colspan="5" class="p-12 text-center">
                     <span class="material-symbols-outlined text-4xl text-gray-700 mb-2">search_off</span>
                     <p class="text-gray-500">Nenhum restaurante encontrado.</p>
                   </td>
@@ -156,5 +184,24 @@ export class AdminDashboardComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  async toggleSubscription(userId: string, newStatus: string) {
+    if (!confirm(`Tem certeza que deseja alterar o status da assinatura para ${newStatus.toUpperCase()}?`)) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    // Use a default plan ID if activating a new subscription (this should ideally be selected by the admin)
+    const defaultPlanId = '00000000-0000-0000-0000-000000000000'; // Replace with a real plan ID if needed, or handle in backend
+    
+    const { error } = await this.adminService.updateSubscriptionStatus(userId, newStatus, defaultPlanId);
+    
+    if (error) {
+      alert('Erro ao atualizar assinatura: ' + error.message);
+    } else {
+      await this.loadData(); // Reload to show updated status
+    }
+    this.isLoading.set(false);
   }
 }

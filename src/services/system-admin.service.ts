@@ -44,21 +44,58 @@ export class SystemAdminService {
   }
 
   async getAllRestaurants() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        full_name,
-        avatar_url,
-        role,
-        updated_at,
-        bars (
-          id,
-          name,
-          created_at
-        )
-      `)
-      .order('updated_at', { ascending: false });
-    return { data, error };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch('/api/admin/restaurants', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch restaurants');
+      }
+
+      const result = await response.json();
+      return { data: result.data, error: null };
+    } catch (error: any) {
+      console.error('Error fetching all restaurants via API:', error);
+      return { data: null, error };
+    }
+  }
+
+  async updateSubscriptionStatus(userId: string, status: string, planId?: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch('/api/admin/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId, status, planId })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update subscription');
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error updating subscription via API:', error);
+      return { error };
+    }
   }
 }
