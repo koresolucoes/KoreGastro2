@@ -29,7 +29,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     const { itemId, isAvailable, categoryId } = req.query;
 
     if (itemId && typeof itemId === 'string') {
-        const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('user_id', restaurantId).eq('id', itemId).single();
+        const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('store_id', restaurantId).eq('id', itemId).single();
         if (error) {
             if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Menu item with id "${itemId}" not found.` } });
             throw error;
@@ -42,7 +42,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     const p_category_id = typeof categoryId === 'string' ? categoryId : null;
 
     const { data: detailedMenu, error } = await supabase.rpc('get_menu_with_stock', {
-        p_restaurant_id: restaurantId,
+        p_store_id: restaurantId,
         p_is_available: p_is_available,
         p_category_id: p_category_id
     });
@@ -68,7 +68,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 
     const updatePayload = parsedBody.data;
 
-    const { data, error } = await supabase.from('recipes').update(updatePayload).eq('id', itemId).eq('user_id', restaurantId).select().single();
+    const { data, error } = await supabase.from('recipes').update(updatePayload).eq('id', itemId).eq('store_id', restaurantId).select().single();
     if (error) {
         if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Menu item with id "${itemId}" not found.` } });
         throw error;

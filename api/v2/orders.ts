@@ -163,7 +163,7 @@ async function handleRequestPayment(req: VercelRequest, res: VercelResponse, res
 // --- Helper Functions ---
 async function buildOrderItems(restaurantId: string, orderId: string, items: RequestItem[]): Promise<Partial<OrderItem>[]> {
     const externalCodes = items.map(i => i.externalCode);
-    const { data: recipes, error: recipeError } = await supabase.from('recipes').select('*').eq('user_id', restaurantId).in('external_code', externalCodes);
+    const { data: recipes, error: recipeError } = await supabase.from('recipes').select('*').eq('store_id', restaurantId).in('external_code', externalCodes);
     if (recipeError) throw new Error(`Error fetching recipes: ${recipeError.message}`);
 
     const recipesMap = new Map<string, Recipe>(recipes!.map(r => [r.external_code!, r]));

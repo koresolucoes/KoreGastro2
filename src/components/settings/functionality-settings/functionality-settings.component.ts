@@ -10,6 +10,7 @@ import { RecipeStateService } from '../../../services/recipe-state.service';
 import { SettingsStateService } from '../../../services/settings-state.service';
 import { DemoService } from '../../../services/demo.service';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
+import { UnitContextService } from '../../../services/unit-context.service';
 
 @Component({
   selector: 'app-functionality-settings',
@@ -25,6 +26,7 @@ export class FunctionalitySettingsComponent {
   authService = inject(AuthService);
   private recipeState = inject(RecipeStateService);
   private settingsState = inject(SettingsStateService);
+  private unitContextService = inject(UnitContextService);
   private demoService = inject(DemoService);
   private focusNFeService = inject(FocusNFeService);
 
@@ -85,7 +87,7 @@ export class FunctionalitySettingsComponent {
   focusNFeCertFileName = computed(() => this.focusNFeCertFile()?.name);
 
   publicMenuUrl = computed(() => {
-    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id;
+    const userId = this.demoService.isDemoMode() ? 'demo-user' : this.unitContextService.activeUnitId();
     if (!userId) return '';
     return `https://app.chefos.online/#/menu/${userId}`;
   });

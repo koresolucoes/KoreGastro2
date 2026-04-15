@@ -164,7 +164,7 @@ export class SupabaseStateService {
         supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
         
         supabase.from('categories').select('*').eq('user_id', userId),
-        supabase.from('recipes').select('*').eq('user_id', userId),
+        supabase.from('recipes').select('*').eq('store_id', userId),
         supabase.from('promotions').select('*').eq('user_id', userId),
         supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
         
@@ -303,7 +303,10 @@ export class SupabaseStateService {
 
     // Safety: ignore updates from other units
     const relevantRow = payload.new || payload.old;
-    if (relevantRow && relevantRow.user_id && relevantRow.user_id !== userId) return;
+    if (relevantRow) {
+        const tenantId = payload.table === 'recipes' ? relevantRow.store_id : relevantRow.user_id;
+        if (tenantId && tenantId !== userId) return;
+    }
 
     switch (payload.table) {
         case 'orders':

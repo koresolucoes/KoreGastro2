@@ -17,9 +17,15 @@ export class RecipeDataService {
   }
 
   async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean; error: any; data?: Recipe }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' }, data: undefined };
-    const { data, error } = await supabase.from('recipes').insert({ ...recipe, user_id: userId }).select().single();
+    const storeId = this.getActiveUnitId();
+    const ownerId = this.authService.currentUser()?.id;
+    if (!storeId || !ownerId) return { success: false, error: { message: 'Active unit or user not found' }, data: undefined };
+    
+    const { data, error } = await supabase.from('recipes').insert({ 
+      ...recipe, 
+      user_id: ownerId, 
+      store_id: storeId 
+    }).select().single();
     return { success: !error, error, data };
   }
   
@@ -185,5 +191,79 @@ export class RecipeDataService {
   async deleteRecipeCategory(id: string): Promise<{ success: boolean, error: any }> {
     const { error } = await supabase.from('categories').delete().eq('id', id);
     return { success: !error, error };
+  }
+
+  async cloneMenuFromStore(sourceStoreId: string): Promise<{ success: boolean, error: any }> {
+    const targetStoreId = this.getActiveUnitId();
+    const ownerId = this.authService.currentUser()?.id;
+    if (!targetStoreId || !ownerId) return { success: false, error: { message: 'Active unit or user not found' } };
+    if (sourceStoreId === targetStoreId) return { success: false, error: { message: 'Source and target stores are the same' } };
+
+    try {
+      // 1. Fetch source categories
+      const { data: sourceCategories, error: catError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', sourceStoreId);
+      
+      if (catError) throw catError;
+      if (!sourceCategories || sourceCategories.length === 0) return { success: true, error: null };
+
+      // 2. Fetch source recipes
+      const { data: sourceRecipes, error: recError } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('store_id', sourceStoreId);
+      
+      if (recError) throw recError;
+
+      // 3. Map old category IDs to new ones
+      const categoryIdMap = new Map<string, string>();
+
+      for (const cat of sourceCategories) {
+        const { data: newCat, error: newCatError } = await supabase
+          .from('categories')
+          .insert({
+            name: cat.name,
+            image_url: cat.image_url,
+            user_id: targetStoreId
+          })
+          .select()
+          .single();
+        
+        if (newCatError) throw newCatError;
+        categoryIdMap.set(cat.id, newCat.id);
+      }
+
+      // 4. Insert recipes with new category IDs
+      if (sourceRecipes && sourceRecipes.length > 0) {
+        const recipesToInsert = sourceRecipes.map(r => ({
+          name: r.name,
+          description: r.description,
+          price: r.price,
+          image_url: r.image_url,
+          category_id: categoryIdMap.get(r.category_id) || r.category_id,
+          is_available: r.is_available,
+          is_sub_recipe: r.is_sub_recipe,
+          user_id: ownerId,
+          store_id: targetStoreId,
+          preparation_time: r.preparation_time,
+          calories: r.calories,
+          allergens: r.allergens,
+          tags: r.tags
+        }));
+
+        const { error: insertRecError } = await supabase
+          .from('recipes')
+          .insert(recipesToInsert);
+        
+        if (insertRecError) throw insertRecError;
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error cloning menu:', error);
+      return { success: false, error };
+    }
   }
 }

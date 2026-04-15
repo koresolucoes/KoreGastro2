@@ -83,8 +83,8 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 
     // Default action: 'detalhado'
     const [recipesRes, allRecipesRes, ingredientsRes, recipeIngredientsRes, recipeSubRecipesRes, categoriesRes] = await Promise.all([
-        supabase.from('recipes').select('*').eq('user_id', restaurantId).eq('is_available', true).eq('is_sub_recipe', false),
-        supabase.from('recipes').select('id, source_ingredient_id').eq('user_id', restaurantId),
+        supabase.from('recipes').select('*').eq('store_id', restaurantId).eq('is_available', true).eq('is_sub_recipe', false),
+        supabase.from('recipes').select('id, source_ingredient_id').eq('store_id', restaurantId),
         supabase.from('ingredients').select('id, stock').eq('user_id', restaurantId),
         supabase.from('recipe_ingredients').select('*').eq('user_id', restaurantId),
         supabase.from('recipe_sub_recipes').select('*').eq('user_id', restaurantId),
@@ -146,7 +146,7 @@ async function handlePut(request: VercelRequest, response: VercelResponse, resta
     const { data: updatedRecipe, error } = await supabase
         .from('recipes')
         .update({ is_available })
-        .eq('user_id', restaurantId)
+        .eq('store_id', restaurantId)
         .eq('external_code', external_code)
         .select()
         .single();

@@ -8,6 +8,7 @@ import { RecipeDataService } from '../../services/recipe-data.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
+import { UnitContextService } from '../../services/unit-context.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../services/supabase-client';
@@ -35,6 +36,7 @@ export class OnboardingComponent {
   private recipeData = inject(RecipeDataService);
   private posData = inject(PosDataService);
   private inventoryData = inject(InventoryDataService);
+  private unitContext = inject(UnitContextService);
   private notification = inject(NotificationService);
 
   currentStep = signal(0);
@@ -259,7 +261,7 @@ export class OnboardingComponent {
         const planId = plans && plans.length > 0 ? plans[0].id : null;
 
         if (planId) {
-            const userId = this.settingsData.getActiveUnitId();
+            const userId = this.unitContext.activeUnitId();
             if (userId) {
                 await supabase.from('subscriptions').insert({
                     user_id: userId,

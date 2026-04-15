@@ -46,6 +46,7 @@ export interface Recipe {
   par_level?: number | null;
   created_at: string;
   user_id: string;
+  store_id?: string;
   hasStock?: boolean;
   yield_quantity?: number; // Furo 4: Rendimento de Receitas
   labor_cost?: number; // Furo 7: Custo de Mão de Obra

@@ -57,7 +57,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
     const { data: menuItems, error: menuError } = await supabase
         .from('recipes')
         .select('name, description, price, external_code')
-        .eq('user_id', restaurantId)
+        .eq('store_id', restaurantId)
         .eq('is_available', true)
         .not('external_code', 'is', null);
 
@@ -188,7 +188,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
     const { data: recipes, error: recipeError } = await supabase
         .from('recipes')
         .select('*')
-        .eq('user_id', restaurantId)
+        .eq('store_id', restaurantId)
         .in('external_code', externalCodes);
     if (recipeError) throw new Error(`Error fetching recipes: ${recipeError.message}`);
 

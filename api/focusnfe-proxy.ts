@@ -133,7 +133,7 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string 
     // FIX: Corrected the Supabase query to use `.like()` as a method call.
     const [orderRes, recipesRes, transactionsRes] = await Promise.all([
         supabase.from('orders').select('*, order_items(*), customers(cpf)').eq('id', orderId).single(),
-        supabase.from('recipes').select('id, ncm_code').eq('user_id', userId),
+        supabase.from('recipes').select('id, ncm_code').eq('store_id', userId),
         supabase.from('transactions').select('description, amount').like('description', `%Pedido #${orderId.slice(0,8)}%`).eq('type', 'Receita')
     ]);
 

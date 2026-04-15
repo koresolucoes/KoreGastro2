@@ -143,7 +143,7 @@ async function deductStockForOrderItems(orderItems: OrderItem[], orderId: string
     
     // Fetch all necessary data for composition calculation
     const [recipesRes, recipeIngredientsRes, recipeSubRecipesRes] = await Promise.all([
-        supabase.from('recipes').select('id, source_ingredient_id').eq('user_id', userId),
+        supabase.from('recipes').select('id, source_ingredient_id').eq('store_id', userId),
         supabase.from('recipe_ingredients').select('*').eq('user_id', userId),
         supabase.from('recipe_sub_recipes').select('*').eq('user_id', userId),
     ]);
