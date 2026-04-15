@@ -5,7 +5,9 @@ import { createClient } from '@supabase/supabase-js';
 import { Buffer } from 'buffer';
 import { Order, CompanyProfile, Recipe, Transaction } from '../src/models/db.models.js';
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 const focusNFeHomologacaoUrl = 'https://homologacao.focusnfe.com.br';
 const focusNFeProducaoUrl = 'https://api.focusnfe.com.br';
 
