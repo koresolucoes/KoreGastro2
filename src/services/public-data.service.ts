@@ -1,11 +1,39 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Station } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Station, ModifierGroup } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PublicDataService {
+  async getRecipeModifiers(recipeId: string): Promise<ModifierGroup[]> {
+    const { data, error } = await supabase
+      .from('recipe_modifier_groups')
+      .select(`
+        modifier_group_id,
+        modifier_groups (
+          id,
+          name,
+          min_required,
+          max_allowed,
+          modifiers (
+            id,
+            name,
+            extra_price,
+            is_available
+          )
+        )
+      `)
+      .eq('recipe_id', recipeId);
+
+    if (error) {
+      console.error('Error fetching recipe modifiers:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => item.modifier_groups) as ModifierGroup[];
+  }
+
   async getPublicStations(userId: string): Promise<Station[]> {
     const { data, error } = await supabase
       .from('stations')

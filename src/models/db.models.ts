@@ -154,6 +154,42 @@ export interface IfoodOption {
   ifood_option_id: string | null;
 }
 
+export interface ModifierGroup {
+  id: string;
+  user_id: string;
+  name: string;
+  min_required: number;
+  max_allowed: number;
+  created_at: string;
+  modifiers?: Modifier[];
+}
+
+export interface Modifier {
+  id: string;
+  user_id: string;
+  group_id: string;
+  name: string;
+  extra_price: number;
+  is_available: boolean;
+  created_at: string;
+}
+
+export interface RecipeModifierGroup {
+  recipe_id: string;
+  modifier_group_id: string;
+  user_id: string;
+}
+
+export interface OrderItemModifier {
+  id: string;
+  order_item_id: string;
+  modifier_id: string | null;
+  name: string;
+  price: number;
+  user_id: string;
+  created_at: string;
+}
+
 export interface RecipeIfoodOptionGroup {
   recipe_id: string;
   ifood_option_group_id: string;
@@ -423,6 +459,7 @@ export interface OrderItem {
   cancelled_by?: string | null; // AUDIT
   authorized_by_employee_id?: string | null; // AUDIT
   unit_cost?: number; // Furo 8: Congelar custo no Order Item
+  order_item_modifiers?: OrderItemModifier[];
 }
 
 export interface RecipePreparation {

@@ -237,7 +237,7 @@
                                                     <span class="text-sm text-gray-400 line-through mb-1">{{ recipe.price | currency:'BRL' }}</span>
                                                 }
                                             </div>
-                                            <button (click)="addToCart(recipe, recipe.effectivePrice)" class="bg-black text-white p-2 rounded-full shadow-md active:scale-90 transition-transform flex items-center justify-center">
+                                            <button (click)="addToCart(recipe)" class="bg-black text-white p-2 rounded-full shadow-md active:scale-90 transition-transform flex items-center justify-center">
                                                 <span class="material-symbols-outlined text-xl">add_shopping_cart</span>
                                             </button>
                                         </div>
@@ -406,6 +406,23 @@
                                         <h4 class="font-bold text-gray-900">{{ item.recipe.name }}</h4>
                                         <p class="text-blue-600 font-bold text-sm">{{ item.effectivePrice | currency:'BRL' }}</p>
                                         
+                                        @if (item.selectedModifiers.length > 0) {
+                                            <div class="mt-1 space-y-0.5">
+                                                @for (mod of item.selectedModifiers; track mod.id) {
+                                                    <div class="text-[10px] text-gray-500 flex justify-between">
+                                                        <span>+ {{ mod.name }}</span>
+                                                        @if (mod.extra_price > 0) {
+                                                            <span>{{ mod.extra_price | currency:'BRL' }}</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+
+                                        @if (item.notes) {
+                                            <p class="text-[10px] text-gray-400 italic mt-1">"{{ item.notes }}"</p>
+                                        }
+                                        
                                         <div class="flex items-center gap-4 mt-3">
                                             <div class="flex items-center bg-gray-100 rounded-full px-2 py-1">
                                                 <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black">
@@ -420,7 +437,8 @@
                                         </div>
                                     </div>
                                     <div class="text-right font-bold text-gray-900">
-                                        {{ (item.effectivePrice * item.quantity) | currency:'BRL' }}
+                                        @let modifiersTotal = item.selectedModifiers.reduce((acc, m) => acc + Number(m.extra_price), 0);
+                                        {{ ((item.effectivePrice + modifiersTotal) * item.quantity) | currency:'BRL' }}
                                     </div>
                                 </div>
                             }
@@ -580,6 +598,93 @@
                     </div>
                 </section>
             }
+        </div>
+    </div>
+  }
+
+  <!-- Modifier Modal -->
+  @if (isModifierModalOpen()) {
+    <div class="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-fade-in">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-white sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-black text-gray-900 leading-tight">{{ selectedRecipeForModifiers()?.name }}</h2>
+                    <p class="text-gray-500 text-sm mt-1">Personalize seu pedido</p>
+                </div>
+                <button (click)="isModifierModalOpen.set(false)" class="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                @for (group of recipeModifierGroups(); track group.id) {
+                    <section>
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg">{{ group.name }}</h3>
+                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                    @if (group.min_required > 0) {
+                                        Obrigatório • Selecione {{ group.min_required }}
+                                    } @else {
+                                        Opcional • Até {{ group.max_allowed }}
+                                    }
+                                </p>
+                            </div>
+                            @let selectedCountInGroup = selectedModifiers().filter(m => m.group_id === group.id).length;
+                            <span class="text-xs font-bold px-2 py-1 rounded-lg" [class.bg-green-100]="selectedCountInGroup >= group.min_required" [class.text-green-700]="selectedCountInGroup >= group.min_required" [class.bg-gray-100]="selectedCountInGroup < group.min_required" [class.text-gray-500]="selectedCountInGroup < group.min_required">
+                                {{ selectedCountInGroup }}/{{ group.max_allowed }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-3">
+                            @for (mod of group.modifiers; track mod.id) {
+                                <div 
+                                    (click)="toggleModifier(mod, group)"
+                                    class="flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer active:scale-[0.98]"
+                                    [class.border-black]="isModifierSelected(mod.id)"
+                                    [class.bg-gray-50]="isModifierSelected(mod.id)"
+                                    [class.border-gray-100]="!isModifierSelected(mod.id)"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors" [class.border-black]="isModifierSelected(mod.id)" [class.bg-black]="isModifierSelected(mod.id)" [class.border-gray-300]="!isModifierSelected(mod.id)">
+                                            @if (isModifierSelected(mod.id)) {
+                                                <span class="material-symbols-outlined text-white text-xs">check</span>
+                                            }
+                                        </div>
+                                        <span class="font-bold text-gray-900">{{ mod.name }}</span>
+                                    </div>
+                                    @if (mod.extra_price > 0) {
+                                        <span class="text-sm font-bold text-blue-600">+ {{ mod.extra_price | currency:'BRL' }}</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <!-- Notes -->
+                <section>
+                    <h3 class="font-bold text-gray-900 text-lg mb-4">Observações</h3>
+                    <textarea 
+                        [(ngModel)]="modifierNotes"
+                        placeholder="Ex: Sem cebola, ponto da carne mal passado, etc." 
+                        rows="3" 
+                        class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-4 py-3 focus:border-black focus:bg-white outline-none transition-all resize-none text-sm"
+                    ></textarea>
+                </section>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-6 border-t border-gray-100 bg-gray-50">
+                <button 
+                    (click)="confirmModifiers()"
+                    class="w-full bg-black text-white py-4 rounded-full font-bold text-lg shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-3"
+                >
+                    Adicionar ao Carrinho
+                </button>
+            </div>
         </div>
     </div>
   }

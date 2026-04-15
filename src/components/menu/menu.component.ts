@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station, ModifierGroup, Modifier } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
@@ -71,6 +71,13 @@ export class MenuComponent implements OnInit, OnDestroy {
   private publicLoyaltyRewards = signal<LoyaltyReward[]>([]);
   publicReservationSettings = signal<ReservationSettings | null>(null);
   private publicStations = signal<Station[]>([]);
+
+  // Modifier state
+  isModifierModalOpen = signal(false);
+  selectedRecipeForModifiers = signal<(Recipe & { effectivePrice: number }) | null>(null);
+  recipeModifierGroups = signal<ModifierGroup[]>([]);
+  selectedModifiers = signal<Modifier[]>([]);
+  modifierNotes = signal('');
 
   ngOnInit() {
     this.routeSub = this.route.paramMap.subscribe(params => {
@@ -301,8 +308,65 @@ export class MenuComponent implements OnInit, OnDestroy {
       }
   }
   
-  addToCart(recipe: Recipe, effectivePrice: number) {
-    this.cartService.addToCart(recipe, effectivePrice);
+  async addToCart(recipe: Recipe & { effectivePrice: number }) {
+    // Check if recipe has modifiers
+    const userId = this.route.snapshot.paramMap.get('userId') || this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    this.isLoading.set(true);
+    const modifiers = await this.publicDataService.getRecipeModifiers(recipe.id);
+    this.isLoading.set(false);
+
+    if (modifiers && modifiers.length > 0) {
+      this.selectedRecipeForModifiers.set(recipe);
+      this.recipeModifierGroups.set(modifiers);
+      this.selectedModifiers.set([]);
+      this.modifierNotes.set('');
+      this.isModifierModalOpen.set(true);
+    } else {
+      this.cartService.addToCart(recipe, recipe.effectivePrice);
+    }
+  }
+
+  toggleModifier(modifier: Modifier, group: ModifierGroup) {
+    this.selectedModifiers.update(selected => {
+      const isSelected = selected.some(m => m.id === modifier.id);
+      if (isSelected) {
+        return selected.filter(m => m.id !== modifier.id);
+      } else {
+        // Check max_allowed for the group
+        const groupSelectedCount = selected.filter(m => m.group_id === group.id).length;
+        if (groupSelectedCount >= group.max_allowed && group.max_allowed === 1) {
+          // Replace if only 1 is allowed
+          return [...selected.filter(m => m.group_id !== group.id), modifier];
+        } else if (groupSelectedCount >= group.max_allowed) {
+          // Don't add if limit reached
+          return selected;
+        }
+        return [...selected, modifier];
+      }
+    });
+  }
+
+  isModifierSelected(modifierId: string): boolean {
+    return this.selectedModifiers().some(m => m.id === modifierId);
+  }
+
+  confirmModifiers() {
+    const recipe = this.selectedRecipeForModifiers();
+    if (!recipe) return;
+
+    // Validate min_required
+    for (const group of this.recipeModifierGroups()) {
+      const selectedInGroup = this.selectedModifiers().filter(m => m.group_id === group.id).length;
+      if (selectedInGroup < group.min_required) {
+        alert(`Por favor, selecione pelo menos ${group.min_required} opções em "${group.name}"`);
+        return;
+      }
+    }
+
+    this.cartService.addToCart(recipe, recipe.effectivePrice, this.selectedModifiers(), this.modifierNotes());
+    this.isModifierModalOpen.set(false);
   }
 
   async submitOrder() {
@@ -355,11 +419,36 @@ export class MenuComponent implements OnInit, OnDestroy {
         station_id: fallbackStationId,
       }));
 
-      const { error: itemsError } = await supabase
+      const { error: itemsError, data: insertedItems } = await supabase
         .from('order_items')
-        .insert(orderItemsData);
+        .insert(orderItemsData)
+        .select();
 
       if (itemsError) throw itemsError;
+
+      // Insert modifiers if any
+      if (insertedItems && insertedItems.length > 0) {
+        const modifiersToInsert: any[] = [];
+        this.cartService.items().forEach((cartItem, index) => {
+          const orderItemId = insertedItems[index].id;
+          cartItem.selectedModifiers.forEach(mod => {
+            modifiersToInsert.push({
+              order_item_id: orderItemId,
+              modifier_id: mod.id,
+              name: mod.name,
+              price: mod.extra_price,
+              user_id: userId
+            });
+          });
+        });
+
+        if (modifiersToInsert.length > 0) {
+          const { error: modsError } = await supabase
+            .from('order_item_modifiers')
+            .insert(modifiersToInsert);
+          if (modsError) throw modsError;
+        }
+      }
 
       this.orderSuccess.set(true);
       this.cartService.clearCart();
