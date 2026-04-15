@@ -2981,6 +2981,7 @@ CREATE TABLE IF NOT EXISTS "public"."recipe_ingredients" (
     "quantity" numeric NOT NULL,
     "preparation_id" "uuid",
     "user_id" "uuid",
+    "correction_factor" numeric DEFAULT 1.0,
     "created_at" timestamp with time zone DEFAULT ("now"() AT TIME ZONE 'utc'::"text")
 );
 

@@ -53,13 +53,19 @@ export class RecipeDataService {
     }
 
     if (ingredients.length > 0) {
-        const ingredientsToInsert = ingredients.map(i => ({ ...i, recipe_id: recipeId, user_id: userId }));
+        const ingredientsToInsert = ingredients.map(i => {
+            const { ingredients: _, ...rest } = i as any;
+            return { ...rest, recipe_id: recipeId, user_id: userId };
+        });
         const { error: ingredientError } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
         if (ingredientError) return { success: false, error: ingredientError };
     }
     
     if (subRecipes.length > 0) {
-        const subRecipesToInsert = subRecipes.map(sr => ({ ...sr, parent_recipe_id: recipeId, user_id: userId }));
+        const subRecipesToInsert = subRecipes.map(sr => {
+            const { recipes: _, ...rest } = sr as any;
+            return { ...rest, parent_recipe_id: recipeId, user_id: userId };
+        });
         const { error: subRecipeError } = await supabase.from('recipe_sub_recipes').insert(subRecipesToInsert);
         if (subRecipeError) return { success: false, error: subRecipeError };
     }
