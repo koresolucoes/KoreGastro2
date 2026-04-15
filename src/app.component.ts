@@ -66,5 +66,26 @@ export class AppComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Handle root path redirection
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      filter(e => e.url === '/' || e.url === '/#/' || e.url === '')
+    ).subscribe(() => {
+      this.handleRootRedirection();
+    });
+
+    // Initial check
+    if (this.router.url === '/' || this.router.url === '/#/' || this.router.url === '') {
+      this.handleRootRedirection();
+    }
+  }
+
+  private handleRootRedirection(): void {
+    if (this.authService.currentUser()) {
+      const defaultRoute = this.operationalAuthService.getDefaultRoute();
+      this.router.navigate([defaultRoute]);
+    } else {
+      this.router.navigate(['/login']);
+    }
   }
 }
