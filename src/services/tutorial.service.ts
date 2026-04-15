@@ -72,29 +72,52 @@ export class TutorialService {
       ]
     },
     {
+      id: 'painel-admin',
+      title: 'Painel de Administração',
+      description: 'Aprenda a gerenciar assinaturas, visualizar métricas globais e controlar o acesso ao sistema.',
+      icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+      steps: [
+        {
+          title: '1. Acesso ao Painel',
+          content: 'O Painel de Administração é exclusivo para usuários com permissão de administrador do sistema. Ele pode ser acessado pelo menu lateral clicando em "Acesso Admin".',
+          imageUrl: 'https://picsum.photos/800/400?random=30'
+        },
+        {
+          title: '2. Visão Geral (Dashboard)',
+          content: 'No dashboard principal, você pode ver métricas globais como o número total de restaurantes cadastrados, a Receita Recorrente Mensal (MRR) e o status das assinaturas.',
+          imageUrl: 'https://picsum.photos/800/400?random=31'
+        },
+        {
+          title: '3. Gestão de Assinaturas',
+          content: 'Na aba de assinaturas, você pode visualizar todos os planos ativos, cancelar assinaturas inadimplentes ou conceder períodos de teste (trial) para novos clientes.',
+          imageUrl: 'https://picsum.photos/800/400?random=32'
+        }
+      ]
+    },
+    {
       id: 'delivery-ifood-integrado',
-      title: 'Delivery e iFood KDS',
-      description: 'Centralize sua operação de delivery. Receba pedidos do iFood e gerencie entregadores próprios em uma única tela.',
+      title: 'Delivery e Integração iFood',
+      description: 'Centralize sua operação de delivery. Receba pedidos do iFood com sincronização automática de cardápio e gerencie entregadores.',
       icon: 'M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25v2.25c0 .621.504 1.125 1.125 1.125m17.25-3.375h-7.5c-.621 0-1.125.504-1.125 1.125',
       steps: [
         {
-          title: '1. Painel KDS Delivery',
-          content: 'Acesse o menu `iFood > KDS Delivery`. Aqui você vê pedidos do iFood e pedidos de Delivery Próprio em colunas (Recebidos, Em Preparo, Pronto, Em Rota).',
+          title: '1. Sincronização Automática de Cardápio',
+          content: 'Ao receber um pedido do iFood, o ChefOS verifica automaticamente se os itens existem no seu sistema. Se um item for novo, ele é criado automaticamente no seu cardápio. Além disso, os preços são sincronizados em tempo real com os valores praticados no iFood.',
           imageUrl: 'https://picsum.photos/800/400?random=8'
         },
         {
-          title: '2. Gestão de Entregadores',
-          content: 'Quando um pedido estiver "Pronto", clique nele e selecione "Atribuir Entregador". Você pode cadastrar sua frota e acompanhar quem está levando cada pedido.',
+          title: '2. Painel KDS Delivery',
+          content: 'Acesse o menu `iFood > KDS Delivery`. Aqui você vê pedidos do iFood e pedidos de Delivery Próprio em colunas (Recebidos, Em Preparo, Pronto, Em Rota). O status é atualizado automaticamente no portal do iFood.',
           imageUrl: 'https://picsum.photos/800/400?random=9'
         },
         {
-          title: '3. Gestão de Disputas iFood',
-          content: 'Se um cliente abrir uma reclamação no iFood, o pedido ficará amarelo ou vermelho no KDS. Clique nele para Aceitar (reembolsar) ou Rejeitar a disputa diretamente pelo ChefOS.',
+          title: '3. Gestão de Entregadores',
+          content: 'Quando um pedido estiver "Pronto", clique nele e selecione "Atribuir Entregador". Você pode cadastrar sua frota e acompanhar quem está levando cada pedido.',
           imageUrl: 'https://picsum.photos/800/400?random=10'
         },
         {
-          title: '4. Mapa de Rastreio',
-          content: 'Na aba "Rastreio em Tempo Real" (menu Delivery), você vê a localização dos seus entregadores no mapa (se eles usarem o app mobile para dar baixa na localização).',
+          title: '4. Gestão de Disputas iFood',
+          content: 'Se um cliente abrir uma reclamação no iFood, o pedido ficará amarelo ou vermelho no KDS. Clique nele para Aceitar (reembolsar) ou Rejeitar a disputa diretamente pelo ChefOS.',
           imageUrl: 'https://picsum.photos/800/400?random=11'
         }
       ]
