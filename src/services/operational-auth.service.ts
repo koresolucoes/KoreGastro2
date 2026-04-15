@@ -288,6 +288,11 @@ export class OperationalAuthService {
     const pathOnly = url.split('?')[0];
     const routeKey = '/' + pathOnly.split('/')[1];
 
+    // Special case for home: always allowed if logged in
+    if (routeKey === '/home') {
+        return true;
+    }
+
     // Special case for tutorials: bypass subscription check, only role permission matters.
     if (routeKey === '/tutorials') {
         const rolePermissions = this.hrState.rolePermissions();
@@ -314,19 +319,9 @@ export class OperationalAuthService {
 
   getDefaultRoute(): string {
     const employee = this.activeEmployee();
-    if (!employee || !employee.role_id) return '/employee-selection';
+    if (!employee) return '/employee-selection';
 
-    if (this.demoService.isDemoMode()) {
-        return '/dashboard';
-    }
-
-    for (const route of ALL_PERMISSION_KEYS) {
-      if (this.hasPermission(route)) {
-          return route;
-      }
-    }
-
-    return '/employee-selection';
+    return '/home';
   }
 
   // Novo método para tentar auto-login do gerente

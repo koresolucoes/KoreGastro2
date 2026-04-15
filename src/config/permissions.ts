@@ -1,6 +1,7 @@
 
 export const ALL_PERMISSION_KEYS = [
   '/dashboard',
+  '/home',
   '/pos',
   '/kds',
   '/ifood-kds',

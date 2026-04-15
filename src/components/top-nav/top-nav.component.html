@@ -5,8 +5,13 @@
     <div class="flex items-center justify-between h-16">
       <!-- Left side: Logo, Store Selector and Desktop Navigation -->
       <div class="flex items-center">
-        <a routerLink="/dashboard" class="flex-shrink-0 text-3xl font-extrabold mr-4">
+        <a routerLink="/home" class="flex-shrink-0 text-3xl font-extrabold mr-4">
           <span>Chef</span><span class="text-blue-500">OS</span>
+        </a>
+
+        <a routerLink="/home" routerLinkActive="text-blue-500" class="hidden md:flex items-center gap-1 text-gray-300 hover:text-white mr-6 transition-colors font-medium">
+          <span class="material-symbols-outlined">home</span>
+          <span class="text-sm">Início</span>
         </a>
 
         <!-- Store Switcher (Visible on Desktop) -->
@@ -166,6 +171,13 @@
         
         <nav class="flex-1 mt-2 overflow-y-auto">
           <ul>
+            <li>
+              <a routerLink="/home" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
+                 class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <span class="material-symbols-outlined h-6 w-6">home</span>
+                <span class="font-medium">Início</span>
+              </a>
+            </li>
             @for (item of navItems(); track item.name) {
               <li>
                 @if (isNavGroup(item)) {

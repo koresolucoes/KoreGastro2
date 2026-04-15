@@ -35,8 +35,13 @@ export const APP_ROUTES: Routes = [
     canActivate: [authGuard] 
   },
   { 
+    path: 'home', 
+    loadComponent: () => import('./components/launchpad/launchpad.component').then(m => m.LaunchpadComponent), 
+    canActivate: [roleGuard] 
+  },
+  { 
     path: '', 
-    redirectTo: 'login', 
+    redirectTo: 'home', 
     pathMatch: 'full' 
   },
   { 

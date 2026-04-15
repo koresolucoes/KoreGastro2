@@ -50,6 +50,15 @@
 
   <!-- Navigation -->
   <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+    <a routerLink="/home" routerLinkActive="bg-blue-600 text-white" 
+       class="group flex items-center px-4 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-800 hover:text-white transition-colors" 
+       [class.justify-center]="!isSidebarOpen()" 
+       [title]="!isSidebarOpen() ? 'Início' : ''">
+       <span class="material-symbols-outlined text-xl mr-3">home</span>
+       @if(isSidebarOpen()) {
+          <span>Início</span>
+       }
+    </a>
     @for (item of navItems(); track item.name) {
       @if (isNavGroup(item)) {
         <div class="relative">
