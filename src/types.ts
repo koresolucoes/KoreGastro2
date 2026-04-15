@@ -1,4 +1,3 @@
-import { Tables } from "./supabase";
 
 export type Json =
   | string

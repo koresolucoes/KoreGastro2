@@ -13,19 +13,16 @@
 export const environment = {
   /**
    * The public URL of your Supabase project.
-   * Found in your Supabase project settings under "API".
    */
-  supabaseUrl: '', // e.g., 'https://xxxxxxxx.supabase.co'
+  supabaseUrl: typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '',
 
   /**
    * The anonymous public key for your Supabase project.
-   * Found in your Supabase project settings under "API".
    */
-  supabaseAnonKey: '',
+  supabaseAnonKey: typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '',
 
   /**
    * Your API key for the Gemini API from Google AI Studio.
-   * Found in Google AI Studio under "Get API key".
    */
-  geminiApiKey: '',
+  geminiApiKey: typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '',
 };
