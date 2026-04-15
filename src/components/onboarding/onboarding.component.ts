@@ -257,21 +257,48 @@ export class OnboardingComponent {
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 30);
         
-        const { data: plans } = await supabase.from('plans').select('id').limit(1);
+        // Fetch the first available plan (usually the basic one)
+        const { data: plans, error: planError } = await supabase.from('plans').select('id').limit(1);
+        
+        if (planError) {
+            console.error('Error fetching plans:', planError);
+        }
+
         const planId = plans && plans.length > 0 ? plans[0].id : null;
 
         if (planId) {
-            const userId = this.unitContext.activeUnitId();
+            // In onboarding, the activeUnitId is usually the user's own ID (the store owner)
+            // We need to get the actual authenticated user ID just to be safe
+            const { data: { user } } = await supabase.auth.getUser();
+            const userId = user?.id || this.unitContext.activeUnitId();
+            
             if (userId) {
-                await supabase.from('subscriptions').insert({
-                    user_id: userId,
-                    store_id: userId,
-                    plan_id: planId,
-                    status: 'trialing',
-                    recurrent: false,
-                    current_period_end: trialEndDate.toISOString()
-                });
+                // Check if a subscription already exists to avoid duplicates
+                const { data: existingSub } = await supabase
+                    .from('subscriptions')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (!existingSub) {
+                    const { error: subError } = await supabase.from('subscriptions').insert({
+                        user_id: userId,
+                        store_id: userId, // Assuming store_id is the same as user_id for the owner
+                        plan_id: planId,
+                        status: 'trialing',
+                        recurrent: false,
+                        current_period_end: trialEndDate.toISOString()
+                    });
+
+                    if (subError) {
+                        console.error('Error creating subscription:', subError);
+                    }
+                }
+            } else {
+                console.error('Could not determine user ID for subscription');
             }
+        } else {
+            console.warn('No plans found in the database. Subscription not created.');
         }
 
         // Success!
