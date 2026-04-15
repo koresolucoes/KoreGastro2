@@ -117,6 +117,7 @@ export class PrintingService {
     const orderId = order.id.substring(0, 8).toUpperCase();
     const headerText = this.getOrderIdentifier(order);
     const customerName = order.customers?.name || order.tab_name || '';
+    const waiterName = order.waiter?.name || '';
     
     let itemsHtml = items.map(item => {
         const notesHtml = item.notes ? `<p style="font-style: italic; margin-left: 15px; margin-top: 2px;"> -> ${item.notes}</p>` : '';
@@ -186,6 +187,7 @@ export class PrintingService {
             <div><strong>Pedido:</strong> #${orderId}</div>
             <div><strong>Data:</strong> ${formattedTimestamp}</div>
             ${customerName ? `<div><strong>Cliente:</strong> ${customerName}</div>` : ''}
+            ${waiterName ? `<div><strong>Garçom:</strong> ${waiterName}</div>` : ''}
           </div>
           <div class="items">${itemsHtml}</div>
         </body>
@@ -268,6 +270,7 @@ export class PrintingService {
           <div class="divider"></div>
           <div>Data: ${date}</div>
           <div>${identifier}</div>
+          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ''}
           <div class="divider"></div>
           <table>
               <thead>
@@ -350,6 +353,7 @@ export class PrintingService {
           <div class="divider"></div>
           <div>Data: ${date}</div>
           <div>${identifier}</div>
+          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ''}
           <div class="divider"></div>
           <table>
               <thead>
