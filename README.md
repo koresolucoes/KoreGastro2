@@ -26,8 +26,9 @@ Para começar a usar, testar o sistema ou baixar os aplicativos, acesse nosso si
 
 O ChefOS é modular e cobre todas as áreas críticas da gestão de um restaurante:
 
-### 🏢 **Multi-Loja (Novo!)**
+### 🏢 **Multi-Loja e Painel de Administração (Novo!)**
 - **Gestão Centralizada:** Gerencie múltiplas unidades ou franquias com um único login de proprietário.
+- **Painel de Administração:** Acesse métricas globais (MRR, Total de Lojas) e gerencie assinaturas e planos de todos os clientes.
 - **Troca Rápida:** Alterne entre lojas (ex: "Matriz" e "Filial") com um clique na barra superior ou lateral.
 - **Segregação de Dados:** Cada loja possui seu próprio cardápio, estoque, funcionários e relatórios, mantendo a organização total.
 - **Gestão de Equipe:** Convide gestores específicos para cada unidade por e-mail.
@@ -59,6 +60,7 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 #### Cardápio iFood
 - **Sincronização Inteligente:** Envie produtos do ChefOS para o iFood.
+- **Sincronização Automática Reversa (Novo!):** Ao receber um pedido do iFood, o sistema cria automaticamente receitas não mapeadas e sincroniza os preços em tempo real com os valores praticados no iFood.
 - **Gestão de Preços e Disponibilidade:** Altere preços e pause itens no iFood instantaneamente.
 - **Imagens:** Faça upload de fotos para os produtos do iFood diretamente pelo sistema.
 
