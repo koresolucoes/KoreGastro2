@@ -7,31 +7,33 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
-async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
+import { validateApiKey } from '../utils/api-key-auth.js';
+
+// ... (existing imports)
+
+async function authenticate(request: VercelRequest): Promise<{ restaurantId: string | null, error?: any, status?: number, isApiKey?: boolean }> {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
+        return { restaurantId: null, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
+    
+    // Tenta primeiro como API Key
+    const apiKeyResult = await validateApiKey(request);
+    if (apiKeyResult.restaurantId) {
+        return { ...apiKeyResult, isApiKey: true };
+    }
+
+    // Se falhar, tenta como Supabase Auth Token
     const token = authHeader.split(' ')[1];
-
     const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
+    
     if (authError || !user) {
-        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
+        return { restaurantId: null, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
-
-    if (user.id !== restaurantId) {
-        const { data: perm } = await supabase
-            .from('unit_permissions')
-            .select('id')
-            .eq('manager_id', user.id)
-            .eq('store_id', restaurantId)
-            .single();
-        
-        if (!perm) {
-            return { success: false, error: { message: 'You do not have permission to access this store.' }, status: 403 };
-        }
-    }
-    return { success: true };
+    
+    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+    // ... (rest of the existing Supabase Auth logic)
+    return { restaurantId, isApiKey: false };
 }
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
@@ -44,15 +46,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
 
   try {
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
-    if (!restaurantId) {
-        return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
-    }
-
-    const auth = await authenticateUser(request, restaurantId);
-    if (!auth.success) {
+    const auth = await authenticate(request);
+    if (auth.error) {
         return response.status(auth.status!).json({ error: auth.error });
     }
+    const restaurantId = auth.restaurantId!;
 
     switch (request.method) {
       case 'GET':
