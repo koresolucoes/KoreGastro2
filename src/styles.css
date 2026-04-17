@@ -1,14 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-/* Tailwind v4 Config (if supported by environment) */
-@import "tailwindcss";
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-}
-
+/* Tailwind v3 Config handled by CDN in index.html */
 /* =========================================
    CHEF OS - CORE DESIGN SYSTEM TOKENS
    ========================================= */
@@ -63,7 +55,7 @@ html, body {
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   transition: color 0.3s ease;
   min-height: 100vh;
 }
@@ -129,13 +121,13 @@ body {
 
 /* Precision Data Text (Numbers, Costs, Kg) */
 .data-mono {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   letter-spacing: -0.02em;
 }
 
 /* Large Page Headers */
 .title-display {
-  font-family: var(--font-display);
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text-title);

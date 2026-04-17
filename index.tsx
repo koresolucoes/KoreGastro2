@@ -10,6 +10,9 @@ import { APP_ROUTES } from './src/app.routes';
 import { supabase } from './src/services/supabase-client';
 import { GlobalErrorHandler } from './src/services/global-error-handler';
 
+// Import our custom global CSS theme
+import './src/styles.css';
+
 // Register the locale data for pt-BR
 registerLocaleData(localePt);
 
