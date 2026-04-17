@@ -1,6 +1,6 @@
 
 <!-- Main Top Navigation Bar -->
-<nav class="chef-glass text-title relative z-30 no-print sticky top-0" (mouseleave)="closeDropdowns()">
+<nav class="chef-glass text-title relative z-30 no-print sticky top-0 border-b border-strong" (mouseleave)="closeDropdowns()">
   <div class="mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
       <!-- Left side: Logo, Store Selector and Desktop Navigation -->
@@ -15,7 +15,7 @@
         </a>
 
         <!-- Store Switcher (Visible on Desktop) -->
-        <div class="relative hidden md:block mr-6 border-l border-subtle pl-4">
+        <div class="relative hidden md:block mr-6 border-l border-strong pl-4">
             <button (click)="toggleStoreDropdown(); $event.stopPropagation()" 
                     class="flex items-center gap-2 text-sm font-medium text-muted hover:text-title transition-colors focus:outline-none">
                 <span class="material-symbols-outlined text-lg">storefront</span>
@@ -68,7 +68,7 @@
                   </button>
                   <!-- Dropdown Panel -->
                   @if (openDropdown() === item.name) {
-                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg chef-surface ring-1 ring-black/5 focus:outline-none py-1"
+                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg chef-surface border border-strong ring-1 ring-black/5 focus:outline-none py-1"
                          (click)="$event.stopPropagation()">
                       @for (child of item.children; track child.path) {
                         <a [routerLink]="child.path" routerLinkActive="bg-brand text-white" (click)="handleLinkClick()"
@@ -103,7 +103,7 @@
 
         <!-- Desktop User Menu -->
         <div class="hidden md:block ml-4 relative">
-          <button (click)="toggleDropdown('user-menu'); $event.stopPropagation()" class="max-w-xs bg-surface-elevated rounded-full flex items-center text-sm focus:outline-none border border-subtle">
+          <button (click)="toggleDropdown('user-menu'); $event.stopPropagation()" class="max-w-xs bg-surface-elevated rounded-full flex items-center text-sm focus:outline-none border border-strong">
             <span class="sr-only">Open user menu</span>
              @if (activeEmployee()?.photo_url; as photoUrl) {
                 <img [src]="photoUrl" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
