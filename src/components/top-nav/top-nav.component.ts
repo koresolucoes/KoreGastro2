@@ -7,6 +7,7 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
+import { ThemeService } from '../../services/theme.service';
 import { AddStoreModalComponent } from '../sidebar/add-store-modal/add-store-modal.component';
 
 export interface NavLink {
@@ -39,6 +40,7 @@ export class TopNavComponent {
   settingsState = inject(SettingsStateService);
   demoService = inject(DemoService);
   unitContextService = inject(UnitContextService);
+  themeService = inject(ThemeService);
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;

@@ -1,8 +1,8 @@
 
-<div class="flex flex-col h-screen bg-gray-900 text-gray-100">
+<div class="flex flex-col h-screen bg-app transition-colors">
   @if (isAuthLoading()) {
-    <div class="flex items-center justify-center h-screen bg-gray-900">
-      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    <div class="flex items-center justify-center h-screen bg-app transition-colors">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2" style="border-color: var(--brand-primary)"></div>
     </div>
   } @else {
     @if (isFullLayoutVisible()) {

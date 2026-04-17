@@ -1,23 +1,23 @@
 
 <!-- Main Top Navigation Bar -->
-<nav class="bg-gray-800 border-b border-gray-700 text-white relative z-30 no-print" (mouseleave)="closeDropdowns()">
+<nav class="chef-glass text-title relative z-30 no-print sticky top-0" (mouseleave)="closeDropdowns()">
   <div class="mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
       <!-- Left side: Logo, Store Selector and Desktop Navigation -->
       <div class="flex items-center">
-        <a routerLink="/home" class="flex-shrink-0 text-3xl font-extrabold mr-4">
-          <span>Chef</span><span class="text-blue-500">OS</span>
+        <a routerLink="/home" class="flex-shrink-0 text-3xl title-display mr-6">
+          <span>Chef</span><span style="color: var(--brand-primary);">OS</span>
         </a>
 
-        <a routerLink="/home" routerLinkActive="text-blue-500" class="hidden md:flex items-center gap-1 text-gray-300 hover:text-white mr-6 transition-colors font-medium">
+        <a routerLink="/home" routerLinkActive="text-brand" class="hidden md:flex items-center gap-1 text-muted hover:text-title mr-6 transition-colors font-medium">
           <span class="material-symbols-outlined">home</span>
           <span class="text-sm">Início</span>
         </a>
 
         <!-- Store Switcher (Visible on Desktop) -->
-        <div class="relative hidden md:block mr-6 border-l border-gray-700 pl-4">
+        <div class="relative hidden md:block mr-6 border-l border-subtle pl-4">
             <button (click)="toggleStoreDropdown(); $event.stopPropagation()" 
-                    class="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors focus:outline-none">
+                    class="flex items-center gap-2 text-sm font-medium text-muted hover:text-title transition-colors focus:outline-none">
                 <span class="material-symbols-outlined text-lg">storefront</span>
                 <span class="max-w-[150px] truncate">{{ unitContextService.activeUnitName() }}</span>
                 <span class="material-symbols-outlined text-sm transition-transform" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
@@ -25,19 +25,19 @@
 
             <!-- Store Dropdown Panel -->
             @if(isStoreDropdownOpen()) {
-                <div class="absolute left-0 mt-2 w-64 rounded-md shadow-xl bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden" (click)="$event.stopPropagation()">
+                <div class="absolute left-0 mt-2 w-64 rounded-xl shadow-xl chef-surface ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden" (click)="$event.stopPropagation()">
                     <div class="py-1 max-h-60 overflow-y-auto">
                          @for(unit of unitContextService.availableUnits(); track unit.id) {
-                            <button (click)="switchStore(unit.id)" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-700 flex items-center justify-between group transition-colors">
-                                <span [class.text-blue-400]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">{{ unit.name }}</span>
+                            <button (click)="switchStore(unit.id)" class="w-full text-left px-4 py-2 text-sm hover-surface-elevated flex items-center justify-between group transition-colors text-title">
+                                <span [class.text-brand]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">{{ unit.name }}</span>
                                 @if(unitContextService.activeUnitId() === unit.id) {
-                                    <span class="material-symbols-outlined text-blue-400 text-xs">check</span>
+                                    <span class="material-symbols-outlined text-brand text-xs">check</span>
                                 }
                             </button>
                         }
                     </div>
-                    <div class="border-t border-gray-700 bg-gray-900/50 p-2">
-                        <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 py-1.5 rounded hover:bg-gray-800 transition-colors">
+                    <div class="border-t border-subtle bg-surface-elevated p-2">
+                        <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-brand hover:text-blue-500 py-1.5 rounded transition-colors hover-surface-elevated">
                             <span class="material-symbols-outlined text-sm">add_business</span>
                             Adicionar / Vincular Loja
                         </button>
@@ -54,11 +54,11 @@
                 @if (isNavGroup(item)) {
                   <button (click)="toggleDropdown(item.name); $event.stopPropagation()"
                           class="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                          [class.bg-gray-700]="isGroupActive(item) || openDropdown() === item.name"
-                          [class.text-white]="isGroupActive(item) || openDropdown() === item.name"
-                          [class.text-gray-300]="!isGroupActive(item) && openDropdown() !== item.name"
-                          [class.hover:bg-gray-700]="!isGroupActive(item) && openDropdown() !== item.name"
-                          [class.hover:text-white]="!isGroupActive(item) && openDropdown() !== item.name">
+                          [class.bg-surface-elevated]="isGroupActive(item) || openDropdown() === item.name"
+                          [class.text-title]="isGroupActive(item) || openDropdown() === item.name"
+                          [class.text-muted]="!isGroupActive(item) && openDropdown() !== item.name"
+                          [class.hover-surface-elevated]="!isGroupActive(item) && openDropdown() !== item.name"
+                          [class.hover:text-title]="!isGroupActive(item) && openDropdown() !== item.name">
                     @if (item.name === 'iFood' && item.imageUrl) {
                       <img [src]="item.imageUrl" [alt]="item.name" class="h-4 object-contain">
                     } @else {
@@ -68,11 +68,11 @@
                   </button>
                   <!-- Dropdown Panel -->
                   @if (openDropdown() === item.name) {
-                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none py-1"
+                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg chef-surface ring-1 ring-black/5 focus:outline-none py-1"
                          (click)="$event.stopPropagation()">
                       @for (child of item.children; track child.path) {
-                        <a [routerLink]="child.path" routerLinkActive="bg-blue-600" (click)="handleLinkClick()"
-                           class="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <a [routerLink]="child.path" routerLinkActive="bg-brand text-white" (click)="handleLinkClick()"
+                           class="flex items-center gap-3 px-4 py-2 text-sm text-body hover-surface-elevated hover:text-title transition-colors">
                           <span class="material-symbols-outlined text-base">{{ child.icon }}</span>
                           <span>{{ child.name }}</span>
                         </a>
@@ -80,9 +80,9 @@
                     </div>
                   }
                 } @else {
-                  <a [routerLink]="item.path" routerLinkActive="bg-gray-700 text-white"
+                  <a [routerLink]="item.path" routerLinkActive="bg-surface-elevated text-title"
                      (click)="handleLinkClick()"
-                     class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                     class="text-muted hover-surface-elevated hover:text-title px-3 py-2 rounded-md text-sm font-medium transition-colors">
                     {{ item.name }}
                   </a>
                 }
@@ -94,35 +94,42 @@
 
       <!-- Right side: User Profile (Desktop) and Mobile Menu Button -->
       <div class="flex items-center">
+        <!-- Theme Toggle -->
+        <button (click)="themeService.toggleTheme()" class="hidden md:flex text-muted hover:text-title p-2 rounded-full hover-surface-elevated transition-colors focus:outline-none mr-2" [title]="themeService.currentTheme() === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
+            <span class="material-symbols-outlined text-[20px]">
+                {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+            </span>
+        </button>
+
         <!-- Desktop User Menu -->
         <div class="hidden md:block ml-4 relative">
-          <button (click)="toggleDropdown('user-menu'); $event.stopPropagation()" class="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+          <button (click)="toggleDropdown('user-menu'); $event.stopPropagation()" class="max-w-xs bg-surface-elevated rounded-full flex items-center text-sm focus:outline-none border border-subtle">
             <span class="sr-only">Open user menu</span>
              @if (activeEmployee()?.photo_url; as photoUrl) {
                 <img [src]="photoUrl" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
              } @else {
-                <span class="material-symbols-outlined text-3xl text-gray-400">account_circle</span>
+                <span class="material-symbols-outlined text-3xl text-muted">account_circle</span>
              }
           </button>
           <!-- User Dropdown Panel -->
           @if (openDropdown() === 'user-menu') {
-            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none" (click)="$event.stopPropagation()">
-              <div class="px-4 py-2 border-b border-gray-700">
-                <p class="text-sm font-semibold text-white truncate" [title]="activeEmployee()?.name">{{ activeEmployee()?.name }}</p>
-                <p class="text-xs text-gray-400">{{ activeEmployee()?.role }}</p>
+            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 chef-surface ring-1 ring-black/5 focus:outline-none" (click)="$event.stopPropagation()">
+              <div class="px-4 py-2 border-b border-subtle">
+                <p class="text-sm font-semibold text-title truncate" [title]="activeEmployee()?.name">{{ activeEmployee()?.name }}</p>
+                <p class="text-xs text-muted">{{ activeEmployee()?.role }}</p>
               </div>
-              <a routerLink="/my-profile" (click)="handleLinkClick()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Meu Perfil</a>
+              <a routerLink="/my-profile" (click)="handleLinkClick()" class="block px-4 py-2 text-sm text-body hover-surface-elevated transition-colors">Meu Perfil</a>
               <button (click)="handleShiftAction(); $event.stopPropagation()" class="w-full text-left block px-4 py-2 text-sm" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
                 {{ shiftButtonState().text }}
               </button>
-              <button (click)="switchEmployee()" class="w-full text-left block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Trocar Operador</button>
-              <button (click)="signOut()" class="w-full text-left block px-4 py-2 text-sm text-red-400 hover:bg-gray-700">Sair do Sistema</button>
+              <button (click)="switchEmployee()" class="w-full text-left block px-4 py-2 text-sm text-body hover-surface-elevated transition-colors">Trocar Operador</button>
+              <button (click)="signOut()" class="w-full text-left block px-4 py-2 text-sm text-danger hover-surface-elevated transition-colors">Sair do Sistema</button>
             </div>
           }
         </div>
         <!-- Mobile menu button -->
         <div class="lg:hidden">
-          <button (click)="toggleMobileMenu()" class="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+          <button (click)="toggleMobileMenu()" class="bg-surface-elevated inline-flex items-center justify-center p-2 rounded-md text-muted hover:text-title hover-surface-elevated focus:outline-none border border-subtle">
             <span class="sr-only">Open main menu</span>
             <span class="material-symbols-outlined">menu</span>
           </button>
@@ -135,34 +142,34 @@
   @if (isMobileMenuOpen()) {
     <div class="fixed inset-0 z-40">
       <!-- Overlay -->
-      <div class="absolute inset-0 bg-black/60" (click)="toggleMobileMenu()"></div>
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="toggleMobileMenu()"></div>
       
       <!-- Menu Content -->
-      <aside class="absolute top-0 left-0 bottom-0 w-72 bg-gray-800 text-gray-300 flex flex-col">
-        <div class="flex items-center justify-between h-16 px-4 border-b border-gray-700 flex-shrink-0">
-          <div class="text-2xl font-extrabold text-white"><span>Chef</span><span class="text-blue-500">OS</span></div>
-          <button (click)="toggleMobileMenu()" class="p-2 rounded-md text-gray-400 hover:bg-gray-700"><span class="material-symbols-outlined">close</span></button>
+      <aside class="absolute top-0 left-0 bottom-0 w-72 chef-surface flex flex-col rounded-none rounded-r-2xl overflow-hidden">
+        <div class="flex items-center justify-between h-16 px-4 border-b border-subtle flex-shrink-0">
+          <div class="text-2xl font-extrabold text-title"><span>Chef</span><span style="color: var(--brand-primary);">OS</span></div>
+          <button (click)="toggleMobileMenu()" class="p-2 rounded-md text-muted hover-surface-elevated hover:text-title"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <!-- Mobile Store Selector -->
-        <div class="px-4 py-3 border-b border-gray-700 bg-gray-900/30">
-            <button (click)="toggleStoreDropdown()" class="w-full flex justify-between items-center bg-gray-800 px-3 py-2 rounded-lg text-sm text-white border border-gray-600">
+        <div class="px-4 py-3 border-b border-subtle bg-surface-elevated">
+            <button (click)="toggleStoreDropdown()" class="w-full flex justify-between items-center bg-surface px-3 py-2 rounded-lg text-sm text-title border border-subtle hover-surface-elevated">
                 <div class="flex items-center gap-2 truncate">
-                    <span class="material-symbols-outlined text-gray-400">storefront</span>
+                    <span class="material-symbols-outlined text-muted">storefront</span>
                     <span>{{ unitContextService.activeUnitName() }}</span>
                 </div>
                 <span class="material-symbols-outlined transition-transform" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
             </button>
             
             @if(isStoreDropdownOpen()) {
-                <div class="mt-2 space-y-1 bg-gray-900/50 rounded-lg p-1 max-h-40 overflow-y-auto">
+                <div class="mt-2 space-y-1 bg-surface rounded-lg p-1 max-h-40 overflow-y-auto border border-subtle">
                     @for(unit of unitContextService.availableUnits(); track unit.id) {
-                        <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 flex justify-between items-center" [class.text-blue-400]="unitContextService.activeUnitId() === unit.id" [class.bg-gray-800]="unitContextService.activeUnitId() === unit.id">
+                        <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2 text-sm rounded hover-surface-elevated flex justify-between items-center text-body" [class.text-brand]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">
                             <span>{{ unit.name }}</span>
-                            @if(unitContextService.activeUnitId() === unit.id) { <span class="material-symbols-outlined text-xs">check</span> }
+                            @if(unitContextService.activeUnitId() === unit.id) { <span class="material-symbols-outlined text-xs text-brand">check</span> }
                         </button>
                     }
-                    <button (click)="openAddStoreModal()" class="w-full text-left px-3 py-2 text-xs font-semibold text-blue-400 rounded hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700 mt-1 pt-2">
+                    <button (click)="openAddStoreModal()" class="w-full text-left px-3 py-2 text-xs font-semibold text-brand rounded hover-surface-elevated flex items-center gap-2 border-t border-subtle mt-1 pt-2">
                         <span class="material-symbols-outlined text-sm">add_business</span> Adicionar Loja
                     </button>
                 </div>
@@ -172,8 +179,8 @@
         <nav class="flex-1 mt-2 overflow-y-auto">
           <ul>
             <li>
-              <a routerLink="/home" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
-                 class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+              <a routerLink="/home" routerLinkActive="bg-surface-elevated text-title" (click)="handleLinkClick()"
+                 class="flex items-center h-12 px-4 space-x-4 text-muted hover-surface-elevated hover:text-title transition-colors">
                 <span class="material-symbols-outlined h-6 w-6">home</span>
                 <span class="font-medium">Início</span>
               </a>
@@ -182,7 +189,7 @@
               <li>
                 @if (isNavGroup(item)) {
                   <details class="group" [open]="isGroupActive(item)">
-                    <summary class="flex items-center justify-between h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 cursor-pointer list-none">
+                    <summary class="flex items-center justify-between h-12 px-4 space-x-4 text-muted hover-surface-elevated hover:text-title transition-colors duration-200 cursor-pointer list-none">
                       <div class="flex items-center space-x-4">
                         @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 object-contain"> }
                         @else if (item.icon) { <span class="material-symbols-outlined h-6 w-6">{{ item.icon }}</span> }
@@ -190,11 +197,11 @@
                       </div>
                       <span class="material-symbols-outlined h-5 w-5 transition-transform duration-200 group-open:rotate-90">chevron_right</span>
                     </summary>
-                    <ul class="bg-gray-900/50">
+                    <ul class="bg-surface-elevated border-y border-subtle">
                       @for (child of item.children; track child.path) {
                         <li>
-                          <a [routerLink]="child.path" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
-                             class="flex items-center h-12 pl-12 pr-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+                          <a [routerLink]="child.path" routerLinkActive="text-brand font-semibold" (click)="handleLinkClick()"
+                             class="flex items-center h-12 pl-12 pr-4 space-x-4 text-body hover-surface-elevated hover:text-title transition-colors">
                             <span class="material-symbols-outlined h-5 w-5">{{child.icon}}</span>
                             <span class="font-medium">{{ child.name }}</span>
                           </a>
@@ -203,8 +210,8 @@
                     </ul>
                   </details>
                 } @else {
-                  <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" (click)="handleLinkClick()"
-                     class="flex items-center h-12 px-4 space-x-4 text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <a [routerLink]="item.path" routerLinkActive="bg-surface-elevated text-title" (click)="handleLinkClick()"
+                     class="flex items-center h-12 px-4 space-x-4 text-muted hover-surface-elevated hover:text-title transition-colors">
                     @if (item.imageUrl) { <img [src]="item.imageUrl" [alt]="item.name" class="h-6 w-6 object-contain"> }
                     @else if (item.icon) { <span class="material-symbols-outlined h-6 w-6">{{ item.icon }}</span> }
                     <span class="font-medium">{{ item.name }}</span>
@@ -215,23 +222,23 @@
           </ul>
         </nav>
 
-        <div class="p-4 border-t border-gray-700 space-y-4">
+        <div class="p-4 border-t border-subtle space-y-4 bg-surface-elevated">
           @if(activeEmployee(); as employee) {
-            <div class="p-2 rounded-lg hover:bg-gray-700/50">
+            <div class="p-2 rounded-lg bg-surface border border-subtle">
                 <a routerLink="/my-profile" (click)="handleLinkClick()" class="flex items-center space-x-3 group">
                   <div class="flex-shrink-0">
                     @if (employee.photo_url) { <img [src]="employee.photo_url" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover"> }
-                    @else { <span class="material-symbols-outlined text-4xl text-gray-400">account_circle</span> }
+                    @else { <span class="material-symbols-outlined text-4xl text-muted group-hover:text-title transition-colors">account_circle</span> }
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-white truncate text-sm group-hover:text-blue-400">{{ employee.name }}</p>
+                    <p class="font-semibold text-title truncate text-sm group-hover:text-brand transition-colors">{{ employee.name }}</p>
                   </div>
                 </a>
-                 <div class="mt-2 flex items-center justify-around text-xs gap-2">
-                    <button (click)="handleShiftAction()" class="flex-1 py-1.5 rounded border border-gray-600" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+                 <div class="mt-3 flex items-center justify-around text-xs gap-2">
+                    <button (click)="handleShiftAction()" class="flex-1 py-1.5 rounded border border-subtle font-medium transition-colors hover-surface-elevated" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
                       {{ shiftButtonState().text }}
                     </button>
-                     <button (click)="switchEmployee()" class="flex-1 text-gray-300 hover:text-white hover:bg-gray-700 py-1.5 rounded border border-gray-600">
+                     <button (click)="switchEmployee()" class="flex-1 text-body hover:text-title hover-surface-elevated py-1.5 rounded border border-subtle font-medium transition-colors">
                       Trocar
                     </button>
                 </div>
@@ -240,15 +247,15 @@
           <div class="flex items-center space-x-3 p-2">
               <div class="flex-shrink-0">
                 @if (companyProfile()?.logo_url; as logoUrl) { <img [src]="logoUrl" alt="Logo da Empresa" class="w-8 h-8 rounded-full object-cover"> }
-                @else { <span class="material-symbols-outlined text-4xl text-gray-400">storefront</span> }
+                @else { <span class="material-symbols-outlined text-4xl text-muted">storefront</span> }
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-semibold text-white truncate text-sm">{{ currentUser()?.email }}</p>
-                <button (click)="signOut()" class="text-xs text-red-400 hover:text-red-300 hover:underline">Sair do Sistema</button>
+                <p class="font-semibold text-title truncate text-sm">{{ currentUser()?.email }}</p>
+                <button (click)="signOut()" class="text-xs font-medium text-danger hover:underline mt-1">Sair do Sistema</button>
               </div>
           </div>
         </div>
-      </aside>
+      </aside>>
     </div>
   }
 </nav>

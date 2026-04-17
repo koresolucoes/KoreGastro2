@@ -65,34 +65,32 @@ export class HourlySalesChartComponent {
     // X-axis
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).tickValues(x.domain().filter((d, i) => i % 2 === 0)).tickFormat(d => `${d}h`))
+      .call(d3.axisBottom(x).tickValues(x.domain().filter((d: any, i: number) => i % 2 === 0)).tickFormat((d: any) => `${d}h`))
       .selectAll("text")
-      .style("fill", "#9ca3af");
+      .style("fill", "var(--text-muted)");
 
     // Y-axis
     svg.append('g')
-      .call(d3.axisLeft(y).tickFormat(d => `R$${d / 1000}k`).ticks(4))
+      .call(d3.axisLeft(y).tickFormat((d: any) => `R$${d / 1000}k`).ticks(4))
        .selectAll("text")
-      .style("fill", "#9ca3af");
+      .style("fill", "var(--text-muted)");
 
     const tooltip = d3.select(containerEl).append("div")
-        .attr("class", "tooltip p-2 rounded-lg bg-gray-900 border border-gray-600 text-xs shadow-lg text-white")
-        .style("position", "absolute")
+        .attr("class", "tooltip p-2 rounded-lg chef-surface text-body shadow-lg absolute z-50 pointer-events-none")
         .style("opacity", 0)
-        .style("pointer-events", "none");
 
     // Bars
     svg.selectAll(".bar")
       .data(data)
       .enter().append("rect")
       .attr("class", "bar")
-      .attr("x", d => x(d.hour))
-      .attr("y", d => y(d.sales))
+      .attr("x", (d: any) => x(d.hour))
+      .attr("y", (d: any) => y(d.sales))
       .attr("width", x.bandwidth())
-      .attr("height", d => height - y(d.sales))
-      .attr("fill", "#2563eb") // blue-600
-      .on("mouseover", (event, d) => {
-        d3.select(event.currentTarget).attr('fill', '#3b82f6');
+      .attr("height", (d: any) => height - y(d.sales))
+      .attr("fill", "var(--brand-primary)") // primary
+      .on("mouseover", (event: any, d: any) => {
+        d3.select(event.currentTarget).attr('fill', "var(--brand-hover)");
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
             <strong>${d.hour}:00 - ${d.hour + 1}:00</strong><br/>

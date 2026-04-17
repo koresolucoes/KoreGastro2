@@ -72,33 +72,31 @@ export class SalesCogsChartComponent {
     // X-axis
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%d/%m')).tickValues(x.domain().filter((d, i) => i % (Math.ceil(data.length / 7)) === 0)))
+      .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%d/%m')).tickValues(x.domain().filter((d: any, i: number) => i % (Math.ceil(data.length / 7)) === 0)))
       .selectAll("text")
-      .style("fill", "#9ca3af");
+      .style("fill", "var(--text-muted)");
 
     // Y-axis
     svg.append('g')
-      .call(d3.axisLeft(y).tickFormat(d => `R$${d / 1000}k`).ticks(5))
+      .call(d3.axisLeft(y).tickFormat((d: any) => `R$${d / 1000}k`).ticks(5))
        .selectAll("text")
-      .style("fill", "#9ca3af");
+      .style("fill", "var(--text-muted)");
 
     const tooltip = d3.select(containerEl).append("div")
-        .attr("class", "tooltip p-2 rounded-lg bg-gray-900 border border-gray-600 text-xs shadow-lg text-white")
-        .style("position", "absolute")
+        .attr("class", "tooltip p-2 rounded-lg chef-surface text-body shadow-lg absolute z-50 pointer-events-none")
         .style("opacity", 0)
-        .style("pointer-events", "none");
 
     // Sales bars
     svg.selectAll(".bar-sales")
       .data(processedData)
       .enter().append("rect")
       .attr("class", "bar-sales")
-      .attr("x", d => x(d.date))
-      .attr("y", d => y(d.sales))
+      .attr("x", (d: any) => x(d.date))
+      .attr("y", (d: any) => y(d.sales))
       .attr("width", x.bandwidth() / 2)
-      .attr("height", d => height - y(d.sales))
-      .attr("fill", "#3b82f6") // blue-600
-      .on("mouseover", (event, d) => {
+      .attr("height", (d: any) => height - y(d.sales))
+      .attr("fill", "var(--brand-primary)") // primary
+      .on("mouseover", (event: any, d: any) => {
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
             <strong>${this.datePipe.transform(d.date, 'dd/MM/yyyy')}</strong><br/>
@@ -108,7 +106,7 @@ export class SalesCogsChartComponent {
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 28) + "px");
         })
-      .on("mouseout", d => {
+      .on("mouseout", (d: any) => {
           tooltip.transition().duration(500).style("opacity", 0);
       });
 
@@ -117,12 +115,12 @@ export class SalesCogsChartComponent {
       .data(processedData)
       .enter().append("rect")
       .attr("class", "bar-cogs")
-      .attr("x", d => x(d.date) + x.bandwidth() / 2)
-      .attr("y", d => y(d.cogs))
+      .attr("x", (d: any) => x(d.date) + x.bandwidth() / 2)
+      .attr("y", (d: any) => y(d.cogs))
       .attr("width", x.bandwidth() / 2)
-      .attr("height", d => height - y(d.cogs))
-      .attr("fill", "#f59e0b") // amber-500
-       .on("mouseover", (event, d) => {
+      .attr("height", (d: any) => height - y(d.cogs))
+      .attr("fill", "var(--accent-warning)") // warning
+       .on("mouseover", (event: any, d: any) => {
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
             <strong>${this.datePipe.transform(d.date, 'dd/MM/yyyy')}</strong><br/>
