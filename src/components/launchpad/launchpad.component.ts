@@ -19,46 +19,56 @@ interface LaunchpadItem {
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-full bg-gray-900 p-6 md:p-10">
-      <div class="max-w-7xl mx-auto">
-        <header class="mb-12 text-center md:text-left">
-          <h1 class="text-4xl font-extrabold text-white mb-2">
-            Bem-vindo ao <span class="text-blue-500">ChefOS</span>
+    <div class="min-h-full bg-app p-4 sm:p-6 md:p-10 relative overflow-hidden">
+      <!-- Decorative background elements -->
+      <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-brand/5 blur-3xl pointer-events-none"></div>
+      <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-success/5 blur-3xl pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto relative z-10">
+        <header class="mb-8 md:mb-12 text-center md:text-left flex flex-col items-center md:items-start">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated border border-strong rounded-full mb-4 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+            <span class="text-xs font-bold text-title uppercase tracking-wider">{{ unitContextService.activeUnitName() }}</span>
+          </div>
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-title mb-2 tracking-tight">
+            Bem-vindo ao <span class="bg-gradient-to-r from-brand to-indigo-500 bg-clip-text text-transparent drop-shadow-sm">ChefOS</span>
           </h1>
-          <p class="text-gray-400 text-lg">
-            {{ unitContextService.activeUnitName() }} • {{ activeEmployee()?.name }}
+          <p class="text-muted text-base sm:text-lg font-medium flex items-center justify-center md:justify-start gap-2">
+            <span class="material-symbols-outlined text-xl">person</span>
+            {{ activeEmployee()?.name }}
           </p>
         </header>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           @for (item of visibleItems(); track item.path) {
             <a [routerLink]="item.path" 
-               class="group relative bg-gray-800 rounded-2xl p-8 border border-gray-700 hover:border-blue-500/50 hover:bg-gray-700/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl flex flex-col items-center text-center">
-              <div [class]="'w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ' + item.color">
-                <span class="material-symbols-outlined text-4xl text-white">{{ item.icon }}</span>
+               class="group relative chef-surface rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-subtle hover:border-brand/40 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
+              <div [class]="'w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-6 transition-transform duration-300 group-hover:scale-110 shadow-inner ' + item.color">
+                <span class="material-symbols-outlined text-2xl sm:text-4xl text-white drop-shadow-md">{{ item.icon }}</span>
               </div>
-              <h3 class="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{{ item.name }}</h3>
-              <p class="text-gray-400 text-sm leading-relaxed">{{ item.description }}</p>
+              <h3 class="text-sm sm:text-xl font-bold text-title mb-1 sm:mb-2 group-hover:text-brand transition-colors line-clamp-1">{{ item.name }}</h3>
+              <p class="hidden sm:block text-muted text-sm leading-relaxed line-clamp-2">{{ item.description }}</p>
               
               <!-- Decorative background element -->
-              <div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-10 transition-opacity">
-                 <span class="material-symbols-outlined text-6xl">{{ item.icon }}</span>
+              <div class="absolute top-0 right-0 p-2 sm:p-4 opacity-0 group-hover:opacity-5 transition-opacity transform group-hover:scale-110 group-hover:-rotate-12">
+                 <span class="material-symbols-outlined text-4xl sm:text-8xl text-title">{{ item.icon }}</span>
               </div>
             </a>
           }
         </div>
 
         @if (visibleItems().length === 0) {
-          <div class="text-center py-20">
-            <span class="material-symbols-outlined text-6xl text-gray-600 mb-4">lock</span>
-            <p class="text-gray-400">Você não tem permissões para acessar nenhuma funcionalidade.</p>
+          <div class="text-center py-20 chef-surface border border-subtle rounded-3xl mt-8 shadow-inner">
+            <span class="material-symbols-outlined text-6xl text-muted mb-4 opacity-50">lock</span>
+            <p class="text-muted text-lg font-medium">Você não tem permissões para acessar nenhuma funcionalidade.</p>
           </div>
         }
 
-        <footer class="mt-16 pt-8 border-t border-gray-800 flex justify-center">
-          <a routerLink="/admin" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-blue-400 transition-colors uppercase tracking-widest">
-            <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
-            Painel de Controle do Sistema
+        <footer class="mt-12 sm:mt-16 pt-8 border-t border-subtle flex justify-center relative">
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 -ml-px w-32 h-px bg-gradient-to-r from-transparent via-brand to-transparent opacity-50"></div>
+          <a routerLink="/admin" class="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-brand transition-colors uppercase tracking-widest bg-surface-elevated px-4 py-2 rounded-full border border-strong shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
+            <span class="material-symbols-outlined text-base">admin_panel_settings</span>
+            Painel de Controle
           </a>
         </footer>
       </div>

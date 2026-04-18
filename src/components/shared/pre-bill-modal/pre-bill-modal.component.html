@@ -1,83 +1,92 @@
 @if (order(); as currentOrder) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
+    <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
       <!-- Header -->
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">Pré-conta - Mesa {{ table()?.number }}</h3>
-        <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div class="p-5 border-b border-subtle flex justify-between items-center bg-surface-elevated rounded-t-2xl">
+        <h3 class="text-xl font-bold text-title flex items-center gap-2">
+          <span class="material-symbols-outlined text-brand">receipt_long</span>
+          Pré-conta - Mesa {{ table()?.number }}
+        </h3>
+        <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
+          <span class="material-symbols-outlined">close</span>
         </button>
       </div>
 
       <!-- Body -->
-      <div class="p-6 flex-1 overflow-y-auto space-y-4">
-        <div>
-            <h4 class="font-semibold text-white mb-2">Itens Consumidos</h4>
-            <ul class="space-y-2 text-sm max-h-60 overflow-y-auto pr-2">
+      <div class="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
+        <div class="bg-surface border border-subtle rounded-xl p-4 shadow-sm">
+            <h4 class="font-bold text-title mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+               Itens Consumidos
+            </h4>
+            <ul class="space-y-2 text-sm max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 @for(item of currentOrder.order_items; track item.id) {
-                    <li class="flex justify-between items-start p-2 bg-gray-700/50 rounded-md">
+                    <li class="flex justify-between items-start p-2.5 bg-surface-elevated border border-strong rounded-lg shadow-sm">
                         <div>
-                            <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
+                            <p class="font-bold text-title">{{ item.quantity }}x {{ item.name }}</p>
                             @if(item.price > 0) {
-                              <p class="text-xs text-gray-400">{{ item.price | currency:'BRL' }} cada</p>
+                              <p class="text-xs text-muted font-medium">{{ item.price | currency:'BRL' }} cada</p>
                             }
                         </div>
-                        <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                        <span class="font-bold text-title font-mono">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
                     </li>
                 }
             </ul>
         </div>
         
-        <div class="space-y-2 pt-4 border-t border-gray-600">
-            <div class="flex justify-between text-lg"><span class="text-gray-300">Subtotal</span><span>{{ orderSubtotalBeforeDiscount() | currency:'BRL' }}</span></div>
+        <div class="space-y-3 pt-5 border-t border-subtle px-1">
+            <div class="flex justify-between text-base font-semibold"><span class="text-muted">Subtotal</span><span class="text-title font-mono">{{ orderSubtotalBeforeDiscount() | currency:'BRL' }}</span></div>
             @if (globalDiscountAmount() > 0) {
-              <div class="flex justify-between text-lg">
-                <span class="text-red-400">Desconto</span>
-                <span class="text-red-400">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
+              <div class="flex justify-between text-base font-semibold">
+                <span class="text-danger flex items-center gap-1"><span class="material-symbols-outlined text-sm">sell</span> Desconto</span>
+                <span class="text-danger font-mono">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
               </div>
             }
-            <div class="flex justify-between items-center text-lg">
+            <div class="flex justify-between items-center text-base font-semibold">
                 <div class="flex items-center gap-2">
-                    <span class="text-gray-300">Taxa de Serviço (10%)</span>
+                    <span class="text-muted">Taxa de Serviço (10%)</span>
                     <button 
                         (click)="serviceFeeApplied.set(!serviceFeeApplied())" 
-                        [class.bg-green-600]="serviceFeeApplied()" 
-                        [class.bg-gray-600]="!serviceFeeApplied()" 
-                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none">
+                        [class.bg-brand]="serviceFeeApplied()" 
+                        [class.bg-surface-elevated]="!serviceFeeApplied()" 
+                        [class.border-brand]="serviceFeeApplied()"
+                        [class.border-strong]="!serviceFeeApplied()"
+                        class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none shadow-inner">
                         <span [class.translate-x-5]="serviceFeeApplied()" [class.translate-x-0]="!serviceFeeApplied()" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"></span>
                     </button>
                 </div>
-                <span>+ {{ tipAmount() | currency:'BRL' }}</span>
+                <span class="text-title font-mono">+ {{ tipAmount() | currency:'BRL' }}</span>
             </div>
-            <div class="flex justify-between text-2xl font-bold text-white pt-2 border-t border-gray-600"><span class="text-white">Total</span><span>{{ orderTotal() | currency:'BRL' }}</span></div>
+            <div class="flex justify-between text-2xl font-black text-title pt-3 border-t border-subtle mt-2"><span class="text-title">Total</span><span class="text-brand font-mono">{{ orderTotal() | currency:'BRL' }}</span></div>
         </div>
         
-        <div class="pt-4 border-t border-gray-600">
-             <div class="flex items-center gap-3">
-                <label for="split-count" class="text-lg text-gray-300">Dividir por</label>
-                <input 
-                    id="split-count"
-                    type="number"
-                    min="1"
-                    [value]="splitCount()"
-                    (input)="onSplitCountChange($event)"
-                    class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-bold text-center w-20 text-xl"
-                >
-                <span class="text-lg text-gray-300">pessoa(s)</span>
+        <div class="pt-5 border-t border-subtle">
+             <div class="flex items-center justify-between gap-3 mb-4 px-1">
+                <label for="split-count" class="text-base font-semibold text-body">Dividir por</label>
+                <div class="flex items-center gap-2">
+                   <input 
+                       id="split-count"
+                       type="number"
+                       min="1"
+                       [value]="splitCount()"
+                       (input)="onSplitCountChange($event)"
+                       class="bg-surface-elevated border border-strong rounded-xl px-3 py-2 text-title font-black text-center w-20 text-xl focus:outline-none focus:border-brand shadow-inner"
+                   >
+                   <span class="text-base font-medium text-muted">pessoa(s)</span>
+                </div>
             </div>
-            <div class="flex justify-between items-center mt-3 bg-gray-900/50 p-3 rounded-lg">
-                <span class="text-xl font-bold text-white">Valor por Pessoa</span>
-                <span class="text-xl font-bold text-green-400">{{ splitTotal() | currency:'BRL' }}</span>
+            <div class="flex justify-between items-center bg-brand/5 border border-brand/20 p-4 rounded-xl shadow-inner">
+                <span class="text-sm font-bold text-brand uppercase tracking-wider">Valor por Pessoa</span>
+                <span class="text-2xl font-black text-brand drop-shadow-sm font-mono">{{ splitTotal() | currency:'BRL' }}</span>
             </div>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-gray-900/50 flex justify-end gap-3 border-t border-gray-700">
-        <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
-        <button (click)="printPreBill()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
-           <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062-.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
-           Imprimir
+      <div class="p-4 bg-surface-elevated border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closeModal.emit()" class="px-5 py-2.5 font-bold rounded-xl text-title bg-surface hover-surface-elevated border border-subtle transition-colors shadow-sm">Fechar</button>
+        <button (click)="printPreBill()" class="px-6 py-2.5 font-bold rounded-xl bg-brand/10 hover:bg-brand/20 text-brand border border-brand/30 flex items-center gap-2 shadow-sm transition-colors">
+           <span class="material-symbols-outlined text-sm">print</span>
+           Imprimir Pré-conta
         </button>
       </div>
     </div>
