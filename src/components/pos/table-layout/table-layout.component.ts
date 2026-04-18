@@ -253,10 +253,10 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
   getStatusClass(status: TableStatus): string {
     switch (status) {
-      case 'LIVRE': return 'border-green-500 bg-gray-800 text-green-400 hover:bg-green-900/20';
-      case 'OCUPADA': return 'border-yellow-500 bg-yellow-900/20 text-yellow-300 hover:bg-yellow-900/40';
-      case 'PAGANDO': return 'border-blue-500 bg-blue-900/30 text-blue-300 hover:bg-blue-900/50';
-      default: return 'border-gray-500 bg-gray-800 text-gray-300';
+      case 'LIVRE': return 'border border-success/50 bg-green-500/10 text-success hover:bg-green-500/20 backdrop-blur-md shadow-sm';
+      case 'OCUPADA': return 'border border-warning/50 bg-yellow-500/10 text-warning hover:bg-yellow-500/20 backdrop-blur-md shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
+      case 'PAGANDO': return 'border border-brand/50 bg-brand/10 text-brand hover:bg-brand/20 backdrop-blur-md shadow-[0_4px_20px_rgba(79,70,229,0.15)]';
+      default: return 'border border-subtle bg-surface text-muted backdrop-blur-md';
     }
   }
 }

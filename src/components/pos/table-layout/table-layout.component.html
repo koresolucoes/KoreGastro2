@@ -47,7 +47,7 @@
   </div>
 
   <!-- Desktop Positioned View (Read-Only) -->
-  <div class="hidden md:block relative w-full h-full min-h-[60vh] rounded-lg overflow-hidden bg-gray-800/30 border border-gray-700 select-none">
+  <div class="hidden md:block relative w-full h-full min-h-[60vh] rounded-2xl overflow-hidden bg-surface-glass-bg border border-subtle select-none shadow-inner">
     @for(table of localTables(); track table.id) {
       <div
         (click)="tableClicked.emit(table)"
@@ -97,44 +97,44 @@
 
   <!-- Mobile List Edit View -->
   <div class="space-y-4 md:hidden pb-20">
-    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg border border-gray-700 sticky top-0 z-10">
-      <h3 class="text-lg font-semibold text-white">Editar Mesas</h3>
-      <button (click)="addTable()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 text-sm flex items-center gap-2">
+    <div class="flex justify-between items-center chef-surface p-3 sticky top-0 z-10">
+      <h3 class="text-lg font-semibold text-title">Editar Mesas</h3>
+      <button (click)="addTable()" class="btn-primary font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2">
         <span class="material-symbols-outlined">add</span> Adicionar
       </button>
     </div>
     @if (localTables().length > 0) {
       <ul class="space-y-2">
         @for(table of localTables(); track table.id) {
-          <li class="flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-700">
+          <li class="flex items-center justify-between chef-surface p-3">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-gray-500">table_restaurant</span>
-              <label class="text-sm font-medium text-gray-300">Nº:</label>
+              <span class="material-symbols-outlined text-muted">table_restaurant</span>
+              <label class="text-sm font-medium text-body">Nº:</label>
               <input 
                 type="number" 
                 [value]="table.number" 
                 (change)="updateTableNumber(table.id, $event)" 
-                class="bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white w-16 text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                class="bg-surface-elevated border border-strong rounded-md px-2 py-1 text-title w-16 text-center font-bold outline-none">
             </div>
-            <button (click)="deleteTable(table.id, $event)" class="p-2 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 hover:text-red-300 transition-colors" title="Deletar Mesa">
+            <button (click)="deleteTable(table.id, $event)" class="p-2 text-danger hover:bg-red-500/10 rounded-lg transition-colors" title="Deletar Mesa">
               <span class="material-symbols-outlined">delete</span>
             </button>
           </li>
         }
       </ul>
     } @else {
-      <div class="text-center text-gray-500 py-16 bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700">
+      <div class="text-center text-muted py-16 chef-surface border-dashed">
           <p>Nenhuma mesa neste salão.</p>
       </div>
     }
   </div>
 
   <!-- Desktop Draggable/Resizable Edit View -->
-  <div class="hidden md:block relative w-full h-full min-h-[60vh] bg-dots rounded-lg overflow-hidden border-2 border-dashed border-gray-600 bg-gray-900">
+  <div class="hidden md:block relative w-full h-full min-h-[60vh] bg-surface-glass-bg rounded-2xl overflow-hidden border border-dashed border-strong shadow-inner">
     @for(table of localTables(); track table.id) {
       <div
         (mousedown)="onDragStart($event, table)"
-        class="absolute flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-75 border-2 bg-gray-800"
+        class="absolute flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-75 border-2 shadow-sm"
         [class]="getStatusClass(table.status)"
         [class.cursor-move]="isEditMode()"
         [class.shadow-xl]="true"

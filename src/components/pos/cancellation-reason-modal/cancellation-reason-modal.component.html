@@ -1,17 +1,17 @@
 
-<div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" (click)="close.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
-    <div class="p-4 border-b border-gray-700">
-      <h3 class="text-xl font-bold text-white">{{ title() }}</h3>
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="close.emit()">
+  <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+    <div class="p-4 border-b border-subtle">
+      <h3 class="text-xl font-bold text-title">{{ title() }}</h3>
     </div>
     <div class="p-6">
-      <p class="text-gray-300 mb-2 text-sm">Por favor, informe o motivo do cancelamento para registro.</p>
+      <p class="text-body mb-2 text-sm">Por favor, informe o motivo do cancelamento para registro.</p>
       <textarea 
         [value]="reason()"
         (input)="reason.set($any($event.target).value)"
         rows="4" 
         placeholder="Ex: Cliente desistiu, Erro de lançamento..."
-        class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500">
+        class="w-full bg-surface-elevated border border-strong rounded-xl p-3 text-title placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-danger shadow-inner">
       </textarea>
       
       <div class="mt-4 flex items-center">
@@ -20,16 +20,16 @@
           id="returnToStock" 
           [checked]="returnToStock()"
           (change)="returnToStock.set($any($event.target).checked)"
-          class="h-4 w-4 rounded border-gray-600 bg-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-800"
+          class="h-4 w-4 rounded border-subtle bg-surface-elevated text-danger focus:ring-danger focus:ring-offset-surface"
         >
-        <label for="returnToStock" class="ml-2 block text-sm text-gray-300">
+        <label for="returnToStock" class="ml-2 block text-sm text-body">
           Retornar itens ao estoque?
         </label>
       </div>
     </div>
-    <div class="p-4 bg-gray-700/50 flex justify-end gap-3 rounded-b-lg">
-      <button (click)="close.emit()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-      <button (click)="onConfirm()" [disabled]="!reason().trim()" class="px-4 py-2 font-bold rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+    <div class="p-4 bg-surface-elevated flex justify-end gap-3 rounded-b-2xl border-t border-subtle">
+      <button (click)="close.emit()" class="px-4 py-2 font-medium rounded-lg text-title bg-surface hover-surface-elevated border border-subtle transition-colors">Cancelar</button>
+      <button (click)="onConfirm()" [disabled]="!reason().trim()" class="px-4 py-2 font-bold rounded-lg bg-danger/10 hover:bg-danger/20 text-danger border border-danger/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         Confirmar Cancelamento
       </button>
     </div>
