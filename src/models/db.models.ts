@@ -323,6 +323,8 @@ export interface InventoryLot {
 export interface Category {
   id: string;
   name: string;
+  icon?: string;
+  color?: string;
   image_url: string | null;
   created_at: string;
   user_id: string;

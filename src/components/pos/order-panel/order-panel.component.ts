@@ -113,6 +113,43 @@ export class OrderPanelComponent {
 
   hasCustomer = computed(() => !!this.currentOrder()?.customers);
 
+  categoriesWithIcons = computed(() => {
+    const iconMap: Record<string, string> = {
+      'bebidas': 'local_bar',
+      'bebibas': 'local_bar', // typo handling
+      'drinks': 'local_bar',
+      'cervejas': 'sports_bar',
+      'salgados': 'bakery_dining',
+      'lanches': 'lunch_dining',
+      'hambúrgueres': 'lunch_dining',
+      'burger': 'lunch_dining',
+      'pizzas': 'local_pizza',
+      'massas': 'dinner_dining',
+      'carnes': 'kebab_dining',
+      'churrasco': 'kebab_dining',
+      'sobremesas': 'icecream',
+      'doce': 'icecream',
+      'entradas': 'tapas',
+      'porções': 'restaurant_menu',
+      'pratos': 'dinner_dining',
+      'cafés': 'coffee',
+      'coffee': 'coffee',
+      'vinhos': 'wine_bar',
+      'aperitivos': 'liquor',
+      'peixes': 'set_meal',
+      'frutos do mar': 'set_meal',
+      'sushi': 'set_meal',
+      'saladas': 'eco',
+      'fit': 'fitness_center',
+      'combos': 'layers',
+    };
+
+    return this.recipeState.categories().map(cat => ({
+      ...cat,
+      icon: cat.icon || iconMap[cat.name.toLowerCase()] || 'category'
+    }));
+  });
+
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
     for (const recipe of this.recipes()) {

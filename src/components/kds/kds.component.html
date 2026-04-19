@@ -6,63 +6,122 @@
 
 
 
-<div class="h-full flex flex-col no-print">
+<div class="h-full flex flex-col no-print bg-app relative p-4 md:p-6 overflow-hidden">
+  
+  <!-- Liquid Glassmorphism Background Orbs -->
+  <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+    <div class="absolute top-[-10%] right-[-5%] w-[400px] md:w-[600px] h-[400px] md:h-[600px] bg-brand/10 rounded-full blur-[80px] md:blur-[120px] mix-blend-screen animate-pulse"></div>
+    <div class="absolute bottom-[-10%] left-[-5%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-indigo-500/5 rounded-full blur-[60px] md:blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
+  </div>
+
   @if (stations().length === 0) {
-    <div class="m-auto text-center bg-gray-800 p-8 rounded-lg">
-      <h1 class="text-2xl font-bold text-white mb-4">Nenhuma Estação de Produção Encontrada</h1>
-      <p class="text-gray-400">Para usar o KDS, primeiro você precisa cadastrar as estações (ex: Cozinha, Bar).</p>
-      <p class="text-gray-500 text-sm mt-2">Vá para Configurações para adicionar uma estação.</p>
+    <div class="m-auto text-center bg-surface-elevated/80 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] border border-strong shadow-2xl relative z-10 max-w-xl">
+      <div class="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-in zoom-in duration-500">
+         <span class="material-symbols-outlined text-5xl text-brand drop-shadow-sm">deck</span>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-black text-title mb-4 tracking-tight">Nenhuma Estação</h1>
+      <p class="text-muted text-lg font-medium leading-relaxed">Para usar o KDS, você precisa cadastrar as estações de produção (ex: Cozinha, Bar).</p>
+      <div class="mt-10 p-4 bg-surface rounded-2xl border border-subtle inline-block">
+        <p class="text-muted text-sm font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand">settings</span>
+            Vá para o menu Configurações para adicionar.
+        </p>
+      </div>
     </div>
   } @else {
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 relative z-10">
       <div class="flex-1">
-        <div class="flex items-center gap-3">
-             <h1 class="text-2xl font-bold text-white">KDS</h1>
+        <div class="flex items-center gap-4">
+             <div class="bg-brand/10 p-2 rounded-xl border border-brand/20 shadow-sm">
+                <span class="material-symbols-outlined text-brand text-2xl">soup_kitchen</span>
+             </div>
+             <h1 class="text-3xl font-black text-title tracking-tight drop-shadow-sm">KDS</h1>
+             
              <!-- Recall Button -->
              @if(viewMode() === 'station') {
-                 <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300 transition-colors border border-gray-600">
-                    <span class="material-symbols-outlined text-base">history</span>
+                 <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-2 px-5 py-2 bg-surface hover:bg-surface-elevated rounded-xl text-sm text-title font-bold transition-all border border-strong hover:border-brand/40 shadow-sm active:scale-95 group">
+                    <span class="material-symbols-outlined text-lg text-muted group-hover:text-brand transition-colors">history</span>
                     <span>Desfazer</span>
                  </button>
              }
         </div>
         
         @if(viewMode() === 'station' || viewMode() === 'production') {
-          <div class="flex items-center gap-2 mt-2 text-sm">
-            <span class="text-gray-400">Responsável:</span>
-            @if (selectedStation()?.employees; as employee) {
-              <span class="font-semibold text-white bg-gray-700 px-2 py-1 rounded-md">{{ employee.name }}</span>
-            } @else {
-              <span class="text-gray-500 italic">Ninguém</span>
-            }
-            <button (click)="isAssignEmployeeModalOpen.set(true)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white" title="Atribuir responsável">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z"></path></svg>
-            </button>
+          <div class="flex items-center gap-3 mt-4 text-sm animate-in slide-in-from-left-4">
+            <span class="text-muted font-bold uppercase tracking-widest text-[10px]">Responsável</span>
+            <div class="flex items-center gap-2">
+                @if (selectedStation()?.employees; as employee) {
+                  <div class="flex items-center gap-2 bg-brand/10 border border-brand/20 px-3 py-1.5 rounded-xl shadow-sm">
+                      <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
+                      <span class="font-black text-brand">{{ employee.name }}</span>
+                  </div>
+                } @else {
+                  <span class="text-muted italic bg-surface/50 border border-subtle px-3 py-1.5 rounded-xl">Ninguém atribuído</span>
+                }
+                <button (click)="isAssignEmployeeModalOpen.set(true)" class="p-2 rounded-xl text-muted hover:bg-brand hover:text-white border border-transparent hover:border-brand transition-all shadow-sm group" title="Atribuir responsável">
+                  <span class="material-symbols-outlined text-xl transition-transform group-hover:rotate-12">person_add</span>
+                </button>
+            </div>
           </div>
         }
       </div>
+      
       <div class="flex items-center flex-wrap gap-4">
         <!-- Sound Toggle -->
-        <button (click)="soundNotificationService.toggleMute()" class="p-2 rounded-lg text-white transition-colors" [class.bg-red-600]="soundNotificationService.isMuted()" [class.hover:bg-red-500]="soundNotificationService.isMuted()" [class.bg-gray-700]="!soundNotificationService.isMuted()" [class.hover:bg-gray-600]="!soundNotificationService.isMuted()" [title]="soundNotificationService.isMuted() ? 'Ativar Som' : 'Silenciar'">
+        <button (click)="soundNotificationService.toggleMute()" 
+                class="p-3 rounded-2xl transition-all border shadow-lg active:scale-90" 
+                [class.bg-danger/20]="soundNotificationService.isMuted()" 
+                [class.text-danger]="soundNotificationService.isMuted()"
+                [class.border-danger/30]="soundNotificationService.isMuted()"
+                [class.bg-surface]="!soundNotificationService.isMuted()" 
+                [class.text-title]="!soundNotificationService.isMuted()"
+                [class.border-strong]="!soundNotificationService.isMuted()"
+                [title]="soundNotificationService.isMuted() ? 'Ativar Som' : 'Silenciar'">
           @if (soundNotificationService.isMuted()) {
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
+            <span class="material-symbols-outlined text-2xl">volume_off</span>
           } @else {
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
+            <span class="material-symbols-outlined text-2xl animate-pulse">volume_up</span>
           }
         </button>
 
         <!-- View Mode Toggle -->
-        <div class="flex gap-1 bg-gray-900/50 p-1 rounded-lg">
-          <button (click)="setViewMode('station')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'station'" [class.text-white]="viewMode() === 'station'">Ticket</button>
-          <button (click)="setViewMode('production')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'production'" [class.text-white]="viewMode() === 'production'">Produção</button>
-          <button (click)="setViewMode('expo')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="viewMode() === 'expo'" [class.text-white]="viewMode() === 'expo'">Expo</button>
+        <div class="flex gap-1 bg-surface-elevated/80 backdrop-blur-md p-1.5 rounded-2xl border border-strong shadow-inner">
+          <button (click)="setViewMode('station')" 
+                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  [class.bg-brand]="viewMode() === 'station'" 
+                  [class.text-white]="viewMode() === 'station'"
+                  [class.shadow-lg]="viewMode() === 'station'"
+                  [class.text-muted]="viewMode() !== 'station'"
+                  [class.hover:text-title]="viewMode() !== 'station'">TICKETS</button>
+          <button (click)="setViewMode('production')" 
+                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  [class.bg-brand]="viewMode() === 'production'" 
+                  [class.text-white]="viewMode() === 'production'"
+                  [class.shadow-lg]="viewMode() === 'production'"
+                  [class.text-muted]="viewMode() !== 'production'"
+                  [class.hover:text-title]="viewMode() !== 'production'">PRODUÇÃO</button>
+          <button (click)="setViewMode('expo')" 
+                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  [class.bg-brand]="viewMode() === 'expo'" 
+                  [class.text-white]="viewMode() === 'expo'"
+                  [class.shadow-lg]="viewMode() === 'expo'"
+                  [class.text-muted]="viewMode() !== 'expo'"
+                  [class.hover:text-title]="viewMode() !== 'expo'">EXPO</button>
         </div>
 
-        <!-- Station Selector for Station View -->
+        <!-- Station Selector -->
         @if(viewMode() === 'station' || viewMode() === 'production') {
-          <div class="flex flex-wrap gap-1 bg-gray-700 p-1 rounded-lg">
+          <div class="flex flex-wrap gap-1 bg-surface/80 backdrop-blur-md p-1.5 rounded-2xl border border-strong shadow-inner">
             @for (station of stations(); track station.id) {
-              <button (click)="selectStation(station)" class="px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="selectedStation()?.id === station.id" [class.text-white]="selectedStation()?.id === station.id" [class.text-gray-300]="selectedStation()?.id !== station.id">
+              <button (click)="selectStation(station)" 
+                      class="px-5 py-2.5 text-sm font-black rounded-xl transition-all border" 
+                      [class.bg-brand/10]="selectedStation()?.id === station.id" 
+                      [class.text-brand]="selectedStation()?.id === station.id" 
+                      [class.border-brand/30]="selectedStation()?.id === station.id"
+                      [class.bg-transparent]="selectedStation()?.id !== station.id"
+                      [class.text-muted]="selectedStation()?.id !== station.id"
+                      [class.border-transparent]="selectedStation()?.id !== station.id"
+                      [class.hover:text-title]="selectedStation()?.id !== station.id">
                 {{ station.name }}
               </button>
             }
@@ -71,273 +130,350 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto pr-2">
+    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10 transition-all duration-500 overflow-x-hidden">
       @if (viewMode() === 'station') {
         <!-- Station View Grid (Ticket based) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col shadow-lg transition-transform" 
-                [class.border-red-600]="ticket.isOrderCancelled" 
-                [class.border-gray-700]="!ticket.isOrderCancelled"
-                [class.border-blue-500]="ticket.orderType.includes('iFood') && !ticket.isOrderCancelled"
-                [class.border-l-8]="ticket.orderType.includes('iFood')">
+            <div class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-strong flex flex-col shadow-2xl transition-all duration-300 hover:shadow-brand/10 hover:-translate-y-1 relative" 
+                [class.ring-2]="ticket.isOrderCancelled" 
+                [class.ring-danger]="ticket.isOrderCancelled"
+                [class.ring-info]="ticket.orderType.includes('iFood') && !ticket.isOrderCancelled">
               
               <!-- Ticket Header -->
-              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.ticketTimerColor">
-                <div class="flex items-center gap-2 overflow-hidden">
+              <div class="p-4 text-white font-black flex justify-between items-center relative overflow-hidden shadow-lg" [class]="ticket.ticketTimerColor">
+                <!-- Glossy overlay for header -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none"></div>
+
+                <div class="flex items-center gap-3 overflow-hidden relative z-10">
                     <!-- Context Icon -->
-                    @if (ticket.orderType.includes('Delivery')) {
-                         <span class="material-symbols-outlined text-white">two_wheeler</span>
-                    } @else if (ticket.orderType.includes('Takeout')) {
-                         <span class="material-symbols-outlined text-white">shopping_bag</span>
-                    } @else if (ticket.orderType === 'QuickSale') {
-                         <span class="material-symbols-outlined text-white">point_of_sale</span>
-                    } @else if (ticket.orderType === 'Tab') {
-                        <span class="material-symbols-outlined text-white">id_card</span>
-                    } @else {
-                         <span class="material-symbols-outlined text-white">restaurant</span>
-                    }
+                    <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                        @if (ticket.orderType.includes('Delivery')) {
+                             <span class="material-symbols-outlined text-white text-xl">two_wheeler</span>
+                        } @else if (ticket.orderType.includes('Takeout')) {
+                             <span class="material-symbols-outlined text-white text-xl">shopping_bag</span>
+                        } @else if (ticket.orderType === 'QuickSale') {
+                             <span class="material-symbols-outlined text-white text-xl">bolt</span>
+                        } @else if (ticket.orderType === 'Tab') {
+                            <span class="material-symbols-outlined text-white text-xl">id_card</span>
+                        } @else {
+                             <span class="material-symbols-outlined text-white text-xl">restaurant</span>
+                        }
+                    </div>
 
                     <div class="flex flex-col leading-tight min-w-0">
-                        @if (ticket.orderType.startsWith('iFood')) {
-                            <span class="truncate" title="iFood #{{ ticket.ifoodDisplayId }}">#{{ ticket.ifoodDisplayId }}</span>
-                        } @else if (ticket.orderType === 'QuickSale') {
-                            <span>Caixa</span>
-                        } @else if (ticket.orderType === 'Tab') {
-                            <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
-                        } @else {
-                            <span>Mesa {{ ticket.tableNumber }}</span>
-                        }
-                        @if(ticket.customerName) {
-                            <span class="text-[10px] font-normal opacity-90 truncate max-w-[120px]">{{ ticket.customerName }}</span>
-                        }
-                        @if(ticket.waiterName) {
-                            <span class="text-[10px] font-normal opacity-80 truncate max-w-[120px]">Garçom: {{ ticket.waiterName }}</span>
-                        }
+                        <div class="flex items-center gap-1.5">
+                            @if (ticket.orderType.startsWith('iFood')) {
+                                <span class="truncate text-lg" title="iFood #{{ ticket.ifoodDisplayId }}">#{{ ticket.ifoodDisplayId }}</span>
+                            } @else if (ticket.orderType === 'QuickSale') {
+                                <span class="text-lg">Balcão</span>
+                            } @else if (ticket.orderType === 'Tab') {
+                                <span class="text-lg">{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
+                            } @else {
+                                <span class="text-lg">Mesa {{ ticket.tableNumber }}</span>
+                            }
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mt-0.5">
+                            @if(ticket.customerName) {
+                                <span class="text-[9px] font-black uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded-md truncate max-w-[100px]">{{ ticket.customerName }}</span>
+                            }
+                            @if(ticket.waiterName) {
+                                <span class="text-[9px] font-bold uppercase tracking-widest opacity-80 truncate max-w-[100px]">Atend: {{ ticket.waiterName }}</span>
+                            }
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    @if(ticket.isOrderCancelled) {
-                        <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded animate-pulse">Cancelado</span>
-                    }
-                    <span class="font-mono text-xl tracking-tight" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
-                    <button (click)="openDetailModal(ticket); $event.stopPropagation()" class="p-1 rounded-full text-white/70 hover:bg-white/20 hover:text-white transition-colors" title="Ver Detalhes">
-                        <span class="material-symbols-outlined text-base">info</span>
-                    </button>
+                <div class="flex items-center gap-3 relative z-10">
+                    <div class="flex flex-col items-end">
+                        <span class="font-mono text-2xl tracking-tighter drop-shadow-md" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                        @if(ticket.isOrderCancelled) {
+                            <span class="text-[9px] font-black uppercase bg-danger px-1.5 py-0.5 rounded-md animate-bounce shadow-lg border border-red-400">Cancelado</span>
+                        }
+                    </div>
                 </div>
               </div>
 
               <!-- Items List -->
-              <ul class="p-2 space-y-2 flex-1 bg-gray-900/30">
+              <div class="p-3 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
                 @for (item of ticket.items; track item.id) {
-                  <li (click)="updateStatus(item, false, $event)" 
-                      class="p-2 rounded border-l-4 transition-all relative cursor-pointer group"
+                  <div (click)="updateStatus(item, false, $event)" 
+                      class="p-4 rounded-2xl border transition-all relative cursor-pointer group shadow-sm bg-surface/50 border-strong overflow-hidden"
                       [class.opacity-50]="updatingItems().has(item.id) || item.isHeld" 
                       [class.pointer-events-none]="updatingItems().has(item.id)"
-                      [class.bg-gray-700]="!item.isCritical && !item.isCancelled && !item.isHeld"
-                      [class.bg-red-900/40]="!item.isHeld && (item.isCritical || item.isCancelled)"
-                      [class.border-gray-500]="item.isHeld"
-                      [class.border-red-500]="!item.isHeld && (item.isCritical || item.isCancelled)"
-                      [class]="!item.isHeld && !item.isCritical ? getItemStatusClass(item.status) : ''">
+                      [class.hover:border-brand/40]="!item.isCancelled"
+                      [class.bg-danger/5]="item.isCancelled"
+                      [class.border-danger/30]="item.isCancelled">
                     
+                    <!-- Glow effect for active/preparing items -->
+                    @if(item.status === 'EM_PREPARO' && !item.isCancelled && !item.isHeld) {
+                        <div class="absolute inset-0 bg-brand/5 pointer-events-none"></div>
+                    }
+
                     <!-- Held Overlay -->
                     @if(item.isHeld) {
-                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90 rounded p-1 text-center z-10">
-                        <p class="text-white font-bold text-xs">Inicia em:</p>
-                        <p class="font-mono text-xl text-yellow-300">{{ formatTime(item.timeToStart) }}</p>
-                        <button (click)="startHeldItemNow(item, $event)" class="mt-1 px-2 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] uppercase font-bold">
-                          Agora
+                      <div class="absolute inset-0 flex flex-col items-center justify-center bg-surface/95 backdrop-blur-sm rounded-2xl p-4 text-center z-10 border border-warning/30">
+                        <span class="material-symbols-outlined text-warning mb-1">schedule</span>
+                        <p class="text-title font-black text-xs uppercase tracking-widest mb-1">Inicia em</p>
+                        <p class="font-mono text-3xl text-warning drop-shadow-sm">{{ formatTime(item.timeToStart) }}</p>
+                        <button (click)="startHeldItemNow(item, $event)" class="mt-3 px-4 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-xl text-[10px] uppercase font-black tracking-widest shadow-lg transition-all active:scale-90">
+                          COMEÇAR AGORA
                         </button>
                       </div>
                     }
 
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-start relative z-10">
                         <div class="flex-1">
-                            <div class="flex items-baseline gap-2">
-                                <span class="font-bold text-lg text-white font-mono" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
-                                        {{ item.quantity }}
-                                </span>
-                                <span class="font-bold text-base text-white leading-tight" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 flex-shrink-0 bg-surface-elevated rounded-xl flex items-center justify-center border border-strong shadow-inner">
+                                    <span class="font-black text-lg text-title font-mono" [class.line-through]="item.isCancelled" [class.text-muted]="item.isCancelled">
+                                            {{ item.quantity }}
+                                    </span>
+                                </div>
+                                <span class="font-bold text-lg text-title leading-tight mt-0.5" [class.line-through]="item.isCancelled" [class.text-muted]="item.isCancelled">
                                         {{ item.name }}
                                 </span>
                             </div>
                              @if (item.notes) { 
-                                <div class="mt-1 inline-block px-2 py-0.5 rounded text-sm font-bold border" 
-                                    [class.bg-yellow-900]="!item.isCancelled" [class.text-yellow-100]="!item.isCancelled" [class.border-yellow-600]="!item.isCancelled"
-                                    [class.bg-gray-800]="item.isCancelled" [class.text-gray-500]="item.isCancelled" [class.border-gray-600]="item.isCancelled">
-                                    <span class="mr-1">⚠️</span> {{ item.notes }}
+                                <div class="mt-3 ml-11 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-black border backdrop-blur-sm" 
+                                    [class.bg-warning/10]="!item.isCancelled" [class.text-warning]="!item.isCancelled" [class.border-warning/30]="!item.isCancelled"
+                                    [class.bg-surface]="item.isCancelled" [class.text-muted]="item.isCancelled" [class.border-strong]="item.isCancelled">
+                                    <span class="material-symbols-outlined text-base">warning</span>
+                                    {{ item.notes }}
                                 </div> 
                              }
                         </div>
                         
                         <!-- Status Badge -->
-                        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded ml-2 whitespace-nowrap border" 
-                              [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" [class.border-blue-500/50]="item.status === 'EM_PREPARO'"
-                              [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" [class.border-yellow-500/50]="item.status === 'PENDENTE'"
-                              [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled" [class.border-red-500/50]="item.isCancelled">
-                            {{ item.isCancelled ? 'CANCELADO' : (item.status === 'EM_PREPARO' ? 'PREPARANDO' : 'PENDENTE') }}
-                        </span>
+                        <div class="flex flex-col items-end gap-2 ml-2">
+                            <span class="text-[10px] font-black uppercase px-2 py-1 rounded-lg border shadow-sm backdrop-blur-md" 
+                                  [class.bg-brand/10]="item.status === 'EM_PREPARO'" [class.text-brand]="item.status === 'EM_PREPARO'" [class.border-brand/30]="item.status === 'EM_PREPARO'"
+                                  [class.bg-warning/10]="item.status === 'PENDENTE' && !item.isCancelled" [class.text-warning]="item.status === 'PENDENTE' && !item.isCancelled" [class.border-warning/30]="item.status === 'PENDENTE' && !item.isCancelled"
+                                  [class.bg-danger/20]="item.isCancelled" [class.text-danger]="item.isCancelled" [class.border-danger/40]="item.isCancelled">
+                                {{ item.isCancelled ? 'CANCELADO' : (item.status === 'EM_PREPARO' ? 'PREPARANDO' : 'PENDENTE') }}
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->
                     @if(item.isCancelled) {
-                        <div class="mt-2 pt-2 border-t border-red-500/20">
-                             <button (click)="acknowledgeCancellation(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1 bg-red-800 hover:bg-red-700 text-white rounded text-xs font-bold uppercase tracking-wider">Ciente</button>
+                        <div class="mt-4 pt-3 border-t border-danger/10">
+                             <button (click)="acknowledgeCancellation(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2 bg-danger text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all">CIENTE</button>
                         </div>
                     } @else if((item.isCritical && !item.attention_acknowledged) || (!item.isHeld && item.status !== 'PRONTO')) {
-                      <div class="mt-2 pt-2 space-y-1" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-red-500/20' : 'border-t border-gray-600/30'">
+                      <div class="mt-4 pt-3 space-y-2 relative z-10" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-danger/10' : 'border-t border-strong'">
                         @if(item.isCritical && !item.attention_acknowledged) {
-                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-bold uppercase tracking-wider mb-1">! Atenção !</button>
+                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2.5 bg-danger text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg animate-pulse hover:brightness-110 active:scale-95 transition-all">! ATENÇÃO !</button>
                         }
                         @if(!item.isHeld && item.status !== 'PRONTO') {
-                          <button (click)="markAsReady(item, ticket, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2 bg-green-700 hover:bg-green-600 text-white rounded text-xs font-bold uppercase tracking-wider shadow-sm active:translate-y-0.5 transition-all">
+                          <button (click)="markAsReady(item, ticket, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-3 bg-success text-white rounded-xl text-sm font-black uppercase tracking-widest shadow-xl shadow-success/20 hover:brightness-110 active:scale-95 active:translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-xl">check_circle</span>
                             PRONTO
                           </button>
                         }
                       </div>
                     }
 
-                    @if(updatingItems().has(item.id)) { <div class="absolute inset-0 bg-gray-900/60 flex items-center justify-center rounded z-20"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div></div> }
-                  </li>
+                    @if(updatingItems().has(item.id)) { <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div> }
+                  </div>
                 }
-              </ul>
+              </div>
               
               <!-- Batch Actions Footer -->
               @if(!ticket.isOrderCancelled) {
-                  <div class="p-2 bg-gray-800 border-t border-gray-700 grid grid-cols-2 gap-2">
-                      <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2 bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-xs font-bold uppercase rounded border border-blue-800 transition-colors">
-                          Iniciar Tudo
+                  <div class="p-3 bg-surface border-t border-strong grid grid-cols-2 gap-3 relative z-10">
+                      <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2.5 bg-brand/10 hover:bg-brand text-brand hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-brand/20 hover:border-brand transition-all active:scale-95 shadow-sm">
+                          INICIAR TUDO
                       </button>
-                       <button (click)="batchUpdateTicketStatus(ticket, 'FINISH_ALL')" class="py-2 bg-green-900/50 hover:bg-green-800 text-green-200 text-xs font-bold uppercase rounded border border-green-800 transition-colors">
-                          Pronto Tudo
+                       <button (click)="batchUpdateTicketStatus(ticket, 'FINISH_ALL')" class="py-2.5 bg-success/10 hover:bg-success text-success hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-success/20 hover:border-success transition-all active:scale-95 shadow-sm">
+                          PRONTO TUDO
                       </button>
                   </div>
               }
               
-              <div class="text-[10px] text-center text-gray-500 p-1 bg-gray-900">
+              <div class="text-[9px] font-bold uppercase tracking-widest text-center text-muted p-2 bg-black/10 relative z-10 border-t border-strong">
                   Recebido às {{ ticket.oldestTimestamp | date:'HH:mm' }}
               </div>
             </div>
           }
           @if (groupedKdsTickets().length === 0) {
-            <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
-              <div class="text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-400">Nenhum pedido ativo</h3>
-                <p class="mt-1 text-sm text-gray-500">Aguardando novos pedidos para esta estação.</p>
+            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner">
+              <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong">
+                <span class="material-symbols-outlined text-4xl text-muted animate-pulse">timer</span>
               </div>
+              <h3 class="text-xl font-black text-title opacity-60">Fila Vazia</h3>
+              <p class="mt-2 text-sm font-bold text-muted uppercase tracking-widest">Aguardando novos pedidos para esta estação.</p>
             </div>
           }
         </div>
       } @else if (viewMode() === 'production') {
         <!-- PRODUCTION VIEW (ALL DAY) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             @for (agg of productionAggregates(); track agg.name + agg.notes) {
                 <div 
                     (click)="advanceProductionItems(agg)"
-                    class="bg-gray-800 rounded-lg border-2 p-4 cursor-pointer relative hover:scale-105 transition-transform flex flex-col justify-between aspect-square"
-                    [class]="getItemStatusClass(agg.status)"
-                    [class.border-red-500]="agg.isCritical"
+                    class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] border border-strong p-6 cursor-pointer relative hover:shadow-2xl hover:shadow-brand/20 transition-all duration-300 flex flex-col justify-between aspect-square group shadow-lg"
+                    [class.border-brand/40]="agg.status === 'EM_PREPARO'"
+                    [class.ring-2]="agg.isCritical"
+                    [class.ring-danger]="agg.isCritical"
                     [class.animate-pulse]="agg.isCritical">
                     
                     @if(updatingItems().has(agg.ids[0])) {
-                         <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center rounded-md z-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div></div>
+                         <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-[2rem] z-10"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-brand"></div></div>
                     }
 
-                    <div class="text-center">
-                        <span class="text-4xl font-extrabold text-white">{{ agg.quantity }}</span>
-                        <span class="text-sm font-bold text-gray-400 block uppercase mt-1">A Produzir</span>
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-surface-elevated rounded-2xl flex items-center justify-center border border-strong shadow-inner mb-2 group-hover:scale-110 transition-transform">
+                            <span class="text-4xl font-black text-title drop-shadow-sm">{{ agg.quantity }}</span>
+                        </div>
+                        <span class="text-[10px] font-black text-muted uppercase tracking-widest">A Produzir</span>
                     </div>
 
-                    <div class="text-center border-t border-gray-600/50 pt-2 mt-2">
-                         <h3 class="text-lg font-bold text-white leading-tight line-clamp-2">{{ agg.name }}</h3>
+                    <div class="text-center border-t border-strong pt-4 mt-2">
+                         <h3 class="text-xl font-black text-title leading-tight line-clamp-2 drop-shadow-sm group-hover:text-brand transition-colors">{{ agg.name }}</h3>
                          @if(agg.notes) {
-                             <p class="text-xs text-yellow-300 italic mt-1 line-clamp-2 bg-yellow-900/30 px-1 rounded">{{ agg.notes }}</p>
+                             <div class="mt-2 inline-flex items-center gap-1.5 bg-warning/10 px-2 py-1 rounded-lg border border-warning/20">
+                                 <span class="material-symbols-outlined text-xs text-warning">warning</span>
+                                 <p class="text-[10px] text-warning font-black uppercase tracking-tight line-clamp-1">{{ agg.notes }}</p>
+                             </div>
                          }
                     </div>
 
-                    <div class="text-center mt-2">
-                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-black/40 text-white font-mono">
-                            Wait: {{ formatTime(agg.maxElapsedTime) }}
-                        </span>
+                    <div class="flex justify-center mt-4">
+                        <div class="px-3 py-1 text-[10px] font-black rounded-full bg-black/10 text-muted border border-strong backdrop-blur-sm font-mono tracking-tighter">
+                            WAIT: {{ formatTime(agg.maxElapsedTime) }}
+                        </div>
                     </div>
+
+                    <!-- Status Decorative Icon -->
+                    <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-all group-hover:text-brand/10 group-hover:scale-110">restaurant</span>
                 </div>
             } @empty {
-                <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
-                    <p class="text-gray-500">Nada para produzir no momento.</p>
+                <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner">
+                    <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong">
+                        <span class="material-symbols-outlined text-4xl text-muted animate-in fade-in zoom-in">soup_kitchen</span>
+                    </div>
+                    <p class="text-muted font-black uppercase tracking-widest text-sm">Nada para produzir no momento.</p>
                 </div>
             }
         </div>
       } @else {
         <!-- Expo View Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           @for (ticket of expoViewTickets(); track ticket.orderId) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden border-2 flex flex-col" [class.border-green-500]="ticket.isReadyForPickup && !ticket.isOrderCancelled" [class.border-gray-700]="!ticket.isReadyForPickup && !ticket.isOrderCancelled" [class.border-red-600]="ticket.isOrderCancelled">
-              <div class="p-3 text-white font-bold flex justify-between items-center" [class]="ticket.isOrderCancelled ? 'bg-red-800' : (ticket.isReadyForPickup ? 'bg-green-600' : ticket.ticketTimerColor)">
-                <div class="flex items-center gap-2">
-                    @if (ticket.orderType.startsWith('iFood')) {
-                        <span title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
-                    } @else if (ticket.orderType === 'QuickSale') {
-                        <span>Caixa</span>
-                    } @else if (ticket.orderType === 'Tab') {
-                        <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
-                    } @else {
-                        <span>Mesa {{ ticket.tableNumber }}</span>
-                    }
-                    @if(ticket.isOrderCancelled) {
-                        <span class="text-xs uppercase bg-black/40 px-2 py-0.5 rounded">Cancelado</span>
-                    }
+            <div class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-strong flex flex-col shadow-2xl transition-all duration-300 hover:shadow-brand/10 hover:-translate-y-1 relative" 
+                 [class.ring-2]="ticket.isReadyForPickup && !ticket.isOrderCancelled" [class.ring-success]="ticket.isReadyForPickup"
+                 [class.ring-danger]="ticket.isOrderCancelled">
+              
+              <div class="p-4 text-white font-black flex justify-between items-center shadow-lg relative overflow-hidden" 
+                   [class]="ticket.isOrderCancelled ? 'bg-danger' : (ticket.isReadyForPickup ? 'bg-success' : ticket.ticketTimerColor)">
+                
+                <!-- Glossy overlay -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none"></div>
+
+                <div class="flex items-center gap-3 relative z-10">
+                    <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+                         <span class="material-symbols-outlined text-white text-xl">
+                             {{ ticket.orderType.includes('Delivery') ? 'two_wheeler' : 
+                                ticket.orderType.includes('Takeout') ? 'shopping_bag' : 
+                                ticket.orderType === 'QuickSale' ? 'bolt' : 
+                                ticket.orderType === 'Tab' ? 'id_card' : 'restaurant' }}
+                         </span>
+                    </div>
+                    
+                    <div class="flex flex-col leading-tight">
+                        @if (ticket.orderType.startsWith('iFood')) {
+                            <span class="text-lg" title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                        } @else if (ticket.orderType === 'QuickSale') {
+                            <span class="text-lg">Balcão</span>
+                        } @else if (ticket.orderType === 'Tab') {
+                            <span class="text-lg">{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
+                        } @else {
+                            <span class="text-lg">Mesa {{ ticket.tableNumber }}</span>
+                        }
+                        
+                        @if(ticket.isOrderCancelled) {
+                            <span class="text-[9px] font-black uppercase bg-black/30 px-1.5 py-0.5 rounded-md mt-0.5">Cancelado</span>
+                        }
+                    </div>
                 </div>
-                <span class="font-mono text-lg">{{ formatTime(ticket.ticketElapsedTime) }}</span>
+                <span class="font-mono text-2xl tracking-tighter drop-shadow-md relative z-10">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               
               <!-- Progress Bar -->
-              <div class="h-1 w-full bg-gray-700">
-                  <div class="h-1 bg-green-500 transition-all duration-500" [style.width.%]="ticket.progress"></div>
+              <div class="h-2 w-full bg-surface border-b border-strong relative overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-success/50 to-success transition-all duration-700 ease-out shadow-[0_0_10px_rgba(34,197,94,0.3)]" [style.width.%]="ticket.progress"></div>
               </div>
               
-              <ul class="p-3 space-y-2 flex-1">
+              <div class="p-4 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
                 @for (item of ticket.items; track item.id) {
-                  <li class="p-2 rounded-md flex justify-between items-center gap-2" 
-                      [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCancelled" 
-                      [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCancelled" 
-                      [class.bg-green-900/50]="item.status === 'PRONTO' && !item.isCancelled"
-                      [class.bg-red-900/40]="item.isCancelled"
-                      [class.bg-gray-700/50]="item.status !== 'EM_PREPARO' && item.status !== 'PENDENTE' && item.status !== 'PRONTO' && !item.isCancelled">
-                    <div class="flex-1">
-                      <p class="font-semibold text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</p>
-                      <p class="text-xs text-gray-400 font-medium">{{ item.stationName }}</p>
+                  <div class="flex items-center justify-between p-4 rounded-2xl border border-strong bg-surface/30 backdrop-blur-sm group hover:border-brand/30 transition-all shadow-sm">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-surface-elevated flex-shrink-0 flex items-center justify-center text-[10px] font-black border border-strong text-title shadow-inner">
+                            {{ item.quantity }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-title truncate" [class.line-through]="item.isCancelled" [class.text-muted]="item.isCancelled">{{ item.name }}</p>
+                            @if(item.stationName) {
+                                <p class="text-[9px] font-black text-muted uppercase tracking-widest">{{ item.stationName }}</p>
+                            }
+                        </div>
                     </div>
-                    <span class="text-xs font-mono px-2 py-1 rounded" 
-                          [class.bg-blue-500/20]="item.status === 'EM_PREPARO'" [class.text-blue-300]="item.status === 'EM_PREPARO'" 
-                          [class.bg-yellow-500/20]="item.status === 'PENDENTE'" [class.text-yellow-300]="item.status === 'PENDENTE'" 
-                          [class.bg-green-500/20]="item.status === 'PRONTO'" [class.text-green-300]="item.status === 'PRONTO'"
-                          [class.bg-red-500/20]="item.isCancelled" [class.text-red-300]="item.isCancelled">
-                      {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
-                    </span>
-                  </li>
+                    
+                    <div class="flex items-center gap-2">
+                        @if(item.status === 'PRONTO' && !item.isCancelled) {
+                            <div class="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center border border-success/30 shadow-sm animate-in zoom-in">
+                                <span class="material-symbols-outlined text-success text-[14px] drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]">check_circle</span>
+                            </div>
+                        } @else if (item.isCancelled) {
+                            <span class="material-symbols-outlined text-danger text-lg">cancel</span>
+                        } @else {
+                            <div class="w-4 h-4 rounded-full border-2 border-brand/20 border-t-brand animate-spin"></div>
+                        }
+                    </div>
+                  </div>
                 }
-              </ul>
-              @if(ticket.isReadyForPickup && !ticket.isOrderCancelled) {
-                <div class="p-2 border-t border-gray-700 bg-green-900/20">
-                  <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full text-center py-3 px-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm disabled:bg-gray-500 disabled:cursor-wait flex items-center justify-center gap-2 shadow-lg">
-                    @if(updatingTickets().has(ticket.orderId)) {
-                      <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      <span>Enviando...</span>
-                    } @else {
-                      <span class="material-symbols-outlined">check_circle</span>
-                      <span>PEDIDO COMPLETO - EXPEDIR</span>
-                    }
-                  </button>
-                </div>
-              }
-              <div class="text-xs text-center text-gray-500 p-2 border-t border-gray-700">Recebido às {{ ticket.oldestTimestamp | date:'HH:mm' }}</div>
+              </div>
+
+              <!-- Expo Actions -->
+              <div class="p-5 bg-surface-elevated/80 border-t border-strong flex flex-col gap-4 relative z-10 backdrop-blur-md">
+                   @if (ticket.totalCount > 0) {
+                      <div class="flex justify-between items-center mb-1">
+                          <span class="text-[9px] font-black text-muted uppercase tracking-widest opacity-80">Andamento</span>
+                          <span class="text-[9px] font-black text-title bg-surface-elevated border border-strong px-2 py-0.5 rounded-lg shadow-inner">{{ ticket.completedCount }} / {{ ticket.totalCount }}</span>
+                      </div>
+                  }
+
+                  @if (ticket.isReadyForPickup && !ticket.isOrderCancelled) {
+                    <button (click)="markOrderAsServed(ticket)" [disabled]="updatingTickets().has(ticket.orderId)" class="w-full py-4 bg-success text-white font-black rounded-2xl shadow-xl shadow-success/20 hover:brightness-110 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2 border border-transparent disabled:opacity-50">
+                        @if(updatingTickets().has(ticket.orderId)) {
+                            <div class="w-5 h-5 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
+                            <span>ENVIANDO...</span>
+                        } @else {
+                            <span class="material-symbols-outlined">done_all</span>
+                            EXPEDIR AGORA
+                        }
+                    </button>
+                  } @else if (ticket.isOrderCancelled) {
+                    <button (click)="markOrderAsServed(ticket)" class="w-full py-4 bg-danger text-white font-black rounded-2xl shadow-xl shadow-danger/20 hover:brightness-110 active:scale-95 transition-all text-sm uppercase tracking-widest border border-transparent">
+                        RESOLVER CANCELAMENTO
+                    </button>
+                  } @else {
+                      <div class="py-4 px-4 bg-surface rounded-2xl text-center border border-strong border-dashed shadow-inner">
+                          <span class="text-[10px] font-black text-muted uppercase tracking-widest italic opacity-50">Produzindo Itens...</span>
+                      </div>
+                  }
+              </div>
             </div>
           }
           @if (expoViewTickets().length === 0) {
-            <div class="col-span-full flex items-center justify-center h-64 bg-gray-800 rounded-lg">
-              <p class="text-gray-500">Nenhum pedido ativo em todas as estações.</p>
+            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner transition-all duration-500 hover:border-brand/30 group">
+                <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-4xl text-muted animate-pulse">delivery_dining</span>
+                </div>
+                <h3 class="text-xl font-black text-title opacity-60 uppercase tracking-tighter">Nenhum pedido para expedição</h3>
+                <p class="mt-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">Os pedidos prontos para entrega aparecerão aqui.</p>
             </div>
           }
         </div>
@@ -348,50 +484,131 @@
 
 <!-- Assign Employee Modal -->
 @if(isAssignEmployeeModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="isAssignEmployeeModalOpen.set(false)">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Atribuir Responsável - {{ selectedStation()?.name }}</h3></div>
-      <div class="p-6 max-h-[70vh] overflow-y-auto"><div class="grid grid-cols-2 md:grid-cols-3 gap-4">@for(employee of employees(); track employee.id) {<button (click)="assignEmployeeToStation(employee.id)" class="flex flex-col items-center gap-2 p-4 rounded-lg transition-colors" [class.bg-blue-600]="selectedStation()?.employee_id === employee.id" [class.text-white]="selectedStation()?.employee_id === employee.id" [class.bg-gray-700]="selectedStation()?.employee_id !== employee.id" [class.hover:bg-gray-600]="selectedStation()?.employee_id !== employee.id"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span class="font-semibold text-center text-sm">{{ employee.name }}</span></button>}</div></div>
-      <div class="p-4 bg-gray-700/50 flex justify-between gap-3"><button (click)="assignEmployeeToStation(null)" class="w-full px-4 py-2 font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors" [disabled]="!selectedStation()?.employee_id">Remover</button><button (click)="isAssignEmployeeModalOpen.set(false)" class="w-full px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button></div>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="isAssignEmployeeModalOpen.set(false)">
+    <div class="bg-surface-elevated/95 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-strong overflow-hidden animate-in zoom-in-95 duration-300" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle bg-surface/50">
+          <div class="flex items-center gap-4">
+              <div class="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center border border-brand/20">
+                  <span class="material-symbols-outlined text-brand text-3xl">person_add</span>
+              </div>
+              <div>
+                  <h3 class="text-2xl font-black text-title tracking-tight">Responsável</h3>
+                  <p class="text-muted text-sm font-bold uppercase tracking-widest mt-1">{{ selectedStation()?.name }}</p>
+              </div>
+          </div>
+      </div>
+      
+      <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
+              @for(employee of employees(); track employee.id) {
+                  <button (click)="assignEmployeeToStation(employee.id)" 
+                          class="flex flex-col items-center gap-3 p-6 rounded-3xl transition-all border group relative overflow-hidden" 
+                          [class.bg-brand/10]="selectedStation()?.employee_id === employee.id" 
+                          [class.border-brand/30]="selectedStation()?.employee_id === employee.id" 
+                          [class.bg-surface]="selectedStation()?.employee_id !== employee.id" 
+                          [class.border-strong]="selectedStation()?.employee_id !== employee.id"
+                          [class.hover:border-brand/40]="selectedStation()?.employee_id !== employee.id">
+                      
+                      <div class="w-16 h-16 rounded-2xl bg-surface-elevated flex items-center justify-center border border-strong shadow-inner group-hover:scale-110 transition-transform relative z-10">
+                          <span class="material-symbols-outlined text-3xl" [class.text-brand]="selectedStation()?.employee_id === employee.id" [class.text-muted]="selectedStation()?.employee_id !== employee.id">account_circle</span>
+                      </div>
+                      
+                      <span class="font-black text-center text-sm tracking-tight relative z-10" [class.text-brand]="selectedStation()?.employee_id === employee.id" [class.text-title]="selectedStation()?.employee_id !== employee.id">
+                          {{ employee.name }}
+                      </span>
+
+                      @if(selectedStation()?.employee_id === employee.id) {
+                          <div class="absolute top-2 right-2 w-6 h-6 bg-brand rounded-full flex items-center justify-center animate-in zoom-in">
+                              <span class="material-symbols-outlined text-white text-base">check</span>
+                          </div>
+                      }
+                  </button>
+              }
+          </div>
+      </div>
+
+      <div class="p-8 bg-surface/50 border-t border-subtle flex flex-col sm:flex-row gap-4">
+          <button (click)="assignEmployeeToStation(null)" 
+                  class="flex-1 py-4 font-black rounded-2xl bg-danger/10 hover:bg-danger text-danger hover:text-white transition-all border border-danger/20 uppercase tracking-widest text-xs disabled:opacity-30" 
+                  [disabled]="!selectedStation()?.employee_id">
+              REMOVER ATRIBUIÇÃO
+          </button>
+          <button (click)="isAssignEmployeeModalOpen.set(false)" 
+                  class="flex-1 py-4 font-black rounded-2xl bg-surface-elevated hover:bg-white/5 text-title transition-all border border-strong uppercase tracking-widest text-xs">
+              VOLTAR
+          </button>
+      </div>
     </div>
   </div>
 }
 
 <!-- Recall / Undo Modal -->
 @if(isRecallModalOpen()) {
-  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 no-print" (click)="isRecallModalOpen.set(false)">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
-        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <span class="material-symbols-outlined text-yellow-400">history</span>
-                Histórico Recente / Desfazer
-            </h3>
-            <button (click)="isRecallModalOpen.set(false)" class="p-1 rounded-full text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="isRecallModalOpen.set(false)">
+    <div class="bg-surface-elevated/95 rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col border border-strong animate-in zoom-in-95 duration-300 overflow-hidden" (click)="$event.stopPropagation()">
+        <div class="p-8 border-b border-subtle flex justify-between items-center bg-surface/50">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-warning/10 rounded-2xl flex items-center justify-center border border-warning/30">
+                    <span class="material-symbols-outlined text-warning text-3xl">history</span>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-black text-title tracking-tight">Restaurar Produção</h3>
+                    <p class="text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">Histórico de itens finalizados</p>
+                </div>
+            </div>
+            <button (click)="isRecallModalOpen.set(false)" class="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:bg-surface-elevated transition-colors border border-transparent hover:border-strong"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <div class="p-4 flex-1 overflow-y-auto">
+
+        <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
             @if(recentlyCompletedItems().length === 0) {
-                <div class="text-center text-gray-500 py-8">
-                    <p>Nenhum item finalizado recentemente nesta sessão.</p>
+                <div class="flex flex-col items-center justify-center py-20 opacity-30">
+                    <span class="material-symbols-outlined text-8xl mb-4">history_toggle_off</span>
+                    <p class="text-lg font-black uppercase tracking-widest">Nenhum item recente</p>
                 </div>
             } @else {
-                <p class="text-xs text-gray-400 mb-3">Clique em "Restaurar" para trazer o item de volta para a fila.</p>
-                <div class="space-y-2">
+                <div class="p-4 bg-warning/5 border border-warning/10 rounded-2xl mb-8">
+                    <p class="text-xs font-bold text-warning flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">info</span>
+                        Clique em "Restaurar" para trazer o item de volta para a fila de produção ativa.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
                     @for(recall of recentlyCompletedItems(); track recall.finishedAt) {
-                        <div class="bg-gray-700/50 p-3 rounded-lg flex justify-between items-center border border-gray-600">
-                            <div>
-                                <p class="font-bold text-white">{{ recall.displayItem.quantity }}x {{ recall.displayItem.name }}</p>
-                                <p class="text-xs text-gray-400">{{ recall.ticketInfo }} • {{ recall.finishedAt | date:'HH:mm:ss' }}</p>
+                        <div class="bg-surface border border-strong p-6 rounded-[2rem] flex justify-between items-center shadow-sm relative group hover:border-brand/40 transition-all">
+                            <div class="flex items-center gap-5">
+                                <div class="w-12 h-12 rounded-2xl bg-surface-elevated flex items-center justify-center text-xl font-black border border-strong text-title shadow-inner">
+                                    {{ recall.displayItem.quantity }}
+                                </div>
+                                <div>
+                                    <p class="font-black text-title text-lg leading-tight">{{ recall.displayItem.name }}</p>
+                                    <div class="flex items-center gap-3 mt-1 opacity-60">
+                                        <p class="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[12px]">push_pin</span>
+                                            {{ recall.ticketInfo }}
+                                        </p>
+                                        <div class="w-1 h-1 rounded-full bg-muted"></div>
+                                        <p class="text-[10px] font-black flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[12px]">schedule</span>
+                                            {{ recall.finishedAt | date:'HH:mm:ss' }}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <button (click)="restoreItem(recall)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded flex items-center gap-1 transition-colors">
-                                <span class="material-symbols-outlined text-sm">undo</span> Restaurar
+                            <button (click)="restoreItem(recall)" class="flex items-center gap-2 px-6 py-3 bg-brand hover:bg-brand-hover text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-base">undo</span> 
+                                RESTAURAR
                             </button>
                         </div>
                     }
                 </div>
             }
         </div>
-        <div class="p-3 bg-gray-900/50 text-center border-t border-gray-700">
-            <button (click)="isRecallModalOpen.set(false)" class="text-gray-400 hover:text-white text-sm">Fechar</button>
+        
+        <div class="p-8 bg-surface/50 text-center border-t border-subtle">
+            <button (click)="isRecallModalOpen.set(false)" class="px-10 py-4 font-black text-muted hover:text-title text-xs uppercase tracking-widest transition-colors hover:bg-surface-elevated rounded-2xl border border-transparent hover:border-strong">
+                FECHAR HISTÓRICO
+            </button>
         </div>
     </div>
   </div>
@@ -399,60 +616,137 @@
 
 <!-- Details Modal -->
 @if(isDetailModalOpen() && selectedTicketForDetail(); as ticket) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="closeDetailModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Detalhes do Pedido</h3><button (click)="closeDetailModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
-      <div class="p-6 flex-1 overflow-y-auto">
-        <div class="grid grid-cols-3 gap-4 text-center mb-6 pb-4 border-b border-gray-600">
-            <div><p class="text-sm text-gray-400">Origem</p><p class="text-lg font-semibold text-white">
-                @if (ticket.orderType.startsWith('iFood')) {
-                    <span>#{{ ticket.ifoodDisplayId }}</span>
-                  } @else if (ticket.orderType === 'QuickSale') {
-                    <span>Caixa</span>
-                  } @else if (ticket.orderType === 'Tab') {
-                    <span>{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
-                  } @else {
-                    <span>Mesa {{ ticket.tableNumber }}</span>
-                  }
-            </p></div>
-            <div><p class="text-sm text-gray-400">Recebido</p><p class="text-lg font-semibold text-white">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p></div>
-            <div><p class="text-sm text-gray-400">Tempo Total</p><p class="text-lg font-semibold font-mono" [class.text-red-400]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p></div>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[70] flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="closeDetailModal()">
+    <div class="bg-surface-elevated/95 rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-strong animate-in zoom-in-95 duration-300 overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle flex justify-between items-center bg-surface/50">
+          <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-brand/10 rounded-[1.25rem] flex items-center justify-center border border-brand/20 shadow-sm transition-transform hover:rotate-6">
+                  <span class="material-symbols-outlined text-brand text-4xl">receipt_long</span>
+              </div>
+              <div>
+                  <h3 class="text-3xl font-black text-title tracking-tight">Detalhes do Pedido</h3>
+                  <p class="text-muted text-[11px] font-black uppercase tracking-[0.3em] mt-1">{{ ticket.orderId.substring(0, 8) }}</p>
+              </div>
+          </div>
+          <button (click)="closeDetailModal()" class="w-12 h-12 flex items-center justify-center rounded-2xl text-muted hover:bg-surface-elevated transition-colors border border-transparent hover:border-strong">
+              <span class="material-symbols-outlined text-2xl">close</span>
+          </button>
+      </div>
+
+      <div class="p-10 flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Ticket Summary Tiles -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Origem</p>
+                <p class="text-2xl font-black text-title">
+                    @if (ticket.orderType.startsWith('iFood')) {
+                        <span class="flex items-center gap-2">
+                             <img src="https://static.ifood.com.br/webapp/images/ifood-logo.png" class="h-4 object-contain opacity-50 grayscale hover:grayscale-0 transition-all" alt="iFood" referrerpolicy="no-referrer">
+                             #{{ ticket.ifoodDisplayId }}
+                        </span>
+                    } @else if (ticket.orderType === 'QuickSale') {
+                        <span>BALCÃO</span>
+                    } @else if (ticket.orderType === 'Tab') {
+                        <span>{{ ticket.tabName || ('CMD ' + ticket.commandNumber) }}</span>
+                    } @else {
+                        <span>MESA {{ ticket.tableNumber }}</span>
+                    }
+                </p>
+            </div>
+            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Horário</p>
+                <p class="text-2xl font-black text-title">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p>
+            </div>
+            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Timer</p>
+                <p class="text-2xl font-black font-mono tracking-tighter" [class.text-danger]="ticket.isTicketLate" [class.text-title]="!ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p>
+            </div>
             @if(ticket.waiterName) {
-                <div><p class="text-sm text-gray-400">Garçom</p><p class="text-lg font-semibold text-white">{{ ticket.waiterName }}</p></div>
+                <div class="bg-brand/5 p-6 rounded-[2rem] border border-brand/20 shadow-sm group">
+                    <p class="text-[10px] font-black text-brand uppercase tracking-widest mb-2">Responsável</p>
+                    <p class="text-2xl font-black text-brand truncate">{{ ticket.waiterName }}</p>
+                </div>
             }
         </div>
-        <div>
-            <h4 class="font-semibold text-white mb-3">Itens do Pedido</h4>
-            <ul class="space-y-3">
+
+        <div class="space-y-8">
+            <h4 class="text-base font-black text-title uppercase tracking-widest flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-brand"></div>
+                Itens do Pedido
+            </h4>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 @for (item of ticket.items; track item.id) {
-                <li class="p-3 rounded-lg flex gap-4" [class.bg-red-900/40]="item.isCritical || item.isCancelled" [class.bg-blue-900/50]="item.status === 'EM_PREPARO' && !item.isCritical && !item.isCancelled" [class.bg-yellow-900/50]="item.status === 'PENDENTE' && !item.isCritical && !item.isCancelled">
-                  <div class="flex-1">
+                    <div class="p-6 rounded-[2.5rem] flex flex-col gap-6 relative overflow-hidden transition-all border border-strong bg-surface" 
+                         [class.ring-2]="item.isCritical || item.isCancelled" 
+                         [class.ring-danger]="item.isCritical || item.isCancelled">
+                      
                       @if(item.isCancelled) {
-                        <div class="flex items-center gap-2 mb-2 text-red-400">
-                             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                            <span class="font-bold uppercase text-sm">CANCELADO</span>
-                        </div>
+                          <div class="absolute top-0 left-0 w-full h-1 bg-danger"></div>
+                          <div class="flex items-center gap-3 text-danger font-black animate-pulse uppercase text-xs tracking-widest mb-2">
+                              <span class="material-symbols-outlined text-sm">block</span>
+                              ITEM CANCELADO
+                          </div>
                       } @else if(item.isCritical) {
-                        <div class="flex items-center gap-2 mb-2 text-red-300"><svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg><span class="font-bold uppercase text-sm">Atenção</span></div>
+                          <div class="flex items-center gap-3 text-danger font-black animate-pulse uppercase text-xs tracking-widest mb-2">
+                              <span class="material-symbols-outlined text-sm">info</span>
+                              ATENÇÃO NECESSÁRIA
+                          </div>
                       }
-                      <p class="font-bold text-white" [class.line-through]="item.isCancelled" [class.text-gray-400]="item.isCancelled">{{ item.quantity }}x {{ item.name }}</p>
-                      @if(item.notes) { <p class="text-sm italic" [class.text-red-300]="item.isCritical" [class.text-yellow-200]="!item.isCritical">"{{ item.notes }}"</p> }
-                      <p class="text-xs font-mono mt-1" [ngClass]="item.timerColor">{{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }} - {{ formatTime(item.elapsedTimeSeconds) }}</p>
-                  </div>
-                  <div class="w-1/3 text-xs border-l border-gray-500 pl-4">
-                    <p class="font-semibold text-gray-300 mb-1">Histórico do Item</p>
-                    <ul class="space-y-1">
-                      @for(history of getStatusHistory(item.status_timestamps); track history.status) {
-                        <li class="flex items-center gap-2"><span class="font-mono text-gray-400">{{ history.time | date:'HH:mm:ss' }}</span><span class="font-semibold text-gray-200 uppercase">{{ history.status.replace('_', ' ') }}</span></li>
-                      }
-                    </ul>
-                  </div>
-                </li>
+
+                      <div class="flex gap-5">
+                          <div class="flex-1 min-w-0">
+                              <div class="flex items-center gap-3 mb-2">
+                                  <div class="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-xl font-black border border-strong shadow-inner text-title">
+                                      {{ item.quantity }}
+                                  </div>
+                                  <p class="font-black text-title text-xl leading-tight truncate" [class.line-through]="item.isCancelled" [class.text-muted]="item.isCancelled">{{ item.name }}</p>
+                              </div>
+                              
+                              @if(item.notes) { 
+                                  <div class="p-3 bg-surface-elevated rounded-2xl border border-strong italic text-muted text-sm relative">
+                                      <span class="text-xl text-brand absolute -top-2 -left-1 opacity-20">"</span>
+                                      {{ item.notes }}
+                                  </div> 
+                              }
+                              
+                              <div class="mt-4 flex items-center gap-4">
+                                  <span class="px-3 py-1 font-black text-[10px] uppercase tracking-widest rounded-lg border shadow-inner" 
+                                        [ngClass]="item.timerColor === 'text-white' ? 'bg-brand/10 text-brand border-brand/20' : 'bg-surface-elevated text-muted border-strong'">
+                                        {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
+                                  </span>
+                                  <span class="font-mono text-sm font-bold text-muted">{{ formatTime(item.elapsedTimeSeconds) }}</span>
+                              </div>
+                          </div>
+
+                          <!-- Historical stats simplified -->
+                          <div class="w-[120px] pt-1">
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-3 border-b border-strong pb-1">Logs de Status</p>
+                            <div class="flex flex-col gap-2">
+                              @for(history of getStatusHistory(item.status_timestamps); track history.status) {
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-black text-title uppercase">{{ history.status.split('_').pop() }}</span>
+                                    <span class="font-mono text-[9px] text-muted">{{ history.time | date:'HH:mm:ss' }}</span>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                      </div>
+                    </div>
                 }
-            </ul>
+            </div>
         </div>
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-end gap-3"><button (click)="closeDetailModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button><button (click)="printTicket(ticket)" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Imprimir</button></div>
+
+      <div class="p-8 bg-surface/50 border-t border-subtle flex justify-end items-center gap-5">
+          <button (click)="closeDetailModal()" class="px-8 py-4 font-black rounded-2xl bg-surface-elevated hover:bg-white/5 text-title transition-all border border-strong uppercase tracking-widest text-xs">
+              FECHAR DETALHES
+          </button>
+          <button (click)="printTicket(ticket)" class="px-10 py-4 font-black rounded-2xl bg-brand hover:brightness-110 text-white transition-all shadow-xl shadow-brand/20 uppercase tracking-widest text-xs flex items-center gap-2">
+              <span class="material-symbols-outlined text-xl">print</span>
+              IMPRIMIR VIA
+          </button>
+      </div>
     </div>
   </div>
 }

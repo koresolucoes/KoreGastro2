@@ -1,77 +1,85 @@
 
 
-<div class="h-full flex flex-col p-4">
+<div class="h-full flex flex-col p-4 relative">
+
+    <!-- Decorative Background Splashes -->
+    <div class="pointer-events-none absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand/10 rounded-full blur-[100px] -z-10"></div>
+    <div class="pointer-events-none absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-info/10 rounded-full blur-[100px] -z-10"></div>
+
     <!-- Header / Actions -->
-    <div class="flex gap-4 mb-4">
-        <div class="relative flex-1">
+    <div class="flex gap-4 mb-5">
+        <div class="relative flex-1 group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-brand to-info rounded-xl opacity-20 group-hover:opacity-40 transition duration-300 blur-sm"></div>
             <input 
                 type="text" 
                 [value]="searchTerm()" 
                 (input)="searchTerm.set($any($event.target).value)" 
                 (keydown.enter)="quickOpenFromSearch()"
                 placeholder="Buscar comanda (Nº ou Nome)..." 
-                class="w-full bg-surface-elevated border border-strong rounded-lg pl-10 pr-4 py-3 text-title focus:outline-none focus:ring-2 focus:ring-brand text-lg transition-colors shadow-sm">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span class="material-symbols-outlined text-muted">search</span>
+                class="relative w-full bg-surface-elevated/80 backdrop-blur-md border border-subtle rounded-xl pl-12 pr-4 py-3.5 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand text-lg transition-all shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                <span class="material-symbols-outlined text-muted group-focus-within:text-brand transition-colors text-2xl">search</span>
             </div>
         </div>
-        <button (click)="openNewTabModal()" class="btn-primary font-bold py-2 px-6 rounded-lg shadow-lg flex items-center gap-2 whitespace-nowrap">
-            <span class="material-symbols-outlined text-2xl">add_card</span>
-            <span class="hidden md:inline">Abrir Comanda</span>
+        <button (click)="openNewTabModal()" class="px-6 py-3.5 rounded-xl text-white font-black flex items-center gap-2 bg-brand hover:bg-brand-hover shadow-lg hover:shadow-brand/20 transition-all border border-transparent active:scale-95 z-10">
+            <span class="material-symbols-outlined">add_card</span>
+            <span class="hidden md:inline uppercase tracking-wider text-sm">Abrir Comanda</span>
         </button>
     </div>
 
     <!-- Quick Open Prompt -->
     @if(notFoundNumber(); as num) {
-        <div class="mb-4 p-4 chef-surface border border-brand bg-brand/10 rounded-lg flex justify-between items-center animate-fade-in shadow-sm">
-            <span class="text-title">Comanda <strong class="text-brand">#{{ num }}</strong> não encontrada.</span>
-            <button (click)="quickOpenFromSearch()" class="text-white btn-primary px-4 py-1.5 rounded text-sm font-bold shadow-sm">
+        <div class="mb-5 p-4 bg-brand/10 border border-brand/30 backdrop-blur-md rounded-2xl flex justify-between items-center animate-in fade-in slide-in-from-top-4 shadow-sm relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-brand/5 to-transparent pointer-events-none"></div>
+            <span class="text-title font-bold text-lg relative z-10">Comanda <strong class="text-brand font-black text-xl">#{{ num }}</strong> não encontrada.</span>
+            <button (click)="quickOpenFromSearch()" class="px-5 py-2 rounded-xl text-brand font-black text-sm bg-surface shadow-sm border border-brand/20 hover:bg-surface-elevated transition-all relative z-10">
                 Abrir Agora
             </button>
         </div>
     }
 
     <!-- Grid -->
-    <div class="flex-1 overflow-y-auto pr-2">
+    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10">
         @if(filteredTabs().length === 0) {
-            <div class="flex flex-col items-center justify-center h-64 text-muted">
-                <span class="material-symbols-outlined text-6xl mb-2 opacity-50">layers_clear</span>
-                <p class="text-lg">Nenhuma comanda aberta encontrada.</p>
+            <div class="flex flex-col items-center justify-center h-64 text-muted bg-surface-elevated/50 backdrop-blur-sm border border-dashed border-strong rounded-3xl mt-4">
+                <span class="material-symbols-outlined text-6xl mb-3 opacity-40">layers_clear</span>
+                <p class="text-lg font-bold tracking-wide">Nenhuma comanda aberta encontrada.</p>
             </div>
         } @else {
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 pb-6">
                 @for(tab of filteredTabs(); track tab.id) {
                     <div (click)="onTabClick(tab)" 
-                         class="chef-surface hover-surface-elevated rounded-2xl p-4 cursor-pointer transition-all flex flex-col justify-between aspect-square group relative overflow-hidden">
+                         class="bg-surface-elevated/80 backdrop-blur-md border border-subtle hover:border-brand/40 shadow-sm hover:shadow-xl rounded-3xl p-5 cursor-pointer transition-all duration-300 flex flex-col justify-between aspect-square group relative overflow-hidden hover:-translate-y-1">
                         
                         <!-- Top: Number & Timer -->
                         <div class="flex justify-between items-start z-10 relative">
-                            <span class="text-4xl font-black text-title group-hover:text-brand transition-colors">{{ tab.command_number }}</span>
-                            <span class="text-[10px] bg-surface-elevated border border-subtle px-1.5 py-0.5 rounded text-muted font-mono shadow-sm">{{ getDuration(tab.timestamp) }}</span>
+                            <span class="text-5xl font-black text-title group-hover:text-brand transition-colors drop-shadow-sm">{{ tab.command_number }}</span>
+                            <span class="text-[10px] bg-black/20 border border-white/5 px-2 py-1 rounded-full text-title font-mono font-bold shadow-inner opacity-80 backdrop-blur-sm">{{ getDuration(tab.timestamp) }}</span>
                         </div>
 
                         <!-- Mid: Name -->
-                        <div class="flex-1 flex items-center justify-center text-center my-2 z-10 relative">
-                            <p class="text-sm font-medium text-body line-clamp-2 leading-tight">
+                        <div class="flex-1 flex items-center justify-center text-center mt-4 mb-2 z-10 relative">
+                            <p class="text-sm font-bold uppercase tracking-wider text-muted opacity-80 line-clamp-2 leading-tight">
                                 {{ tab.tab_name || 'Sem nome' }}
                             </p>
                         </div>
 
                         <!-- Bottom: Total or Delete -->
-                        <div class="pt-3 border-t border-subtle mt-auto flex justify-between items-end z-10 relative">
+                        <div class="pt-3 border-t border-strong/50 mt-auto flex justify-between items-end z-10 relative">
                             @if(getOrderTotal(tab) === 0) {
-                                <button (click)="$event.stopPropagation(); deleteTab(tab)" class="text-danger hover:text-red-400 text-xs flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded border border-danger/30 hover:bg-red-500/20 shadow-sm z-10 transition-colors">
+                                <button (click)="$event.stopPropagation(); deleteTab(tab)" class="text-danger hover:text-white text-xs flex items-center gap-1 bg-danger/10 px-3 py-1.5 rounded-lg border border-danger/30 hover:bg-danger shadow-sm z-20 transition-all font-bold tracking-wide">
                                     <span class="material-symbols-outlined text-sm">delete</span> Excluir
                                 </button>
                                 <span></span> <!-- Spacer -->
                             } @else {
                                 <span></span> <!-- Spacer -->
-                                <p class="text-right text-lg font-bold text-success data-mono">{{ getOrderTotal(tab) | currency:'BRL' }}</p>
+                                <p class="text-right text-xl font-black text-success drop-shadow-sm">{{ getOrderTotal(tab) | currency:'BRL' }}</p>
                             }
                         </div>
                         
-                        <!-- Decorative BG Icon -->
-                        <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-transform group-hover:scale-110">receipt_long</span>
+                        <!-- Decorative BG Element -->
+                        <div class="absolute inset-0 bg-gradient-to-tr from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                        <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-transform group-hover:scale-110 group-hover:text-brand/10">receipt_long</span>
                     </div>
                 }
             </div>
@@ -81,27 +89,39 @@
 
 <!-- New Tab Modal -->
 @if(isNewTabModalOpen()) {
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" (click)="closeNewTabModal()">
-        <div class="chef-surface shadow-2xl w-full max-w-sm" (click)="$event.stopPropagation()">
-            <div class="p-4 border-b border-subtle flex justify-between items-center">
-                <h3 class="text-xl font-bold text-title">Abrir Nova Comanda</h3>
-                <button (click)="closeNewTabModal()" class="text-muted hover:text-title transition-colors"><span class="material-symbols-outlined">close</span></button>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" (click)="closeNewTabModal()">
+        <div class="chef-surface border border-subtle shadow-2xl rounded-3xl w-full max-w-sm overflow-hidden" (click)="$event.stopPropagation()">
+            <!-- Decorator -->
+            <div class="h-2 w-full bg-gradient-to-r from-brand to-info"></div>
+            
+            <div class="p-5 border-b border-subtle bg-surface-elevated flex justify-between items-center">
+                <h3 class="text-xl font-black text-title flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand">add_card</span>
+                    Nova Comanda
+                </h3>
+                <button (click)="closeNewTabModal()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors"><span class="material-symbols-outlined">close</span></button>
             </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-muted mb-1 uppercase tracking-wider">Número da Comanda/Cartão</label>
-                    <input type="number" [ngModel]="newTabNumber()" (ngModelChange)="newTabNumber.set(+$event)" class="w-full bg-surface-elevated border border-strong rounded-lg px-4 py-3 text-title text-3xl font-bold text-center focus:ring-2 focus:ring-brand focus:outline-none shadow-inner data-mono" placeholder="000" autofocus>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-muted mb-1">Nome do Cliente (Opcional)</label>
-                    <input type="text" [ngModel]="newTabName()" (ngModelChange)="newTabName.set($event)" (keydown.enter)="createTab()" class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-title focus:outline-none focus:ring-2 focus:ring-brand shadow-inner" placeholder="Ex: Pedro">
+            
+            <div class="p-6 space-y-5">
+                <div class="bg-surface-elevated border border-strong rounded-2xl p-4 shadow-inner">
+                    <label class="block text-[11px] font-black tracking-widest text-muted mb-2 uppercase">Número do Cartão / Comanda</label>
+                    <input type="number" [ngModel]="newTabNumber()" (ngModelChange)="newTabNumber.set(+$event)" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-brand text-4xl font-black text-center focus:ring-1 focus:ring-brand focus:border-brand focus:outline-none shadow-sm transition-colors" placeholder="000" autofocus>
                 </div>
                 
-                <button (click)="createTab()" [disabled]="!newTabNumber() || isCreating()" class="w-full btn-primary font-bold py-3 rounded-lg mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md">
+                <div>
+                    <label class="block text-[11px] font-black tracking-widest text-muted mb-2 uppercase">Nome do Cliente <span class="opacity-50">(Opcional)</span></label>
+                    <div class="relative">
+                        <input type="text" [ngModel]="newTabName()" (ngModelChange)="newTabName.set($event)" (keydown.enter)="createTab()" class="w-full bg-surface-elevated border border-strong rounded-xl pl-10 pr-4 py-3 text-title focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors" placeholder="Ex: Pedro">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted opacity-70">person</span>
+                    </div>
+                </div>
+                
+                <button (click)="createTab()" [disabled]="!newTabNumber() || isCreating()" class="w-full bg-brand text-white font-black text-lg py-4 rounded-xl mt-2 hover:bg-brand-hover hover:shadow-lg hover:shadow-brand/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-transparent">
                     @if(isCreating()) {
                         <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     }
                     <span>Abrir Comanda</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
                 </button>
             </div>
         </div>

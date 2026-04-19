@@ -96,9 +96,9 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
        const start = new Date(order.timestamp).getTime();
        const diffMinutes = Math.floor((this.currentTime() - start) / 60000);
        
-       if (diffMinutes > 90) return 'text-red-400 font-bold';
-       if (diffMinutes > 45) return 'text-yellow-400 font-bold';
-       return 'text-green-400 font-bold';
+       if (diffMinutes > 90) return 'text-danger font-bold';
+       if (diffMinutes > 45) return 'text-warning font-bold';
+       return 'text-success font-bold';
   }
   
   getTableCustomerName(table: Table): string {
@@ -253,8 +253,8 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
   getStatusClass(status: TableStatus): string {
     switch (status) {
-      case 'LIVRE': return 'border border-success/50 bg-green-500/10 text-success hover:bg-green-500/20 backdrop-blur-md shadow-sm';
-      case 'OCUPADA': return 'border border-warning/50 bg-yellow-500/10 text-warning hover:bg-yellow-500/20 backdrop-blur-md shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
+      case 'LIVRE': return 'border border-success/50 bg-success/10 text-success hover:bg-success/20 backdrop-blur-md shadow-sm';
+      case 'OCUPADA': return 'border border-warning/50 bg-warning/10 text-warning hover:bg-warning/20 backdrop-blur-md shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
       case 'PAGANDO': return 'border border-brand/50 bg-brand/10 text-brand hover:bg-brand/20 backdrop-blur-md shadow-[0_4px_20px_rgba(79,70,229,0.15)]';
       default: return 'border border-subtle bg-surface text-muted backdrop-blur-md';
     }

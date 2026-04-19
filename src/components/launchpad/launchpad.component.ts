@@ -39,35 +39,39 @@ interface LaunchpadItem {
           </p>
         </header>
 
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           @for (item of visibleItems(); track item.path) {
             <a [routerLink]="item.path" 
-               class="group relative chef-surface rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-subtle hover:border-brand/40 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
-              <div [class]="'w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-6 transition-transform duration-300 group-hover:scale-110 shadow-inner ' + item.color">
-                <span class="material-symbols-outlined text-2xl sm:text-4xl text-white drop-shadow-md">{{ item.icon }}</span>
+               class="group relative bg-surface-elevated/80 backdrop-blur-md rounded-[2rem] p-5 sm:p-8 border border-strong hover:border-brand/40 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 sm:hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
+              
+              <!-- Hover Gradient Overlay -->
+              <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+
+              <div [class]="'w-14 h-14 sm:w-20 sm:h-20 rounded-[1.25rem] sm:rounded-[1.5rem] flex items-center justify-center mb-4 sm:mb-6 transition-transform duration-300 group-hover:scale-110 shadow-inner relative z-10 ' + item.color">
+                <span class="material-symbols-outlined text-3xl sm:text-4xl text-white drop-shadow-md">{{ item.icon }}</span>
               </div>
-              <h3 class="text-sm sm:text-xl font-bold text-title mb-1 sm:mb-2 group-hover:text-brand transition-colors line-clamp-1">{{ item.name }}</h3>
-              <p class="hidden sm:block text-muted text-sm leading-relaxed line-clamp-2">{{ item.description }}</p>
+              <h3 class="text-base sm:text-xl font-black text-title mb-1 sm:mb-2 group-hover:text-brand transition-colors line-clamp-1 tracking-tight drop-shadow-sm relative z-10">{{ item.name }}</h3>
+              <p class="hidden sm:block text-muted text-sm leading-relaxed line-clamp-2 relative z-10 font-medium">{{ item.description }}</p>
               
               <!-- Decorative background element -->
-              <div class="absolute top-0 right-0 p-2 sm:p-4 opacity-0 group-hover:opacity-5 transition-opacity transform group-hover:scale-110 group-hover:-rotate-12">
-                 <span class="material-symbols-outlined text-4xl sm:text-8xl text-title">{{ item.icon }}</span>
+              <div class="absolute top-0 right-0 p-3 sm:p-5 opacity-0 group-hover:opacity-10 transition-opacity transform group-hover:scale-125 group-hover:-rotate-12 duration-500">
+                 <span class="material-symbols-outlined text-6xl sm:text-8xl" [class]="'text-' + item.color.split('-')[1] + '-500'">{{ item.icon }}</span>
               </div>
             </a>
           }
         </div>
 
         @if (visibleItems().length === 0) {
-          <div class="text-center py-20 chef-surface border border-subtle rounded-3xl mt-8 shadow-inner">
-            <span class="material-symbols-outlined text-6xl text-muted mb-4 opacity-50">lock</span>
-            <p class="text-muted text-lg font-medium">Você não tem permissões para acessar nenhuma funcionalidade.</p>
+          <div class="text-center py-20 bg-surface-elevated/80 backdrop-blur-md border border-subtle rounded-[2rem] mt-8 shadow-inner">
+            <span class="material-symbols-outlined text-6xl text-muted mb-4 opacity-50 drop-shadow-sm">lock</span>
+            <p class="text-muted text-lg font-bold tracking-tight">Você não tem permissões para acessar nenhuma funcionalidade.</p>
           </div>
         }
 
         <footer class="mt-12 sm:mt-16 pt-8 border-t border-subtle flex justify-center relative">
-          <div class="absolute top-0 left-1/2 -translate-x-1/2 -ml-px w-32 h-px bg-gradient-to-r from-transparent via-brand to-transparent opacity-50"></div>
-          <a routerLink="/admin" class="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-brand transition-colors uppercase tracking-widest bg-surface-elevated px-4 py-2 rounded-full border border-strong shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
-            <span class="material-symbols-outlined text-base">admin_panel_settings</span>
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 -ml-px w-64 h-px bg-gradient-to-r from-transparent via-brand to-transparent opacity-50"></div>
+          <a routerLink="/admin" class="inline-flex items-center gap-2 text-xs font-black text-muted hover:text-white transition-all uppercase tracking-widest bg-surface px-5 py-3 rounded-full border border-strong shadow-sm hover:shadow-brand/20 hover:-translate-y-1 hover:bg-brand">
+            <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
             Painel de Controle
           </a>
         </footer>

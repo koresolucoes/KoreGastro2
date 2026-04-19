@@ -1,64 +1,82 @@
 
 <div class="container mx-auto">
-  <h1 class="text-3xl font-bold text-white mb-6">Configurações</h1>
+  <h1 class="text-4xl text-title title-display tracking-tight mb-8">Configurações</h1>
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
     <!-- Vertical Navigation -->
     <div class="md:col-span-1">
       <nav class="space-y-2 sticky top-4">
         <button (click)="selectTab('empresa')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'empresa'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'empresa'"
+                [class.border-brand]="activeTab() === 'empresa'"
                 [class.text-white]="activeTab() === 'empresa'"
-                [class.text-gray-300]="activeTab() !== 'empresa'"
-                [class.hover:bg-gray-700]="activeTab() !== 'empresa'">
+                [class.chef-surface]="activeTab() !== 'empresa'"
+                [class.border-subtle]="activeTab() !== 'empresa'"
+                [class.text-muted]="activeTab() !== 'empresa'"
+                [class.hover:border-strong]="activeTab() !== 'empresa'">
           <span class="material-symbols-outlined">storefront</span>
-          <span class="font-medium">Dados da Empresa</span>
+          <span class="font-bold text-sm tracking-wide">Dados da Empresa</span>
         </button>
         <button (click)="selectTab('stores')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'stores'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'stores'"
+                [class.border-brand]="activeTab() === 'stores'"
                 [class.text-white]="activeTab() === 'stores'"
-                [class.text-gray-300]="activeTab() !== 'stores'"
-                [class.hover:bg-gray-700]="activeTab() !== 'stores'">
+                [class.chef-surface]="activeTab() !== 'stores'"
+                [class.border-subtle]="activeTab() !== 'stores'"
+                [class.text-muted]="activeTab() !== 'stores'"
+                [class.hover:border-strong]="activeTab() !== 'stores'">
           <span class="material-symbols-outlined">domain</span>
-          <span class="font-medium">Minhas Lojas</span>
+          <span class="font-bold text-sm tracking-wide">Minhas Lojas</span>
         </button>
         <button (click)="selectTab('equipe')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'equipe'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'equipe'"
+                [class.border-brand]="activeTab() === 'equipe'"
                 [class.text-white]="activeTab() === 'equipe'"
-                [class.text-gray-300]="activeTab() !== 'equipe'"
-                [class.hover:bg-gray-700]="activeTab() !== 'equipe'">
+                [class.chef-surface]="activeTab() !== 'equipe'"
+                [class.border-subtle]="activeTab() !== 'equipe'"
+                [class.text-muted]="activeTab() !== 'equipe'"
+                [class.hover:border-strong]="activeTab() !== 'equipe'">
           <span class="material-symbols-outlined">group_add</span>
-          <span class="font-medium">Gestão de Equipe</span>
+          <span class="font-bold text-sm tracking-wide">Gestão de Equipe</span>
         </button>
         <button (click)="selectTab('cadastros')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'cadastros'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'cadastros'"
+                [class.border-brand]="activeTab() === 'cadastros'"
                 [class.text-white]="activeTab() === 'cadastros'"
-                [class.text-gray-300]="activeTab() !== 'cadastros'"
-                [class.hover:bg-gray-700]="activeTab() !== 'cadastros'">
+                [class.chef-surface]="activeTab() !== 'cadastros'"
+                [class.border-subtle]="activeTab() !== 'cadastros'"
+                [class.text-muted]="activeTab() !== 'cadastros'"
+                [class.hover:border-strong]="activeTab() !== 'cadastros'">
           <span class="material-symbols-outlined">database</span>
-          <span class="font-medium">Cadastros</span>
+          <span class="font-bold text-sm tracking-wide">Cadastros</span>
         </button>
         <button (click)="selectTab('funcionalidades')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'funcionalidades'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'funcionalidades'"
+                [class.border-brand]="activeTab() === 'funcionalidades'"
                 [class.text-white]="activeTab() === 'funcionalidades'"
-                [class.text-gray-300]="activeTab() !== 'funcionalidades'"
-                [class.hover:bg-gray-700]="activeTab() !== 'funcionalidades'">
+                [class.chef-surface]="activeTab() !== 'funcionalidades'"
+                [class.border-subtle]="activeTab() !== 'funcionalidades'"
+                [class.text-muted]="activeTab() !== 'funcionalidades'"
+                [class.hover:border-strong]="activeTab() !== 'funcionalidades'">
           <span class="material-symbols-outlined">extension</span>
-          <span class="font-medium">Módulos e Integrações</span>
+          <span class="font-bold text-sm tracking-wide">Módulos e Integrações</span>
         </button>
         <button (click)="selectTab('seguranca')"
-                class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors"
-                [class.bg-blue-600]="activeTab() === 'seguranca'"
+                class="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all border shadow-sm outline-none"
+                [class.bg-brand]="activeTab() === 'seguranca'"
+                [class.border-brand]="activeTab() === 'seguranca'"
                 [class.text-white]="activeTab() === 'seguranca'"
-                [class.text-gray-300]="activeTab() !== 'seguranca'"
-                [class.hover:bg-gray-700]="activeTab() !== 'seguranca'">
+                [class.chef-surface]="activeTab() !== 'seguranca'"
+                [class.border-subtle]="activeTab() !== 'seguranca'"
+                [class.text-muted]="activeTab() !== 'seguranca'"
+                [class.hover:border-strong]="activeTab() !== 'seguranca'">
           <span class="material-symbols-outlined">security</span>
-          <span class="font-medium">Cargos e Permissões</span>
+          <span class="font-bold text-sm tracking-wide">Cargos e Permissões</span>
         </button>
       </nav>
     </div>

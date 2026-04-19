@@ -1,31 +1,40 @@
 @if (state().isOpen) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" (click)="notificationService.onCancel()">
-    <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-md border border-subtle" (click)="$event.stopPropagation()">
-      <div class="p-6">
-        <div class="flex items-start gap-4">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300" (click)="notificationService.onCancel()">
+    <div class="chef-surface rounded-3xl shadow-2xl w-full max-w-md border border-subtle relative overflow-hidden backdrop-blur-md" (click)="$event.stopPropagation()">
+      <!-- Decorative Backdrop -->
+      <div class="absolute -top-20 -right-20 w-40 h-40 bg-brand/10 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="p-6 relative z-10">
+        <div class="flex items-start gap-5">
+           <!-- Icon container based on state -->
           @if (state().type === 'confirm' || state().type === 'prompt') {
-            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 sm:mx-0 sm:h-12 sm:w-12 shadow-inner border border-brand/20">
-              <span class="material-symbols-outlined text-brand drop-shadow-md">help</span>
+            <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 sm:mx-0 shadow-inner border border-brand/20">
+              <span class="material-symbols-outlined text-brand drop-shadow-md text-3xl">help</span>
+            </div>
+          } @else if (state().type === 'alert') {
+             <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-warning/10 sm:mx-0 shadow-inner border border-warning/20">
+              <span class="material-symbols-outlined text-warning drop-shadow-md text-3xl">warning</span>
             </div>
           } @else {
-             <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-warning/10 sm:mx-0 sm:h-12 sm:w-12 shadow-inner border border-warning/20">
-              <span class="material-symbols-outlined text-warning drop-shadow-md">warning</span>
+             <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-success/10 sm:mx-0 shadow-inner border border-success/20">
+              <span class="material-symbols-outlined text-success drop-shadow-md text-3xl">check_circle</span>
             </div>
           }
+
           <div class="mt-0 flex-1 text-left">
-            <h3 class="text-xl font-bold text-title mb-2" id="modal-title">{{ state().title }}</h3>
+            <h3 class="text-xl font-black text-title mb-2 tracking-tight drop-shadow-sm" id="modal-title">{{ state().title }}</h3>
             <div class="mt-2">
-              <p class="text-sm text-body leading-relaxed">{{ state().message }}</p>
+              <p class="text-sm text-body font-medium leading-relaxed">{{ state().message }}</p>
             </div>
              @if (state().type === 'prompt') {
-              <div class="mt-4">
+              <div class="mt-5">
                 @if (state().inputType === 'textarea') {
                   <textarea 
                     [value]="notificationService.promptInputValue()"
                     (input)="notificationService.promptInputValue.set($any($event.target).value)"
                     [placeholder]="state().placeholder"
                     rows="3"
-                    class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-title placeholder:text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-colors">
+                    class="w-full bg-surface-elevated/80 backdrop-blur-sm border border-strong rounded-2xl px-4 py-3 text-title placeholder:text-muted focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/50 shadow-inner transition-all custom-scrollbar">
                   </textarea>
                 } @else {
                   <input 
@@ -33,32 +42,34 @@
                     [value]="notificationService.promptInputValue()"
                     (input)="notificationService.promptInputValue.set($any($event.target).value)"
                     [placeholder]="state().placeholder"
-                    class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-title placeholder:text-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-colors">
+                    class="w-full bg-surface-elevated/80 backdrop-blur-sm border border-strong rounded-xl px-4 py-3 test-base text-title placeholder:text-muted focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/50 shadow-inner transition-all">
                 }
               </div>
             }
           </div>
         </div>
       </div>
-      <div class="bg-surface-elevated border-t border-subtle px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 rounded-b-2xl">
+      <div class="bg-surface-elevated/60 backdrop-blur-sm border-t border-subtle px-6 py-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 rounded-b-3xl relative z-10 shadow-inner">
         @if (state().type === 'confirm' || state().type === 'prompt') {
           <button 
             type="button" 
             (click)="notificationService.onCancel()"
-            class="w-full sm:w-auto justify-center rounded-xl bg-surface px-5 py-2.5 text-sm font-semibold text-title shadow-sm hover-surface-elevated border border-subtle transition-colors focus:ring-2 focus:ring-brand/30">
+            class="w-full sm:w-auto justify-center rounded-xl bg-surface px-6 py-2.5 text-sm font-black uppercase tracking-wider text-muted shadow-sm hover-surface-elevated hover:text-title hover:-translate-y-0.5 border border-strong transition-all focus:ring-2 focus:ring-brand/30 active:scale-95">
             {{ state().cancelText }}
           </button>
         }
         <button 
           type="button" 
           (click)="notificationService.onConfirm()"
-          class="w-full sm:w-auto justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all focus:ring-2"
+          class="w-full sm:w-auto justify-center rounded-xl px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-md transition-all focus:ring-2 hover:-translate-y-0.5 active:scale-95"
           [class.bg-brand]="state().type === 'confirm' || state().type === 'prompt'"
           [class.hover:bg-brand-hover]="state().type === 'confirm' || state().type === 'prompt'"
           [class.focus:ring-brand]="state().type === 'confirm' || state().type === 'prompt'"
+          [class.shadow-brand/30]="state().type === 'confirm' || state().type === 'prompt'"
           [class.bg-warning]="state().type === 'alert'"
           [class.hover:bg-yellow-500]="state().type === 'alert'"
           [class.focus:ring-warning]="state().type === 'alert'"
+          [class.shadow-warning/30]="state().type === 'alert'"
           >
           {{ state().confirmText }}
         </button>

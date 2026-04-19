@@ -1,42 +1,42 @@
 
 <div class="h-full flex flex-col" (click)="closeContextMenu()">
   <!-- Header -->
-  <header class="flex-shrink-0 chef-glass shadow-md z-10 no-print">
+  <header class="flex-shrink-0 bg-surface/80 backdrop-blur-md shadow-sm z-10 no-print border-b border-subtle">
     <div class="flex flex-col">
         <!-- Top Bar: Logo & Main Toggle & Actions -->
-        <div class="flex justify-between items-center p-3 border-b border-subtle">
-            <div class="flex items-center gap-3">
-                 <div class="bg-surface p-1 rounded-lg flex gap-1 border border-subtle shadow-sm">
-                    <button (click)="toggleViewMode('tables')" class="px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors" [class.bg-brand]="viewMode() === 'tables'" [class.text-white]="viewMode() === 'tables'" [class.text-muted]="viewMode() !== 'tables'">
-                        <span class="material-symbols-outlined text-base">table_restaurant</span>
-                        <span class="hidden sm:inline">Mesas</span>
+        <div class="flex justify-between items-center p-3">
+            <div class="flex items-center gap-3 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0">
+                 <div class="bg-surface-elevated p-1 rounded-xl flex gap-1 border border-strong shadow-inner">
+                    <button (click)="toggleViewMode('tables')" class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all" [class.bg-brand]="viewMode() === 'tables'" [class.text-white]="viewMode() === 'tables'" [class.shadow-md]="viewMode() === 'tables'" [class.text-muted]="viewMode() !== 'tables'">
+                        <span class="material-symbols-outlined text-lg">table_restaurant</span>
+                        <span>Mesas</span>
                     </button>
-                    <button (click)="toggleViewMode('tabs')" class="px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1 transition-colors" [class.bg-brand]="viewMode() === 'tabs'" [class.text-white]="viewMode() === 'tabs'" [class.text-muted]="viewMode() !== 'tabs'">
-                        <span class="material-symbols-outlined text-base">id_card</span>
-                        <span class="hidden sm:inline">Comandas</span>
+                    <button (click)="toggleViewMode('tabs')" class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all" [class.bg-brand]="viewMode() === 'tabs'" [class.text-white]="viewMode() === 'tabs'" [class.shadow-md]="viewMode() === 'tabs'" [class.text-muted]="viewMode() !== 'tabs'">
+                        <span class="material-symbols-outlined text-lg">id_card</span>
+                        <span>Comandas</span>
                     </button>
                 </div>
             </div>
 
             <!-- Right Actions -->
-             <div class="flex items-center gap-2">
+             <div class="flex items-center gap-2 mt-2 md:mt-0">
                 @if(viewMode() === 'tables') {
                     <!-- Edit Layout (Icon Only on Mobile) -->
                     <button (click)="isEditMode.set(!isEditMode())"
-                        class="p-2 rounded-md transition-colors border shadow-sm"
-                        [class.bg-yellow-500]="isEditMode()"
-                        [class.text-white]="isEditMode()"
-                        [class.border-yellow-600]="isEditMode()"
+                        class="p-2.5 rounded-xl transition-all shadow-sm border"
+                        [class.bg-warning]="isEditMode()"
+                        [class.text-black]="isEditMode()"
+                        [class.border-warning]="isEditMode()"
                         [class.bg-surface]="!isEditMode()"
-                        [class.border-subtle]="!isEditMode()"
+                        [class.border-strong]="!isEditMode()"
                         [class.text-title]="!isEditMode()"
-                        [class.hover-surface-elevated]="!isEditMode()"
+                        [class.hover:border-brand/40]="!isEditMode()"
                         title="Editar Layout">
-                        <span class="material-symbols-outlined text-lg">dashboard_customize</span>
+                        <span class="material-symbols-outlined text-xl">dashboard_customize</span>
                     </button>
                     <!-- Manage Halls (Icon Only) -->
-                     <button (click)="isHallManagerOpen.set(true)" class="p-2 rounded-md bg-surface border border-subtle hover-surface-elevated text-title transition-colors shadow-sm" title="Gerenciar Salões">
-                        <span class="material-symbols-outlined text-lg">meeting_room</span>
+                     <button (click)="isHallManagerOpen.set(true)" class="p-2.5 rounded-xl bg-surface border border-strong hover:border-brand/40 text-title transition-all shadow-sm" title="Gerenciar Salões">
+                        <span class="material-symbols-outlined text-xl">dataset</span>
                     </button>
                 }
             </div>
@@ -44,14 +44,14 @@
         
         <!-- Bottom Bar: Hall Selector (Scrollable) -->
         @if(viewMode() === 'tables') {
-            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar px-3 py-2 bg-surface-elevated border-b border-subtle">
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar px-4 py-3 bg-surface-elevated/50 border-t border-subtle">
                 @for(hall of halls(); track hall.id) {
                     <button 
                     (click)="selectHall(hall)"
-                    class="px-4 py-1.5 text-xs font-bold rounded-full transition-colors whitespace-nowrap border shadow-sm"
-                    [class.bg-brand]="selectedHall()?.id === hall.id"
-                    [class.text-white]="selectedHall()?.id === hall.id"
-                    [class.border-brand]="selectedHall()?.id === hall.id"
+                    class="px-5 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap border shadow-sm tracking-wide"
+                    [class.bg-brand/10]="selectedHall()?.id === hall.id"
+                    [class.text-brand]="selectedHall()?.id === hall.id"
+                    [class.border-brand/30]="selectedHall()?.id === hall.id"
                     [class.text-muted]="selectedHall()?.id !== hall.id"
                     [class.bg-surface]="selectedHall()?.id !== hall.id"
                     [class.border-subtle]="selectedHall()?.id !== hall.id"
@@ -60,7 +60,7 @@
                     </button>
                 }
                  @if(halls().length === 0) {
-                     <span class="text-xs text-muted italic px-2">Sem salões.</span>
+                     <span class="text-sm font-medium text-muted italic px-2">Nenhum salão configurado.</span>
                  }
             </div>
         }
@@ -68,8 +68,14 @@
   </header>
 
   <!-- Main Content -->
-  <main class="flex-1 flex overflow-hidden relative">
-    <div class="flex-1 overflow-auto bg-transparent">
+  <main class="flex-1 flex overflow-hidden relative bg-app">
+    <!-- Liquid Glassmorphism Background Orbs -->
+    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+      <div class="absolute top-[-10%] right-[-5%] w-[400px] md:w-[600px] h-[400px] md:h-[600px] bg-brand/10 rounded-full blur-[80px] md:blur-[120px] mix-blend-screen animate-pulse"></div>
+      <div class="absolute bottom-[-10%] left-[-5%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-brand/5 rounded-full blur-[60px] md:blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
+    </div>
+
+    <div class="flex-1 overflow-auto bg-transparent relative z-10 hide-scrollbar">
         @if (viewMode() === 'tables') {
             @if (selectedHall(); as hall) {
                 <div class="p-4 h-full">
@@ -86,9 +92,10 @@
                 </div>
             } @else {
                 <div class="flex items-center justify-center h-full">
-                    <div class="text-center text-muted">
-                        <p>Nenhum salão selecionado.</p>
-                        <button (click)="isHallManagerOpen.set(true)" class="mt-2 text-brand hover:underline">
+                    <div class="text-center p-8 bg-surface-elevated border border-strong rounded-3xl shadow-sm">
+                        <span class="material-symbols-outlined text-6xl text-brand/20 mb-4 drop-shadow-sm">table_restaurant</span>
+                        <p class="text-xl font-bold text-muted mb-4">Nenhum salão selecionado.</p>
+                        <button (click)="isHallManagerOpen.set(true)" class="px-6 py-2.5 bg-brand/10 text-brand border border-brand/20 font-bold rounded-xl shadow-sm hover:bg-brand/20 transition-colors">
                             Criar Salão
                         </button>
                     </div>
@@ -102,7 +109,7 @@
     <!-- Order Panel: Overlay on mobile, sidebar on desktop -->
     @if (isOrderPanelOpen()) {
       <!-- Mobile: Full screen overlay -->
-      <div class="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30">
+      <div class="md:hidden fixed inset-0 bg-black/60 backdrop-blur-md z-30 animate-in fade-in">
         <app-order-panel
           [selectedTable]="selectedTable()"
           [currentOrder]="activeOrder()"
@@ -120,7 +127,7 @@
       </div>
 
       <!-- Desktop: Side panel -->
-      <div class="hidden md:block w-full md:w-3/5 lg:w-1/2 xl:w-[600px] border-l-2 border-strong shadow-2xl relative z-20">
+      <div class="hidden md:block w-full md:w-[60%] lg:w-[55%] xl:w-[750px] border-l border-subtle shadow-2xl relative z-20 transition-transform duration-300 transform translate-x-0 bg-surface">
         <app-order-panel
           [selectedTable]="selectedTable()"
           [currentOrder]="activeOrder()"
@@ -181,26 +188,29 @@
 <!-- Context Menu for Tables -->
 @if(isContextMenuOpen()) {
   <div 
-    class="fixed z-50 chef-surface border border-strong rounded-xl shadow-2xl w-56 text-sm py-2"
+    class="fixed z-50 chef-surface border border-subtle rounded-2xl shadow-xl w-60 text-sm py-2 backdrop-blur-md animate-in fade-in"
     [style.left.px]="contextMenuPosition().x"
     [style.top.px]="contextMenuPosition().y"
     (click)="$event.stopPropagation()">
-      <div class="px-3 py-2 border-b border-subtle">
-          <p class="font-bold text-title">Mesa {{ contextMenuTable()?.number }}</p>
+      <div class="px-4 py-3 border-b border-subtle">
+          <p class="font-black text-title text-base flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand opacity-80">table_restaurant</span>
+            Mesa {{ contextMenuTable()?.number }}
+          </p>
           @if(activeOrder()?.customers?.name; as customerName) {
-            <p class="text-xs text-brand">{{ customerName }}</p>
+            <p class="text-xs text-brand font-bold uppercase tracking-wider mt-1">{{ customerName }}</p>
           }
       </div>
-      <ul class="text-body mt-1">
+      <ul class="text-body mt-2 px-2 pb-1 space-y-1">
           <li>
-              <button (click)="handlePrintPreBill()" class="w-full text-left flex items-center gap-3 px-3 py-2 hover-surface-elevated transition-colors text-title">
-                  <span class="material-symbols-outlined text-[18px]">receipt</span>
+              <button (click)="handlePrintPreBill()" class="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover-surface-elevated transition-colors text-title font-bold border border-transparent hover:border-subtle shadow-sm">
+                  <span class="material-symbols-outlined text-[20px] text-muted">receipt</span>
                   <span>Imprimir Pré-conta</span>
               </button>
           </li>
           <li>
-              <button (click)="openMoveModal()" class="w-full text-left flex items-center gap-3 px-3 py-2 hover-surface-elevated transition-colors text-title">
-                 <span class="material-symbols-outlined text-[18px]">move_up</span>
+              <button (click)="openMoveModal()" class="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover-surface-elevated transition-colors text-title font-bold border border-transparent hover:border-subtle shadow-sm">
+                 <span class="material-symbols-outlined text-[20px] text-muted">move_up</span>
                   <span>Mover Pedido</span>
               </button>
           </li>

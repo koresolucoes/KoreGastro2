@@ -1,30 +1,36 @@
 
-<div class="relative flex flex-col items-center justify-center min-h-screen overflow-hidden p-4 bg-gray-900">
-  <!-- Animated Background -->
-  <div class="absolute inset-0 z-0 animated-gradient-background opacity-50"></div>
+<div class="relative flex flex-col items-center justify-center min-h-screen overflow-hidden p-4 sm:p-8 bg-app">
+  <!-- Glowing Liquid Background -->
+  <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-brand/20 blur-[100px] mix-blend-screen animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-brand/10 blur-[120px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
+  </div>
   
   <!-- Content Wrapper -->
   <div class="relative z-10 w-full max-w-5xl">
     @if (isTrialing() && trialDaysRemaining() !== null) {
-      <div class="bg-blue-900/50 border border-blue-700 text-blue-200 px-4 py-3 rounded-xl relative mb-6 shadow-lg backdrop-blur-sm" role="alert">
+      <div class="bg-brand/20 border border-brand/40 text-brand-light px-4 py-3 rounded-2xl relative mb-6 shadow-lg backdrop-blur-md" role="alert">
         <strong class="font-bold">Período de Teste!</strong>
         @if(trialDaysRemaining()! > 0) {
           <span class="block sm:inline ml-2">Você tem {{ trialDaysRemaining() }} {{ trialDaysRemaining() === 1 ? 'dia restante' : 'dias restantes' }} para testar o ChefOS.</span>
         } @else {
           <span class="block sm:inline ml-2">Seu período de teste acaba hoje.</span>
         }
-        <a href="https://app.chefos.online" target="_blank" class="font-bold underline ml-2 hover:text-white transition-colors">Assine um plano</a> para não perder acesso.
+        <a href="https://app.chefos.online" target="_blank" class="font-black underline ml-2 hover:text-white transition-colors">Assine um plano</a> para não perder acesso.
       </div>
     }
 
-    <div class="bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 md:p-12 border border-gray-700/50">
+    <div class="bg-surface-elevated/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] p-8 md:p-12 border border-strong relative overflow-hidden">
+      <!-- Glow accent line top -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+
       <!-- Inactive Subscription Warning -->
       @if (!hasActiveSubscription() && isDataLoaded()) {
-        <div class="bg-red-900/50 border-l-4 border-red-500 text-red-200 p-6 rounded-xl mb-8 text-sm shadow-inner">
-          <h3 class="font-bold text-red-300 text-lg">Plano Inativo ou Expirado</h3>
-          <p class="mt-2">Sua assinatura não está ativa. Você só pode acessar os <a routerLink="/tutorials" class="font-semibold underline hover:text-red-100">tutoriais</a>.</p>
-          <p class="mt-2">Para reativar seu plano, entre em contato com nosso suporte: 
-            <a href="mailto:suporte@koresolucoes.com.br" class="font-semibold underline hover:text-red-100">suporte@koresolucoes.com.br</a>
+        <div class="bg-danger/20 border-l-4 border-danger text-danger-light p-6 rounded-2xl mb-8 text-sm shadow-inner backdrop-blur-sm">
+          <h3 class="font-bold text-danger text-lg">Plano Inativo ou Expirado</h3>
+          <p class="mt-2 text-danger">Sua assinatura não está ativa. Você só pode acessar os <a routerLink="/tutorials" class="font-bold underline hover:text-white">tutoriais</a>.</p>
+          <p class="mt-2 text-danger">Para reativar seu plano, entre em contato com nosso suporte: 
+            <a href="mailto:suporte@koresolucoes.com.br" class="font-bold underline hover:text-white">suporte@koresolucoes.com.br</a>
           </p>
         </div>
       }
@@ -33,84 +39,84 @@
         @if (!selectedEmployee() && !confirmationEmployee()) {
           <!-- Step 1: Employee Grid Selection -->
           <div class="text-center mb-10">
-            <h2 class="text-3xl font-extrabold text-white mb-2">Quem é você?</h2>
-            <p class="text-gray-400">Selecione seu perfil para acessar o sistema</p>
+            <h2 class="text-4xl font-black text-title mb-2 tracking-tight">Quem é você?</h2>
+            <p class="text-muted font-medium">Selecione seu perfil para acessar o sistema</p>
           </div>
           
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             @for(employee of employees(); track employee.id) {
-              <button (click)="selectEmployee(employee)" class="group flex flex-col items-center p-6 bg-gray-700/30 rounded-2xl hover:bg-gray-700/80 transition-all duration-300 relative border border-gray-600/30 hover:border-blue-500/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/20">
+              <button (click)="selectEmployee(employee)" class="group flex flex-col items-center p-6 bg-surface/50 rounded-2xl hover:bg-surface-elevated transition-all duration-300 relative border border-strong hover:border-brand/50 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand/10">
                  @if (employee.current_clock_in_id) {
-                  <div class="absolute top-4 right-4 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-[0_0_10px_rgba(34,197,94,0.6)] animate-pulse" title="Turno iniciado"></div>
+                  <div class="absolute top-4 right-4 w-4 h-4 bg-success rounded-full border-2 border-surface shadow-[0_0_10px_rgba(34,197,94,0.6)] animate-pulse" title="Turno iniciado"></div>
                  }
                 @if (employee.photo_url) {
-                  <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-20 h-20 rounded-full object-cover mb-4 ring-4 ring-gray-800 group-hover:ring-blue-500/30 transition-all">
+                  <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-20 h-20 rounded-full object-cover mb-4 ring-4 ring-surface-elevated group-hover:ring-brand/30 transition-all shadow-inner">
                 } @else {
-                  <div class="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center mb-4 ring-4 ring-gray-800 group-hover:ring-blue-500/30 transition-all">
-                    <span class="material-symbols-outlined text-4xl text-gray-400 group-hover:text-blue-300 transition-colors">person</span>
+                  <div class="w-20 h-20 rounded-full bg-surface-elevated/50 flex items-center justify-center mb-4 ring-4 ring-surface-elevated group-hover:ring-brand/30 transition-all shadow-inner">
+                    <span class="material-symbols-outlined text-4xl text-muted group-hover:text-brand transition-colors">person</span>
                   </div>
                 }
-                <span class="font-bold text-white text-center text-lg leading-tight mb-1">{{ employee.name }}</span>
-                 <span class="text-xs font-medium text-blue-400 text-center uppercase tracking-wider">{{ employee.role }}</span>
+                <span class="font-bold text-title text-center text-lg leading-tight mb-1">{{ employee.name }}</span>
+                 <span class="text-[10px] font-black text-brand text-center uppercase tracking-widest">{{ employee.role }}</span>
               </button>
             }
           </div>
         } @else if (selectedEmployee(); as employee) {
           <!-- Step 2: PIN Entry Modal -->
-          <div class="w-full max-w-sm mx-auto text-center animate-fade-in-up">
+          <div class="w-full max-w-sm mx-auto text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div class="relative inline-block mb-6">
               @if (employee.photo_url) {
-                <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-28 h-28 rounded-full object-cover ring-4 ring-blue-500/50 shadow-2xl">
+                <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-28 h-28 rounded-full object-cover ring-4 ring-brand/50 shadow-2xl">
               } @else {
-                <div class="w-28 h-28 rounded-full bg-gray-700 flex items-center justify-center ring-4 ring-blue-500/50 shadow-2xl">
-                  <span class="material-symbols-outlined text-5xl text-gray-400">person</span>
+                <div class="w-28 h-28 rounded-full bg-surface/80 flex items-center justify-center ring-4 ring-brand/50 shadow-2xl">
+                  <span class="material-symbols-outlined text-5xl text-muted">person</span>
                 </div>
               }
-              <button (click)="cancelPinLogin()" class="absolute -bottom-2 -right-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full p-2 shadow-lg border border-gray-600 transition-colors" title="Trocar usuário">
+              <button (click)="cancelPinLogin()" class="absolute -bottom-2 -right-2 bg-surface hover:bg-surface-elevated text-title rounded-full p-2.5 shadow-lg border border-strong transition-colors" title="Trocar usuário">
                 <span class="material-symbols-outlined text-sm">swap_horiz</span>
               </button>
             </div>
             
-            <h2 class="text-3xl font-bold text-white mb-1">Olá, {{ employee.name.split(' ')[0] }}</h2>
-            <p class="text-gray-400 mb-8">Digite seu PIN de 4 dígitos</p>
+            <h2 class="text-3xl font-black text-title mb-1 tracking-tight">Olá, {{ employee.name.split(' ')[0] }}</h2>
+            <p class="text-muted font-medium mb-8">Digite seu PIN de 4 dígitos</p>
             
-            <div class="flex justify-center items-center gap-4 h-16 mb-8 text-5xl tracking-[0.5em] font-mono bg-gray-900/50 rounded-xl border border-gray-700/50 shadow-inner" [class.animate-shake]="loginError()" [class.text-red-400]="loginError()" [class.border-red-500]="loginError()" [class.text-white]="!loginError()">
+            <div class="flex justify-center items-center gap-4 h-16 mb-8 text-5xl tracking-[0.5em] font-mono bg-surface/50 rounded-2xl border border-strong shadow-inner" [class.animate-shake]="loginError()" [class.text-danger]="loginError()" [class.border-danger/50]="loginError()" [class.text-title]="!loginError()">
               {{ pinDisplay() }}
             </div>
             
             <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto">
               @for(digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']; track digit) {
-                <button (click)="handlePinInput(digit)" class="w-20 h-20 mx-auto bg-gray-700/50 rounded-full text-3xl font-bold text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-900/50 transition-all active:scale-90 border border-gray-600/50">{{ digit }}</button>
+                <button (click)="handlePinInput(digit)" class="w-20 h-20 mx-auto bg-surface-elevated/50 rounded-full text-3xl font-bold text-title hover:bg-brand hover:text-white hover:shadow-lg hover:shadow-brand/50 transition-all active:scale-95 border border-strong">{{ digit }}</button>
               }
-              <button (click)="clearPin()" class="w-20 h-20 mx-auto bg-gray-800/50 rounded-full text-sm font-bold text-gray-400 hover:bg-gray-700 hover:text-white transition-all active:scale-90 border border-gray-700/50 flex items-center justify-center">
+              <button (click)="clearPin()" class="w-20 h-20 mx-auto bg-surface/50 rounded-full text-sm font-bold text-muted hover:bg-surface-elevated hover:text-title transition-all active:scale-95 border border-strong flex items-center justify-center">
                 <span class="material-symbols-outlined">backspace</span>
               </button>
-              <button (click)="handlePinInput('0')" class="w-20 h-20 mx-auto bg-gray-700/50 rounded-full text-3xl font-bold text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-900/50 transition-all active:scale-90 border border-gray-600/50">0</button>
-              <button (click)="cancelPinLogin()" class="w-20 h-20 mx-auto bg-gray-800/50 rounded-full text-sm font-bold text-gray-400 hover:bg-gray-700 hover:text-white transition-all active:scale-90 border border-gray-700/50 flex items-center justify-center">
+              <button (click)="handlePinInput('0')" class="w-20 h-20 mx-auto bg-surface-elevated/50 rounded-full text-3xl font-bold text-title hover:bg-brand hover:text-white hover:shadow-lg hover:shadow-brand/50 transition-all active:scale-95 border border-strong">0</button>
+              <button (click)="cancelPinLogin()" class="w-20 h-20 mx-auto bg-surface/50 rounded-full text-sm font-bold text-muted hover:bg-surface-elevated hover:text-title transition-all active:scale-95 border border-strong flex items-center justify-center">
                 <span class="material-symbols-outlined">close</span>
               </button>
             </div>
           </div>
         } @else if (confirmationEmployee(); as employee) {
           <!-- Step 3: Clock-In Confirmation -->
-          <div class="w-full max-w-md mx-auto text-center animate-fade-in-up">
+          <div class="w-full max-w-md mx-auto text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div class="mb-8">
                @if (employee.photo_url) {
-                  <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-32 h-32 rounded-full object-cover mx-auto ring-4 ring-green-500/50 shadow-2xl mb-6">
+                  <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-32 h-32 rounded-full object-cover mx-auto ring-4 ring-success/50 shadow-2xl mb-6">
               } @else {
-                  <div class="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center mx-auto ring-4 ring-green-500/50 shadow-2xl mb-6">
-                      <span class="material-symbols-outlined text-6xl text-gray-400">person</span>
+                  <div class="w-32 h-32 rounded-full bg-surface-elevated flex items-center justify-center mx-auto ring-4 ring-success/50 shadow-2xl mb-6">
+                      <span class="material-symbols-outlined text-6xl text-muted">person</span>
                   </div>
               }
-              <h2 class="text-3xl font-bold text-white mb-2">Olá, {{ employee.name.split(' ')[0] }}</h2>
-              <p class="text-gray-300 text-xl">Pronto para começar seu turno?</p>
+              <h2 class="text-3xl font-black text-title mb-2 tracking-tight">Olá, {{ employee.name.split(' ')[0] }}</h2>
+              <p class="text-muted text-xl font-medium">Pronto para começar seu turno?</p>
               </div>
               
               <div class="flex flex-col gap-4">
-                  <button (click)="confirmClockIn()" class="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-green-500 transition-all text-xl shadow-lg shadow-green-900/30 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3">
+                  <button (click)="confirmClockIn()" class="w-full bg-success hover:brightness-110 text-white font-black py-4 px-6 rounded-2xl transition-all text-xl shadow-lg shadow-success/30 hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3">
                       <span class="material-symbols-outlined">schedule</span> Iniciar Turno Agora
                   </button>
-                  <button (click)="cancelClockInConfirmation()" class="w-full bg-gray-700 text-white font-medium py-3 px-6 rounded-xl hover:bg-gray-600 transition-colors border border-gray-600">
+                  <button (click)="cancelClockInConfirmation()" class="w-full bg-surface-elevated text-title font-bold py-4 px-6 rounded-2xl hover:bg-surface border border-strong transition-all active:scale-95">
                       Cancelar e Voltar
                   </button>
               </div>
@@ -118,17 +124,17 @@
         }
       } @else {
         <!-- Empty State - Should be redirected by logic, but just in case -->
-        <div class="flex items-center justify-center h-64">
-           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-           <p class="ml-4 text-gray-400">Carregando...</p>
+        <div class="flex flex-col items-center justify-center h-64 gap-4">
+           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+           <p class="text-muted font-medium">Carregando...</p>
         </div>
       }
 
       <!-- Official Website Link -->
-      <div class="text-center mt-6 pt-4 border-t border-gray-700/50">
-        <p class="text-sm text-gray-400">
+      <div class="text-center mt-10 pt-6 border-t border-subtle">
+        <p class="text-sm font-medium text-muted">
           Conheça o ChefOS -
-          <a href="https://app.chefos.online" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-400 hover:text-blue-300">
+          <a href="https://app.chefos.online" target="_blank" rel="noopener noreferrer" class="font-bold text-brand hover:text-brand-light transition-colors ml-1">
             Visite nossa página oficial
           </a>
         </p>

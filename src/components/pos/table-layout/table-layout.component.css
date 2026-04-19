@@ -1,17 +1,17 @@
 .bg-dots {
-    background-color: #1f2937; /* bg-gray-800 */
-    background-image: radial-gradient(#4b5563 1px, transparent 1px);
+    background-color: var(--color-surface);
+    background-image: radial-gradient(var(--color-strong) 1px, transparent 1px);
     background-size: 16px 16px;
+    opacity: 0.5;
 }
 
 .resize-handle {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 16px;
-    height: 16px;
-    background-color: #3b82f6; /* bg-blue-600 */
-    cursor: nwse-resize;
-    border-top-left-radius: 8px;
+    bottom: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
+    cursor: se-resize;
     z-index: 10;
 }

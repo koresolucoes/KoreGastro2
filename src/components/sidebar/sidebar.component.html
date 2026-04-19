@@ -1,44 +1,54 @@
 
-<aside class="w-64 bg-gray-900 border-r border-gray-800 text-gray-300 flex flex-col h-screen no-print transition-all duration-300" [class.w-20]="!isSidebarOpen()" [class.w-64]="isSidebarOpen()">
+<aside class="flex flex-col h-screen no-print transition-all duration-300 bg-surface-elevated/90 backdrop-blur-2xl border-r border-strong text-muted relative z-40" [class.w-20]="!isSidebarOpen()" [class.w-72]="isSidebarOpen()">
+  
+  <!-- Subtle inner background glowing effects -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-20 -left-20 w-60 h-60 bg-brand/10 rounded-full blur-[80px]"></div>
+    <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 to-transparent"></div>
+  </div>
+
   <!-- Header / Toggle -->
-  <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800 flex-shrink-0">
+  <div class="h-20 flex items-center justify-between px-5 border-b border-subtle flex-shrink-0 relative z-10">
     @if(isSidebarOpen()) {
-        <span class="text-2xl font-extrabold text-white">Chef<span class="text-blue-500">OS</span></span>
+        <span class="text-2xl font-black tracking-tight text-title flex items-center gap-2">
+           <span class="material-symbols-outlined text-brand opacity-90 drop-shadow-sm text-3xl">restaurant_menu</span>
+           Chef<span class="text-brand">OS</span>
+        </span>
     }
-    <button (click)="toggleSidebar()" class="p-1 rounded-md hover:bg-gray-800 text-gray-400">
-      <span class="material-symbols-outlined">{{ isSidebarOpen() ? 'menu_open' : 'menu' }}</span>
+    <button (click)="toggleSidebar()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-subtle transition-all active:scale-95 shadow-sm" [class.mx-auto]="!isSidebarOpen()">
+      <span class="material-symbols-outlined text-xl">{{ isSidebarOpen() ? 'menu_open' : 'menu' }}</span>
     </button>
   </div>
 
-  <!-- Store Switcher (Custom Dropdown) -->
+  <!-- Store Switcher -->
   @if(isSidebarOpen()) {
-    <div class="px-4 py-3 border-b border-gray-800 relative">
-        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Loja Ativa</label>
+    <div class="px-5 py-4 border-b border-subtle relative z-20">
+        <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 opacity-80">Unidade Operacional</label>
         
-        <button (click)="toggleStoreDropdown()" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-md border border-gray-700 py-2 px-3 flex justify-between items-center transition-colors">
-            <span class="truncate">{{ unitContextService.activeUnitName() }}</span>
-            <span class="material-symbols-outlined text-sm text-gray-400 transition-transform duration-200" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
+        <button (click)="toggleStoreDropdown()" class="w-full bg-surface hover:bg-surface-elevated text-title text-sm rounded-xl border border-strong py-2.5 px-4 flex justify-between items-center transition-all shadow-sm hover:border-brand/40 group">
+            <span class="font-bold truncate">{{ unitContextService.activeUnitName() }}</span>
+            <span class="material-symbols-outlined text-sm text-muted group-hover:text-brand transition-transform duration-300" [class.rotate-180]="isStoreDropdownOpen()">unfold_more</span>
         </button>
 
         <!-- Dropdown Menu -->
         @if(isStoreDropdownOpen()) {
-            <div class="absolute left-4 right-4 top-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 overflow-hidden">
-                <ul class="max-h-48 overflow-y-auto">
+            <div class="absolute left-5 right-5 top-full mt-2 bg-surface-elevated border border-strong rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl animate-in slide-in-from-top-2 zoom-in-95">
+                <ul class="max-h-56 overflow-y-auto custom-scrollbar p-1">
                     @for(unit of unitContextService.availableUnits(); track unit.id) {
                         <li>
-                            <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 flex items-center justify-between group">
-                                <span [class.text-blue-400]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">{{ unit.name }}</span>
+                            <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2.5 text-sm rounded-xl transition-all flex items-center justify-between group" [class.bg-brand/10]="unitContextService.activeUnitId() === unit.id" [class.text-brand]="unitContextService.activeUnitId() === unit.id" [class.hover:bg-surface]="unitContextService.activeUnitId() !== unit.id" [class.text-muted]="unitContextService.activeUnitId() !== unit.id" [class.hover:text-title]="unitContextService.activeUnitId() !== unit.id">
+                                <span class="font-bold truncate">{{ unit.name }}</span>
                                 @if(unitContextService.activeUnitId() === unit.id) {
-                                    <span class="material-symbols-outlined text-blue-400 text-xs">check</span>
+                                    <span class="material-symbols-outlined text-brand text-sm shadow-sm scale-110">check_circle</span>
                                 }
                             </button>
                         </li>
                     }
                 </ul>
-                <div class="border-t border-gray-700 p-2 bg-gray-900/50">
-                    <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 py-1 rounded hover:bg-gray-800 transition-colors">
+                <div class="border-t border-subtle p-2 bg-black/10">
+                    <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-brand hover:text-white py-2 rounded-xl hover:bg-brand transition-all border border-transparent hover:border-brand/50 shadow-sm active:scale-95">
                         <span class="material-symbols-outlined text-sm">add_business</span>
-                        Adicionar / Vincular Loja
+                        Nova Loja
                     </button>
                 </div>
             </div>
@@ -49,58 +59,59 @@
   }
 
   <!-- Navigation -->
-  <nav class="flex-1 overflow-y-auto py-4 space-y-1">
-    <a routerLink="/home" routerLinkActive="bg-blue-600 text-white" 
-       class="group flex items-center px-4 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-800 hover:text-white transition-colors" 
+  <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-1 custom-scrollbar relative z-10">
+    <a routerLink="/home" routerLinkActive="bg-gradient-to-r from-brand to-brand/80 text-white shadow-lg shadow-brand/20 border-transparent font-bold !text-white" 
+       class="group flex items-center px-4 py-3 text-sm font-medium rounded-xl hover:bg-surface border border-transparent hover:border-subtle transition-all duration-300 relative text-title"
        [class.justify-center]="!isSidebarOpen()" 
        [title]="!isSidebarOpen() ? 'Início' : ''">
-       <span class="material-symbols-outlined text-xl mr-3">home</span>
+       <!-- active indicator glow -->
+       <span class="material-symbols-outlined text-[22px] mr-3 relative z-10 transition-transform group-hover:scale-110">home</span>
        @if(isSidebarOpen()) {
-          <span>Início</span>
+          <span class="relative z-10 tracking-wide">Início</span>
        }
     </a>
     @for (item of navItems(); track item.name) {
       @if (isNavGroup(item)) {
-        <div class="relative">
+        <div class="relative space-y-1 mt-1">
             <!-- Group Header -->
             <button 
                 (click)="toggleGroup(item.name)" 
-                class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium transition-colors duration-200"
-                [class.text-white]="expandedGroups()[item.name]"
-                [class.text-gray-400]="!expandedGroups()[item.name]"
+                class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-all duration-300 rounded-xl border border-transparent hover:bg-surface hover:border-subtle group"
+                [class.text-title]="expandedGroups()[item.name]"
+                [class.text-muted]="!expandedGroups()[item.name]"
                 [class.justify-center]="!isSidebarOpen()"
                 [title]="!isSidebarOpen() ? item.name : ''">
                 
                 <div class="flex items-center gap-3">
                     @if (item.imageUrl) {
-                        <img [src]="item.imageUrl" [alt]="item.name" class="h-5 w-5 object-contain opacity-70">
+                        <img [src]="item.imageUrl" [alt]="item.name" class="h-[22px] w-[22px] object-contain opacity-80 group-hover:opacity-100 transition-opacity drop-shadow-sm">
                     } @else if (item.icon) {
-                         <!-- Render path based icon or simple icon -->
                          @if(item.icon.startsWith('M')) {
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
+                             <svg class="w-[22px] h-[22px] transition-transform group-hover:scale-110 group-hover:text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
                          } @else {
-                             <span class="material-symbols-outlined text-xl">{{ item.icon }}</span>
+                             <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
                          }
                     }
                     @if(isSidebarOpen()) {
-                        <span>{{ item.name }}</span>
+                        <span class="tracking-wide" [class.font-bold]="expandedGroups()[item.name]">{{ item.name }}</span>
                     }
                 </div>
                 
                 @if(isSidebarOpen()) {
-                    <span class="material-symbols-outlined text-sm transition-transform duration-200" [class.rotate-90]="expandedGroups()[item.name]">chevron_right</span>
+                    <span class="material-symbols-outlined text-sm opacity-60 transition-transform duration-300 group-hover:text-brand group-hover:opacity-100" [class.rotate-90]="expandedGroups()[item.name]">chevron_right</span>
                 }
             </button>
             
             <!-- Group Children -->
             @if(expandedGroups()[item.name] && isSidebarOpen()) {
-                <div class="mt-1 space-y-1 bg-gray-800/30">
+                <div class="space-y-1 my-1 ml-6 relative border-l border-strong pl-2 py-1 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-300">
+                    <div class="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-brand/50 to-transparent"></div>
                     @for (child of item.children; track child.path) {
-                        <a [routerLink]="child.path" routerLinkActive="bg-blue-600 text-white" class="group flex items-center pl-11 pr-2 py-2 text-sm font-medium text-gray-400 rounded-md hover:text-white hover:bg-gray-800 transition-colors">
+                        <a [routerLink]="child.path" routerLinkActive="bg-brand/10 text-brand font-bold border-brand/30" class="group flex items-center px-4 py-2 text-sm font-medium text-muted rounded-xl hover:text-title hover:bg-surface border border-transparent transition-all">
                             @if(child.icon && child.icon.startsWith('M')) {
-                                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="child.icon"></path></svg>
+                                <svg class="w-4 h-4 mr-3 flex-shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="child.icon"></path></svg>
                             } @else if (child.icon) {
-                                <span class="material-symbols-outlined text-lg mr-3">{{ child.icon }}</span>
+                                <span class="material-symbols-outlined text-[18px] mr-3 transition-transform group-hover:scale-110">{{ child.icon }}</span>
                             }
                             {{ child.name }}
                         </a>
@@ -110,17 +121,17 @@
         </div>
       } @else {
         <!-- Single Link -->
-        <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white" class="group flex items-center px-4 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-800 hover:text-white transition-colors" [class.justify-center]="!isSidebarOpen()" [title]="!isSidebarOpen() ? item.name : ''">
+        <a [routerLink]="item.path" routerLinkActive="bg-gradient-to-r from-brand to-brand/80 text-white shadow-lg shadow-brand/20 border-transparent font-bold !text-white" class="group flex items-center px-4 py-3 text-sm font-medium rounded-xl hover:bg-surface hover:text-title border border-transparent hover:border-subtle transition-all duration-300 text-muted mt-1" [class.justify-center]="!isSidebarOpen()" [title]="!isSidebarOpen() ? item.name : ''">
              @if (item.imageUrl) {
-                <img [src]="item.imageUrl" [alt]="item.name" class="h-5 w-5 object-contain mr-3">
+                <img [src]="item.imageUrl" [alt]="item.name" class="h-[22px] w-[22px] object-contain mr-3 opacity-80 group-hover:opacity-100 transition-opacity">
              } @else if (item.icon && item.icon.startsWith('M')) {
-                <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
+                <svg class="w-[22px] h-[22px] mr-3 flex-shrink-0 transition-transform group-hover:scale-110 group-hover:text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
              } @else if (item.icon) {
-                 <span class="material-symbols-outlined text-xl mr-3">{{ item.icon }}</span>
+                 <span class="material-symbols-outlined text-[22px] mr-3 transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
              }
              
              @if(isSidebarOpen()) {
-                <span>{{ item.name }}</span>
+                <span class="tracking-wide">{{ item.name }}</span>
              }
         </a>
       }
@@ -128,32 +139,36 @@
   </nav>
 
   <!-- User Footer -->
-  <div class="border-t border-gray-800 p-4 bg-gray-900">
+  <div class="p-5 bg-surface-elevated/80 border-t border-strong flex-shrink-0 relative z-20 backdrop-blur-md">
     <div class="flex items-center gap-3">
        @if (activeEmployee()?.photo_url; as photoUrl) {
-          <img [src]="photoUrl" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-gray-600">
+          <img [src]="photoUrl" alt="Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-brand/50 shadow-sm">
        } @else {
-          <div class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
-            <span class="material-symbols-outlined">person</span>
+          <div class="w-10 h-10 rounded-full bg-surface border border-strong flex items-center justify-center text-muted shadow-sm">
+            <span class="material-symbols-outlined text-lg">person</span>
           </div>
        }
        
        @if(isSidebarOpen()) {
            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-white truncate">{{ activeEmployee()?.name }}</p>
-              <p class="text-xs text-gray-500 truncate">{{ activeEmployee()?.role }}</p>
+              <p class="text-sm font-black text-title truncate">{{ activeEmployee()?.name }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-brand truncate opacity-90">{{ activeEmployee()?.role }}</p>
            </div>
        }
     </div>
     
     @if(isSidebarOpen()) {
-        <div class="mt-4 space-y-2">
-            <button (click)="handleShiftAction()" class="w-full py-1.5 px-2 rounded text-xs font-semibold border transition-colors" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+        <div class="mt-5 space-y-3">
+            <button (click)="handleShiftAction()" class="w-full py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all active:scale-95 shadow-sm" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
                 {{ shiftButtonState().text }}
             </button>
             <div class="grid grid-cols-2 gap-2">
-                <button (click)="switchEmployee()" class="py-1.5 px-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors">Trocar</button>
-                <button (click)="signOut()" class="py-1.5 px-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded text-xs transition-colors">Sair</button>
+                <button (click)="switchEmployee()" class="py-2 px-2 bg-surface hover:bg-surface-elevated text-title border border-strong hover:border-brand/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm">
+                    <span class="material-symbols-outlined text-[14px]">swap_horiz</span> Trocar
+                </button>
+                <button (click)="signOut()" class="py-2 px-2 bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/20 hover:border-danger rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm">
+                    <span class="material-symbols-outlined text-[14px]">logout</span> Sair
+                </button>
             </div>
         </div>
     }

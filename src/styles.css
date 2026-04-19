@@ -5,46 +5,68 @@
    CHEF OS - CORE DESIGN SYSTEM TOKENS
    ========================================= */
 
-/* LIGHT THEME - Liquid Glass */
+/* LIGHT THEME - Professional Culinary Day */
 html, html[data-theme="light"] {
-  --bg-app: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #dbeafe 100%); /* Soft Indigo/Purple/Blue Mesh */
-  --surface-base: rgba(255, 255, 255, 0.45); /* High transparency for frosted effect */
-  --surface-elevated: rgba(255, 255, 255, 0.65);
-  --surface-glass-bg: rgba(255, 255, 255, 0.45);
+  /* Soft, warm off-white background to reduce glare (Zinc 50 to Zinc 100) */
+  --bg-app: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%); 
   
-  --border-subtle: rgba(255, 255, 255, 0.4);
-  --border-strong: rgba(255, 255, 255, 0.8);
-  --border-focus: rgba(99, 102, 241, 0.5); 
+  /* Crisp white surfaces for high contrast with content */
+  --surface-base: rgba(255, 255, 255, 0.95); 
+  --surface-elevated: rgba(255, 255, 255, 1);
+  --surface-glass-bg: rgba(255, 255, 255, 0.85);
   
-  --text-title: #1e1b4b; /* Deep Indigo */
-  --text-body: #312e81;  /* Indigo 800 */
-  --text-muted: #4f46e5; /* Indigo 600 - keeping high visibility on gradient */
+  /* Subtle monochromatic borders */
+  --border-subtle: rgba(24, 24, 27, 0.1); 
+  --border-strong: rgba(24, 24, 27, 0.2);
+  --border-focus: rgba(234, 88, 12, 0.4); /* Brand focus ring */
   
-  --brand-primary: #4f46e5;
-  --brand-hover: #4338ca;
-  --accent-success: #10b981;
-  --accent-warning: #f59e0b;
-  --accent-danger: #ef4444;
+  /* Typography - Zinc/Charcoal palette for readability */
+  --text-title: #09090b; /* Zinc 950 */
+  --text-body: #27272a;  /* Zinc 800 */
+  --text-muted: #52525b; /* Zinc 600 - dark enough to be perfectly legible */
+  
+  /* Brand accents - Appetizing, energetic Burnt Orange / Terracotta */
+  --brand-primary: #ea580c; /* Orange 600 */
+  --brand-hover: #c2410c;   /* Orange 700 */
+  
+  /* Feedback colors - bold but not blinding */
+  --accent-success: #16a34a; /* Green 600 */
+  --accent-warning: #d97706; /* Amber 600 */
+  --accent-danger: #dc2626;  /* Red 600 */
 
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08); /* Colored soft shadow */
+  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); /* Softer shadow */
 }
 
-/* DARK THEME - Liquid Glass Night */
+/* DARK THEME - Professional Culinary Night */
 html[data-theme="dark"] {
-  --bg-app: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%); /* Neon Purple/Navy Mesh */
-  --surface-base: rgba(15, 23, 42, 0.35); /* Translucent dark slate */
-  --surface-elevated: rgba(30, 41, 59, 0.55);
-  --surface-glass-bg: rgba(15, 23, 42, 0.35);
+  /* Deep matte zinc background - avoids pure black smear on OLEDs */
+  --bg-app: linear-gradient(135deg, #18181b 0%, #09090b 100%); /* Zinc 900 to 950 */
   
+  /* Slightly lighter zinc for surfaces */
+  --surface-base: rgba(39, 39, 42, 0.6); /* Zinc 800 */
+  --surface-elevated: rgba(63, 63, 70, 0.6); /* Zinc 700 */
+  --surface-glass-bg: rgba(24, 24, 27, 0.7);
+  
+  /* Delicate light borders */
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.18);
-  --border-focus: rgba(99, 102, 241, 0.5); 
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-focus: rgba(249, 115, 22, 0.5); /* Bright orange focus */
   
-  --text-title: #f8fafc;
-  --text-body: #cbd5e1;
-  --text-muted: #818cf8; /* Light Indigo */
+  /* Typography - High contrast light greys */
+  --text-title: #ffffff; /* Pure white for titles */
+  --text-body: #e4e4e7;  /* Zinc 200 */
+  --text-muted: #a1a1aa; /* Zinc 400 - bright enough for dark mode */
   
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  /* Brand accents - Vibrant orange for visibility in dark mode */
+  --brand-primary: #f97316; /* Orange 500 */
+  --brand-hover: #ea580c;   /* Orange 600 */
+  
+  /* Feedback colors */
+  --accent-success: #10b981; /* Emerald 500 */
+  --accent-warning: #f59e0b; /* Amber 500 */
+  --accent-danger: #ef4444;  /* Red 500 */
+  
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* Global Background Setup */
@@ -134,29 +156,23 @@ body {
   transition: color 0.3s ease;
 }
 
-/* Custom scrollbar for a more modern look */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Global hidden scrollbars for a cleaner "Glass" look */
+*::-webkit-scrollbar {
+  display: none !important;
 }
-::-webkit-scrollbar-track {
-  background: #1f2937; /* bg-gray-800 */
-}
-::-webkit-scrollbar-thumb {
-  background: #4b5563; /* bg-gray-600 */
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280; /* bg-gray-500 */
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Hide scrollbar for elements with this class */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
 }
 
 /* Print styles */
