@@ -1,23 +1,42 @@
-<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" (click)="close.emit()">
+  <div class="chef-surface border border-subtle rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95" (click)="$event.stopPropagation()">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-700">
+    <div class="p-6 border-b border-subtle bg-surface-elevated/30">
         <div class="flex justify-between items-start">
-            <div>
-              <h3 class="text-xl font-bold text-white">{{ employee().name }}</h3>
-              <p class="text-gray-400 text-sm">{{ employeeRole() }}</p>
+            <div class="flex items-center gap-4">
+                @if (employee().photo_url) {
+                    <img [src]="employee().photo_url" alt="Foto" class="w-16 h-16 rounded-2xl object-cover border-2 border-surface shadow-md">
+                } @else {
+                    <div class="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center text-brand border border-brand/20 shadow-inner">
+                        <span class="material-symbols-outlined text-3xl">person</span>
+                    </div>
+                }
+                <div>
+                  <h3 class="text-2xl font-black text-title title-display">{{ employee().name }}</h3>
+                  <p class="text-muted text-sm font-bold uppercase tracking-widest">{{ employeeRole() }}</p>
+                </div>
             </div>
-            <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger transition-all">
+              <span class="material-symbols-outlined">close</span>
             </button>
         </div>
         <!-- Tabs -->
-        <div class="mt-4 border-b border-gray-700">
-            <nav class="-mb-px flex space-x-6">
-                <button (click)="activeTab.set('performance')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'performance'" [class.text-white]="activeTab() === 'performance'" [class.border-transparent]="activeTab() !== 'performance'" [class.text-gray-400]="activeTab() !== 'performance'" [class.hover:text-gray-200]="activeTab() !== 'performance'">
+        <div class="mt-6 border-b border-subtle">
+            <nav class="-mb-px flex space-x-8">
+                <button (click)="activeTab.set('performance')" class="py-3 px-1 border-b-2 font-black text-[11px] uppercase tracking-widest transition-all" 
+                        [class.border-brand]="activeTab() === 'performance'" 
+                        [class.text-brand]="activeTab() === 'performance'" 
+                        [class.border-transparent]="activeTab() !== 'performance'" 
+                        [class.text-muted]="activeTab() !== 'performance'" 
+                        [class.hover:text-title]="activeTab() !== 'performance'">
                     Desempenho
                 </button>
-                <button (click)="activeTab.set('details')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'details'" [class.text-white]="activeTab() === 'details'" [class.border-transparent]="activeTab() !== 'details'" [class.text-gray-400]="activeTab() !== 'details'" [class.hover:text-gray-200]="activeTab() !== 'details'">
+                <button (click)="activeTab.set('details')" class="py-3 px-1 border-b-2 font-black text-[11px] uppercase tracking-widest transition-all" 
+                        [class.border-brand]="activeTab() === 'details'" 
+                        [class.text-brand]="activeTab() === 'details'" 
+                        [class.border-transparent]="activeTab() !== 'details'" 
+                        [class.text-muted]="activeTab() !== 'details'" 
+                        [class.hover:text-title]="activeTab() !== 'details'">
                     Dados Pessoais
                 </button>
             </nav>
@@ -25,115 +44,173 @@
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-6 overflow-y-auto">
+    <div class="flex-1 p-8 overflow-y-auto hide-scrollbar bg-surface/30">
       @if(activeTab() === 'performance') {
-        <div class="flex justify-between items-center mb-4">
-          <h4 class="text-lg font-semibold text-white">Resumo de Desempenho</h4>
-          <div class="flex space-x-1 bg-gray-700 p-1 rounded-lg">
-            <button (click)="period.set('7d')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === '7d'" [class.text-white]="period() === '7d'">7 Dias</button>
-            <button (click)="period.set('30d')" class="px-3 py-1 text-sm rounded-md" [class.bg-blue-600]="period() === '30d'" [class.text-white]="period() === '30d'">30 Dias</button>
+        <div class="flex justify-between items-center mb-6">
+          <h4 class="text-lg font-black text-title uppercase tracking-tight">Resumo de Desempenho</h4>
+          <div class="flex bg-surface-elevated p-1 rounded-xl border border-strong shadow-inner">
+            <button (click)="period.set('7d')" class="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" 
+                    [class.bg-brand]="period() === '7d'" [class.text-white]="period() === '7d'" [class.shadow-sm]="period() === '7d'"
+                    [class.text-muted]="period() !== '7d'">7 Dias</button>
+            <button (click)="period.set('30d')" class="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" 
+                    [class.bg-brand]="period() === '30d'" [class.text-white]="period() === '30d'" [class.shadow-sm]="period() === '30d'"
+                    [class.text-muted]="period() !== '30d'">30 Dias</button>
           </div>
         </div>
 
         @if (isLoading()) {
           <div class="flex items-center justify-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+             <div class="relative w-12 h-12">
+                <div class="absolute inset-0 rounded-full border-4 border-brand/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-brand border-t-transparent animate-spin"></div>
+             </div>
           </div>
         } @else if (stats(); as s) {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Vendas Totais</p><p class="text-2xl font-bold text-white">{{ s.totalSales | currency:'BRL' }}</p></div>
-            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Gorjetas</p><p class="text-2xl font-bold text-green-400">{{ s.totalTips | currency:'BRL' }}</p></div>
-            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold text-white">{{ s.averageTicket | currency:'BRL' }}</p></div>
-            <div class="bg-gray-700/50 p-4 rounded-lg"><p class="text-sm text-gray-400">Horas Trabalhadas</p><p class="text-2xl font-bold text-white">{{ s.workedHours | number:'1.1-1' }}h</p></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="chef-surface p-5 border-subtle shadow-sm">
+                <p class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Vendas Totais</p>
+                <p class="text-2xl font-black text-title data-mono">{{ s.totalSales | currency:'BRL' }}</p>
+            </div>
+            <div class="chef-surface p-5 border-success/20 bg-success/5 shadow-sm">
+                <p class="text-[10px] text-success/70 font-black uppercase tracking-widest mb-1">Gorjetas</p>
+                <p class="text-2xl font-black text-success data-mono">{{ s.totalTips | currency:'BRL' }}</p>
+            </div>
+            <div class="chef-surface p-5 border-subtle shadow-sm">
+                <p class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Ticket Médio</p>
+                <p class="text-2xl font-black text-title data-mono">{{ s.averageTicket | currency:'BRL' }}</p>
+            </div>
+            <div class="chef-surface p-5 border-info/20 bg-info/5 shadow-sm">
+                <p class="text-[10px] text-info/70 font-black uppercase tracking-widest mb-1">Horas Trabalhadas</p>
+                <p class="text-2xl font-black text-title data-mono">{{ s.workedHours | number:'1.1-1' }}h</p>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Daily Hours Chart -->
             @if(period() === '7d') {
-              <div class="bg-gray-700/50 p-4 rounded-lg">
-                <h5 class="text-md font-semibold text-white mb-4">Horas Trabalhadas (Últimos 7 dias)</h5>
+              <div class="chef-surface p-6 border-subtle shadow-sm">
+                <h5 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand">bar_chart</span>
+                    Frequência (7 dias)
+                </h5>
                 @if(s.dailyHoursChartData.length > 0 && s.workedHours > 0) {
-                  <div class="flex justify-between items-end h-32 space-x-2">
+                  <div class="flex justify-between items-end h-40 space-x-3 px-2">
                     @for(day of s.dailyHoursChartData; track day.label) {
-                      <div class="flex-1 flex flex-col items-center justify-end h-full">
-                        <div class="w-full bg-blue-600 rounded-t-sm hover:bg-blue-500 transition-colors" [style.height.%]="day.percentage" [title]="(day.hours | number:'1.1-1') + ' horas'"></div>
-                        <p class="text-xs text-gray-400 mt-1">{{ day.label }}</p>
+                      <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                        <div class="w-full bg-brand/20 group-hover:bg-brand/40 absolute inset-0 rounded-t-lg -z-0 transition-all opacity-0 group-hover:opacity-100"></div>
+                        <div class="w-full bg-brand rounded-t-lg hover:bg-brand-hover transition-all shadow-lg shadow-brand/20 z-10" [style.height.%]="day.percentage">
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-title text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
+                                {{ day.hours | number:'1.1-1' }}h
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-black text-muted transition-colors group-hover:text-title mt-3 uppercase tracking-tighter">{{ day.label }}</p>
                       </div>
                     }
                   </div>
                 } @else {
-                  <p class="text-center text-sm text-gray-500 h-32 flex items-center justify-center">Nenhum registro de horas nos últimos 7 dias.</p>
+                  <div class="flex flex-col items-center justify-center py-12 text-center bg-surface-elevated/30 rounded-2xl border border-dashed border-strong">
+                    <span class="material-symbols-outlined text-4xl text-muted/30 mb-2">event_busy</span>
+                    <p class="text-xs text-muted font-bold">Sem registros neste período</p>
+                  </div>
                 }
               </div>
             }
 
             <!-- Recent Entries -->
-            <div class="bg-gray-700/50 p-4 rounded-lg" [class.lg:col-span-2]="period() === '30d'">
-              <h5 class="text-md font-semibold text-white mb-4">Últimos Registros de Ponto</h5>
+            <div class="chef-surface p-6 border-subtle shadow-sm" [class.lg:col-span-2]="period() === '30d'">
+              <h5 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-brand">history</span>
+                  Últimos Pontos
+              </h5>
               @if(s.recentEntries.length > 0) {
-                <ul class="space-y-2">
+                <ul class="space-y-3">
                   @for(entry of s.recentEntries; track entry.id) {
-                    <li class="flex justify-between items-center text-sm bg-gray-900/50 p-2 rounded-md">
-                      <div>
-                        <p class="font-medium text-white">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
-                        <p class="font-mono text-xs text-gray-400">{{ entry.clock_in_time | date:'HH:mm' }} - {{ entry.clock_out_time ? (entry.clock_out_time | date:'HH:mm') : 'Agora' }}</p>
+                    <li class="flex justify-between items-center bg-surface-elevated hover:bg-surface border border-strong rounded-2xl p-4 transition-all shadow-sm group">
+                      <div class="flex items-center gap-4">
+                        <div class="bg-brand/10 p-2 rounded-xl border border-strong group-hover:bg-brand group-hover:border-brand transition-colors">
+                            <span class="material-symbols-outlined text-brand group-hover:text-white transition-colors">schedule</span>
+                        </div>
+                        <div>
+                          <p class="text-title font-black text-sm">{{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
+                          <p class="font-mono text-xs text-muted">{{ entry.clock_in_time | date:'HH:mm' }} — {{ entry.clock_out_time ? (entry.clock_out_time | date:'HH:mm') : 'Em curso' }}</p>
+                        </div>
                       </div>
-                      <span class="font-semibold text-white font-mono">{{ getFormattedDuration(entry) }}</span>
+                      <span class="font-black text-title font-mono bg-surface-elevated px-3 py-1.5 rounded-lg border border-strong shadow-inner text-sm">{{ getFormattedDuration(entry) }}</span>
                     </li>
                   }
                 </ul>
               } @else {
-                <p class="text-center text-sm text-gray-500 py-8">Nenhum registro de ponto no período.</p>
+                  <div class="flex flex-col items-center justify-center py-12 text-center bg-surface-elevated/30 rounded-2xl border border-dashed border-strong">
+                    <span class="material-symbols-outlined text-4xl text-muted/30 mb-2">work_off</span>
+                    <p class="text-xs text-muted font-bold">Sem registros de ponto</p>
+                  </div>
               }
             </div>
           </div>
         }
       } @else if(activeTab() === 'details') {
-          <dl class="space-y-6">
+          <div class="space-y-8">
             <!-- Personal Info -->
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Informações Pessoais</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ employee().cpf || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">RG</dt><dd class="text-white font-medium">{{ employee().rg || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Data de Nascimento</dt><dd class="text-white font-medium">{{ employee().birth_date ? (employee().birth_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Endereço</dt><dd class="text-white font-medium">{{ employee().address || 'Não informado' }}</dd></div>
+            <section class="chef-surface p-6 border-subtle shadow-sm">
+              <h4 class="text-sm font-black text-brand uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span class="material-symbols-outlined">badge</span>
+                  Informações Pessoais
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">CPF</dt><dd class="text-title font-bold">{{ employee().cpf || '—' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">RG</dt><dd class="text-title font-bold">{{ employee().rg || '—' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Data de Nascimento</dt><dd class="text-title font-bold">{{ employee().birth_date ? (employee().birth_date | date:'dd/MM/yyyy') : '—' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Endereço Residencial</dt><dd class="text-title font-bold">{{ employee().address || '—' }}</dd></div>
               </div>
-            </div>
+            </section>
+
              <!-- Contact Info -->
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Contato</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">Telefone</dt><dd class="text-white font-medium">{{ employee().phone || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Contato de Emergência</dt><dd class="text-white font-medium">{{ employee().emergency_contact_name || 'Não informado' }} ({{ employee().emergency_contact_phone || 'N/A' }})</dd></div>
+            <section class="chef-surface p-6 border-subtle shadow-sm">
+              <h4 class="text-sm font-black text-brand uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span class="material-symbols-outlined">contact_phone</span>
+                  Contato e Emergência
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Telefone Principal</dt><dd class="text-title font-black text-lg data-mono">{{ employee().phone || '—' }}</dd></div>
+                  <div class="flex flex-col"><dt class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Emergência</dt><dd class="text-title font-bold">{{ employee().emergency_contact_name || '—' }} <span class="text-muted text-xs ml-2 font-mono">({{ employee().emergency_contact_phone || '—' }})</span></dd></div>
               </div>
+            </section>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Contract Info -->
+                <section class="chef-surface p-6 border-subtle shadow-sm">
+                  <h4 class="text-sm font-black text-brand uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <span class="material-symbols-outlined">description</span>
+                      Contrato
+                  </h4>
+                  <div class="space-y-4">
+                      <div class="flex justify-between items-center"><dt class="text-[10px] text-muted font-black uppercase tracking-widest">Contratação</dt><dd class="text-title font-bold border-b border-strong">{{ employee().hire_date ? (employee().hire_date | date:'dd/MM/yyyy') : '—' }}</dd></div>
+                      <div class="flex justify-between items-center"><dt class="text-[10px] text-muted font-black uppercase tracking-widest">Tipo</dt><dd class="text-title font-black uppercase tracking-widest text-[10px] bg-surface-elevated px-2 py-0.5 rounded border border-strong">{{ employee().salary_type || '—' }}</dd></div>
+                      <div class="flex justify-between items-center"><dt class="text-[10px] text-muted font-black uppercase tracking-widest">Salário Base</dt><dd class="text-brand font-black data-mono text-lg">{{ (employee().salary_rate | currency:'BRL') || '—' }}</dd></div>
+                  </div>
+                </section>
+
+                 <!-- Bank Info -->
+                <section class="chef-surface p-6 border-subtle shadow-sm">
+                  <h4 class="text-sm font-black text-brand uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <span class="material-symbols-outlined">account_balance</span>
+                      Dados Bancários
+                  </h4>
+                  <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <div class="flex flex-col"><dt class="text-[9px] text-muted font-black uppercase tracking-widest mb-0.5">Banco</dt><dd class="text-title font-bold text-xs truncate">{{ employee().bank_details?.bank || '—' }}</dd></div>
+                      <div class="flex flex-col"><dt class="text-[9px] text-muted font-black uppercase tracking-widest mb-0.5">Agência</dt><dd class="text-title font-bold text-xs">{{ employee().bank_details?.agency || '—' }}</dd></div>
+                      <div class="flex flex-col"><dt class="text-[9px] text-muted font-black uppercase tracking-widest mb-0.5">Conta</dt><dd class="text-title font-bold text-xs">{{ employee().bank_details?.account || '—' }}</dd></div>
+                      <div class="flex flex-col"><dt class="text-[9px] text-muted font-black uppercase tracking-widest mb-0.5">PIX</dt><dd class="text-title font-bold text-[10px] data-mono truncate">{{ employee().bank_details?.pix || '—' }}</dd></div>
+                  </div>
+                </section>
             </div>
-            <!-- Contract Info -->
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Dados Contratuais</h4>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">Data de Contratação</dt><dd class="text-white font-medium">{{ employee().hire_date ? (employee().hire_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Tipo de Salário</dt><dd class="text-white font-medium capitalize">{{ employee().salary_type || 'Não definido' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Valor</dt><dd class="text-white font-medium">{{ (employee().salary_rate | currency:'BRL') || 'Não definido' }}</dd></div>
-              </div>
-            </div>
-             <!-- Bank Info -->
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Dados Bancários</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">Banco</dt><dd class="text-white font-medium">{{ employee().bank_details?.bank || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Agência</dt><dd class="text-white font-medium">{{ employee().bank_details?.agency || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Conta</dt><dd class="text-white font-medium">{{ employee().bank_details?.account || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Chave PIX</dt><dd class="text-white font-medium">{{ employee().bank_details?.pix || 'Não informado' }}</dd></div>
-              </div>
-            </div>
-          </dl>
+          </div>
       }
     </div>
 
     <!-- Footer -->
-    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-      <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    <div class="p-6 bg-surface-elevated/50 border-t border-subtle flex justify-end gap-3 shadow-lg">
+      <button (click)="close.emit()" class="px-8 py-3 bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-sm active:scale-95">Fechar Detalhes</button>
     </div>
   </div>
 </div>

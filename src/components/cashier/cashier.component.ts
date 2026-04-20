@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
 import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory } from '../../models/db.models';
@@ -72,86 +72,134 @@ export class CashierComponent implements OnInit, OnDestroy {
   posState = inject(PosStateService);
   hrState = inject(HrStateService);
 
-  view: WritableSignal<CashierView> = signal('payingTables');
+  // Signals & State
+  view = signal<CashierView>('payingTables');
   isLoading = computed(() => !this.supabaseStateService.isDataLoaded());
-
-  // --- Quick Sale Signals ---
+  isFetchingCompletedOrders = signal(false);
+  
+  // Date Filters for History (Centralized)
+  completedOrdersStartDate = signal<string>(new Date().toISOString().split('T')[0]);
+  completedOrdersEndDate = signal<string>(new Date().toISOString().split('T')[0]);
+  completedOrdersSearchTerm = signal('');
+  
+  // Cache for categories and recipes
   categories = this.recipeState.categories;
-  recipes = this.recipeState.recipesWithStockStatus;
-  selectedCategory: WritableSignal<Category | null> = signal(null);
-  recipeSearchTerm = signal('');
-  quickSaleCart = signal<CartItem[]>([]);
-  isQuickSalePaymentModalOpen = signal(false);
+  recipesWithStock = this.recipeState.recipesWithStockStatus;
   
-  quickSaleCustomer = signal<Customer | null>(null);
-  isCustomerSelectModalOpen = signal(false);
-  processingQuickSaleOrder = signal<Order | null>(null);
+  // Derived Financial Data
+  revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita'));
+  expenseTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Despesa'));
+  tipTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Gorjeta'));
 
-  // --- Cash Drawer Signals ---
-  cashDrawerView: WritableSignal<CashDrawerView> = signal('movement');
+  openingBalance = computed(() => 
+    this.cashierState.transactions()
+      .find(t => t.type === 'Abertura de Caixa')?.amount ?? 0
+  );
+
+  totalRevenue = computed(() => this.revenueTransactions().reduce((sum, t) => sum + t.amount, 0));
+  totalExpenses = computed(() => this.expenseTransactions().reduce((sum, t) => sum + t.amount, 0));
+  totalTips = computed(() => this.tipTransactions().reduce((sum, t) => sum + t.amount, 0));
+  
+  totalDifference = computed(() => this.closingBreakdown().reduce((sum, item) => sum + item.difference, 0));
+
+  currentBalance = computed(() => 
+    this.openingBalance() + this.totalRevenue() - this.totalExpenses()
+  );
+
+  // Active Orders (Refined)
+  openOrders = this.posState.openOrders;
+  
+  tablesForPayment = computed(() => 
+    this.posState.tables().filter(t => t.status === 'PAGANDO' || t.status === 'OCUPADA')
+  );
+  
+  quickSalesForPayment = computed(() => 
+    this.posState.orders().filter(o => o.order_type === 'QuickSale' && o.status === 'OPEN')
+  );
+
+  // Modal States
+  isTablePaymentModalOpen = signal(false);
+  isQuickSalePaymentModalOpen = signal(false);
+  isPreBillModalOpen = signal(false);
   isClosingModalOpen = signal(false);
+  isTableOptionsModalOpen = signal(false);
+  isDetailsModalOpen = signal(false);
+  isCustomerSelectModalOpen = signal(false);
+
+  selectedTableForPayment = signal<Table | null>(null);
+  selectedTableForOptions = signal<Table | null>(null);
+  selectedOrderForDetails = signal<Order | null>(null);
+  selectedTableForPreBill = signal<Table | null>(null);
+
+  selectedOrderForPayment = computed(() => {
+    const table = this.selectedTableForPayment();
+    if (!table) return this.processingQuickSaleOrder();
+    return this.posState.openOrders().find(o => o.table_number === table.number) ?? null;
+  });
+
+  selectedOrderForPreBill = computed(() => {
+    const table = this.selectedTableForPreBill();
+    if (!table) return null;
+    return this.posState.openOrders().find(o => o.table_number === table.number) ?? null;
+  });
+
+  processingQuickSaleOrder = signal<Order | null>(null);
+  quickSaleCustomer = signal<Customer | null>(null);
+  quickSaleCart = signal<CartItem[]>([]);
   
-  // NEW: Detailed Breakdown for Closing
+  // Closing Logic
   closingBreakdown = signal<PaymentBreakdownItem[]>([]);
-  
   closingNotes = signal('');
-  
-  // Expenses / Sangria
+
+  // Expense Form
   newExpenseDescription = signal('');
   newExpenseAmount = signal<number | null>(null);
   newExpenseCategoryId = signal<string | null>(null);
   newExpenseCompetenceDate = signal<string>(new Date().toISOString().split('T')[0]);
   financialCategories = signal<FinancialCategory[]>([]);
 
-  // --- Reprint / Details Signals ---
-  isDetailsModalOpen = signal(false);
-  selectedOrderForDetails = signal<Order | null>(null);
-  completedOrdersStartDate = signal('');
-  completedOrdersEndDate = signal('');
-  completedOrdersSearchTerm = signal('');
-  isFetchingCompletedOrders = signal(false);
+  // Reprint / History
   completedOrdersForPeriod = signal<Order[]>([]);
   processingNfceOrders = signal<Set<string>>(new Set());
-
-  // --- Paying Tables Signals ---
-  tablesForPayment = computed(() => this.posState.tables().filter(t => t.status === 'PAGANDO'));
-  openOrders = this.posState.openOrders;
-  isTablePaymentModalOpen = signal(false);
   
-  selectedTableForPayment = signal<Table | null>(null);
-  selectedOrderForPayment = computed(() => {
-    const table = this.selectedTableForPayment();
-    if (!table) return null;
-    return this.openOrders().find(o => o.table_number === table.number) ?? null;
-  });
-  
-  isTableOptionsModalOpen = signal(false);
-  selectedTableForOptions = signal<Table | null>(null);
-
-  // --- Pre-bill Modal Signals ---
-  isPreBillModalOpen = signal(false);
-  selectedTableForPreBill = signal<Table | null>(null);
-  selectedOrderForPreBill = computed(() => {
-    const table = this.selectedTableForPreBill();
-    if (!table) return null;
-    return this.openOrders().find(o => o.table_number === table.number) ?? null;
-  });
-  
+  // Timer for elapsed durations
   currentTime = signal(Date.now());
   private timer: any;
   private quickSaleSuccess = false;
 
   constructor() {
-    const today = new Date().toISOString().split('T')[0];
-    this.completedOrdersStartDate.set(today);
-    this.completedOrdersEndDate.set(today);
-
-    effect(() => {
-        const startDate = this.completedOrdersStartDate();
-        const endDate = this.completedOrdersEndDate();
-        this.fetchCompletedOrdersForPeriod(startDate, endDate);
-    }, { allowSignalWrites: true });
+    this.setupEffects();
   }
+
+  private setupEffects() {
+    // Re-fetch history when dates or view changes
+    effect(() => {
+        const start = this.completedOrdersStartDate();
+        const end = this.completedOrdersEndDate();
+        const currentView = this.view();
+        
+        if (currentView === 'reprint') {
+            untracked(() => this.fetchCompletedOrdersForPeriod(start, end));
+        }
+    }, { allowSignalWrites: true });
+    
+    // Safety check on startup
+    effect(() => {
+        const isLoaded = !this.isLoading();
+        if (isLoaded) {
+            untracked(() => this.initData());
+        }
+    });
+  }
+
+  private async initData() {
+    try {
+        await this.loadFinancialCategories();
+    } catch (e) {
+        console.error("Cashier init failed:", e);
+    }
+  }
+
   
   ngOnInit() {
       this.timer = setInterval(() => {
@@ -183,38 +231,38 @@ export class CashierComponent implements OnInit, OnDestroy {
     return `${hours}h ${mins}m`;
   }
 
+  // Quick Sale Logic
+  recipeSearchTerm = signal('');
+  selectedCategory = signal<Category | null>(null);
+  
+  filteredRecipes = computed(() => {
+    const term = this.recipeSearchTerm().toLowerCase();
+    const category = this.selectedCategory();
+    return this.recipesWithStock().filter(r => {
+      const matchesSearch = r.name.toLowerCase().includes(term) || r.external_code?.toLowerCase().includes(term);
+      const matchesCategory = !category || r.category_id === category.id;
+      return matchesSearch && matchesCategory;
+    });
+  });
+
+  cartTotal = computed(() => {
+    const priceMap = this.recipePrices();
+    return this.quickSaleCart().reduce((sum, item) => 
+      sum + (priceMap.get(item.recipe.id) ?? item.recipe.price) * item.quantity, 0
+    );
+  });
+  
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
-    for (const recipe of this.recipes()) {
+    for (const recipe of this.recipesWithStock()) {
       priceMap.set(recipe.id, this.pricingService.getEffectivePrice(recipe));
     }
     return priceMap;
   });
 
-  // --- Quick Sale Computeds & Methods ---
-  quickSalesForPayment = computed(() => {
-    return this.posState.openOrders().filter(o => o.order_type === 'QuickSale');
-  });
-
-  filteredRecipes = computed(() => {
-    const category = this.selectedCategory();
-    const term = this.recipeSearchTerm().toLowerCase();
-    let recipesToShow = this.recipes().filter(r => r.is_available && !r.is_sub_recipe);
-    if (category) {
-      recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
-    }
-    if (term) {
-      recipesToShow = recipesToShow.filter(r => r.name.toLowerCase().includes(term));
-    }
-    return recipesToShow;
-  });
-
-  cartTotal = computed(() => {
-    const prices = this.recipePrices();
-    return this.quickSaleCart().reduce((sum, item) => sum + (prices.get(item.recipe.id) ?? item.recipe.price) * item.quantity, 0)
-  });
-  
-  selectCategory(category: Category | null) { this.selectedCategory.set(category); }
+  selectCategory(category: Category | null) { 
+    this.selectedCategory.set(category); 
+  }
   
   addToCart(recipe: Recipe) {
     this.quickSaleCart.update(cart => {
@@ -377,7 +425,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   }
 
   async openPreBillForTable(table: Table) {
-    const order = this.openOrders().find(o => o.table_number === table.number);
+    const order = this.posState.openOrders().find(o => o.table_number === table.number);
     if (order) {
       this.selectedTableForPreBill.set(table);
       this.isPreBillModalOpen.set(true);
@@ -397,15 +445,6 @@ export class CashierComponent implements OnInit, OnDestroy {
   }
 
   // --- Cash Drawer & Closing Logic ---
-  openingBalance = computed(() => this.cashierState.transactions().find(t => t.type === 'Abertura de Caixa')?.amount ?? 0);
-  revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita' || t.type === 'Gorjeta'));
-  expenseTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Despesa'));
-
-  totalRevenue = computed(() => this.revenueTransactions().reduce((sum, t) => sum + t.amount, 0));
-  totalExpenses = computed(() => this.expenseTransactions().reduce((sum, t) => sum + t.amount, 0));
-
-  totalDifference = computed(() => this.closingBreakdown().reduce((sum, item) => sum + item.difference, 0));
-
   async handleLogExpense(isSangria = false) {
     const descriptionInput = this.newExpenseDescription().trim();
     let description = descriptionInput;

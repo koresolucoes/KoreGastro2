@@ -1,62 +1,69 @@
 
-<div class="container mx-auto h-full flex flex-col">
+<div class="h-full flex flex-col p-4 md:p-8">
   <!-- Header -->
-  <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
     <div>
-      <a routerLink="/inventory" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-2">
-        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-        <span>Voltar para o Estoque</span>
+      <a routerLink="/inventory" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-4 group transition-all">
+        <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+        <span class="text-[11px] font-black uppercase tracking-widest">Voltar para o Estoque</span>
       </a>
-      <div class="flex items-center gap-3">
-        <h1 class="text-3xl font-bold text-white">Contagem de Estoque</h1>
-        <span class="px-2 py-1 text-xs font-bold uppercase rounded bg-gray-700 text-gray-300 border border-gray-600">
-           {{ isBlindMode() ? 'Cego' : 'Aberto' }}
+      <div class="flex items-center gap-4">
+        <h1 class="text-4xl font-black text-title title-display tracking-tight">Contagem de Estoque</h1>
+        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg bg-surface-elevated text-muted border border-subtle shadow-sm">
+           MODO: {{ isBlindMode() ? 'Cego' : 'Aberto' }}
         </span>
       </div>
-      <p class="text-gray-400 mt-1">Insira a quantidade contada de cada item para ajustar o inventário.</p>
+      <p class="text-muted text-sm font-medium mt-2 max-w-xl">Insira a quantidade contada de cada item para realizar o ajuste automático do inventário.</p>
     </div>
     
-    <div class="flex items-center gap-4">
-        <label class="flex items-center cursor-pointer">
-            <span class="mr-3 text-sm font-medium text-gray-300">Modo Cego</span>
-            <div class="relative">
-                <input type="checkbox" [checked]="isBlindMode()" (change)="toggleBlindMode()" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </div>
+    <div class="flex items-center gap-6 bg-surface-elevated/80 backdrop-blur-md p-4 rounded-2xl border border-strong shadow-sm hover:border-brand/20 transition-all">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-black text-title uppercase tracking-widest">Modo Cego</span>
+          <span class="text-[9px] text-muted font-medium italic">Esconder estoque do sistema</span>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [checked]="isBlindMode()" (change)="toggleBlindMode()" class="sr-only peer">
+            <div class="w-12 h-6 bg-surface border border-strong rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-muted/40 after:border-transparent after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand peer-checked:after:bg-white peer-checked:after:border-brand"></div>
         </label>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="flex-shrink-0 my-4 space-y-4">
-    <div class="relative">
+  <div class="flex-shrink-0 mb-8 space-y-4">
+    <div class="relative group">
       <input 
         type="text" 
         [value]="searchTerm()" 
         (input)="searchTerm.set($any($event.target).value)"
         placeholder="Buscar ingrediente pelo nome..." 
-        class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        class="w-full bg-surface-elevated/60 backdrop-blur-sm border border-strong rounded-2xl pl-14 pr-6 py-4 text-title title-display font-black text-xl placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all shadow-inner group-hover:border-brand/20">
+      <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+        <span class="material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">search</span>
       </div>
     </div>
-    <div class="flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg">
-        <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
+    <div class="flex flex-wrap items-center gap-3 bg-surface-elevated/40 backdrop-blur-sm p-3 rounded-2xl border border-subtle">
+        <span class="text-[10px] font-black text-muted uppercase tracking-widest ml-2">Categorias:</span>
         <button (click)="setCategoryFilter(null)"
-            class="px-3 py-1 text-sm rounded-full transition-colors"
-            [class.bg-blue-600]="activeCategoryFilter() === null"
+            class="px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm border"
+            [class.bg-brand]="activeCategoryFilter() === null"
             [class.text-white]="activeCategoryFilter() === null"
-            [class.bg-gray-700]="activeCategoryFilter() !== null"
-            [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
+            [class.border-brand]="activeCategoryFilter() === null"
+            [class.bg-surface]="activeCategoryFilter() !== null"
+            [class.text-muted]="activeCategoryFilter() !== null"
+            [class.border-subtle]="activeCategoryFilter() !== null"
+            [class.hover:bg-surface-elevated]="activeCategoryFilter() !== null">
             Todas
         </button>
         @for (category of categories(); track category.id) {
             <button (click)="setCategoryFilter(category.id)"
-                class="px-3 py-1 text-sm rounded-full transition-colors"
-                [class.bg-blue-600]="activeCategoryFilter() === category.id"
+                class="px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm border"
+                [class.bg-brand]="activeCategoryFilter() === category.id"
                 [class.text-white]="activeCategoryFilter() === category.id"
-                [class.bg-gray-700]="activeCategoryFilter() !== category.id"
-                [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
+                [class.border-brand]="activeCategoryFilter() === category.id"
+                [class.bg-surface]="activeCategoryFilter() !== category.id"
+                [class.text-muted]="activeCategoryFilter() !== category.id"
+                [class.border-subtle]="activeCategoryFilter() !== category.id"
+                [class.hover:bg-surface-elevated]="activeCategoryFilter() !== category.id">
                 {{ category.name }}
             </button>
         }
@@ -64,126 +71,179 @@
   </div>
 
   <!-- Main Content: Scrollable list -->
-  <div class="flex-1 overflow-y-auto pb-36 md:pb-4">
+  <div class="flex-1 overflow-y-auto pb-48 md:pb-8 custom-scrollbar">
     <!-- Desktop Table View -->
-    <div class="hidden md:block">
-        <table class="w-full text-left">
-            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0 z-10">
-                <tr>
-                    <th class="px-6 py-3 w-1/3">Ingrediente</th>
-                    <th class="px-6 py-3 text-right">Estoque Sistema</th>
-                    <th class="px-6 py-3 text-center w-48">Estoque Contado</th>
+    <div class="hidden md:block chef-surface rounded-3xl border border-subtle overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-surface-elevated/80 backdrop-blur-md text-[10px] font-black text-muted uppercase tracking-widest sticky top-0 z-10">
+                <tr class="border-b border-subtle">
+                    <th class="px-8 py-5">Ingrediente</th>
+                    <th class="px-8 py-5 text-right">Sistema</th>
+                    <th class="px-8 py-5 text-center w-64">Contagem Manual</th>
                     @if (!isBlindMode()) {
-                        <th class="px-6 py-3 text-right">Diferença</th>
-                        <th class="px-6 py-3 text-right">Custo Diferença</th>
+                        <th class="px-8 py-5 text-right">Diferença</th>
+                        <th class="px-8 py-5 text-right pr-12">Impacto Financeiro</th>
                     }
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-subtle">
                 @for (ingredient of filteredIngredients(); track ingredient.id; let i = $index) {
-                    <tr class="border-b border-gray-700 hover:bg-gray-700/40" [class.bg-red-900/20]="!isBlindMode() && ingredient.difference < 0" [class.bg-green-900/20]="!isBlindMode() && ingredient.difference > 0">
-                        <td class="px-6 py-3 font-medium text-white">{{ ingredient.name }}</td>
-                        <td class="px-6 py-3 text-right">
+                    <tr class="hover:bg-surface transition-colors group" 
+                        [class.bg-red-500/5]="!isBlindMode() && ingredient.difference < 0" 
+                        [class.bg-emerald-500/5]="!isBlindMode() && ingredient.difference > 0">
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-surface-elevated border border-strong flex items-center justify-center group-hover:border-brand/40 transition-colors shadow-inner">
+                                    <span class="material-symbols-outlined text-muted text-xl group-hover:text-brand transition-colors">restaurant</span>
+                                </div>
+                                <span class="font-black text-title title-display text-lg tracking-tight">{{ ingredient.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
                              @if (isBlindMode()) {
-                                <span class="text-gray-600">******</span>
+                                <span class="text-muted/20 font-black tracking-[0.2em]">••••</span>
                              } @else {
-                                {{ ingredient.stock | number:'1.0-3' }} {{ ingredient.unit }}
+                                <div class="flex flex-col items-end">
+                                  <span class="text-title font-black text-lg">{{ ingredient.stock | number:'1.0-3' }}</span>
+                                  <span class="text-[9px] font-black uppercase tracking-widest text-muted">{{ ingredient.unit }}</span>
+                                </div>
                              }
                         </td>
-                        <td class="px-6 py-3 text-center">
-                            <input 
-                                [id]="'count-input-' + i"
-                                type="number" 
-                                [value]="ingredient.counted_stock" 
-                                (input)="updateCount(ingredient.id, $event)"
-                                (keydown)="focusNext($event, 'count-input-' + (i + 1))"
-                                class="w-32 bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-1 text-white text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <td class="px-8 py-6 text-center">
+                            <div class="relative inline-flex items-center">
+                                <input 
+                                    [id]="'count-input-' + i"
+                                    type="number" 
+                                    [value]="ingredient.counted_stock" 
+                                    (input)="updateCount(ingredient.id, $event)"
+                                    (keydown)="focusNext($event, 'count-input-' + (i + 1))"
+                                    class="w-40 bg-surface-elevated border-2 border-strong rounded-2xl px-5 py-3 text-title font-black text-xl text-center shadow-inner focus:ring-2 focus:ring-brand outline-none transition-all group-hover:border-brand/30">
+                            </div>
                         </td>
                         @if (!isBlindMode()) {
-                            <td class="px-6 py-3 text-right font-semibold" [class.text-red-400]="ingredient.difference < 0" [class.text-green-400]="ingredient.difference > 0">
-                                {{ ingredient.difference > 0 ? '+' : '' }}{{ ingredient.difference | number:'1.0-3' }} {{ ingredient.unit }}
+                            <td class="px-8 py-6 text-right">
+                                <div class="flex flex-col items-end">
+                                  <span class="font-black text-lg title-display transition-all" [class.text-red-500]="ingredient.difference < 0" [class.text-emerald-500]="ingredient.difference > 0" [class.text-muted]="ingredient.difference === 0">
+                                      {{ ingredient.difference > 0 ? '+' : '' }}{{ ingredient.difference | number:'1.0-3' }}
+                                  </span>
+                                  <span class="text-[9px] font-black uppercase tracking-widest text-muted">{{ ingredient.unit }}</span>
+                                </div>
                             </td>
-                             <td class="px-6 py-3 text-right font-bold" [class.text-red-400]="ingredient.difference < 0" [class.text-green-400]="ingredient.difference > 0">
+                             <td class="px-8 py-6 text-right pr-12 font-black text-lg title-display" [class.text-red-500]="ingredient.difference < 0" [class.text-emerald-500]="ingredient.difference > 0" [class.text-muted]="ingredient.difference === 0">
                                 {{ (ingredient.difference * ingredient.cost) | currency:'BRL' }}
                             </td>
                         }
                     </tr>
                 }
                  @if(filteredIngredients().length === 0) {
-                    <tr><td colspan="5" class="text-center text-gray-500 py-16">Nenhum ingrediente encontrado.</td></tr>
+                    <tr>
+                      <td colspan="5" class="px-8 py-24">
+                        <div class="flex flex-col items-center justify-center text-center">
+                            <div class="w-20 h-20 bg-surface-elevated rounded-[30px] border border-dashed border-strong flex items-center justify-center mb-6">
+                              <span class="material-symbols-outlined text-muted text-4xl">inventory</span>
+                            </div>
+                            <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum ingrediente encontrado nesta visualização.</p>
+                        </div>
+                      </td>
+                    </tr>
                  }
             </tbody>
         </table>
     </div>
 
     <!-- Mobile Card View -->
-    <div class="block md:hidden space-y-4">
+    <div class="block md:hidden space-y-6">
        @for (ingredient of filteredIngredients(); track ingredient.id; let i = $index) {
-        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3" [class.border-l-4]="!isBlindMode() && ingredient.difference !== 0" [class.border-red-500]="!isBlindMode() && ingredient.difference < 0" [class.border-green-500]="!isBlindMode() && ingredient.difference > 0">
-            <p class="font-semibold text-white text-lg">{{ ingredient.name }}</p>
+        <div class="chef-surface p-6 rounded-3xl border border-subtle space-y-5 shadow-lg group active:scale-[0.98] transition-transform" 
+             [class.border-l-[6px]]="!isBlindMode() && ingredient.difference !== 0" 
+             [class.border-red-500]="!isBlindMode() && ingredient.difference < 0" 
+             [class.border-emerald-500]="!isBlindMode() && ingredient.difference > 0">
+            
+            <div class="flex items-center justify-between">
+              <p class="font-black text-title title-display text-xl tracking-tight">{{ ingredient.name }}</p>
+              <div class="w-8 h-8 rounded-lg bg-surface-elevated border border-strong flex items-center justify-center text-muted">
+                <span class="material-symbols-outlined text-lg">restaurant</span>
+              </div>
+            </div>
+
             @if (!isBlindMode()) {
-                <div class="grid grid-cols-3 gap-2 text-center text-sm pt-3 border-t border-gray-600/50">
+                <div class="grid grid-cols-3 gap-4 text-center bg-surface-elevated/40 p-4 rounded-2xl border border-strong">
                     <div>
-                        <p class="text-gray-400 text-xs">Sistema</p>
-                        <p class="text-white font-medium">{{ ingredient.stock | number:'1.0-3' }} {{ ingredient.unit }}</p>
+                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Sistema</p>
+                        <p class="text-title font-black text-sm">{{ ingredient.stock | number:'1.0-3' }} <span class="text-[8px] text-muted">{{ ingredient.unit }}</span></p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">Diferença</p>
-                        <p class="font-semibold" [class.text-red-400]="ingredient.difference < 0" [class.text-green-400]="ingredient.difference > 0">
+                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Diferença</p>
+                        <p class="font-black text-sm title-display" [class.text-red-500]="ingredient.difference < 0" [class.text-emerald-500]="ingredient.difference > 0">
                            {{ ingredient.difference > 0 ? '+' : '' }}{{ ingredient.difference | number:'1.0-3' }}
                         </p>
                     </div>
                      <div>
-                        <p class="text-gray-400 text-xs">Custo Dif.</p>
-                        <p class="font-bold" [class.text-red-400]="ingredient.difference < 0" [class.text-green-400]="ingredient.difference > 0">
+                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Valor</p>
+                        <p class="font-black text-sm title-display" [class.text-red-500]="ingredient.difference < 0" [class.text-emerald-500]="ingredient.difference > 0">
                            {{ (ingredient.difference * ingredient.cost) | currency:'BRL' }}
                         </p>
                     </div>
                 </div>
             }
-             <div class="pt-3 border-t border-gray-600/50">
-                 <label [for]="'count-input-mobile-' + i" class="block text-sm font-medium text-gray-300 mb-1">Estoque Contado</label>
-                 <input 
-                    [id]="'count-input-mobile-' + i"
-                    type="number" 
-                    [value]="ingredient.counted_stock" 
-                    (input)="updateCount(ingredient.id, $event)"
-                    (keydown)="focusNext($event, 'count-input-mobile-' + (i + 1))"
-                    class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-white text-center font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+             <div class="space-y-2">
+                 <label [for]="'count-input-mobile-' + i" class="block text-[10px] font-black text-muted uppercase tracking-widest pl-1">Estoque Contado Manualmente</label>
+                 <div class="relative">
+                    <input 
+                       [id]="'count-input-mobile-' + i"
+                       type="number" 
+                       [value]="ingredient.counted_stock" 
+                       (input)="updateCount(ingredient.id, $event)"
+                       (keydown)="focusNext($event, 'count-input-mobile-' + (i + 1))"
+                       class="w-full bg-surface-elevated border-2 border-strong rounded-2xl px-6 py-4 text-title font-black text-2xl text-center focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner group-hover:border-brand/30">
+                 </div>
              </div>
         </div>
        }
         @if(filteredIngredients().length === 0) {
-            <div class="text-center text-gray-500 py-16">Nenhum ingrediente encontrado.</div>
+            <div class="py-24 text-center">
+              <span class="material-symbols-outlined text-muted text-5xl mb-4">search_off</span>
+              <p class="text-muted font-black uppercase tracking-widest text-xs">Nada por aqui...</p>
+            </div>
         }
     </div>
   </div>
 
   <!-- Footer with Summary and Actions -->
-  <div class="flex-shrink-0 mt-auto p-4 bg-gray-800 border-t border-gray-700
-              fixed bottom-16 left-0 right-0 z-30
-              md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:rounded-b-lg">
-    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="text-center md:text-left">
-        <p class="text-lg font-semibold text-white">{{ summary().itemsCounted }} / {{ summary().totalItems }} itens contados</p>
+  <div class="flex-shrink-0 mt-auto p-8 bg-surface-elevated/90 backdrop-blur-xl border-t border-subtle
+              fixed bottom-0 left-0 right-0 z-[60]
+              md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:rounded-[40px] md:mb-8 md:shadow-2xl">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+      <div class="flex flex-col items-center md:items-start">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="flex -space-x-2">
+            <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white border-2 border-surface shadow-sm">
+              <span class="material-symbols-outlined text-sm font-black">done_all</span>
+            </div>
+          </div>
+          <span class="text-xl font-black text-title title-display tracking-tight">{{ summary().itemsCounted }} / {{ summary().totalItems }} materiais conferidos</span>
+        </div>
+        
         @if (!isBlindMode()) {
-            <p class="text-sm">
-              <span class="text-gray-400">Diferença Total: </span>
-              <span class="font-bold" [class.text-green-400]="summary().totalDifferenceValue >= 0" [class.text-red-400]="summary().totalDifferenceValue < 0">
+            <p class="flex items-center gap-2">
+              <span class="text-[10px] font-black text-muted uppercase tracking-widest">Saldo do Ajuste: </span>
+              <span class="text-2xl font-black title-display tracking-tighter" [class.text-emerald-500]="summary().totalDifferenceValue >= 0" [class.text-red-500]="summary().totalDifferenceValue < 0">
                 {{ summary().totalDifferenceValue | currency:'BRL' }}
               </span>
             </p>
         }
       </div>
+      
       <button 
         (click)="finalizeAndAdjust()" 
         [disabled]="!hasCountedItems() || isFinalizing()"
-        class="w-full md:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-500 transition-colors disabled:bg-gray-600 disabled:cursor-wait flex items-center justify-center gap-2">
+        class="w-full md:w-auto bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-widest px-12 py-5 rounded-[22px] transition-all shadow-lg shadow-brand/20 disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:scale-100 transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 min-w-[320px] border border-brand">
          @if(isFinalizing()) {
-            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span>Finalizando...</span>
+            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
+            <span>Gravando Ajustes...</span>
           } @else {
-            <span>Finalizar e Ajustar Estoque</span>
+            <span class="material-symbols-outlined">inventory_2</span>
+            <span>Finalizar Inventário & Aplicar Ajustes</span>
           }
       </button>
     </div>

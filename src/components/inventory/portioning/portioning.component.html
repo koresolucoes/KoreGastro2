@@ -1,47 +1,99 @@
-<div class="container mx-auto h-full flex flex-col">
+<div class="h-full flex flex-col p-4 md:p-8">
   <!-- Header -->
-  <div class="flex-shrink-0">
-    <a routerLink="/inventory" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4">
-      <span class="material-symbols-outlined">arrow_back</span>
-      <span>Voltar para o Estoque</span>
+  <div class="flex-shrink-0 mb-10">
+    <a routerLink="/inventory" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-4 group transition-all">
+      <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+      <span class="text-[11px] font-black uppercase tracking-widest">Voltar para o Estoque</span>
     </a>
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-            <h1 class="text-3xl font-bold text-white">Porcionamento Planejado</h1>
-            <p class="text-gray-400 mt-1">Registre o processo de porcionamento de insumos para controlar rendimento e perdas.</p>
+            <h1 class="text-4xl font-black text-title title-display tracking-tight">Porcionamento Planejado</h1>
+            <p class="text-muted text-sm font-medium mt-2 max-w-xl">Registre o processo de porcionamento de insumos para controlar rendimento, subprodutos e perdas operacionais.</p>
         </div>
-        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
+        <button (click)="openAddModal()" class="px-8 py-4 bg-brand hover:bg-brand-hover text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-3 border border-brand">
             <span class="material-symbols-outlined">add</span>
-            <span>Registrar Novo Porcionamento</span>
+            <span>Registrar Novo Processo</span>
         </button>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="flex-1 overflow-y-auto bg-gray-800 rounded-lg p-4">
+  <div class="flex-1 overflow-y-auto custom-scrollbar">
     @if(portioningEvents().length === 0) {
-        <div class="text-center py-16 text-gray-500">Nenhum evento de porcionamento registrado.</div>
+        <div class="flex flex-col items-center justify-center py-32">
+            <div class="w-24 h-24 bg-surface-elevated rounded-[40px] border border-dashed border-strong flex items-center justify-center mb-8">
+              <span class="material-symbols-outlined text-muted text-5xl">inventory_2</span>
+            </div>
+            <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum evento de porcionamento registrado ainda.</p>
+        </div>
     } @else {
-        <div class="space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
             @for(event of portioningEvents(); track event.id) {
-                <div class="bg-gray-700/50 p-4 rounded-lg">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="font-bold text-white">Insumo: {{ event.ingredients?.name }}</p>
-                            <p class="text-sm text-gray-400">Processado em: {{ event.processed_at | date:'dd/MM/yyyy HH:mm' }} por {{ event.employees?.name || 'N/A' }}</p>
+                <div class="chef-surface p-8 rounded-[32px] border border-subtle shadow-lg hover:border-brand/20 transition-all group">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex items-center gap-4">
+                           <div class="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner group-hover:bg-brand/5 transition-colors">
+                             <span class="material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">kitchen</span>
+                           </div>
+                           <div>
+                               <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Insumo Base</p>
+                               <p class="font-black text-title title-display text-xl tracking-tight leading-none group-hover:text-brand transition-colors">{{ event.ingredients?.name }}</p>
+                           </div>
                         </div>
                         @if (event.yield_percentage) {
-                          <span class="text-sm font-semibold text-blue-300">Rendimento: {{ event.yield_percentage | number:'1.1-1' }}%</span>
+                          <div class="flex flex-col items-end">
+                            <span class="text-[10px] font-black text-brand uppercase tracking-widest mb-1">Rendimento</span>
+                            <span class="text-xl font-black title-display tracking-tight text-brand">{{ event.yield_percentage | number:'1.1-1' }}%</span>
+                          </div>
                         }
                     </div>
-                    <div class="mt-3 pt-3 border-t border-gray-600/50 text-sm">
-                        <p><strong>Entrada:</strong> {{ event.input_quantity }} un</p>
-                        <strong>Saídas:</strong>
-                        <ul class="list-disc list-inside pl-2 text-gray-300">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-surface-elevated/40 rounded-2xl border border-strong shadow-inner mb-6">
+                      <div>
+                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-2">Entrada de Processo</p>
+                        <div class="flex items-center gap-2">
+                          <span class="text-title font-black text-lg">{{ event.input_quantity }}</span>
+                          <span class="text-[9px] font-black uppercase tracking-widest text-muted">UN</span>
+                        </div>
+                      </div>
+                      <div>
+                         <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Responsável</p>
+                         <p class="text-title font-bold text-sm">{{ event.employees?.name || 'N/A' }}</p>
+                         <p class="text-[10px] text-muted italic">{{ event.processed_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                      </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <p class="text-[11px] font-black text-title uppercase tracking-widest flex items-center gap-2">
+                          <span class="material-symbols-outlined text-lg text-emerald-500">output</span>
+                          Saídas Geradas
+                        </p>
+                        <div class="space-y-2">
                            @for(output of event.portioning_event_outputs; track output.id) {
-                            <li>{{ output.output_type }}: {{ output.quantity_produced }} {{ output.unit }} - {{ output.ingredients?.name || output.description }}</li>
+                            <div class="flex items-center justify-between p-3 bg-surface rounded-xl border border-subtle hover:border-brand/30 transition-all">
+                              <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center border border-strong"
+                                     [class.text-emerald-500]="output.output_type === 'YIELD'"
+                                     [class.text-amber-500]="output.output_type === 'BYPRODUCT'"
+                                     [class.text-red-500]="output.output_type === 'WASTE'">
+                                  <span class="material-symbols-outlined text-lg">
+                                    {{ output.output_type === 'YIELD' ? 'check_circle' : (output.output_type === 'BYPRODUCT' ? 'recycling' : 'delete_sweep') }}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p class="text-xs font-black text-title tracking-tight">{{ output.ingredients?.name || output.description }}</p>
+                                  <p class="text-[9px] font-black text-muted uppercase tracking-tighter">
+                                    {{ output.output_type === 'YIELD' ? 'Principal' : (output.output_type === 'BYPRODUCT' ? 'Subproduto' : 'Perda Operacional') }}
+                                  </p>
+                                </div>
+                              </div>
+                              <div class="flex flex-col items-end">
+                                <span class="font-black text-sm text-title">{{ output.quantity_produced | number:'1.0-3' }}</span>
+                                <span class="text-[8px] font-black uppercase tracking-widest text-muted">{{ output.unit }}</span>
+                              </div>
+                            </div>
                            }
-                        </ul>
+                        </div>
                     </div>
                 </div>
             }
@@ -52,85 +104,121 @@
 
 <!-- Add/Edit Modal -->
 @if(isModalOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-      <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-          <h3 class="text-xl font-bold text-white">Novo Evento de Porcionamento</h3>
-          <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal()">
+      <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+        <div class="p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md flex justify-between items-center flex-shrink-0">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
+              <span class="material-symbols-outlined text-2xl">science</span>
+            </div>
+            <h3 class="text-2xl font-black text-title title-display tracking-tight leading-none">Novo Porcionamento</h3>
+          </div>
+          <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
         </div>
-        <div class="p-6 flex-1 overflow-y-auto space-y-6">
+        
+        <div class="p-8 flex-1 overflow-y-auto space-y-10 custom-scrollbar">
           <!-- Input Section -->
-          <section class="bg-gray-900/50 p-4 rounded-lg">
-            <h4 class="text-lg font-semibold text-white mb-3">Insumo de Entrada</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Ingrediente a Porcionar *</label>
-                    <select [ngModel]="form().input_ingredient_id" (ngModelChange)="onInputIngredientChange($event)" name="input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white">
-                        <option [value]="undefined">Selecione...</option>
-                        @for(ing of portionableIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
-                    </select>
-                </div>
-                <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Lote de Origem *</label>
-                    <select [ngModel]="form().input_lot_id" (ngModelChange)="updateFormValue('input_lot_id', $event)" name="input_lot_id" [disabled]="!form().input_ingredient_id" class="w-full bg-gray-700 rounded p-2 text-white disabled:opacity-50">
-                        <option [value]="undefined">Selecione...</option>
-                        @for(lot of availableLots(); track lot.id) { <option [value]="lot.id">Lote {{ lot.lot_number || lot.id.slice(0,4) }} (Estoque: {{lot.quantity}})</option> }
-                    </select>
+          <section class="space-y-6">
+            <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2 border-b border-subtle pb-3">
+              <span class="material-symbols-outlined text-lg text-brand">login</span>
+              Materia-Prima de Entrada
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Item do Inventário *</label>
+                    <div class="relative">
+                      <select [ngModel]="form().input_ingredient_id" (ngModelChange)="onInputIngredientChange($event)" class="w-full bg-surface-elevated border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none">
+                          <option [value]="undefined">Selecione o Insumo...</option>
+                          @for(ing of portionableIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
+                      </select>
+                      <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade a Usar *</label>
-                    <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="updateFormValue('input_quantity', +$event)" name="input_quantity" class="w-full bg-gray-700 rounded p-2 text-white">
+                    <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Lote / Validade *</label>
+                    <div class="relative">
+                      <select [ngModel]="form().input_lot_id" (ngModelChange)="updateFormValue('input_lot_id', $event)" [disabled]="!form().input_ingredient_id" class="w-full bg-surface-elevated border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none disabled:opacity-30">
+                          <option [value]="undefined">Selecione o Lote...</option>
+                          @for(lot of availableLots(); track lot.id) { <option [value]="lot.id">Lote {{ lot.lot_number || lot.id.slice(0,4) }} (Disponível: {{lot.quantity}})</option> }
+                      </select>
+                      <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+                    </div>
                 </div>
+            </div>
+            <div>
+                <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Quantidade para Processar *</label>
+                <input type="number" [ngModel]="form().input_quantity" (ngModelChange)="updateFormValue('input_quantity', +$event)" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title font-black text-xl shadow-inner focus:ring-2 focus:ring-brand outline-none transition-all" placeholder="Ex: 10.00">
             </div>
           </section>
           
           <!-- Outputs Section -->
-          <section class="bg-gray-900/50 p-4 rounded-lg">
-            <h4 class="text-lg font-semibold text-white mb-3">Resultados (Saídas)</h4>
-            <div class="space-y-3">
+          <section class="space-y-6">
+            <div class="flex justify-between items-center border-b border-subtle pb-3">
+              <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-emerald-500">output</span>
+                Resultados Esperados
+              </h4>
+              <div class="flex items-center gap-2">
+                <button (click)="addOutput('BYPRODUCT')" class="px-4 py-2 bg-amber-500/10 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-500/20 hover:bg-amber-500/20 transition-all">+ Subproduto</button>
+                <button (click)="addOutput('WASTE')" class="px-4 py-2 bg-red-500/10 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500/20 transition-all">+ Perda</button>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
               @for(output of form().outputs; track $index) {
-                <div class="p-3 bg-gray-700/50 rounded-lg space-y-2 relative">
+                <div class="p-6 bg-surface-elevated/40 rounded-3xl border border-subtle space-y-5 relative group/item hover:border-brand/30 transition-all">
                   @if($index > 0) {
-                    <button (click)="removeOutput($index)" class="absolute -top-2 -right-2 p-1 bg-red-600 rounded-full text-white"><span class="material-symbols-outlined text-sm">close</span></button>
+                    <button (click)="removeOutput($index)" class="absolute -top-3 -right-3 w-8 h-8 bg-surface border border-strong rounded-full text-muted hover:text-red-500 shadow-lg flex items-center justify-center active:scale-90 transition-all group/close">
+                      <span class="material-symbols-outlined text-sm font-black group-hover/close:rotate-90 transition-transform">close</span>
+                    </button>
                   }
-                  <p class="font-semibold text-white">{{ output.output_type === 'YIELD' ? 'Rendimento Principal' : (output.output_type === 'BYPRODUCT' ? 'Subproduto' : 'Perda') }}</p>
-                  @if(output.output_type !== 'WASTE') {
-                    <div>
-                      <label class="text-xs text-gray-400">Vincular ao item de estoque</label>
-                      <select [ngModel]="output.ingredient_id" (ngModelChange)="updateOutputField($index, 'ingredient_id', $event)" name="output_ingredient_id_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                          <option [value]="undefined">Selecione...</option>
-                          @for(ing of yieldIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
-                      </select>
-                    </div>
-                  } @else {
-                    <div>
-                      <label class="text-xs text-gray-400">Descrição da Perda</label>
-                      <input type="text" [ngModel]="output.description" (ngModelChange)="updateOutputField($index, 'description', $event)" name="output_description_{{$index}}" placeholder="Ex: Aparas, Ossos" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                    </div>
-                  }
-                   <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="text-xs text-gray-400">Quantidade Produzida / Perdida</label>
-                      <input type="number" [ngModel]="output.quantity_produced" (ngModelChange)="updateOutputField($index, 'quantity_produced', +$event)" name="output_quantity_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                    </div>
+                  
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full"
+                         [class.bg-emerald-500]="output.output_type === 'YIELD'"
+                         [class.bg-amber-500]="output.output_type === 'BYPRODUCT'"
+                         [class.bg-red-500]="output.output_type === 'WASTE'"></div>
+                    <p class="text-[11px] font-black text-title uppercase tracking-widest">
+                       {{ output.output_type === 'YIELD' ? 'Produto Final Principal' : (output.output_type === 'BYPRODUCT' ? 'Subproduto de Processo' : 'Perda de Processamento') }}
+                    </p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @if(output.output_type !== 'WASTE') {
+                      <div class="md:col-span-2">
+                        <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1 pl-1">Vincular ao Cadastro *</label>
+                        <select [ngModel]="output.ingredient_id" (ngModelChange)="output.ingredient_id = $event" class="w-full bg-surface border border-subtle rounded-xl px-4 py-2.5 text-title font-bold text-xs focus:ring-1 focus:ring-brand outline-none transition-all appearance-none">
+                            <option [value]="undefined">Selecione o Material Resultante...</option>
+                            @for(ing of yieldIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
+                        </select>
+                      </div>
+                    } @else {
+                      <div class="md:col-span-2">
+                        <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1 pl-1">Motivo da Perda</label>
+                        <input type="text" [ngModel]="output.description" (ngModelChange)="output.description = $event" placeholder="Ex: Aparas de gordura, Ossos, Quebra" class="w-full bg-surface border border-subtle rounded-xl px-4 py-2.5 text-title font-bold text-xs focus:ring-1 focus:ring-brand outline-none transition-all">
+                      </div>
+                    }
                      <div>
-                      <label class="text-xs text-gray-400">Unidade</label>
-                      <input type="text" [ngModel]="output.unit" (ngModelChange)="updateOutputField($index, 'unit', $event)" name="output_unit_{{$index}}" class="w-full bg-gray-700 rounded p-2 text-white text-sm">
-                    </div>
+                        <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1 pl-1">Quantidade Produzida</label>
+                        <input type="number" [ngModel]="output.quantity_produced" (ngModelChange)="output.quantity_produced = $event" class="w-full bg-surface border border-subtle rounded-xl px-4 py-2.5 text-title font-bold text-sm focus:ring-1 focus:ring-brand outline-none transition-all">
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1 pl-1">Unidade</label>
+                        <input type="text" [ngModel]="output.unit" (ngModelChange)="output.unit = $event" class="w-full bg-surface border border-subtle rounded-xl px-4 py-2.5 text-title font-bold text-xs focus:ring-1 focus:ring-brand outline-none transition-all" placeholder="Ex: KG, UN">
+                      </div>
                   </div>
                 </div>
               }
             </div>
-            <div class="mt-3 grid grid-cols-2 gap-2">
-                <button (click)="addOutput('BYPRODUCT')" class="w-full py-2 text-sm font-semibold text-blue-400 border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-lg">+ Subproduto</button>
-                <button (click)="addOutput('WASTE')" class="w-full py-2 text-sm font-semibold text-yellow-400 border-2 border-dashed border-gray-600 hover:border-yellow-500 rounded-lg">+ Perda</button>
-            </div>
           </section>
         </div>
-        <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-           <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-           <button (click)="saveEvent()" [disabled]="isSaving()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-             @if(isSaving()) { <span>Salvando...</span> } @else { <span>Salvar e Ajustar Estoque</span> }
+        
+        <div class="p-8 bg-surface-elevated/80 backdrop-blur-md flex justify-end gap-4 border-t border-subtle flex-shrink-0">
+           <button (click)="closeModal()" class="px-8 py-3.5 font-black text-xs uppercase tracking-widest rounded-2xl text-title bg-surface hover:bg-surface-elevated border border-strong transition-all active:scale-95">Descartar</button>
+           <button (click)="saveEvent()" [disabled]="isSaving()" class="px-10 py-3.5 bg-brand hover:bg-brand-hover text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 border border-brand disabled:opacity-50 min-w-[240px]">
+             @if(isSaving()) { <span class="flex items-center gap-2"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white"></div> Processando...</span> } @else { <span>Confirmar e Ajustar Estoque</span> }
            </button>
         </div>
       </div>

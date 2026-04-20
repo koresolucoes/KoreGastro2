@@ -1,67 +1,114 @@
 
-<div class="flex flex-col h-full gap-4">
+<div class="flex flex-col h-full gap-8">
     <!-- Filters -->
-    <div class="bg-gray-800 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-end border border-gray-700">
+    <div class="bg-surface-elevated/40 backdrop-blur-md p-6 rounded-3xl flex flex-col md:flex-row gap-6 items-end border border-subtle shadow-sm">
         <div class="w-full md:w-1/4">
-            <label class="block text-xs font-medium text-gray-400 mb-1">Data Início</label>
-            <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Início do Período</label>
+            <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner font-bold text-sm">
         </div>
         <div class="w-full md:w-1/4">
-            <label class="block text-xs font-medium text-gray-400 mb-1">Data Fim</label>
-            <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Fim do Período</label>
+            <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner font-bold text-sm">
         </div>
         <div class="w-full md:w-1/2">
-             <label class="block text-xs font-medium text-gray-400 mb-1">Filtrar por Ingrediente</label>
-             <select [ngModel]="selectedIngredientId()" (ngModelChange)="selectedIngredientId.set($event)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option [value]="null">Todos os Ingredientes</option>
-                @for(ing of ingredients(); track ing.id) {
-                    <option [value]="ing.id">{{ ing.name }}</option>
-                }
-             </select>
+             <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Material / Insumo</label>
+             <div class="relative">
+               <select [ngModel]="selectedIngredientId()" (ngModelChange)="selectedIngredientId.set($event)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner font-bold text-sm appearance-none">
+                  <option [value]="null">Todos os Itens do Inventário</option>
+                  @for(ing of ingredients(); track ing.id) {
+                      <option [value]="ing.id">{{ ing.name }}</option>
+                  }
+               </select>
+               <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+             </div>
         </div>
     </div>
 
     <!-- Logs Table -->
-    <div class="flex-1 bg-gray-800 rounded-lg overflow-hidden border border-gray-700 flex flex-col">
-        <div class="p-4 border-b border-gray-700">
-            <h3 class="font-bold text-white text-lg">Histórico de Movimentações</h3>
+    <div class="flex-1 chef-surface rounded-[40px] overflow-hidden border border-subtle flex flex-col shadow-2xl">
+        <div class="p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner">
+                <span class="material-symbols-outlined text-brand text-2xl">history_edu</span>
+              </div>
+              <div>
+                <h3 class="font-black text-title title-display text-2xl tracking-tight leading-none">Rastreabilidade de Movimentações</h3>
+                <p class="text-muted font-medium text-xs mt-1 uppercase tracking-widest">Logs detalhados de entradas, saídas e ajustes</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+               <span class="text-[10px] font-black text-muted uppercase tracking-widest">Registros:</span>
+               <span class="px-3 py-1 bg-brand/10 text-brand rounded-lg text-xs font-black border border-brand/20">{{ logs().length }}</span>
+            </div>
         </div>
         
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 overflow-auto custom-scrollbar">
             @if(isLoading()) {
-                <div class="flex items-center justify-center h-full">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div class="flex flex-col items-center justify-center h-full gap-4">
+                    <div class="relative w-16 h-16">
+                      <div class="absolute inset-0 rounded-full border-4 border-brand/10"></div>
+                      <div class="absolute inset-0 rounded-full border-4 border-brand border-t-transparent animate-spin"></div>
+                    </div>
+                    <span class="text-[11px] font-black text-muted uppercase tracking-widest animate-pulse">Sincronizando Histórico...</span>
                 </div>
             } @else if(logs().length === 0) {
-                 <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                    <span class="material-symbols-outlined text-4xl mb-2">history_edu</span>
-                    <p>Nenhum registro encontrado no período.</p>
+                 <div class="flex flex-col items-center justify-center h-full py-20">
+                    <div class="w-20 h-20 bg-surface-elevated rounded-[30px] border border-dashed border-strong flex items-center justify-center mb-6">
+                      <span class="material-symbols-outlined text-muted text-4xl">history_off</span>
+                    </div>
+                    <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum registro encontrado para estes parâmetros.</p>
                 </div>
             } @else {
-                <table class="w-full text-left text-sm text-gray-300">
-                    <thead class="bg-gray-700/50 text-xs uppercase sticky top-0">
-                        <tr>
-                            <th class="px-4 py-3">Data/Hora</th>
-                            <th class="px-4 py-3">Responsável</th>
-                            <th class="px-4 py-3">Ingrediente</th>
-                            <th class="px-4 py-3 text-right">Qtd.</th>
-                            <th class="px-4 py-3 text-right">Saldo Ant.</th>
-                            <th class="px-4 py-3 text-right">Saldo Novo</th>
-                            <th class="px-4 py-3">Motivo</th>
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surface-elevated/60 text-[10px] font-black text-muted uppercase tracking-widest sticky top-0 z-20 backdrop-blur-md">
+                        <tr class="border-b border-subtle">
+                            <th class="px-8 py-5">Data/Hora</th>
+                            <th class="px-8 py-5">Responsável</th>
+                            <th class="px-8 py-5">Item do Estoque</th>
+                            <th class="px-8 py-5 text-right">Movimentação</th>
+                            <th class="px-8 py-5 text-right">Saldo Ant.</th>
+                            <th class="px-8 py-5 text-right">Saldo Atual</th>
+                            <th class="px-8 py-5 pr-12">Justificativa</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700">
+                    <tbody class="divide-y divide-subtle/40">
                         @for(log of logs(); track log.id) {
-                            <tr class="hover:bg-gray-700/30 transition-colors">
-                                <td class="px-4 py-3 whitespace-nowrap">{{ log.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-                                <td class="px-4 py-3 font-medium text-white">{{ log.employees?.name || 'Sistema' }}</td>
-                                <td class="px-4 py-3">{{ log.ingredients?.name }}</td>
-                                <td class="px-4 py-3 text-right font-bold" [class.text-green-400]="log.quantity_change > 0" [class.text-red-400]="log.quantity_change < 0">
-                                    {{ log.quantity_change > 0 ? '+' : '' }}{{ log.quantity_change | number:'1.0-3' }} {{ log.ingredients?.unit }}
+                            <tr class="hover:bg-surface transition-colors group">
+                                <td class="px-8 py-6 whitespace-nowrap">
+                                  <div class="flex flex-col">
+                                    <span class="text-title font-black text-sm">{{ log.created_at | date:'dd/MM/yyyy' }}</span>
+                                    <span class="text-[10px] text-muted font-bold">{{ log.created_at | date:'HH:mm' }}</span>
+                                  </div>
                                 </td>
-                                <td class="px-4 py-3 text-right text-gray-500">{{ log.previous_balance | number:'1.0-3' }}</td>
-                                <td class="px-4 py-3 text-right text-white">{{ log.new_balance | number:'1.0-3' }}</td>
-                                <td class="px-4 py-3 italic text-gray-400 max-w-xs truncate" [title]="log.reason">{{ log.reason }}</td>
+                                <td class="px-8 py-6">
+                                  <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-surface-elevated flex items-center justify-center text-muted font-black text-[10px] border border-strong shadow-inner">
+                                      {{ (log.employees?.name || 'S').charAt(0) }}
+                                    </div>
+                                    <span class="font-bold text-title text-sm">{{ log.employees?.name || 'Sistema' }}</span>
+                                  </div>
+                                </td>
+                                <td class="px-8 py-6">
+                                  <div class="flex flex-col">
+                                    <span class="font-black text-title title-display tracking-tight text-sm">{{ log.ingredients?.name }}</span>
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-muted">{{ log.ingredients?.unit }}</span>
+                                  </div>
+                                </td>
+                                <td class="px-8 py-6 text-right">
+                                  <div class="inline-flex flex-col items-end">
+                                    <span class="font-black text-sm title-display" [class.text-emerald-500]="log.quantity_change > 0" [class.text-red-500]="log.quantity_change < 0">
+                                        {{ log.quantity_change > 0 ? '+' : '' }}{{ log.quantity_change | number:'1.0-3' }}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td class="px-8 py-6 text-right font-bold text-xs text-muted/60">{{ log.previous_balance | number:'1.0-3' }}</td>
+                                <td class="px-8 py-6 text-right font-black text-sm text-title">{{ log.new_balance | number:'1.0-3' }}</td>
+                                <td class="px-8 py-6 pr-12">
+                                  <div class="px-3 py-1.5 bg-surface-elevated rounded-xl border border-strong text-[11px] font-medium italic text-muted max-w-xs truncate group-hover:border-brand/20 transition-all cursor-help" [title]="log.reason">
+                                    {{ log.reason }}
+                                  </div>
+                                </td>
                             </tr>
                         }
                     </tbody>

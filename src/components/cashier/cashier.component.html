@@ -72,7 +72,7 @@
   <div class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 scroll-smooth">
     @if (isLoading()) {
       <div class="flex items-center justify-center h-full">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand"></div>
       </div>
     } @else {
       @switch (view()) {
@@ -97,8 +97,8 @@
 
                       <div class="p-6 flex flex-col items-center justify-center min-h-[180px]">
                         <div class="text-5xl font-black text-title mb-2 drop-shadow-sm">{{ table.number }}</div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-6 flex items-center gap-1.5 animate-pulse">
-                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-warning mb-6 flex items-center gap-1.5 animate-pulse">
+                            <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
                             Aguardando
                         </div>
                         
@@ -137,7 +137,7 @@
             <!-- Section: Quick Sales -->
             <div class="flex flex-col h-full mt-8 lg:mt-0">
                <h2 class="text-xl font-black text-title mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px]">
-                <span class="material-symbols-outlined text-purple-500 drop-shadow-sm">point_of_sale</span>
+                <span class="material-symbols-outlined text-info drop-shadow-sm">point_of_sale</span>
                 Vendas Rápidas em Aberto
               </h2>
                @if(quickSalesForPayment().length > 0) {
@@ -306,7 +306,7 @@
                      <button (click)="sendQuickSaleToKitchen()" [disabled]="quickSaleCart().length === 0" class="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-surface border border-subtle hover:bg-surface-elevated text-title transition-all disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-sm">skillet</span> Cozinha
                      </button>
-                     <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-success text-white shadow-xl shadow-success/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                     <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-success text-white shadow-xl shadow-success/20 transition-all hover:bg-success-hover hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-sm">payments</span> Receber
                      </button>
                   </div>

@@ -2,19 +2,19 @@
 <div class="container mx-auto max-w-7xl animate-in fade-in duration-500">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
     <div>
-      <h1 class="text-4xl text-white title-display tracking-tight">Gestão de Estoque</h1>
-      <p class="text-gray-400 mt-2 text-sm font-medium">Monitore, cadastre e ajuste os insumos do seu restaurante com precisão.</p>
+      <h1 class="text-4xl text-title title-display tracking-tight">Gestão de Estoque</h1>
+      <p class="text-muted mt-2 text-sm font-medium">Monitore, cadastre e ajuste os insumos do seu restaurante com precisão.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3 self-start md:self-center">
-        <a routerLink="/inventory/portioning" class="chef-surface !shadow-none bg-gray-800/40 text-gray-300 font-medium py-2 px-4 rounded-xl hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2 text-sm">
+        <a routerLink="/inventory/portioning" class="chef-surface !shadow-none bg-surface-elevated text-muted font-medium py-2 px-4 rounded-xl hover:text-title transition-all flex items-center gap-2 text-sm border-strong border">
             <span class="material-symbols-outlined text-[20px]">cut</span>
             <span>Porcionamento</span>
         </a>
-        <a routerLink="/inventory/audit" class="chef-surface !shadow-none bg-gray-800/40 text-gray-300 font-medium py-2 px-4 rounded-xl hover:bg-gray-700 hover:text-white transition-all flex items-center gap-2 text-sm">
+        <a routerLink="/inventory/audit" class="chef-surface !shadow-none bg-surface-elevated text-muted font-medium py-2 px-4 rounded-xl hover:text-title transition-all flex items-center gap-2 text-sm border-strong border">
             <span class="material-symbols-outlined text-[20px]">fact_check</span>
             <span>Contagem</span>
         </a>
-        <button (click)="openAddModal()" style="background-color: var(--brand-primary);" class="text-white font-semibold py-2 px-5 rounded-xl hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2 text-sm">
+        <button (click)="openAddModal()" class="btn-primary font-semibold py-2 px-5 rounded-xl transition-opacity shadow-sm flex items-center gap-2 text-sm">
           <span class="material-symbols-outlined text-[20px]">add</span>
           Adicionar Item
         </button>
@@ -31,11 +31,11 @@
       [class.opacity-60]="activeDashboardFilter() !== 'all'"
       [class.hover:opacity-100]="true">
       <div class="flex justify-between items-start">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventário Total</h3>
-        <span class="material-symbols-outlined text-gray-500 text-sm">inventory_2</span>
+        <h3 class="text-xs font-semibold text-muted uppercase tracking-wider">Inventário Total</h3>
+        <span class="material-symbols-outlined text-muted opacity-50 text-sm">inventory_2</span>
       </div>
-      <p class="text-3xl font-bold text-white mt-3 data-mono">{{ ingredients().length }}</p>
-      <p class="text-xs font-medium text-blue-400 mt-2 flex items-center gap-1 data-mono">
+      <p class="text-3xl font-bold text-title mt-3 data-mono">{{ ingredients().length }}</p>
+      <p class="text-xs font-medium text-brand mt-2 flex items-center gap-1 data-mono">
         <span class="material-symbols-outlined text-[14px]">account_balance_wallet</span>
         {{ totalInventoryCost() | currency:'BRL' }}
       </p>
@@ -49,11 +49,11 @@
       [class.opacity-60]="activeDashboardFilter() !== 'low_stock'"
       [class.hover:opacity-100]="true">
       <div class="flex justify-between items-start">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Estoque Baixo</h3>
-        <span class="material-symbols-outlined text-yellow-500/50 text-sm">warning</span>
+        <h3 class="text-xs font-semibold text-muted uppercase tracking-wider">Estoque Baixo</h3>
+        <span class="material-symbols-outlined text-warning opacity-50 text-sm">warning</span>
       </div>
-      <p class="text-3xl font-bold text-white mt-3 data-mono">{{ lowStockCount() }}</p>
-      <p class="text-xs font-medium text-yellow-500/70 mt-2">Abaixo do mínimo de segurança</p>
+      <p class="text-3xl font-bold text-title mt-3 data-mono">{{ lowStockCount() }}</p>
+      <p class="text-xs font-medium text-warning opacity-70 mt-2">Abaixo do mínimo de segurança</p>
     </div>
 
     <div 
@@ -64,11 +64,11 @@
       [class.opacity-60]="activeDashboardFilter() !== 'expiring_soon'"
       [class.hover:opacity-100]="true">
       <div class="flex justify-between items-start">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Vencendo (7d)</h3>
-        <span class="material-symbols-outlined text-red-500/50 text-sm">event_busy</span>
+        <h3 class="text-xs font-semibold text-muted uppercase tracking-wider">Vencendo (7d)</h3>
+        <span class="material-symbols-outlined text-danger opacity-50 text-sm">event_busy</span>
       </div>
-      <p class="text-3xl font-bold text-white mt-3 data-mono">{{ expiringSoonCount() }}</p>
-      <p class="text-xs font-medium text-red-500/70 mt-2">Risco iminente de perda (ESG)</p>
+      <p class="text-3xl font-bold text-title mt-3 data-mono">{{ expiringSoonCount() }}</p>
+      <p class="text-xs font-medium text-danger opacity-70 mt-2">Risco iminente de perda (ESG)</p>
     </div>
 
     <div 
@@ -79,24 +79,24 @@
       [class.opacity-60]="activeDashboardFilter() !== 'stagnant'"
       [class.hover:opacity-100]="true">
       <div class="flex justify-between items-start">
-        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Parado (30d)</h3>
+        <h3 class="text-xs font-semibold text-muted uppercase tracking-wider">Parado (30d)</h3>
         <span class="material-symbols-outlined text-purple-500/50 text-sm">hourglass_bottom</span>
       </div>
-      <p class="text-3xl font-bold text-white mt-3 data-mono">{{ stagnantStockCount() }}</p>
+      <p class="text-3xl font-bold text-title mt-3 data-mono">{{ stagnantStockCount() }}</p>
       <p class="text-xs font-medium text-purple-500/70 mt-2">Capital imobilizado sem giro</p>
     </div>
   </div>
   
   <!-- Tabs -->
-  <div class="mb-4 border-b border-gray-700">
+  <div class="mb-4 border-b border-subtle">
       <nav class="-mb-px flex space-x-6">
-          <button (click)="viewTab.set('inventory')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'inventory'" [class.text-white]="viewTab() === 'inventory'" [class.border-transparent]="viewTab() !== 'inventory'" [class.text-gray-400]="viewTab() !== 'inventory'">
+          <button (click)="viewTab.set('inventory')" class="py-3 px-1 border-b-2 text-sm font-medium transition-all" [class.border-brand]="viewTab() === 'inventory'" [class.text-title]="viewTab() === 'inventory'" [class.border-transparent]="viewTab() !== 'inventory'" [class.text-muted]="viewTab() !== 'inventory'">
               Inventário
           </button>
-          <button (click)="viewTab.set('labels')" (click)="loadLabelLogs()" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'labels'" [class.text-white]="viewTab() === 'labels'" [class.border-transparent]="viewTab() !== 'labels'" [class.text-gray-400]="viewTab() !== 'labels'">
+          <button (click)="viewTab.set('labels')" (click)="loadLabelLogs()" class="py-3 px-1 border-b-2 text-sm font-medium transition-all" [class.border-brand]="viewTab() === 'labels'" [class.text-title]="viewTab() === 'labels'" [class.border-transparent]="viewTab() !== 'labels'" [class.text-muted]="viewTab() !== 'labels'">
               Etiquetas (ANVISA)
           </button>
-          <button (click)="viewTab.set('logs')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="viewTab() === 'logs'" [class.text-white]="viewTab() === 'logs'" [class.border-transparent]="viewTab() !== 'logs'" [class.text-gray-400]="viewTab() !== 'logs'">
+          <button (click)="viewTab.set('logs')" class="py-3 px-1 border-b-2 text-sm font-medium transition-all" [class.border-brand]="viewTab() === 'logs'" [class.text-title]="viewTab() === 'logs'" [class.border-transparent]="viewTab() !== 'logs'" [class.text-muted]="viewTab() !== 'logs'">
               Logs de Movimentação
           </button>
       </nav>
@@ -105,44 +105,47 @@
   @if (viewTab() === 'inventory') {
 
       <!-- AI Prediction Section -->
-      <div class="bg-gray-800 rounded-lg p-6 mb-6">
+      <div class="chef-surface p-6 mb-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h2 class="text-xl font-semibold text-white">Análise e Previsão com IA</h2>
-                <p class="text-gray-400 mt-1 text-sm">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
+                <h2 class="text-xl font-bold text-title">Análise e Previsão com IA</h2>
+                <p class="text-muted mt-1 text-sm font-medium">Use o histórico de vendas para prever suas necessidades de estoque para a próxima semana.</p>
             </div>
-            <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait">
+            <button (click)="predictStockNeeds()" [disabled]="isAnalyzingStock()" class="btn-primary font-bold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait shadow-lg shadow-brand/20">
               @if(isAnalyzingStock()) {
                 <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 <span>Analisando...</span>
               } @else {
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 22.5l-.648-1.938a3.375 3.375 0 00-2.672-2.672L11.25 18l1.938-.648a3.375 3.375 0 002.672-2.672L16.25 13.5l.648 1.938a3.375 3.375 0 002.672 2.672L21.75 18l-1.938.648a3.375 3.375 0 00-2.672 2.672z" /></svg>
+                <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
                 <span>Analisar Estoque</span>
               }
             </button>
         </div>
         @if(stockPrediction(); as predictions) {
-          <div class="mt-4 pt-4 border-t border-gray-700">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-semibold text-white">Previsão para a Próxima Semana</h3>
-                <button (click)="generatePurchaseOrder()" [disabled]="!hasItemsToOrder()" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-lg hover:bg-green-500 transition-colors text-sm disabled:opacity-50">
+          <div class="mt-4 pt-4 border-t border-subtle">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-title">Previsão para a Próxima Semana</h3>
+                <button (click)="generatePurchaseOrder()" [disabled]="!hasItemsToOrder()" class="bg-success text-white font-bold py-2 px-4 rounded-xl hover:opacity-90 transition-all text-sm disabled:opacity-50 shadow-sm">
                     Gerar Ordem de Compra
                 </button>
             </div>
-            <div class="max-h-60 overflow-y-auto pr-2">
+            <div class="max-h-60 overflow-y-auto pr-2 hide-scrollbar">
               <table class="w-full text-left text-sm">
-                <thead class="bg-gray-700/50 text-gray-300 uppercase sticky top-0"><tr>
-                    <th class="px-4 py-2">Ingrediente</th>
-                    <th class="px-4 py-2 text-center">Estoque Atual</th>
-                    <th class="px-4 py-2 text-center">Uso Previsto</th>
-                    <th class="px-4 py-2 text-center">Sugestão de Compra</th>
-                </tr></thead>
-                <tbody>@for(p of predictions; track p.ingredientId) {
-                <tr class="border-b border-gray-700">
-                    <td class="px-4 py-2 font-medium text-white">{{p.ingredientName}}</td>
-                    <td class="px-4 py-2 text-center text-gray-300">{{p.currentStock}} {{p.unit}}</td>
-                    <td class="px-4 py-2 text-center text-yellow-300 font-medium">{{p.predictedUsage}} {{p.unit}}</td>
-                    <td class="px-4 py-2 text-center text-blue-300 font-bold bg-gray-700/50">{{p.suggestedPurchase}} {{p.unit}}</td>
+                <thead class="bg-surface-elevated/50 text-muted uppercase text-[10px] tracking-widest sticky top-0">
+                  <tr>
+                    <th class="px-4 py-3 font-bold">Ingrediente</th>
+                    <th class="px-4 py-3 text-center font-bold">Estoque Atual</th>
+                    <th class="px-4 py-3 text-center font-bold">Uso Previsto</th>
+                    <th class="px-4 py-3 text-center font-bold">Sugestão de Compra</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-subtle">
+                @for(p of predictions; track p.ingredientId) {
+                <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="px-4 py-3 font-bold text-title">{{p.ingredientName}}</td>
+                    <td class="px-4 py-3 text-center text-muted data-mono">{{p.currentStock}} {{p.unit}}</td>
+                    <td class="px-4 py-3 text-center text-warning font-black data-mono">{{p.predictedUsage}} {{p.unit}}</td>
+                    <td class="px-4 py-3 text-center text-brand font-black bg-brand/5 data-mono">{{p.suggestedPurchase}} {{p.unit}}</td>
                 </tr>
                 }</tbody>
               </table>
@@ -153,37 +156,41 @@
 
 
       <!-- Search and Category Filters -->
-      <div class="mb-4 space-y-4">
-        <div class="relative">
+      <div class="mb-6 space-y-4">
+        <div class="relative group">
           <input 
             type="text" 
             [value]="searchTerm()" 
             (input)="searchTerm.set($any($event.target).value)" 
             placeholder="Buscar ingrediente pelo nome..." 
-            class="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
+            class="w-full bg-surface border border-strong rounded-2xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+            <span class="material-symbols-outlined">search</span>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2 bg-gray-800 p-3 rounded-lg">
-            <span class="text-sm font-medium text-gray-400 mr-2">Filtrar por Categoria:</span>
+        <div class="flex flex-wrap items-center gap-2 chef-surface p-3 border-subtle">
+            <span class="text-[10px] font-black text-muted uppercase tracking-widest mr-2">Filtrar por Categoria:</span>
             <button (click)="setCategoryFilter(null)"
-                class="px-3 py-1 text-sm rounded-full transition-colors"
-                [class.bg-blue-600]="activeCategoryFilter() === null"
+                class="px-4 py-1.5 text-xs font-bold rounded-full transition-all border outline-none"
+                [class.bg-brand]="activeCategoryFilter() === null"
                 [class.text-white]="activeCategoryFilter() === null"
-                [class.bg-gray-700]="activeCategoryFilter() !== null"
-                [class.hover:bg-gray-600]="activeCategoryFilter() !== null">
+                [class.border-brand]="activeCategoryFilter() === null"
+                [class.bg-surface]="activeCategoryFilter() !== null"
+                [class.text-muted]="activeCategoryFilter() !== null"
+                [class.border-subtle]="activeCategoryFilter() !== null"
+                [class.hover:border-strong]="activeCategoryFilter() !== null">
                 Todas
             </button>
             @for (category of categories(); track category.id) {
                 <button (click)="setCategoryFilter(category.id)"
-                    class="px-3 py-1 text-sm rounded-full transition-colors"
-                    [class.bg-blue-600]="activeCategoryFilter() === category.id"
+                    class="px-4 py-1.5 text-xs font-bold rounded-full transition-all border outline-none"
+                    [class.bg-brand]="activeCategoryFilter() === category.id"
                     [class.text-white]="activeCategoryFilter() === category.id"
-                    [class.bg-gray-700]="activeCategoryFilter() !== category.id"
-                    [class.hover:bg-gray-600]="activeCategoryFilter() !== category.id">
+                    [class.border-brand]="activeCategoryFilter() === category.id"
+                    [class.bg-surface]="activeCategoryFilter() !== category.id"
+                    [class.text-muted]="activeCategoryFilter() !== category.id"
+                    [class.border-subtle]="activeCategoryFilter() !== category.id"
+                    [class.hover:border-strong]="activeCategoryFilter() !== category.id">
                     {{ category.name }}
                 </button>
             }
@@ -194,7 +201,7 @@
         <!-- Desktop Table View -->
         <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-left min-w-max">
-            <thead class="bg-gray-800/40 text-[11px] text-gray-400 uppercase tracking-wider" style="font-family: var(--font-display);">
+            <thead class="bg-surface-elevated/50 text-[11px] text-muted uppercase tracking-wider" style="font-family: var(--font-display);">
               <tr>
                 <th scope="col" class="px-6 py-4 font-semibold">Ingrediente</th>
                 <th scope="col" class="px-6 py-4 font-semibold">Estoque</th>
@@ -205,48 +212,48 @@
                 <th scope="col" class="px-6 py-4 font-semibold text-right">Ações</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
+            <tbody class="divide-y divide-subtle">
               @for (ingredient of filteredIngredients(); track ingredient.id) {
                 <tr (click)="openDetailsModal(ingredient)" 
                     class="group transition-colors duration-150 cursor-pointer" 
-                    [class.bg-red-900/20]="isExpiringSoon(ingredient.expiration_date)"
-                    [class.hover:bg-red-900/30]="isExpiringSoon(ingredient.expiration_date)"
-                    [class.hover:bg-gray-800/60]="!isExpiringSoon(ingredient.expiration_date)">
+                    [class.bg-danger/5]="isExpiringSoon(ingredient.expiration_date)"
+                    [class.hover:bg-danger/10]="isExpiringSoon(ingredient.expiration_date)"
+                    [class.hover:bg-surface-elevated/60]="!isExpiringSoon(ingredient.expiration_date)">
                   <td class="px-6 py-4">
-                    <div class="font-medium text-gray-200 group-hover:text-white transition-colors">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded ml-1" title="Item vendável no PDV">PDV</span> }</div>
-                    <div class="text-[11px] text-gray-500 mt-0.5 uppercase tracking-wide">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
+                    <div class="font-medium text-title group-hover:text-brand transition-colors">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-[10px] font-bold text-brand bg-brand/10 px-1.5 py-0.5 rounded ml-1" title="Item vendável no PDV">PDV</span> }</div>
+                    <div class="text-[11px] text-muted mt-0.5 uppercase tracking-wide">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</div>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="data-mono font-medium" [class.text-red-400]="isLowStock(ingredient.stock, ingredient.min_stock)">{{ ingredient.stock }}</span>
-                    <span class="text-xs text-gray-500 ml-1">{{ ingredient.unit }}</span>
+                    <span class="data-mono font-medium text-body" [class.text-danger]="isLowStock(ingredient.stock, ingredient.min_stock)">{{ ingredient.stock }}</span>
+                    <span class="text-xs text-muted ml-1">{{ ingredient.unit }}</span>
                   </td>
-                  <td class="px-6 py-4 text-right data-mono text-gray-400 text-sm">
+                  <td class="px-6 py-4 text-right data-mono text-muted text-sm">
                     {{ ingredient.cost | currency:'BRL' }}
                   </td>
-                  <td class="px-6 py-4 text-right data-mono text-gray-200 font-medium">
+                  <td class="px-6 py-4 text-right data-mono text-title font-medium">
                     {{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}
                   </td>
                   <td class="px-6 py-4 text-center">
                     @if (isExpiringSoon(ingredient.expiration_date)) {
-                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-red-300 bg-red-900/30 border border-red-800/50 rounded-full">
-                         <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-danger bg-danger/10 border border-danger/20 rounded-full">
+                         <span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
                          Vencendo
                        </span>
                     } @else if (isLowStock(ingredient.stock, ingredient.min_stock)) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-yellow-300 bg-yellow-900/30 border border-yellow-800/50 rounded-full">
-                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-warning bg-warning/10 border border-warning/20 rounded-full">
+                         <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
                          Baixo
                        </span>
                     } @else {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-300 bg-emerald-900/20 border border-emerald-800/30 rounded-full">
-                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-success bg-success/10 border border-success/20 rounded-full">
+                         <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
                          Saudável
                        </span>
                     }
                   </td>
                   <td class="px-6 py-4 text-center hidden lg:table-cell">
                     <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" (click)="$event.stopPropagation()">
-                       <button (click)="openAdjustmentModal(ingredient)" class="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-700" title="Ajuste Rápido">
+                       <button (click)="openAdjustmentModal(ingredient)" class="p-1.5 bg-surface hover:bg-surface-elevated text-muted hover:text-brand rounded-md border border-subtle" title="Ajuste Rápido">
                          <span class="material-symbols-outlined text-[16px]">edit_square</span>
                        </button>
                     </div>

@@ -1,54 +1,115 @@
 @if (isLoading()) {
-  <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
-    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+  <div class="flex flex-col items-center justify-center h-96 chef-surface rounded-[40px] border border-subtle">
+    <div class="relative w-20 h-20 mb-6">
+      <div class="absolute inset-0 border-4 border-brand/10 rounded-full"></div>
+      <div class="absolute inset-0 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+    </div>
+    <p class="text-[11px] font-black text-title uppercase tracking-widest animate-pulse">Cruzando Dados Comparativos...</p>
   </div>
 } @else if (reportData(); as data) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
     <!-- Current Period -->
-    <div class="bg-gray-800 p-6 rounded-lg">
-      <h3 class="text-lg font-semibold text-white mb-4">Período Atual</h3>
-      <div class="space-y-4">
-        <div><p class="text-sm text-gray-400">Faturamento</p><p class="text-2xl font-bold text-blue-300">{{ data.current.totalSales | currency:'BRL' }}</p></div>
-        <div><p class="text-sm text-gray-400">Pedidos</p><p class="text-2xl font-bold">{{ data.current.orderCount }}</p></div>
-        <div><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold">{{ data.current.averageTicket | currency:'BRL' }}</p></div>
+    <div class="chef-surface p-8 rounded-[32px] border border-subtle shadow-xl group hover:border-brand/30 transition-all">
+      <div class="flex items-center gap-4 mb-8 border-b border-subtle pb-4">
+        <div class="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center text-brand">
+          <span class="material-symbols-outlined text-2xl">event</span>
+        </div>
+        <h3 class="text-xl font-black text-title title-display tracking-tight leading-none">Período Atual</h3>
+      </div>
+      <div class="space-y-8">
+        <div>
+          <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-2">Faturamento Total</p>
+          <p class="text-3xl font-black text-title title-display tracking-tight">{{ data.current.totalSales | currency:'BRL' }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-6 border-t border-strong/40">
+           <div>
+             <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Pedidos</p>
+             <p class="text-xl font-black text-title title-display">{{ data.current.orderCount }}</p>
+           </div>
+           <div>
+             <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Ticket Médio</p>
+             <p class="text-xl font-black text-title title-display">{{ data.current.averageTicket | currency:'BRL' }}</p>
+           </div>
+        </div>
       </div>
     </div>
+
     <!-- Previous Period -->
-    <div class="bg-gray-800 p-6 rounded-lg">
-      <h3 class="text-lg font-semibold text-white mb-4">Período Anterior</h3>
-      <div class="space-y-4">
-        <div><p class="text-sm text-gray-400">Faturamento</p><p class="text-2xl font-bold text-gray-300">{{ data.previous.totalSales | currency:'BRL' }}</p></div>
-        <div><p class="text-sm text-gray-400">Pedidos</p><p class="text-2xl font-bold">{{ data.previous.orderCount }}</p></div>
-        <div><p class="text-sm text-gray-400">Ticket Médio</p><p class="text-2xl font-bold">{{ data.previous.averageTicket | currency:'BRL' }}</p></div>
+    <div class="chef-surface p-8 rounded-[32px] border border-subtle shadow-lg opacity-80 hover:opacity-100 transition-opacity group">
+      <div class="flex items-center gap-4 mb-8 border-b border-subtle pb-4">
+        <div class="w-10 h-10 bg-surface rounded-xl flex items-center justify-center text-muted border border-strong shadow-inner">
+          <span class="material-symbols-outlined text-2xl">history</span>
+        </div>
+        <h3 class="text-xl font-black text-muted title-display tracking-tight leading-none">Período Anterior</h3>
+      </div>
+      <div class="space-y-8">
+        <div>
+          <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-2">Faturamento Total</p>
+          <p class="text-3xl font-black text-muted/60 title-display tracking-tight">{{ data.previous.totalSales | currency:'BRL' }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-6 border-t border-strong/40">
+           <div>
+             <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Pedidos</p>
+             <p class="text-xl font-black text-muted/60 title-display">{{ data.previous.orderCount }}</p>
+           </div>
+           <div>
+             <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Ticket Médio</p>
+             <p class="text-xl font-black text-muted/60 title-display">{{ data.previous.averageTicket | currency:'BRL' }}</p>
+           </div>
+        </div>
       </div>
     </div>
+
     <!-- Comparison -->
-    <div class="bg-gray-800 p-6 rounded-lg">
-      <h3 class="text-lg font-semibold text-white mb-4">Comparação</h3>
-      <div class="space-y-4">
-        <div>
-            <p class="text-sm text-gray-400">Faturamento</p>
-            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(salesChange())" [class.text-red-400]="!isPositiveChange(salesChange())">
-                {{ salesChange() | number:'1.2-2' }}%
-            </p>
+    <div class="bg-surface-elevated/40 p-8 rounded-[32px] border border-strong shadow-inner group">
+      <div class="flex items-center gap-4 mb-8 border-b border-subtle pb-4">
+        <div class="w-10 h-10 bg-surface rounded-xl flex items-center justify-center text-brand border border-strong">
+          <span class="material-symbols-outlined text-2xl">insights</span>
         </div>
-        <div>
-            <p class="text-sm text-gray-400">Pedidos</p>
-            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(ordersChange())" [class.text-red-400]="!isPositiveChange(ordersChange())">
-                {{ ordersChange() | number:'1.2-2' }}%
-            </p>
+        <h3 class="text-xl font-black text-title title-display tracking-tight leading-none">Delta de Performance</h3>
+      </div>
+      <div class="space-y-8">
+        <div class="p-6 rounded-2xl border transition-all"
+             [class.bg-success/5]="isPositiveChange(salesChange())" [class.border-success/20]="isPositiveChange(salesChange())"
+             [class.bg-danger/5]="!isPositiveChange(salesChange())" [class.border-danger/20]="!isPositiveChange(salesChange())">
+            <p class="text-[9px] font-black uppercase tracking-widest mb-2" [class.text-success]="isPositiveChange(salesChange())" [class.text-danger]="!isPositiveChange(salesChange())">Variação de Faturamento</p>
+            <div class="flex items-center gap-3">
+               <span class="material-symbols-outlined text-2xl" [class.text-success]="isPositiveChange(salesChange())" [class.text-danger]="!isPositiveChange(salesChange())">
+                 {{ isPositiveChange(salesChange()) ? 'trending_up' : 'trending_down' }}
+               </span>
+               <p class="text-3xl font-black title-display tracking-tighter" [class.text-success]="isPositiveChange(salesChange())" [class.text-danger]="!isPositiveChange(salesChange())">
+                   {{ salesChange() | number:'1.2-2' }}%
+               </p>
+            </div>
         </div>
-        <div>
-            <p class="text-sm text-gray-400">Ticket Médio</p>
-            <p class="text-2xl font-bold" [class.text-green-400]="isPositiveChange(ticketChange())" [class.text-red-400]="!isPositiveChange(ticketChange())">
-                {{ ticketChange() | number:'1.2-2' }}%
-            </p>
+        
+        <div class="grid grid-cols-2 gap-4">
+           <div class="p-4 rounded-2xl border"
+                [class.bg-success/5]="isPositiveChange(ordersChange())" [class.border-success/10]="isPositiveChange(ordersChange())"
+                [class.bg-danger/5]="!isPositiveChange(ordersChange())" [class.border-danger/10]="!isPositiveChange(ordersChange())">
+               <p class="text-[8px] font-black uppercase tracking-widest mb-1" [class.text-success]="isPositiveChange(ordersChange())" [class.text-danger]="!isPositiveChange(ordersChange())">Pedidos</p>
+               <p class="text-xl font-black title-display tracking-tighter" [class.text-success]="isPositiveChange(ordersChange())" [class.text-danger]="!isPositiveChange(ordersChange())">
+                   {{ ordersChange() | number:'1.1-1' }}%
+               </p>
+           </div>
+           <div class="p-4 rounded-2xl border"
+                [class.bg-success/5]="isPositiveChange(ticketChange())" [class.border-success/10]="isPositiveChange(ticketChange())"
+                [class.bg-danger/5]="!isPositiveChange(ticketChange())" [class.border-danger/10]="!isPositiveChange(ticketChange())">
+               <p class="text-[8px] font-black uppercase tracking-widest mb-1" [class.text-success]="isPositiveChange(ticketChange())" [class.text-danger]="!isPositiveChange(ticketChange())">Ticket</p>
+               <p class="text-xl font-black title-display tracking-tighter" [class.text-success]="isPositiveChange(ticketChange())" [class.text-danger]="!isPositiveChange(ticketChange())">
+                   {{ ticketChange() | number:'1.1-1' }}%
+               </p>
+           </div>
         </div>
       </div>
     </div>
   </div>
 } @else {
-  <div class="text-center text-gray-500 py-16 bg-gray-800 rounded-lg">
-    <p>Não foi possível carregar os dados para comparação.</p>
+  <div class="flex flex-col items-center justify-center py-20 chef-surface border border-dashed border-strong rounded-[40px]">
+    <div class="w-20 h-20 bg-surface-elevated rounded-full flex items-center justify-center mb-6 border border-strong shadow-inner">
+      <span class="material-symbols-outlined text-muted/30 text-4xl">cloud_off</span>
+    </div>
+    <h3 class="text-lg font-black text-title title-display tracking-tight mb-1">Dados Indisponíveis</h3>
+    <p class="text-muted text-xs font-medium max-w-xs text-center leading-relaxed">Não foi possível processar o cruzamento de dados para o período solicitado.</p>
   </div>
 }

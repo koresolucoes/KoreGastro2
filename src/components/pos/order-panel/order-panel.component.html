@@ -145,7 +145,7 @@
                                 
                                 @if (!recipe.hasStock) {
                                     <div class="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-md z-20">
-                                        <span class="text-[9px] sm:text-[11px] font-black text-white bg-danger px-2 sm:px-4 py-1 sm:py-1.5 rounded-full uppercase tracking-[0.2em] shadow-2xl border-2 border-red-500 animate-pulse">Esgotado</span>
+                                        <span class="text-[9px] sm:text-[11px] font-black text-white bg-danger px-2 sm:px-4 py-1 sm:py-1.5 rounded-full uppercase tracking-[0.2em] shadow-2xl border-2 border-danger animate-pulse">Esgotado</span>
                                     </div>
                                 }
                             </div>
@@ -224,7 +224,7 @@
                                     </div>
                                     
                                     <!-- Actions for Sent Items -->
-                                    <button (click)="initiateItemCancellation(item)" class="absolute -right-2 -top-2 bg-danger border border-red-400 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 shadow-md hover:bg-red-600 transition-all transform hover:scale-110 active:scale-95" title="Cancelar Item">
+                                    <button (click)="initiateItemCancellation(item)" class="absolute -right-2 -top-2 bg-danger border border-danger/40 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 shadow-md hover:bg-danger-hover transition-all transform hover:scale-110 active:scale-95" title="Cancelar Item">
                                         <span class="material-symbols-outlined text-sm">close</span>
                                     </button>
                                 </div>
@@ -298,7 +298,7 @@
                         <span class="material-symbols-outlined group-disabled:opacity-50">send</span>
                         <span class="tracking-wide uppercase text-sm">Enviar</span>
                     </button>
-                    <button (click)="startCheckout()" [disabled]="orderTotal() === 0" class="bg-success hover:bg-green-500 text-white font-black py-3.5 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-success disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed">
+                    <button (click)="startCheckout()" [disabled]="orderTotal() === 0" class="bg-success hover:bg-success-hover text-white font-black py-3.5 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-success disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed">
                         <span class="material-symbols-outlined">payments</span>
                         <span class="tracking-wide uppercase text-sm">Pagar</span>
                     </button>
@@ -388,7 +388,7 @@
                 </div>
 
                 <!-- Add Button -->
-                <button (click)="confirmQuickAdd()" class="w-full bg-success hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex justify-between items-center px-6 text-sm uppercase tracking-wide border border-success">
+                <button (click)="confirmQuickAdd()" class="w-full bg-success hover:bg-success-hover text-white font-black py-4 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex justify-between items-center px-6 text-sm uppercase tracking-wide border border-success">
                     <span>Adicionar Item</span>
                     <span class="data-mono text-lg">{{ ((recipePrices().get(recipe.id) || recipe.price) * quickAddQuantity()) | currency:'BRL' }}</span>
                 </button>
@@ -446,7 +446,7 @@
       </div>
       <div class="p-4 bg-surface-elevated flex justify-end gap-3 rounded-b-3xl border-t border-subtle">
         <button (click)="closeGlobalDiscountModal()" class="px-5 py-2.5 font-bold text-sm rounded-xl text-title bg-surface hover-surface-elevated border border-strong transition-colors">Cancelar</button>
-        <button (click)="saveGlobalDiscount()" class="px-5 py-2.5 font-black text-sm uppercase tracking-wider rounded-xl bg-success hover:bg-green-500 text-white shadow-sm border border-success">Aplicar</button>
+        <button (click)="saveGlobalDiscount()" class="px-5 py-2.5 font-black text-sm uppercase tracking-wider rounded-xl bg-success hover:bg-success-hover text-white shadow-sm border border-success">Aplicar</button>
       </div>
     </div>
   </div>

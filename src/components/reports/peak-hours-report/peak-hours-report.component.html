@@ -1,57 +1,107 @@
 @if (isLoading()) {
-  <div class="flex items-center justify-center h-96 bg-gray-800 rounded-lg">
-    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+  <div class="flex flex-col items-center justify-center h-96 chef-surface rounded-[40px] border border-subtle">
+    <div class="relative w-20 h-20 mb-6">
+      <div class="absolute inset-0 border-4 border-brand/10 rounded-full"></div>
+      <div class="absolute inset-0 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+    </div>
+    <p class="text-[11px] font-black text-title uppercase tracking-widest animate-pulse">Agrupando Séries Temporais...</p>
   </div>
 } @else {
   <div class="space-y-8">
     <!-- Hourly Sales Chart -->
-    <div class="bg-gray-800 p-4 md:p-6 rounded-lg">
-      <h3 class="text-xl font-semibold text-white mb-6">Volume de Vendas por Hora</h3>
+    <div class="chef-surface rounded-[32px] p-8 border border-subtle shadow-xl w-full overflow-hidden">
+      <div class="flex items-center gap-4 mb-8 border-b border-subtle pb-4">
+        <div class="w-12 h-12 bg-surface rounded-xl flex items-center justify-center text-brand border border-strong shadow-inner">
+          <span class="material-symbols-outlined text-2xl">schedule</span>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-title title-display tracking-tight leading-none">Concentração de Vendas por Faixa Horária</h3>
+          <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Identificação de picos e vales de demanda diária</p>
+        </div>
+      </div>
+      
       @if (maxSales() > 0) {
-          <div class="overflow-x-auto pb-4">
-            <div class="flex items-end h-72 space-x-1 md:space-x-2 border-b-2 border-l-2 border-gray-600 p-2 md:p-4 md:min-w-[700px]">
+          <div class="overflow-x-auto pb-4 custom-scrollbar">
+            <div class="flex items-end h-[320px] space-x-1 md:space-x-3 border-b-2 border-l-2 border-strong/40 p-2 md:p-6 md:min-w-[700px] relative">
+                <!-- Grid Lines -->
+                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none p-6 pb-2">
+                  <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                  <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                  <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                  <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                </div>
+
                 @for (hour of chartData(); track hour.hour) {
-                    <div class="flex flex-col items-center justify-end h-full w-full">
-                        <div 
-                            class="w-full bg-blue-600 rounded-t-md hover:bg-blue-500 transition-colors" 
-                            [style.height.%]="hour.percentage"
-                            [title]="(hour.sales | currency:'BRL') + ' às ' + hour.hour + 'h'">
+                    <div class="flex flex-col items-center justify-end h-full w-full relative group">
+                        <!-- Tooltip -->
+                        <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-title text-surface px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none shadow-lg">
+                           {{ hour.sales | currency:'BRL' }}
+                           <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-title rotate-45"></div>
                         </div>
-                        <p class="text-[10px] md:text-xs text-gray-400 mt-2">{{ hour.hour }}h</p>
+
+                        <div 
+                            class="w-full bg-brand/80 hover:bg-brand rounded-t-xl transition-all border-x border-t border-brand cursor-pointer shadow-[0_-4px_20px_rgba(0,0,0,0.1)] hover:shadow-brand/20 relative z-0" 
+                            [style.height.%]="hour.percentage">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-xl"></div>
+                        </div>
+                        <p class="text-[10px] font-black text-muted tracking-tighter mt-3 font-mono">{{ hour.hour }}h</p>
                     </div>
                 }
             </div>
           </div>
-           <p class="text-xs text-gray-500 text-center mt-2 no-print">Passe o mouse sobre as barras para ver os valores exatos.</p>
       } @else {
-          <div class="text-center text-gray-500 py-16">
-              <p>Nenhum dado de vendas encontrado para este período para gerar o gráfico.</p>
+          <div class="flex flex-col items-center justify-center h-48 bg-surface-elevated/20 rounded-[24px] border border-dashed border-strong opacity-80">
+              <span class="material-symbols-outlined text-muted/30 text-4xl mb-2">bar_chart</span>
+              <p class="text-[11px] font-black text-muted uppercase tracking-widest text-center">Volume insuficiente para projeção horária</p>
           </div>
       }
     </div>
 
     <!-- Day of the Week Sales Chart -->
-    <div class="bg-gray-800 p-4 md:p-6 rounded-lg">
-      <h3 class="text-xl font-semibold text-white mb-6">Volume de Vendas por Dia da Semana</h3>
+    <div class="chef-surface rounded-[32px] p-8 border border-subtle shadow-xl w-full overflow-hidden">
+      <div class="flex items-center gap-4 mb-8 border-b border-subtle pb-4">
+        <div class="w-12 h-12 bg-surface rounded-xl flex items-center justify-center text-info border border-strong shadow-inner">
+          <span class="material-symbols-outlined text-2xl">date_range</span>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-title title-display tracking-tight leading-none">Mapa de Calor por Dia da Semana</h3>
+          <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Comparativo de performance ao longo da semana</p>
+        </div>
+      </div>
+
       @if (maxSalesByDay() > 0) {
-        <div class="overflow-x-auto pb-4">
-          <div class="flex items-end justify-between h-72 space-x-2 md:space-x-4 border-b-2 border-l-2 border-gray-600 p-2 md:p-4 md:min-w-[500px]">
+        <div class="overflow-x-auto pb-4 custom-scrollbar">
+          <div class="flex items-end justify-between h-[320px] space-x-2 md:space-x-6 border-b-2 border-l-2 border-strong/40 p-2 md:p-6 md:min-w-[500px] relative">
+              <!-- Grid Lines -->
+              <div class="absolute inset-0 flex flex-col justify-between pointer-events-none p-6 pb-2">
+                <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+                <div class="w-full border-b border-dashed border-subtle/30 opacity-50"></div>
+              </div>
+
               @for (day of dayOfWeekChartData(); track day.dayIndex) {
-                  <div class="flex flex-col items-center justify-end h-full w-full">
-                      <div 
-                          class="w-full bg-teal-600 rounded-t-md hover:bg-teal-500 transition-colors" 
-                          [style.height.%]="day.percentage"
-                          [title]="(day.sales | currency:'BRL')">
+                  <div class="flex flex-col items-center justify-end h-full w-full relative group">
+                      <!-- Tooltip -->
+                      <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-title text-surface px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none shadow-lg">
+                         {{ day.sales | currency:'BRL' }}
+                         <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-title rotate-45"></div>
                       </div>
-                      <p class="text-xs md:text-sm font-semibold text-gray-400 mt-2">{{ day.dayOfWeek }}</p>
+
+                      <div 
+                          class="w-full bg-info/80 hover:bg-info rounded-t-xl transition-all border-x border-t border-info cursor-pointer shadow-[0_-4px_20px_rgba(0,0,0,0.1)] hover:shadow-info/20 relative z-0" 
+                          [style.height.%]="day.percentage">
+                          <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-xl"></div>
+                      </div>
+                      <p class="text-[10px] font-black text-muted tracking-widest uppercase mt-4 break-words text-center">{{ day.dayOfWeek.substring(0, 3) }}</p>
                   </div>
               }
           </div>
         </div>
-        <p class="text-xs text-gray-500 text-center mt-2 no-print">Passe o mouse sobre as barras para ver os valores exatos.</p>
       } @else {
-        <div class="text-center text-gray-500 py-16">
-            <p>Nenhum dado de vendas encontrado para este período para gerar o gráfico.</p>
+        <div class="flex flex-col items-center justify-center h-48 bg-surface-elevated/20 rounded-[24px] border border-dashed border-strong opacity-80">
+            <span class="material-symbols-outlined text-muted/30 text-4xl mb-2">calendar_month</span>
+            <p class="text-[11px] font-black text-muted uppercase tracking-widest text-center">Volume insuficiente para projeção diária</p>
         </div>
       }
     </div>

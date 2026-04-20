@@ -551,12 +551,12 @@ export class OrderPanelComponent {
 
   getOrderItemStatusClass(status: OrderItemStatus): string {
     switch (status) {
-      case 'PENDENTE': return 'text-yellow-400';
-      case 'EM_PREPARO': return 'text-blue-400';
-      case 'PRONTO': return 'text-green-400 font-bold';
-      case 'AGUARDANDO': return 'text-gray-400';
-      case 'CANCELADO': return 'text-red-500 line-through';
-      default: return 'text-gray-500';
+      case 'PENDENTE': return 'text-warning';
+      case 'EM_PREPARO': return 'text-info';
+      case 'PRONTO': return 'text-success font-black';
+      case 'AGUARDANDO': return 'text-muted';
+      case 'CANCELADO': return 'text-danger line-through';
+      default: return 'text-muted';
     }
   }
   
