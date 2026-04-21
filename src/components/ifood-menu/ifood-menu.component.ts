@@ -383,7 +383,7 @@ export class IfoodMenuComponent implements OnInit {
   }
 
   getStatusClass(status: SyncStatus): string {
-    return { 'synced': 'bg-green-500', 'unsynced': 'bg-blue-500', 'modified': 'bg-yellow-500', 'error': 'bg-red-500', 'syncing': 'bg-gray-500 animate-pulse' }[status] || 'bg-gray-400';
+    return { 'synced': 'bg-success shadow-success shadow-sm', 'unsynced': 'bg-brand shadow-brand shadow-sm', 'modified': 'bg-warning shadow-warning shadow-sm', 'error': 'bg-danger shadow-danger shadow-sm', 'syncing': 'bg-muted shadow-muted shadow-sm animate-pulse' }[status] || 'bg-subtle';
   }
 
   // --- Option Group & Option Methods ---

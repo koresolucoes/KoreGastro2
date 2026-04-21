@@ -1,52 +1,55 @@
 @if(order(); as o) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface">
         <div>
-          <h3 class="text-xl font-bold text-white">Detalhes do Pedido iFood</h3>
-          <p class="text-sm text-gray-400 font-mono">#{{ o.ifood_display_id }}</p>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-muted">receipt_long</span> Detalhes do Pedido</h3>
+          <p class="text-[11px] text-muted font-black tracking-widest uppercase mt-1">#{{ o.ifood_display_id }}</p>
         </div>
-        <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button (click)="closeModal.emit()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
-      <div class="p-6 flex-1 overflow-y-auto space-y-4">
+      <div class="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6 bg-surface/30">
         <!-- Order Info -->
-        <div class="grid grid-cols-2 gap-4 text-sm bg-gray-900/50 p-3 rounded-lg">
+        <div class="grid grid-cols-2 gap-4 text-sm bg-surface p-4 rounded-xl border border-subtle shadow-sm">
           <div>
-            <p class="text-gray-400">Cliente</p>
-            <p class="font-semibold text-white">{{ o.customers?.name || 'Não informado' }}</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Cliente</p>
+            <p class="font-bold text-title">{{ o.customers?.name || 'Não informado' }}</p>
           </div>
           <div>
-            <p class="text-gray-400">CPF na Nota</p>
-            <p class="font-semibold text-white">{{ o.customers?.cpf || 'Não solicitado' }}</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">CPF na Nota</p>
+            <p class="font-bold text-title">{{ o.customers?.cpf || 'Não solicitado' }}</p>
           </div>
           <div>
-            <p class="text-gray-400">Recebido às</p>
-            <p class="font-semibold text-white">{{ o.timestamp | date:'dd/MM/yy HH:mm:ss' }}</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Recebido</p>
+            <p class="font-bold text-title">{{ o.timestamp | date:'dd/MM/yy HH:mm:ss' }}</p>
           </div>
            <div>
-            <p class="text-gray-400">Tempo Decorrido</p>
-            <p class="font-semibold font-mono" [class]="o.timerColor">{{ formatTime(o.elapsedTime) }}</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Tempo</p>
+            <p class="font-mono font-bold" [class]="o.timerColor">{{ formatTime(o.elapsedTime) }}</p>
           </div>
            <div>
-            <p class="text-gray-400">Tipo</p>
-            <p class="font-semibold text-white">{{ o.order_type === 'iFood-Delivery' ? 'Entrega' : 'Retirada' }}</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Tipo</p>
+            <p class="font-bold text-title">{{ o.order_type === 'iFood-Delivery' ? 'Entrega' : 'Retirada' }}</p>
           </div>
         </div>
 
         <!-- Items -->
         <div>
-          <h4 class="font-semibold text-white mb-2">Itens do Pedido</h4>
-          <ul class="space-y-2 text-sm max-h-48 overflow-y-auto pr-2">
+          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">shopping_bag</span> Itens</h4>
+          <ul class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2">
             @for(item of o.order_items; track item.id) {
-              <li class="p-2 bg-gray-700/50 rounded-md">
+              <li class="p-3 bg-surface rounded-xl border border-subtle shadow-sm">
                 <div class="flex justify-between items-start">
-                    <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
-                    <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                    <p class="font-bold text-title text-sm"><span class="text-brand mr-1">{{ item.quantity }}x</span> {{ item.name }}</p>
+                    <span class="font-black text-title">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
                 </div>
                 @if(item.notes) {
-                  <p class="text-xs italic text-yellow-200 mt-1 pt-1 border-t border-gray-600/50">"{{ item.notes }}"</p>
+                  <div class="mt-2 pt-2 border-t border-subtle flex gap-2">
+                      <span class="material-symbols-outlined text-[14px] text-warning mt-0.5">edit_note</span>
+                      <p class="text-xs italic font-medium text-warning">"{{ item.notes }}"</p>
+                  </div>
                 }
               </li>
             }
@@ -55,46 +58,49 @@
         
         <!-- Payment -->
         <div>
-          <h4 class="font-semibold text-white mb-2">Pagamento</h4>
-          <div class="space-y-2 text-sm bg-gray-700/50 p-3 rounded-lg">
-            <div class="flex justify-between">
-              <span class="text-gray-300">Subtotal Itens</span>
-              <span class="font-semibold text-white">{{ subTotal() | currency:'BRL' }}</span>
+          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">payments</span> Pagamento</h4>
+          <div class="space-y-3 text-sm bg-surface p-4 rounded-xl border border-subtle shadow-sm">
+            <div class="flex justify-between items-baseline">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Subtotal</span>
+              <span class="font-black text-title">{{ subTotal() | currency:'BRL' }}</span>
             </div>
             @if(deliveryFee() > 0) {
-              <div class="flex justify-between">
-                <span class="text-gray-300">Taxa de Entrega</span>
-                <span class="font-semibold text-white">+ {{ deliveryFee() | currency:'BRL' }}</span>
+              <div class="flex justify-between items-baseline">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Taxa de Entrega</span>
+                <span class="font-black text-title">+ {{ deliveryFee() | currency:'BRL' }}</span>
               </div>
             }
             @if(additionalFees() > 0) {
-              <div class="flex justify-between">
-                <span class="text-gray-300">Taxa de Serviço</span>
-                <span class="font-semibold text-white">+ {{ additionalFees() | currency:'BRL' }}</span>
+              <div class="flex justify-between items-baseline">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Taxa de Serviço</span>
+                <span class="font-black text-title">+ {{ additionalFees() | currency:'BRL' }}</span>
               </div>
             }
             @if (orderBenefitsTotal() > 0) {
-              <div>
-                <div class="flex justify-between">
-                  <span class="text-gray-300">Descontos</span>
-                  <span class="font-semibold text-red-400">- {{ orderBenefitsTotal() | currency:'BRL' }}</span>
+              <div class="space-y-1">
+                <div class="flex justify-between items-baseline">
+                  <span class="text-[11px] font-bold uppercase tracking-widest text-danger">Descontos</span>
+                  <span class="font-black text-danger">- {{ orderBenefitsTotal() | currency:'BRL' }}</span>
                 </div>
                 @for(benefit of orderBenefits(); track $index) {
-                  <div class="flex justify-between text-xs pl-4">
-                    <span class="text-gray-400">↳ {{ benefit.sponsor }}</span>
-                    <span class="text-gray-400">- {{ benefit.value | currency:'BRL' }}</span>
+                  <div class="flex justify-between items-baseline text-[10px] pl-4">
+                    <span class="font-bold text-muted uppercase tracking-wider">↳ {{ benefit.sponsor }}</span>
+                    <span class="font-black text-muted">- {{ benefit.value | currency:'BRL' }}</span>
                   </div>
                 }
               </div>
             }
-            <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-600">
-              <span class="text-white">Total a Pagar</span>
-              <span class="text-green-400">{{ finalTotal() | currency:'BRL' }}</span>
+            <div class="flex justify-between items-baseline pt-3 border-t border-strong">
+              <span class="text-[11px] font-black uppercase tracking-widest text-title">Total</span>
+              <span class="font-black text-xl text-success">{{ finalTotal() | currency:'BRL' }}</span>
             </div>
-             <div class="pt-2 border-t border-gray-600">
-                <p class="text-gray-300 font-semibold">{{ o.paymentDetails }}</p>
+             <div class="pt-3 border-t border-subtle flex justify-between items-center">
+                 <div class="flex items-center gap-1.5">
+                     <span class="material-symbols-outlined text-muted text-[16px]">credit_card</span>
+                     <span class="text-[11px] font-bold uppercase tracking-widest text-muted">{{ o.paymentDetails }}</span>
+                 </div>
                 @if(o.changeDue && o.changeDue > 0) {
-                    <p class="text-yellow-300 mt-1">Troco para: {{ o.changeDue | currency:'BRL' }}</p>
+                    <div class="bg-warning/10 text-warning px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">Troco: {{ o.changeDue | currency:'BRL' }}</div>
                 }
             </div>
           </div>
@@ -102,12 +108,12 @@
 
         @if(o.ifood_dispute_id) {
           <div>
-            <h4 class="font-semibold text-white mb-2">Disputa Aberta</h4>
-            <div class="p-3 rounded-lg" [class]="o.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-orange-900/40' : 'bg-yellow-900/40'">
+            <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-warning">warning</span> Disputa</h4>
+            <div class="p-4 rounded-xl border" [class]="o.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-warning/10 border-warning/20 text-warning'">
               @if(getDisputeMessage(o); as message) {
-                <p class="text-sm italic text-white">"{{ message }}"</p>
+                <p class="text-xs font-bold leading-relaxed">"{{ message }}"</p>
               } @else {
-                <p class="text-sm italic text-gray-400">(Motivo não informado na disputa)</p>
+                <p class="text-[11px] font-bold uppercase tracking-widest opacity-80">(Motivo não informado)</p>
               }
             </div>
           </div>
@@ -115,16 +121,16 @@
         
         @if(o.ifood_dispute_id && evidenceImages().length > 0) {
             <div>
-                <h4 class="font-semibold text-white mb-2">Evidências da Disputa</h4>
-                <div class="grid grid-cols-3 gap-2">
+                <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">image</span> Evidências</h4>
+                <div class="grid grid-cols-3 gap-3">
                     @for(image of evidenceImages(); track image.src) {
-                        <div class="aspect-square bg-gray-700 rounded-md flex items-center justify-center overflow-hidden">
+                        <div class="aspect-square bg-surface border border-subtle rounded-xl flex items-center justify-center overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                             @if(image.loading) {
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                                <span class="material-symbols-outlined text-muted animate-spin">progress_activity</span>
                             } @else if (image.error) {
-                                <span class="material-symbols-outlined text-red-400 text-3xl" title="Erro ao carregar imagem">error</span>
+                                <span class="material-symbols-outlined text-danger text-2xl" title="Erro ao carregar">broken_image</span>
                             } @else {
-                                <img [src]="image.src" alt="Evidência da disputa" class="w-full h-full object-cover rounded-md">
+                                <img [src]="image.src" alt="Evidência" class="w-full h-full object-cover">
                             }
                         </div>
                     }
@@ -133,10 +139,10 @@
         }
 
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-end gap-3 border-t border-gray-700">
-        <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
-        <button (click)="printIfoodOrder()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
-            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6 3.129M6.72 13.829L6 3.129m0 10.7a48.45 48.45 0 0112 0m-12 0v.042m12 0v-.042m0 10.704l.72-10.7M17.28 13.829c.24.03.48.062-.72.096m-.72-.096L18 3.129m-1.2 10.7l.72-10.7m0 10.7a48.45 48.45 0 00-12 0m12 0v.042m-12 0v-.042" /></svg>
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closeModal.emit()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-surface border border-strong hover:bg-surface-elevated text-title transition-all active:scale-95 shadow-sm">Fechar</button>
+        <button (click)="printIfoodOrder()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-brand hover:bg-brand-hover text-white flex items-center gap-2 transition-all active:scale-95 shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">print</span>
             Imprimir
         </button>
       </div>

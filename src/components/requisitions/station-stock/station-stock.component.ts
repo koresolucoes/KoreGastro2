@@ -11,71 +11,77 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex flex-col h-full gap-4">
+    <div class="flex flex-col h-full gap-5">
       
       <!-- Sub-Tabs for Mode -->
-      <div class="flex gap-2 bg-gray-900/50 p-1 rounded-lg self-start">
-          <button (click)="viewMode.set('current')" class="px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-gray-700]="viewMode() === 'current'" [class.text-white]="viewMode() === 'current'" [class.text-gray-400]="viewMode() !== 'current'">
+      <div class="flex gap-2 bg-surface border border-subtle p-1.5 rounded-xl self-start custom-scrollbar overflow-x-auto">
+          <button (click)="viewMode.set('current')" class="px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all focus:outline-none whitespace-nowrap" [class.bg-brand]="viewMode() === 'current'" [class.text-white]="viewMode() === 'current'" [class.shadow-sm]="viewMode() === 'current'" [class.text-muted]="viewMode() !== 'current'" [class.hover:text-title]="viewMode() !== 'current'">
               Estoque Atual
           </button>
-          <button (click)="viewMode.set('history')" class="px-4 py-2 text-sm font-medium rounded-md transition-colors" [class.bg-gray-700]="viewMode() === 'history'" [class.text-white]="viewMode() === 'history'" [class.text-gray-400]="viewMode() !== 'history'">
+          <button (click)="viewMode.set('history')" class="px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all focus:outline-none whitespace-nowrap" [class.bg-brand]="viewMode() === 'history'" [class.text-white]="viewMode() === 'history'" [class.shadow-sm]="viewMode() === 'history'" [class.text-muted]="viewMode() !== 'history'" [class.hover:text-title]="viewMode() !== 'history'">
               Histórico de Entradas
           </button>
       </div>
 
       <!-- Filters -->
-      <div class="flex flex-col md:flex-row gap-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
+      <div class="flex flex-col md:flex-row gap-5 bg-surface-elevated p-5 rounded-2xl border border-subtle shadow-sm">
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-400 mb-1">Selecionar Estação</label>
-          <select 
-            [ngModel]="selectedStationId()" 
-            (ngModelChange)="selectedStationId.set($event)" 
-            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option [value]="null">Todas as Estações</option>
-            @for(station of stations(); track station.id) {
-              <option [value]="station.id">{{ station.name }}</option>
-            }
-          </select>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Selecionar Estação</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
+            <select 
+              [ngModel]="selectedStationId()" 
+              (ngModelChange)="selectedStationId.set($event)" 
+              class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all appearance-none cursor-pointer">
+              <option [value]="null">Todas as Estações</option>
+              @for(station of stations(); track station.id) {
+                <option [value]="station.id">{{ station.name }}</option>
+              }
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+          </div>
         </div>
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-400 mb-1">Buscar</label>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Buscar</label>
           <div class="relative">
+             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
             <input 
               type="text" 
               [value]="searchTerm()" 
               (input)="searchTerm.set($any($event.target).value)" 
               [placeholder]="viewMode() === 'current' ? 'Nome do ingrediente...' : 'Ingrediente ou ID...'" 
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-lg">search</span>
+              class="w-full bg-surface border border-strong rounded-lg pl-9 pr-4 py-2.5 text-sm text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-medium transition-all">
           </div>
         </div>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto custom-scrollbar pb-6 pr-2">
         @if(viewMode() === 'current') {
             <!-- CURRENT STOCK VIEW -->
             @if(filteredStock().length === 0) {
-              <div class="flex flex-col items-center justify-center h-64 text-gray-500 bg-gray-800 rounded-lg border-2 border-dashed border-gray-700">
-                <span class="material-symbols-outlined text-4xl mb-2">inventory_2</span>
-                <p>Nenhum estoque encontrado para os filtros selecionados.</p>
+              <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
+                 <span class="material-symbols-outlined text-4xl text-muted mb-2">inventory_2</span>
+                <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum estoque encontrado.</p>
               </div>
             } @else {
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 @for(item of filteredStock(); track item.id) {
-                  <div class="bg-gray-800 border-l-4 border-l-blue-500 rounded-lg p-4 shadow-sm hover:bg-gray-700/50 transition-colors">
-                    <div class="flex justify-between items-start mb-2">
-                      <h3 class="font-bold text-white text-lg truncate" [title]="item.ingredients?.name">{{ item.ingredients?.name }}</h3>
-                      <span class="text-xs font-mono text-gray-500 bg-gray-900 px-2 py-1 rounded">{{ item.stations?.name }}</span>
+                  <div class="bg-surface-elevated border-l-[3px] border-l-brand border border-subtle border-l-transparent rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                      <h3 class="font-black text-title text-base tracking-tight truncate mr-2" [title]="item.ingredients?.name">{{ item.ingredients?.name }}</h3>
+                      <span class="text-[10px] font-bold text-muted bg-surface border border-subtle px-2 py-0.5 rounded-lg whitespace-nowrap">{{ item.stations?.name }}</span>
                     </div>
                     
-                    <div class="flex items-end gap-2 mt-4">
-                      <span class="text-3xl font-bold text-blue-400">{{ item.quantity | number:'1.0-3' }}</span>
-                      <span class="text-gray-400 font-medium mb-1">{{ item.ingredients?.unit }}</span>
+                    <div class="flex flex-col gap-1 mt-2">
+                      <div class="flex items-baseline gap-1.5">
+                         <span class="text-3xl font-black text-brand tracking-tight">{{ item.quantity | number:'1.0-3' }}</span>
+                         <span class="text-[11px] text-muted font-bold">{{ item.ingredients?.unit }}</span>
+                      </div>
                     </div>
                     
-                    <div class="mt-4 pt-3 border-t border-gray-700/50 flex justify-between items-center text-xs text-gray-400">
-                      <span>Última reposição:</span>
+                    <div class="mt-5 pt-3 border-t border-subtle flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-muted group-hover:text-title transition-colors">
+                      <span>Última reposição</span>
                       <span>{{ item.last_restock_date ? (item.last_restock_date | date:'dd/MM HH:mm') : 'N/A' }}</span>
                     </div>
                   </div>
@@ -85,39 +91,39 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
         } @else {
             <!-- HISTORY VIEW -->
             @if(filteredHistory().length === 0) {
-                 <div class="flex flex-col items-center justify-center h-64 text-gray-500 bg-gray-800 rounded-lg border-2 border-dashed border-gray-700">
-                    <span class="material-symbols-outlined text-4xl mb-2">history</span>
-                    <p>Nenhum histórico de recebimento recente.</p>
+                 <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
+                    <span class="material-symbols-outlined text-4xl text-muted mb-2">history</span>
+                    <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum histórico recente.</p>
                 </div>
             } @else {
-                <div class="space-y-4">
+                <div class="space-y-5">
                     @for(req of filteredHistory(); track req.id) {
-                        <div class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-                            <div class="bg-gray-900/50 p-3 flex justify-between items-center border-b border-gray-700">
+                        <div class="bg-surface-elevated border border-subtle rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <div class="bg-surface/50 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-subtle gap-3">
                                 <div>
-                                    <span class="text-xs font-mono text-gray-400">#{{ req.id.slice(0,8) }}</span>
-                                    <span class="text-sm font-bold text-white ml-2">{{ req.stations?.name }}</span>
+                                    <span class="text-[10px] font-mono text-muted uppercase tracking-widest">#{{ req.id.slice(0,8) }}</span>
+                                    <span class="text-sm font-black text-title ml-3 tracking-tight">{{ req.stations?.name }}</span>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-green-400 font-bold uppercase">Entregue em {{ req.processed_at | date:'dd/MM HH:mm' }}</p>
-                                    <p class="text-[10px] text-gray-500">Por: {{ req.processor?.name || 'Sistema' }}</p>
+                                <div class="text-left sm:text-right">
+                                    <p class="text-[11px] text-success font-black uppercase tracking-widest flex items-center gap-1 sm:justify-end"><span class="material-symbols-outlined text-[14px]">check_circle</span> Entregue em {{ req.processed_at | date:'dd/MM HH:mm' }}</p>
+                                    <p class="text-[10px] font-bold text-muted mt-0.5">Por: {{ req.processor?.name || 'Sistema' }}</p>
                                 </div>
                             </div>
-                            <div class="p-3">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-gray-500 uppercase border-b border-gray-700">
+                            <div class="p-5">
+                                <table class="w-full text-left text-title">
+                                    <thead class="text-[10px] font-black tracking-widest text-muted uppercase border-b border-subtle">
                                         <tr>
-                                            <th class="py-2">Item</th>
-                                            <th class="py-2 text-center">Solicitado</th>
-                                            <th class="py-2 text-center">Recebido</th>
+                                            <th class="py-2 px-2">Item</th>
+                                            <th class="py-2 px-2 text-center">Solicitado</th>
+                                            <th class="py-2 px-2 text-right">Recebido</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="text-gray-300">
+                                    <tbody class="text-sm">
                                         @for(item of req.requisition_items; track item.id) {
-                                            <tr class="border-b border-gray-700/50 last:border-0">
-                                                <td class="py-2">{{ item.ingredients?.name }}</td>
-                                                <td class="py-2 text-center text-gray-500">{{ item.quantity_requested }} {{ item.unit }}</td>
-                                                <td class="py-2 text-center font-bold" [class.text-green-400]="item.quantity_delivered === item.quantity_requested" [class.text-yellow-400]="item.quantity_delivered !== item.quantity_requested">
+                                            <tr class="border-b border-subtle/50 last:border-0 hover:bg-surface/30 transition-colors">
+                                                <td class="py-3 px-2 font-bold">{{ item.ingredients?.name }}</td>
+                                                <td class="py-3 px-2 text-center text-muted font-medium">{{ item.quantity_requested }} {{ item.unit }}</td>
+                                                <td class="py-3 px-2 text-right font-black" [class.text-success]="item.quantity_delivered === item.quantity_requested" [class.text-warning]="item.quantity_delivered !== item.quantity_requested">
                                                     {{ item.quantity_delivered }} {{ item.unit }}
                                                 </td>
                                             </tr>

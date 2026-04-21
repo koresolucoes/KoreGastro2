@@ -13,49 +13,49 @@
       <p class="text-muted text-sm font-medium">Gerenciamento financeiro e pagamentos</p>
     </div>
     
-    <div class="flex bg-surface-elevated/50 p-1.5 rounded-2xl border border-subtle backdrop-blur-md shadow-inner">
+    <div class="flex gap-6 border-b border-subtle">
       <button (click)="view.set('payingTables')" 
-              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2"
-              [class.bg-brand]="view() === 'payingTables'" 
-              [class.text-white]="view() === 'payingTables'" 
-              [class.shadow-lg]="view() === 'payingTables'"
+              class="pb-3 text-sm font-bold transition-all relative"
+              [class.text-brand]="view() === 'payingTables'" 
               [class.text-muted]="view() !== 'payingTables'"
               [class.hover:text-title]="view() !== 'payingTables'">
-        <span class="material-symbols-outlined text-lg">payments</span>
         A Receber
         @if(tablesForPayment().length > 0) {
-          <span class="ml-1 bg-white text-brand text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">{{ tablesForPayment().length }}</span>
+          <span class="ml-1 bg-brand text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{{ tablesForPayment().length }}</span>
+        }
+        @if(view() === 'payingTables') {
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
         }
       </button>
       <button (click)="view.set('quickSale')" 
-              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2"
-              [class.bg-brand]="view() === 'quickSale'" 
-              [class.text-white]="view() === 'quickSale'" 
-              [class.shadow-lg]="view() === 'quickSale'"
+              class="pb-3 text-sm font-bold transition-all relative"
+              [class.text-brand]="view() === 'quickSale'" 
               [class.text-muted]="view() !== 'quickSale'"
               [class.hover:text-title]="view() !== 'quickSale'">
-        <span class="material-symbols-outlined text-lg">point_of_sale</span>
         Venda Rápida
+        @if(view() === 'quickSale') {
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+        }
       </button>
       <button (click)="view.set('cashDrawer')" 
-              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2"
-              [class.bg-brand]="view() === 'cashDrawer'" 
-              [class.text-white]="view() === 'cashDrawer'" 
-              [class.shadow-lg]="view() === 'cashDrawer'"
+              class="pb-3 text-sm font-bold transition-all relative"
+              [class.text-brand]="view() === 'cashDrawer'" 
               [class.text-muted]="view() !== 'cashDrawer'"
               [class.hover:text-title]="view() !== 'cashDrawer'">
-        <span class="material-symbols-outlined text-lg">account_balance_wallet</span>
         Fechamento
+        @if(view() === 'cashDrawer') {
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+        }
       </button>
       <button (click)="view.set('reprint')" 
-              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2"
-              [class.bg-brand]="view() === 'reprint'" 
-              [class.text-white]="view() === 'reprint'" 
-              [class.shadow-lg]="view() === 'reprint'"
+              class="pb-3 text-sm font-bold transition-all relative"
+              [class.text-brand]="view() === 'reprint'" 
               [class.text-muted]="view() !== 'reprint'"
               [class.hover:text-title]="view() !== 'reprint'">
-        <span class="material-symbols-outlined text-lg">history</span>
         Histórico
+        @if(view() === 'reprint') {
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+        }
       </button>
     </div>
   </div>
@@ -445,20 +445,20 @@
         <!-- VIEW: HISTÓRICO -->
         @case ('reprint') {
           <div class="chef-surface h-full flex flex-col border-subtle overflow-hidden">
-            <div class="p-6 border-b border-subtle flex flex-col sm:flex-row justify-between items-center gap-6 bg-surface/40 backdrop-blur-xl">
+            <div class="p-6 border-b border-subtle flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-surface/40 backdrop-blur-xl">
                 <div>
                     <h2 class="text-xl font-black text-title uppercase tracking-tight">Vendas Finalizadas</h2>
                     <p class="text-xs text-muted font-medium">Consulte e reimprima comprovantes de períodos anteriores.</p>
                 </div>
-                <div class="flex gap-3 bg-surface-elevated p-1.5 rounded-2xl border border-subtle shadow-inner">
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-sm">calendar_today</span>
-                        <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="bg-surface border border-subtle rounded-xl px-4 py-2 pl-9 text-title text-[10px] font-black uppercase outline-none focus:border-brand transition-all">
+                <div class="flex flex-row items-center gap-1 sm:gap-2 bg-surface-elevated p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-subtle shadow-inner w-full xl:w-auto overflow-hidden">
+                    <div class="relative w-full sm:w-auto">
+                        <span class="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
+                        <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="w-full bg-surface border border-subtle rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 pl-7 sm:pl-9 text-title text-[9px] sm:text-[10px] font-black uppercase outline-none focus:border-brand transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full">
                     </div>
-                    <span class="flex items-center text-muted font-bold"> até </span>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-sm">calendar_today</span>
-                        <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="bg-surface border border-subtle rounded-xl px-4 py-2 pl-9 text-title text-[10px] font-black uppercase outline-none focus:border-brand transition-all">
+                    <span class="flex items-center justify-center text-muted font-bold text-[10px] sm:text-xs">ate</span>
+                    <div class="relative w-full sm:w-auto">
+                        <span class="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
+                        <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="w-full bg-surface border border-subtle rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 pl-7 sm:pl-9 text-title text-[9px] sm:text-[10px] font-black uppercase outline-none focus:border-brand transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full">
                     </div>
                 </div>
             </div>
@@ -495,25 +495,30 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-                                    <div class="text-right">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full md:w-auto justify-between md:justify-end">
+                                    <div class="text-left sm:text-right w-full sm:w-auto">
                                         <p class="text-[9px] text-muted font-black uppercase tracking-widest mb-1">Total Final</p>
                                         <p class="font-black text-success text-2xl tracking-tighter font-mono leading-none">{{ getOrderTotal(order) | currency:'BRL' }}</p>
                                         @if(order.nfce_status === 'autorizado') {
                                             <span class="inline-block mt-1 text-[8px] bg-success/10 text-success px-2 py-0.5 rounded border border-success/20 font-black uppercase tracking-widest">NFC-e Autorizada</span>
                                         }
                                     </div>
-                                    <div class="flex gap-2">
-                                         <button (click)="reprintReceipt(order)" class="w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95" title="Reimprimir">
-                                            <span class="material-symbols-outlined text-lg">print</span>
+                                    <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                                         <button (click)="reprintReceipt(order)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95 px-4 sm:px-0" title="Reimprimir">
+                                            <span class="material-symbols-outlined text-lg hidden sm:block">print</span>
+                                            <span class="text-[10px] font-black uppercase sm:hidden">Reimprimir</span>
                                         </button>
-                                        <button (click)="openDetailsModal(order)" class="w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95" title="Detalhes">
-                                            <span class="material-symbols-outlined text-lg">visibility</span>
+                                        <button (click)="openDetailsModal(order)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95 px-4 sm:px-0" title="Detalhes">
+                                            <span class="material-symbols-outlined text-lg hidden sm:block">visibility</span>
+                                            <span class="text-[10px] font-black uppercase sm:hidden">Detalhes</span>
                                         </button>
                                         @if(!order.nfce_status) {
-                                            <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="w-10 h-10 flex items-center justify-center bg-brand text-white rounded-xl shadow-lg shadow-brand/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-40" title="Emitir NFC-e">
+                                            <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-brand text-white rounded-xl shadow-lg shadow-brand/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 px-4 sm:px-0" title="Emitir NFC-e">
                                                 @if(processingNfceOrders().has(order.id)) { <div class="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full"></div> }
-                                                @else { <span class="material-symbols-outlined text-lg">description</span> }
+                                                @else { 
+                                                    <span class="material-symbols-outlined text-lg hidden sm:block">description</span> 
+                                                    <span class="text-[10px] font-black uppercase sm:hidden">NFC-E</span>
+                                                }
                                             </button>
                                         }
                                     </div>

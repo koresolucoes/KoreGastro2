@@ -1,90 +1,99 @@
 @if (order(); as o) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
+    <div class="chef-surface border border-subtle shadow-2xl w-full max-w-3xl h-[85vh] flex flex-col rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <!-- Header -->
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <div>
-          <h3 class="text-xl font-bold text-white">Detalhes da Entrega</h3>
-          <p class="text-sm text-gray-400 font-mono">#{{ o.id.slice(0, 8) }}</p>
-        </div>
-        <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
+        <h3 class="text-xl font-black text-title flex items-center gap-3">
+            <span class="material-symbols-outlined text-brand">receipt_long</span>
+            Detalhes da Entrega <span class="text-muted text-sm tracking-widest font-bold">#{{ o.id.slice(0, 8) }}</span>
+        </h3>
+        <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
+          <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <!-- Body -->
-      <div class="flex-1 p-6 overflow-y-auto space-y-6">
-        <!-- Customer Details -->
-        <section>
-          <h4 class="text-lg font-semibold text-white mb-3">Cliente e Endereço</h4>
-          <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
-            @if (o.customers; as customer) {
-              <div>
-                <p class="text-sm text-gray-400">Nome</p>
-                <p class="font-semibold text-white">{{ customer.name }}</p>
+      <div class="flex-1 p-5 sm:p-8 overflow-y-auto custom-scrollbar space-y-8">
+        <!-- Customer Details & Map -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section class="bg-surface-elevated border border-strong rounded-xl p-5 shadow-sm">
+              <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[16px]">person</span> Cliente e Endereço
+              </h4>
+              <div class="space-y-4">
+                @if (o.customers; as customer) {
+                  <div>
+                    <p class="text-[10px] font-black tracking-widest uppercase text-muted mb-1">Nome</p>
+                    <p class="font-bold text-title text-base">{{ customer.name }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-black tracking-widest uppercase text-muted mb-1">Telefone</p>
+                    <p class="font-bold text-muted data-mono text-sm">{{ customer.phone || 'Não informado' }}</p>
+                  </div>
+                  <div class="pt-4 border-t border-subtle">
+                    <p class="text-[10px] font-black tracking-widest uppercase text-muted mb-1">Endereço</p>
+                    <p class="font-medium text-title text-sm whitespace-pre-wrap">{{ customer.address || 'Não informado' }}</p>
+                  </div>
+                } @else {
+                  <p class="text-muted text-sm italic py-4 opacity-70">Nenhum cliente associado a este pedido.</p>
+                }
               </div>
-              <div>
-                <p class="text-sm text-gray-400">Telefone</p>
-                <p class="font-semibold text-white">{{ customer.phone || 'Não informado' }}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-400">Endereço</p>
-                <p class="font-semibold text-white whitespace-pre-wrap">{{ customer.address || 'Não informado' }}</p>
-              </div>
-              <div #mapContainer class="w-full h-48 rounded-lg z-0 mt-3 bg-gray-900/50"></div>
-            } @else {
-              <p class="text-gray-500">Nenhum cliente associado a este pedido.</p>
-            }
-          </div>
-        </section>
+            </section>
+            
+             @if(o.customers) {
+                 <div class="bg-surface-elevated border border-strong rounded-xl p-1 shadow-sm h-48 md:h-full relative overflow-hidden">
+                     <div #mapContainer class="w-full h-full rounded-lg z-0 bg-surface flex items-center justify-center">
+                         <span class="material-symbols-outlined text-4xl text-muted">map</span>
+                     </div>
+                 </div>
+             }
+        </div>
 
         <!-- Order Items -->
         <section>
-          <h4 class="text-lg font-semibold text-white mb-3">Itens do Pedido</h4>
-          <ul class="space-y-2">
+          <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4 flex items-center gap-2 border-b border-subtle pb-2">
+              <span class="material-symbols-outlined text-[16px]">restaurant_menu</span> Itens do Pedido
+          </h4>
+          <ul class="space-y-2 mt-4">
             @for (item of o.order_items; track item.id) {
-              <li class="p-2 bg-gray-700/50 rounded-md">
-                <div class="flex justify-between items-center text-sm">
-                  <p class="font-medium text-white">{{ item.quantity }}x {{ item.name }}</p>
-                  <span class="font-semibold text-white">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+              <li class="flex justify-between items-center py-2 px-3 bg-surface-elevated rounded-lg border border-strong shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                <div class="flex flex-col">
+                  <span class="font-bold text-title text-sm">{{ item.quantity }}x {{ item.name }}</span>
                 </div>
+                <span class="font-black text-title text-sm">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
               </li>
             }
           </ul>
         </section>
 
         <!-- Payment Details -->
-        <section>
-          <h4 class="text-lg font-semibold text-white mb-3">Pagamento</h4>
-          <div class="bg-gray-700/50 p-4 rounded-lg space-y-2">
-            <div>
-              <p class="text-sm text-gray-400">Método</p>
-              <p class="font-semibold text-white">{{ o.notes?.replace('Pagamento: ', '') || 'Não especificado' }}</p>
-            </div>
-             <div class="pt-2 border-t border-gray-600">
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-300">Subtotal Itens</span>
-                    <span>{{ getItemSubtotal(o) | currency:'BRL' }}</span>
-                </div>
-                @if(o.delivery_cost && o.delivery_cost > 0) {
-                <div class="flex justify-between text-sm mt-1">
-                    <span class="text-gray-300">Taxa de Entrega</span>
-                    <span>+ {{ o.delivery_cost | currency:'BRL' }}</span>
-                </div>
-                }
-            </div>
-            <div class="flex justify-between items-center text-xl font-bold text-white pt-2 border-t border-gray-600">
-              <span>Total</span>
-              <span class="text-green-400">{{ getOrderTotal(o) | currency:'BRL' }}</span>
-            </div>
-          </div>
+        <section class="bg-surface-elevated border border-strong rounded-xl p-5 shadow-sm space-y-3">
+          <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-2 border-b border-subtle pb-2 hidden">Pagamento</h4>
+           <div class="flex justify-between text-sm font-bold text-muted">
+               <span>Método:</span>
+               <span class="text-title uppercase tracking-widest text-[11px]">{{ o.notes?.replace('Pagamento: ', '') || 'Não especificado' }}</span>
+           </div>
+           <div class="flex justify-between text-sm font-bold text-muted pt-3 border-t border-subtle border-dashed">
+               <span>Subtotal Itens:</span>
+               <span>{{ getItemSubtotal(o) | currency:'BRL' }}</span>
+           </div>
+           @if(o.delivery_cost && o.delivery_cost > 0) {
+               <div class="flex justify-between text-sm font-bold text-muted mt-1">
+                   <span>Taxa de Entrega:</span>
+                   <span>+ {{ o.delivery_cost | currency:'BRL' }}</span>
+               </div>
+           }
+           <div class="flex justify-between text-xl font-black text-brand pt-3 border-t border-subtle">
+             <span class="uppercase text-sm tracking-widest">Total</span>
+             <span>{{ getOrderTotal(o) | currency:'BRL' }}</span>
+           </div>
         </section>
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button (click)="closeModal.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
-        <button (click)="printGuide()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-2">
-          <span class="material-symbols-outlined text-base">print</span>
+      <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl shrink-0">
+        <button (click)="closeModal.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Fechar</button>
+        <button (click)="printGuide()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm">print</span>
           <span>Imprimir Guia</span>
         </button>
       </div>

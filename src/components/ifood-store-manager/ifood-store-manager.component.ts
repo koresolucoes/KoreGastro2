@@ -49,7 +49,7 @@ export class IfoodStoreManagerComponent implements OnInit {
   storeState = computed(() => {
     const statuses = this.status();
     if (!statuses || statuses.length === 0) {
-      return { state: 'DESCONHECIDO', message: 'Carregando...', color: 'bg-gray-500' };
+      return { state: 'DESCONHECIDO', message: 'Carregando...', color: 'bg-surface border border-subtle text-muted' };
     }
     
     // Assume the first status in the array is the primary one for the store.
@@ -60,15 +60,15 @@ export class IfoodStoreManagerComponent implements OnInit {
 
     switch (mainStatus.state) {
       case 'OK':
-        return { state: 'ABERTA', message: message, color: 'bg-green-500' };
+        return { state: 'ABERTA', message: message, color: 'bg-success/10 border border-success/20 text-success' };
       case 'WARNING':
-        return { state: 'ALERTA', message: message, color: 'bg-yellow-500' };
+        return { state: 'ALERTA', message: message, color: 'bg-warning/10 border border-warning/20 text-warning' };
       case 'ERROR':
-        return { state: 'FECHADA (ERRO)', message: message, color: 'bg-red-500' };
+        return { state: 'FECHADA (ERRO)', message: message, color: 'bg-danger/10 border border-danger/20 text-danger' };
       case 'CLOSED':
-        return { state: 'FECHADA', message: message, color: 'bg-gray-500' };
+        return { state: 'FECHADA', message: message, color: 'bg-surface border border-subtle text-muted' };
       default:
-        return { state: 'DESCONHECIDO', message: message, color: 'bg-gray-500' };
+        return { state: 'DESCONHECIDO', message: message, color: 'bg-surface border border-subtle text-muted' };
     }
   });
 

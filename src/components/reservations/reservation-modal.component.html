@@ -1,51 +1,54 @@
-<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-    <div class="flex justify-between items-center p-4 border-b border-gray-700">
-      <h3 class="text-xl font-bold text-white">{{ isEditing() ? 'Editar Reserva' : 'Adicionar Nova Reserva' }}</h3>
-      <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="close.emit()">
+  <div class="chef-surface border border-subtle shadow-2xl w-full max-w-lg rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
+      <h3 class="text-xl font-black text-title flex items-center gap-3">
+          <span class="material-symbols-outlined text-brand">book_online</span>
+          {{ isEditing() ? 'Editar Reserva' : 'Adicionar Nova Reserva' }}
+      </h3>
+      <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
+        <span class="material-symbols-outlined">close</span>
       </button>
     </div>
 
-    <form (ngSubmit)="onSave()">
-      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+    <form (ngSubmit)="onSave()" class="flex flex-col">
+      <div class="p-5 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
         <div>
-          <label for="customerName" class="block text-sm font-medium text-gray-300 mb-1">Nome do Cliente *</label>
-          <input type="text" id="customerName" [ngModel]="reservationForm().customer_name" (ngModelChange)="updateFormField('customer_name', $event)" name="customerName" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label for="customerName" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nome do Cliente *</label>
+          <input type="text" id="customerName" [ngModel]="reservationForm().customer_name" (ngModelChange)="updateFormField('customer_name', $event)" name="customerName" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="Ex: Maria Antonieta">
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label for="customerPhone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-            <input type="tel" id="customerPhone" [ngModel]="reservationForm().customer_phone" (ngModelChange)="updateFormField('customer_phone', $event)" name="customerPhone" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label for="customerPhone" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Telefone</label>
+            <input type="tel" id="customerPhone" [ngModel]="reservationForm().customer_phone" (ngModelChange)="updateFormField('customer_phone', $event)" name="customerPhone" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="(11) 99999-9999">
           </div>
           <div>
-            <label for="partySize" class="block text-sm font-medium text-gray-300 mb-1">Nº de Pessoas *</label>
-            <input type="number" id="partySize" [ngModel]="reservationForm().party_size" (ngModelChange)="updateFormField('party_size', $event)" name="partySize" min="1" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label for="partySize" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nº de Pessoas *</label>
+            <input type="number" id="partySize" [ngModel]="reservationForm().party_size" (ngModelChange)="updateFormField('party_size', $event)" name="partySize" min="1" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="2">
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label for="reservationDate" class="block text-sm font-medium text-gray-300 mb-1">Data *</label>
-            <input type="date" id="reservationDate" [(ngModel)]="formDate" name="reservationDate" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label for="reservationDate" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Data *</label>
+            <input type="date" id="reservationDate" [(ngModel)]="formDate" name="reservationDate" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
           </div>
           <div>
-            <label for="reservationTime" class="block text-sm font-medium text-gray-300 mb-1">Hora *</label>
-            <input type="time" id="reservationTime" [(ngModel)]="formTime" name="reservationTime" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label for="reservationTime" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Hora *</label>
+            <input type="time" id="reservationTime" [(ngModel)]="formTime" name="reservationTime" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
           </div>
         </div>
         
         <div>
-          <label for="notes" class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-          <textarea id="notes" [ngModel]="reservationForm().notes" (ngModelChange)="updateFormField('notes', $event)" name="notes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <label for="notes" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Observações / Preferências</label>
+          <textarea id="notes" [ngModel]="reservationForm().notes" (ngModelChange)="updateFormField('notes', $event)" name="notes" rows="3" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-medium focus:border-brand outline-none transition-all placeholder:text-muted/50 resize-none custom-scrollbar" placeholder="Comemoração de aniversário, cadeira de bebê..."></textarea>
         </div>
       </div>
       
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button type="button" (click)="close.emit()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-        <button type="submit" [disabled]="!isFormValid()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
-            {{ isEditing() ? 'Salvar Alterações' : 'Salvar Reserva' }}
+      <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl">
+        <button type="button" (click)="close.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Cancelar</button>
+        <button type="submit" [disabled]="!isFormValid()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-sm">save</span> {{ isEditing() ? 'Salvar' : 'Adicionar' }}
         </button>
       </div>
     </form>

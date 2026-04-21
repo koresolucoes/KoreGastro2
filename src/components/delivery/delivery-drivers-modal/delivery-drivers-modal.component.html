@@ -1,44 +1,50 @@
-<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
+  <div class="chef-surface border border-subtle shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-      <h3 class="text-xl font-bold text-white">Gerenciar Entregadores</h3>
-      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
+      <h3 class="text-xl font-black text-title flex items-center gap-3">
+          <span class="material-symbols-outlined text-brand">two_wheeler</span>
+          Gerenciar Entregadores
+      </h3>
+      <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
+        <span class="material-symbols-outlined">close</span>
       </button>
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="flex-1 p-5 sm:p-8 overflow-y-auto custom-scrollbar flex flex-col md:flex-row gap-8">
       <!-- Left: Driver List -->
-      <div class="md:col-span-2">
-        <h4 class="text-lg font-semibold text-white mb-3">Entregadores Cadastrados</h4>
+      <div class="flex-[2] flex flex-col min-h-0">
+        <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">Entregadores Cadastrados</h4>
         @if (drivers().length === 0) {
-          <p class="text-center text-gray-500 py-10">Nenhum entregador cadastrado.</p>
+            <div class="flex flex-col items-center justify-center py-10 opacity-50 bg-surface-elevated border border-dashed border-strong rounded-xl">
+                <span class="material-symbols-outlined text-4xl text-muted mb-2">person_off</span>
+                <p class="text-xs font-bold text-muted uppercase tracking-widest text-center">Nenhum cadatrado</p>
+            </div>
         } @else {
-          <div class="space-y-3">
+          <div class="space-y-3 overflow-y-auto custom-scrollbar pr-2 pb-4">
             @for (driver of drivers(); track driver.id) {
-              <div class="bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-3 h-3 rounded-full" [class.bg-green-500]="driver.is_active" [class.bg-gray-500]="!driver.is_active" [title]="driver.is_active ? 'Ativo' : 'Inativo'"></div>
+              <div class="bg-surface-elevated border border-strong p-4 rounded-xl flex items-center justify-between shadow-sm transition-all hover:border-brand/40 group">
+                <div class="flex items-center gap-4">
+                  <div class="w-3 h-3 rounded-full shadow-sm" [class.bg-success]="driver.is_active" [class.bg-muted]="!driver.is_active" [title]="driver.is_active ? 'Ativo' : 'Inativo'"></div>
                   <div>
-                    <p class="font-semibold text-white">{{ driver.name }}</p>
-                    <p class="text-xs text-gray-400">{{ driver.vehicle_type || 'Veículo não informado' }} - {{ driver.phone || 'Telefone não informado' }}</p>
+                    <p class="font-bold text-title text-sm">{{ driver.name }}</p>
+                    <p class="text-[10px] font-black text-muted tracking-widest uppercase mt-1">{{ driver.vehicle_type || 'Não info.' }} <span class="mx-1">•</span> <span class="data-mono">{{ driver.phone || 'Sem telefone' }}</span></p>
                   </div>
                 </div>
                 @if (driverPendingDeletion()?.id === driver.id) {
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-red-300">Certeza?</span>
-                    <button (click)="confirmDelete()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                    <button (click)="cancelDelete()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                    <span class="text-[10px] font-bold text-danger uppercase tracking-widest mr-2">Certeza?</span>
+                    <button (click)="confirmDelete()" class="px-3 py-1.5 font-black uppercase text-[10px] tracking-widest rounded-lg bg-danger text-white hover:bg-danger-hover transition-colors shadow-sm active:scale-95">Sim</button>
+                    <button (click)="cancelDelete()" class="px-3 py-1.5 font-black uppercase text-[10px] tracking-widest rounded-lg bg-surface border border-strong text-title hover:bg-surface-elevated transition-colors shadow-sm active:scale-95">Não</button>
                   </div>
                 } @else {
-                  <div class="flex items-center gap-2">
-                    <button (click)="startEditing(driver)" class="p-2 text-blue-400 hover:text-blue-300">
-                      <span class="material-symbols-outlined text-base">edit</span>
+                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button (click)="startEditing(driver)" class="p-2 text-muted hover:text-brand bg-surface border border-transparent hover:border-brand/30 rounded-lg transition-all" title="Editar">
+                      <span class="material-symbols-outlined text-sm">edit</span>
                     </button>
-                    <button (click)="requestDelete(driver)" class="p-2 text-red-400 hover:text-red-300">
-                      <span class="material-symbols-outlined text-base">delete</span>
+                    <button (click)="requestDelete(driver)" class="p-2 text-muted hover:text-danger bg-surface border border-transparent hover:border-danger/30 rounded-lg transition-all" title="Excluir">
+                      <span class="material-symbols-outlined text-sm">delete</span>
                     </button>
                   </div>
                 }
@@ -49,54 +55,65 @@
       </div>
 
       <!-- Right: Add/Edit Form -->
-      <div class="md:col-span-1">
-        <h4 class="text-lg font-semibold text-white mb-3">{{ editingDriver() ? 'Editar Entregador' : 'Novo Entregador' }}</h4>
-        <form (ngSubmit)="saveDriver()" class="space-y-4 bg-gray-900/50 p-4 rounded-lg">
+      <div class="flex-1 flex flex-col min-h-0">
+        <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">{{ editingDriver() ? 'Editar Entregador' : 'Novo Entregador' }}</h4>
+        <form (ngSubmit)="saveDriver()" class="space-y-4 bg-surface-elevated border border-strong p-5 rounded-xl shadow-sm overflow-y-auto custom-scrollbar">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Nome *</label>
-            <input type="text" [(ngModel)]="driverForm().name" name="name" required class="w-full bg-gray-700 rounded p-2 text-white">
+            <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nome *</label>
+            <input type="text" [(ngModel)]="driverForm().name" name="name" required class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
-            <input type="tel" [(ngModel)]="driverForm().phone" name="phone" class="w-full bg-gray-700 rounded p-2 text-white">
+            <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Telefone</label>
+            <input type="tel" [(ngModel)]="driverForm().phone" name="phone" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
           </div>
           
           @if (!editingDriver()) {
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">PIN (4 dígitos) *</label>
-              <input type="password" [(ngModel)]="driverForm().pin" name="pin" required maxlength="4" class="w-full bg-gray-700 rounded p-2 text-white text-center tracking-widest">
+              <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">PIN (4 dígitos) *</label>
+              <input type="password" [(ngModel)]="driverForm().pin" name="pin" required maxlength="4" placeholder="****" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-sm text-center tracking-[0.5em] text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/30">
             </div>
           }
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Tipo de Veículo</label>
-            <select [(ngModel)]="driverForm().vehicle_type" name="vehicle_type" class="w-full bg-gray-700 rounded p-2 text-white">
-              <option>Moto</option>
-              <option>Carro</option>
-              <option>Bicicleta</option>
-            </select>
+            <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Tipo de Veículo</label>
+            <div class="relative">
+                <select [(ngModel)]="driverForm().vehicle_type" name="vehicle_type" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all appearance-none cursor-pointer">
+                  <option>Moto</option>
+                  <option>Carro</option>
+                  <option>Bicicleta</option>
+                </select>
+                <span class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-muted material-symbols-outlined">expand_more</span>
+            </div>
           </div>
+          
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Taxa Base (R$)</label>
-              <input type="number" [(ngModel)]="driverForm().base_rate" name="base_rate" class="w-full bg-gray-700 rounded p-2 text-white">
+              <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Taxa Base (R$)</label>
+              <div class="relative">
+                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted font-bold text-xs">$</span>
+                 <input type="number" [(ngModel)]="driverForm().base_rate" name="base_rate" class="w-full bg-surface border border-strong rounded-xl pl-8 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+              </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Taxa por KM (R$)</label>
-              <input type="number" step="0.01" [(ngModel)]="driverForm().rate_per_km" name="rate_per_km" class="w-full bg-gray-700 rounded p-2 text-white">
+              <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Taxa / KM (R$)</label>
+               <div class="relative">
+                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted font-bold text-xs">$</span>
+                 <input type="number" step="0.01" [(ngModel)]="driverForm().rate_per_km" name="rate_per_km" class="w-full bg-surface border border-strong rounded-xl pl-8 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+              </div>
             </div>
           </div>
 
-          <div class="flex items-center">
-            <input type="checkbox" id="is_active" [(ngModel)]="driverForm().is_active" name="is_active" class="h-4 w-4 rounded border-gray-500 text-blue-600">
-            <label for="is_active" class="ml-2 text-sm text-gray-200">Ativo</label>
+          <div class="flex items-center mt-2 p-3 bg-surface border border-strong rounded-xl cursor-pointer hover:border-brand/40 transition-colors">
+            <input type="checkbox" id="is_active" [(ngModel)]="driverForm().is_active" name="is_active" class="h-5 w-5 rounded border-strong bg-surface text-brand checked:bg-brand focus:ring-brand focus:ring-offset-surface cursor-pointer">
+            <label for="is_active" class="ml-3 text-xs font-black text-title uppercase tracking-widest cursor-pointer select-none">Entregador Ativo</label>
           </div>
-          <div class="pt-2 flex flex-col gap-2">
-            <button type="submit" [disabled]="!driverForm().name?.trim() || (!editingDriver() && driverForm().pin?.length !== 4)" class="w-full px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-              Salvar
+          
+          <div class="pt-4 flex flex-col gap-3 border-t border-subtle mt-2">
+            <button type="submit" [disabled]="!driverForm().name?.trim() || (!editingDriver() && driverForm().pin?.length !== 4)" class="w-full px-6 py-3 font-black text-xs uppercase tracking-widest rounded-xl bg-brand hover:bg-brand-hover text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-brand/20 active:scale-95 flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-sm">save</span> Salvar Entregador
             </button>
             @if (editingDriver()) {
-              <button type="button" (click)="cancelEditing()" class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">
+              <button type="button" (click)="cancelEditing()" class="w-full px-6 py-2.5 font-black text-[10px] uppercase tracking-widest rounded-xl bg-surface border border-strong text-title hover:bg-surface-elevated transition-all shadow-sm active:scale-95 text-center">
                 Cancelar Edição
               </button>
             }

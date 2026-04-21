@@ -51,10 +51,6 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   notes = signal('');
 
   ngOnInit() {
-    // This component is public, so we need to adjust the body class for the light theme
-    document.body.classList.remove('bg-gray-900');
-    document.body.classList.add('bg-white'); // Changed to white for better contrast with new design
-
     this.routeSub = this.route.paramMap.subscribe(params => {
       const userId = params.get('userId');
       if (userId) {
@@ -68,9 +64,6 @@ export class PublicBookingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // Revert body class when leaving the component
-    document.body.classList.add('bg-gray-900');
-    document.body.classList.remove('bg-white');
     this.routeSub?.unsubscribe();
   }
 

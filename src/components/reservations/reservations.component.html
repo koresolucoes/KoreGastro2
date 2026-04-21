@@ -1,17 +1,20 @@
-<div class="container mx-auto">
+<div class="h-full flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto hide-scrollbar space-y-6">
   <!-- Header -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-white">Gestão de Reservas</h1>
-      <p class="text-gray-400 mt-1">Veja e gerencie as reservas para o dia selecionado.</p>
+      <h1 class="text-3xl font-black text-title title-display flex items-center gap-3">
+        <span class="material-symbols-outlined text-brand text-4xl">book_online</span>
+        Gestão de Reservas
+      </h1>
+      <p class="text-muted mt-1 text-sm font-medium">Veja e gerencie as reservas para o dia selecionado.</p>
     </div>
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-      <div class="flex gap-1 bg-gray-700 p-1 rounded-lg w-full sm:w-auto">
-          <button (click)="activeView.set('daily')" class="flex-1 sm:flex-initial px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'daily'" [class.text-white]="activeView() === 'daily'">
+      <div class="flex border border-strong bg-surface-elevated/50 p-1 rounded-xl w-full sm:w-auto shadow-inner">
+          <button (click)="activeView.set('daily')" class="flex-1 sm:flex-initial px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-brand]="activeView() === 'daily'" [class.text-white]="activeView() === 'daily'" [class.shadow-md]="activeView() === 'daily'" [class.text-muted]="activeView() !== 'daily'">
               Visão Diária
           </button>
-          <button (click)="activeView.set('overview')" class="flex-1 sm:flex-initial px-3 py-1.5 text-sm font-medium rounded-md transition-colors" [class.bg-blue-600]="activeView() === 'overview'" [class.text-white]="activeView() === 'overview'">
-              Visão Geral (15d)
+          <button (click)="activeView.set('overview')" class="flex-1 sm:flex-initial px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-brand]="activeView() === 'overview'" [class.text-white]="activeView() === 'overview'" [class.shadow-md]="activeView() === 'overview'" [class.text-muted]="activeView() !== 'overview'">
+              Agenda (15d)
           </button>
       </div>
 
@@ -20,13 +23,13 @@
           type="date" 
           [value]="selectedDate()" 
           (change)="handleDateChange($event)" 
-          class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+          class="bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title font-bold focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-inner text-sm transition-all h-[40px]">
       }
       
       @if (canAddReservation()) {
-        <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-          <span>Adicionar Reserva</span>
+        <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-2 px-6 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-lg shadow-brand/20 active:scale-95 h-[40px]">
+          <span class="material-symbols-outlined text-sm">add</span>
+          Nova Reserva
         </button>
       }
     </div>
@@ -34,143 +37,166 @@
 
   @if (activeView() === 'daily') {
     <!-- Reservation Columns -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[400px]">
       <!-- Pending Column -->
-      <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
-        <h2 class="text-xl font-semibold text-yellow-400 mb-4 border-b-2 border-yellow-500 pb-2">Pendentes ({{ pendingReservations().length }})</h2>
-        <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+      <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
+        <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-warning mb-4 pb-2 border-b border-warning/30 flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px]">pending_actions</span> Pendentes ({{ pendingReservations().length }})
+        </h2>
+        <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of pendingReservations(); track reservation.id) {
-            <div (click)="openEditModal(reservation)" class="bg-gray-800 p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-700/50 transition-colors" [class]="getStatusClass(reservation.status)">
+            <div (click)="openEditModal(reservation)" class="bg-surface-elevated/40 p-4 rounded-xl border border-subtle hover:border-warning/40 shadow-sm cursor-pointer transition-all active:scale-[0.98] group flex flex-col border-l-[3px] border-l-warning">
               <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
-                  <div class="flex items-center gap-4 mt-1 text-sm text-gray-300">
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                  <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
+                  <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-warning">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-warning">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
-              <div class="mt-2 text-sm space-y-1">
+              <div class="mt-3 pt-3 border-t border-subtle border-dashed text-xs space-y-2">
                 @if(reservation.customer_phone) {
-                  <div class="flex items-center gap-2 text-gray-400">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
-                    <span>{{ reservation.customer_phone }}</span>
+                  <div class="flex items-center gap-2 text-muted">
+                    <span class="material-symbols-outlined text-[14px] opacity-70">call</span>
+                    <span class="font-medium data-mono">{{ reservation.customer_phone }}</span>
                   </div>
                 }
                 @if(reservation.customer_email) {
-                  <div class="flex items-center gap-2 text-gray-400">
-                     <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
-                    <span>{{ reservation.customer_email }}</span>
+                  <div class="flex items-center gap-2 text-muted">
+                     <span class="material-symbols-outlined text-[14px] opacity-70">mail</span>
+                    <span class="font-medium truncate">{{ reservation.customer_email }}</span>
                   </div>
                 }
               </div>
               @if(reservation.notes) {
-                <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p>
+                <p class="text-[10px] font-bold text-title mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-warning">info</span> "{{ reservation.notes }}"</p>
               }
-              <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Confirmar</button>
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+              <div class="flex gap-2 mt-4">
+                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-success text-white hover:bg-success-hover transition-all active:scale-95 shadow-md shadow-success/20">Confirmar</button>
+                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95">Cancelar</button>
               </div>
             </div>
           } @empty {
-            <p class="text-center text-gray-500 py-8">Nenhuma reserva pendente.</p>
+            <div class="flex flex-col items-center justify-center h-48 opacity-40">
+              <span class="material-symbols-outlined text-4xl mb-2 text-muted">inbox</span>
+              <p class="text-center text-muted font-bold text-sm">Nenhuma pendente.</p>
+            </div>
           }
         </div>
       </div>
       
       <!-- Confirmed Column -->
-      <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
-        <h2 class="text-xl font-semibold text-blue-400 mb-4 border-b-2 border-blue-500 pb-2">Confirmadas ({{ confirmedReservations().length }})</h2>
-         <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+      <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
+        <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-info mb-4 pb-2 border-b border-info/30 flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px]">check_circle</span> Confirmadas ({{ confirmedReservations().length }})
+        </h2>
+         <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of confirmedReservations(); track reservation.id) {
-            <div (click)="openEditModal(reservation)" class="bg-gray-800 p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-700/50 transition-colors" [class]="getStatusClass(reservation.status)">
+            <div (click)="openEditModal(reservation)" class="bg-surface-elevated/40 p-4 rounded-xl border border-subtle hover:border-info/40 shadow-sm cursor-pointer transition-all active:scale-[0.98] group flex flex-col border-l-[3px] border-l-info">
                <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
-                  <div class="flex items-center gap-4 mt-1 text-sm text-gray-300">
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                  <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
+                  <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-info">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-info">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
-              <div class="mt-2 text-sm space-y-1">
-                @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg><span>{{ reservation.customer_phone }}</span></div> }
-                @if(reservation.customer_email) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg><span>{{ reservation.customer_email }}</span></div> }
+              <div class="mt-3 pt-3 border-t border-subtle border-dashed text-xs space-y-2">
+                @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
+                @if(reservation.customer_email) { <div class="flex items-center gap-2 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
               </div>
-              @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
-              <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Finalizar</button>
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+              @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-info">info</span> "{{ reservation.notes }}"</p> }
+              <div class="flex gap-2 mt-4">
+                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border-2 border-success text-success transition-all active:scale-95 text-center leading-none">Concluir</button>
+                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95 text-center leading-none">Cancelar</button>
               </div>
             </div>
           } @empty {
-            <p class="text-center text-gray-500 py-8">Nenhuma reserva confirmada.</p>
+            <div class="flex flex-col items-center justify-center h-48 opacity-40">
+              <span class="material-symbols-outlined text-4xl mb-2 text-muted">event_available</span>
+              <p class="text-center text-muted font-bold text-sm">Nenhuma confirmada.</p>
+            </div>
           }
         </div>
       </div>
       
       <!-- Completed/Cancelled Column -->
-      <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
-        <h2 class="text-xl font-semibold text-gray-400 mb-4 border-b-2 border-gray-500 pb-2">Finalizadas / Canceladas ({{ completedOrCancelledReservations().length }})</h2>
-         <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+      <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
+        <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-muted mb-4 pb-2 border-b border-subtle flex items-center gap-2">
+          <span class="material-symbols-outlined text-[16px]">history</span> Finalizadas ({{ completedOrCancelledReservations().length }})
+        </h2>
+         <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of completedOrCancelledReservations(); track reservation.id) {
-            <div class="bg-gray-800 p-4 rounded-lg border-l-4" [class]="getStatusClass(reservation.status)">
+            <div class="bg-surface-elevated/20 p-4 rounded-xl border border-subtle flex flex-col border-l-[3px] opacity-80 hover:opacity-100 transition-opacity" [class.border-l-success]="reservation.status === 'COMPLETED'" [class.border-l-danger]="reservation.status === 'CANCELLED'">
                <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-bold text-lg" [class]="getStatusTextClass(reservation.status)">{{ reservation.customer_name }}</p>
-                  <div class="flex items-center gap-4 mt-1 text-sm text-gray-400">
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                  <p class="font-black text-base line-through opacity-70" [class.text-title]="reservation.status === 'COMPLETED'" [class.text-danger]="reservation.status === 'CANCELLED'">{{ reservation.customer_name }}</p>
+                  <div class="flex items-center gap-4 mt-1 text-xs font-bold text-muted">
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
-               <div class="mt-2 text-sm space-y-1">
-                @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg><span>{{ reservation.customer_phone }}</span></div> }
-                @if(reservation.customer_email) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg><span>{{ reservation.customer_email }}</span></div> }
-              </div>
-              @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
             </div>
           } @empty {
-            <p class="text-center text-gray-500 py-8">Nenhuma reserva neste estado.</p>
+             <div class="flex flex-col items-center justify-center h-48 opacity-40">
+              <span class="material-symbols-outlined text-4xl mb-2 text-muted">history</span>
+              <p class="text-center text-muted font-bold text-sm">Espaço vazio.</p>
+            </div>
           }
         </div>
       </div>
     </div>
   } @else {
     <!-- Overview View -->
-    <div class="space-y-8">
+    <div class="space-y-6 flex-1">
       @if (groupedOverviewReservations().length > 0) {
         @for (group of groupedOverviewReservations(); track group.date) {
-          <div>
-            <h2 class="text-xl font-bold text-white mb-4 border-b-2 border-gray-700 pb-2">
+          <div class="chef-surface border border-subtle rounded-3xl p-6 shadow-sm mb-6">
+            <h2 class="text-lg font-black uppercase tracking-widest text-title mb-6 border-b border-subtle pb-3 flex items-center gap-3">
+              <span class="material-symbols-outlined text-brand text-2xl">calendar_month</span>
               {{ group.date + 'T00:00:00' | date:'fullDate' }}
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               @for (reservation of group.reservations; track reservation.id) {
-                <div (click)="openEditModal(reservation)" class="bg-gray-800 p-4 rounded-lg border-l-4 cursor-pointer hover:bg-gray-700/50 transition-colors" [class]="getStatusClass(reservation.status)">
-                  <div class="flex justify-between items-start">
-                    <div>
-                      <p class="font-bold text-white text-lg">{{ reservation.customer_name }}</p>
-                      <div class="flex items-center gap-4 mt-1 text-sm text-gray-300">
-                        <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                        <span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>{{ reservation.party_size }}</span>
+                <div (click)="openEditModal(reservation)" class="bg-surface-elevated/40 p-5 rounded-2xl border border-subtle hover:border-brand/40 hover:shadow-lg cursor-pointer transition-all active:scale-[0.98] group relative overflow-hidden" [class]="getStatusClass(reservation.status)">
+                  <div class="absolute left-0 top-0 bottom-0 w-2" [class.bg-warning]="reservation.status === 'PENDING'" [class.bg-info]="reservation.status === 'CONFIRMED'" [class.bg-success]="reservation.status === 'COMPLETED'" [class.bg-danger]="reservation.status === 'CANCELLED'"></div>
+                  
+                  <div class="flex justify-between items-start pl-2">
+                    <div class="flex-1">
+                      <p class="font-black text-title text-lg mb-1" [class.line-through]="reservation.status === 'CANCELLED'" [class.opacity-50]="reservation.status === 'CANCELLED'">{{ reservation.customer_name }}</p>
+                      <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
+                        <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">schedule</span> <span class="data-mono">{{ reservation.reservation_time | date:'HH:mm' }}</span></span>
+                        <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">group</span> <span class="data-mono">{{ reservation.party_size }}</span></span>
                       </div>
                     </div>
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusTextClass(reservation.status)">{{ reservation.status }}</span>
+                    
+                    <span class="px-3 py-1 text-[9px] uppercase tracking-widest font-black rounded-lg border ml-2 shrink-0" 
+                      [class.bg-warning/10]="reservation.status === 'PENDING'" [class.text-warning]="reservation.status === 'PENDING'" [class.border-warning/20]="reservation.status === 'PENDING'"
+                      [class.bg-info/10]="reservation.status === 'CONFIRMED'" [class.text-info]="reservation.status === 'CONFIRMED'" [class.border-info/20]="reservation.status === 'CONFIRMED'"
+                      [class.bg-success/10]="reservation.status === 'COMPLETED'" [class.text-success]="reservation.status === 'COMPLETED'" [class.border-success/20]="reservation.status === 'COMPLETED'"
+                      [class.bg-danger/10]="reservation.status === 'CANCELLED'" [class.text-danger]="reservation.status === 'CANCELLED'" [class.border-danger/20]="reservation.status === 'CANCELLED'">
+                        {{  reservation.status === 'PENDING' ? 'Pendente' : 
+                            reservation.status === 'CONFIRMED' ? 'Confirmada' : 
+                            reservation.status === 'COMPLETED' ? 'Finalizada' : 'Cancelada' }}
+                    </span>
                   </div>
-                  <div class="mt-2 text-sm space-y-1">
-                    @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg><span>{{ reservation.customer_phone }}</span></div> }
-                    @if(reservation.customer_email) { <div class="flex items-center gap-2 text-gray-400"><svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg><span>{{ reservation.customer_email }}</span></div> }
-                  </div>
-                  @if(reservation.notes) { <p class="text-xs italic text-yellow-200 mt-2 p-2 bg-gray-700/50 rounded-md">"{{ reservation.notes }}"</p> }
                   
-                  <div class="flex gap-2 mt-4 pt-3 border-t border-gray-700">
+                  <div class="mt-4 pt-4 border-t border-subtle border-dashed text-xs space-y-2 pl-2">
+                    @if(reservation.customer_phone) { <div class="flex items-center gap-3 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
+                    @if(reservation.customer_email) { <div class="flex items-center gap-3 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
+                  </div>
+                  @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-3 bg-surface border border-subtle rounded-xl flex items-start gap-2 ml-2 shadow-inner"><span class="material-symbols-outlined text-[14px]">info</span> "{{ reservation.notes }}"</p> }
+                  
+                  <div class="flex gap-2 mt-5 pl-2 relative z-10 transition-opacity">
                     @if (reservation.status === 'PENDING') {
-                      <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Confirmar</button>
-                      <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+                      <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-success text-white hover:bg-success-hover transition-all active:scale-95 shadow-md shadow-success/20">Confirmar</button>
+                      <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95">Cancelar</button>
                     } @else if (reservation.status === 'CONFIRMED') {
-                       <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-green-600 hover:bg-green-500 text-white transition-colors">Finalizar</button>
-                       <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-sm font-semibold rounded-md bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+                       <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border-2 border-success text-success transition-all active:scale-95 text-center leading-none">Concluir</button>
+                       <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95 text-center leading-none">Cancelar</button>
                     }
                   </div>
                 </div>
@@ -179,8 +205,9 @@
           </div>
         }
       } @else {
-        <div class="text-center bg-gray-800 rounded-lg py-16">
-          <p class="text-gray-500">Nenhuma reserva encontrada para os próximos 15 dias.</p>
+        <div class="text-center chef-surface border border-subtle flex flex-col justify-center items-center rounded-3xl py-24 opacity-60">
+          <span class="material-symbols-outlined text-6xl text-muted mb-4">search_off</span>
+          <p class="text-muted font-bold">Nenhuma reserva encontrada para os próximos 15 dias.</p>
         </div>
       }
     </div>

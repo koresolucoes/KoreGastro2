@@ -220,50 +220,50 @@
 
         <!-- Case 3: Loyalty Page -->
         @case ('loyalty') {
-          <div class="min-h-screen bg-gray-50 pb-12">
-            <header class="bg-white sticky top-0 z-40 shadow-sm px-4 py-4 flex items-center gap-4">
-                <button (click)="setView('cover')" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors">
+          <div class="min-h-screen bg-app pb-12">
+            <header class="chef-surface sticky top-0 z-40 border-b border-subtle px-4 py-4 flex items-center gap-4">
+                <button (click)="setView('cover')" class="p-2 rounded-full text-muted hover:bg-surface-elevated transition-colors">
                     <span class="material-symbols-outlined">arrow_back</span>
                 </button>
-                <h1 class="text-xl font-bold text-gray-900">Programa de Fidelidade</h1>
+                <h1 class="text-xl font-bold text-title">Programa de Fidelidade</h1>
             </header>
 
             <main class="max-w-2xl mx-auto px-4 py-8">
-                <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+                <div class="bg-gradient-to-br from-brand to-brand-hover rounded-[2.5rem] p-8 text-white shadow-xl shadow-brand/20 mb-8 relative overflow-hidden">
                     <div class="relative z-10">
-                        <h2 class="text-3xl font-black mb-2">Ganhe Prêmios!</h2>
-                        <p class="text-amber-100 mb-6">A cada R$ 1,00 gasto, você ganha {{ publicLoyaltySettings()?.points_per_real || 1 }} ponto(s).</p>
-                        <div class="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-4 py-2 w-fit">
-                            <span class="material-symbols-outlined">info</span>
+                        <h2 class="text-3xl font-black mb-2 tracking-tight drop-shadow-md">Ganhe Prêmios!</h2>
+                        <p class="text-white/90 mb-6 font-medium">A cada R$ 1,00 gasto, você ganha {{ publicLoyaltySettings()?.points_per_real || 1 }} ponto(s).</p>
+                        <div class="flex items-center gap-2 bg-black/20 backdrop-blur-md rounded-full px-4 py-2 w-fit border border-white/10 shadow-inner">
+                            <span class="material-symbols-outlined text-sm">info</span>
                             <span class="text-sm font-medium">Acumule pontos e troque por recompensas</span>
                         </div>
                     </div>
-                    <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-20 rotate-12">loyalty</span>
+                    <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl text-white/10 rotate-12 pointer-events-none">loyalty</span>
                 </div>
 
-                <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-amber-500">redeem</span> Recompensas Disponíveis
+                <h3 class="text-lg font-bold text-title mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand">redeem</span> Recompensas Disponíveis
                 </h3>
 
                 <div class="space-y-4">
                     @for(reward of loyaltyRewardsDisplay(); track reward.id) {
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="chef-surface p-6 flex justify-between items-center group transition-all hover:border-brand/40 hover:shadow-lg">
                             <div>
-                                <h4 class="font-bold text-gray-900 text-lg">{{ reward.name }}</h4>
-                                <p class="text-gray-500 text-sm mb-2">{{ reward.description }}</p>
-                                <div class="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-bold w-fit">
+                                <h4 class="font-black text-title text-lg group-hover:text-brand transition-colors">{{ reward.name }}</h4>
+                                <p class="text-muted text-sm mb-3 limit-lines">{{ reward.description }}</p>
+                                <div class="bg-surface-elevated text-title px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit border border-strong shadow-sm inline-block">
                                     {{ reward.valueLabel }}
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <div class="text-2xl font-black text-amber-600">{{ reward.points_cost }}</div>
-                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pontos</div>
+                            <div class="text-right ml-4">
+                                <div class="text-3xl font-black text-brand data-mono tracking-tighter">{{ reward.points_cost }}</div>
+                                <div class="text-[10px] font-bold text-muted uppercase tracking-widest">Pontos</div>
                             </div>
                         </div>
                     } @empty {
-                        <div class="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200">
-                            <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">sentiment_dissatisfied</span>
-                            <p class="text-gray-500">Nenhuma recompensa ativa no momento.</p>
+                        <div class="text-center py-16 chef-surface border-dashed">
+                            <span class="material-symbols-outlined text-5xl text-muted/30 mb-4 animate-in zoom-in">sentiment_dissatisfied</span>
+                            <p class="text-muted font-bold text-sm uppercase tracking-widest">Nenhuma recompensa ativa no momento.</p>
                         </div>
                     }
                 </div>
@@ -273,59 +273,60 @@
 
         <!-- Case 4: Info Page -->
         @case ('info') {
-          <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-              <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
-                   <button (click)="setView('menu')" class="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-md p-2 rounded-full text-gray-900 hover:bg-white transition-colors shadow-sm">
+          <div class="min-h-screen bg-app flex flex-col pt-16 items-center p-4">
+              <div class="chef-surface w-full max-w-lg shadow-2xl overflow-hidden relative">
+                   <button (click)="setView('menu')" class="absolute top-4 left-4 z-10 bg-surface/80 backdrop-blur-md p-2 rounded-full text-title hover:bg-surface-elevated transition-colors shadow-sm border border-subtle">
                         <span class="material-symbols-outlined">arrow_back</span>
                    </button>
 
-                  <div class="relative h-40 bg-gray-900">
+                  <div class="relative h-40 bg-surface-elevated">
                        <div class="absolute inset-0 bg-cover bg-center opacity-60" [style.background-image]="'url(' + (companyProfile()?.menu_header_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1074&auto=format&fit=crop') + ')'"></div>
+                       <div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
                        <div class="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
                             @if(companyProfile()?.logo_url; as logo) {
-                                <img [src]="logo" class="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover bg-white">
+                                <img [src]="logo" class="w-24 h-24 rounded-[1.5rem] border-4 border-surface shadow-xl object-cover bg-surface">
                             } @else {
-                                <div class="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-400">?</div>
+                                <div class="w-24 h-24 rounded-[1.5rem] border-4 border-surface shadow-xl bg-surface-elevated flex items-center justify-center text-3xl font-bold text-muted">?</div>
                             }
                        </div>
                   </div>
                   
-                  <div class="pt-14 pb-8 px-8 text-center">
-                      <h1 class="text-2xl font-black text-gray-900 mb-1">{{ companyProfile()?.company_name }}</h1>
+                  <div class="pt-14 pb-8 px-8 text-center bg-surface">
+                      <h1 class="text-2xl font-black text-title mb-1 title-display">{{ companyProfile()?.company_name }}</h1>
                       <div class="flex items-center justify-center gap-2 text-sm font-medium mb-8">
-                           <span class="w-2 h-2 rounded-full" [class.bg-green-500]="isRestaurantOpen()" [class.bg-red-500]="!isRestaurantOpen()"></span>
-                           <span [class.text-green-600]="isRestaurantOpen()" [class.text-red-600]="!isRestaurantOpen()">{{ isRestaurantOpen() ? 'Aberto Agora' : 'Fechado' }}</span>
+                           <span class="w-2 h-2 rounded-full" [class.bg-success]="isRestaurantOpen()" [class.bg-danger]="!isRestaurantOpen()"></span>
+                           <span [class.text-success]="isRestaurantOpen()" [class.text-danger]="!isRestaurantOpen()">{{ isRestaurantOpen() ? 'Aberto Agora' : 'Fechado' }}</span>
                       </div>
 
                       <div class="space-y-4 text-left">
                           <!-- Contact -->
-                          <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                              <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                  <span class="material-symbols-outlined text-blue-600">location_on</span> Localização
+                          <div class="bg-surface-elevated p-5 rounded-3xl border border-strong shadow-inner">
+                              <h3 class="font-black text-title uppercase tracking-widest text-[10px] mb-4 flex items-center gap-2">
+                                  <span class="material-symbols-outlined text-brand">location_on</span> Localização
                               </h3>
-                              <p class="text-gray-600 text-sm leading-relaxed">{{ companyProfile()?.address || 'Endereço não informado' }}</p>
+                              <p class="text-muted text-sm leading-relaxed">{{ companyProfile()?.address || 'Endereço não informado' }}</p>
                               @if(companyProfile()?.phone) {
-                                  <div class="mt-4 pt-4 border-t border-gray-200">
-                                    <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Telefone</p>
-                                    <p class="text-gray-900 font-medium">{{ companyProfile()?.phone }}</p>
+                                  <div class="mt-4 pt-4 border-t border-subtle">
+                                    <p class="text-muted text-[9px] font-black uppercase mb-1 tracking-widest">Telefone</p>
+                                    <p class="text-title font-medium">{{ companyProfile()?.phone }}</p>
                                   </div>
                               }
                           </div>
 
                           <!-- Hours -->
                           @if(sortedWeeklyHours().length > 0) {
-                            <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                                <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-purple-600">schedule</span> Horários
+                            <div class="bg-surface-elevated p-5 rounded-3xl border border-strong shadow-inner">
+                                <h3 class="font-black text-title uppercase tracking-widest text-[10px] mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-brand">schedule</span> Horários
                                 </h3>
                                 <ul class="space-y-3 text-sm">
                                 @for (day of sortedWeeklyHours(); track day.day_of_week) {
-                                    <li class="flex justify-between items-center">
-                                        <span class="font-medium text-gray-500 w-24">{{ daysOfWeek[day.day_of_week] }}</span>
+                                    <li class="flex justify-between items-center py-1">
+                                        <span class="font-medium text-muted w-24">{{ daysOfWeek[day.day_of_week] }}</span>
                                         @if(day.is_closed) { 
-                                            <span class="text-red-400 font-medium bg-red-50 px-2 py-0.5 rounded text-xs">Fechado</span> 
+                                            <span class="text-danger font-black uppercase tracking-widest bg-danger/10 px-2 py-0.5 rounded-lg text-[9px]">Fechado</span> 
                                         } @else { 
-                                            <span class="text-gray-900 font-medium">{{ day.opening_time }} - {{ day.closing_time }}</span> 
+                                            <span class="text-title font-bold data-mono">{{ day.opening_time }} - {{ day.closing_time }}</span> 
                                         }
                                     </li>
                                 }
@@ -340,61 +341,64 @@
 
         <!-- Case 5: Cart Page -->
         @case ('cart') {
-            <div class="min-h-screen bg-gray-50 pb-32">
-                <header class="bg-white sticky top-0 z-40 shadow-sm px-4 py-4 flex items-center gap-4">
-                    <button (click)="setView('menu')" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors">
+            <div class="min-h-screen bg-app pb-32">
+                <header class="chef-surface sticky top-0 z-40 border-b border-subtle px-4 py-4 flex items-center gap-4">
+                    <button (click)="setView('menu')" class="p-2 rounded-full text-muted hover:bg-surface-elevated transition-colors">
                         <span class="material-symbols-outlined">arrow_back</span>
                     </button>
-                    <h1 class="text-xl font-bold text-gray-900">Seu Carrinho</h1>
+                    <h1 class="text-xl font-bold text-title">Seu Carrinho</h1>
                 </header>
 
                 <main class="max-w-2xl mx-auto px-4 py-8">
                     @if(cartService.items().length > 0) {
                         <div class="space-y-4 mb-8">
                             @for(item of cartService.items(); track item.recipe.id) {
-                                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4">
+                                <div class="chef-surface p-4 flex gap-4 transition-all">
                                     @if(item.recipe.image_url) {
-                                        <img [src]="item.recipe.image_url" class="w-20 h-20 rounded-xl object-cover">
+                                        <img [src]="item.recipe.image_url" class="w-20 h-20 rounded-2xl object-cover shadow-sm">
                                     }
                                     <div class="flex-1">
-                                        <h4 class="font-bold text-gray-900">{{ item.recipe.name }}</h4>
-                                        <p class="text-blue-600 font-bold text-sm">{{ item.effectivePrice | currency:'BRL' }}</p>
+                                        <h4 class="font-bold text-title">{{ item.recipe.name }}</h4>
+                                        <p class="text-brand font-black text-sm data-mono">{{ item.effectivePrice | currency:'BRL' }}</p>
                                         
                                         <div class="flex items-center gap-4 mt-3">
-                                            <div class="flex items-center bg-gray-100 rounded-full px-2 py-1">
-                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black">
-                                                    <span class="material-symbols-outlined text-lg">remove</span>
+                                            <div class="flex items-center bg-surface-elevated border border-strong rounded-full px-2 py-1 shadow-inner">
+                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-muted hover:text-title hover:bg-surface rounded-full transition-colors">
+                                                    <span class="material-symbols-outlined text-sm">remove</span>
                                                 </button>
-                                                <span class="w-8 text-center font-bold text-sm">{{ item.quantity }}</span>
-                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity + 1)" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black">
-                                                    <span class="material-symbols-outlined text-lg">add</span>
+                                                <span class="w-8 text-center font-bold text-sm data-mono">{{ item.quantity }}</span>
+                                                <button (click)="cartService.updateQuantity(item.recipe.id, item.quantity + 1)" class="w-8 h-8 flex items-center justify-center text-muted hover:text-title hover:bg-surface rounded-full transition-colors">
+                                                    <span class="material-symbols-outlined text-sm">add</span>
                                                 </button>
                                             </div>
-                                            <button (click)="cartService.removeFromCart(item.recipe.id)" class="text-red-500 text-xs font-bold uppercase tracking-wider">Remover</button>
+                                            <button (click)="cartService.removeFromCart(item.recipe.id)" class="text-danger text-[10px] uppercase font-black tracking-widest px-2 py-1 rounded-lg hover:bg-danger/10 transition-colors">Remover</button>
                                         </div>
                                     </div>
-                                    <div class="text-right font-bold text-gray-900">
+                                    <div class="text-right font-black text-title data-mono text-lg">
                                         {{ (item.effectivePrice * item.quantity) | currency:'BRL' }}
                                     </div>
                                 </div>
                             }
                         </div>
 
-                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-gray-500">Subtotal</span>
-                                <span class="text-xl font-bold text-gray-900">{{ cartService.subtotal() | currency:'BRL' }}</span>
+                        <div class="chef-surface rounded-[2rem] p-6 shadow-lg border border-subtle relative overflow-hidden group">
+                           <div class="absolute inset-0 bg-gradient-to-tr from-brand/5 to-transparent pointer-events-none"></div>
+                            <div class="flex justify-between items-center mb-6 relative z-10">
+                                <span class="text-muted font-bold tracking-wide">Subtotal</span>
+                                <span class="text-3xl font-black text-brand data-mono tracking-tighter">{{ cartService.subtotal() | currency:'BRL' }}</span>
                             </div>
-                            <button (click)="setView('checkout')" class="w-full bg-black text-white py-4 rounded-full font-bold text-lg shadow-xl active:scale-95 transition-transform">
-                                Finalizar Pedido
+                            <button (click)="setView('checkout')" class="w-full bg-brand text-white py-4 rounded-full font-black text-lg shadow-xl shadow-brand/30 hover:bg-brand-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-brand border-t-white/20">
+                                Finalizar Pedido <span class="material-symbols-outlined text-sm">arrow_forward</span>
                             </button>
                         </div>
                     } @else {
-                        <div class="text-center py-20">
-                            <span class="material-symbols-outlined text-6xl text-gray-200 mb-4">shopping_basket</span>
-                            <h3 class="text-xl font-bold text-gray-900">Carrinho Vazio</h3>
-                            <p class="text-gray-500 mt-2 mb-8">Você ainda não adicionou nenhum item.</p>
-                            <button (click)="setView('menu')" class="bg-black text-white px-8 py-3 rounded-full font-bold">Ver Cardápio</button>
+                        <div class="text-center py-20 chef-surface border-dashed">
+                            <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-strong rotate-12">
+                                <span class="material-symbols-outlined text-5xl text-muted">shopping_basket</span>
+                            </div>
+                            <h3 class="text-2xl font-black text-title title-display tracking-tight mb-2">Carrinho Vazio</h3>
+                            <p class="text-muted mb-8 font-medium">Você ainda não adicionou nenhum item ao seu pedido.</p>
+                            <button (click)="setView('menu')" class="bg-surface-elevated text-title px-8 py-3 rounded-full font-bold border border-strong shadow-sm hover:border-brand/40 transition-all">Explorar Cardápio</button>
                         </div>
                     }
                 </main>

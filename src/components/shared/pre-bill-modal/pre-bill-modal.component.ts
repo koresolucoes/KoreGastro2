@@ -19,6 +19,7 @@ export class PreBillModalComponent {
 
   serviceFeeApplied = signal(true);
   splitCount = signal(1);
+  Math = Math;
 
   constructor() {
     effect(() => {

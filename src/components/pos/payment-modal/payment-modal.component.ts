@@ -53,6 +53,7 @@ export class PaymentModalComponent {
   isRedeemModalOpen = signal(false);
   isEmittingNfce = signal(false);
   showKeypad = signal(true); // Control visibility of virtual keypad
+  mobileTab = signal<'resumo' | 'pagamento'>('pagamento'); // Mobile tab control
 
   // Discount signals
   isAddingDiscount = signal(false);

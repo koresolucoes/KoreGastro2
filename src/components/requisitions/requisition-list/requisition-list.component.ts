@@ -13,93 +13,95 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex flex-col h-full gap-4">
+    <div class="flex flex-col h-full gap-5">
        <!-- Filters -->
-       <div class="flex gap-2 overflow-x-auto pb-2">
-          <button (click)="filterStatus.set('PENDING')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" [class.bg-yellow-600]="filterStatus() === 'PENDING'" [class.text-white]="filterStatus() === 'PENDING'" [class.bg-gray-700]="filterStatus() !== 'PENDING'">Pendentes</button>
-          <button (click)="filterStatus.set('DELIVERED')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" [class.bg-green-600]="filterStatus() === 'DELIVERED'" [class.text-white]="filterStatus() === 'DELIVERED'" [class.bg-gray-700]="filterStatus() !== 'DELIVERED'">Entregues</button>
-          <button (click)="filterStatus.set('REJECTED')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" [class.bg-red-600]="filterStatus() === 'REJECTED'" [class.text-white]="filterStatus() === 'REJECTED'" [class.bg-gray-700]="filterStatus() !== 'REJECTED'">Rejeitadas</button>
+       <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+          <button (click)="filterStatus.set('PENDING')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-warning]="filterStatus() === 'PENDING'" [class.text-white]="filterStatus() === 'PENDING'" [class.bg-surface]="filterStatus() !== 'PENDING'" [class.text-muted]="filterStatus() !== 'PENDING'" [class.hover:bg-surface-elevated]="filterStatus() !== 'PENDING'">Pendentes</button>
+          <button (click)="filterStatus.set('DELIVERED')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-success]="filterStatus() === 'DELIVERED'" [class.text-white]="filterStatus() === 'DELIVERED'" [class.bg-surface]="filterStatus() !== 'DELIVERED'" [class.text-muted]="filterStatus() !== 'DELIVERED'" [class.hover:bg-surface-elevated]="filterStatus() !== 'DELIVERED'">Entregues</button>
+          <button (click)="filterStatus.set('REJECTED')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-danger]="filterStatus() === 'REJECTED'" [class.text-white]="filterStatus() === 'REJECTED'" [class.bg-surface]="filterStatus() !== 'REJECTED'" [class.text-muted]="filterStatus() !== 'REJECTED'" [class.hover:bg-surface-elevated]="filterStatus() !== 'REJECTED'">Rejeitadas</button>
        </div>
 
        <!-- List -->
-       <div class="flex-1 overflow-y-auto space-y-4 pr-2">
+       <div class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pb-6 pr-2">
           @for (req of filteredRequisitions(); track req.id) {
-             <div class="bg-gray-800 border border-gray-700 rounded-lg p-4 transition-all" [class.border-l-4]="true" [class.border-l-yellow-500]="req.status === 'PENDING'" [class.border-l-green-500]="req.status === 'DELIVERED'" [class.border-l-red-500]="req.status === 'REJECTED'">
-                <div class="flex justify-between items-start mb-3 cursor-pointer" (click)="toggleExpand(req.id)">
+             <div class="bg-surface-elevated border border-subtle rounded-2xl p-5 shadow-sm transition-all group" [class.border-l-4]="true" [class.border-l-warning]="req.status === 'PENDING'" [class.border-l-success]="req.status === 'DELIVERED'" [class.border-l-danger]="req.status === 'REJECTED'">
+                <div class="flex justify-between items-start mb-2 cursor-pointer" (click)="toggleExpand(req.id)">
                    <div>
-                      <h3 class="font-bold text-white text-lg">{{ req.stations?.name || 'Estação Desconhecida' }}</h3>
-                      <p class="text-sm text-gray-400">Solicitado em: {{ req.created_at | date:'dd/MM/yyyy HH:mm' }} por {{ req.requester?.name || 'Usuário' }}</p>
+                      <h3 class="font-black text-title text-lg tracking-tight">{{ req.stations?.name || 'Estação Desconhecida' }}</h3>
+                      <p class="text-[11px] font-bold text-muted uppercase tracking-wider mt-1">Solicitado em: {{ req.created_at | date:'dd/MM/yy HH:mm' }} por {{ req.requester?.name || 'Usuário' }}</p>
                       @if(req.notes) {
-                         <p class="text-xs text-yellow-200 mt-1 italic">Obs: "{{ req.notes }}"</p>
+                         <p class="text-xs text-warning mt-2 italic bg-warning/10 p-2 rounded-lg border border-warning/20">"{{ req.notes }}"</p>
                       }
                    </div>
-                   <div class="flex items-center gap-2">
-                      <span class="px-2 py-1 text-xs font-semibold rounded-full" 
-                        [class.bg-yellow-900]="req.status === 'PENDING'" [class.text-yellow-300]="req.status === 'PENDING'"
-                        [class.bg-green-900]="req.status === 'DELIVERED'" [class.text-green-300]="req.status === 'DELIVERED'"
-                        [class.bg-red-900]="req.status === 'REJECTED'" [class.text-red-300]="req.status === 'REJECTED'">
+                   <div class="flex items-center gap-3">
+                      <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm" 
+                        [class.bg-warning/20]="req.status === 'PENDING'" [class.text-warning]="req.status === 'PENDING'"
+                        [class.bg-success/20]="req.status === 'DELIVERED'" [class.text-success]="req.status === 'DELIVERED'"
+                        [class.bg-danger/20]="req.status === 'REJECTED'" [class.text-danger]="req.status === 'REJECTED'">
                         {{ req.status }}
                       </span>
-                      <span class="material-symbols-outlined text-gray-400 transform transition-transform" [class.rotate-180]="expandedId() === req.id">expand_more</span>
+                      <button class="p-1.5 rounded-full hover:bg-surface transition-colors flex items-center justify-center">
+                        <span class="material-symbols-outlined text-muted transform transition-transform" [class.rotate-180]="expandedId() === req.id">expand_more</span>
+                      </button>
                    </div>
                 </div>
 
                 @if (expandedId() === req.id) {
-                   <div class="border-t border-gray-700 pt-3 animate-fade-in-down">
-                      <table class="w-full text-sm text-left text-gray-300 mb-4">
-                         <thead class="text-xs uppercase bg-gray-700/50 text-gray-400">
+                   <div class="border-t border-subtle mt-4 pt-4 animate-fade-in-down">
+                      <table class="w-full text-left text-title mb-6">
+                         <thead class="text-[10px] uppercase font-black tracking-widest text-muted border-b border-subtle">
                             <tr>
-                               <th class="px-2 py-1">Insumo</th>
-                               <th class="px-2 py-1 text-center">Solicitado</th>
-                               <th class="px-2 py-1 text-center" *ngIf="req.status === 'PENDING'">Estoque Central</th>
-                               <th class="px-2 py-1 text-center" *ngIf="req.status === 'PENDING'">Entregar</th>
-                               <th class="px-2 py-1 text-center" *ngIf="req.status !== 'PENDING'">Entregue</th>
+                               <th class="py-2 px-2">Insumo</th>
+                               <th class="py-2 px-2 text-center w-24">Solicitado</th>
+                               <th class="py-2 px-2 text-center w-24" *ngIf="req.status === 'PENDING'">Estoque Qtd.</th>
+                               <th class="py-2 px-2 text-center w-28" *ngIf="req.status === 'PENDING'">Entregar</th>
+                               <th class="py-2 px-2 text-center w-24" *ngIf="req.status !== 'PENDING'">Entregue</th>
                             </tr>
                          </thead>
-                         <tbody>
+                         <tbody class="text-sm">
                             @for(item of req.requisition_items; track item.id) {
                                @let stock = getIngredientStock(item.ingredient_id);
                                @let deliveryQty = getDeliveryQty(req.id, item.id, item.quantity_requested);
-                               <tr class="border-b border-gray-700/30">
-                                  <td class="px-2 py-2">{{ item.ingredients?.name }}</td>
-                                  <td class="px-2 py-2 text-center font-mono">{{ item.quantity_requested }} {{ item.unit }}</td>
+                               <tr class="border-b border-strong/50 last:border-0 hover:bg-surface/50 transition-colors">
+                                  <td class="py-3 px-2 font-bold">{{ item.ingredients?.name }}</td>
+                                  <td class="py-3 px-2 text-center font-mono text-muted">{{ item.quantity_requested }} {{ item.unit }}</td>
                                   
                                   <!-- Stock Visibility for Pending -->
-                                  <td class="px-2 py-2 text-center" *ngIf="req.status === 'PENDING'">
-                                      <span class="font-mono font-bold" [class.text-red-400]="stock < item.quantity_requested" [class.text-green-400]="stock >= item.quantity_requested">
+                                  <td class="py-3 px-2 text-center" *ngIf="req.status === 'PENDING'">
+                                      <span class="font-mono font-bold" [class.text-danger]="stock < item.quantity_requested" [class.text-success]="stock >= item.quantity_requested">
                                           {{ stock | number:'1.0-2' }}
                                       </span>
                                   </td>
 
                                   <!-- Input for delivery amount if Pending -->
-                                  <td class="px-2 py-2 text-center" *ngIf="req.status === 'PENDING'">
-                                     <input type="number" [value]="deliveryQty" (input)="updateDeliveryQty(req.id, item.id, $any($event.target).value)" class="w-20 bg-gray-900 border border-gray-600 rounded px-1 text-center text-white focus:outline-none focus:border-blue-500" min="0">
+                                  <td class="py-3 px-2 text-center" *ngIf="req.status === 'PENDING'">
+                                     <input type="number" [value]="deliveryQty" (input)="updateDeliveryQty(req.id, item.id, $any($event.target).value)" class="w-20 bg-surface border border-strong rounded-lg py-1.5 px-2 text-center text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand font-bold transition-all" min="0">
                                   </td>
                                   
                                   <!-- Display delivered amount if processed -->
-                                  <td class="px-2 py-2 text-center font-mono font-bold text-green-400" *ngIf="req.status !== 'PENDING'">
-                                     {{ item.quantity_delivered || 0 }} {{ item.unit }}
+                                  <td class="py-3 px-2 text-center" *ngIf="req.status !== 'PENDING'">
+                                    <span class="font-mono font-black text-success">{{ item.quantity_delivered || 0 }} {{ item.unit }}</span>
                                   </td>
                                </tr>
                             }
                          </tbody>
                       </table>
 
-                      <div class="flex justify-between items-center mt-4">
-                         <button (click)="printGuide(req)" class="text-blue-400 hover:text-white flex items-center gap-1 text-sm font-medium">
-                            <span class="material-symbols-outlined text-base">print</span> Imprimir Guia
+                      <div class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
+                         <button (click)="printGuide(req)" class="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest text-brand hover:text-brand-hover hover:bg-surface p-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">print</span> Imprimir Guia
                          </button>
 
                          @if (req.status === 'PENDING') {
-                             <div class="flex gap-3">
-                                <button (click)="rejectRequisition(req)" class="px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg text-sm font-semibold transition-colors">Rejeitar</button>
-                                <button (click)="approveDelivery(req)" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-                                   <span class="material-symbols-outlined text-sm">check</span> Confirmar Entrega
+                             <div class="flex gap-3 w-full sm:w-auto">
+                                <button (click)="rejectRequisition(req)" class="flex-1 sm:flex-none py-2.5 px-4 bg-surface hover:bg-danger/10 border border-danger/30 hover:border-danger text-danger rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 text-center">Rejeitar</button>
+                                <button (click)="approveDelivery(req)" class="flex-1 sm:flex-none py-2.5 px-5 bg-success hover:bg-success-hover text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2">
+                                   <span class="material-symbols-outlined text-[16px]">check_circle</span> Aprovar
                                 </button>
                              </div>
                          } @else if (req.status === 'DELIVERED') {
-                              <div class="text-xs text-right text-gray-500">
-                                 Processado em: {{ req.processed_at | date:'dd/MM/yyyy HH:mm' }} por {{ req.processor?.name || 'Sistema' }}
+                              <div class="text-[10px] font-bold uppercase tracking-widest text-muted text-right bg-surface border border-subtle px-3 py-1.5 rounded-lg">
+                                 Processado em: {{ req.processed_at | date:'dd/MM/yy HH:mm' }} por <span class="text-title">{{ req.processor?.name || 'Sistema' }}</span>
                               </div>
                          }
                       </div>
@@ -107,8 +109,9 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                 }
              </div>
           } @empty {
-             <div class="text-center py-20 bg-gray-800 rounded-lg text-gray-500">
-                Nenhuma requisição encontrada com este status.
+             <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
+                 <span class="material-symbols-outlined text-4xl text-muted mb-2">inbox</span>
+                <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhuma requisição encontrada com este status.</p>
              </div>
           }
        </div>
@@ -116,7 +119,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
-    .animate-fade-in-down { animation: fadeInDown 0.3s ease-out; }
+    .animate-fade-in-down { animation: fadeInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })

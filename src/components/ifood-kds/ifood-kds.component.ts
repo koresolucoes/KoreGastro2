@@ -860,10 +860,10 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
   }
 
   getLogStatusClass(status: string | null): string {
-    if (!status) return 'bg-gray-600';
-    if (status.startsWith('SUCCESS')) return 'bg-green-600';
-    if (status.startsWith('ERROR')) return 'bg-red-600';
-    return 'bg-blue-600';
+    if (!status) return 'bg-muted text-surface-elevated';
+    if (status.startsWith('SUCCESS')) return 'bg-success/10 border border-success/20 text-success';
+    if (status.startsWith('ERROR')) return 'bg-danger/10 border border-danger/20 text-danger';
+    return 'bg-brand/10 border border-brand/20 text-brand';
   }
 
   // Helper for template

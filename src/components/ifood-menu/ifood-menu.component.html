@@ -1,111 +1,112 @@
-<div class="container mx-auto">
+<div class="px-6 py-6 pb-20 md:pb-6">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-white">Gerenciamento de Cardápio iFood</h1>
-      <p class="text-gray-400 mt-1">Sincronize seu cardápio do ChefOS com a plataforma do iFood.</p>
+      <h1 class="text-3xl font-black text-title tracking-tight">Gerenciamento de Cardápio <span class="text-brand">iFood</span></h1>
+      <p class="text-[11px] font-bold uppercase tracking-widest text-muted mt-1">Sincronize seu cardápio do ChefOS com a plataforma do iFood.</p>
     </div>
   </div>
 
-  <div class="mb-4 border-b border-gray-700">
+  <div class="mb-6 border-b border-subtle">
     <nav class="-mb-px flex space-x-6">
-      <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'live'" [class.text-white]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-gray-400]="view() !== 'live'">
-        Cardápio no iFood
+      <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'live'" [class.text-title]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-muted]="view() !== 'live'" [class.hover:text-title]="view() !== 'live'">
+        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">menu_book</span> Cardápio no iFood</span>
       </button>
-      <button (click)="view.set('optionGroups')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'optionGroups'" [class.text-white]="view() === 'optionGroups'" [class.border-transparent]="view() !== 'optionGroups'" [class.text-gray-400]="view() !== 'optionGroups'">
-        Grupos de Complementos
+      <button (click)="view.set('optionGroups')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'optionGroups'" [class.text-title]="view() === 'optionGroups'" [class.border-transparent]="view() !== 'optionGroups'" [class.text-muted]="view() !== 'optionGroups'" [class.hover:text-title]="view() !== 'optionGroups'">
+         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">category</span> Grupos de Complementos</span>
       </button>
-      <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-sm font-medium" [class.border-blue-500]="view() === 'unsellable'" [class.text-white]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-gray-400]="view() !== 'unsellable'">
-        Itens Não Vendáveis
+      <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'unsellable'" [class.text-title]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-muted]="view() !== 'unsellable'" [class.hover:text-title]="view() !== 'unsellable'">
+         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">block</span> Itens Não Vendáveis</span>
       </button>
     </nav>
   </div>
 
   @if (isLoading()) {
-    <div class="bg-gray-800 rounded-lg p-16 text-center">
-      <div class="flex flex-col items-center gap-4">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p class="text-gray-400">Carregando dados do iFood...</p>
-      </div>
+    <div class="bg-surface-elevated border border-subtle rounded-2xl min-h-[400px] flex flex-col items-center justify-center text-center shadow-sm">
+      <span class="material-symbols-outlined text-brand animate-spin text-5xl mb-4">progress_activity</span>
+      <p class="text-[11px] font-black uppercase tracking-widest text-muted">Carregando dados do iFood...</p>
     </div>
   } @else {
     @switch (view()) {
       @case('live') {
-        <div class="bg-gray-800 rounded-lg p-4">
-          <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
-            <h2 class="text-xl font-semibold text-white">Seu Cardápio Ativo no iFood</h2>
-            <div class="flex gap-2">
-              <button (click)="openCategoryModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">Nova Categoria</button>
-              <button (click)="openSyncModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Sincronizar / Criar Itens</button>
+        <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
+            <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-success">active_indicators</span> Seu Cardápio Ativo no iFood</h2>
+            <div class="flex flex-wrap gap-3">
+              <button (click)="openCategoryModal()" class="bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">add</span> Nova Categoria</button>
+              <button (click)="openSyncModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">sync</span> Sincronizar / Criar Itens</button>
             </div>
           </div>
           
-          <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+          <div class="space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
             @for(category of ifoodCategories(); track category.id) {
               <section>
-                <div class="flex items-center gap-2 border-b border-gray-700 pb-2 mb-3">
-                  <h3 class="text-lg font-bold text-blue-300">{{ category.name }}</h3>
-                   <button (click)="deleteCategory(category)" class="text-red-400 hover:text-red-300 p-1" title="Deletar categoria">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <div class="flex items-center justify-between border-b border-subtle pb-3 mb-4">
+                  <h3 class="text-xs font-black uppercase tracking-widest text-title">{{ category.name }}</h3>
+                   <button (click)="deleteCategory(category)" class="text-muted hover:text-danger hover:bg-surface p-1.5 rounded-full transition-colors" title="Deletar categoria">
+                      <span class="material-symbols-outlined text-[18px]">delete</span>
                    </button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   @for(item of category.items; track item.id) {
                     @if(ifoodItemsWithLocalEquivalent().get(item.externalCode); as localItem) {
-                      <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col gap-3">
+                      <div class="bg-surface border border-subtle rounded-xl p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex gap-4">
                           <div class="flex-shrink-0 relative">
                             <input type="file" [id]="'image-input-' + item.id" (change)="onImageSelected($event, item)" accept="image/png, image/jpeg" class="hidden">
-                            <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-md bg-gray-600 flex items-center justify-center text-gray-400 hover:bg-gray-500/50 text-center text-xs p-1 disabled:cursor-wait overflow-hidden group">
+                            <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-xl bg-surface border border-strong flex items-center justify-center text-muted hover:bg-surface-elevated text-center p-1 disabled:opacity-50 overflow-hidden group transition-colors">
                               @if(isUploadingImage() === item.id) {
-                                  <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                  <span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
                               } @else if (item.image) {
                                   <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover">
-                                  <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <span class="text-white text-xs font-semibold">Alterar</span>
+                                  <div class="absolute inset-0 bg-overlay/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span class="text-white text-[9px] font-black uppercase tracking-widest">Alterar</span>
                                   </div>
                               } @else {
-                                  <span>Adicionar Imagem</span>
+                                  <span class="material-symbols-outlined text-[24px]">add_photo_alternate</span>
                               }
                             </button>
                           </div>
-                          <div class="flex-1">
-                            <p class="font-semibold text-white">{{ item.name }}</p>
-                            <p class="text-xs text-gray-400">{{ item.description }}</p>
+                          <div class="flex-1 min-w-0">
+                            <p class="font-bold text-title text-sm truncate">{{ item.name }}</p>
+                            <p class="text-xs text-muted mt-1 line-clamp-3 leading-relaxed">{{ item.description }}</p>
                           </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-600/50">
-                          <div class="p-2 bg-gray-800/50 rounded-md">
-                              <div class="flex items-center justify-between text-gray-400 text-xs">
-                                <span>Preço iFood</span>
-                                <button (click)="openPriceModal(item)" class="text-blue-400 hover:text-blue-300" title="Editar Preço">
-                                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-subtle">
+                          <div class="p-3 bg-surface border border-strong rounded-xl">
+                              <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-muted">A vender</span>
+                                <button (click)="openPriceModal(item)" class="text-brand hover:text-brand-hover p-1 rounded-full hover:bg-surface-elevated transition-colors" title="Editar Preço">
+                                  <span class="material-symbols-outlined text-[14px]">edit</span>
                                 </button>
                               </div>
-                              <p class="font-bold text-lg text-green-400">{{ item.price.value | currency:'BRL' }}</p>
+                              <p class="font-bold text-lg text-title">{{ item.price.value | currency:'BRL' }}</p>
                           </div>
-                          <div class="p-2 bg-gray-800/50 rounded-md">
-                              <p class="text-gray-400 text-xs">Preço ChefOS</p>
+                          <div class="p-3 bg-surface border border-strong rounded-xl">
+                              <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Custo</p>
                                @if(localRecipesByExternalCode().has(item.externalCode)) {
-                                  <p class="font-bold text-lg text-white">{{ localRecipesByExternalCode().get(item.externalCode)!.price | currency:'BRL' }}</p>
+                                  <p class="font-bold text-lg text-title opacity-80">{{ localRecipesByExternalCode().get(item.externalCode)!.price | currency:'BRL' }}</p>
                               } @else {
-                                  <p class="text-xs text-gray-500 mt-2">Não vinculado</p>
+                                  <p class="text-[10px] font-bold text-warning mt-2 uppercase tracking-widest">Não vinculado</p>
                               }
                           </div>
                         </div>
-                        <button (click)="openStatusModal(item)" class="cursor-pointer w-full flex justify-between items-center p-2 rounded-md hover:bg-gray-800 transition-colors" [class.bg-green-900/40]="item.status === 'AVAILABLE'" [class.bg-red-900/40]="item.status !== 'AVAILABLE'">
+                        <button (click)="openStatusModal(item)" class="cursor-pointer w-full flex justify-between items-center p-3 rounded-xl border transition-colors" [class.bg-success/10]="item.status === 'AVAILABLE'" [class.border-success/20]="item.status === 'AVAILABLE'" [class.bg-danger/10]="item.status !== 'AVAILABLE'" [class.border-danger/20]="item.status !== 'AVAILABLE'">
                             <div class="flex items-center gap-2">
-                              <div class="h-3 w-3 rounded-full" [class.bg-green-500]="item.status === 'AVAILABLE'" [class.bg-red-500]="item.status !== 'AVAILABLE'"></div>
-                              <span class="font-semibold text-sm">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                              <div class="h-2 w-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" [class.bg-success]="item.status === 'AVAILABLE'" [class.shadow-success]="item.status === 'AVAILABLE'" [class.bg-danger]="item.status !== 'AVAILABLE'" [class.shadow-danger]="item.status !== 'AVAILABLE'"></div>
+                              <span class="font-black text-[11px] uppercase tracking-widest" [class.text-success]="item.status === 'AVAILABLE'" [class.text-danger]="item.status !== 'AVAILABLE'">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
                             </div>
-                            <span class="text-xs text-gray-400">Alterar</span>
+                            <span class="material-symbols-outlined text-[16px] opacity-70" [class.text-success]="item.status === 'AVAILABLE'" [class.text-danger]="item.status !== 'AVAILABLE'">tune</span>
                         </button>
-                         <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: localItem.recipe.id }" class="w-full text-center py-2 px-3 bg-gray-600/50 hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-colors">
+                         <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: localItem.recipe.id }" class="w-full text-center py-2.5 px-3 bg-surface border border-strong hover:bg-surface-elevated text-title rounded-xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm">
                             Editar no ChefOS
                         </a>
                       </div>
                     }
                   } @empty {
-                    <p class="text-sm text-gray-500 italic col-span-full">Nenhum item nesta categoria.</p>
+                    <div class="col-span-full py-8 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
+                        <span class="material-symbols-outlined text-3xl text-muted mb-2">restaurant_menu</span>
+                        <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum item nesta categoria.</p>
+                    </div>
                   }
                 </div>
               </section>
@@ -114,72 +115,88 @@
         </div>
       }
       @case('optionGroups') {
-        <div class="bg-gray-800 rounded-lg p-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-white">Grupos de Complementos</h2>
-                <p class="text-sm text-gray-400">A criação de novos grupos é feita ao sincronizar um item com complementos.</p>
+        <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
+                <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">category</span> Grupos de Complementos</h2>
+                <p class="text-[11px] font-black uppercase tracking-widest text-muted">A criação de novos grupos é feita ao sincronizar um item com complementos.</p>
             </div>
-            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
                 @for(group of ifoodOptionGroups(); track group.id) {
-                    <details class="bg-gray-700/50 rounded-lg">
-                        <summary class="p-4 cursor-pointer flex justify-between items-center">
+                    <details class="bg-surface border border-subtle rounded-xl shadow-sm group/details">
+                        <summary class="p-5 cursor-pointer flex flex-col sm:flex-row sm:justify-between items-start sm:items-center list-none gap-4">
                             <div>
-                                <p class="font-semibold text-white">{{ group.name }}</p>
-                                <p class="text-xs text-gray-400 font-mono">{{ group.externalCode }}</p>
+                                <p class="font-black text-title text-base uppercase tracking-widest">{{ group.name }}</p>
+                                <p class="text-[10px] text-muted font-mono mt-1 opacity-70">{{ group.externalCode }}</p>
                             </div>
-                            <div class="flex items-center gap-4">
-                               <span class="px-2 py-1 text-xs font-semibold rounded-full" [class.bg-green-500/20]="group.status === 'AVAILABLE'" [class.text-green-300]="group.status === 'AVAILABLE'" [class.bg-red-500/20]="group.status !== 'AVAILABLE'" [class.text-red-300]="group.status !== 'AVAILABLE'">{{ group.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
-                                <button (click)="$event.preventDefault(); openEditGroupModal(group)" class="p-1 text-blue-400 hover:text-white"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
-                                <button (click)="$event.preventDefault(); deleteOptionGroup(group)" class="p-1 text-red-400 hover:text-white"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                <span class="material-symbols-outlined text-gray-400">expand_more</span>
+                            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                               <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md" [class.bg-success/10]="group.status === 'AVAILABLE'" [class.text-success]="group.status === 'AVAILABLE'" [class.bg-danger/10]="group.status !== 'AVAILABLE'" [class.text-danger]="group.status !== 'AVAILABLE'">{{ group.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
+                                <div class="flex items-center gap-1">
+                                    <button (click)="$event.preventDefault(); openEditGroupModal(group)" class="p-2 text-muted hover:text-brand hover:bg-surface-elevated rounded-full transition-colors"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                                    <button (click)="$event.preventDefault(); deleteOptionGroup(group)" class="p-2 text-muted hover:text-danger hover:bg-surface-elevated rounded-full transition-colors"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                                    <span class="material-symbols-outlined text-muted group-open/details:rotate-180 transition-transform">expand_more</span>
+                                </div>
                             </div>
                         </summary>
-                        <div class="px-4 pb-4 border-t border-gray-600/50">
-                            <div class="mt-4 space-y-2">
+                        <div class="p-5 pt-0 border-t border-subtle mt-4">
+                            <div class="space-y-3">
                                 @for(option of group.options; track option.id) {
-                                    <div class="bg-gray-800/50 p-3 rounded-md flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-surface-elevated border border-strong rounded-xl gap-3 shadow-sm">
                                         <div>
-                                            <p class="text-white font-medium">{{option.name}}</p>
-                                            <p class="text-xs text-gray-400 font-mono">{{option.externalCode}}</p>
+                                            <p class="font-bold text-title text-sm">{{ option.name }}</p>
+                                            <p class="text-[10px] text-muted font-mono mt-1 opacity-70">{{ option.externalCode }}</p>
                                         </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="font-semibold text-green-300">{{option.price.value | currency:'BRL'}}</span>
-                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full" [class.bg-green-500/20]="option.status === 'AVAILABLE'" [class.text-green-300]="option.status === 'AVAILABLE'" [class.bg-red-500/20]="option.status !== 'AVAILABLE'" [class.text-red-300]="option.status !== 'AVAILABLE'">{{ option.status === 'AVAILABLE' ? 'Disp.' : 'Indisp.' }}</span>
-                                            <button (click)="openEditOptionModal(option, group)" class="text-blue-400 hover:text-blue-300 p-1" title="Editar Complemento"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                                        <div class="flex items-center gap-5">
+                                            <p class="font-bold text-title whitespace-nowrap">{{ option.price.value | currency:'BRL' }}</p>
+                                            <span class="text-[10px] font-black uppercase tracking-widest" [class.text-success]="option.status === 'AVAILABLE'" [class.text-danger]="option.status !== 'AVAILABLE'">{{ option.status === 'AVAILABLE' ? 'Disp.' : 'Indisp.' }}</span>
+                                            <div class="flex gap-1">
+                                                <button (click)="openEditOptionModal(option, group)" class="p-1.5 text-muted hover:text-brand hover:bg-surface rounded-full transition-colors"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                                            </div>
                                         </div>
                                     </div>
+                                } @empty {
+                                    <div class="py-6 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
+                                        <span class="material-symbols-outlined text-3xl text-muted mb-2">inventory_2</span>
+                                        <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhuma opção neste grupo.</p>
+                                    </div>
                                 }
+                                <div class="pt-2">
+                                    <button (click)="openAddOptionModal(group)" class="w-full text-center py-3 text-[11px] font-black uppercase tracking-widest text-brand border-2 border-dashed border-strong hover:border-brand hover:bg-brand/5 rounded-xl transition-all">
+                                        + Adicionar Complemento
+                                    </button>
+                                </div>
                             </div>
-                            <button (click)="openAddOptionModal(group)" class="mt-3 w-full text-center py-2 px-3 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 rounded-lg font-semibold text-sm transition-colors">
-                                + Adicionar Complemento
-                            </button>
                         </div>
                     </details>
                 } @empty {
-                    <p class="text-center text-gray-500 py-10">Nenhum grupo de complementos encontrado.</p>
+                    <div class="py-10 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
+                        <span class="material-symbols-outlined text-4xl text-muted mb-2">category</span>
+                        <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum grupo de complemento encontrado.</p>
+                    </div>
                 }
             </div>
         </div>
       }
       @case ('unsellable') {
-        <div class="bg-gray-800 rounded-lg p-6">
-            <h2 class="text-xl font-semibold text-white mb-4">Itens Não Vendáveis no iFood</h2>
+        <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
+            <h2 class="font-black text-sm uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-muted">block</span> Itens Não Vendáveis no iFood</h2>
              @if (unsellableCategories().length === 0) {
-                <div class="p-16 text-center text-green-400">
-                    <p class="text-lg font-semibold">Parabéns! Todos os seus itens no iFood estão disponíveis para venda.</p>
-                </div>
-            } @else {
-                <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                    @for(category of unsellableCategories(); track category.id) {
-                        @for(item of category.unsellableItems; track item.id) {
-                            <div class="bg-gray-700/50 p-3 rounded-lg">
-                                <p class="font-semibold text-white">Item ID: {{ item.id }}</p>
-                                <p class="text-sm text-red-400 font-medium">Motivos: {{ item.restrictions.join(', ') }}</p>
-                            </div>
-                        }
-                    }
-                </div>
-            }
+                 <div class="p-8 text-center bg-success/5 border border-success/20 rounded-xl">
+                     <span class="material-symbols-outlined text-4xl text-success mb-3">check_circle</span>
+                     <p class="text-success font-black uppercase tracking-widest mb-1">Parabéns!</p>
+                     <p class="text-xs text-success/80">Todos os seus itens no iFood estão disponíveis para venda.</p>
+                 </div>
+             } @else {
+                 <div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                     @for(category of unsellableCategories(); track category.id) {
+                         @for(item of category.unsellableItems; track item.id) {
+                             <div class="bg-surface border border-subtle rounded-xl p-4 flex flex-col gap-2 shadow-sm">
+                                 <p class="font-bold text-title text-sm"><span class="text-[10px] uppercase tracking-widest text-muted mr-1">Item ID:</span> {{ item.id }}</p>
+                                 <p class="text-[11px] text-danger font-bold uppercase tracking-widest bg-danger/10 p-2 rounded-lg border border-danger/20 w-fit">Motivos: {{ item.restrictions.join(', ') }}</p>
+                             </div>
+                         }
+                     }
+                 </div>
+             }
         </div>
       }
     }
@@ -188,53 +205,66 @@
 
 <!-- Sync/Create Modal -->
 @if(isSyncModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeSyncModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">Sincronizar Itens com iFood</h3>
-        <button (click)="closeSyncModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeSyncModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">sync</span> Sincronizar Itens com iFood</h3>
+        <button (click)="closeSyncModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
-      <div class="p-4 flex-1 overflow-y-auto">
+      <div class="p-6 flex-1 overflow-y-auto bg-surface/30 custom-scrollbar">
         @if (itemsToCreateOnIfood().length === 0) {
-          <div class="p-16 text-center text-gray-500">
-            <p>Nenhum item novo para sincronizar.</p>
-            <p class="text-xs mt-1">Vá para as Fichas Técnicas para adicionar um "Código Externo" aos seus pratos.</p>
+          <div class="py-16 text-center flex flex-col items-center opacity-60">
+            <span class="material-symbols-outlined text-4xl text-muted mb-3">cloud_done</span>
+            <p class="font-black text-[11px] uppercase tracking-widest text-title mb-1">Nenhum item novo para sincronizar.</p>
+            <p class="text-[10px] text-muted font-bold uppercase tracking-widest">Vá para as Fichas Técnicas para adicionar um "Código Externo" aos seus pratos.</p>
           </div>
         } @else {
-          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
-            <h2 class="text-lg font-semibold text-white">Itens para Criar/Atualizar no iFood</h2>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-yellow-500"></div><span>Modificado</span></div>
-              <div class="flex items-center gap-2"><div class="h-3 w-3 rounded-full bg-blue-500"></div><span>Novo</span></div>
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">list_alt</span> Itens para Criar/Atualizar no iFood</h2>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-black uppercase tracking-widest">
+              <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] rounded-full bg-warning shadow-warning"></div><span class="text-warning">Modificado</span></div>
+              <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] rounded-full bg-brand shadow-brand"></div><span class="text-brand">Novo</span></div>
             </div>
           </div>
-          <table class="w-full text-left">
-            <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase sticky top-0">
-              <tr>
-                <th class="px-6 py-3 w-12">Status</th>
-                <th class="px-6 py-3">Item</th>
-                <th class="px-6 py-3 text-right">Preço</th>
-                <th class="px-6 py-3 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for(item of itemsToCreateOnIfood(); track item.recipe.id) {
-                <tr class="border-b border-gray-700">
-                  <td class="px-6 py-4">
-                    <div class="h-3 w-3 rounded-full" [class]="getStatusClass(item.status)" [title]="item.status"></div>
-                  </td>
-                  <td class="px-6 py-4 font-medium text-white">{{ item.recipe.name }}</td>
-                  <td class="px-6 py-4 text-right font-semibold">{{ item.recipe.price | currency:'BRL' }}</td>
-                  <td class="px-6 py-4 text-center">
-                    <button (click)="syncItem(item)" [disabled]="item.status === 'syncing'" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm disabled:bg-gray-600 disabled:cursor-wait">
-                      {{ item.status === 'syncing' ? 'Sincronizando...' : (item.status === 'modified' ? 'Atualizar' : 'Sincronizar') }}
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="bg-surface border border-subtle rounded-xl overflow-hidden shadow-sm">
+              <table class="w-full text-left">
+                <thead class="bg-surface-elevated border-b border-subtle text-[10px] font-black uppercase tracking-widest text-muted sticky top-0">
+                  <tr>
+                    <th class="px-5 py-4 w-12 text-center">Status</th>
+                    <th class="px-5 py-4">Item</th>
+                    <th class="px-5 py-4 text-right">Preço</th>
+                    <th class="px-5 py-4 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-subtle">
+                  @for(item of itemsToCreateOnIfood(); track item.recipe.id) {
+                    <tr class="hover:bg-surface-elevated/50 transition-colors">
+                      <td class="px-5 py-4 flex justify-center items-center">
+                        <div class="h-2.5 w-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" [ngClass]="{
+                            'bg-warning shadow-warning': item.status === 'modified',
+                            'bg-brand shadow-brand': item.status === 'new',
+                            'bg-success shadow-success': item.status === 'synced',
+                            'bg-muted shadow-muted': item.status === 'error' || item.status === 'syncing'
+                        }" [title]="item.status"></div>
+                      </td>
+                      <td class="px-5 py-4 font-bold text-title text-sm">{{ item.recipe.name }}</td>
+                      <td class="px-5 py-4 text-right font-bold text-title">{{ item.recipe.price | currency:'BRL' }}</td>
+                      <td class="px-5 py-4 text-center">
+                        <button (click)="syncItem(item)" [disabled]="item.status === 'syncing' || item.status === 'synced'" class="bg-brand hover:bg-brand-hover text-white font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-lg transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-[120px]">
+                          {{ item.status === 'syncing' ? '...' : (item.status === 'modified' ? 'Atualizar' : (item.status === 'synced' ? 'Sincronizado' : 'Sincronizar')) }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+          </div>
         }
+      </div>
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closeSyncModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Fechar</button>
       </div>
     </div>
   </div>
@@ -242,20 +272,29 @@
 
 <!-- Price Edit Modal -->
 @if(isPriceModalOpen() && editingPriceItem(); as item) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePriceModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Alterar Preço no iFood</h3></div>
-      <div class="p-6 space-y-4">
-        <p class="text-gray-300">Item: <span class="font-semibold text-white">{{ item.name }}</span></p>
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closePriceModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit</span> Alterar Preço</h3>
+          <button (click)="closePriceModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+      </div>
+      <div class="p-6 space-y-5 bg-surface/30">
+        <p class="text-[11px] font-black uppercase tracking-widest text-muted">Item: <span class="font-bold text-title">{{ item.name }}</span></p>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Novo Preço (R$)</label>
-          <input type="number" step="0.01" [(ngModel)]="newPrice" name="newPrice" class="w-full bg-gray-700 rounded p-2 text-white text-lg">
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Novo Preço (R$) <span class="text-danger">*</span></label>
+          <input type="number" step="0.01" [(ngModel)]="newPrice" name="newPrice" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-lg font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
         </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button (click)="closePriceModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-        <button (click)="savePrice()" [disabled]="isChangingPrice()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-          {{ isChangingPrice() ? 'Salvando...' : 'Salvar Preço' }}
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closePriceModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+        <button (click)="savePrice()" [disabled]="isChangingPrice()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          @if(isChangingPrice()) {
+              <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+          } @else {
+              <span class="material-symbols-outlined text-[16px]">save</span> Salvar Preço
+          }
         </button>
       </div>
     </div>
@@ -264,20 +303,29 @@
 
 <!-- Status Edit Modal -->
 @if(isStatusModalOpen() && editingStatusItem(); as item) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeStatusModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Alterar Disponibilidade</h3></div>
-      <div class="p-6 space-y-4">
-        <p class="text-gray-300">Item: <span class="font-semibold text-white">{{ item.name }}</span></p>
-        <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
-            <button (click)="newStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newStatus() === 'AVAILABLE'">Disponível</button>
-            <button (click)="newStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newStatus() === 'UNAVAILABLE'">Indisponível</button>
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeStatusModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">tune</span> Alterar Disponibilidade</h3>
+          <button (click)="closeStatusModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+      </div>
+      <div class="p-6 space-y-5 bg-surface/30">
+        <p class="text-[11px] font-black uppercase tracking-widest text-muted">Item: <span class="font-bold text-title">{{ item.name }}</span></p>
+        <div class="flex gap-2 bg-surface border border-strong p-1.5 rounded-xl">
+            <button (click)="newStatus.set('AVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-success]="newStatus() === 'AVAILABLE'" [class.text-surface-elevated]="newStatus() === 'AVAILABLE'" [class.text-muted]="newStatus() !== 'AVAILABLE'" [class.hover:bg-surface-elevated]="newStatus() !== 'AVAILABLE'">Disponível</button>
+            <button (click)="newStatus.set('UNAVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-danger]="newStatus() === 'UNAVAILABLE'" [class.text-surface-elevated]="newStatus() === 'UNAVAILABLE'" [class.text-muted]="newStatus() !== 'UNAVAILABLE'" [class.hover:bg-surface-elevated]="newStatus() !== 'UNAVAILABLE'">Indisponível</button>
         </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button (click)="closeStatusModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-        <button (click)="saveStatus()" [disabled]="isChangingStatus()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-          {{ isChangingStatus() ? 'Salvando...' : 'Salvar Status' }}
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closeStatusModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+        <button (click)="saveStatus()" [disabled]="isChangingStatus()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+           @if(isChangingStatus()) {
+               <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+           } @else {
+               <span class="material-symbols-outlined text-[16px]">save</span> Salvar Status
+           }
         </button>
       </div>
     </div>
@@ -286,19 +334,28 @@
 
 <!-- New Category Modal -->
 @if(isCategoryModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeCategoryModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Criar Nova Categoria no iFood</h3></div>
-      <div class="p-6 space-y-4">
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeCategoryModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">create_new_folder</span> Nova Categoria</h3>
+          <button (click)="closeCategoryModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+      </div>
+      <div class="p-6 space-y-4 bg-surface/30">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Categoria</label>
-          <input type="text" [(ngModel)]="newCategoryName" name="newCategoryName" class="w-full bg-gray-700 rounded p-2 text-white">
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome da Categoria <span class="text-danger">*</span></label>
+          <input type="text" [(ngModel)]="newCategoryName" name="newCategoryName" placeholder="Ex: Bebidas, Sobremesas..." class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
         </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button (click)="closeCategoryModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-        <button (click)="saveNewCategory()" [disabled]="isCreatingCategory()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-          {{ isCreatingCategory() ? 'Criando...' : 'Criar Categoria' }}
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+        <button (click)="closeCategoryModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+        <button (click)="saveNewCategory()" [disabled]="isCreatingCategory() || !newCategoryName.trim()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+           @if(isCreatingCategory()) {
+               <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
+           } @else {
+               <span class="material-symbols-outlined text-[16px]">add</span> Criar
+           }
         </button>
       </div>
     </div>
@@ -307,26 +364,31 @@
 
 <!-- Edit Recipe Modal (Quick Edit) -->
 @if(isEditRecipeModalOpen() && editingRecipeForm(); as form) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeRecipeEditModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white">Configurar Item para iFood</h3>
-        <button (click)="closeRecipeEditModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeRecipeEditModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">settings</span> Configurar Item iFood</h3>
+        <button (click)="closeRecipeEditModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
 
-      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <p class="text-sm text-gray-400">Para sincronizar com o iFood, um item precisa de um <strong class="text-yellow-300">"Código Externo"</strong> único. Você também pode ajustar outros detalhes aqui.</p>
+      <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto bg-surface/30 custom-scrollbar">
+        <div class="bg-brand/10 border border-brand/20 p-4 rounded-xl flex gap-3 text-brand text-sm shadow-sm">
+            <span class="material-symbols-outlined shrink-0 text-[20px]">info</span>
+            <p>Para sincronizar com o iFood, um item precisa de um <strong class="font-black">Código Externo (SKU)</strong> único. Você pode ajustá-lo aqui.</p>
+        </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Código Externo (SKU) *</label>
-          <input type="text" [value]="form.external_code || ''" (input)="updateEditingRecipeField('external_code', $any($event.target).value)" placeholder="Ex: PRATO-001" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Código Externo (SKU) <span class="text-danger">*</span></label>
+          <input type="text" [value]="form.external_code || ''" (input)="updateEditingRecipeField('external_code', $any($event.target).value)" placeholder="Ex: PRATO-001" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-mono font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
         </div>
       </div>
       
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-         <button (click)="closeRecipeEditModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-         <button (click)="saveRecipeDetails()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar</button>
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+         <button (click)="closeRecipeEditModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+         <button (click)="saveRecipeDetails()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95">
+             <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+         </button>
       </div>
 
     </div>
@@ -335,47 +397,56 @@
 
 <!-- Option Modal -->
 @if(isOptionModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="closeOptionModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white">{{ editingOption() ? 'Editar Complemento' : 'Novo Complemento' }}</h3>
-        <p class="text-sm text-gray-400">para o grupo: {{ parentGroupForOption()?.name }}</p>
-      </div>
-      <div class="p-6 space-y-4">
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeOptionModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-start">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome *</label>
-          <input type="text" [(ngModel)]="optionForm().name" name="optionName" class="w-full bg-gray-700 rounded p-2 text-white">
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit_square</span> {{ editingOption() ? 'Editar Complemento' : 'Novo Complemento' }}</h3>
+          <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1 leading-relaxed">Grupo: <span class="font-bold text-title">{{ parentGroupForOption()?.name }}</span></p>
+        </div>
+        <button (click)="closeOptionModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+      <div class="p-6 space-y-5 bg-surface/30">
+        <div>
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome <span class="text-danger">*</span></label>
+          <input type="text" [(ngModel)]="optionForm().name" name="optionName" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Preço Adicional (R$)</label>
-            <input type="number" step="0.01" [(ngModel)]="optionForm().price" name="optionPrice" class="w-full bg-gray-700 rounded p-2 text-white">
+            <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Preço Adicional (R$)</label>
+            <input type="number" step="0.01" [(ngModel)]="optionForm().price" name="optionPrice" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Código Externo *</label>
-            <input type="text" [(ngModel)]="optionForm().externalCode" name="optionExternalCode" class="w-full bg-gray-700 rounded p-2 text-white">
+            <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Código Externo <span class="text-danger">*</span></label>
+            <input type="text" [(ngModel)]="optionForm().externalCode" name="optionExternalCode" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-mono font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
           </div>
         </div>
         @if (editingOption()) {
            <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-            <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
-                <button (click)="newOptionStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newOptionStatus() === 'AVAILABLE'">Disponível</button>
-                <button (click)="newOptionStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newOptionStatus() === 'UNAVAILABLE'">Indisponível</button>
+            <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Status</label>
+            <div class="flex gap-2 bg-surface border border-strong p-1.5 rounded-xl">
+                <button (click)="newOptionStatus.set('AVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-success]="newOptionStatus() === 'AVAILABLE'" [class.text-surface-elevated]="newOptionStatus() === 'AVAILABLE'" [class.text-muted]="newOptionStatus() !== 'AVAILABLE'" [class.hover:bg-surface-elevated]="newOptionStatus() !== 'AVAILABLE'">Disponível</button>
+                <button (click)="newOptionStatus.set('UNAVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-danger]="newOptionStatus() === 'UNAVAILABLE'" [class.text-surface-elevated]="newOptionStatus() === 'UNAVAILABLE'" [class.text-muted]="newOptionStatus() !== 'UNAVAILABLE'" [class.hover:bg-surface-elevated]="newOptionStatus() !== 'UNAVAILABLE'">Indisponível</button>
             </div>
           </div>
         }
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-between items-center">
+      <div class="p-5 bg-surface border-t border-subtle flex justify-between items-center rounded-b-2xl">
         @if(editingOption(); as option) {
-            <button (click)="deleteOption(option)" class="px-4 py-2 font-medium rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">Excluir</button>
+            <button (click)="deleteOption(option)" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">delete</span> Excluir</button>
         } @else {
             <div></div>
         }
         <div class="flex gap-3">
-            <button (click)="closeOptionModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-            <button (click)="saveOption()" [disabled]="isSavingOption()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-                {{ isSavingOption() ? 'Salvando...' : 'Salvar' }}
+            <button (click)="closeOptionModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+            <button (click)="saveOption()" [disabled]="isSavingOption()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if(isSavingOption()) {
+                    <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+                } @else {
+                    <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+                }
             </button>
         </div>
       </div>
@@ -385,28 +456,35 @@
 
 <!-- Edit Option Group Modal -->
 @if(isEditGroupModalOpen() && editingGroup(); as group) {
-  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" (click)="closeEditGroupModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white">Editar Grupo de Complementos</h3>
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeEditGroupModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit</span> Editar Grupo</h3>
+        <button (click)="closeEditGroupModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-6 space-y-5 bg-surface/30">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Grupo</label>
-          <input type="text" [(ngModel)]="editingGroupName" name="groupName" class="w-full bg-gray-700 rounded p-2 text-white">
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome do Grupo</label>
+          <input type="text" [(ngModel)]="editingGroupName" name="groupName" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-          <div class="flex gap-2 bg-gray-700/50 p-1 rounded-lg">
-              <button (click)="newGroupStatus.set('AVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-green-600]="newGroupStatus() === 'AVAILABLE'">Disponível</button>
-              <button (click)="newGroupStatus.set('UNAVAILABLE')" class="flex-1 py-2 text-sm font-semibold rounded-md" [class.bg-red-600]="newGroupStatus() === 'UNAVAILABLE'">Indisponível</button>
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Status</label>
+          <div class="flex gap-2 bg-surface border border-strong p-1.5 rounded-xl">
+              <button (click)="newGroupStatus.set('AVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-success]="newGroupStatus() === 'AVAILABLE'" [class.text-surface-elevated]="newGroupStatus() === 'AVAILABLE'" [class.text-muted]="newGroupStatus() !== 'AVAILABLE'" [class.hover:bg-surface-elevated]="newGroupStatus() !== 'AVAILABLE'">Disponível</button>
+              <button (click)="newGroupStatus.set('UNAVAILABLE')" class="flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-danger]="newGroupStatus() === 'UNAVAILABLE'" [class.text-surface-elevated]="newGroupStatus() === 'UNAVAILABLE'" [class.text-muted]="newGroupStatus() !== 'UNAVAILABLE'" [class.hover:bg-surface-elevated]="newGroupStatus() !== 'UNAVAILABLE'">Indisponível</button>
           </div>
         </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-          <button (click)="closeEditGroupModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-          <button (click)="saveGroupChanges()" [disabled]="isSavingOption()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-500">
-              {{ isSavingOption() ? 'Salvando...' : 'Salvar' }}
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+          <button (click)="closeEditGroupModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+          <button (click)="saveGroupChanges()" [disabled]="isSavingOption()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              @if(isSavingOption()) {
+                  <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+              } @else {
+                  <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+              }
           </button>
       </div>
     </div>

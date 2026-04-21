@@ -1,11 +1,28 @@
 
 <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex flex-col items-center justify-end md:justify-center p-0 md:p-4 animate-in fade-in" (click)="paymentSuccess() ? null : closeModal.emit(true)">
-  <div class="chef-surface border border-subtle rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] md:h-[85vh] flex flex-col lg:flex-row overflow-hidden relative" (click)="$event.stopPropagation()">
+  <div class="chef-surface border border-subtle rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] md:h-[85vh] flex flex-col overflow-hidden relative" (click)="$event.stopPropagation()">
     
     @if (!paymentSuccess()) {
-        <!-- LEFT SIDE: Order Summary & Split -->
-        <div class="w-full lg:w-1/2 flex flex-col order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-subtle bg-surface-elevated/20 flex-shrink lg:flex-shrink-0 min-h-[40vh] lg:h-full relative overflow-hidden backdrop-blur-md pb-safe lg:pb-0">
-             <!-- Decorative Gradient -->
+        <!-- MOBILE TABS -->
+        <div class="lg:hidden flex gap-0 border-b border-subtle sticky top-0 z-50 shrink-0 bg-surface">
+            <button (click)="mobileTab.set('pagamento')" class="flex-1 py-4 text-[11px] font-black uppercase tracking-widest relative transition-all flex items-center justify-center gap-2" [class.text-brand]="mobileTab() === 'pagamento'" [class.text-muted]="mobileTab() !== 'pagamento'">
+               <span class="material-symbols-outlined text-sm">payments</span> Pagamento
+               @if(mobileTab() === 'pagamento') {
+                   <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+               }
+            </button>
+            <button (click)="mobileTab.set('resumo')" class="flex-1 py-4 text-[11px] font-black uppercase tracking-widest relative transition-all flex items-center justify-center gap-2" [class.text-brand]="mobileTab() === 'resumo'" [class.text-muted]="mobileTab() !== 'resumo'">
+               <span class="material-symbols-outlined text-sm">receipt_long</span> Resumo
+               @if(mobileTab() === 'resumo') {
+                   <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+               }
+            </button>
+        </div>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative w-full h-full">
+            <!-- LEFT SIDE: Order Summary & Split -->
+            <div [ngClass]="mobileTab() === 'resumo' ? 'flex' : 'hidden lg:flex'" class="w-full lg:w-1/2 flex-col order-2 lg:order-1 lg:border-r border-subtle bg-surface-elevated/20 p-0 h-full relative overflow-hidden backdrop-blur-md pb-safe lg:pb-0 shrink-0 lg:shrink">
+                 <!-- Decorative Gradient -->
             <div class="absolute top-0 right-0 w-64 h-64 bg-brand/5 rounded-full blur-3xl -z-10"></div>
             
             <!-- Header -->
@@ -21,9 +38,19 @@
                         <p class="text-[10px] font-black text-muted uppercase tracking-widest">{{ lastKnownOrder()?.order_items?.length }} itens no total</p>
                     </div>
                 </div>
-                <div class="flex bg-surface-elevated p-1 rounded-xl shadow-inner border border-strong self-stretch sm:self-auto">
-                    <button (click)="splitMode.set('total')" class="flex-1 sm:flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-brand]="splitMode() === 'total'" [class.text-white]="splitMode() === 'total'" [class.shadow-md]="splitMode() === 'total'" [class.text-muted]="splitMode() !== 'total'">Total</button>
-                    <button (click)="splitMode.set('item')" class="flex-1 sm:flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all" [class.bg-brand]="splitMode() === 'item'" [class.text-white]="splitMode() === 'item'" [class.shadow-md]="splitMode() === 'item'" [class.text-muted]="splitMode() !== 'item'">Dividir</button>
+                <div class="flex gap-6 border-b border-subtle self-stretch sm:self-auto px-2">
+                    <button (click)="splitMode.set('total')" class="pb-3 text-[10px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="splitMode() === 'total'" [class.text-muted]="splitMode() !== 'total'">
+                        Total
+                        @if(splitMode() === 'total') {
+                            <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+                        }
+                    </button>
+                    <button (click)="splitMode.set('item')" class="pb-3 text-[10px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="splitMode() === 'item'" [class.text-muted]="splitMode() !== 'item'">
+                        Dividir
+                        @if(splitMode() === 'item') {
+                            <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+                        }
+                    </button>
                 </div>
             </div>
 
@@ -163,9 +190,19 @@
                         @if(isAddingDiscount()) {
                             <div class="chef-surface border-brand/30 bg-brand/5 p-4 rounded-2xl mb-1 slide-in-from-top-2 animate-in duration-200 shadow-lg relative overflow-hidden">
                                 <div class="absolute top-0 left-0 w-1 h-full bg-brand"></div>
-                                <div class="flex gap-2 mb-4 bg-surface/50 p-1 rounded-xl border border-subtle shadow-inner">
-                                     <button (click)="localDiscountType.set('percentage')" class="flex-1 py-2 text-[9px] uppercase font-black tracking-widest rounded-lg transition-all" [class.bg-brand]="localDiscountType() === 'percentage'" [class.text-white]="localDiscountType() === 'percentage'" [class.shadow-md]="localDiscountType() === 'percentage'" [class.text-muted]="localDiscountType() !== 'percentage'">Porcentagem</button>
-                                     <button (click)="localDiscountType.set('fixed_value')" class="flex-1 py-2 text-[9px] uppercase font-black tracking-widest rounded-lg transition-all" [class.bg-brand]="localDiscountType() === 'fixed_value'" [class.text-white]="localDiscountType() === 'fixed_value'" [class.shadow-md]="localDiscountType() === 'fixed_value'" [class.text-muted]="localDiscountType() !== 'fixed_value'">Valor Fixo</button>
+                                <div class="flex gap-4 mb-4 border-b border-subtle px-2">
+                                     <button (click)="localDiscountType.set('percentage')" class="pb-2 text-[9px] uppercase font-black tracking-widest relative transition-all" [class.text-brand]="localDiscountType() === 'percentage'" [class.text-muted]="localDiscountType() !== 'percentage'">
+                                        Porcentagem
+                                        @if(localDiscountType() === 'percentage') {
+                                            <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+                                        }
+                                     </button>
+                                     <button (click)="localDiscountType.set('fixed_value')" class="pb-2 text-[9px] uppercase font-black tracking-widest relative transition-all" [class.text-brand]="localDiscountType() === 'fixed_value'" [class.text-muted]="localDiscountType() !== 'fixed_value'">
+                                        Valor Fixo
+                                        @if(localDiscountType() === 'fixed_value') {
+                                            <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
+                                        }
+                                     </button>
                                 </div>
                                 <div class="flex gap-2">
                                     <div class="relative flex-1">
@@ -244,11 +281,11 @@
         </div>
 
         <!-- RIGHT SIDE: Calculator & Payment Methods -->
-        <div class="w-full lg:w-1/2 p-4 pb-12 lg:p-10 flex flex-col order-1 lg:order-2 h-[45vh] lg:h-full flex-shrink-0 lg:flex-shrink bg-surface/30 relative z-30 justify-between overflow-hidden lg:overflow-y-auto hide-scrollbar">
+        <div [ngClass]="mobileTab() === 'pagamento' ? 'flex' : 'hidden lg:flex'" class="w-full lg:w-1/2 p-4 pb-24 lg:p-10 flex-col order-1 lg:order-2 h-full shrink-0 lg:shrink bg-surface/30 relative z-30 justify-between overflow-y-auto hide-scrollbar">
             <!-- Decorative Elements -->
             <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-brand/5 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div class="flex-1 flex flex-col min-h-0 relative z-10">
+            <div class="flex-1 flex flex-col relative z-10">
                 <!-- Amount Input Section -->
                 <div class="bg-surface-elevated rounded-3xl p-6 lg:p-8 mb-6 border border-strong flex flex-col items-end shadow-2xl relative overflow-hidden flex-shrink-0 group">
                     <div class="absolute inset-0 bg-gradient-to-br from-brand/10 via-transparent to-brand/5 pointer-events-none opacity-50"></div>
@@ -295,12 +332,12 @@
                     }
                 </div>
                 
-                <div class="flex-1 overflow-hidden flex flex-col relative z-10 gap-6">
+                <div class="flex-1 flex flex-col relative z-10 gap-6 min-h-[350px] lg:min-h-0">
                     <!-- Keypad & Methods Layout -->
-                    <div class="flex gap-4 h-full">
+                    <div class="flex flex-col lg:flex-row gap-4 h-full">
                         <!-- Numeric Keypad (Left) -->
                          @if(showKeypad()) {
-                            <div class="w-2/3 grid grid-cols-3 gap-2 h-full content-stretch">
+                            <div class="w-full lg:w-2/3 grid grid-cols-3 gap-2 h-full content-stretch">
                                 @for(btn of ['7','8','9','4','5','6','1','2','3']; track btn) {
                                     <button (click)="appendDigit(btn)" class="bg-surface hover:bg-surface-elevated border border-strong text-title text-2xl font-black rounded-2xl shadow-md active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand/50 hover:border-brand/30">{{ btn }}</button>
                                 }
@@ -311,7 +348,7 @@
                         }
 
                         <!-- Methods Column (Right) -->
-                        <div class="flex flex-col gap-3 h-full overflow-y-auto hide-scrollbar" [class.flex-1]="showKeypad()" [class.w-full]="!showKeypad()">
+                        <div class="grid grid-cols-2 lg:flex lg:flex-col gap-3 lg:h-full w-full lg:w-auto" [class.lg:flex-1]="showKeypad()" [class.lg:w-full]="!showKeypad()">
                             @let methods = [
                                 { id: 'Dinheiro', icon: 'payments', label: 'Dinheiro', color: 'success' },
                                 { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Crédito', color: 'brand' },
@@ -407,6 +444,8 @@
                     <span class="relative z-10">Concluir Venda</span>
                 </button>
             </div>
+        </div>
+        </div>
         } @else {
         <!-- SUCCESS SCREEN -->
         <div class="w-full h-full flex flex-col items-center justify-center p-6 md:p-12 text-center bg-surface relative overflow-hidden backdrop-blur-3xl animate-in fade-in duration-500">
@@ -464,7 +503,6 @@
                 <span class="text-[10px] font-black text-title uppercase tracking-widest">Kore Kitchen System • v2.0</span>
              </div>
         </div>
-    }</div>
     }
   </div>
 </div>

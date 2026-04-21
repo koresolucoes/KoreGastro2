@@ -1,142 +1,173 @@
-<div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="close.emit()">
+  <div class="chef-surface border border-subtle shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-700">
-        <div class="flex justify-between items-start">
-            <div>
-              <h3 class="text-xl font-bold text-white">{{ customer().name }}</h3>
-              <p class="text-gray-400 text-sm">Cliente</p>
+    <div class="p-6 border-b border-subtle bg-surface/50">
+        <div class="flex justify-between items-start mb-6">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                 <span class="material-symbols-outlined text-3xl">person</span>
+              </div>
+              <div>
+                <h3 class="text-2xl font-black text-title tracking-tight">{{ customer().name }}</h3>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="px-2 py-0.5 rounded-md bg-surface-elevated border border-subtle text-[10px] font-black uppercase tracking-widest text-muted">Cliente</span>
+                    @if(customer().cpf) {
+                        <span class="px-2 py-0.5 rounded-md bg-surface bg-opacity-50 text-[10px] font-bold text-muted font-mono border border-subtle border-dashed">{{ customer().cpf }}</span>
+                    }
+                </div>
+              </div>
             </div>
-            <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
+              <span class="material-symbols-outlined">close</span>
             </button>
         </div>
         <!-- Tabs -->
-        <div class="mt-4 border-b border-gray-700">
-            <nav class="-mb-px flex space-x-6">
-                <button (click)="activeTab.set('details')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'details'" [class.text-white]="activeTab() === 'details'" [class.border-transparent]="activeTab() !== 'details'" [class.text-gray-400]="activeTab() !== 'details'" [class.hover:text-gray-200]="activeTab() !== 'details'">
-                    Dados Pessoais
-                </button>
-                <button (click)="activeTab.set('history')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'history'" [class.text-white]="activeTab() === 'history'" [class.border-transparent]="activeTab() !== 'history'" [class.text-gray-400]="activeTab() !== 'history'" [class.hover:text-gray-200]="activeTab() !== 'history'">
-                    Histórico de Consumo
-                </button>
-                 <button (click)="activeTab.set('loyalty')" class="py-2 px-1 border-b-2 font-medium text-sm" [class.border-blue-500]="activeTab() === 'loyalty'" [class.text-white]="activeTab() === 'loyalty'" [class.border-transparent]="activeTab() !== 'loyalty'" [class.text-gray-400]="activeTab() !== 'loyalty'" [class.hover:text-gray-200]="activeTab() !== 'loyalty'">
-                    Fidelidade
-                </button>
-            </nav>
+        <div class="flex border-b border-subtle gap-8">
+            <button (click)="activeTab.set('details')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'details'" [class.text-muted]="activeTab() !== 'details'">
+                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">info</span> Dados Pessoais</span>
+                @if(activeTab() === 'details') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
+            </button>
+            <button (click)="activeTab.set('history')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'history'" [class.text-muted]="activeTab() !== 'history'">
+                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">receipt_long</span> Histórico</span>
+                @if(activeTab() === 'history') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
+            </button>
+             <button (click)="activeTab.set('loyalty')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'loyalty'" [class.text-muted]="activeTab() !== 'loyalty'">
+                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">stars</span> Fidelidade</span>
+                @if(activeTab() === 'loyalty') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
+            </button>
         </div>
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-6 overflow-y-auto">
+    <div class="flex-1 p-6 sm:p-8 overflow-y-auto custom-scrollbar">
       @if(activeTab() === 'details') {
-          <dl class="space-y-6">
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Informações de Contato</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">Telefone</dt><dd class="text-white font-medium">{{ customer().phone || 'Não informado' }}</dd></div>
-                  <div class="flex flex-col"><dt class="text-gray-400">Email</dt><dd class="text-white font-medium">{{ customer().email || 'Não informado' }}</dd></div>
-              </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-8">
+                <!-- Info Section -->
+                <div>
+                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">contact_mail</span> Contato & Detalhes</h4>
+                  <div class="bg-surface-elevated/50 p-5 rounded-2xl border border-subtle space-y-4">
+                      <div class="flex flex-col"><span class="text-[10px] uppercase font-bold text-muted mb-1">Telefone</span><span class="text-title font-medium data-mono">{{ customer().phone || 'Não informado' }}</span></div>
+                      <div class="flex flex-col"><span class="text-[10px] uppercase font-bold text-muted mb-1">Email</span><span class="text-title font-medium">{{ customer().email || 'Não informado' }}</span></div>
+                      <div class="flex flex-col"><span class="text-[10px] uppercase font-bold text-muted mb-1">CPF</span><span class="text-title font-medium font-mono">{{ customer().cpf || 'Não informado' }}</span></div>
+                  </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div>
+                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">description</span> Observações</h4>
+                  <div class="bg-surface-elevated/50 p-5 rounded-2xl border border-subtle">
+                    <p class="text-sm text-title font-medium whitespace-pre-wrap leading-relaxed">
+                      {{ customer().notes || 'Nenhuma observação registrada.' }}
+                    </p>
+                  </div>
+                </div>
             </div>
+
+            <!-- Map Section -->
             <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Endereço</h4>
-              <div class="text-sm text-white font-medium whitespace-pre-wrap mb-2">
-                {{ customer().address || 'Não informado' }}
+              <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">place</span> Endereço</h4>
+              <div class="bg-surface-elevated/50 p-4 rounded-2xl border border-subtle flex items-start gap-3 mb-4">
+                  <span class="material-symbols-outlined text-brand bg-brand/10 p-2 rounded-xl border border-brand/20">location_on</span>
+                  <div class="text-sm text-title font-medium whitespace-pre-wrap flex-1 mt-1">
+                    {{ customer().address || 'Nenhum endereço informado.' }}
+                  </div>
               </div>
-              <div #mapContainer class="w-full h-48 rounded-lg z-0 relative bg-gray-700/50">
+              <div #mapContainer class="w-full h-48 md:h-64 rounded-2xl border border-strong shadow-inner relative bg-surface-elevated overflow-hidden">
                   @if (isLoadingMap()) {
-                      <div class="absolute inset-0 flex items-center justify-center">
-                          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                      <div class="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-10">
+                          <div class="animate-spin rounded-full h-8 w-8 border-2 border-brand/40 border-t-brand"></div>
                       </div>
                   }
                   @if (mapGeocodeError()) {
-                      <div class="absolute inset-0 flex items-center justify-center text-center text-gray-400 text-sm p-4">
+                      <div class="absolute inset-0 flex items-center justify-center text-center text-muted font-bold text-sm p-6 bg-surface/80 backdrop-blur-sm z-10">
                           {{ mapGeocodeError() }}
                       </div>
                   }
               </div>
             </div>
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Documentos</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div class="flex flex-col"><dt class="text-gray-400">CPF</dt><dd class="text-white font-medium">{{ customer().cpf || 'Não informado' }}</dd></div>
-              </div>
-            </div>
-            <div>
-              <h4 class="text-md font-semibold text-white border-b border-gray-600 pb-2 mb-3">Observações</h4>
-              <div class="text-sm text-white font-medium whitespace-pre-wrap">
-                {{ customer().notes || 'Nenhuma observação.' }}
-              </div>
-            </div>
-          </dl>
+          </div>
       } @else if (activeTab() === 'history') {
         @if (isLoadingHistory()) {
           <div class="flex items-center justify-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-2 border-brand/40 border-t-brand"></div>
           </div>
         } @else if (consumptionHistory().length === 0) {
-          <div class="text-center text-gray-500 py-16">
-              <p>Nenhum histórico de consumo encontrado para este cliente.</p>
+          <div class="text-center text-muted py-24 flex flex-col items-center opacity-60">
+              <span class="material-symbols-outlined text-6xl mb-4">receipt_long</span>
+              <p class="font-bold text-lg">Nenhum histórico de consumo</p>
           </div>
         } @else {
-          <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @for(order of consumptionHistory(); track order.id) {
-              <div class="bg-gray-700/50 p-4 rounded-lg">
-                <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 mb-3 border-b border-gray-600/50">
+              <div class="bg-surface border border-subtle p-5 rounded-2xl hover:border-brand/30 transition-all hover:shadow-lg group">
+                <div class="flex justify-between items-start mb-4">
                   <div>
-                    <p class="font-semibold text-white">{{ order.completed_at | date:'fullDate' }}</p>
-                    <p class="text-xs text-gray-400 font-mono">#{{ order.id.slice(0, 8) }}</p>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">{{ order.completed_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                    <p class="text-[11px] font-bold text-title bg-surface-elevated px-2 py-0.5 rounded-lg border border-subtle inline-block font-mono tracking-widest">#{{ order.id.slice(0, 8).toUpperCase() }}</p>
                   </div>
-                  <div class="text-right mt-2 sm:mt-0">
-                    <p class="text-xs text-gray-400">Total do Pedido</p>
-                    <p class="text-lg font-bold text-green-400">{{ getOrderTotal(order) | currency:'BRL' }}</p>
+                  <div class="text-right">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-muted mb-0.5">Total Pago</p>
+                    <p class="text-xl font-black text-success tracking-tighter data-mono leading-none">{{ getOrderTotal(order) | currency:'BRL' }}</p>
                   </div>
                 </div>
-                <h5 class="text-sm font-semibold text-gray-300 mb-2">Itens Consumidos:</h5>
-                <ul class="space-y-1 text-sm">
-                  @for (item of order.order_items; track item.id) {
-                    <li class="flex justify-between items-center">
-                      <span class="text-gray-200">{{ item.quantity }}x {{ item.name }}</span>
-                      <span class="text-gray-300 font-mono">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
-                    </li>
-                  }
-                </ul>
+                
+                <div class="border-t border-subtle border-dashed pt-4">
+                    <h5 class="text-[9px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">fastfood</span> Itens do Pedido</h5>
+                    <ul class="space-y-2">
+                    @for (item of order.order_items; track item.id) {
+                        <li class="flex justify-between items-center text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-surface-elevated text-brand text-[10px] font-black min-w-[24px] h-6 flex items-center justify-center rounded-md border border-strong">{{ item.quantity }}x</span>
+                            <span class="text-title font-medium truncate max-w-[150px] sm:max-w-[200px]">{{ item.name }}</span>
+                        </div>
+                        <span class="text-muted font-bold font-mono tracking-tight">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+                        </li>
+                    }
+                    </ul>
+                </div>
               </div>
             }
           </div>
         }
       } @else if (activeTab() === 'loyalty') {
-        <div class="space-y-6">
-          <div class="bg-gray-700/50 p-4 rounded-lg text-center">
-            <p class="text-sm text-gray-400">Saldo Atual de Pontos</p>
-            <p class="text-4xl font-bold text-blue-400">{{ customer().loyalty_points | number }}</p>
+        <div class="max-w-3xl mx-auto space-y-6">
+          <div class="bg-brand/10 border border-brand/20 p-8 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center items-center shadow-lg">
+            <span class="material-symbols-outlined text-brand opacity-10 absolute -right-6 -bottom-6 text-9xl">stars</span>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-brand mb-2 z-10">Saldo Consolidado de Pontos</p>
+            <p class="text-6xl font-black text-brand tracking-tighter z-10">{{ customer().loyalty_points | number }}</p>
           </div>
            @if (isLoadingHistory()) {
             <div class="flex items-center justify-center h-64">
-              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <div class="animate-spin rounded-full h-12 w-12 border-2 border-brand/40 border-t-brand"></div>
             </div>
           } @else if (loyaltyMovements().length === 0) {
-            <div class="text-center text-gray-500 py-16">
-                <p>Nenhuma movimentação de pontos encontrada.</p>
+            <div class="text-center text-muted py-16 flex flex-col items-center opacity-60">
+                <span class="material-symbols-outlined text-6xl mb-4">stars</span>
+                <p class="font-bold text-lg">Nenhuma movimentação de pontos.</p>
             </div>
           } @else {
-            <div>
-              <h4 class="text-md font-semibold text-white mb-3">Histórico de Pontos</h4>
+            <div class="chef-surface border border-subtle rounded-2xl overflow-hidden mt-8 shadow-sm">
+              <div class="p-4 border-b border-subtle bg-surface/50">
+                  <h4 class="text-[11px] font-black uppercase tracking-widest text-title flex items-center gap-2">
+                      <span class="material-symbols-outlined text-brand text-[18px]">history</span> Histórico de Transações de Pontos
+                  </h4>
+              </div>
               <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                  <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+                  <thead class="bg-surface-elevated/40 text-[9px] text-muted uppercase tracking-widest font-black border-b border-subtle bg-opacity-30">
                     <tr>
-                      <th class="px-4 py-2">Data</th>
-                      <th class="px-4 py-2">Descrição</th>
-                      <th class="px-4 py-2 text-right">Pontos</th>
+                      <th class="px-6 py-3">Data/Hora</th>
+                      <th class="px-6 py-3">Motivo/Descrição</th>
+                      <th class="px-6 py-3 text-right">Saldo</th>
                     </tr>
                   </thead>
                   <tbody>
                     @for(movement of loyaltyMovements(); track movement.id) {
-                      <tr class="border-b border-gray-700">
-                        <td class="px-4 py-3 text-sm text-gray-300">{{ movement.created_at | date:'dd/MM/yy HH:mm' }}</td>
-                        <td class="px-4 py-3 text-sm text-white">{{ movement.description }}</td>
-                        <td class="px-4 py-3 text-right font-semibold font-mono" [class.text-green-400]="movement.points_change > 0" [class.text-red-400]="movement.points_change < 0">
+                      <tr class="border-b border-subtle hover:bg-surface-elevated/30 transition-colors">
+                        <td class="px-6 py-4 text-xs font-bold text-title">{{ movement.created_at | date:'dd/MM/yy HH:mm' }}</td>
+                        <td class="px-6 py-4 text-xs font-medium text-muted">{{ movement.description }}</td>
+                        <td class="px-6 py-4 text-right font-black data-mono text-sm" [class.text-success]="movement.points_change > 0" [class.text-danger]="movement.points_change < 0">
                           {{ movement.points_change > 0 ? '+' : '' }}{{ movement.points_change | number }}
                         </td>
                       </tr>
@@ -151,8 +182,8 @@
     </div>
 
     <!-- Footer -->
-    <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-      <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+    <div class="p-5 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl">
+      <button (click)="close.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Voltar</button>
     </div>
   </div>
 </div>
