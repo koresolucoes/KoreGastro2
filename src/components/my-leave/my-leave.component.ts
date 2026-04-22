@@ -117,10 +117,10 @@ export class MyLeaveComponent {
 
   getStatusClass(status: LeaveRequestStatus): string {
     switch (status) {
-      case 'Pendente': return 'bg-yellow-500/20 text-yellow-300';
-      case 'Aprovada': return 'bg-green-500/20 text-green-300';
-      case 'Rejeitada': return 'bg-red-500/20 text-red-300';
-      default: return 'bg-gray-500/20 text-gray-300';
+      case 'Pendente': return 'bg-warning/10 text-warning border-warning/30';
+      case 'Aprovada': return 'bg-success/10 text-success border-success/30';
+      case 'Rejeitada': return 'bg-danger/10 text-danger border-danger/30';
+      default: return 'bg-surface border-strong text-muted';
     }
   }
   

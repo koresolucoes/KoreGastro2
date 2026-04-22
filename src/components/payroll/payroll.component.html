@@ -1,114 +1,132 @@
 <div class="container mx-auto">
   <!-- Header & Filters -->
   <div class="no-print">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-white">Folha de Pagamento</h1>
-        <p class="text-gray-400 mt-1">Calcule e visualize a prévia da folha de pagamento da sua equipe.</p>
+        <h1 class="text-3xl font-bold text-title title-display">Folha de Pagamento</h1>
+        <p class="text-muted mt-1 text-sm">Calcule e visualize a prévia da folha de pagamento da equipe.</p>
       </div>
-      <div class="flex items-center gap-4">
-        <select [value]="selectedMonth()" (change)="selectedMonth.set(+$any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold">
+      <div class="flex flex-wrap items-center gap-3 bg-surface-elevated p-1.5 rounded-[1.25rem] border border-strong shadow-sm w-full md:w-auto">
+        <select [value]="selectedMonth()" (change)="selectedMonth.set(+$any($event.target).value)" class="bg-surface border border-strong rounded-xl px-4 py-2.5 text-title font-bold text-xs uppercase tracking-widest focus:border-brand outline-none appearance-none cursor-pointer">
           @for (month of months; track month.value) {
             <option [value]="month.value">{{ month.name }}</option>
           }
         </select>
-        <select [value]="selectedYear()" (change)="selectedYear.set(+$any($event.target).value)" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold">
+        <select [value]="selectedYear()" (change)="selectedYear.set(+$any($event.target).value)" class="bg-surface border border-strong rounded-xl px-4 py-2.5 text-title font-bold text-xs uppercase tracking-widest focus:border-brand outline-none appearance-none cursor-pointer">
            @for (year of availableYears(); track year) {
             <option [value]="year">{{ year }}</option>
           }
         </select>
         
-        <button (click)="openAdjustmentModal()" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
-           <span class="material-symbols-outlined text-base">attach_money</span>
-           Lançar Ajuste
+        <button (click)="openAdjustmentModal()" class="btn-primary font-bold py-2.5 px-5 rounded-xl transition-all flex items-center gap-2 shadow-md shadow-brand/20 active:scale-95 text-xs uppercase tracking-widest ml-auto md:ml-0">
+           <span class="material-symbols-outlined text-[18px]">price_change</span>
+           <span class="hidden md:inline">Lançar Ajuste</span>
+           <span class="md:hidden">Ajuste</span>
         </button>
 
-        <button (click)="printReport()" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors flex items-center gap-2">
-          <span class="material-symbols-outlined text-base">print</span>
-          Imprimir
+        <button (click)="printReport()" class="bg-surface hover:bg-surface-elevated text-muted hover:text-title hover:border-brand border border-strong font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest shadow-sm">
+          <span class="material-symbols-outlined text-[18px]">print</span>
+          <span class="hidden md:inline">Imprimir</span>
         </button>
       </div>
     </div>
   </div>
 
-  <div class="bg-gray-800 rounded-lg printable-area">
-    <div class="p-6 border-b border-gray-700">
-      <h2 class="text-2xl font-semibold text-white">
+  <div class="bg-surface-elevated border border-subtle shadow-sm rounded-3xl printable-area overflow-hidden">
+    <div class="p-6 border-b border-subtle bg-app flex items-center justify-between">
+      <h2 class="text-xl font-bold text-title title-display flex items-center gap-3">
+        <span class="material-symbols-outlined text-brand text-3xl">receipt_long</span>
         Prévia da Folha - {{ months[selectedMonth()].name }} de {{ selectedYear() }}
       </h2>
     </div>
 
     @if (isLoading()) {
-      <div class="text-center py-20 text-gray-500">Calculando...</div>
+      <div class="text-center py-20 bg-surface flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mb-4"></div>
+        <p class="text-muted font-bold text-xs uppercase tracking-widest">Calculando folha...</p>
+      </div>
     } @else if (payrollData().length === 0) {
-      <div class="text-center py-20 text-gray-500">Nenhum dado encontrado para este período.</div>
+      <div class="text-center py-24 flex flex-col items-center justify-center opacity-80 bg-surface">
+        <span class="material-symbols-outlined text-5xl text-muted mb-4">event_busy</span>
+        <p class="text-xl font-bold text-title title-display">Nenhum dado encontrado!</p>
+        <p class="text-muted text-sm mt-1">Este período não possui registros para calcular.</p>
+      </div>
     } @else {
       <!-- Desktop Table -->
       <div class="overflow-x-auto hidden md:block">
-        <table class="w-full text-left min-w-[1000px]">
-          <thead class="bg-gray-700/50 text-sm text-gray-300 uppercase">
+        <table class="w-full text-left min-w-[1000px] border-collapse">
+          <thead class="bg-surface sticky top-0 z-10 border-b border-strong">
             <tr>
-              <th class="px-6 py-3">Funcionário</th>
-              <th class="px-6 py-3 text-center">H. Trab</th>
-              <th class="px-6 py-3 text-center">H. Extras</th>
-              <th class="px-6 py-3 text-right">Salário Base</th>
-              <th class="px-6 py-3 text-right">Valor H. Extra</th>
-              <th class="px-6 py-3 text-right">Ajustes</th>
-              <th class="px-6 py-3 text-right font-bold">Total a Pagar</th>
-              <th class="px-6 py-3 text-center no-print">Ações</th>
+              <th class="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">Funcionário</th>
+              <th class="px-6 py-5 text-center text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">H. Trab</th>
+              <th class="px-6 py-5 text-center text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">H. Extras</th>
+              <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">Salário Base</th>
+              <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">Valor H. Extra</th>
+              <th class="px-6 py-5 text-right text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong">Ajustes</th>
+              <th class="px-6 py-5 text-right text-[11px] font-black uppercase tracking-widest text-title border-b border-strong">Total a Pagar</th>
+              <th class="px-6 py-5 text-center text-[10px] font-black uppercase tracking-widest text-muted border-b border-strong no-print">Ações</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="bg-surface">
             @for (data of payrollData(); track data.employee.id) {
-              <tr class="border-b border-gray-700">
-                <td class="px-6 py-4"><p class="font-medium text-white">{{ data.employee.name }}</p><p class="text-xs text-gray-400">{{ data.employee.role }}</p></td>
-                <td class="px-6 py-4 text-center font-semibold text-white">{{ data.workedHours | number:'1.2-2' }}h</td>
-                <td class="px-6 py-4 text-center font-semibold" [class.text-yellow-400]="data.overtimeHours > 0">{{ data.overtimeHours | number:'1.2-2' }}h</td>
-                <td class="px-6 py-4 text-right text-gray-300">{{ data.basePay | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-right text-yellow-400">{{ data.overtimePay | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-right font-medium" [class.text-green-400]="data.adjustmentsTotal > 0" [class.text-red-400]="data.adjustmentsTotal < 0">
+              <tr class="hover:bg-brand/5 border-b border-strong transition-colors group">
+                <td class="px-6 py-5">
+                  <p class="font-bold text-title group-hover:text-brand transition-colors">{{ data.employee.name }}</p>
+                  <p class="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">{{ data.employee.role }}</p>
+                </td>
+                <td class="px-6 py-5 text-center font-bold text-title data-mono">{{ data.workedHours | number:'1.2-2' }}h</td>
+                <td class="px-6 py-5 text-center font-bold data-mono" [class.text-warning]="data.overtimeHours > 0" [class.text-muted]="data.overtimeHours === 0">{{ data.overtimeHours | number:'1.2-2' }}h</td>
+                <td class="px-6 py-5 text-right text-muted font-medium data-mono">{{ data.basePay | currency:'BRL' }}</td>
+                <td class="px-6 py-5 text-right font-bold data-mono" [class.text-warning]="data.overtimePay > 0" [class.text-muted]="data.overtimePay === 0">{{ data.overtimePay | currency:'BRL' }}</td>
+                <td class="px-6 py-5 text-right font-bold data-mono" [class.text-success]="data.adjustmentsTotal > 0" [class.text-danger]="data.adjustmentsTotal < 0" [class.text-muted]="data.adjustmentsTotal === 0">
                     {{ data.adjustmentsTotal | currency:'BRL' }}
                 </td>
-                <td class="px-6 py-4 text-right font-bold text-lg text-green-400">{{ data.totalPay | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-center no-print"><button (click)="openPayslip(data)" class="text-blue-400 hover:underline text-sm">Gerar Contracheque</button></td>
+                <td class="px-6 py-5 text-right font-black text-lg text-success data-mono bg-success/5">{{ data.totalPay | currency:'BRL' }}</td>
+                <td class="px-6 py-5 text-center no-print">
+                  <button (click)="openPayslip(data)" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-surface-elevated hover:bg-brand/10 hover:text-brand border border-strong transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 shadow-sm flex items-center justify-center mx-auto gap-1">
+                    <span class="material-symbols-outlined text-[14px]">receipt_long</span> Gerar
+                  </button>
+                </td>
               </tr>
             }
           </tbody>
            <tfoot>
-            <tr class="bg-gray-900/50">
-                <td class="px-6 py-4 font-bold text-white text-lg">TOTAIS</td>
-                <td class="px-6 py-4 text-center font-bold text-white">{{ totalWorkedHours() | number:'1.2-2' }}h</td>
-                <td class="px-6 py-4 text-center font-bold text-yellow-400">{{ totalOvertimeHours() | number:'1.2-2' }}h</td>
-                <td class="px-6 py-4 text-right font-bold text-white">{{ totalBasePay() | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-right font-bold text-yellow-400">{{ totalOvertimePay() | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-right font-bold text-white">{{ totalAdjustments() | currency:'BRL' }}</td>
-                <td class="px-6 py-4 text-right font-bold text-2xl text-green-400">{{ grandTotalPay() | currency:'BRL' }}</td>
+            <tr class="bg-app border-t border-subtle">
+                <td class="px-6 py-6 font-black uppercase tracking-widest text-title text-sm">TOTAIS</td>
+                <td class="px-6 py-6 text-center font-black data-mono text-title">{{ totalWorkedHours() | number:'1.2-2' }}h</td>
+                <td class="px-6 py-6 text-center font-black data-mono text-warning">{{ totalOvertimeHours() | number:'1.2-2' }}h</td>
+                <td class="px-6 py-6 text-right font-black data-mono text-title">{{ totalBasePay() | currency:'BRL' }}</td>
+                <td class="px-6 py-6 text-right font-black data-mono text-warning">{{ totalOvertimePay() | currency:'BRL' }}</td>
+                <td class="px-6 py-6 text-right font-black data-mono text-title">{{ totalAdjustments() | currency:'BRL' }}</td>
+                <td class="px-6 py-6 text-right font-black text-2xl data-mono text-success">{{ grandTotalPay() | currency:'BRL' }}</td>
                 <td class="no-print"></td>
             </tr>
           </tfoot>
         </table>
       </div>
       <!-- Mobile Cards -->
-       <div class="md:hidden p-4 space-y-4">
+       <div class="md:hidden p-4 space-y-4 bg-surface rounded-b-3xl">
         @for (data of payrollData(); track data.employee.id) {
-          <div class="bg-gray-700/50 p-4 rounded-lg">
-            <div class="flex justify-between items-start mb-3">
+          <div class="bg-surface-elevated border border-strong shadow-sm p-5 rounded-2xl">
+            <div class="flex justify-between items-start mb-4">
               <div>
-                <p class="font-bold text-white text-lg">{{ data.employee.name }}</p>
-                <p class="text-sm text-gray-400">{{ data.employee.role }}</p>
+                <p class="font-black title-display text-title text-lg">{{ data.employee.name }}</p>
+                <p class="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">{{ data.employee.role }}</p>
               </div>
-              <div class="text-right">
-                <p class="text-xs text-green-400">Total a Pagar</p>
-                <p class="text-xl font-bold text-green-400">{{ data.totalPay | currency:'BRL' }}</p>
+              <div class="text-right bg-success/10 p-2 rounded-xl border border-success/20">
+                <p class="text-[10px] font-black uppercase tracking-widest text-success">Total a Pagar</p>
+                <p class="text-xl font-black data-mono text-success mt-1">{{ data.totalPay | currency:'BRL' }}</p>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-gray-600/50 text-sm">
-              <div><p class="text-gray-400">H. Trabalhadas</p><p class="text-white font-medium">{{ data.workedHours | number:'1.2-2' }}h</p></div>
-              <div><p class="text-gray-400">H. Extras</p><p class="font-medium" [class.text-yellow-400]="data.overtimeHours > 0">{{ data.overtimeHours | number:'1.2-2' }}h</p></div>
-              <div><p class="text-gray-400">Ajustes</p><p class="font-medium" [class.text-red-400]="data.adjustmentsTotal < 0">{{ data.adjustmentsTotal | currency:'BRL' }}</p></div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t border-subtle text-sm">
+              <div class="bg-surface p-3 rounded-xl border border-strong"><p class="text-[10px] uppercase font-bold text-muted mb-1">H. Trabalhadas</p><p class="text-title font-bold data-mono">{{ data.workedHours | number:'1.2-2' }}h</p></div>
+              <div class="bg-surface p-3 rounded-xl border border-strong"><p class="text-[10px] uppercase font-bold text-muted mb-1">H. Extras</p><p class="font-bold data-mono" [class.text-warning]="data.overtimeHours > 0" [class.text-title]="data.overtimeHours === 0">{{ data.overtimeHours | number:'1.2-2' }}h</p></div>
+              <div class="bg-surface p-3 rounded-xl border border-strong col-span-2"><p class="text-[10px] uppercase font-bold text-muted mb-1">Ajustes</p><p class="font-bold data-mono" [class.text-danger]="data.adjustmentsTotal < 0" [class.text-success]="data.adjustmentsTotal > 0">{{ data.adjustmentsTotal | currency:'BRL' }}</p></div>
             </div>
-            <div class="pt-3 mt-3 border-t border-gray-600/50">
-              <button (click)="openPayslip(data)" class="w-full text-center py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm">Gerar Contracheque</button>
+            <div class="pt-4 mt-4 border-t border-subtle">
+              <button (click)="openPayslip(data)" class="w-full text-center py-3 px-3 bg-surface hover:bg-brand/10 hover:text-brand hover:border-brand/30 border border-strong text-title rounded-xl font-bold text-xs uppercase tracking-widest shadow-sm transition-colors flex items-center justify-center gap-2">
+                 <span class="material-symbols-outlined text-[18px]">receipt_long</span> Gerar Contracheque
+              </button>
             </div>
           </div>
         }
@@ -119,42 +137,49 @@
 
 <!-- Adjustment Modal -->
 @if(isAdjustmentModalOpen()) {
-    <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAdjustmentModal()">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700" (click)="$event.stopPropagation()">
-            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-white">Lançamento Avulso ({{ periodString() }})</h3>
-                <button (click)="closeAdjustmentModal()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="p-6 space-y-4">
+    <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeAdjustmentModal()">
+        <div class="chef-surface rounded-3xl shadow-2xl w-full max-w-md border border-subtle overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+            <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
-                    <select [value]="adjustmentForm().employeeId" (change)="updateAdjustmentForm('employeeId', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                   <h3 class="text-xl font-bold text-title title-display">Lançamento Avulso</h3>
+                   <p class="text-[10px] uppercase tracking-widest font-bold text-muted mt-1">{{ periodString() }}</p>
+                </div>
+                <button (click)="closeAdjustmentModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <div class="p-8 space-y-6 bg-app">
+                <div>
+                    <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5">Funcionário *</label>
+                    <select [value]="adjustmentForm().employeeId" (change)="updateAdjustmentForm('employeeId', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm font-bold appearance-none cursor-pointer">
                         @for (data of payrollData(); track data.employee.id) {
                             <option [value]="data.employee.id">{{ data.employee.name }}</option>
                         }
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-5">
                      <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
-                        <select [value]="adjustmentForm().type" (change)="updateAdjustmentForm('type', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5">Tipo</label>
+                        <select [value]="adjustmentForm().type" (change)="updateAdjustmentForm('type', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm font-bold appearance-none cursor-pointer">
                             <option value="BONUS">Bônus / Adicional</option>
                             <option value="DEDUCTION">Desconto / Vale</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Valor (R$)</label>
-                        <input type="number" [value]="adjustmentForm().amount" (input)="updateAdjustmentForm('amount', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="0.00">
+                        <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5">Valor (R$)</label>
+                        <input type="number" [value]="adjustmentForm().amount" (input)="updateAdjustmentForm('amount', +$any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title data-mono text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm" placeholder="0.00">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
-                    <input type="text" [value]="adjustmentForm().description" (input)="updateAdjustmentForm('description', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="Ex: Quebra de caixa, Gorjeta extra...">
+                    <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5">Descrição</label>
+                    <input type="text" [value]="adjustmentForm().description" (input)="updateAdjustmentForm('description', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm" placeholder="Ex: Quebra de caixa, Gorjeta extra...">
                 </div>
             </div>
-             <div class="p-4 bg-gray-700/50 flex justify-end gap-3 rounded-b-lg">
-                <button (click)="closeAdjustmentModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-                <button (click)="saveAdjustment()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar</button>
+             <div class="p-6 bg-surface-elevated flex justify-end gap-3 shadow-lg border-t border-subtle">
+                <button (click)="closeAdjustmentModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest text-xs rounded-xl bg-surface border border-strong text-muted hover:text-title hover:border-brand transition-all shadow-sm">Cancelar</button>
+                <button (click)="saveAdjustment()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg shadow-brand/20 flex items-center gap-2">
+                   <span class="material-symbols-outlined text-[18px]">save</span> Salvar
+                </button>
             </div>
         </div>
     </div>
@@ -162,114 +187,119 @@
 
 <!-- Payslip Modal -->
 @if(employeeForPayslip(); as payslip) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print" (click)="closePayslip()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 class="text-xl font-bold text-white">Contracheque - {{ payslip.employee.name }}</h3>
-            <div class="flex gap-2">
-                <button (click)="printPayslip()" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-500">Imprimir</button>
-                <button (click)="closePayslip()" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-                    <span class="material-symbols-outlined">close</span>
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 no-print backdrop-blur-sm animate-in fade-in duration-200" (click)="closePayslip()">
+    <div class="chef-surface rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+        <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center bg-app">
+            <h3 class="text-xl font-bold text-title title-display">Contracheque - {{ payslip.employee.name }}</h3>
+            <div class="flex gap-3">
+                <button (click)="printPayslip()" class="btn-primary px-6 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                   <span class="material-symbols-outlined text-[16px]">print</span>
+                   Imprimir
+                </button>
+                <button (click)="closePayslip()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface border border-strong bg-surface transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
                 </button>
             </div>
         </div>
-        <div class="flex-1 p-6 overflow-y-auto">
-            <div class="payslip-printable-area bg-white text-black p-6 font-sans text-xs">
+        <div class="flex-1 p-8 overflow-y-auto custom-scrollbar bg-surface-elevated">
+            <div class="payslip-printable-area bg-white text-black p-8 font-sans text-xs rounded-md shadow-2xl mx-auto max-w-3xl">
                 @for(copy of [1, 2]; track copy) {
                 <div class="payslip-container">
                     <!-- Header -->
-                    <div class="text-center border-b border-gray-400 pb-2">
-                        <h2 class="text-base font-bold">{{ companyProfile()?.company_name || 'Nome da Empresa' }}</h2>
-                        <h3 class="font-semibold mt-2 text-sm">Recibo de Pagamento de Salário - {{ payslipReferenceMonth() }}</h3>
+                    <div class="text-center border-b-2 border-black pb-3 mb-4">
+                        <h2 class="text-xl font-black uppercase tracking-widest">{{ companyProfile()?.company_name || 'Nome da Empresa' }}</h2>
+                        <h3 class="font-bold mt-2 text-sm">RECIBO DE PAGAMENTO DE SALÁRIO - {{ payslipReferenceMonth() }}</h3>
                     </div>
                     <!-- Employee Info -->
-                     <table class="w-full my-2 border-collapse border border-gray-400">
+                     <table class="w-full mb-4 border-collapse border border-black">
                         <tbody>
                             <tr>
-                                <td class="p-1 border border-gray-400"><strong>Funcionário:</strong><br>{{ payslip.employee.name }}</td>
-                                <td class="p-1 border border-gray-400"><strong>Cargo:</strong><br>{{ payslip.employee.role }}</td>
+                                <td class="p-2 border border-black text-sm"><strong>Funcionário:</strong><br><span class="text-base">{{ payslip.employee.name }}</span></td>
+                                <td class="p-2 border border-black text-sm w-[30%]"><strong>Cargo:</strong><br><span class="uppercase">{{ payslip.employee.role }}</span></td>
                             </tr>
                         </tbody>
                     </table>
                     <!-- Details Table -->
-                    <table class="w-full text-xs border-collapse border border-gray-400">
-                        <thead class="bg-gray-200">
-                            <tr class="font-bold">
-                                <td class="p-1 border border-gray-400 w-[45%]">Descrição</td>
-                                <td class="p-1 border border-gray-400 text-center w-[15%]">Ref</td>
-                                <td class="p-1 border border-gray-400 text-center w-[20%]">Proventos</td>
-                                <td class="p-1 border border-gray-400 text-center w-[20%]">Descontos</td>
+                    <table class="w-full text-sm border-collapse border border-black">
+                        <thead class="bg-gray-100">
+                            <tr class="font-black text-center">
+                                <td class="p-2 border border-black w-[45%] text-left">DESCRIÇÃO</td>
+                                <td class="p-2 border border-black w-[15%]">REF</td>
+                                <td class="p-2 border border-black w-[20%]">PROVENTOS</td>
+                                <td class="p-2 border border-black w-[20%]">DESCONTOS</td>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="font-mono">
                             <!-- Salario Base -->
                             <tr>
-                                <td class="p-1 border border-gray-400">Salário Base</td>
-                                <td class="p-1 border border-gray-400 text-right">{{ payslipNormalHoursWorked() | number:'1.1-1' }}h</td>
-                                <td class="p-1 border border-gray-400 text-right">{{ payslip.basePay | currency:'BRL' }}</td>
-                                <td class="p-1 border border-gray-400"></td>
+                                <td class="p-2 border border-black font-sans">Salário Base</td>
+                                <td class="p-2 border border-black text-center">{{ payslipNormalHoursWorked() | number:'1.2-2' }}h</td>
+                                <td class="p-2 border border-black text-right">{{ payslip.basePay | currency:'BRL' }}</td>
+                                <td class="p-2 border border-black"></td>
                             </tr>
                             
                             <!-- Horas Extras -->
                             @if(payslip.overtimePay > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">Horas Extras</td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ payslip.overtimeHours | number:'1.2-2' }}h</td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ payslip.overtimePay | currency:'BRL' }}</td>
-                                    <td class="p-1 border border-gray-400"></td>
+                                    <td class="p-2 border border-black font-sans">Horas Extras</td>
+                                    <td class="p-2 border border-black text-center">{{ payslip.overtimeHours | number:'1.2-2' }}h</td>
+                                    <td class="p-2 border border-black text-right">{{ payslip.overtimePay | currency:'BRL' }}</td>
+                                    <td class="p-2 border border-black"></td>
                                 </tr>
                             }
                             
                             <!-- Ajustes -->
                             @for(adj of payslipAdjustments(); track adj.id) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">{{ adj.description }}</td>
-                                    <td class="p-1 border border-gray-400 text-right"></td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ adj.type === 'BONUS' ? (adj.amount | currency:'BRL') : '' }}</td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ adj.type === 'DEDUCTION' ? (adj.amount | currency:'BRL') : '' }}</td>
+                                    <td class="p-2 border border-black font-sans">{{ adj.description }}</td>
+                                    <td class="p-2 border border-black text-center"></td>
+                                    <td class="p-2 border border-black text-right">{{ adj.type === 'BONUS' ? (adj.amount | currency:'BRL') : '' }}</td>
+                                    <td class="p-2 border border-black text-right">{{ adj.type === 'DEDUCTION' ? (adj.amount | currency:'BRL') : '' }}</td>
                                 </tr>
                             }
 
                             <!-- Descontos Fixos Simulados -->
                              @if(payslipINSS() > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">INSS (Simulado)</td>
-                                    <td class="p-1 border border-gray-400 text-right">9%</td>
-                                    <td class="p-1 border border-gray-400"></td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ payslipINSS() | currency:'BRL' }}</td>
+                                    <td class="p-2 border border-black font-sans">INSS (Simulado)</td>
+                                    <td class="p-2 border border-black text-center">9%</td>
+                                    <td class="p-2 border border-black"></td>
+                                    <td class="p-2 border border-black text-right">{{ payslipINSS() | currency:'BRL' }}</td>
                                 </tr>
                             }
                              @if(payslipVT() > 0) {
                                 <tr>
-                                    <td class="p-1 border border-gray-400">Vale Transporte</td>
-                                    <td class="p-1 border border-gray-400 text-right">6%</td>
-                                    <td class="p-1 border border-gray-400"></td>
-                                    <td class="p-1 border border-gray-400 text-right">{{ payslipVT() | currency:'BRL' }}</td>
+                                    <td class="p-2 border border-black font-sans">Vale Transporte</td>
+                                    <td class="p-2 border border-black text-center">6%</td>
+                                    <td class="p-2 border border-black"></td>
+                                    <td class="p-2 border border-black text-right">{{ payslipVT() | currency:'BRL' }}</td>
                                 </tr>
                             }
 
-                            <!-- Empty rows -->
+                            <!-- Empty rows for spacing -->
                             @for (_ of [1,2,3]; track _) {
-                               <tr><td class="p-1 border border-gray-400 h-4"></td><td class="p-1 border border-gray-400"></td><td class="p-1 border border-gray-400"></td><td class="p-1 border border-gray-400"></td></tr>
+                               <tr><td class="p-2 border border-black h-6"></td><td class="p-2 border border-black"></td><td class="p-2 border border-black"></td><td class="p-2 border border-black"></td></tr>
                             }
                         </tbody>
-                        <tfoot class="font-bold bg-gray-200">
+                        <tfoot class="font-black bg-gray-100 font-mono text-base border-t-2 border-black">
                              <tr>
-                                <td class="p-1 border border-gray-400" colspan="2">TOTAIS</td>
-                                <td class="p-1 border border-gray-400 text-right">{{ payslipTotalProventos() | currency:'BRL' }}</td>
-                                <td class="p-1 border border-gray-400 text-right">{{ payslipTotalDescontos() | currency:'BRL' }}</td>
+                                <td class="p-2 border border-black text-right font-sans" colspan="2">TOTAIS</td>
+                                <td class="p-2 border border-black text-right">{{ payslipTotalProventos() | currency:'BRL' }}</td>
+                                <td class="p-2 border border-black text-right">{{ payslipTotalDescontos() | currency:'BRL' }}</td>
                             </tr>
                         </tfoot>
                     </table>
                     
-                    <div class="border border-gray-400 p-2 mt-[-1px] font-bold text-right text-sm">
-                        LÍQUIDO A RECEBER: {{ payslipLiquido() | currency:'BRL' }}
+                    <div class="border border-black border-t-0 p-3 font-black text-right text-lg font-mono bg-green-50/50">
+                        <span class="font-sans mr-4 text-base">LÍQUIDO A RECEBER:</span> {{ payslipLiquido() | currency:'BRL' }}
                     </div>
 
-                    <div class="mt-8 pt-4 text-center">
-                        <div class="inline-block w-80 border-t border-gray-500 pt-1 text-sm">Assinatura do Funcionário</div>
+                    <div class="mt-12 pt-6 text-center">
+                        <div class="inline-block w-96 border-t border-black pt-2 font-bold text-sm">Assinatura do Funcionário</div>
                     </div>
-                     <p class="text-xs text-center text-gray-500 mt-2">{{ copy === 1 ? 'Via da Empresa' : 'Via do Empregado' }}</p>
+                     <p class="text-xs text-center text-gray-500 mt-4 font-bold tracking-widest uppercase mb-10">{{ copy === 1 ? 'Via da Empresa' : 'Via do Empregado' }}</p>
+                     
+                     <div class="border-b-2 border-dashed border-gray-400 my-8"></div>
                 </div>
                 }
             </div>

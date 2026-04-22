@@ -1,107 +1,113 @@
 <div class="container mx-auto h-full flex flex-col">
   <!-- Header -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-white">Escalas de Trabalho</h1>
-      <p class="text-gray-400 mt-1">Planeje e visualize a escala semanal da sua equipe.</p>
+      <h1 class="text-3xl font-bold text-title title-display">Escalas de Trabalho</h1>
+      <p class="text-muted mt-1 text-sm">Planeje e visualize a escala semanal da sua equipe.</p>
     </div>
-    <div class="flex items-center gap-4">
-      <button (click)="changeWeek(-1)" class="p-2 bg-gray-700 rounded-lg hover:bg-gray-600">
-        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    <div class="flex items-center gap-4 bg-surface-elevated p-1.5 rounded-xl border border-strong shadow-sm">
+      <button (click)="changeWeek(-1)" class="p-2 bg-surface hover:bg-brand/10 hover:text-brand text-muted rounded-lg transition-colors flex items-center justify-center border border-strong shadow-sm">
+        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
       </button>
       <input 
         type="week"
         [value]="weekInputValue()"
         (change)="handleDateChange($event)"
-        class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button (click)="changeWeek(1)" class="p-2 bg-gray-700 rounded-lg hover:bg-gray-600">
-        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        class="bg-transparent border-none px-2 py-1 text-title font-bold focus:outline-none focus:ring-0 uppercase tracking-widest text-xs cursor-pointer">
+      <button (click)="changeWeek(1)" class="p-2 bg-surface hover:bg-brand/10 hover:text-brand text-muted rounded-lg transition-colors flex items-center justify-center border border-strong shadow-sm">
+        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
       </button>
     </div>
   </div>
 
   @if (isLoading()) {
-    <div class="flex-1 flex items-center justify-center bg-gray-800 rounded-lg">
-      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    <div class="flex-1 flex items-center justify-center bg-surface-elevated rounded-3xl border border-subtle shadow-sm">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
     </div>
   } @else {
     <!-- Schedule Actions -->
     @if (isManager()) {
-      <div class="mb-4 flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+      <div class="mb-6 flex justify-between items-center bg-surface-elevated p-4 rounded-2xl border border-strong shadow-sm">
           @if (activeSchedule(); as schedule) {
-              <div class="flex items-center gap-2">
-                  <span class="px-3 py-1 text-sm font-semibold rounded-full" [class.bg-green-600]="schedule.is_published" [class.bg-yellow-600]="!schedule.is_published" [class.text-white]="schedule.is_published" [class.text-gray-900]="!schedule.is_published">
+              <div class="flex items-center gap-3">
+                  <span class="px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold rounded-lg shadow-sm w-fit" [class.bg-success]="schedule.is_published" [class.text-white]="schedule.is_published" [class.bg-warning]="!schedule.is_published" [class.text-title]="!schedule.is_published" [class.border]="true" [class.border-success-hover]="schedule.is_published" [class.border-warning-hover]="!schedule.is_published">
                       {{ schedule.is_published ? 'Publicada' : 'Rascunho' }}
                   </span>
                   @if (schedule.notes) {
-                      <p class="text-sm text-gray-400">| {{ schedule.notes }}</p>
+                      <p class="text-xs text-muted font-medium border-l border-strong pl-3">{{ schedule.notes }}</p>
                   }
               </div>
-              <div class="flex gap-2">
-                  <button (click)="copyFromPreviousWeek()" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2">
-                      <span class="material-symbols-outlined text-base">content_copy</span>
-                      Copiar Semana Anterior
+              <div class="flex gap-3">
+                  <button (click)="copyFromPreviousWeek()" class="bg-surface hover:bg-surface-elevated hover:text-title hover:border-brand text-muted border border-strong font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-2 uppercase tracking-widest transition-all shadow-sm">
+                      <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                      Copiar Anterior
                   </button>
-                  <button (click)="togglePublish()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                      {{ schedule.is_published ? 'Cancelar Publicação' : 'Publicar Escala' }}
+                  <button (click)="togglePublish()" class="btn-primary py-2.5 px-5 font-bold rounded-xl text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                       <span class="material-symbols-outlined text-[18px]">{{ schedule.is_published ? 'unpublished' : 'publish' }}</span>
+                      {{ schedule.is_published ? 'Cancelar Pub.' : 'Publicar Escala' }}
                   </button>
               </div>
           } @else {
-              <div class="text-center text-gray-500 py-2 w-full">
-                <p>Nenhuma escala para esta semana. Adicione turnos para criar uma.</p>
+              <div class="text-center text-muted font-medium py-3 w-full border border-dashed border-strong rounded-xl bg-surface">
+                <span class="material-symbols-outlined align-middle mr-2 text-[20px]">calendar_add_on</span>
+                Nenhuma escala para esta semana. Clique na tabela para adicionar turnos e criar uma.
               </div>
           }
       </div>
     }
 
     <!-- Schedule Table -->
-    <div class="flex-1 bg-gray-800 rounded-lg overflow-hidden flex flex-col">
-      <div class="overflow-auto hide-scrollbar">
-        <table class="w-full min-w-[700px] text-left border-separate border-spacing-0">
-          <thead class="bg-gray-700/50 sticky top-0 z-10">
+    <div class="flex-1 bg-surface-elevated rounded-3xl overflow-hidden flex flex-col border border-subtle shadow-sm">
+      <div class="overflow-auto custom-scrollbar">
+        <table class="w-full min-w-[900px] text-left border-separate border-spacing-0">
+          <thead class="bg-app sticky top-0 z-10">
             <tr>
-              <th class="px-4 py-3 text-sm font-semibold text-white sticky left-0 bg-gray-700/50 z-20 w-48">Funcionário</th>
+              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted sticky left-0 bg-app z-20 w-48 border-b border-strong">Funcionário</th>
               @for (day of weekDays(); track day) {
-                <th class="px-2 py-3 text-sm font-semibold text-white text-center w-40">
-                  <span class="block">{{ day | date:'EEEE' }}</span>
-                  <span class="block text-xs text-gray-400">{{ day | date:'dd/MM' }}</span>
+                <th class="px-2 py-4 text-center border-b border-strong">
+                  <span class="block text-xs font-bold text-title capitalize">{{ day | date:'EEEE' }}</span>
+                  <span class="block text-[10px] font-bold text-muted uppercase tracking-widest mt-0.5 data-mono">{{ day | date:'dd/MM' }}</span>
                 </th>
               }
             </tr>
           </thead>
-          <tbody>
+          <tbody class="bg-surface">
             @for (employee of employeesToDisplay(); track employee.id) {
-              <tr class="hover:bg-gray-700/30">
-                <td class="px-4 py-3 font-medium text-white align-top sticky left-0 bg-gray-800 z-10 border-b border-gray-700">
-                  <p>{{ employee.name }}</p>
-                  <p class="text-xs text-gray-400">{{ employee.role }}</p>
+              <tr class="hover:bg-brand/5 transition-colors group">
+                <td class="px-6 py-4 font-bold text-title align-top sticky left-0 group-hover:bg-brand/5 border-b border-strong z-10 transition-colors bg-surface">
+                  <p class="truncate group-hover:text-brand transition-colors">{{ employee.name }}</p>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-muted mt-0.5">{{ employee.role }}</p>
                 </td>
                 @for (day of weekDays(); track day) {
                   @let shift = shiftsByEmployeeAndDay().get(employee.id)?.get(day.toISOString().split('T')[0]) ?? null;
                   @let approvedLeave = getApprovedLeave(day, employee);
                   <td 
-                    class="px-2 py-3 align-top border-b border-gray-700"
+                    class="px-2 py-3 align-top border-b border-strong transition-colors"
                     [class.cursor-pointer]="isManager()"
+                    [class.hover:bg-brand/10]="isManager()"
                     (click)="openShiftModal(day, employee.id, shift)">
                     @if (shift) {
                       @if (shift.is_day_off) {
-                        <div class="bg-gray-600 text-center text-gray-300 p-2 rounded-md text-sm font-semibold">Folga</div>
+                        <div class="bg-surface-elevated border border-strong text-center text-muted px-2 py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm">Folga</div>
                       } @else {
-                        <div class="bg-gray-700 p-2 rounded-md text-center">
-                           <p class="text-xs text-gray-300">{{ shift.role_assigned }}</p>
-                           <p class="font-mono text-sm font-semibold text-blue-300">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
+                        <div class="bg-brand/10 border border-brand/20 p-2.5 rounded-xl text-center shadow-sm relative overflow-hidden group/shift hover:border-brand/40 transition-colors">
+                           <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand"></div>
+                           <p class="text-[10px] font-bold uppercase tracking-widest text-brand mb-1 truncate">{{ shift.role_assigned }}</p>
+                           <p class="font-black data-mono text-sm text-title">{{ shift.start_time | date:'HH:mm' }} - {{ shift.end_time | date:'HH:mm' }}</p>
                            @if(shift.notes) {
-                            <p class="text-xs text-yellow-200 mt-1 truncate" [title]="shift.notes">{{shift.notes}}</p>
+                            <p class="text-[10px] text-muted mt-1.5 truncate border-t border-brand/10 pt-1 font-medium italic" [title]="shift.notes">{{shift.notes}}</p>
                            }
                         </div>
                       }
                     } @else if (approvedLeave) {
-                      <div class="bg-purple-900/50 border border-purple-800 text-center text-purple-200 p-2 rounded-md text-sm font-semibold">
-                          {{ approvedLeave.request_type }}
+                      <div class="bg-purple/10 border border-purple/30 text-center text-purple p-2.5 rounded-xl text-xs font-bold shadow-sm flex flex-col items-center justify-center">
+                          <span class="material-symbols-outlined text-[16px] mb-1">event_busy</span>
+                          <span class="uppercase tracking-widest text-[10px]">{{ approvedLeave.request_type }}</span>
                       </div>
                     }
                      @else {
                         <!-- Empty Cell -->
+                        <div class="h-full w-full min-h-[4rem] rounded-xl border border-transparent hover:border-brand/20 transition-colors pointer-events-none"></div>
                     }
                   </td>
                 }
@@ -110,8 +116,10 @@
           </tbody>
         </table>
          @if (!activeSchedule() && !isManager()) {
-            <div class="text-center text-gray-500 py-20 w-full">
-              <p>A escala para esta semana ainda não foi publicada.</p>
+            <div class="text-center py-20 w-full flex flex-col items-center justify-center opacity-80">
+              <span class="material-symbols-outlined text-5xl text-muted mb-4">calendar_month</span>
+              <p class="text-xl font-bold text-title title-display">Escala não disponível</p>
+              <p class="text-muted text-sm mt-1">A escala para esta semana ainda não foi publicada.</p>
             </div>
         }
       </div>
@@ -121,69 +129,73 @@
 
 <!-- Add/Edit Shift Modal -->
 @if(isModalOpen() && isManager()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">{{ editingShift() ? 'Editar Turno' : 'Novo Turno' }}</h3>
-        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeModal()">
+    <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
+        <h3 class="text-xl font-bold text-title title-display">{{ editingShift() ? 'Editar Turno' : 'Novo Turno' }}</h3>
+        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-8 space-y-6 bg-app">
         
         @if (shiftConflictWarning()) {
-            <div class="bg-red-900/40 border border-red-700 text-red-200 p-3 rounded-lg flex items-center gap-2">
-                <span class="material-symbols-outlined">warning</span>
-                <span class="text-sm font-semibold">{{ shiftConflictWarning() }}</span>
+            <div class="bg-danger/10 border border-danger/30 text-danger p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                <span class="material-symbols-outlined mt-0.5">warning</span>
+                <span class="text-sm font-medium">{{ shiftConflictWarning() }}</span>
             </div>
         }
 
-        <div class="flex items-center">
-            <input type="checkbox" id="is_day_off" [checked]="shiftForm().is_day_off" (change)="updateShiftFormField('is_day_off', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600">
-            <label for="is_day_off" class="ml-2 text-sm text-gray-200">Marcar como dia de Folga</label>
-        </div>
+        <label class="flex items-center gap-3 p-4 bg-surface rounded-xl border border-strong cursor-pointer hover:border-brand transition-colors group">
+            <input type="checkbox" id="is_day_off" [checked]="shiftForm().is_day_off" (change)="updateShiftFormField('is_day_off', $any($event.target).checked)" class="w-5 h-5 rounded border-strong text-brand focus:ring-brand bg-surface-elevated">
+            <span class="font-bold text-title group-hover:text-brand transition-colors">Marcar como dia de Folga</span>
+        </label>
 
         @if (!shiftForm().is_day_off) {
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
-            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Funcionário *</label>
+            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold appearance-none cursor-pointer">
               <option [value]="undefined">Selecione...</option>
               @for (emp of allEmployees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
             </select>
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Início *</label>
-              <input type="datetime-local" [value]="formatForInput(shiftForm().start_time)" (input)="updateShiftFormDateTime('start_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Início *</label>
+              <input type="datetime-local" [value]="formatForInput(shiftForm().start_time)" (input)="updateShiftFormDateTime('start_time', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title text-sm data-mono font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none shadow-sm">
             </div>
              <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Fim *</label>
-              <input type="datetime-local" [value]="formatForInput(shiftForm().end_time)" (input)="updateShiftFormDateTime('end_time', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Fim *</label>
+              <input type="datetime-local" [value]="formatForInput(shiftForm().end_time)" (input)="updateShiftFormDateTime('end_time', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title text-sm data-mono font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none shadow-sm">
             </div>
           </div>
            <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Cargo no Turno</label>
-            <input type="text" [value]="shiftForm().role_assigned || 'Selecione um funcionário'" disabled class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Cargo no Turno</label>
+            <input type="text" [value]="shiftForm().role_assigned || 'Selecione um funcionário'" disabled class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-muted font-bold cursor-not-allowed opacity-70">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-            <textarea [value]="shiftForm().notes || ''" (input)="updateShiftFormField('notes', $any($event.target).value)" rows="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"></textarea>
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Observações (Opcional)</label>
+            <textarea [value]="shiftForm().notes || ''" (input)="updateShiftFormField('notes', $any($event.target).value)" rows="2" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body focus:border-brand focus:ring-1 focus:ring-brand outline-none shadow-sm transition-all resize-y"></textarea>
           </div>
         } @else {
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Funcionário *</label>
-            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Funcionário *</label>
+            <select [value]="shiftForm().employee_id" (change)="updateShiftFormField('employee_id', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold appearance-none cursor-pointer">
               <option [value]="undefined">Selecione...</option>
               @for (emp of allEmployees(); track emp.id) { <option [value]="emp.id">{{ emp.name }}</option> }
             </select>
           </div>
         }
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-between items-center">
+      <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-between items-center bg-surface-elevated/50 shadow-lg">
         @if (editingShift()) {
-          <button (click)="deleteShift()" class="px-4 py-2 font-medium rounded-lg bg-red-600/50 hover:bg-red-600 text-red-100 transition-colors">Excluir Turno</button>
+          <button (click)="deleteShift()" class="px-5 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all text-xs flex items-center justify-center gap-2 border border-danger/20 shadow-sm"><span class="material-symbols-outlined text-[18px]">delete</span> Excluir</button>
         } @else { <div></div> }
         <div class="flex gap-3">
-          <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-          <button (click)="saveShift()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Turno</button>
+          <button (click)="closeModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Cancelar</button>
+          <button (click)="saveShift()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">save</span> Salvar
+          </button>
         </div>
       </div>
     </div>

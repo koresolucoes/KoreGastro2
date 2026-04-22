@@ -170,6 +170,13 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleTableShape(tableId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.localTables.update(tables => tables.map(t =>
+      t.id === tableId ? { ...t, shape: t.shape === 'circle' ? 'square' : 'circle' } : t
+    ));
+  }
+
   async saveLayout() {
     const tablesToSave = this.localTables();
     if (tablesToSave.length > 0) {

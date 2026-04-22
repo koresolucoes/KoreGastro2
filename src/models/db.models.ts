@@ -245,6 +245,7 @@ export interface Table {
   employee_id?: string | null;
   command_number?: number | null;
   tab_name?: string | null;
+  shape?: 'square' | 'circle';
   created_at: string;
   user_id: string;
 }

@@ -1,70 +1,70 @@
 <div class="container mx-auto">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
     <div>
-      <h1 class="text-3xl font-bold text-white">Gestão de Compras</h1>
-      <p class="text-gray-400 mt-1">Crie e gerencie ordens de compra para seus fornecedores.</p>
+      <h1 class="text-3xl font-bold text-title title-display">Gestão de Compras</h1>
+      <p class="text-muted text-sm mt-1">Crie e gerencie ordens de compra para seus fornecedores.</p>
     </div>
-    <button (click)="openAddModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2">
-      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+    <button (click)="openAddModal()" class="btn-primary py-3 px-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
+      <span class="material-symbols-outlined text-[20px]">add</span>
       <span>Nova Ordem de Compra</span>
     </button>
   </div>
   
-  <div class="bg-gray-800 rounded-lg">
+  <div class="rounded-3xl">
     @if (purchaseOrdersWithDetails().length === 0) {
-      <div class="text-center py-16">
-        <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 003.375-3.375h1.5a1.125 1.125 0 011.125 1.125v-1.5a3.375 3.375 0 00-3.375-3.375H3.375" /></svg>
-        <h3 class="mt-2 text-lg font-medium text-white">Nenhuma ordem de compra encontrada</h3>
-        <p class="mt-1 text-sm text-gray-500">Crie sua primeira ordem de compra para começar a gerenciar seus pedidos.</p>
+      <div class="text-center py-20 bg-surface-elevated border border-dashed border-strong rounded-3xl opacity-80 shadow-sm relative overflow-hidden group">
+        <span class="material-symbols-outlined text-muted text-5xl mb-4 group-hover:scale-110 transition-transform">shopping_cart</span>
+        <h3 class="mt-2 text-xl font-bold text-title title-display">Nenhuma ordem de compra encontrada</h3>
+        <p class="mt-2 text-sm text-muted font-medium">Crie sua primeira ordem de compra para começar a gerenciar seus pedidos.</p>
       </div>
     } @else {
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-2">
         @for(order of purchaseOrdersWithDetails(); track order.id) {
-            <div class="bg-gray-700/50 rounded-lg p-4 flex flex-col border border-transparent hover:border-blue-600 transition-all">
-              <div class="flex-grow space-y-3">
+            <div class="bg-surface-elevated rounded-3xl p-6 flex flex-col border border-subtle hover:border-brand shadow-sm hover:shadow-md transition-all group">
+              <div class="flex-grow space-y-4">
                 <!-- Top section -->
                 <div class="flex justify-between items-start">
                   <div>
-                    <p class="font-mono text-xs text-gray-400">#{{order.id.slice(0, 8)}}</p>
-                    <p class="font-semibold text-white truncate" [title]="getSupplierName(order.supplier_id)">{{getSupplierName(order.supplier_id)}}</p>
+                    <p class="data-mono text-xs font-bold text-muted uppercase tracking-widest mb-1 shadow-inner px-2 py-0.5 rounded bg-surface border border-strong fit-content inline-block">#{{order.id.slice(0, 8)}}</p>
+                    <p class="font-bold text-title truncate mt-1 group-hover:text-brand transition-colors" [title]="getSupplierName(order.supplier_id)">{{getSupplierName(order.supplier_id)}}</p>
                   </div>
-                  <span class="px-2 py-1 text-xs font-semibold rounded-full" [ngClass]="getStatusClass(order.status)">{{order.status}}</span>
+                  <span class="px-3 py-1 text-[10px] uppercase tracking-widest font-bold rounded-lg shadow-sm" [ngClass]="getStatusClass(order.status)">{{order.status}}</span>
                 </div>
 
                 <!-- Details section -->
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm pt-4 border-t border-strong">
                     <div>
-                        <p class="text-gray-400 text-xs">Data</p>
-                        <p class="text-white font-medium">{{order.created_at | date:'dd/MM/yyyy'}}</p>
+                        <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">Data</p>
+                        <p class="text-body font-bold data-mono">{{order.created_at | date:'dd/MM/yyyy'}}</p>
                     </div>
                      <div>
-                        <p class="text-gray-400 text-xs">Itens</p>
-                        <p class="text-white font-medium">{{order.itemCount}}</p>
+                        <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">Itens</p>
+                        <p class="text-body font-bold data-mono">{{order.itemCount}}</p>
                     </div>
-                     <div class="col-span-2">
-                        <p class="text-gray-400 text-xs">Total</p>
-                        <p class="text-white font-semibold text-lg">{{order.total | currency:'BRL' }}</p>
+                     <div class="col-span-2 bg-surface p-3 rounded-xl border border-strong group-hover:border-brand/40 transition-colors">
+                        <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-0.5">Total</p>
+                        <p class="text-title font-black text-xl data-mono">{{order.total | currency:'BRL' }}</p>
                     </div>
                 </div>
               </div>
 
               <!-- Bottom: Actions -->
-              <div class="pt-3 mt-3 border-t border-gray-600/50">
+              <div class="pt-4 mt-4 border-t border-strong">
                 @if (orderPendingDeletion()?.id === order.id) {
-                  <div class="flex gap-2 justify-end items-center w-full">
-                    <span class="text-sm text-red-300">Certeza?</span>
-                    <button (click)="confirmDeleteOrder()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                    <button (click)="cancelDeleteOrder()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                  <div class="flex gap-2 justify-end items-center w-full px-2 py-1 bg-danger/5 rounded-xl border border-danger/20">
+                    <span class="text-xs font-bold text-danger uppercase tracking-widest">Certeza?</span>
+                    <button (click)="confirmDeleteOrder()" class="px-3 py-1.5 font-bold rounded-lg bg-danger hover:bg-danger-hover text-white text-xs transition-colors shadow-sm">Sim</button>
+                    <button (click)="cancelDeleteOrder()" class="px-3 py-1.5 font-bold rounded-lg bg-surface hover:bg-surface-elevated text-muted hover:text-title border border-strong text-xs transition-colors">Não</button>
                   </div>
                 } @else {
                   <div class="flex justify-end gap-2 w-full">
                     @if (order.status === 'Enviada') {
-                      <button (click)="markAsReceived(order)" class="text-sm font-semibold text-green-300 bg-green-900/40 hover:bg-green-900/60 px-3 py-2 rounded-md transition-colors">Receber</button>
+                      <button (click)="markAsReceived(order)" class="text-xs font-bold uppercase tracking-widest text-success border border-success/30 hover:border-success bg-success/10 hover:bg-success hover:text-white px-3 py-2 rounded-xl transition-all shadow-sm">Receber</button>
                     }
-                    <button (click)="openEditModal(order)" class="text-sm font-semibold text-blue-300 bg-blue-900/40 hover:bg-blue-900/60 px-3 py-2 rounded-md transition-colors">Ver/Editar</button>
+                    <button (click)="openEditModal(order)" class="text-xs font-bold uppercase tracking-widest text-brand border border-brand/30 hover:border-brand bg-brand/10 hover:bg-brand hover:text-white px-3 py-2 rounded-xl transition-all shadow-sm flex-1 text-center">Ver / Editar</button>
                     @if(order.status === 'Rascunho') {
-                      <button (click)="requestDeleteOrder(order)" class="text-red-300 font-medium text-sm p-2 rounded-lg bg-red-900/40 hover:bg-red-900/60">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      <button (click)="requestDeleteOrder(order)" class="text-danger font-medium p-2 rounded-xl border border-transparent hover:border-danger hover:bg-danger/10 transition-colors tooltip flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     }
                   </div>
@@ -78,18 +78,18 @@
 
 <!-- Add/Edit Modal -->
 @if(isModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
-        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeModal()">
+    <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
+        <h3 class="text-xl font-bold text-title title-display">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
+        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors"><span class="material-symbols-outlined text-[20px]">close</span></button>
       </div>
-      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+      <div class="p-8 flex-1 overflow-y-auto space-y-8 bg-app custom-scrollbar">
         <!-- Order Details -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-elevated rounded-2xl border border-strong shadow-sm">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor</label>
-            <select (change)="updateOrderFormField('supplier_id', $any($event.target).value)" [value]="orderForm().supplier_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Fornecedor</label>
+            <select (change)="updateOrderFormField('supplier_id', $any($event.target).value)" [value]="orderForm().supplier_id" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold appearance-none cursor-pointer">
               <option value="null">Nenhum/Diverso</option>
               @for(s of suppliers(); track s.id) {
                 <option [value]="s.id">{{s.name}}</option>
@@ -97,24 +97,30 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-            <select (change)="updateOrderFormField('status', $any($event.target).value)" [value]="orderForm().status" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-900 disabled:cursor-not-allowed">
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Status</label>
+            <select (change)="updateOrderFormField('status', $any($event.target).value)" [value]="orderForm().status" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm appearance-none cursor-pointer">
               <option>Rascunho</option>
               <option>Enviada</option>
               <option>Recebida</option>
             </select>
           </div>
         </div>
+
         <!-- Items -->
-        <div>
-          <h4 class="text-lg font-semibold text-white mb-3">Itens do Pedido</h4>
+        <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
+          <h4 class="text-lg font-bold text-title mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand">inventory_2</span> Itens do Pedido
+          </h4>
+          
           @if(orderForm().status === 'Enviada') {
-            <div class="mb-3 p-3 bg-blue-900/50 border border-blue-700 rounded-lg text-sm text-blue-300">
+            <div class="mb-5 p-4 bg-info/10 border border-info/30 rounded-xl text-sm text-info flex items-start gap-3">
+              <span class="material-symbols-outlined mt-0.5">info</span>
               <p><strong>Atenção:</strong> A ordem foi enviada. Preencha os custos unitários de cada item conforme a nota fiscal antes de marcar o pedido como "Recebido".</p>
             </div>
           }
+          
           <!-- Table Header -->
-          <div class="hidden sm:grid grid-cols-12 gap-x-3 px-3 mb-2 text-xs text-gray-400 font-medium">
+          <div class="hidden sm:grid grid-cols-12 gap-x-4 px-4 mb-2 text-[10px] text-muted font-bold uppercase tracking-widest">
             <span class="col-span-4">Ingrediente</span>
             <span class="col-span-2 text-center">Custo Unit.</span>
             <span class="col-span-2 text-center">Lote</span>
@@ -122,99 +128,125 @@
             <span class="col-span-2 text-center">Quantidade</span>
           </div>
 
-          <div class="space-y-2 mb-3">
+          <div class="space-y-3 mb-4">
             @for(item of orderItems(); track item.id) {
-              <div class="p-3 rounded-lg bg-gray-900/50">
-                <div class="grid grid-cols-12 gap-x-3 gap-y-2 items-center">
+              <div class="p-4 rounded-xl bg-surface border border-strong hover:border-brand transition-colors group">
+                <div class="grid grid-cols-12 gap-x-4 gap-y-3 items-center">
                     <!-- Ingredient Name (visible on all sizes) -->
-                    <div class="col-span-12 sm:col-span-4 font-medium text-white flex justify-between items-center">
-                        <span>{{item.name}}</span>
-                         <button (click)="removeItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Remover">
-                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
+                    <div class="col-span-12 sm:col-span-4 font-bold text-title flex justify-between items-center group-hover:text-brand transition-colors">
+                        <span class="truncate">{{item.name}}</span>
+                         <button (click)="removeItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors" title="Remover">
+                           <span class="material-symbols-outlined text-[18px]">close</span>
                         </button>
                     </div>
                     
                     <!-- Custo -->
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Custo Unit.</label>
-                        <input type="number" step="0.01" [value]="item.cost || 0" (change)="updateItemField(item.id, 'cost', +$any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center disabled:bg-gray-800 disabled:cursor-not-allowed">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Custo Unit.</label>
+                        <input type="number" step="0.01" [value]="item.cost || 0" (change)="updateItemField(item.id, 'cost', +$any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-3 py-2 text-title data-mono font-bold text-center disabled:opacity-50 disabled:cursor-not-allowed">
                     </div>
 
                     <!-- Lote -->
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Lote</label>
-                        <input type="text" [value]="item.lot_number || ''" (change)="updateItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="(Opcional)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center disabled:bg-gray-800 disabled:cursor-not-allowed">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Lote</label>
+                        <input type="text" [value]="item.lot_number || ''" (change)="updateItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="Opcional" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-3 py-2 text-title font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed placeholder-muted text-sm">
                     </div>
 
                     <!-- Validade -->
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Validade</label>
-                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updateItemField(item.id, 'expiration_date', $any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center disabled:bg-gray-800 disabled:cursor-not-allowed">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Validade</label>
+                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updateItemField(item.id, 'expiration_date', $any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-2 py-2 text-title font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                     </div>
                     
                     <!-- Quantidade -->
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Quantidade</label>
-                        <div class="flex items-center">
-                            <input type="number" [value]="item.quantity" (change)="updateItemField(item.id, 'quantity', +$any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center disabled:bg-gray-800 disabled:cursor-not-allowed">
-                            <span class="text-xs text-gray-400 ml-2 hidden sm:inline">{{item.unit}}</span>
+                    <div class="col-span-6 sm:col-span-2 flex items-center gap-2 justify-between">
+                        <div class="w-full">
+                          <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Quantidade</label>
+                          <div class="flex items-center gap-2">
+                              <input type="number" [value]="item.quantity" (change)="updateItemField(item.id, 'quantity', +$any($event.target).value)" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-2 py-2 text-title data-mono font-bold text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                              <span class="text-[10px] uppercase tracking-widest font-bold text-muted hidden sm:inline w-6 text-center">{{item.unit}}</span>
+                          </div>
                         </div>
+                        <button (click)="removeItem(item.id)" class="w-8 h-8 hidden sm:flex items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1" title="Remover do Pedido">
+                           <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
                     </div>
                     
-                     <div class="col-span-12 sm:hidden text-right text-xs text-gray-400">
+                     <div class="col-span-12 sm:hidden text-right text-[10px] uppercase font-bold text-muted tracking-widest">
                         Unidade: {{item.unit}}
                     </div>
                 </div>
               </div>
             }
           </div>
+
           @if(orderForm().status !== 'Recebida') {
-            <div class="relative mt-2">
-              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            <div class="relative mt-6">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                  <span class="material-symbols-outlined text-muted text-[20px]">search</span>
               </div>
-              <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Adicionar ingrediente..." class="w-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg p-2 pl-10 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-              @if(itemSearchTerm()) {
-                  <div class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto shadow-lg">
-                      <ul>
+              <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Buscar ingrediente para adicionar..." class="w-full bg-app border-2 border-dashed border-strong focus:border-brand focus:ring-0 outline-none rounded-xl p-3.5 pl-12 text-title placeholder-muted font-medium transition-all shadow-sm">
+              
+              @if(itemSearchTerm() && filteredIngredients().length > 0) {
+                  <div class="absolute bottom-full left-0 right-0 bg-surface-elevated border border-strong rounded-xl mb-2 z-10 max-h-64 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div class="p-2 text-[10px] font-bold text-muted uppercase tracking-widest sticky top-0 bg-surface-elevated backdrop-blur-sm z-10 border-b border-subtle">
+                          Ingredientes Encontrados
+                      </div>
+                      <ul class="p-1">
                         @for(ing of filteredIngredients(); track ing.id) {
                           <li (mousedown)="!currentItemIds().has(ing.id) ? addItemToOrder(ing) : null" 
-                              class="p-3 text-sm rounded-md"
-                              [class.hover:bg-gray-700]="!currentItemIds().has(ing.id)"
+                              class="p-3 my-0.5 text-sm rounded-lg flex justify-between items-center transition-colors"
+                              [class.hover:bg-brand]="!currentItemIds().has(ing.id)"
+                              [class.hover:text-white]="!currentItemIds().has(ing.id)"
                               [class.cursor-pointer]="!currentItemIds().has(ing.id)"
+                              [class.bg-surface]="!currentItemIds().has(ing.id)"
                               [class.opacity-50]="currentItemIds().has(ing.id)"
-                              [class.text-gray-500]="currentItemIds().has(ing.id)">
-                              {{ing.name}}
+                              [class.text-muted]="currentItemIds().has(ing.id)">
+                              <span class="font-bold">{{ing.name}}</span>
                               @if(currentItemIds().has(ing.id)) {
-                                  <span class="text-xs italic"> (Já adicionado)</span>
+                                  <span class="text-[10px] font-bold uppercase tracking-widest text-muted border border-strong px-2 py-0.5 rounded-md">Na Lista</span>
+                              } @else {
+                                  <span class="text-[10px] font-bold uppercase tracking-widest opacity-80 border border-current px-2 py-0.5 rounded-md">{{ing.unit}}</span>
                               }
                           </li>
                         }
                       </ul>
-                      <div class="border-t border-gray-700 p-2 text-center">
-                        <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:underline">
-                          Não encontrou? Cadastre um novo ingrediente.
+                      <div class="border-t border-subtle p-3 text-center bg-surface">
+                        <button (click)="openAddIngredientModal()" class="text-xs text-brand hover:text-brand-hover font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mx-auto">
+                           <span class="material-symbols-outlined text-[16px]">add</span> Criar novo ingrediente
                         </button>
                       </div>
                   </div>
+                } @else if(itemSearchTerm()) {
+                   <div class="absolute bottom-full left-0 right-0 bg-surface-elevated border border-strong rounded-xl mb-2 z-10 p-6 shadow-2xl text-center">
+                       <p class="text-sm font-medium text-muted mb-3">Nenhum ingrediente "{{itemSearchTerm()}}" encontrado.</p>
+                       <button (click)="openAddIngredientModal()" class="btn-primary text-xs font-bold px-4 py-2 rounded-xl shadow-sm">
+                           Cadastrar "{{itemSearchTerm()}}"
+                       </button>
+                   </div>
                 }
             </div>
           }
         </div>
-         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-          <textarea rows="2" (change)="updateOrderFormField('notes', $any($event.target).value)" [value]="orderForm().notes" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-800 disabled:cursor-not-allowed"></textarea>
+        
+         <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
+          <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 ml-1 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">notes</span> Observações Internas</label>
+          <textarea rows="3" (change)="updateOrderFormField('notes', $any($event.target).value)" [value]="orderForm().notes" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-xl p-4 text-body disabled:opacity-50 disabled:cursor-not-allowed resize-y transition-all" placeholder="Adicione instruções para o fornecedor ou para o recebedor na loja..."></textarea>
         </div>
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
-        <div>
-          <span class="text-lg font-bold text-gray-300">Total do Pedido:</span>
-          <span class="text-lg font-bold text-white ml-2">{{ orderTotal() | currency:'BRL' }}</span>
+      
+      <!-- Footer -->
+      <div class="p-6 bg-surface-elevated flex flex-col md:flex-row justify-between items-center border-t border-subtle gap-4 shrink-0">
+        <div class="flex items-center gap-3 w-full md:w-auto p-4 bg-app rounded-xl border border-strong shadow-sm justify-center md:justify-start">
+          <span class="text-[10px] font-bold text-muted uppercase tracking-widest">Total:</span>
+          <span class="text-2xl font-black text-title data-mono">{{ orderTotal() | currency:'BRL' }}</span>
         </div>
-        <div class="flex gap-3">
-          <button (click)="closeModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+        <div class="flex gap-3 w-full md:w-auto">
+          <button (click)="closeModal()" class="flex-1 md:flex-none px-6 py-3 font-bold rounded-xl text-muted bg-surface hover:text-title hover:bg-surface-elevated uppercase tracking-widest text-xs transition-colors border border-strong">Cancelar</button>
           @if(orderForm().status !== 'Recebida') {
-            <button (click)="saveOrder()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar Pedido</button>
+            <button (click)="saveOrder()" class="flex-1 md:flex-none px-8 py-3 font-bold rounded-xl bg-brand hover:bg-brand-hover text-white transition-colors shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">save</span> Salvar Pedido
+            </button>
           }
         </div>
       </div>
@@ -224,21 +256,35 @@
 
 <!-- Add Ingredient "On-the-fly" Modal -->
 @if (isAddingIngredient()) {
-  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeAddIngredientModal()">
-    <div class="bg-gray-700 rounded-lg w-full max-w-md" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-600"><h4 class="text-lg font-semibold text-white">Novo Ingrediente</h4></div>
-      <div class="p-6 space-y-4">
-          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome do Ingrediente" class="w-full bg-gray-600 rounded-lg p-2 text-white">
-          <div class="grid grid-cols-2 gap-4">
-            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-600 rounded-lg p-2 text-white">
-            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-600 rounded-lg p-2 text-white">
-                @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
-            </select>
+  <div class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeAddIngredientModal()">
+    <div class="chef-surface rounded-3xl w-full max-w-md border-none shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-subtle bg-surface-elevated text-center">
+        <h4 class="title-display text-2xl text-title">Novo Ingrediente</h4>
+        <p class="text-xs text-muted font-bold tracking-widest uppercase mt-2">Cadastro Rápido</p>
+      </div>
+      <div class="p-8 space-y-5 bg-app">
+          <div>
+            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Nome</label>
+            <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="ex: Óleo de Soja" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none font-bold">
+          </div>
+          <div class="grid grid-cols-2 gap-5">
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Custo (R$)</label>
+              <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="0.00" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none data-mono font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Unid. Medida</label>
+              <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none font-bold uppercase tracking-widest appearance-none cursor-pointer">
+                  @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
+              </select>
+            </div>
           </div>
       </div>
-      <div class="p-4 bg-gray-600/50 flex justify-end gap-2">
-        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-500 hover:bg-gray-400">Cancelar</button>
-        <button (click)="saveNewIngredient()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500">Salvar Ingrediente</button>
+      <div class="p-6 bg-surface-elevated border-t border-subtle flex flex-col gap-3">
+        <button (click)="saveNewIngredient()" class="w-full py-4 rounded-xl bg-success hover:bg-success-hover text-white font-bold shadow-md shadow-success/30 flex items-center justify-center gap-2 transition-all active:scale-95 text-xl">
+            <span class="material-symbols-outlined">check_circle</span> Salvar
+        </button>
+        <button (click)="closeAddIngredientModal()" class="w-full py-3 text-xs font-bold rounded-xl text-muted hover:text-title hover:bg-surface uppercase tracking-widest transition-colors">Cancelar</button>
       </div>
     </div>
   </div>

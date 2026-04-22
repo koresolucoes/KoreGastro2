@@ -1,32 +1,32 @@
 
-<div class="p-4 text-white h-full flex flex-col bg-gray-900">
+<div class="p-4 md:p-8 text-body min-h-screen flex flex-col bg-app">
   
   <!-- Header -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
     <div>
-      <h1 class="text-3xl font-bold flex items-center gap-2">
+      <h1 class="title-display text-4xl flex items-center gap-3">
           Mise en Place
-          <span class="text-xs bg-blue-600 px-2 py-0.5 rounded uppercase tracking-wider font-bold">V2</span>
+          <span class="text-xs bg-brand px-2 py-0.5 rounded-full text-white uppercase tracking-wider font-bold">V2</span>
       </h1>
-      <p class="text-gray-400">Planejamento e Execução de Produção</p>
+      <p class="text-muted mt-1 font-medium">Planejamento e Execução de Produção</p>
     </div>
     
     <div class="flex items-center gap-3">
         <!-- Mode Switcher -->
-        <div class="flex bg-gray-800 p-1 rounded-lg">
-            <button (click)="viewMode.set('manager')" *ngIf="isManager()" class="px-4 py-2 rounded-md text-sm font-bold transition-colors" [class.bg-gray-600]="viewMode() === 'manager'" [class.text-white]="viewMode() === 'manager'" [class.text-gray-400]="viewMode() !== 'manager'">
+        <div class="flex chef-glass p-1 rounded-xl">
+            <button (click)="viewMode.set('manager')" *ngIf="isManager()" class="px-5 py-2 rounded-lg text-sm font-bold transition-all" [class.bg-surface]="viewMode() === 'manager'" [class.text-title]="viewMode() === 'manager'" [class.shadow-sm]="viewMode() === 'manager'" [class.text-muted]="viewMode() !== 'manager'">
                 Gestão
             </button>
-            <button (click)="viewMode.set('cook')" class="px-4 py-2 rounded-md text-sm font-bold transition-colors" [class.bg-blue-600]="viewMode() === 'cook'" [class.text-white]="viewMode() === 'cook'" [class.text-gray-400]="viewMode() !== 'cook'">
+            <button (click)="viewMode.set('cook')" class="px-5 py-2 rounded-lg text-sm font-bold transition-all" [class.bg-brand]="viewMode() === 'cook'" [class.text-white]="viewMode() === 'cook'" [class.shadow-md]="viewMode() === 'cook'" [class.text-muted]="viewMode() !== 'cook'">
                 Produção
             </button>
         </div>
 
-        <input type="date" [value]="selectedDate()" (change)="handleDateChange($event)" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white font-semibold focus:ring-2 focus:ring-blue-500 outline-none">
+        <input type="date" [value]="selectedDate()" (change)="handleDateChange($event)" class="chef-surface focus:outline-none focus:ring-2 focus:ring-brand px-4 py-2 font-medium text-title cursor-pointer">
         
         @if (isManager() && viewMode() === 'manager') {
-          <button (click)="openTaskModal()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 shadow-lg">
-              <span class="material-symbols-outlined">add</span>
+          <button (click)="openTaskModal()" class="btn-primary flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
+              <span class="material-symbols-outlined text-lg">add</span>
               <span class="hidden sm:inline">Nova Tarefa</span>
           </button>
         }
@@ -35,54 +35,79 @@
 
   @if (isLoading()) {
     <div class="flex-1 flex items-center justify-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand"></div>
     </div>
   } @else {
 
-    <!-- MANAGER VIEW: Sortable List -->
+    <!-- MANAGER VIEW: Elegant Sortable List -->
     @if (viewMode() === 'manager') {
-        <div class="flex-1 overflow-y-auto pr-2" cdkDropList (cdkDropListDropped)="drop($event)">
+        <div class="flex-1 overflow-y-auto pr-2 pb-20 space-y-4" cdkDropList (cdkDropListDropped)="drop($event)">
             @for(task of tasks(); track task.id) {
-                <div cdkDrag class="bg-gray-800 border-l-4 rounded-lg p-4 mb-3 flex items-center justify-between shadow-sm cursor-move hover:bg-gray-750 transition-colors" [class]="getStatusClass(task.status)">
+                <div cdkDrag class="chef-surface relative p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-move overflow-hidden group" [class]="getStatusClass(task.status)">
                     
-                    <div class="flex items-center gap-4">
-                        <span class="material-symbols-outlined text-gray-500 cursor-grab">drag_indicator</span>
+                    <!-- Left Color Bar (Status) -->
+                    <div class="absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-300" 
+                        [class.bg-yellow-500]="task.status === 'A Fazer'"
+                        [class.bg-info]="task.status === 'Em Preparo'"
+                        [class.bg-success]="task.status === 'Concluído'">
+                    </div>
+                    
+                    <div class="flex items-center gap-5 pl-2">
+                        <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shadow-sm opacity-50 group-hover:opacity-100 transition-opacity">
+                            <span class="material-symbols-outlined text-muted text-sm">drag_indicator</span>
+                        </div>
                         <div>
-                            <h3 class="font-bold text-lg text-white">
-                                {{ task.quantity_to_produce }}x {{ task.recipes?.name || task.custom_task_name }}
-                            </h3>
-                            <div class="flex items-center gap-2 text-sm text-gray-400">
-                                <span class="bg-gray-900 px-2 py-0.5 rounded text-xs">{{ task.stations?.name || 'Geral' }}</span>
-                                @if(task.employee_id) { <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">person</span> {{ task.employees?.name }}</span> }
-                                @if(task.sub_recipe_id) {
-                                  <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-blue-400 hover:text-blue-300 text-xs ml-2 hover:underline">
-                                    Ver Ficha
-                                  </button>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="bg-surface-elevated text-muted text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded">{{ task.stations?.name || 'Geral' }}</span>
+                                @if(task.employee_id) { 
+                                    <span class="flex items-center gap-1 text-muted text-[10px] font-bold uppercase tracking-wider bg-surface-elevated px-2 py-0.5 rounded">
+                                        <span class="material-symbols-outlined text-[10px]">person</span> {{ task.employees?.name }}
+                                    </span> 
                                 }
                             </div>
+                            <h3 class="font-bold text-xl text-title">
+                                <span class="text-brand mr-1">{{ task.quantity_to_produce }}x</span> 
+                                {{ task.recipes?.name || task.custom_task_name }}
+                            </h3>
+                            @if(task.sub_recipe_id) {
+                                <div class="mt-1">
+                                    <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-brand hover:text-brand-hover text-xs font-semibold flex items-center gap-1 transition-colors">
+                                        <span class="material-symbols-outlined text-[14px]">menu_book</span>
+                                        Ver Ficha Técnica
+                                    </button>
+                                </div>
+                            }
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-4">
-                        <div class="text-right mr-4">
-                            <span class="block text-xs font-bold uppercase tracking-wider" [class.text-green-400]="task.status === 'Concluído'" [class.text-blue-400]="task.status === 'Em Preparo'" [class.text-yellow-400]="task.status === 'A Fazer'">{{ task.status }}</span>
+                    <div class="flex items-center gap-6 justify-between md:justify-end border-t border-subtle md:border-t-0 pt-4 md:pt-0">
+                        <div class="text-right">
+                            <span class="inline-block text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-surface-elevated" 
+                                [class.text-success]="task.status === 'Concluído'" 
+                                [class.text-info]="task.status === 'Em Preparo'" 
+                                [class.text-yellow-500]="task.status === 'A Fazer'">
+                                {{ task.status }}
+                            </span>
                             @if(task.completed_at) {
-                                <span class="text-xs text-gray-500">Feito em {{ task.completed_at | date:'HH:mm' }}</span>
+                                <span class="block mt-1 text-xs text-muted font-medium data-mono">Feito às {{ task.completed_at | date:'HH:mm' }}</span>
                             }
                         </div>
-                        <button (click)="openTaskModal(task)" class="p-2 text-blue-400 hover:bg-gray-700 rounded-full"><span class="material-symbols-outlined">edit</span></button>
-                        <button (click)="deleteTask(task.id)" class="p-2 text-red-400 hover:bg-gray-700 rounded-full"><span class="material-symbols-outlined">delete</span></button>
+                        <div class="flex gap-2">
+                            <button (click)="openTaskModal(task)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-brand transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
+                            <button (click)="deleteTask(task.id)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-danger transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
+                        </div>
                     </div>
 
                     <!-- Drag Preview -->
-                    <div *cdkDragPreview class="bg-gray-700 p-4 rounded-lg shadow-2xl opacity-90 border border-blue-500 text-white">
-                        {{ task.recipes?.name || task.custom_task_name }}
+                    <div *cdkDragPreview class="chef-surface p-4 shadow-2xl border-2 border-brand flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center"><span class="material-symbols-outlined">drag_indicator</span></div>
+                        <span class="font-bold text-title">{{ task.recipes?.name || task.custom_task_name }}</span>
                     </div>
                 </div>
             } @empty {
-                <div class="text-center py-20 text-gray-500">
-                    <span class="material-symbols-outlined text-6xl mb-4">playlist_add</span>
-                    <p>Nenhuma tarefa planejada para hoje.</p>
+                <div class="text-center py-20 text-muted bg-surface-elevated rounded-2xl border border-dashed border-strong">
+                    <span class="material-symbols-outlined text-5xl mb-3 opacity-50">playlist_add</span>
+                    <p class="font-medium text-lg">Nenhuma tarefa planejada para hoje.</p>
                 </div>
             }
         </div>
@@ -92,48 +117,53 @@
     @if (viewMode() === 'cook') {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
             @for(task of cookTasks(); track task.id) {
-                <div (click)="enterFocusMode(task)" class="bg-gray-800 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-700 hover:border-blue-500 cursor-pointer transition-all hover:scale-[1.02] group flex flex-col h-64 relative">
-                    <!-- Status Strip -->
-                    <div class="h-2 w-full" [class]="getStatusClass(task.status)"></div>
+                <div (click)="enterFocusMode(task)" class="chef-surface cursor-pointer group flex flex-col h-64 relative overflow-hidden">
                     
-                    <div class="p-6 flex-1 flex flex-col justify-between relative z-10">
+                    <!-- Top Status Strip -->
+                    <div class="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
+                        [class.bg-yellow-500]="task.status === 'A Fazer'"
+                        [class.bg-info]="task.status === 'Em Preparo'">
+                    </div>
+                    
+                    <div class="p-6 flex-1 flex flex-col justify-between relative z-10 mt-1">
                          <div>
-                             <div class="flex justify-between items-start mb-2">
-                                 <span class="bg-gray-900 text-gray-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">{{ task.stations?.name }}</span>
+                             <div class="flex justify-between items-start mb-3">
+                                 <span class="bg-surface-elevated text-muted text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded">{{ task.stations?.name }}</span>
                                  @if(task.status === 'Em Preparo') {
                                      <span class="flex h-3 w-3 relative">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-info opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-info"></span>
                                       </span>
                                  }
                              </div>
-                             <h3 class="text-2xl font-black text-white leading-tight line-clamp-3">
+                             <h3 class="text-2xl font-bold text-title leading-tight line-clamp-3 font-sans tracking-tight">
                                  {{ task.recipes?.name || task.custom_task_name }}
                              </h3>
                          </div>
                          
-                         <div class="flex items-end justify-between">
-                             <div class="text-gray-400 text-sm">
-                                 Meta:
+                         <div class="flex items-end justify-between border-t border-subtle pt-4 mt-4">
+                             <div class="text-muted text-sm font-semibold uppercase tracking-wider">
+                                 Meta
                              </div>
-                             <div class="text-4xl font-bold text-white">
-                                 {{ task.quantity_to_produce }} <span class="text-lg text-gray-500 font-medium">{{ task.recipes?.unit || 'un' }}</span>
+                             <div class="text-4xl font-black text-brand data-mono">
+                                 {{ task.quantity_to_produce }} <span class="text-lg text-muted font-bold">{{ task.recipes?.unit || 'un' }}</span>
                              </div>
                          </div>
                     </div>
 
-                    <!-- Action Prompt -->
-                    <div class="absolute inset-0 bg-blue-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                        <span class="text-white font-bold text-lg flex items-center gap-2">
-                            <span class="material-symbols-outlined text-3xl">play_circle</span>
-                            ABRIR TAREFA
-                        </span>
+                    <!-- Action Prompt Overlay -->
+                    <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <button class="btn-primary rounded-full px-6 py-3 font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform shadow-xl">
+                            <span class="material-symbols-outlined">play_circle</span>
+                            Iniciar Tarefa
+                        </button>
                     </div>
                 </div>
             } @empty {
-                 <div class="col-span-full text-center py-20 text-gray-500">
-                    <span class="material-symbols-outlined text-6xl mb-4">check_circle</span>
-                    <p class="text-xl">Tudo pronto por aqui!</p>
+                 <div class="col-span-full text-center py-24 text-muted bg-surface-elevated rounded-3xl border border-dashed border-strong">
+                    <span class="material-symbols-outlined text-6xl mb-4 text-success opacity-80">check_circle</span>
+                    <p class="text-2xl font-bold text-title font-sans">Tudo pronto por aqui!</p>
+                    <p class="mt-2 font-medium">Não há tarefas pendentes para você no momento.</p>
                 </div>
             }
         </div>
@@ -143,57 +173,59 @@
 
 <!-- Task Form Modal -->
 @if(isModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">{{ editingTask() ? 'Editar Tarefa' : 'Nova Tarefa' }}</h3>
-        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" (click)="closeModal()">
+    <div class="chef-surface w-full max-w-xl animate-in fade-in zoom-in duration-200" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50 rounded-t-2xl">
+        <h3 class="title-display text-2xl">{{ editingTask() ? 'Editar Tarefa' : 'Nova Tarefa' }}</h3>
+        <button (click)="closeModal()" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-title transition-colors">
+            <span class="material-symbols-outlined">close</span>
+        </button>
       </div>
-      <div class="p-6 space-y-4">
-        <!-- Task Type -->
-        <div class="flex gap-1 bg-gray-700 p-1 rounded-lg">
-            <button (click)="updateTaskFormField('task_type', 'recipe')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="taskForm().task_type === 'recipe'">Sub-receita</button>
-            <button (click)="updateTaskFormField('task_type', 'custom')" class="flex-1 px-3 py-1.5 text-sm rounded-md" [class.bg-blue-600]="taskForm().task_type === 'custom'">Personalizada</button>
+      <div class="p-6 space-y-6">
+        <!-- Task Type Toggle -->
+        <div class="flex p-1 bg-surface-elevated rounded-xl border border-subtle">
+            <button (click)="updateTaskFormField('task_type', 'recipe')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all" [class.bg-surface]="taskForm().task_type === 'recipe'" [class.text-title]="taskForm().task_type === 'recipe'" [class.shadow-sm]="taskForm().task_type === 'recipe'" [class.text-muted]="taskForm().task_type !== 'recipe'">Sub-receita</button>
+            <button (click)="updateTaskFormField('task_type', 'custom')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all" [class.bg-surface]="taskForm().task_type === 'custom'" [class.text-title]="taskForm().task_type === 'custom'" [class.shadow-sm]="taskForm().task_type === 'custom'" [class.text-muted]="taskForm().task_type !== 'custom'">Personalizada</button>
         </div>
         
         @if (taskForm().task_type === 'recipe') {
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Sub-receita</label>
-                <select [value]="taskForm().sub_recipe_id" (change)="updateTaskFormField('sub_recipe_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                    <option [value]="null">Selecione...</option>
+                <label class="block text-sm font-bold text-muted uppercase tracking-wider mb-2">Selecione a Sub-receita</label>
+                <select [value]="taskForm().sub_recipe_id" (change)="updateTaskFormField('sub_recipe_id', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-body font-medium focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all">
+                    <option [value]="null">Escolha na lista...</option>
                     @for (recipe of subRecipes(); track recipe.id) { <option [value]="recipe.id">{{ recipe.name }}</option> }
                 </select>
             </div>
         } @else {
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Nome da Tarefa</label>
-                <input type="text" [value]="taskForm().custom_task_name" (input)="updateTaskFormField('custom_task_name', $any($event.target).value)" placeholder="Ex: Limpar câmara fria" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                <label class="block text-sm font-bold text-muted uppercase tracking-wider mb-2">Nome da Tarefa</label>
+                <input type="text" [value]="taskForm().custom_task_name" (input)="updateTaskFormField('custom_task_name', $any($event.target).value)" placeholder="Ex: Higienizar legumes" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-body font-medium focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all">
             </div>
         }
         
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-6">
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade</label>
-                <input type="number" [value]="taskForm().quantity_to_produce" (input)="updateTaskFormField('quantity_to_produce', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                <label class="block text-sm font-bold text-muted uppercase tracking-wider mb-2">Quantidade</label>
+                <input type="number" [value]="taskForm().quantity_to_produce" (input)="updateTaskFormField('quantity_to_produce', +$any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-body font-medium focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all data-mono text-lg">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Estação</label>
-                <select [value]="taskForm().station_id" (change)="updateTaskFormField('station_id', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                <label class="block text-sm font-bold text-muted uppercase tracking-wider mb-2">Praça / Estação</label>
+                <select [value]="taskForm().station_id" (change)="updateTaskFormField('station_id', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-body font-medium focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all">
                     @for (s of stations(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
                 </select>
             </div>
         </div>
          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Atribuir a</label>
-            <select [value]="taskForm().employee_id" (change)="updateTaskFormField('employee_id', $any($event.target).value || null)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                <option [value]="null">Não atribuído</option>
+            <label class="block text-sm font-bold text-muted uppercase tracking-wider mb-2">Atribuir a</label>
+            <select [value]="taskForm().employee_id" (change)="updateTaskFormField('employee_id', $any($event.target).value || null)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-body font-medium focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all">
+                <option [value]="null">Não atribuído (Qualquer um da praça)</option>
                 @for (e of employees(); track e.id) { <option [value]="e.id">{{ e.name }}</option> }
             </select>
         </div>
       </div>
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Cancelar</button>
-         <button (click)="saveTask()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white">Salvar Tarefa</button>
+      <div class="p-6 border-t border-subtle bg-surface/50 rounded-b-2xl flex justify-end gap-3 mt-4">
+         <button (click)="closeModal()" class="px-6 py-2.5 font-bold rounded-xl text-muted hover:bg-surface-elevated transition-colors border border-transparent">Cancelar</button>
+         <button (click)="saveTask()" class="btn-primary px-8 py-2.5 font-bold rounded-xl shadow-lg shadow-brand/20">Salvar Tarefa</button>
       </div>
     </div>
   </div>

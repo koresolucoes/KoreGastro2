@@ -11,7 +11,7 @@ export interface Tutorial {
   id: string;
   title: string;
   description: string;
-  icon: string; // Heroicon path
+  icon: string; // Material symbol name
   steps: TutorialStep[];
 }
 
@@ -24,7 +24,7 @@ export class TutorialService {
       id: 'multi-loja-configuracao',
       title: 'Multi-Loja e Início Rápido',
       description: 'Aprenda a gerenciar múltiplas unidades, alternar entre lojas e convidar sua equipe de gestão.',
-      icon: 'M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72l1.189-1.19A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z',
+      icon: 'storefront',
       steps: [
         {
           title: '1. Alternando entre Lojas',
@@ -47,7 +47,7 @@ export class TutorialService {
       id: 'operacao-venda-hibrida',
       title: 'PDV: Mesas e Comandas',
       description: 'Domine a operação híbrida: controle mesas no mapa e gerencie comandas individuais simultaneamente.',
-      icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z',
+      icon: 'point_of_sale',
       steps: [
         {
           title: '1. Alternando Visualizações',
@@ -75,7 +75,7 @@ export class TutorialService {
       id: 'painel-admin',
       title: 'Painel de Administração',
       description: 'Aprenda a gerenciar assinaturas, visualizar métricas globais e controlar o acesso ao sistema.',
-      icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+      icon: 'admin_panel_settings',
       steps: [
         {
           title: '1. Acesso ao Painel',
@@ -98,7 +98,7 @@ export class TutorialService {
       id: 'delivery-ifood-integrado',
       title: 'Delivery e Integração iFood',
       description: 'Centralize sua operação de delivery. Receba pedidos do iFood com sincronização automática de cardápio e gerencie entregadores.',
-      icon: 'M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25v2.25c0 .621.504 1.125 1.125 1.125m17.25-3.375h-7.5c-.621 0-1.125.504-1.125 1.125',
+      icon: 'delivery_dining',
       steps: [
         {
           title: '1. Sincronização Automática de Cardápio',
@@ -126,7 +126,7 @@ export class TutorialService {
       id: 'estoque-requisicoes',
       title: 'Estoque 2.0: Requisições e Praça',
       description: 'Controle avançado de estoque separando o Almoxarifado Central do Estoque da Cozinha (Praça).',
-      icon: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z',
+      icon: 'inventory_2',
       steps: [
         {
           title: '1. O Conceito de Requisição',
@@ -149,7 +149,7 @@ export class TutorialService {
       id: 'porcionamento-transformacao',
       title: 'Processamento e Porcionamento',
       description: 'Transforme peças inteiras em porções (ex: Peça de Filé -> Medalhões) controlando rendimento e custos.',
-      icon: 'M14.25 9.75v-4.5m0 4.5h4.5m-4.5 0l6-6m-3 18c-8.284 0-15-6.716-15-15V4.5A2.25 2.25 0 014.5 2.25h1.372c.516 0 .966.351 1.091.852l1.106 4.423c.11.44-.054.902-.417 1.173l-1.293.97a1.062 1.062 0 00-.38 1.21 12.035 12.035 0 017.143 7.143c.29.416.162.966-.173 1.347l-.852 1.09a2.25 2.25 0 01-1.293.417H5.25a2.25 2.25 0 01-2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293a1.062 1.062 0 00-.38 1.21 12.035 12.035 0 017.143 7.143c.29.416.162.966-.173 1.347l-.852 1.09a2.25 2.25 0 01-1.293.417H5.25a2.25 2.25 0 01-2.25-2.25v-1.372z',
+      icon: 'content_cut',
       steps: [
         {
           title: '1. Iniciar Porcionamento',
@@ -172,7 +172,7 @@ export class TutorialService {
       id: 'seguranca-alimentar-etiquetas',
       title: 'Etiquetagem e Validade (ANVISA)',
       description: 'Gere etiquetas de validade para produtos abertos ou manipulados e garanta a conformidade sanitária.',
-      icon: 'M9.568 3.076A1.5 1.5 0 0110.5 2.25h3a1.5 1.5 0 011.432.826l.866 1.5a1.5 1.5 0 01-.284 1.776l-1.38 1.38A1.5 1.5 0 0113.5 8.25h-3a1.5 1.5 0 01-1.06-.44l-1.38-1.38a1.5 1.5 0 01-.285-1.776l.866-1.5zM9 12.75a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75zM9 16.5a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75zM21 12a9 9 0 11-18 0 9 9 0 0 1 18 0z',
+      icon: 'label',
       steps: [
         {
           title: '1. Configuração do Item',
@@ -195,7 +195,7 @@ export class TutorialService {
       id: 'rh-completo',
       title: 'RH: Escalas, Ponto e Pagamento',
       description: 'Gerencie sua equipe, controle horas trabalhadas e gere previsões de folha de pagamento.',
-      icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+      icon: 'groups',
       steps: [
         {
           title: '1. Controle de Ponto',
@@ -218,7 +218,7 @@ export class TutorialService {
       id: 'gestao-financeira',
       title: 'Financeiro e Relatórios',
       description: 'Analise o DRE, CMV teórico vs. real e o desempenho de vendas detalhado.',
-      icon: 'M12 6v12m-3-2.818l.879.659c1.171.66 2.605.66 3.784 0l.879-.659m-2.25-1.028a9 9 0 00-3.6 0m3.6 0a9 9 0 003.6 0M3.124 6.097A16.855 16.855 0 0012 5.25c4.75 0 9.178.883 12.876 2.454a1 1 0 01.378 1.258l-1.826 3.844a1 1 0 01-1.43.376c-3.179-1.52-6.577-2.306-9.998-2.306-3.42 0-6.819.786-9.998 2.306a1 1 0 01-1.43-.376L.748 7.355a1 1 0 01.376-1.258z',
+      icon: 'query_stats',
       steps: [
         {
           title: '1. Relatório de Resumo',
@@ -241,7 +241,7 @@ export class TutorialService {
       id: 'nfce-fidelidade',
       title: 'NFC-e e Fidelidade',
       description: 'Como configurar a emissão fiscal e criar programas de recompensa para clientes.',
-      icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z',
+      icon: 'receipt_long',
       steps: [
         {
           title: '1. Configuração Fiscal (FocusNFe)',

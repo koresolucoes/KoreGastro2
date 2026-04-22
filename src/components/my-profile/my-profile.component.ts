@@ -153,10 +153,10 @@ export class MyProfileComponent implements OnInit {
 
   getLeaveStatusClass(status: string): string {
     switch (status) {
-      case 'Pendente': return 'bg-yellow-500/20 text-yellow-300';
-      case 'Aprovada': return 'bg-green-500/20 text-green-300';
-      case 'Rejeitada': return 'bg-red-500/20 text-red-300';
-      default: return 'bg-gray-500/20 text-gray-300';
+      case 'Pendente': return 'bg-warning/10 border-warning/30 text-warning';
+      case 'Aprovada': return 'bg-success/10 border-success/30 text-success';
+      case 'Rejeitada': return 'bg-danger/10 border-danger/30 text-danger';
+      default: return 'bg-surface border-strong text-muted';
     }
   }
 }

@@ -1,38 +1,45 @@
 
-<div class="fixed inset-0 bg-gray-900 z-[100] flex flex-col">
-    <!-- Header -->
-    <div class="h-16 flex items-center justify-between px-4 bg-gray-800 border-b border-gray-700 shadow-md z-10">
-        <button (click)="cancel()" class="p-2 rounded-full text-gray-400 hover:bg-gray-700">
-            <span class="material-symbols-outlined text-3xl">close</span>
+<div class="fixed inset-0 bg-app z-[100] flex flex-col pt-safe animate-in slide-in-from-bottom duration-300">
+    <!-- Top Nav -->
+    <div class="h-16 flex items-center justify-between px-6 chef-glass shadow-sm z-20 shrink-0">
+        <button (click)="cancel()" class="w-10 h-10 rounded-full flex items-center justify-center text-muted hover:bg-surface-elevated hover:text-title transition-all">
+            <span class="material-symbols-outlined text-2xl">close</span>
         </button>
-        <h1 class="text-xl font-bold text-white truncate max-w-[200px]">{{ taskName() }}</h1>
+        <h1 class="text-lg font-bold text-title truncate max-w-[250px] font-sans tracking-tight">{{ taskName() }}</h1>
         <div class="w-10"></div> <!-- Spacer -->
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-y-auto">
         
         <!-- STEP 1: PREVIEW -->
         @if(step() === 'preview') {
-            <div class="flex flex-col items-center animate-fade-in text-center max-w-md w-full">
-                @if(imageUrl()) {
-                    <img [src]="imageUrl()" class="w-48 h-48 rounded-full object-cover border-4 border-gray-700 shadow-2xl mb-8">
-                } @else {
-                    <div class="w-48 h-48 rounded-full bg-gray-800 flex items-center justify-center border-4 border-gray-700 shadow-2xl mb-8">
-                        <span class="material-symbols-outlined text-6xl text-gray-600">skillet</span>
-                    </div>
-                }
+            <div class="flex flex-col items-center animate-in fade-in zoom-in duration-300 text-center max-w-md w-full my-auto">
+                <div class="relative group cursor-default mb-10">
+                    <div class="absolute inset-0 bg-brand/20 blur-3xl rounded-full scale-110 group-hover:bg-brand/30 transition-colors duration-500"></div>
+                    @if(imageUrl()) {
+                        <img [src]="imageUrl()" class="w-56 h-56 rounded-full object-cover border-8 border-surface-elevated shadow-2xl relative z-10 hover:scale-105 transition-transform duration-500">
+                    } @else {
+                        <div class="w-56 h-56 rounded-full bg-surface-elevated border-8 border-surface shadow-2xl relative z-10 flex items-center justify-center overflow-hidden hover:scale-105 transition-transform duration-500">
+                             <div class="absolute inset-0 bg-gradient-to-tr from-brand/10 to-transparent"></div>
+                            <span class="material-symbols-outlined text-7xl text-brand opacity-60">skillet</span>
+                        </div>
+                    }
+                </div>
 
-                <h2 class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meta de Produção</h2>
-                <div class="text-6xl font-black text-white mb-2">{{ targetQuantity() }} <span class="text-2xl text-gray-500 font-medium">{{ unit() }}</span></div>
+                <div class="mb-10">
+                    <h2 class="text-muted text-xs font-bold uppercase tracking-widest mb-3">Meta de Produção</h2>
+                    <div class="text-7xl font-black text-title data-mono">{{ targetQuantity() }} <span class="text-3xl text-muted font-bold">{{ unit() }}</span></div>
+                </div>
                 
                 @if(task().sub_recipe_id) {
-                    <div class="bg-gray-800 px-4 py-2 rounded-lg text-blue-400 font-medium mb-8">
-                        Ver Receita & Ingredientes
+                    <div class="chef-surface px-6 py-3 rounded-xl text-brand hover:text-brand-hover hover:bg-surface-elevated font-semibold mb-10 flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm border border-subtle">
+                        <span class="material-symbols-outlined">menu_book</span>
+                        Consultar Ficha Técnica
                     </div>
                 }
 
-                <button (click)="startProduction()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-2xl shadow-lg shadow-blue-900/50 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                <button (click)="startProduction()" class="w-full btn-primary hover:bg-brand-hover text-white font-bold py-5 rounded-2xl shadow-xl shadow-brand/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
                     <span class="material-symbols-outlined text-3xl">play_circle</span>
                     INICIAR PREPARO
                 </button>
@@ -41,83 +48,101 @@
 
         <!-- STEP 2: WORKING (TIMER) -->
         @if(step() === 'working') {
-            <div class="flex flex-col items-center animate-fade-in w-full max-w-md">
-                <div class="relative mb-12">
-                    <div class="w-64 h-64 rounded-full border-8 border-gray-700 flex items-center justify-center bg-gray-800 shadow-[0_0_50px_rgba(37,99,235,0.2)]">
-                        <div class="text-center">
-                            <div class="text-gray-400 text-xs uppercase mb-1">Tempo Decorrido</div>
-                            <div class="text-5xl font-mono font-bold text-white tracking-wider">{{ formatTime(elapsedTime()) }}</div>
+            <div class="flex flex-col items-center animate-in fade-in duration-300 w-full max-w-md my-auto">
+                <div class="relative mb-16">
+                    <div class="w-72 h-72 rounded-full border-[12px] border-surface-elevated flex items-center justify-center bg-surface shadow-[0_0_80px_rgba(234,88,12,0.15)] relative z-10">
+                         <div class="absolute inset-0 rounded-full border-4 border-brand opacity-50 animate-[spin_4s_linear_infinite] border-t-transparent border-l-transparent"></div>
+                        <div class="text-center relative z-20">
+                            <div class="text-muted text-xs font-bold uppercase tracking-widest mb-2">Tempo Decorrido</div>
+                            <div class="text-6xl font-mono font-black text-brand tracking-tight drop-shadow-sm">{{ formatTime(elapsedTime()) }}</div>
                         </div>
                     </div>
-                    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-green-900/80 text-green-300 px-4 py-1 rounded-full text-xs font-bold border border-green-700 backdrop-blur-md animate-pulse">
+                    <div class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-info/10 text-info px-6 py-2 rounded-full text-xs font-black uppercase tracking-wider border border-info/30 backdrop-blur-md animate-pulse z-20 flex items-center gap-2 shadow-lg">
+                        <span class="w-2 h-2 rounded-full bg-info"></span>
                         EM ANDAMENTO
                     </div>
                 </div>
 
-                <div class="w-full bg-gray-800 rounded-xl p-4 mb-8 border-l-4 border-blue-500">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <p class="text-gray-400 text-xs uppercase">Produzindo</p>
-                            <p class="text-white font-bold text-lg">{{ taskName() }}</p>
+                <div class="w-full chef-surface rounded-2xl p-6 mb-10 border-l-[6px] border-l-brand relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-brand/5 to-transparent pointer-events-none"></div>
+                    <div class="flex justify-between items-end relative z-10">
+                        <div class="pr-4">
+                            <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-1.5">Produzindo agora</p>
+                            <p class="text-title font-bold text-xl leading-tight">{{ taskName() }}</p>
                         </div>
-                        <p class="text-blue-400 font-bold text-2xl">{{ targetQuantity() }} {{ unit() }}</p>
+                        <div class="text-brand font-black text-3xl data-mono shrink-0 whitespace-nowrap">
+                            {{ targetQuantity() }} <span class="text-lg text-brand/70">{{ unit() }}</span>
+                        </div>
                     </div>
                 </div>
 
-                <button (click)="finishProduction()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-6 rounded-2xl shadow-lg shadow-green-900/50 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                <button (click)="finishProduction()" class="w-full bg-success text-white hover:opacity-90 font-bold py-5 rounded-2xl shadow-xl shadow-success/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
                     <span class="material-symbols-outlined text-3xl">check_circle</span>
-                    FINALIZAR
+                    FINALIZAR PREPARO
                 </button>
             </div>
         }
 
         <!-- STEP 3: FINALIZE -->
         @if(step() === 'finalize') {
-            <div class="w-full max-w-lg flex flex-col h-full">
-                <h2 class="text-2xl font-bold text-white mb-6 text-center">Confirmar Produção</h2>
+            <!-- The finalization now uses a smaller custom layout here, similar to completion-modal but built-in -->
+            <div class="w-full max-w-md flex flex-col h-full animate-in fade-in slide-in-from-bottom-8 duration-300 pb-8">
+                <h2 class="title-display text-3xl text-title mb-8 text-center pt-4">Confirmar Produção</h2>
                 
-                <div class="flex-1 overflow-y-auto space-y-6 px-2">
+                <div class="flex-1 space-y-8 px-2 flex flex-col justify-center">
                     <!-- Quantity Input -->
-                    <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700">
-                        <label class="block text-gray-400 text-xs uppercase font-bold mb-3 text-center">Quantidade Obtida</label>
-                        <div class="flex items-center justify-center gap-4">
-                            <button (click)="producedQuantity.set(producedQuantity() - 1)" class="w-12 h-12 rounded-full bg-gray-700 text-white text-2xl font-bold hover:bg-gray-600">-</button>
+                    <div class="chef-surface p-8 rounded-3xl border border-strong relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-brand"></div>
+                        <label class="block text-muted text-xs uppercase tracking-widest font-bold mb-6 text-center">Quantidade Obtida</label>
+                        <div class="flex items-center justify-center gap-6">
+                            <button (click)="producedQuantity.set(producedQuantity() - 1)" class="w-14 h-14 rounded-full bg-surface-elevated border border-strong text-title text-3xl font-light hover:bg-subtle transition-all active:scale-90 flex items-center justify-center shadow-sm">-</button>
                             <div class="flex flex-col items-center">
-                                <input type="number" [ngModel]="producedQuantity()" (ngModelChange)="producedQuantity.set(+$event)" class="bg-transparent text-5xl font-bold text-white w-32 text-center outline-none border-b-2 border-blue-500 focus:border-blue-400 transition-colors">
-                                <span class="text-gray-500 font-medium mt-1">{{ unit() }}</span>
+                                <input type="number" [ngModel]="producedQuantity()" (ngModelChange)="producedQuantity.set(+$event)" class="bg-transparent text-6xl font-black text-brand w-36 text-center outline-none border-b-2 border-brand focus:border-brand-hover transition-colors data-mono appearance-none m-0">
+                                <span class="text-muted font-bold mt-2 uppercase tracking-widest text-sm">{{ unit() }}</span>
                             </div>
-                            <button (click)="producedQuantity.set(producedQuantity() + 1)" class="w-12 h-12 rounded-full bg-gray-700 text-white text-2xl font-bold hover:bg-gray-600">+</button>
+                            <button (click)="producedQuantity.set(producedQuantity() + 1)" class="w-14 h-14 rounded-full bg-surface-elevated border border-strong text-title text-3xl font-light hover:bg-subtle transition-all active:scale-90 flex items-center justify-center shadow-sm">+</button>
                         </div>
                     </div>
 
-                    <!-- Details -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-400 text-xs mb-1 ml-1">Validade</label>
-                            <input type="date" [ngModel]="expirationDate()" (ngModelChange)="expirationDate.set($event)" class="w-full bg-gray-800 border-none rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500">
+                    <!-- Details Details Container -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="chef-surface p-3 rounded-xl">
+                                <label class="block text-muted text-[10px] font-bold uppercase tracking-wider mb-1">Validade</label>
+                                <input type="date" [ngModel]="expirationDate()" (ngModelChange)="expirationDate.set($event)" class="w-full bg-transparent border-none p-1 text-title font-bold focus:ring-0 outline-none cursor-pointer">
+                            </div>
+                            <div class="chef-surface p-3 rounded-xl">
+                                 <label class="block text-muted text-[10px] font-bold uppercase tracking-wider mb-1">Lote</label>
+                                 <input type="text" [ngModel]="lotNumber()" (ngModelChange)="lotNumber.set($event)" class="w-full bg-transparent border-none p-1 text-title font-bold focus:ring-0 outline-none data-mono placeholder-muted/50" placeholder="Gerar auto">
+                            </div>
                         </div>
-                        <div>
-                             <label class="block text-gray-400 text-xs mb-1 ml-1">Lote</label>
-                             <input type="text" [ngModel]="lotNumber()" (ngModelChange)="lotNumber.set($event)" class="w-full bg-gray-800 border-none rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500">
+                        
+                        <div class="chef-surface p-3 rounded-xl">
+                            <label class="block text-muted text-[10px] font-bold uppercase tracking-wider mb-1">Observações</label>
+                            <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="1" class="w-full bg-transparent border-none p-1 text-body focus:ring-0 outline-none resize-none placeholder-muted/50" placeholder="Sem ocorrências..."></textarea>
                         </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-400 text-xs mb-1 ml-1">Observações</label>
-                        <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="2" class="w-full bg-gray-800 border-none rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500" placeholder="Ocorrências..."></textarea>
                     </div>
 
-                    <div class="flex items-center justify-between bg-gray-800 p-4 rounded-xl cursor-pointer" (click)="printLabel.set(!printLabel())">
-                        <span class="text-white font-medium">Imprimir Etiqueta</span>
-                        <div class="w-12 h-6 rounded-full relative transition-colors" [class.bg-blue-600]="printLabel()" [class.bg-gray-600]="!printLabel()">
-                            <div class="absolute top-1 w-4 h-4 bg-white rounded-full transition-all" [class.left-1]="!printLabel()" [class.left-7]="printLabel()"></div>
+                    <div class="flex items-center justify-between chef-surface p-5 rounded-2xl cursor-pointer hover:border-brand transition-colors group border border-subtle" (click)="printLabel.set(!printLabel())">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-surface-elevated flex items-center justify-center text-muted group-hover:text-brand transition-colors">
+                                <span class="material-symbols-outlined">print</span>
+                            </div>
+                            <span class="text-title font-bold">Imprimir Etiqueta</span>
+                        </div>
+                        <div class="w-14 h-7 rounded-full relative transition-colors shadow-inner" [class.bg-brand]="printLabel()" [class.bg-surface-elevated]="!printLabel()">
+                            <div class="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300" [class.left-1]="!printLabel()" [class.left-8]="printLabel()"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6 pt-4 border-t border-gray-800">
-                    <button (click)="confirmCompletion()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-5 rounded-2xl shadow-lg shadow-green-900/50 text-xl active:scale-95 transition-all">
-                        CONFIRMAR
+                <div class="mt-10 pt-6 border-t border-subtle">
+                    <button (click)="confirmCompletion()" class="w-full bg-success text-white hover:opacity-90 font-bold py-5 rounded-2xl shadow-xl shadow-success/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-3xl">check_circle</span>
+                        CONFIRMAR PRODUÇÃO
+                    </button>
+                    <button (click)="step.set('preview')" class="w-full mt-4 text-muted hover:text-title font-bold py-3 text-sm uppercase tracking-widest transition-colors">
+                        Voltar
                     </button>
                 </div>
             </div>

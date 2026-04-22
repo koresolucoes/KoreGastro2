@@ -1,46 +1,49 @@
 @if (request(); as req) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="close.emit()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-700" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="close.emit()">
+    <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <!-- Header -->
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <div>
-            <h3 class="text-xl font-bold text-white">Detalhes da Solicitação</h3>
-            <p class="text-gray-400 text-sm">Funcionário: {{ req.employees?.name }}</p>
+            <h3 class="text-2xl font-bold text-title title-display">Detalhes da Solicitação</h3>
+            <p class="text-sm font-bold uppercase tracking-widest text-muted mt-1">{{ req.employees?.name }}</p>
         </div>
-        <button (click)="close.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button (click)="close.emit()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       
       <!-- Body -->
-      <div class="flex-1 p-6 overflow-y-auto space-y-6">
+      <div class="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-8 bg-app">
         <!-- Request Details -->
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <div class="flex flex-col"><dt class="text-gray-400">Tipo de Ausência</dt><dd class="text-white font-semibold text-base">{{ req.request_type }}</dd></div>
-            <div class="flex flex-col"><dt class="text-gray-400">Status</dt><dd class="text-white font-semibold text-base">{{ req.status }}</dd></div>
-            <div class="flex flex-col"><dt class="text-gray-400">Período</dt><dd class="text-white font-medium">{{ formatDateRange(req.start_date, req.end_date) }}</dd></div>
-            <div class="flex flex-col"><dt class="text-gray-400">Data da Solicitação</dt><dd class="text-white font-medium">{{ req.created_at | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+            <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong shadow-sm"><dt class="text-[10px] uppercase tracking-widest font-bold text-muted mb-1">Tipo de Ausência</dt><dd class="text-brand font-black text-lg">{{ req.request_type }}</dd></div>
+            <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong shadow-sm"><dt class="text-[10px] uppercase tracking-widest font-bold text-muted mb-1">Status</dt><dd class="text-title font-black text-lg">{{ req.status }}</dd></div>
+            <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong shadow-sm"><dt class="text-[10px] uppercase tracking-widest font-bold text-muted mb-1">Período</dt><dd class="text-title font-bold text-sm data-mono mt-0.5">{{ formatDateRange(req.start_date, req.end_date) }}</dd></div>
+            <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong shadow-sm"><dt class="text-[10px] uppercase tracking-widest font-bold text-muted mb-1">Data da Solicitação</dt><dd class="text-title font-bold text-sm data-mono mt-0.5">{{ req.created_at | date:'dd/MM/yyyy HH:mm' }}</dd></div>
         </dl>
         
         @if(req.reason) {
             <div>
-                <h4 class="text-md font-semibold text-white mb-2">Justificativa do Funcionário</h4>
-                <p class="text-gray-300 bg-gray-700/50 p-3 rounded-lg italic">"{{ req.reason }}"</p>
+                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">chat</span> Justificativa do Funcionário</h4>
+                <p class="text-body bg-surface border border-strong p-4 rounded-xl italic shadow-sm relative overflow-hidden">
+                    <span class="absolute left-0 top-0 bottom-0 w-1 bg-brand/50"></span>
+                    "{{ req.reason }}"
+                </p>
             </div>
         }
 
         <!-- Attachment -->
         @if(req.attachment_url) {
             <div>
-                <h4 class="text-md font-semibold text-white mb-2">Anexo</h4>
-                <div class="bg-gray-700/50 p-4 rounded-lg">
+                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">attachment</span> Anexo</h4>
+                <div class="bg-surface border border-strong p-4 rounded-xl shadow-sm">
                     @if(isImage()) {
-                        <img [src]="req.attachment_url" alt="Anexo da solicitação" class="max-h-80 w-auto rounded-md mx-auto">
+                        <img [src]="req.attachment_url" alt="Anexo da solicitação" class="max-h-80 w-auto rounded-lg mx-auto shadow-md border border-subtle">
                     } @else {
-                        <div class="flex items-center justify-center gap-4">
-                            <span class="material-symbols-outlined text-4xl text-gray-400">description</span>
-                            <a [href]="req.attachment_url" target="_blank" rel="noopener noreferrer" class="text-lg font-semibold text-blue-400 hover:underline">
-                                Baixar Anexo
+                        <div class="flex items-center justify-center gap-4 py-8">
+                            <span class="material-symbols-outlined text-5xl text-muted">description</span>
+                            <a [href]="req.attachment_url" target="_blank" rel="noopener noreferrer" class="btn-primary px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 shadow-sm active:scale-95 transition-all">
+                                <span class="material-symbols-outlined text-[18px]">download</span> Baixar Anexo
                             </a>
                         </div>
                     }
@@ -51,32 +54,34 @@
         <!-- Manager Section -->
         @if(req.status === 'Pendente') {
             <div>
-                <h4 class="text-md font-semibold text-white mb-2">Ação do Gestor</h4>
+                <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">edit_note</span> Ação do Gestor</h4>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Adicionar Observação (Opcional)</label>
+                    <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Adicionar Observação (Opcional)</label>
                     <textarea 
                         [value]="managerNotes()" 
                         (input)="managerNotes.set($any($event.target).value)" 
-                        rows="2" 
+                        rows="3" 
                         placeholder="Ex: Folga aprovada, bom descanso!" 
-                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400">
+                        class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body placeholder-muted focus:border-brand focus:ring-1 focus:ring-brand outline-none shadow-sm transition-all resize-y">
                     </textarea>
                 </div>
             </div>
         } @else if (req.manager_notes) {
             <div>
-                <h4 class="text-md font-semibold text-white mb-2">Sua Observação</h4>
-                <p class="text-gray-300 bg-gray-700/50 p-3 rounded-lg">{{ req.manager_notes }}</p>
+                 <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">edit_note</span> Sua Observação</h4>
+                <p class="text-body bg-surface border border-strong p-4 rounded-xl shadow-sm">{{ req.manager_notes }}</p>
             </div>
         }
       </div>
 
       <!-- Footer -->
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-        <button (click)="close.emit()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white">Fechar</button>
+      <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-end gap-3 shadow-lg">
+        <button (click)="close.emit()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Fechar</button>
         @if(req.status === 'Pendente') {
-            <button (click)="onReject()" class="px-6 py-2 font-medium rounded-lg bg-red-600 hover:bg-red-500 text-white">Rejeitar</button>
-            <button (click)="onApprove()" class="px-6 py-2 font-medium rounded-lg bg-green-600 hover:bg-green-500 text-white">Aprovar</button>
+            <button (click)="onReject()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white border border-danger/20 transition-all text-xs shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">thumb_down</span> Rejeitar</button>
+            <button (click)="onApprove()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">thumb_up</span> Aprovar
+            </button>
         }
       </div>
     </div>

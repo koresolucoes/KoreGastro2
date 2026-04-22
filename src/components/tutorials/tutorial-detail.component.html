@@ -1,50 +1,67 @@
 @if (tutorial(); as t) {
-  <div class="container mx-auto max-w-4xl">
-    <a routerLink="/tutorials" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6">
-      <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-      <span>Voltar para todos os tutoriais</span>
+  <div class="container mx-auto max-w-4xl p-4 md:p-8">
+    <a routerLink="/tutorials" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-8 font-black text-[10px] uppercase tracking-widest transition-colors bg-brand/10 hover:bg-brand/20 px-4 py-2.5 rounded-xl border border-brand/10 active:scale-95 shadow-sm">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      <span>Voltar para tutoriais</span>
     </a>
 
-    <header class="text-center mb-10">
-      <h1 class="text-4xl font-extrabold text-white">{{ t.title }}</h1>
-      <p class="mt-3 text-lg text-gray-400">{{ t.description }}</p>
+    <header class="text-center mb-16">
+      <h1 class="text-4xl md:text-5xl font-black text-title title-display tracking-tight leading-none">{{ t.title }}</h1>
+      <p class="mt-4 text-lg text-muted font-medium max-w-2xl mx-auto leading-relaxed">{{ t.description }}</p>
     </header>
 
     <div class="space-y-12">
       @for (step of t.steps; track step.title; let i = $index) {
-        <section class="flex flex-col md:flex-row items-center gap-8">
+        <section class="flex flex-col md:flex-row items-center gap-10 bg-surface-elevated p-8 md:p-12 rounded-[40px] border border-subtle shadow-sm relative overflow-hidden group">
+          <div class="absolute inset-0 bg-brand/5 blur-3xl rounded-full translate-x-[-20%] translate-y-[-20%] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+          
           <!-- Text Content -->
-          <div class="md:w-1/2">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-lg">
+          <div class="md:w-1/2 relative z-10 space-y-4">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="flex items-center justify-center w-12 h-12 rounded-2xl bg-brand text-white font-black text-xl shadow-lg shadow-brand/30 shrink-0 border border-brand-hover">
                 {{ i + 1 }}
               </div>
-              <h2 class="text-2xl font-bold text-white">{{ step.title }}</h2>
+              <h2 class="text-2xl font-black text-title title-display leading-tight pt-1.5">{{ step.title.substring(3) }}</h2>
             </div>
-            <p class="text-gray-300 leading-relaxed">{{ step.content }}</p>
+            <p class="text-muted font-medium leading-relaxed text-sm lg:text-base border-l-2 border-brand/50 pl-4 ml-6">{{ step.content }}</p>
           </div>
           <!-- Image Content -->
-          <div class="md:w-1/2">
-            <img [src]="step.imageUrl" alt="Ilustração para o passo: {{ step.title }}" width="800" height="400" class="rounded-lg shadow-lg border-2 border-gray-700">
-            <p class="text-center text-xs text-gray-500 mt-2">Imagem ilustrativa</p>
+          <div class="md:w-1/2 relative z-10 w-full">
+            <div class="rounded-3xl shadow-lg border-4 border-surface overflow-hidden bg-surface translate-x-0 transition-transform hover:scale-[1.02] duration-300 relative aspect-video">
+               <img [src]="step.imageUrl" alt="Ilustração para o passo: {{ step.title }}" class="w-full h-full object-cover">
+               <div class="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-3xl pointer-events-none"></div>
+            </div>
+            <p class="text-center text-[10px] font-black uppercase tracking-widest text-muted mt-4 opacity-50">Imagem ilustrativa</p>
           </div>
         </section>
       }
     </div>
 
-    <footer class="text-center mt-16 py-8 border-t border-gray-700">
-        <h3 class="text-xl font-bold text-white">Tutorial Concluído!</h3>
-        <p class="text-gray-400 mt-2">Explore outras funcionalidades ou volte para a lista de tutoriais.</p>
-        <a routerLink="/tutorials" class="mt-4 inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-500 transition-colors">
+    <footer class="text-center mt-20 pt-16 border-t border-subtle relative">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-app px-4">
+           <div class="w-20 h-20 bg-success/10 text-success rounded-[24px] flex items-center justify-center shadow-inner border border-success/20 rotate-12 mx-auto">
+              <span class="material-symbols-outlined text-4xl -rotate-12">verified</span>
+          </div>
+        </div>
+        <h3 class="text-3xl font-black text-title title-display tracking-tight">Guia Concluído!</h3>
+        <p class="text-muted mt-3 font-medium text-sm">Explore outras funcionalidades ou volte para a lista principal.</p>
+        <a routerLink="/tutorials" class="mt-8 inline-flex items-center justify-center gap-2 btn-primary font-black py-4 px-8 rounded-2xl text-[11px] uppercase tracking-widest shadow-lg shadow-brand/20 active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[18px]">menu_book</span>
             Ver outros Tutoriais
         </a>
     </footer>
 
   </div>
 } @else {
-  <div class="text-center py-20">
-    <h2 class="text-2xl font-bold text-white">Tutorial não encontrado</h2>
-    <p class="text-gray-400 mt-2">O guia que você está procurando não existe ou foi movido.</p>
-    <a routerLink="/tutorials" class="mt-4 inline-block text-blue-400 hover:underline">Voltar para a lista de tutoriais</a>
+  <div class="text-center py-32 flex flex-col items-center justify-center bg-surface-elevated rounded-[40px] border border-strong shadow-sm max-w-2xl mx-auto mt-10">
+    <div class="w-24 h-24 bg-surface rounded-[24px] border border-strong shadow-inner flex items-center justify-center mb-8 rotate-12">
+        <span class="material-symbols-outlined text-5xl text-muted -rotate-12">explore_off</span>
+    </div>
+    <h2 class="text-2xl font-black text-title title-display tracking-tight">Tutorial não encontrado</h2>
+    <p class="text-muted mt-3 text-sm font-medium">O guia que você está procurando não existe ou foi movido.</p>
+    <a routerLink="/tutorials" class="bg-surface border border-strong hover:bg-surface-elevated text-title mt-8 text-[11px] px-8 py-3.5 rounded-xl font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      Voltar aos tutoriais
+    </a>
   </div>
 }
