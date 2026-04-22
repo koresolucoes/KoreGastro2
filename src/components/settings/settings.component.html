@@ -1,55 +1,58 @@
 
 <div class="container mx-auto h-full animate-in fade-in duration-500 max-w-7xl">
-  <!-- Modern Header -->
-  <div class="mb-10 relative">
+  <!-- Modern Header (Hidden on mobile when in detail mode) -->
+  <div class="mb-4 lg:mb-10 relative mt-4 lg:mt-0 px-4 lg:px-0" [ngClass]="{'hidden lg:block': mobileViewMode() === 'detail'}">
     <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-brand rounded-full blur-[2px] opacity-80 hidden md:block"></div>
-    <h1 class="text-5xl md:text-6xl text-title title-display tracking-tighter leading-none mb-2">Configurações do <span class="text-brand">Sistema</span></h1>
-    <p class="text-muted text-sm md:text-base font-bold uppercase tracking-[0.2em] opacity-60">Personalize sua experiência operacional</p>
+    <h1 class="text-3xl lg:text-5xl lg:text-6xl text-title title-display tracking-tight leading-none mb-1 lg:mb-2">Configurações<span class="hidden lg:inline"> do <span class="text-brand">Sistema</span></span></h1>
+    <p class="text-muted text-[11px] lg:text-base font-bold uppercase tracking-[0.2em] opacity-60">Personalize sua experiência</p>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-    <!-- Glassmorphism Vertical Navigation -->
-    <div class="lg:col-span-3 sticky top-4 z-20">
-      <nav class="space-y-2.5 p-3 bg-surface-elevated/30 border border-subtle rounded-[32px] backdrop-blur-xl shadow-2xl">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-12 items-start h-full lg:h-auto">
+    <!-- Glassmorphism Navigation: Mobile List / Desktop Vertical Sidebar -->
+    <div class="lg:col-span-3 lg:sticky lg:top-24 z-20 w-full" [ngClass]="{'hidden lg:block': mobileViewMode() === 'detail', 'block': mobileViewMode() === 'menu'}">
+      <nav class="flex flex-col bg-surface shadow-sm lg:bg-surface-elevated/30 lg:border lg:border-subtle lg:rounded-[32px] lg:backdrop-blur-xl lg:shadow-2xl lg:p-3 overflow-hidden">
         @let navItems = [
-          { id: 'empresa', label: 'Dados da Empresa', icon: 'storefront' },
-          { id: 'stores', label: 'Minhas Lojas', icon: 'domain' },
-          { id: 'equipe', label: 'Gestão de Equipe', icon: 'group_add' },
-          { id: 'cadastros', label: 'Cadastros Base', icon: 'database' },
-          { id: 'funcionalidades', label: 'Módulos & Integrações', icon: 'extension' },
-          { id: 'seguranca', label: 'Cargos & Permissões', icon: 'security' }
+          { id: 'empresa', label: 'Dados da Empresa', desc: 'Perfil, logotipo e localização', icon: 'storefront' },
+          { id: 'stores', label: 'Minhas Lojas', desc: 'Gerenciar unidades ativas', icon: 'domain' },
+          { id: 'aparencia', label: 'Aparência e Temas', desc: 'Cores e modo escuro', icon: 'palette' },
+          { id: 'equipe', label: 'Gestão de Equipe', desc: 'Convites e vinculações', icon: 'group_add' },
+          { id: 'cadastros', label: 'Cadastros Base', desc: 'Taxas, pagamentos e PDV', icon: 'database' },
+          { id: 'funcionalidades', label: 'Módulos & Integrações', desc: 'iFood, KDS e recursos adicionais', icon: 'extension' },
+          { id: 'seguranca', label: 'Cargos & Permissões', desc: 'Acessos e restrições', icon: 'security' }
         ];
 
         @for(item of navItems; track item.id) {
           <button (click)="selectTab(item.id)"
-                  class="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all outline-none group active:scale-[0.98] relative overflow-hidden"
-                  [class.bg-brand]="activeTab() === item.id"
-                  [class.text-white]="activeTab() === item.id"
-                  [class.shadow-xl]="activeTab() === item.id"
-                  [class.shadow-brand/20]="activeTab() === item.id"
-                  [class.text-muted]="activeTab() !== item.id"
-                  [class.hover:text-title]="activeTab() !== item.id"
-                  [class.hover:bg-surface-elevated/50]="activeTab() !== item.id">
+                  class="flex-shrink-0 w-full flex items-center gap-4 px-4 py-4 lg:p-4 rounded-none border-b border-subtle last:border-0 lg:border-none lg:rounded-2xl text-left transition-all outline-none group active:scale-[0.98] lg:active:scale-[0.98] relative overflow-hidden bg-surface hover:bg-surface-elevated lg:bg-transparent"
+                  [class.lg:bg-brand]="activeTab() === item.id"
+                  [class.lg:text-white]="activeTab() === item.id"
+                  [class.lg:shadow-xl]="activeTab() === item.id"
+                  [class.lg:shadow-brand/20]="activeTab() === item.id">
             
-            <div class="p-2 rounded-xl transition-colors relative z-10" 
-                 [class.bg-white/20]="activeTab() === item.id"
-                 [class.bg-surface/50]="activeTab() !== item.id"
-                 [class.group-hover:bg-brand/10]="activeTab() !== item.id">
-              <span class="material-symbols-outlined text-[20px] block leading-none" [class.text-brand]="activeTab() !== item.id">{{ item.icon }}</span>
+            <div class="p-3 lg:p-2 rounded-full lg:rounded-xl transition-colors relative z-10 bg-surface-elevated border border-strong lg:border-none flex items-center justify-center" 
+                 [class.lg:bg-white/20]="activeTab() === item.id"
+                 [class.lg:bg-surface/50]="activeTab() !== item.id"
+                 [class.lg:group-hover:bg-brand/10]="activeTab() !== item.id">
+              <span class="material-symbols-outlined text-[20px] lg:text-[20px] block leading-none text-brand lg:text-inherit" [class.lg:text-brand]="activeTab() !== item.id">{{ item.icon }}</span>
             </div>
             
-            <span class="font-black text-[11px] uppercase tracking-widest relative z-10 transition-transform group-hover:translate-x-1">{{ item.label }}</span>
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+              <span class="font-bold text-sm lg:font-black lg:text-[11px] lg:uppercase lg:tracking-widest relative z-10 transition-transform lg:group-hover:translate-x-1 text-title lg:text-inherit">{{ item.label }}</span>
+              <span class="text-xs text-muted font-medium lg:hidden truncate mt-0.5">{{ item.desc }}</span>
+            </div>
             
+            <span class="material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 group-hover:text-brand transition-all">chevron_right</span>
+
             @if(activeTab() === item.id) {
-              <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -translate-y-12 translate-x-12"></div>
-              <div class="absolute inset-y-0 right-0 w-1 bg-white/40 rounded-full"></div>
+              <div class="hidden lg:block absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -translate-y-12 translate-x-12"></div>
+              <div class="hidden lg:block absolute inset-y-0 right-0 w-1 bg-white/40 rounded-full"></div>
             }
           </button>
         }
       </nav>
       
-      <!-- System Info Card -->
-      <div class="mt-6 p-6 bg-surface-elevated/20 border border-strong rounded-[24px] backdrop-blur-md">
+      <!-- System Info Card (Desktop Only) -->
+      <div class="hidden lg:block mt-6 p-6 bg-surface-elevated/20 border border-strong rounded-[24px] backdrop-blur-md">
           <div class="flex items-center gap-3 mb-4">
               <div class="w-2 h-2 rounded-full bg-success"></div>
               <span class="text-[9px] font-black uppercase tracking-[0.2em] text-title opacity-60">Sincronizado na Nuvem</span>
@@ -59,9 +62,18 @@
     </div>
 
     <!-- Scrollable Tab Content Area -->
-    <div class="lg:col-span-9 animate-in slide-in-from-right-4 duration-500 fill-mode-both">
-      <div class="bg-surface-elevated/40 border border-subtle rounded-[40px] p-8 md:p-12 backdrop-blur-xl shadow-2xl relative overflow-hidden min-h-[600px]">
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand via-transparent to-transparent opacity-40"></div>
+    <div class="lg:col-span-9 animate-in slide-in-from-right-4 lg:slide-in-from-bottom-4 duration-300 fill-mode-both min-h-[100dvh] lg:min-h-0 bg-app" [ngClass]="{'hidden lg:block': mobileViewMode() === 'menu', 'block': mobileViewMode() === 'detail'}">
+      
+      <!-- Mobile Specific "Back" Header -->
+      <div class="lg:hidden bg-surface border-b border-subtle p-3 sticky top-0 z-30 flex items-center gap-3 shadow-sm pt-safe">
+         <button (click)="goBackToMenu()" class="p-2 rounded-full text-muted hover:text-title hover:bg-surface-elevated transition-colors active:scale-95 flex items-center justify-center -ml-2">
+             <span class="material-symbols-outlined text-2xl">arrow_back</span>
+         </button>
+         <h2 class="text-lg font-bold text-title flex-1 truncate">{{ getActiveTabLabel() }}</h2>
+      </div>
+
+      <div class="bg-transparent lg:bg-surface-elevated/40 lg:border lg:border-subtle lg:rounded-[40px] p-4 py-6 md:p-12 lg:backdrop-blur-xl lg:shadow-2xl relative overflow-hidden min-h-[calc(100vh-100px)] lg:min-h-[600px] mb-20 lg:mb-0">
+        <div class="hidden lg:block absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand via-transparent to-transparent opacity-40"></div>
         
         @switch (activeTab()) {
           @case ('empresa') {
@@ -69,6 +81,9 @@
           }
           @case ('stores') {
             <app-store-management></app-store-management>
+          }
+          @case ('aparencia') {
+            <app-appearance-settings></app-appearance-settings>
           }
           @case ('equipe') {
             <app-multi-unit-settings></app-multi-unit-settings>
@@ -85,8 +100,8 @@
         }
       </div>
 
-      <!-- Footer Info (No Print) -->
-      <div class="mt-8 flex justify-between items-center px-4 no-print opacity-30">
+      <!-- Footer Info (Desktop Only) -->
+      <div class="hidden lg:flex mt-8 justify-between items-center px-4 no-print opacity-30 pb-10">
           <span class="text-[10px] font-black uppercase tracking-[0.3em] text-title">Kore POS • Configurações Avançadas</span>
           <span class="text-[10px] font-black uppercase tracking-[0.3em] text-title">v2.0.4-LTS</span>
       </div>

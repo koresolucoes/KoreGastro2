@@ -1,0 +1,122 @@
+<!-- Header -->
+<div class="chef-surface border border-subtle rounded-3xl p-8 mb-6 shadow-sm">
+  <div class="flex items-center gap-4 border-b border-subtle pb-4">
+    <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
+      <span class="material-symbols-outlined text-3xl text-brand">palette</span>
+    </div>
+    <div>
+      <h2 class="text-2xl font-black text-title title-display tracking-tight">Aparência e Temas</h2>
+      <p class="text-muted text-sm font-medium">Personalize as cores e o modo de exibição do seu restaurante.</p>
+    </div>
+  </div>
+</div>
+
+<div class="space-y-8">
+  <!-- Sessão 1: Modo de Exibição -->
+  <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm">
+    <h3 class="text-[11px] font-black tracking-widest text-brand uppercase mb-6 flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">contrast</span>
+      Modo de Exibição
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Light Mode Option -->
+      <button (click)="setTheme('light')" 
+              class="relative flex flex-col p-6 rounded-2xl border-2 transition-all group overflow-hidden bg-white text-gray-900"
+              [class.border-brand]="themeService.currentTheme() === 'light'"
+              [class.border-transparent]="themeService.currentTheme() !== 'light'"
+              [class.shadow-md]="themeService.currentTheme() === 'light'">
+          
+          <div class="absolute inset-0 bg-transparent group-hover:bg-brand/5 transition-colors"></div>
+          
+          <div class="flex items-center justify-between mb-4 relative z-10 w-full">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-3xl" [class.text-brand]="themeService.currentTheme() === 'light'">light_mode</span>
+              <span class="font-black text-lg">Modo Claro</span>
+            </div>
+            @if(themeService.currentTheme() === 'light') {
+              <span class="material-symbols-outlined text-brand">check_circle</span>
+            }
+          </div>
+          
+          <div class="w-full h-24 bg-gray-100 rounded-xl border border-gray-200 relative z-10 overflow-hidden flex flex-col p-2 gap-2">
+            <div class="w-full flex gap-2">
+              <div class="w-8 h-8 rounded-full bg-brand/20"></div>
+              <div class="flex-1 space-y-2 py-1">
+                <div class="h-2 bg-gray-200 rounded w-1/3"></div>
+                <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+      </button>
+
+      <!-- Dark Mode Option -->
+      <button (click)="setTheme('dark')" 
+              class="relative flex flex-col p-6 rounded-2xl border-2 transition-all group overflow-hidden bg-zinc-900 text-white"
+              [class.border-brand]="themeService.currentTheme() === 'dark'"
+              [class.border-transparent]="themeService.currentTheme() !== 'dark'"
+              [class.shadow-md]="themeService.currentTheme() === 'dark'">
+          
+          <div class="absolute inset-0 bg-transparent group-hover:bg-brand/10 transition-colors"></div>
+          
+          <div class="flex items-center justify-between mb-4 relative z-10 w-full">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-3xl text-gray-400" [class.text-brand]="themeService.currentTheme() === 'dark'">dark_mode</span>
+              <span class="font-black text-lg">Modo Escuro</span>
+            </div>
+            @if(themeService.currentTheme() === 'dark') {
+              <span class="material-symbols-outlined text-brand">check_circle</span>
+            }
+          </div>
+          
+          <div class="w-full h-24 bg-zinc-800 rounded-xl border border-zinc-700 relative z-10 overflow-hidden flex flex-col p-2 gap-2">
+            <div class="w-full flex gap-2">
+              <div class="w-8 h-8 rounded-full bg-brand/20"></div>
+              <div class="flex-1 space-y-2 py-1">
+                <div class="h-2 bg-zinc-700 rounded w-1/3"></div>
+                <div class="h-2 bg-zinc-700 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sessão 2: Paleta Gastronômica -->
+  <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm relative overflow-hidden">
+    <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand/5 blur-3xl rounded-full"></div>
+    
+    <h3 class="text-[11px] font-black tracking-widest text-brand uppercase mb-2 flex items-center gap-2 relative z-10">
+      <span class="material-symbols-outlined text-base">colors</span>
+      Paletas Gastronômicas
+    </h3>
+    <p class="text-muted text-sm font-medium mb-6 relative z-10">Inspiradas em capitais mundiais da gastronomia, personalize a cor primária do sistema inteiro.</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 relative z-10">
+      @for(palette of palettes; track palette.id) {
+        <button (click)="setPalette(palette.id)" 
+                class="flex flex-col items-center p-6 bg-surface-elevated hover:bg-surface border-2 rounded-2xl transition-all group scale-100 active:scale-95 text-center shadow-sm relative overflow-hidden"
+                [class.border-brand]="themeService.currentPalette() === palette.id"
+                [class.border-strong]="themeService.currentPalette() !== palette.id"
+                [style.--card-brand]="palette.color">
+            
+            @if(themeService.currentPalette() === palette.id) {
+              <div class="absolute inset-0 bg-[var(--card-brand)] opacity-5 pointer-events-none"></div>
+            }
+
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shadow-lg"
+                 [style.backgroundColor]="palette.color">
+                @if(themeService.currentPalette() === palette.id) {
+                    <span class="material-symbols-outlined text-white text-3xl font-bold animate-in zoom-in">check</span>
+                } @else {
+                    <span class="material-symbols-outlined text-white/50 text-2xl">restaurant</span>
+                }
+            </div>
+            
+            <h4 class="text-title font-black text-lg" [class.text-brand]="themeService.currentPalette() === palette.id">{{ palette.name }}</h4>
+            <p class="text-muted text-xs mt-2 w-full truncate" [title]="palette.description">{{ palette.description }}</p>
+        </button>
+      }
+    </div>
+  </div>
+</div>

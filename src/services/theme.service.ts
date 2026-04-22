@@ -2,16 +2,19 @@ import { Injectable, signal, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 
 export type Theme = 'light' | 'dark';
+export type Palette = 'chefos' | 'napoli' | 'kyoto' | 'oaxaca' | 'lyon' | 'bangkok';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ThemeService {
   private readonly THEME_KEY = 'chefos-theme';
+  private readonly PALETTE_KEY = 'chefos-palette';
   private document = inject(DOCUMENT);
   
-  // Create a reactive signal for the current theme. Default to dark for consistency in this session
+  // Create reactive signals
   public readonly currentTheme = signal<Theme>('dark'); 
+  public readonly currentPalette = signal<Palette>('chefos');
 
   constructor() {
     this.initializeTheme();
@@ -27,8 +30,16 @@ export class ThemeService {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         this.setTheme(prefersDark ? 'dark' : 'light');
       }
+
+      const savedPalette = localStorage.getItem(this.PALETTE_KEY) as Palette;
+      if (savedPalette) {
+        this.setPalette(savedPalette);
+      } else {
+        this.setPalette('chefos');
+      }
     } else {
       this.setTheme('dark');
+      this.setPalette('chefos');
     }
   }
 
@@ -46,4 +57,18 @@ export class ThemeService {
     // Apply changes to HTML root element safely to avoid Tailwind Dark Mode collisions
     this.document.documentElement.setAttribute('data-theme', theme);
   }
+
+  public setPalette(palette: Palette) {
+    this.currentPalette.set(palette);
+    if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.PALETTE_KEY, palette);
+    }
+
+    if (palette === 'chefos') {
+        this.document.documentElement.removeAttribute('data-palette');
+    } else {
+        this.document.documentElement.setAttribute('data-palette', palette);
+    }
+  }
 }
+

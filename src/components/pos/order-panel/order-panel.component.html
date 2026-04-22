@@ -7,7 +7,7 @@
     
     @if (selectedTable(); as table) {
       <!-- Header / Top Bar -->
-      <div class="flex items-center justify-between p-4 bg-surface/80 backdrop-blur-xl border-b border-subtle flex-shrink-0 z-20 shadow-sm relative">
+      <div class="flex items-center justify-between p-4 bg-surface-elevated/80 backdrop-blur-xl border-b border-subtle flex-shrink-0 z-20 shadow-sm relative">
         <div class="flex items-center gap-4">
             <h2 class="text-xl font-black text-title flex items-center gap-2 drop-shadow-sm">
                 @if(table.number > 0) {
@@ -180,7 +180,7 @@
         </div>
 
         <!-- RIGHT: Cart & Actions (Sidebar on Desktop, Tab on Mobile) -->
-        <div class="w-full md:w-80 bg-surface/90 backdrop-blur-xl border-l border-subtle flex flex-col shadow-2xl z-20 md:flex h-full relative" [class.hidden]="mobileTab() === 'menu'">
+        <div class="w-full md:w-80 bg-surface-elevated/90 backdrop-blur-xl border-l border-subtle flex flex-col shadow-2xl z-20 md:flex h-full relative" [class.hidden]="mobileTab() === 'menu'">
             <!-- Cart Header -->
             <div class="p-4 border-b border-subtle flex-shrink-0 bg-surface-elevated/50 flex justify-between items-center">
                 <h3 class="font-black text-title text-base flex items-center gap-2 uppercase tracking-wide">
@@ -286,7 +286,7 @@
             </div>
 
             <!-- Footer Actions -->
-            <div class="p-4 bg-surface-elevated border-t border-subtle space-y-3 z-30 absolute bottom-[60px] left-0 right-0 md:relative md:bottom-auto shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+            <div class="p-4 bg-surface-elevated/95 backdrop-blur-xl border-t border-subtle space-y-3 z-30 absolute bottom-[60px] left-0 right-0 md:relative md:bottom-auto shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
                 <div class="flex justify-between items-end mb-1">
                     <span class="text-xs font-black uppercase tracking-widest text-muted">Total</span>
                     <span class="text-3xl font-black text-title data-mono drop-shadow-sm">{{ orderTotal() | currency:'BRL' }}</span>
@@ -313,7 +313,7 @@
         </div>
 
         <!-- Mobile Bottom Tabs Navigation -->
-        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-elevated/90 backdrop-blur-xl border-t border-subtle flex z-[60] h-[60px] pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-elevated/95 backdrop-blur-xl border-t border-subtle flex z-[60] h-[60px] pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
             <button (click)="setMobileTab('menu')" class="flex-1 flex flex-col items-center justify-center transition-colors relative group border-r border-subtle/50" [class.text-brand]="mobileTab() === 'menu'" [class.text-muted]="mobileTab() !== 'menu'">
                 <span class="material-symbols-outlined text-[24px] mb-0.5 group-active:scale-90 transition-transform">restaurant_menu</span>
                 <span class="text-[10px] font-black uppercase tracking-widest leading-none mt-1">Cardápio</span>

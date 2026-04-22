@@ -73,6 +73,71 @@ html[data-theme="dark"] {
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
+/* =========================================
+   PALETAS GASTRONÔMICAS (THEMES)
+   ========================================= */
+
+/* Nápoles (Tomate San Marzano / Clássico) */
+html[data-palette="napoli"] {
+  --brand-primary: #e11d48; /* Rose 600 */
+  --brand-hover: #be123c;   /* Rose 700 */
+  --border-focus: rgba(225, 29, 72, 0.4);
+}
+html[data-theme="dark"][data-palette="napoli"] {
+  --brand-primary: #fb7185; /* Rose 400 */
+  --brand-hover: #e11d48;   /* Rose 600 */
+  --border-focus: rgba(251, 113, 133, 0.5);
+}
+
+/* Kyoto (Matcha Minimalista / Zen) */
+html[data-palette="kyoto"] {
+  --brand-primary: #16a34a; /* Green 600 */
+  --brand-hover: #15803d;   /* Green 700 */
+  --border-focus: rgba(22, 163, 74, 0.4);
+}
+html[data-theme="dark"][data-palette="kyoto"] {
+  --brand-primary: #4ade80; /* Green 400 */
+  --brand-hover: #16a34a;   /* Green 600 */
+  --border-focus: rgba(74, 222, 128, 0.5);
+}
+
+/* Oaxaca (Terracotta Pimenta / Quente) */
+html[data-palette="oaxaca"] {
+  --brand-primary: #d97706; /* Amber 600 */
+  --brand-hover: #b45309;   /* Amber 700 */
+  --border-focus: rgba(217, 119, 6, 0.4);
+}
+html[data-theme="dark"][data-palette="oaxaca"] {
+  --brand-primary: #fbbf24; /* Amber 400 */
+  --brand-hover: #d97706;   /* Amber 600 */
+  --border-focus: rgba(251, 191, 36, 0.5);
+}
+
+/* Lyon (Bordeaux Bouchon / Sofisticado) */
+html[data-palette="lyon"] {
+  --brand-primary: #831843; /* Pink 900 (Vinho) */
+  --brand-hover: #4c0519;   /* Pink 950 */
+  --border-focus: rgba(131, 24, 67, 0.4);
+}
+html[data-theme="dark"][data-palette="lyon"] {
+  --brand-primary: #f472b6; /* Pink 400 */
+  --brand-hover: #db2777;   /* Pink 600 */
+  --border-focus: rgba(244, 114, 182, 0.5);
+}
+
+/* Bangkok (Curry Açafrão / Elétrico) */
+html[data-palette="bangkok"] {
+  --brand-primary: #ca8a04; /* Yellow 600 */
+  --brand-hover: #a16207;   /* Yellow 700 */
+  --border-focus: rgba(202, 138, 4, 0.4);
+}
+html[data-theme="dark"][data-palette="bangkok"] {
+  --brand-primary: #fde047; /* Yellow 300 */
+  --brand-hover: #eab308;   /* Yellow 500 */
+  --border-focus: rgba(253, 224, 71, 0.5);
+}
+
+
 /* Global Background Setup */
 html, body {
   background: var(--bg-app) !important;

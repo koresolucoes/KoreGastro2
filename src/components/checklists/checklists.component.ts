@@ -13,16 +13,26 @@ import autoTable from 'jspdf-autotable';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-white">Checklists Diários</h1>
-        <div class="flex gap-3">
-          <button (click)="generatePDF()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
-            Gerar Relatório
+    <div class="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <!-- Page Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-subtle pb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center border border-success/20 shadow-inner">
+            <span class="material-symbols-outlined text-success text-2xl">checklist</span>
+          </div>
+          <div>
+            <h1 class="text-3xl font-black title-display tracking-tight text-title">Checklists</h1>
+            <p class="text-muted text-sm font-medium">Controle operacional e rotinas diárias</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button (click)="generatePDF()" class="flex-1 md:flex-none bg-surface-elevated hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-strong shadow-sm hover:translate-y-[-2px] active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-info">picture_as_pdf</span>
+            Relatório
           </button>
           @if (isManager()) {
-            <button (click)="showAddTemplateModal.set(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+            <button (click)="showAddTemplateModal.set(true)" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:translate-y-[-2px] active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
               <span class="material-symbols-outlined text-sm">add</span>
               Nova Tarefa
             </button>
@@ -31,126 +41,156 @@ import autoTable from 'jspdf-autotable';
       </div>
 
       <!-- Filters -->
-      <div class="mb-6 flex gap-4">
-        <select [ngModel]="selectedSection()" (ngModelChange)="selectedSection.set($event)" class="rounded-md bg-gray-800 border-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-          <option value="">Todas as Seções</option>
-          <option value="Cozinha">Cozinha</option>
-          <option value="Salão">Salão</option>
-          <option value="Bar">Bar</option>
-          <option value="Caixa">Caixa</option>
-          <option value="Geral">Geral</option>
-        </select>
+      <div class="flex flex-col sm:flex-row gap-4 p-4 chef-surface bg-surface-elevated/20 transition-all">
+        <div class="flex-1 relative group">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">category</span>
+          <select [ngModel]="selectedSection()" (ngModelChange)="selectedSection.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
+            <option value="">Todas as Seções</option>
+            <option value="Cozinha">Cozinha</option>
+            <option value="Salão">Salão</option>
+            <option value="Bar">Bar</option>
+            <option value="Caixa">Caixa</option>
+            <option value="Geral">Geral</option>
+          </select>
+        </div>
         
-        <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="rounded-md bg-gray-800 border-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-          <option value="">Todos os Tipos</option>
-          <option value="opening">Abertura</option>
-          <option value="closing">Fechamento</option>
-          <option value="custom">Outros</option>
-        </select>
+        <div class="flex-1 relative group">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">schedule</span>
+          <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
+            <option value="">Todos os Tipos</option>
+            <option value="opening">Abertura</option>
+            <option value="closing">Fechamento</option>
+            <option value="custom">Outros</option>
+          </select>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Checklist Tasks -->
         <div class="lg:col-span-2 space-y-6">
-          <div class="bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-700">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-700 bg-gray-800 flex justify-between items-center">
-              <h3 class="text-lg leading-6 font-medium text-white">Tarefas</h3>
-              <button (click)="loadData()" class="text-gray-400 hover:text-blue-400" title="Atualizar">
-                <span class="material-symbols-outlined">refresh</span>
+          <div class="chef-surface overflow-hidden">
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex justify-between items-center">
+              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand opacity-60">task_alt</span>
+                Tarefas Pendentes
+              </h3>
+              <button (click)="loadData()" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all" title="Atualizar">
+                <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
               </button>
             </div>
             
-            @if (isLoading()) {
-              <div class="p-8 text-center text-gray-400">
-                <span class="material-symbols-outlined animate-spin text-4xl mb-2">sync</span>
-                <p>Carregando checklists...</p>
+            @if (isLoading() && templates().length === 0) {
+               <div class="p-16 text-center text-muted">
+                <div class="animate-pulse flex flex-col items-center">
+                   <div class="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
+                      <span class="material-symbols-outlined text-brand text-4xl">sync</span>
+                   </div>
+                   <p class="font-bold uppercase tracking-widest text-xs">Sincronizando tarefas...</p>
+                </div>
               </div>
             } @else if (filteredTemplates().length === 0) {
-              <div class="p-8 text-center text-gray-400">
-                <span class="material-symbols-outlined text-4xl mb-2 text-gray-500">checklist</span>
-                <p>Nenhuma tarefa encontrada para os filtros selecionados.</p>
+              <div class="p-16 text-center text-muted">
+                <span class="material-symbols-outlined text-6xl mb-4 opacity-20">inventory</span>
+                <p class="text-lg font-bold">Nenhuma tarefa encontrada.</p>
                 @if (isManager()) {
-                  <p class="text-sm mt-2">Clique em "Nova Tarefa" para começar.</p>
+                   <button (click)="showAddTemplateModal.set(true)" class="mt-4 text-brand font-black text-sm uppercase tracking-widest hover:underline">Nova tarefa</button>
                 }
               </div>
             } @else {
-              <ul class="divide-y divide-gray-700">
+              <div class="divide-y divide-subtle">
                 @for (template of filteredTemplates(); track template.id) {
-                  <li class="p-4 hover:bg-gray-700/50 transition-colors">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-900 text-gray-300 border border-gray-700">
-                            {{ template.section }}
-                          </span>
-                          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border"
-                                [ngClass]="{
-                                  'bg-blue-900/50 text-blue-400 border-blue-800': template.checklist_type === 'opening',
-                                  'bg-indigo-900/50 text-indigo-400 border-indigo-800': template.checklist_type === 'closing',
-                                  'bg-gray-900/50 text-gray-400 border-gray-700': template.checklist_type === 'custom'
-                                }">
-                            {{ getTypeName(template.checklist_type) }}
-                          </span>
+                  <div class="p-6 hover:bg-surface-elevated transition-colors group">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                           <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-surface-elevated text-muted border border-strong">
+                             {{ template.section }}
+                           </span>
+                           <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border"
+                                 [ngClass]="{
+                                   'bg-info/10 text-info border-info/20': template.checklist_type === 'opening',
+                                   'bg-purple/10 text-purple border-purple/20': template.checklist_type === 'closing',
+                                   'bg-muted/10 text-muted border-muted/20': template.checklist_type === 'custom'
+                                 }">
+                             {{ getTypeName(template.checklist_type) }}
+                           </span>
                         </div>
-                        <h4 class="text-md font-medium text-white">{{ template.task_description }}</h4>
+                        <h4 class="text-lg font-bold text-title leading-tight">{{ template.task_description }}</h4>
                       </div>
                       
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-3">
                         <button (click)="logTask(template, 'completed')" 
                                 [disabled]="isSubmitting()"
-                                class="bg-green-900/50 hover:bg-green-800 text-green-400 border border-green-800 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 transition-colors disabled:opacity-50">
-                          <span class="material-symbols-outlined text-sm">check_circle</span>
-                          Concluído
+                                class="flex-1 sm:flex-none bg-success/10 hover:bg-success text-success hover:text-white border border-success/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
+                          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                          OK
                         </button>
                         <button (click)="logTask(template, 'issue')" 
                                 [disabled]="isSubmitting()"
-                                class="bg-red-900/50 hover:bg-red-800 text-red-400 border border-red-800 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 transition-colors disabled:opacity-50">
-                          <span class="material-symbols-outlined text-sm">report_problem</span>
-                          Problema
+                                class="flex-1 sm:flex-none bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
+                          <span class="material-symbols-outlined text-[18px]">report_problem</span>
+                          Falha
                         </button>
                       </div>
                     </div>
-                  </li>
+                  </div>
                 }
-              </ul>
+              </div>
             }
           </div>
         </div>
 
         <!-- Recent Logs -->
-        <div class="lg:col-span-1">
-          <div class="bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-700">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-700 bg-gray-800">
-              <h3 class="text-lg leading-6 font-medium text-white">Últimas Execuções</h3>
+        <div class="lg:col-span-1 space-y-6">
+          <div class="chef-surface overflow-hidden flex flex-col max-h-[800px]">
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex-shrink-0">
+              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple opacity-60">history</span>
+                Execuções
+              </h3>
             </div>
-            <div class="p-0 max-h-[600px] overflow-y-auto">
+            <div class="flex-1 overflow-y-auto hide-scrollbar p-0">
               @if (recentLogs().length === 0) {
-                <div class="p-6 text-center text-gray-400 text-sm">
-                  Nenhum registro recente encontrado.
+                <div class="p-12 text-center text-muted italic text-sm">
+                   <span class="material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
+                   Nenhum registro.
                 </div>
               } @else {
-                <ul class="divide-y divide-gray-700">
+                <div class="divide-y divide-subtle">
                   @for (log of recentLogs(); track log.id) {
-                    <li class="p-4">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <p class="text-sm font-medium text-white line-clamp-2">{{ log.checklist_templates?.task_description }}</p>
-                          <p class="text-xs text-gray-400 mt-1">Por: {{ log.employees?.name || 'Desconhecido' }}</p>
-                          <p class="text-xs text-gray-500">{{ log.completed_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                    <div class="p-5 hover:bg-surface-elevated transition-colors">
+                      <div class="flex justify-between items-start gap-4">
+                        <div class="min-w-0">
+                          <p class="text-sm font-bold text-title line-clamp-2 leading-snug">{{ log.checklist_templates?.task_description }}</p>
+                          <div class="flex items-center gap-1.5 mt-2">
+                             <span class="material-symbols-outlined text-[14px] text-muted">person</span>
+                             <p class="text-[10px] font-bold text-muted uppercase tracking-wider truncate">{{ log.employees?.name || 'Sistema' }}</p>
+                          </div>
+                          @if(log.notes) {
+                             <div class="mt-2 p-2 bg-warning/5 border border-warning/20 rounded-lg text-[10px] text-warning font-bold italic">
+                                OBS: {{ log.notes }}
+                             </div>
+                          }
                         </div>
-                        <div class="ml-2 flex-shrink-0">
+                        <div class="flex-shrink-0">
                           @if (log.status === 'completed') {
-                            <span class="material-symbols-outlined text-green-400" title="Concluído">check_circle</span>
+                            <div class="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center text-success border border-success/20">
+                               <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                            </div>
                           } @else if (log.status === 'issue') {
-                            <span class="material-symbols-outlined text-red-400" title="Problema Reportado">report_problem</span>
-                          } @else {
-                            <span class="material-symbols-outlined text-yellow-400" title="Pendente">pending</span>
+                            <div class="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center text-danger border border-danger/20 animate-pulse">
+                               <span class="material-symbols-outlined text-[20px]">report_problem</span>
+                            </div>
                           }
                         </div>
                       </div>
-                    </li>
+                      <div class="flex items-center gap-1.5 mt-3 opacity-50">
+                        <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">{{ log.completed_at | date:'dd MMM, HH:mm' }}</p>
+                      </div>
+                    </div>
                   }
-                </ul>
+                </div>
               }
             </div>
           </div>
@@ -160,24 +200,27 @@ import autoTable from 'jspdf-autotable';
 
     <!-- Add Template Modal -->
     @if (showAddTemplateModal()) {
-      <div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" (click)="showAddTemplateModal.set(false)">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
-          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 class="text-xl font-bold text-white">Nova Tarefa de Checklist</h3>
-            <button (click)="showAddTemplateModal.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+       <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddTemplateModal.set(false)">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
+          <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
+            <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
+               <span class="material-symbols-outlined text-brand">add_task</span>
+               Nova Tarefa
+            </h3>
+            <button (click)="showAddTemplateModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
           <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
-            <div class="p-6 space-y-4">
+            <div class="p-8 space-y-6">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Descrição da Tarefa</label>
-                <input type="text" formControlName="task_description" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Ligar as luzes e o ar condicionado">
+                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Descrição da Tarefa</label>
+                <textarea formControlName="task_description" rows="3" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner resize-none" placeholder="O que deve ser feito?"></textarea>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Seção</label>
-                  <select formControlName="section" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Seção</label>
+                  <select formControlName="section" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-2.5 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
                     <option value="Cozinha">Cozinha</option>
                     <option value="Salão">Salão</option>
                     <option value="Bar">Bar</option>
@@ -186,8 +229,8 @@ import autoTable from 'jspdf-autotable';
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
-                  <select formControlName="checklist_type" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Tipo</label>
+                  <select formControlName="checklist_type" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-2.5 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
                     <option value="opening">Abertura</option>
                     <option value="closing">Fechamento</option>
                     <option value="custom">Outros</option>
@@ -195,11 +238,11 @@ import autoTable from 'jspdf-autotable';
                 </div>
               </div>
             </div>
-            <div class="bg-gray-900/50 p-4 border-t border-gray-700 flex justify-end gap-3">
-              <button type="button" (click)="showAddTemplateModal.set(false)" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <div class="bg-surface-elevated/50 px-8 py-5 border-t border-subtle flex justify-end gap-3">
+              <button type="button" (click)="showAddTemplateModal.set(false)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
                 Cancelar
               </button>
-              <button type="submit" [disabled]="templateForm.invalid || isSubmitting()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+              <button type="submit" [disabled]="templateForm.invalid || isSubmitting()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white rounded-xl text-sm font-black shadow-lg shadow-brand/20 transition-all active:scale-95 border border-brand uppercase tracking-widest">
                 Salvar
               </button>
             </div>

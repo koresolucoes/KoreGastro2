@@ -13,16 +13,26 @@ import autoTable from 'jspdf-autotable';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-white">Controle de Temperatura</h1>
-        <div class="flex gap-3">
-          <button (click)="generatePDF()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+    <div class="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <!-- Page Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-subtle pb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-info/10 rounded-2xl flex items-center justify-center border border-info/20 shadow-inner">
+            <span class="material-symbols-outlined text-info text-2xl">thermostat</span>
+          </div>
+          <div>
+            <h1 class="text-3xl font-black title-display tracking-tight text-title">Temperaturas</h1>
+            <p class="text-muted text-sm font-medium">Controle e monitoramento de equipamentos</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button (click)="generatePDF()" class="flex-1 md:flex-none bg-surface-elevated hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-strong shadow-sm hover:translate-y-[-2px] active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-info">picture_as_pdf</span>
             Gerar Relatório
           </button>
           @if (isManager()) {
-            <button (click)="showAddEquipmentModal.set(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+            <button (click)="showAddEquipmentModal.set(true)" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:translate-y-[-2px] active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
               <span class="material-symbols-outlined text-sm">add</span>
               Novo Equipamento
             </button>
@@ -30,99 +40,120 @@ import autoTable from 'jspdf-autotable';
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Equipment List & Logging -->
         <div class="lg:col-span-2 space-y-6">
-          <div class="bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-700">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-700 bg-gray-800 flex justify-between items-center">
-              <h3 class="text-lg leading-6 font-medium text-white">Equipamentos Monitorados</h3>
-              <button (click)="loadData()" class="text-gray-400 hover:text-blue-400" title="Atualizar">
-                <span class="material-symbols-outlined">refresh</span>
+          <div class="chef-surface overflow-hidden">
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex justify-between items-center">
+              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand opacity-60">kitchen</span>
+                Monitoramento Ativo
+              </h3>
+              <button (click)="loadData()" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all" title="Atualizar">
+                <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
               </button>
             </div>
             
-            @if (isLoading()) {
-              <div class="p-8 text-center text-gray-400">
-                <span class="material-symbols-outlined animate-spin text-4xl mb-2">sync</span>
-                <p>Carregando equipamentos...</p>
+            @if (isLoading() && equipmentList().length === 0) {
+              <div class="p-16 text-center text-muted">
+                <div class="animate-pulse flex flex-col items-center">
+                   <div class="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
+                      <span class="material-symbols-outlined text-brand text-4xl">sync</span>
+                   </div>
+                   <p class="font-bold uppercase tracking-widest text-xs">Carregando dispositivos...</p>
+                </div>
               </div>
             } @else if (equipmentList().length === 0) {
-              <div class="p-8 text-center text-gray-400">
-                <span class="material-symbols-outlined text-4xl mb-2 text-gray-500">kitchen</span>
-                <p>Nenhum equipamento cadastrado.</p>
+              <div class="p-16 text-center text-muted">
+                <span class="material-symbols-outlined text-6xl mb-4 opacity-20">kitchen</span>
+                <p class="text-lg font-bold">Nenhum equipamento cadastrado.</p>
                 @if (isManager()) {
-                  <p class="text-sm mt-2">Clique em "Novo Equipamento" para começar.</p>
+                  <button (click)="showAddEquipmentModal.set(true)" class="mt-4 text-brand font-black text-sm uppercase tracking-widest hover:underline">Clique para adicionar</button>
                 }
               </div>
             } @else {
-              <ul class="divide-y divide-gray-700">
+              <div class="divide-y divide-subtle">
                 @for (eq of equipmentList(); track eq.id) {
-                  <li class="p-4 hover:bg-gray-700/50 transition-colors">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <h4 class="text-md font-semibold text-white flex items-center gap-2">
-                          <span class="material-symbols-outlined text-blue-400">kitchen</span>
-                          {{ eq.name }}
-                        </h4>
-                        <p class="text-sm text-gray-400 mt-1">
-                          Faixa ideal: 
-                          <span class="font-medium text-gray-300">
-                            {{ eq.min_temp !== null ? eq.min_temp + '°C' : 'N/A' }} a {{ eq.max_temp !== null ? eq.max_temp + '°C' : 'N/A' }}
-                          </span>
-                        </p>
+                  <div class="p-6 hover:bg-surface-elevated transition-colors group">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                      <div class="flex items-center gap-4">
+                         <div class="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center border border-subtle shadow-sm">
+                            <span class="material-symbols-outlined text-muted group-hover:text-brand transition-colors">kitchen</span>
+                         </div>
+                         <div>
+                            <h4 class="text-base font-black text-title">{{ eq.name }}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                               <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Faixa Ideal</span>
+                               <span class="text-xs font-black text-brand bg-brand/10 px-2 py-0.5 rounded-md border border-brand/20">
+                                 {{ eq.min_temp !== null ? eq.min_temp + '°C' : 'N/A' }} a {{ eq.max_temp !== null ? eq.max_temp + '°C' : 'N/A' }}
+                               </span>
+                            </div>
+                         </div>
                       </div>
                       
-                      <div class="flex items-center gap-2">
-                        <input type="number" step="0.1" [id]="'temp-' + eq.id" placeholder="Ex: 4.5" 
-                               class="block w-24 rounded-md bg-gray-900 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                               #tempInput (input)="null">
-                        <span class="text-gray-400">°C</span>
+                      <div class="flex items-center gap-3">
+                        <div class="relative flex items-center">
+                            <input type="number" step="0.1" [id]="'temp-' + eq.id" placeholder="00.0" 
+                                   class="block w-28 rounded-xl bg-surface-elevated border-2 border-strong/50 text-title font-black text-center py-2.5 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition-all placeholder:opacity-30 text-lg data-mono shadow-inner"
+                                   #tempInput (input)="null">
+                            <span class="absolute -right-6 text-sm font-black text-muted tracking-tighter">°C</span>
+                        </div>
                         <button (click)="logTemperature(eq, tempInput.value); tempInput.value = ''" 
                                 [disabled]="isSubmitting() || !tempInput.value"
-                                class="ml-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:text-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
+                                class="ml-8 bg-success hover:bg-success-hover disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-md hover:translate-y-[-2px] active:scale-95 border border-success/30 uppercase tracking-widest">
                           <span class="material-symbols-outlined text-sm">save</span>
                           Registrar
                         </button>
                       </div>
                     </div>
-                  </li>
+                  </div>
                 }
-              </ul>
+              </div>
             }
           </div>
         </div>
 
         <!-- Recent Logs -->
-        <div class="lg:col-span-1">
-          <div class="bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-700">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-700 bg-gray-800">
-              <h3 class="text-lg leading-6 font-medium text-white">Últimos Registros</h3>
+        <div class="lg:col-span-1 space-y-6">
+          <div class="chef-surface overflow-hidden flex flex-col max-h-[800px]">
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex-shrink-0">
+              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple opacity-60">history</span>
+                Histórico
+              </h3>
             </div>
-            <div class="p-0 max-h-[600px] overflow-y-auto">
+            <div class="flex-1 overflow-y-auto hide-scrollbar p-0">
               @if (recentLogs().length === 0) {
-                <div class="p-6 text-center text-gray-400 text-sm">
-                  Nenhum registro recente encontrado.
+                <div class="p-12 text-center text-muted italic text-sm">
+                  <span class="material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
+                  Nenhum registro recente.
                 </div>
               } @else {
-                <ul class="divide-y divide-gray-700">
+                <div class="divide-y divide-subtle">
                   @for (log of recentLogs(); track log.id) {
-                    <li class="p-4">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <p class="text-sm font-medium text-white">{{ log.equipment?.name }}</p>
-                          <p class="text-xs text-gray-400 mt-1">Por: {{ log.employees?.name || 'Desconhecido' }}</p>
-                          <p class="text-xs text-gray-500">{{ log.recorded_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                    <div class="p-5 hover:bg-surface-elevated transition-colors">
+                      <div class="flex justify-between items-start mb-3">
+                        <div class="min-w-0">
+                          <p class="text-sm font-black text-title truncate">{{ log.equipment?.name }}</p>
+                          <div class="flex items-center gap-1.5 mt-1">
+                             <span class="material-symbols-outlined text-[14px] text-muted">person</span>
+                             <p class="text-[10px] font-bold text-muted uppercase tracking-wider truncate">{{ log.employees?.name || 'Sistema' }}</p>
+                          </div>
                         </div>
-                        <div class="text-right">
-                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                        <div class="flex-shrink-0 ml-2">
+                           <div class="px-3 py-1.5 rounded-xl font-black text-sm data-mono shadow-sm border"
                                 [ngClass]="getTemperatureStatusClass(log.temperature, log.equipment?.min_temp, log.equipment?.max_temp)">
-                            {{ log.temperature }} °C
-                          </span>
+                             {{ log.temperature }}°C
+                           </div>
                         </div>
                       </div>
-                    </li>
+                      <div class="flex items-center gap-1.5 opacity-50">
+                        <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">{{ log.recorded_at | date:'dd MMM, HH:mm' }}</p>
+                      </div>
+                    </div>
                   }
-                </ul>
+                </div>
               }
             </div>
           </div>
@@ -132,36 +163,42 @@ import autoTable from 'jspdf-autotable';
 
     <!-- Add Equipment Modal -->
     @if (showAddEquipmentModal()) {
-      <div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" (click)="showAddEquipmentModal.set(false)">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
-          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 class="text-xl font-bold text-white">Novo Equipamento</h3>
-            <button (click)="showAddEquipmentModal.set(false)" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddEquipmentModal.set(false)">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
+          <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
+            <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
+               <span class="material-symbols-outlined text-brand">add_circle</span>
+               Novo Equipamento
+            </h3>
+            <button (click)="showAddEquipmentModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
           <form [formGroup]="equipmentForm" (ngSubmit)="saveEquipment()">
-            <div class="p-6 space-y-4">
+            <div class="p-8 space-y-6">
               <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Equipamento</label>
-                <input type="text" formControlName="name" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Freezer Carnes">
+                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome do Equipamento</label>
+                <div class="relative group">
+                   <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted group-focus-within:text-brand transition-colors">kitchen</span>
+                   <input type="text" formControlName="name" class="w-full bg-surface-elevated border-2 border-strong rounded-xl pl-12 pr-4 py-3 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner" placeholder="Ex: Freezer de Carnes">
+                </div>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Temp. Mínima (°C)</label>
-                  <input type="number" step="0.1" formControlName="min_temp" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Mínima (°C)</label>
+                  <input type="number" step="0.1" formControlName="min_temp" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-black data-mono focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-300 mb-1">Temp. Máxima (°C)</label>
-                  <input type="number" step="0.1" formControlName="max_temp" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Máxima (°C)</label>
+                  <input type="number" step="0.1" formControlName="max_temp" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-black data-mono focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner">
                 </div>
               </div>
             </div>
-            <div class="bg-gray-900/50 p-4 border-t border-gray-700 flex justify-end gap-3">
-              <button type="button" (click)="showAddEquipmentModal.set(false)" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <div class="bg-surface-elevated/50 px-8 py-5 border-t border-subtle flex justify-end gap-3">
+              <button type="button" (click)="showAddEquipmentModal.set(false)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
                 Cancelar
               </button>
-              <button type="submit" [disabled]="equipmentForm.invalid || isSubmitting()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+              <button type="submit" [disabled]="equipmentForm.invalid || isSubmitting()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white rounded-xl text-sm font-black shadow-lg shadow-brand/20 transition-all active:scale-95 border border-brand uppercase tracking-widest">
                 Salvar
               </button>
             </div>
@@ -266,12 +303,12 @@ export class TemperaturesComponent implements OnInit {
 
   getTemperatureStatusClass(temp: number, min: number | null | undefined, max: number | null | undefined): string {
     if (min !== null && min !== undefined && temp < min) {
-      return 'bg-blue-100 text-blue-800'; // Too cold
+      return 'bg-info/10 text-info border-info/30'; // Too cold
     }
     if (max !== null && max !== undefined && temp > max) {
-      return 'bg-red-100 text-red-800'; // Too hot
+      return 'bg-danger/10 text-danger border-danger/30'; // Too hot
     }
-    return 'bg-green-100 text-green-800'; // OK
+    return 'bg-success/10 text-success border-success/30'; // OK
   }
 
   generatePDF() {
