@@ -1,69 +1,174 @@
-<div class="h-full flex flex-col p-4 md:p-8">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 no-print">
-    <div>
-      <h1 class="text-4xl font-black text-title title-display tracking-tight">Relatórios & Inteligência</h1>
-      <p class="text-muted text-sm font-medium mt-2">Extraia insights valiosos da sua operação através de dados consolidados e análises precisas.</p>
-    </div>
-    
-    <div class="chef-surface p-4 rounded-3xl flex flex-col md:flex-row gap-4 items-center border border-subtle shadow-md">
-      <div class="relative">
-        <label class="absolute -top-2 left-4 px-1 bg-surface text-[9px] font-black text-muted uppercase tracking-widest z-10">Data de Início</label>
-        <input type="date" [value]="startDate()" (input)="startDate.set($any($event.target).value)" 
-               class="bg-surface border border-strong rounded-xl px-4 py-2.5 text-title font-bold text-xs focus:ring-2 focus:ring-brand outline-none transition-all appearance-none min-w-[160px]">
-      </div>
-      <div class="w-4 h-[1px] bg-subtle hidden md:block"></div>
-      <div class="relative">
-        <label class="absolute -top-2 left-4 px-1 bg-surface text-[9px] font-black text-muted uppercase tracking-widest z-10">Data de Fim</label>
-        <input type="date" [value]="endDate()" (input)="endDate.set($any($event.target).value)" 
-               class="bg-surface border border-strong rounded-xl px-4 py-2.5 text-title font-bold text-xs focus:ring-2 focus:ring-brand outline-none transition-all appearance-none min-w-[160px]">
-      </div>
-    </div>
+<div class="h-full flex flex-col md:flex-row bg-background">
+  
+  <!-- Sidebar Categories -->
+  <div class="w-full md:w-64 flex-shrink-0 bg-surface border-r border-subtle md:h-full flex flex-col no-print z-10 shadow-lg">
+     <div class="p-6 border-b border-subtle pb-8">
+        <h1 class="text-3xl font-black text-title title-display tracking-tight leading-none mb-2">Relatórios<br>& Gestão</h1>
+        <p class="text-muted text-[11px] font-bold uppercase tracking-widest leading-relaxed mt-4">Inteligência Operacional</p>
+     </div>
+     
+     <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+        <!-- BI Category -->
+        <button (click)="setCategory('bi')"
+                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
+                [class.bg-brand/10]="activeCategory() === 'bi'" [class.border-brand/30]="activeCategory() === 'bi'"
+                [class.bg-surface]="activeCategory() !== 'bi'" [class.border-strong]="activeCategory() !== 'bi'" [class.hover:bg-surface-elevated]="activeCategory() !== 'bi'">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
+                 [class.bg-brand]="activeCategory() === 'bi'" [class.text-white]="activeCategory() === 'bi'" [class.border-transparent]="activeCategory() === 'bi'"
+                 [class.bg-surface-elevated]="activeCategory() !== 'bi'" [class.text-brand]="activeCategory() !== 'bi'" [class.border-strong]="activeCategory() !== 'bi'">
+                <span class="material-symbols-outlined">query_stats</span>
+            </div>
+            <div>
+               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'bi'" [class.text-brand]="activeCategory() === 'bi'">Inteligência BI</p>
+               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Vendas & Clientes</p>
+            </div>
+        </button>
+
+        <!-- Financial Category -->
+        <button (click)="setCategory('financial')"
+                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
+                [class.bg-emerald-500/10]="activeCategory() === 'financial'" [class.border-emerald-500/30]="activeCategory() === 'financial'"
+                [class.bg-surface]="activeCategory() !== 'financial'" [class.border-strong]="activeCategory() !== 'financial'" [class.hover:bg-surface-elevated]="activeCategory() !== 'financial'">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
+                 [class.bg-emerald-500]="activeCategory() === 'financial'" [class.text-white]="activeCategory() === 'financial'" [class.border-transparent]="activeCategory() === 'financial'"
+                 [class.bg-surface-elevated]="activeCategory() !== 'financial'" [class.text-emerald-500]="activeCategory() !== 'financial'" [class.border-strong]="activeCategory() !== 'financial'">
+                <span class="material-symbols-outlined">account_balance</span>
+            </div>
+            <div>
+               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'financial'" [class.text-emerald-600]="activeCategory() === 'financial'">DRE & Financeiro</p>
+               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Fluxo e CMV</p>
+            </div>
+        </button>
+        
+        <!-- Audit Category -->
+        <button (click)="setCategory('audit')"
+                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
+                [class.bg-indigo-500/10]="activeCategory() === 'audit'" [class.border-indigo-500/30]="activeCategory() === 'audit'"
+                [class.bg-surface]="activeCategory() !== 'audit'" [class.border-strong]="activeCategory() !== 'audit'" [class.hover:bg-surface-elevated]="activeCategory() !== 'audit'">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
+                 [class.bg-indigo-500]="activeCategory() === 'audit'" [class.text-white]="activeCategory() === 'audit'" [class.border-transparent]="activeCategory() === 'audit'"
+                 [class.bg-surface-elevated]="activeCategory() !== 'audit'" [class.text-indigo-500]="activeCategory() !== 'audit'" [class.border-strong]="activeCategory() !== 'audit'">
+                <span class="material-symbols-outlined">policy</span>
+            </div>
+            <div>
+               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'audit'" [class.text-indigo-600]="activeCategory() === 'audit'">Auditoria</p>
+               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Logs e Fraudes</p>
+            </div>
+        </button>
+        
+        <!-- Losses Category -->
+        <button (click)="setCategory('losses')"
+                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
+                [class.bg-amber-500/10]="activeCategory() === 'losses'" [class.border-amber-500/30]="activeCategory() === 'losses'"
+                [class.bg-surface]="activeCategory() !== 'losses'" [class.border-strong]="activeCategory() !== 'losses'" [class.hover:bg-surface-elevated]="activeCategory() !== 'losses'">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
+                 [class.bg-amber-500]="activeCategory() === 'losses'" [class.text-white]="activeCategory() === 'losses'" [class.border-transparent]="activeCategory() === 'losses'"
+                 [class.bg-surface-elevated]="activeCategory() !== 'losses'" [class.text-amber-500]="activeCategory() !== 'losses'" [class.border-strong]="activeCategory() !== 'losses'">
+                <span class="material-symbols-outlined">trending_down</span>
+            </div>
+            <div>
+               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'losses'" [class.text-amber-600]="activeCategory() === 'losses'">Perdas (Waste)</p>
+               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Custo com erros</p>
+            </div>
+        </button>
+
+        <!-- Custom Category -->
+        <button (click)="setCategory('custom')"
+                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group mt-4"
+                [class.bg-title/5]="activeCategory() === 'custom'" [class.border-title/30]="activeCategory() === 'custom'"
+                [class.bg-surface]="activeCategory() !== 'custom'" [class.border-strong]="activeCategory() !== 'custom'" [class.hover:bg-surface-elevated]="activeCategory() !== 'custom'">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
+                 [class.bg-title]="activeCategory() === 'custom'" [class.text-surface]="activeCategory() === 'custom'" [class.border-transparent]="activeCategory() === 'custom'"
+                 [class.bg-surface-elevated]="activeCategory() !== 'custom'" [class.text-title]="activeCategory() !== 'custom'" [class.border-strong]="activeCategory() !== 'custom'">
+                <span class="material-symbols-outlined">construction</span>
+            </div>
+            <div>
+               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="true">Personalizado</p>
+               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Construtor Próprio</p>
+            </div>
+        </button>
+     </div>
   </div>
 
-  <!-- Tabs for Report Types -->
-  <div class="mb-10 no-print flex-shrink-0">
-      <nav class="flex items-center gap-2 p-1.5 bg-surface-elevated/40 backdrop-blur-md rounded-2xl border border-subtle overflow-x-auto scrollbar-none" aria-label="Tabs">
-          <button (click)="activeReport.set('summary')" 
-                  class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2"
-                  [class.bg-brand]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.shadow-lg]="activeReport() === 'summary'"
-                  [class.text-muted]="activeReport() !== 'summary'" [class.hover:bg-surface]="activeReport() !== 'summary'">
-              <span class="material-symbols-outlined text-lg">dashboard</span>
-              Resumo Operacional
-          </button>
-          <button (click)="activeReport.set('comparative')" 
-                  class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2"
-                  [class.bg-brand]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.shadow-lg]="activeReport() === 'comparative'"
-                  [class.text-muted]="activeReport() !== 'comparative'" [class.hover:bg-surface]="activeReport() !== 'comparative'">
-              <span class="material-symbols-outlined text-lg">compare_arrows</span>
-              Análise Comparativa
-          </button>
-          <button (click)="activeReport.set('peakHours')" 
-                  class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2"
-                  [class.bg-brand]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.shadow-lg]="activeReport() === 'peakHours'"
-                  [class.text-muted]="activeReport() !== 'peakHours'" [class.hover:bg-surface]="activeReport() !== 'peakHours'">
-              <span class="material-symbols-outlined text-lg">schedule</span>
-              Horários de Pico
-          </button>
-          <button (click)="activeReport.set('audit')" 
-                  class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2"
-                  [class.bg-red-500]="activeReport() === 'audit'" [class.text-white]="activeReport() === 'audit'" [class.shadow-lg]="activeReport() === 'audit'"
-                  [class.text-muted]="activeReport() !== 'audit'" [class.hover:bg-red-500/5]="activeReport() !== 'audit'">
-              <span class="material-symbols-outlined text-lg">policy</span>
-              Auditoria & Cancelamentos
-          </button>
-          <button (click)="activeReport.set('builder')" 
-                  class="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2"
-                  [class.bg-brand]="activeReport() === 'builder'" [class.text-white]="activeReport() === 'builder'" [class.shadow-lg]="activeReport() === 'builder'"
-                  [class.text-muted]="activeReport() !== 'builder'" [class.hover:bg-surface]="activeReport() !== 'builder'">
-              <span class="material-symbols-outlined text-lg">construction</span>
-              Construtor Customizado
-          </button>
-      </nav>
-  </div>
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
+      <!-- Top Filters -->
+      <div class="absolute top-0 right-0 left-0 bg-surface/80 backdrop-blur-xl border-b border-subtle p-4 px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 no-print gap-4">
+         
+         <!-- Sub-tabs based on Active Category -->
+         <nav class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full md:w-auto pb-2 md:pb-0">
+             @if (activeCategory() === 'bi') {
+                 <button (click)="activeReport.set('menuEngineering')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-brand]="activeReport() === 'menuEngineering'" [class.text-white]="activeReport() === 'menuEngineering'" [class.border-transparent]="activeReport() === 'menuEngineering'"
+                         [class.bg-surface]="activeReport() !== 'menuEngineering'" [class.text-muted]="activeReport() !== 'menuEngineering'" [class.border-strong]="activeReport() !== 'menuEngineering'" [class.hover:text-title]="activeReport() !== 'menuEngineering'">
+                     <span class="material-symbols-outlined text-base">grid_goldenratio</span> Engenharia BCG
+                 </button>
+                 <button (click)="activeReport.set('customerBehavior')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-brand]="activeReport() === 'customerBehavior'" [class.text-white]="activeReport() === 'customerBehavior'" [class.border-transparent]="activeReport() === 'customerBehavior'"
+                         [class.bg-surface]="activeReport() !== 'customerBehavior'" [class.text-muted]="activeReport() !== 'customerBehavior'" [class.border-strong]="activeReport() !== 'customerBehavior'" [class.hover:text-title]="activeReport() !== 'customerBehavior'">
+                     <span class="material-symbols-outlined text-base">psychology</span> CRM Frequência
+                 </button>
+                 <button (click)="activeReport.set('peakHours')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-brand]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() === 'peakHours'"
+                         [class.bg-surface]="activeReport() !== 'peakHours'" [class.text-muted]="activeReport() !== 'peakHours'" [class.border-strong]="activeReport() !== 'peakHours'" [class.hover:text-title]="activeReport() !== 'peakHours'">
+                     <span class="material-symbols-outlined text-base">schedule</span> Mapa de Calor
+                 </button>
+             }
+             @if (activeCategory() === 'financial') {
+                 <button (click)="activeReport.set('summary')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-emerald-500]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.border-transparent]="activeReport() === 'summary'"
+                         [class.bg-surface]="activeReport() !== 'summary'" [class.text-muted]="activeReport() !== 'summary'" [class.border-strong]="activeReport() !== 'summary'" [class.hover:text-title]="activeReport() !== 'summary'">
+                     <span class="material-symbols-outlined text-base">dashboard</span> Resumo Geral
+                 </button>
+                 <button (click)="activeReport.set('comparative')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-emerald-500]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.border-transparent]="activeReport() === 'comparative'"
+                         [class.bg-surface]="activeReport() !== 'comparative'" [class.text-muted]="activeReport() !== 'comparative'" [class.border-strong]="activeReport() !== 'comparative'" [class.hover:text-title]="activeReport() !== 'comparative'">
+                     <span class="material-symbols-outlined text-base">compare_arrows</span> Conciliação DRE
+                 </button>
+             }
+             @if (activeCategory() === 'audit') {
+                 <button (click)="activeReport.set('audit')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-indigo-500]="activeReport() === 'audit'" [class.text-white]="activeReport() === 'audit'" [class.border-transparent]="activeReport() === 'audit'"
+                         [class.bg-surface]="activeReport() !== 'audit'" [class.text-muted]="activeReport() !== 'audit'" [class.border-strong]="activeReport() !== 'audit'" [class.hover:text-title]="activeReport() !== 'audit'">
+                     <span class="material-symbols-outlined text-base">cancel</span> Descontos & Canc.
+                 </button>
+                 <button (click)="activeReport.set('systemLogs')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-indigo-500]="activeReport() === 'systemLogs'" [class.text-white]="activeReport() === 'systemLogs'" [class.border-transparent]="activeReport() === 'systemLogs'"
+                         [class.bg-surface]="activeReport() !== 'systemLogs'" [class.text-muted]="activeReport() !== 'systemLogs'" [class.border-strong]="activeReport() !== 'systemLogs'" [class.hover:text-title]="activeReport() !== 'systemLogs'">
+                     <span class="material-symbols-outlined text-base">history</span> Logs Imutáveis
+                 </button>
+             }
+             @if (activeCategory() === 'losses') {
+                  <button (click)="activeReport.set('lossReport')"
+                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+                         [class.bg-amber-500]="activeReport() === 'lossReport'" [class.text-white]="activeReport() === 'lossReport'" [class.border-transparent]="activeReport() === 'lossReport'"
+                         [class.bg-surface]="activeReport() !== 'lossReport'" [class.text-muted]="activeReport() !== 'lossReport'" [class.border-strong]="activeReport() !== 'lossReport'" [class.hover:text-title]="activeReport() !== 'lossReport'">
+                     <span class="material-symbols-outlined text-base">warning</span> Desperdícios
+                 </button>
+             }
+         </nav>
+         
+         <!-- Global Date Filter -->
+         <div class="flex items-center gap-2 bg-surface p-1.5 rounded-2xl border border-strong shadow-inner">
+             <input type="date" [value]="startDate()" (input)="startDate.set($any($event.target).value)" 
+                    class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]">
+             <span class="text-muted text-[10px] font-black uppercase">até</span>
+             <input type="date" [value]="endDate()" (input)="endDate.set($any($event.target).value)" 
+                    class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]">
+         </div>
+      </div>
 
-  <div class="flex-1 overflow-auto custom-scrollbar">
-    @switch (activeReport()) {
-      @case('summary') {
+      <!-- Report Viewport -->
+      <div class="flex-1 overflow-y-auto px-6 md:px-10 pt-[100px] md:pt-[100px] pb-24 custom-scrollbar">
+          @switch (activeReport()) {
+            @case('summary') {
         <!-- Report Generation Form -->
         <div class="chef-surface rounded-[32px] p-8 mb-8 no-print border border-subtle shadow-xl group">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
@@ -296,6 +401,26 @@
       @case('builder') {
           <div class="pb-20">
             <app-report-builder [startDate]="startDate()" [endDate]="endDate()"></app-report-builder>
+          </div>
+      }
+      @case('menuEngineering') {
+          <div class="pb-20">
+            <app-menu-engineering [startDate]="startDate()" [endDate]="endDate()"></app-menu-engineering>
+          </div>
+      }
+      @case('customerBehavior') {
+          <div class="pb-20 h-full">
+            <app-customer-behavior [startDate]="startDate()" [endDate]="endDate()"></app-customer-behavior>
+          </div>
+      }
+      @case('systemLogs') {
+          <div class="pb-20 h-full">
+            <app-system-logs [startDate]="startDate()" [endDate]="endDate()"></app-system-logs>
+          </div>
+      }
+      @case('lossReport') {
+          <div class="pb-20 h-full">
+            <app-loss-report [startDate]="startDate()" [endDate]="endDate()"></app-loss-report>
           </div>
       }
     }

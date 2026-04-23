@@ -37,7 +37,7 @@ interface ChartWidget extends BaseWidget {
 }
 
 interface ListWidget extends BaseWidget {
-  type: 'list_top_items' | 'list_recent_orders' | 'list_payment_methods' | 'list_low_stock';
+  type: 'list_top_items' | 'list_recent_orders' | 'list_payment_methods' | 'list_low_stock' | 'list_waiter_ranking';
   title: string;
 }
 
@@ -92,10 +92,11 @@ export class DashboardComponent implements OnInit {
   // Layout Management
   private defaultWidgetOrder = [
     'kpi_sales', 'kpi_profit', 'kpi_ticket', 'kpi_orders', 
+    'kpi_occupancy', 'kpi_turnover', 'kpi_kds_time',
     'dre_summary',
     'chart_sales_1', 'list_top_items', 
-    'chart_hourly_1', 'list_payment_methods',
-    'list_recent_orders', 'list_low_stock'
+    'chart_hourly_1', 'list_waiter_ranking',
+    'list_recent_orders', 'list_payment_methods', 'list_low_stock'
   ];
   private widgetOrder = signal<string[]>([]);
   
@@ -156,6 +157,9 @@ export class DashboardComponent implements OnInit {
     const grossProfit = this.grossProfit();
     const avgTicket = this.averageTicket();
     const orderCount = this.totalOrders();
+    const occupancy = this.occupancyRate();
+    const turnover = this.averageTurnoverTime();
+    const kdsTime = this.averageKdsTime();
 
     const allWidgets: Record<string, DashboardWidget> = {
       'kpi_sales': { 
@@ -178,6 +182,21 @@ export class DashboardComponent implements OnInit {
         value: orderCount.toString(), 
         subValue: `${this.openOrdersCount()} abertos agora`, icon: 'shopping_cart_checkout', colorClass: 'text-yellow-400', route: '/pos'
       },
+      'kpi_occupancy': { 
+        type: 'kpi', id: 'kpi_occupancy', cols: 1, label: 'Tx de Ocupação', 
+        value: occupancy.toLocaleString('pt-BR', { style: 'percent', maximumFractionDigits: 1 }), 
+        subValue: 'Mesas ocupadas', icon: 'table_restaurant', colorClass: 'text-indigo-400', route: '/pos'
+      },
+      'kpi_turnover': { 
+        type: 'kpi', id: 'kpi_turnover', cols: 1, label: 'Turnover (Ciclo Médio)', 
+        value: `${turnover} min`, 
+        subValue: 'Tempo na mesa', icon: 'timer', colorClass: 'text-rose-400', route: '/pos'
+      },
+      'kpi_kds_time': { 
+        type: 'kpi', id: 'kpi_kds_time', cols: 1, label: 'Tempo de Cozinha', 
+        value: `${kdsTime} min`, 
+        subValue: 'Média de preparo', icon: 'skillet', colorClass: kdsTime > 15 ? 'text-danger' : 'text-amber-400', route: '/kds'
+      },
       'dre_summary': {
         type: 'dre_summary', id: 'dre_summary', cols: 2, title: 'DRE - Demonstrativo de Resultado'
       },
@@ -192,6 +211,10 @@ export class DashboardComponent implements OnInit {
       'list_top_items': {
         type: 'list_top_items', id: 'list_top_items', cols: 1,
         title: 'Top 5 Mais Vendidos'
+      },
+      'list_waiter_ranking': {
+        type: 'list_waiter_ranking', id: 'list_waiter_ranking', cols: 1,
+        title: 'Ranking de Garçons (Ticket Médio)'
       },
       'list_recent_orders': {
         type: 'list_recent_orders', id: 'list_recent_orders', cols: 1,
@@ -310,6 +333,44 @@ export class DashboardComponent implements OnInit {
   
   openOrdersCount = computed(() => this.posState.orders().filter(o => o.status === 'OPEN').length);
 
+  occupancyRate = computed(() => {
+    const allTables = this.posState.tables();
+    if (allTables.length === 0) return 0;
+    const occupiedTablesCount = new Set(this.posState.openOrders().filter(o => o.table_number).map(o => o.table_number)).size;
+    return occupiedTablesCount / allTables.length;
+  });
+
+  averageTurnoverTime = computed(() => {
+    const tableOrders = this.dashboardState.performanceCompletedOrders().filter(o => o.order_type === 'Dine-in' && o.completed_at && o.timestamp);
+    if (tableOrders.length === 0) return 0;
+    
+    const totalMinutes = tableOrders.reduce((sum, order) => {
+       const start = new Date(order.timestamp).getTime();
+       const end = new Date(order.completed_at!).getTime();
+       return sum + ((end - start) / (1000 * 60));
+    }, 0);
+    return Math.round(totalMinutes / tableOrders.length);
+  });
+
+  averageKdsTime = computed(() => {
+    let totalMinutes = 0;
+    let count = 0;
+    
+    const orders = this.dashboardState.performanceCompletedOrders();
+    for (const order of orders) {
+       for (const item of order.order_items) {
+           if (item.status_timestamps && item.status_timestamps['PRONTO'] && item.created_at) {
+               const start = new Date(item.created_at).getTime();
+               const end = new Date(item.status_timestamps['PRONTO']).getTime();
+               totalMinutes += ((end - start) / (1000 * 60));
+               count++;
+           }
+       }
+    }
+    
+    return count > 0 ? Math.round(totalMinutes / count) : 0;
+  });
+
   // Lists Data
   
   topSellingItems = computed(() => {
@@ -364,6 +425,33 @@ export class DashboardComponent implements OnInit {
         percentage: totalValue > 0 ? (value / totalValue) * 100 : 0 
       }))
       .sort((a, b) => b.value - a.value);
+  });
+
+  waiterRanking = computed(() => {
+    const tableOrders = this.dashboardState.performanceCompletedOrders().filter(o => o.order_type === 'Dine-in' && o.created_by_employee_id);
+    const waiterStats = new Map<string, { name: string, totalRevenue: number, orderCount: number }>();
+    const staff = this.hrState.employees() || [];
+    
+    for (const order of tableOrders) {
+      if (!order.created_by_employee_id) continue;
+      const waiterId = order.created_by_employee_id;
+      const existing = waiterStats.get(waiterId) || { name: staff.find(s => s.id === waiterId)?.name || 'Atendente ' + waiterId.slice(0, 4), totalRevenue: 0, orderCount: 0 };
+      
+      const orderTotal = order.order_items.reduce((s, i) => s + (i.price * i.quantity), 0);
+      existing.totalRevenue += orderTotal;
+      existing.orderCount++;
+      waiterStats.set(waiterId, existing);
+    }
+    
+    return Array.from(waiterStats.values())
+      .map(w => ({
+         name: w.name,
+         avgTicket: w.orderCount > 0 ? w.totalRevenue / w.orderCount : 0,
+         totalRevenue: w.totalRevenue,
+         orders: w.orderCount
+      }))
+      .sort((a, b) => b.avgTicket - a.avgTicket)
+      .slice(0, 5);
   });
 
   lowStockItems = computed(() => {

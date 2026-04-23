@@ -85,6 +85,14 @@ A nova **API V2 e Webhooks** agora estão padronizados e trazem super-poderes de
 - **Gatilhos em Tempo Real:** Subscrição em Webhooks (ex: `order.created`) para conectar ferramentas externas, ERPs contábeis e sistemas locais de Paging.
 - **Ponto e RH Inteligente:** Consumo e atualização interativa da rotina de folha, gestão de férias e "bater ponto" com restrição de GPS via Endpoints. Cargo ACL altamente granular.
 
+### 🔌 **Arquitetura de API e Webhooks Ominichannel**
+A nova **API V2 e Webhooks** agora estão padronizados e trazem super-poderes de personalização e integração para sistemas externos:
+- [Consultar Documentação V1 e Webhooks](API.md)
+- [Consultar a Nova API V2](apiv2.md)
+- **Extensível via API V2 REST:** Total controle e CRUD sobre salões temporários (`/halls`), lançamento de comandas fora do site (`/orders`), atualização contínua do estoque e gestão e autenticação de usuários via rotas (`/customers` e `/menu-items`).
+- **Gatilhos em Tempo Real:** Subscrição em Webhooks (ex: `order.created`) para conectar ferramentas externas, ERPs contábeis e sistemas locais de Paging.
+- **Ponto e RH Inteligente:** Consumo e atualização interativa da rotina de folha, gestão de férias e "bater ponto" com restrição de GPS via Endpoints. Cargo ACL altamente granular.
+
 ### 🍳 **KDS (Kitchen Display System)**
 - **Comandas Digitais:** Envie pedidos diretamente para as estações (Cozinha, Bar).
 - **Timers e Alertas:** Controle visual de atrasos e alertas sonoros para novos pedidos e itens críticos (alergias).

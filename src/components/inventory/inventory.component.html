@@ -373,47 +373,50 @@
   
   } @else if (viewTab() === 'labels') {
       <!-- Label Logs Tab -->
-      <div class="bg-gray-800 rounded-lg p-6">
-          <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-semibold text-white">Histórico de Etiquetas Geradas</h2>
-              <button (click)="openLabelModal(null)" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+      <div class="chef-surface border border-subtle shadow-xl rounded-2xl p-8">
+          <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-black text-title title-display tracking-tight">Histórico de Etiquetas Geradas</h2>
+              <button (click)="openLabelModal(null)" class="bg-brand hover:bg-brand/90 text-white font-bold py-2 px-4 rounded-xl transition-all shadow-md flex items-center gap-2">
                   <span class="material-symbols-outlined text-base">print</span>
                   Nova Etiqueta Avulsa
               </button>
           </div>
           
           @if(labelLogs().length === 0) {
-              <p class="text-center text-gray-500 py-10">Nenhuma etiqueta gerada recentemente.</p>
+              <div class="flex flex-col items-center justify-center h-64 border border-dashed border-strong rounded-[24px]">
+                 <span class="material-symbols-outlined text-muted/30 text-5xl mb-4">label_off</span>
+                 <p class="text-center text-muted font-black tracking-widest uppercase text-xs">Nenhuma etiqueta gerada recentemente.</p>
+              </div>
           } @else {
-              <div class="overflow-x-auto">
-                  <table class="w-full text-left text-sm text-gray-300">
-                      <thead class="text-xs uppercase bg-gray-700/50">
+              <div class="overflow-x-auto border border-subtle rounded-2xl shadow-sm">
+                  <table class="w-full text-left text-sm text-muted">
+                      <thead class="text-[10px] uppercase font-black tracking-widest bg-surface-elevated text-muted border-b border-subtle">
                           <tr>
-                              <th class="px-4 py-3">Item</th>
-                              <th class="px-4 py-3">Tipo</th>
-                              <th class="px-4 py-3">Manipulação</th>
-                              <th class="px-4 py-3">Validade</th>
-                              <th class="px-4 py-3">Resp.</th>
-                              <th class="px-4 py-3">Lote</th>
+                              <th class="px-6 py-4">Item</th>
+                              <th class="px-6 py-4">Tipo</th>
+                              <th class="px-6 py-4">Manipulação</th>
+                              <th class="px-6 py-4">Validade</th>
+                              <th class="px-6 py-4">Resp.</th>
+                              <th class="px-6 py-4">Lote</th>
                           </tr>
                       </thead>
-                      <tbody>
+                      <tbody class="divide-y divide-subtle/50 bg-background">
                           @for(log of labelLogs(); track log.id) {
-                              <tr class="border-b border-gray-700 hover:bg-gray-700/30">
-                                  <td class="px-4 py-3 font-medium text-white">{{ log.item_name }}</td>
-                                  <td class="px-4 py-3">
-                                      <span class="px-2 py-1 rounded text-xs font-bold" 
-                                        [class.bg-blue-900]="log.label_type === 'OPENING'" [class.text-blue-300]="log.label_type === 'OPENING'"
-                                        [class.bg-green-900]="log.label_type === 'PREPARED'" [class.text-green-300]="log.label_type === 'PREPARED'"
-                                        [class.bg-purple-900]="log.label_type === 'PORTION'" [class.text-purple-300]="log.label_type === 'PORTION'"
-                                        [class.bg-yellow-900]="log.label_type === 'DEFROST'" [class.text-yellow-300]="log.label_type === 'DEFROST'">
+                              <tr class="hover:bg-surface/50 transition-colors">
+                                  <td class="px-6 py-4 font-black text-title">{{ log.item_name }}</td>
+                                  <td class="px-6 py-4">
+                                      <span class="px-3 py-1.5 rounded-lg text-[10px] tracking-widest uppercase font-black" 
+                                        [class.bg-brand/10]="log.label_type === 'OPENING'" [class.text-brand]="log.label_type === 'OPENING'"
+                                        [class.bg-emerald-500/10]="log.label_type === 'PREPARED'" [class.text-emerald-500]="log.label_type === 'PREPARED'"
+                                        [class.bg-indigo-500/10]="log.label_type === 'PORTION'" [class.text-indigo-500]="log.label_type === 'PORTION'"
+                                        [class.bg-warning/10]="log.label_type === 'DEFROST'" [class.text-warning]="log.label_type === 'DEFROST'">
                                           {{ log.label_type }}
                                       </span>
                                   </td>
-                                  <td class="px-4 py-3">{{ log.manipulation_date | date:'dd/MM/yy HH:mm' }}</td>
-                                  <td class="px-4 py-3 font-bold text-white">{{ log.expiration_date | date:'dd/MM/yy HH:mm' }}</td>
-                                  <td class="px-4 py-3">{{ log.employees?.name || '---' }}</td>
-                                  <td class="px-4 py-3 font-mono text-xs">{{ log.lot_number || '-' }}</td>
+                                  <td class="px-6 py-4 font-mono text-xs font-bold">{{ log.manipulation_date | date:'dd/MM HH:mm' }}</td>
+                                  <td class="px-6 py-4 font-mono text-xs font-bold text-title">{{ log.expiration_date | date:'dd/MM HH:mm' }}</td>
+                                  <td class="px-6 py-4">{{ log.employees?.name || '---' }}</td>
+                                  <td class="px-6 py-4 font-mono text-xs">{{ log.lot_number || '-' }}</td>
                               </tr>
                           }
                       </tbody>
@@ -429,30 +432,33 @@
 
 <!-- Add/Edit Ingredient Modal -->
 @if(isModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white">{{ editingIngredient() ? 'Editar Ingrediente' : 'Adicionar Novo Ingrediente' }}</h3>
-        <button (click)="closeModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal()">
+    <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface-elevated rounded-t-2xl">
+        <h3 class="text-xl font-bold text-title flex items-center gap-2">
+            <span class="material-symbols-outlined text-brand">inventory_2</span>
+            {{ editingIngredient() ? 'Editar Ingrediente' : 'Novo Ingrediente' }}
+        </h3>
+        <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
+          <span class="material-symbols-outlined">close</span>
         </button>
       </div>
 
-      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div class="p-6 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Nome do Ingrediente</label>
-              <input type="text" [value]="ingredientForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" placeholder="Ex: Farinha de Trigo" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Nome do Ingrediente</label>
+              <input type="text" [value]="ingredientForm().name || ''" (input)="updateFormValue('name', $any($event.target).value)" placeholder="Ex: Farinha de Trigo" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Cód. Externo (PDV / iFood)</label>
-              <input type="text" [value]="ingredientForm().external_code || ''" (input)="updateFormValue('external_code', $any($event.target).value)" placeholder="Ex: SKU123" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Cód. Externo (PDV / iFood)</label>
+              <input type="text" [value]="ingredientForm().external_code || ''" (input)="updateFormValue('external_code', $any($event.target).value)" placeholder="Ex: SKU123" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner">
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Categoria de Estoque</label>
-              <select (change)="updateFormValue('category_id', $any($event.target).value)" [value]="ingredientForm().category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Categoria de Estoque</label>
+              <select (change)="updateFormValue('category_id', $any($event.target).value)" [value]="ingredientForm().category_id" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none">
                 <option [value]="null">Nenhuma</option>
                 @for (cat of categories(); track cat.id) {
                   <option [value]="cat.id">{{ cat.name }}</option>
@@ -460,8 +466,8 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor Principal</label>
-              <select (change)="updateFormValue('supplier_id', $any($event.target).value)" [value]="ingredientForm().supplier_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Fornecedor Principal</label>
+              <select (change)="updateFormValue('supplier_id', $any($event.target).value)" [value]="ingredientForm().supplier_id" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none">
                 <option [value]="null">Nenhum</option>
                 @for (sup of suppliers(); track sup.id) {
                   <option [value]="sup.id">{{ sup.name }}</option>
@@ -473,18 +479,18 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @if (!editingIngredient()) {
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Inicial</label>
-              <input type="number" [value]="ingredientForm().stock ?? 0" (input)="updateFormValue('stock', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Estoque Inicial</label>
+              <input type="number" [value]="ingredientForm().stock ?? 0" (input)="updateFormValue('stock', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner font-mono text-right">
             </div>
           } @else {
              <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Atual</label>
-                <input type="number" [value]="ingredientForm().stock ?? 0" disabled class="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
+                <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Estoque Atual</label>
+                <input type="number" [value]="ingredientForm().stock ?? 0" disabled class="w-full bg-background border border-subtle rounded-xl px-4 py-2 text-muted cursor-not-allowed font-mono text-right">
             </div>
           }
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Unidade</label>
-            <select (change)="updateFormValue('unit', $any($event.target).value)" [value]="ingredientForm().unit" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Unidade</label>
+            <select (change)="updateFormValue('unit', $any($event.target).value)" [value]="ingredientForm().unit" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner uppercase appearance-none tracking-widest text-sm font-black">
               @for (unit of availableUnits; track unit) {
                 <option [value]="unit">{{ unit.toUpperCase() }}</option>
               }
@@ -494,50 +500,60 @@
 
          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Custo Unitário (R$)</label>
-            <input type="number" [value]="ingredientForm().cost ?? 0" (input)="updateFormValue('cost', $any($event.target).value)" placeholder="Ex: 12.50" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Custo Unitário (R$)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted font-bold">R$</span>
+              <input type="number" [value]="ingredientForm().cost ?? 0" (input)="updateFormValue('cost', $any($event.target).value)" placeholder="12.50" class="w-full bg-surface-elevated border border-strong rounded-xl pl-10 pr-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner font-mono text-right">
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Estoque Mínimo</label>
-            <input type="number" [value]="ingredientForm().min_stock ?? 0" (input)="updateFormValue('min_stock', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Estoque Mínimo</label>
+            <input type="number" [value]="ingredientForm().min_stock ?? 0" (input)="updateFormValue('min_stock', $any($event.target).value)" class="w-full bg-warning/10 border border-warning/30 rounded-xl px-4 py-2 text-warning focus:outline-none focus:ring-1 focus:ring-warning shadow-inner font-mono text-right font-bold">
           </div>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
-            <input type="date" [value]="ingredientForm().expiration_date | date:'yyyy-MM-dd'" (input)="updateFormValue('expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Data de Validade <span class="text-xs text-muted font-normal">(Lote atual)</span></label>
+            <input type="date" [value]="ingredientForm().expiration_date | date:'yyyy-MM-dd'" (input)="updateFormValue('expiration_date', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner uppercase text-sm font-mono tracking-wide">
         </div>
 
-        <!-- Validade / Etiquetagem -->
-        <div class="pt-4 border-t border-gray-700">
-            <h4 class="text-md font-semibold text-white mb-3">Configuração de Validade (Etiquetagem)</h4>
+        <!-- Etiquetagem -->
+        <div class="pt-5 mt-2 border-t border-subtle relative">
+            <span class="absolute -top-3 left-3 bg-surface-elevated px-2 text-[10px] font-black uppercase text-muted tracking-widest">Etiquetagem (ANVISA)</span>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Validade após aberto (dias)</label>
-                    <input type="number" [value]="ingredientForm().shelf_life_after_open_days ?? 3" (input)="updateFormValue('shelf_life_after_open_days', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Validade após aberto (dias)</label>
+                    <input type="number" [value]="ingredientForm().shelf_life_after_open_days ?? 3" (input)="updateFormValue('shelf_life_after_open_days', +$any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner font-mono text-right">
                 </div>
                 <div>
-                     <label class="block text-sm font-medium text-gray-300 mb-1">Condição de Armazenamento</label>
-                     <input type="text" [value]="ingredientForm().storage_conditions || 'Refrigerado'" (input)="updateFormValue('storage_conditions', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                     <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Condição Armazenamento</label>
+                     <input type="text" [value]="ingredientForm().storage_conditions || 'Refrigerado'" (input)="updateFormValue('storage_conditions', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner">
                 </div>
             </div>
         </div>
 
-        <!-- Sellable Item Section -->
-        <div class="pt-4 border-t border-gray-700">
-            <div class="flex items-center">
-                <input id="is_sellable" type="checkbox" [checked]="ingredientForm().is_sellable" (change)="updateFormValue('is_sellable', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
-                <label for="is_sellable" class="ml-2 block text-sm font-medium text-gray-200">Pode ser vendido diretamente no PDV?</label>
+        <!-- PDV -->
+        <div class="pt-5 mt-2 border-t border-subtle relative">
+            <span class="absolute -top-3 left-3 bg-surface-elevated px-2 text-[10px] font-black uppercase text-brand tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">point_of_sale</span> Venda Direta</span>
+            <div class="flex items-center group cursor-pointer w-max" (click)="updateFormValue('is_sellable', !ingredientForm().is_sellable)">
+                <div class="w-5 h-5 rounded border border-strong flex items-center justify-center transition-colors mr-3 shadow-inner bg-surface group-hover:border-brand"
+                     [class.bg-brand]="ingredientForm().is_sellable" [class.border-brand]="ingredientForm().is_sellable">
+                     @if(ingredientForm().is_sellable) { <span class="material-symbols-outlined text-[14px] text-white font-bold">check</span> }
+                </div>
+                <span class="text-sm font-bold text-title user-select-none group-hover:text-brand transition-colors">Vender diretamente no PDV</span>
             </div>
             @if(ingredientForm().is_sellable) {
-                <div class="mt-4 space-y-4 p-4 bg-gray-700/50 rounded-lg">
+                <div class="mt-4 p-4 bg-brand/5 border border-brand/20 rounded-xl space-y-4 shadow-inner">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Preço de Venda (R$)</label>
-                        <input type="number" [value]="ingredientForm().price ?? 0" (input)="updateFormValue('price', $any($event.target).value)" placeholder="Ex: 5.00" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                        <label class="block text-sm font-semibold text-brand mb-1.5 ml-1">Preço de Venda (R$)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-brand font-bold">R$</span>
+                            <input type="number" [value]="ingredientForm().price ?? 0" (input)="updateFormValue('price', $any($event.target).value)" placeholder="5.00" class="w-full bg-surface border border-brand/30 rounded-xl pl-10 pr-4 py-2 text-brand font-black focus:outline-none focus:border-brand shadow-inner font-mono text-right">
+                        </div>
                     </div>
                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Categoria no PDV</label>
-                            <select (change)="updateFormValue('pos_category_id', $any($event.target).value)" [value]="ingredientForm().pos_category_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Categoria (Cardápio)</label>
+                            <select (change)="updateFormValue('pos_category_id', $any($event.target).value)" [value]="ingredientForm().pos_category_id" class="w-full bg-surface border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none">
                                 <option [value]="null">Selecione...</option>
                                 @for(cat of recipeCategories(); track cat.id) {
                                     <option [value]="cat.id">{{ cat.name }}</option>
@@ -545,8 +561,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Estação KDS</label>
-                             <select (change)="updateFormValue('station_id', $any($event.target).value)" [value]="ingredientForm().station_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Estação de Produção</label>
+                             <select (change)="updateFormValue('station_id', $any($event.target).value)" [value]="ingredientForm().station_id" class="w-full bg-surface border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none">
                                 <option [value]="null">Selecione...</option>
                                 @for(station of stations(); track station.id) {
                                     <option [value]="station.id">{{ station.name }}</option>
@@ -557,36 +573,54 @@
                 </div>
             }
         </div>
-        <!-- Portioning Section -->
-        <div class="pt-4 border-t border-gray-700">
-            <h4 class="text-md font-semibold text-white mb-3">Porcionamento</h4>
-            <div class="space-y-4 p-4 bg-gray-700/50 rounded-lg">
-                <div class="flex items-center">
-                    <input id="is_portionable" type="checkbox" [checked]="ingredientForm().is_portionable" (change)="updateFormValue('is_portionable', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
-                    <label for="is_portionable" class="ml-2 block text-sm font-medium text-gray-200">Este é um item porcionável?</label>
+        
+        <!-- Porcionamento -->
+        <div class="pt-5 mt-2 border-t border-subtle relative">
+            <span class="absolute -top-3 left-3 bg-surface-elevated px-2 text-[10px] font-black uppercase text-indigo-500 tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">content_cut</span> Porcionamento</span>
+            <div class="space-y-4 p-4 border border-strong rounded-xl bg-surface">
+                
+                <!-- Toggle 1 -->
+                <div class="flex items-start group cursor-pointer" (click)="updateFormValue('is_portionable', !ingredientForm().is_portionable)">
+                    <div class="w-5 h-5 rounded border border-strong flex items-center justify-center transition-colors mr-3 shadow-inner bg-surface group-hover:border-indigo-500 mt-0.5 flex-shrink-0"
+                         [class.bg-indigo-500]="ingredientForm().is_portionable" [class.border-indigo-500]="ingredientForm().is_portionable">
+                         @if(ingredientForm().is_portionable) { <span class="material-symbols-outlined text-[14px] text-white font-bold">check</span> }
+                    </div>
+                    <div>
+                        <span class="text-sm font-bold text-title block mb-0.5 group-hover:text-indigo-500 transition-colors">Matéria-Prima (Item Base)</span>
+                        <p class="text-[10px] text-muted font-medium leading-tight">Marque se este item será cortado/dividido para criar outros sub-itens.</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-400 -mt-2 ml-6">Marque se este item (ex: uma peça de picanha) é processado para gerar outros itens de estoque (ex: porções de picanha).</p>
 
-                <div class="flex items-center">
-                    <input id="is_yield_product" type="checkbox" [checked]="ingredientForm().is_yield_product" (change)="updateFormValue('is_yield_product', $any($event.target).checked)" class="h-4 w-4 rounded border-gray-500 text-blue-600 focus:ring-blue-500">
-                    <label for="is_yield_product" class="ml-2 block text-sm font-medium text-gray-200">Este item é um resultado de porcionamento?</label>
+                <!-- Toggle 2 -->
+                <div class="flex items-start group cursor-pointer pt-2" (click)="updateFormValue('is_yield_product', !ingredientForm().is_yield_product)">
+                    <div class="w-5 h-5 rounded border border-strong flex items-center justify-center transition-colors mr-3 shadow-inner bg-surface group-hover:border-indigo-500 mt-0.5 flex-shrink-0"
+                         [class.bg-indigo-500]="ingredientForm().is_yield_product" [class.border-indigo-500]="ingredientForm().is_yield_product">
+                         @if(ingredientForm().is_yield_product) { <span class="material-symbols-outlined text-[14px] text-white font-bold">check</span> }
+                    </div>
+                    <div>
+                        <span class="text-sm font-bold text-title block mb-0.5 group-hover:text-indigo-500 transition-colors">Subproduto (Resultado)</span>
+                        <p class="text-[10px] text-muted font-medium leading-tight">Marque se este item é a porção final após um processo de manipulação.</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-400 -mt-2 ml-6">Marque se este item (ex: porção de picanha) é o resultado final de um processo de porcionamento.</p>
 
                 @if(ingredientForm().is_yield_product) {
-                    <div class="pl-6">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Peso Padrão da Porção (em gramas)</label>
-                        <input type="number" [value]="ingredientForm().standard_portion_weight_g ?? null" (input)="updateFormValue('standard_portion_weight_g', $any($event.target).value)" placeholder="Ex: 250" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                        <p class="text-xs text-gray-400 mt-1">Opcional. Usado para calcular o rendimento no processo de porcionamento.</p>
+                    <div class="pl-8 pt-3 border-t border-subtle mt-3">
+                        <label class="block text-xs font-bold text-indigo-500 mb-1">Peso Padrão (gramas)</label>
+                        <input type="number" [value]="ingredientForm().standard_portion_weight_g ?? null" (input)="updateFormValue('standard_portion_weight_g', $any($event.target).value)" placeholder="Ex: 250" class="w-32 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-1.5 text-indigo-600 focus:outline-none focus:border-indigo-500 shadow-inner font-mono font-bold text-right">
+                        <p class="text-[9px] text-muted mt-1 uppercase tracking-widest font-bold">Estimativa de rendimento</p>
                     </div>
                 }
             </div>
         </div>
       </div>
       
-      <div class="p-4 bg-gray-700/50 flex justify-end gap-3">
-         <button (click)="closeModal()" class="px-4 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-         <button (click)="saveIngredient()" class="px-4 py-2 font-medium rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors">Salvar</button>
+      <!-- Footer -->
+      <div class="p-4 bg-surface-elevated flex justify-end gap-3 flex-shrink-0 border-t border-subtle rounded-b-2xl">
+         <button (click)="closeModal()" class="px-5 py-2 font-bold rounded-xl text-muted hover-surface-elevated transition-colors border border-transparent hover:border-strong">Cancelar</button>
+         <button (click)="saveIngredient()" class="px-6 py-2 font-black rounded-xl bg-brand hover:bg-brand/90 text-white transition-all shadow-md flex items-center gap-2">
+             <span class="material-symbols-outlined text-[18px]">save</span>
+             Salvar
+         </button>
       </div>
 
     </div>
@@ -890,21 +924,40 @@
 
 <!-- Add Ingredient "On-the-fly" Modal -->
 @if (isAddingIngredient()) {
-  <div class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" (click)="closeAddIngredientModal()">
-    <div class="bg-gray-700 rounded-lg w-full max-w-md" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-600"><h4 class="text-lg font-semibold text-white">Novo Ingrediente</h4></div>
-      <div class="p-6 space-y-4">
-          <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Nome do Ingrediente" class="w-full bg-gray-600 rounded-lg p-2 text-white">
+  <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in" (click)="closeAddIngredientModal()">
+    <div class="chef-surface border border-subtle shadow-2xl rounded-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface-elevated rounded-t-2xl flex justify-between items-center">
+          <h4 class="text-xl font-bold text-title flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand">inventory_2</span> Novo Ingrediente
+          </h4>
+          <button (click)="closeAddIngredientModal()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+      </div>
+      <div class="p-6 space-y-5">
+          <div>
+              <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Nome do Ingrediente</label>
+              <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="Farinha, Açúcar..." class="w-full bg-surface border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner">
+          </div>
           <div class="grid grid-cols-2 gap-4">
-            <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="Custo Unitário" class="w-full bg-gray-600 rounded-lg p-2 text-white">
-            <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-gray-600 rounded-lg p-2 text-white">
-                @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
-            </select>
+              <div>
+                  <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Custo Unitário (R$)</label>
+                  <div class="relative">
+                      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted font-bold">R$</span>
+                      <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="12.50" class="w-full bg-surface border border-strong rounded-xl pl-10 pr-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner font-mono text-right">
+                  </div>
+              </div>
+              <div>
+                  <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Unidade</label>
+                  <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner uppercase tracking-widest font-black text-sm appearance-none">
+                      @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
+                  </select>
+              </div>
           </div>
       </div>
-      <div class="p-4 bg-gray-600/50 flex justify-end gap-2">
-        <button (click)="closeAddIngredientModal()" class="px-4 py-2 text-sm rounded-lg bg-gray-500 hover:bg-gray-400">Cancelar</button>
-        <button (click)="saveNewIngredient()" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500">Salvar Ingrediente</button>
+      <div class="p-4 bg-surface-elevated flex justify-end gap-3 flex-shrink-0 border-t border-subtle rounded-b-2xl">
+        <button (click)="closeAddIngredientModal()" class="px-5 py-2 font-bold rounded-xl text-muted hover-surface-elevated transition-colors border border-transparent hover:border-strong">Cancelar</button>
+        <button (click)="saveNewIngredient()" class="px-6 py-2 font-black rounded-xl bg-brand hover:bg-brand/90 text-white transition-all shadow-md flex items-center gap-2">Salvar</button>
       </div>
     </div>
   </div>

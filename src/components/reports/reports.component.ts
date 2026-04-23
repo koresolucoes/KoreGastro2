@@ -7,15 +7,29 @@ import { ComparativeReportComponent } from './comparative-report/comparative-rep
 import { PeakHoursReportComponent } from './peak-hours-report/peak-hours-report.component';
 import { ReportBuilderComponent } from './report-builder/report-builder.component';
 import { CancellationReportComponent } from './cancellation-report/cancellation-report.component';
+import { MenuEngineeringComponent } from './menu-engineering/menu-engineering.component';
+import { CustomerBehaviorReportComponent } from './customer-behavior/customer-behavior.component';
+import { SystemLogsReportComponent } from './system-logs/system-logs.component';
+import { LossReportComponent } from './loss-report/loss-report.component';
 
 type ReportType = 'sales' | 'items' | 'financial';
-type ActiveReport = 'summary' | 'comparative' | 'peakHours' | 'audit' | 'builder';
-
+type ReportCategory = 'bi' | 'financial' | 'audit' | 'losses' | 'custom';
+type ActiveReport = 'summary' | 'comparative' | 'peakHours' | 'audit' | 'builder' | 'menuEngineering' | 'customerBehavior' | 'systemLogs' | 'lossReport';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, ComparativeReportComponent, PeakHoursReportComponent, ReportBuilderComponent, CancellationReportComponent],
+  imports: [
+    CommonModule, 
+    ComparativeReportComponent, 
+    PeakHoursReportComponent, 
+    ReportBuilderComponent, 
+    CancellationReportComponent, 
+    MenuEngineeringComponent,
+    CustomerBehaviorReportComponent,
+    SystemLogsReportComponent,
+    LossReportComponent
+  ],
   templateUrl: './reports.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,7 +47,19 @@ export class ReportsComponent implements OnInit {
     generatedSummaryReport = signal<ReportData | null>(null);
 
     // View State
-    activeReport = signal<ActiveReport>('summary');
+    activeCategory = signal<ReportCategory>('bi');
+    activeReport = signal<ActiveReport>('menuEngineering');
+
+    setCategory(category: ReportCategory) {
+        this.activeCategory.set(category);
+        switch (category) {
+            case 'bi': this.activeReport.set('menuEngineering'); break;
+            case 'financial': this.activeReport.set('summary'); break;
+            case 'audit': this.activeReport.set('audit'); break;
+            case 'losses': this.activeReport.set('lossReport'); break;
+            case 'custom': this.activeReport.set('builder'); break;
+        }
+    }
     
     summaryReportTitle = computed(() => {
         switch (this.summaryReportType()) {

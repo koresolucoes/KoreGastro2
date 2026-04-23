@@ -83,10 +83,10 @@
            </p>
            <div class="border-2 border-white bg-white text-black p-2 rounded-xl w-full max-w-[260px] mx-auto text-xs shadow-lg transform rotate-1 hover:rotate-0 transition-transform">
                 <div [style.background-color]="dayColor()" class="text-center font-bold text-white p-1.5 mb-2 rounded-md shadow-sm">{{ dayName() }}</div>
-                <div class="font-bold text-center text-sm mb-2 border-b border-gray-200 pb-1">{{ itemName() }}</div>
-                <div class="flex justify-between mb-1"><span>MANIPULAÇÃO:</span><span class="font-mono text-gray-700">{{ form().manipulationDate | date:'dd/MM HH:mm' }}</span></div>
+                <div class="font-bold text-center text-sm mb-2 border-b border-gray-300 pb-1">{{ itemName() }}</div>
+                <div class="flex justify-between mb-1"><span>MANIPULAÇÃO:</span><span class="font-mono text-gray-800">{{ form().manipulationDate | date:'dd/MM HH:mm' }}</span></div>
                 <div class="flex justify-between font-bold text-red-600 mb-2"><span>VALIDADE:</span><span class="font-mono">{{ form().expirationDate | date:'dd/MM HH:mm' }}</span></div>
-                <div class="flex justify-between text-[10px] text-gray-500 border-t border-gray-200 pt-1 mt-1 font-mono">
+                <div class="flex justify-between text-[10px] text-gray-600 border-t border-gray-300 pt-1 mt-1 font-mono">
                   <span>{{ form().quantity }}{{ form().unit }}</span>
                   <span class="truncate max-w-[100px]">{{ responsibleName() }}</span>
                 </div>

@@ -1,0 +1,119 @@
+<div class="h-full flex flex-col space-y-8">
+  <div class="chef-surface rounded-[40px] border border-subtle shadow-xl p-8">
+    <div class="flex items-start gap-6">
+      <div class="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center border border-brand/20 shadow-inner">
+        <span class="material-symbols-outlined text-brand text-4xl">grid_goldenratio</span>
+      </div>
+      <div>
+        <h2 class="text-3xl font-black text-title title-display tracking-tight">Engenharia de Cardápio (Matriz BCG)</h2>
+        <p class="text-muted font-medium text-sm mt-2 max-w-3xl leading-relaxed">
+          Esta análise classifica seus pratos cruzando a <strong>Popularidade</strong> (quantidade vendida) com a <strong>Rentabilidade</strong> (lucro gerado). Use estes insights para otimizar preços, criar campanhas e decidir o que manter no cardápio.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex flex-col items-center justify-center h-96 chef-surface rounded-[40px] border border-subtle">
+      <div class="relative w-20 h-20 mb-6">
+        <div class="absolute inset-0 border-4 border-brand/10 rounded-full"></div>
+        <div class="absolute inset-0 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      <p class="text-[11px] font-black text-title uppercase tracking-widest animate-pulse">Calculando Matriz BCG...</p>
+    </div>
+  } @else if (sortedData().length > 0) {
+    <!-- Legend -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+      <div class="chef-surface p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex items-start gap-3">
+        <span class="material-symbols-outlined text-emerald-500 text-3xl">star</span>
+        <div>
+          <h4 class="text-xs font-black uppercase text-emerald-500">Estrelas</h4>
+          <p class="text-[10px] text-muted mt-1 leading-tight">Alta Popularidade / Alta Margem. Destaque-os no cardápio!</p>
+        </div>
+      </div>
+      <div class="chef-surface p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex items-start gap-3">
+        <span class="material-symbols-outlined text-blue-500 text-3xl">payments</span>
+        <div>
+          <h4 class="text-xs font-black uppercase text-blue-500">Vacas Leiteiras</h4>
+          <p class="text-[10px] text-muted mt-1 leading-tight">Alta Popularidade / Baixa Margem. Tente reduzir o custo levemente.</p>
+        </div>
+      </div>
+      <div class="chef-surface p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
+        <span class="material-symbols-outlined text-amber-500 text-3xl">extension</span>
+        <div>
+          <h4 class="text-xs font-black uppercase text-amber-500">Quebra-Cabeças</h4>
+          <p class="text-[10px] text-muted mt-1 leading-tight">Baixa Popularidade / Alta Margem. Crie promoções para vendê-los mais.</p>
+        </div>
+      </div>
+      <div class="chef-surface p-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 flex items-start gap-3">
+        <span class="material-symbols-outlined text-rose-500 text-3xl">delete</span>
+        <div>
+          <h4 class="text-xs font-black uppercase text-rose-500">Cachorros</h4>
+          <p class="text-[10px] text-muted mt-1 leading-tight">Baixa Popularidade / Baixa Margem. Considere removê-los.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="chef-surface rounded-3xl border border-subtle overflow-hidden shadow-xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left whitespace-nowrap">
+          <thead class="bg-surface-elevated/60 text-[10px] font-black text-muted uppercase tracking-widest border-b border-subtle">
+            <tr>
+              <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors" (click)="sortBy('name')">
+                <div class="flex items-center gap-2">Item <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'name'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+              </th>
+              <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors" (click)="sortBy('category')">
+                <div class="flex items-center gap-2">Classificação <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'category'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+              </th>
+              <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-center" (click)="sortBy('quantity')">
+                <div class="flex items-center justify-center gap-2">Vendas <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'quantity'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+              </th>
+              <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-right" (click)="sortBy('contributionMargin')">
+                <div class="flex items-center justify-end gap-2">Margem de Contribuição <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'contributionMargin'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+              </th>
+              <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-right" (click)="sortBy('totalRevenue')">
+                <div class="flex items-center justify-end gap-2">Faturamento <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'totalRevenue'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-subtle/50">
+            @for(item of sortedData(); track item.id) {
+              <tr class="hover:bg-surface/40 transition-colors">
+                <td class="px-6 py-4">
+                  <p class="font-black text-title text-sm tracking-tight">{{ item.name }}</p>
+                  <div class="flex gap-2 mt-1">
+                     <span class="text-[10px] text-muted">Preço: {{ item.unitPrice | currency:'BRL' }}</span>
+                     <span class="text-[10px] text-amber-600/80">Custo: {{ item.unitCost | currency:'BRL' }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-strong shadow-sm text-xs font-black uppercase tracking-widest" [ngClass]="getCategoryColor(item.category)">
+                    <span class="material-symbols-outlined text-lg leading-none">{{ getCategoryIcon(item.category) }}</span>
+                    {{ item.category }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <span class="font-bold data-mono text-title">{{ item.quantity }}</span>
+                  <p class="text-[9px] text-muted uppercase tracking-widest mt-0.5">{{ item.popularityPercentage | percent:'1.1-1' }} do Mix</p>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <span class="font-black data-mono tracking-tight" [class.text-emerald-500]="item.contributionMargin > 0" [class.text-rose-500]="item.contributionMargin <= 0">{{ item.contributionMargin | currency:'BRL' }}</span>
+                  <p class="text-[9px] uppercase tracking-widest mt-0.5" [class.text-emerald-500]="item.profitMargin > 0" [class.text-rose-500]="item.profitMargin <= 0">{{ item.profitMargin | percent:'1.0-1' }} Rentab.</p>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <span class="font-black text-title data-mono">{{ item.totalRevenue | currency:'BRL' }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="flex flex-col items-center justify-center py-32 chef-surface border border-dashed border-strong rounded-[40px]">
+      <span class="material-symbols-outlined text-muted/30 text-6xl mb-6">search_off</span>
+      <p class="text-muted font-black uppercase tracking-widest text-sm">Sem vendas suficientes para gerar a Matriz no período.</p>
+    </div>
+  }
+</div>
