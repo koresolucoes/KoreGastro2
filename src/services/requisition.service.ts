@@ -84,7 +84,7 @@ export class RequisitionService {
       return { success: !error, error };
   }
 
-  async createRequisition(stationId: string, items: { ingredientId: string; quantity: number; unit: string }[], notes?: string): Promise<{ success: boolean; error: any }> {
+  async createRequisition(stationId: string | null, items: { ingredientId: string; quantity: number; unit: string }[], notes?: string, targetUnitId?: string): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     // AUDIT: Capture the specific employee who requested this
     const employeeId = this.operationalAuthService.activeEmployee()?.id;
@@ -95,7 +95,8 @@ export class RequisitionService {
       .from('requisitions')
       .insert({
         user_id: userId,
-        requested_by: employeeId || null, // Explicitly linking the employee
+        target_unit_id: targetUnitId || null,
+        requested_by: employeeId || null, 
         station_id: stationId,
         status: 'PENDING',
         notes: notes
@@ -131,6 +132,29 @@ export class RequisitionService {
       return this.processDelivery(id, items, userId);
     }
 
+    if (status === 'IN_TRANSIT' && items) {
+       // Matriz is dispatching the items. We need to DEDUCT from their inventory now.
+       for (const item of items) {
+          // Temporarily save what the matrix is sending in 'quantity_delivered' 
+          // (which really means 'quantity_dispatched' in this state)
+          await supabase
+            .from('requisition_items')
+            .update({ quantity_delivered: item.quantity_delivered })
+            .eq('id', item.id);
+            
+          // Deduct from MATRIZ local inventory. We assume the passed 'id' is the requisition_item id
+          // We need the ingredientId to deduct stock
+          const { data: reqItem } = await supabase.from('requisition_items').select('ingredient_id').eq('id', item.id).single();
+          if (reqItem) {
+              await this.inventoryDataService.adjustIngredientStock({
+                 ingredientId: reqItem.ingredient_id,
+                 quantityChange: -item.quantity_delivered,
+                 reason: `Expedição para Transferência (Req #${id.slice(0,8)})`
+              });
+          }
+       }
+    }
+
     // AUDIT: Capture who performed the status change (e.g., Rejection)
     const employeeId = this.operationalAuthService.activeEmployee()?.id;
 
@@ -162,42 +186,61 @@ export class RequisitionService {
 
     if (fetchError || !requisition) return { success: false, error: fetchError || { message: 'Requisition not found' } };
 
+    const isExternalTransfer = requisition.target_unit_id !== null && requisition.target_unit_id !== undefined;
+
     for (const item of requisition.requisition_items) {
       const qty = item.quantity_delivered || 0;
       if (qty > 0) {
-        const deductResult = await this.inventoryDataService.adjustIngredientStock({
-            ingredientId: item.ingredient_id,
-            quantityChange: -qty,
-            reason: `Transferência para Estação (Req #${requisitionId.slice(0,8)})`
-        });
-
-        if (!deductResult.success) {
-            console.error(`Failed to deduct stock for item ${item.id}`, deductResult.error);
-        }
-
-        const { data: existingStock } = await supabase
-            .from('station_stocks')
-            .select('*')
-            .eq('station_id', requisition.station_id)
-            .eq('ingredient_id', item.ingredient_id)
-            .single();
-
-        if (existingStock) {
-            await supabase.from('station_stocks')
-                .update({ 
-                    quantity: existingStock.quantity + qty, 
-                    last_restock_date: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', existingStock.id);
+        
+        if (isExternalTransfer) {
+             // For external transfers, deduct stock from Matriz and add to Local Main Inventory
+             // Currently, both operations need to happen across different stores.
+             // Because InventoryService uses RLS heavily, we might need a dedicated RPC to do this securely,
+             // or just trust the active user session if they have permissions.
+             
+             // 1. ADD STUFF TO TARGET RESTAURANT (The one receiving)
+             await this.inventoryDataService.adjustIngredientStock({
+                ingredientId: item.ingredient_id,
+                quantityChange: qty, // ADDING stock!
+                reason: `Entrada via TRF Matriz (Req #${requisitionId.slice(0,8)})`
+             });
+             // We do NOT add to `station_stocks` unless explicitly asked down the road.
         } else {
-            await supabase.from('station_stocks').insert({
-                user_id: userId,
-                station_id: requisition.station_id,
-                ingredient_id: item.ingredient_id,
-                quantity: qty,
-                last_restock_date: new Date().toISOString()
+            // Internal Transfer Logging (Main Inventory -> Station)
+            const deductResult = await this.inventoryDataService.adjustIngredientStock({
+                ingredientId: item.ingredient_id,
+                quantityChange: -qty,
+                reason: `Transferência O.I para Praça (Req #${requisitionId.slice(0,8)})`
             });
+
+            if (!deductResult.success) {
+                console.error(`Failed to deduct stock for item ${item.id}`, deductResult.error);
+            }
+
+            const { data: existingStock } = await supabase
+                .from('station_stocks')
+                .select('*')
+                .eq('station_id', requisition.station_id)
+                .eq('ingredient_id', item.ingredient_id)
+                .single();
+
+            if (existingStock) {
+                await supabase.from('station_stocks')
+                    .update({ 
+                        quantity: existingStock.quantity + qty, 
+                        last_restock_date: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existingStock.id);
+            } else {
+                await supabase.from('station_stocks').insert({
+                    user_id: userId,
+                    station_id: requisition.station_id,
+                    ingredient_id: item.ingredient_id,
+                    quantity: qty,
+                    last_restock_date: new Date().toISOString()
+                });
+            }
         }
       }
     }
@@ -215,6 +258,36 @@ export class RequisitionService {
         .eq('id', requisitionId);
 
     return { success: !updateError, error: updateError };
+  }
+
+  // --- COMMISSARY / CROSS-TENANT ---
+  async getInboxRequisitions(startDate: string, endDate: string) {
+      const activeUnitId = this.getActiveUnitId();
+      if (!activeUnitId) return { data: null, error: { message: 'Unit not found' } };
+
+      const { data, error } = await supabase
+          .from('requisitions')
+          .select(`
+            id, 
+            status, 
+            notes, 
+            created_at, 
+            user_id,
+            origin_store:stores!requisitions_user_id_fkey(name),
+            requisition_items (
+              id,
+              quantity_requested,
+              quantity_delivered,
+              unit,
+              ingredients (id, name, type)
+            )
+          `)
+          .eq('target_unit_id', activeUnitId)
+          .gte('created_at', new Date(`${startDate}T00:00:00`).toISOString())
+          .lte('created_at', new Date(`${endDate}T23:59:59`).toISOString())
+          .order('created_at', { ascending: false });
+
+      return { data, error };
   }
 
   // --- REPORTING ---

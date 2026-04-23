@@ -5,12 +5,13 @@ import { RequisitionCreateComponent } from './requisition-create/requisition-cre
 import { RequisitionListComponent } from './requisition-list/requisition-list.component';
 import { StationStockComponent } from './station-stock/station-stock.component';
 import { RequisitionReportsComponent } from './requisition-reports/requisition-reports.component';
+import { RequisitionInboxComponent } from './requisition-inbox/requisition-inbox.component';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-requisitions',
   standalone: true,
-  imports: [CommonModule, RequisitionCreateComponent, RequisitionListComponent, StationStockComponent, RequisitionReportsComponent],
+  imports: [CommonModule, RequisitionCreateComponent, RequisitionListComponent, StationStockComponent, RequisitionReportsComponent, RequisitionInboxComponent],
   template: `
     <div class="px-6 py-6 pb-20 md:pb-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -32,6 +33,16 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.hover:text-title]="activeTab() !== 'create'">
                 <span class="material-symbols-outlined text-[16px]">add_shopping_cart</span>
                 Nova Requisição
+            </button>
+            <button (click)="activeTab.set('inbox')" 
+                    class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap outline-none"
+                    [class.border-brand]="activeTab() === 'inbox'"
+                    [class.text-title]="activeTab() === 'inbox'"
+                    [class.border-transparent]="activeTab() !== 'inbox'"
+                    [class.text-muted]="activeTab() !== 'inbox'"
+                    [class.hover:text-title]="activeTab() !== 'inbox'">
+                <span class="material-symbols-outlined text-[16px]">move_to_inbox</span>
+                Pedidos da Matriz
             </button>
             <button (click)="activeTab.set('stock')" 
                     class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap outline-none"
@@ -71,6 +82,9 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
             @case ('create') {
                 <app-requisition-create></app-requisition-create>
             }
+            @case ('inbox') {
+                <app-requisition-inbox></app-requisition-inbox>
+            }
             @case ('stock') {
                 <app-station-stock></app-station-stock>
             }
@@ -89,7 +103,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 export class RequisitionsComponent implements OnInit {
   private supabaseState = inject(SupabaseStateService);
   
-  activeTab = signal<'create' | 'manage' | 'stock' | 'reports'>('create');
+  activeTab = signal<'create' | 'inbox' | 'manage' | 'stock' | 'reports'>('create');
 
   ngOnInit() {
       // Force load of historical data (requisitions, logs) when entering this module

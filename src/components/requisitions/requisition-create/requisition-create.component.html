@@ -1,11 +1,33 @@
 
     <div class="bg-surface-elevated rounded-2xl p-6 h-full flex flex-col border border-subtle shadow-sm">
-      <h2 class="font-black text-xs uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-muted">add_shopping_cart</span> Nova Requisição para Praça</h2>
+      <h2 class="font-black text-xs uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-muted">add_shopping_cart</span> Nova Requisição</h2>
       
       <!-- Top Controls -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Selecione a Estação (Destino)</label>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Tipo de Requisição</label>
+          <div class="flex gap-2 mb-3">
+             <button (click)="isExternalRequest.set(false)" [class.bg-brand]="!isExternalRequest()" [class.text-white]="!isExternalRequest()" [class.bg-surface-elevated]="isExternalRequest()" [class.border-strong]="isExternalRequest()" class="flex-1 py-2 px-3 border rounded-lg text-xs font-bold transition-colors">Estoque Interno</button>
+             <button (click)="isExternalRequest.set(true)" [class.bg-brand]="isExternalRequest()" [class.text-white]="isExternalRequest()" [class.bg-surface-elevated]="!isExternalRequest()" [class.border-strong]="!isExternalRequest()" class="flex-1 py-2 px-3 border rounded-lg text-xs font-bold transition-colors">Outra Loja / Matriz</button>
+          </div>
+
+          @if(isExternalRequest()) {
+             <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Solicitar para qual unidade?</label>
+             <div class="relative mb-3">
+               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">domain</span>
+               <select [ngModel]="selectedTargetUnitId()" (ngModelChange)="selectedTargetUnitId.set($event)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all cursor-pointer">
+                 <option [value]="null">Selecione a Unidade...</option>
+                 @for(unit of availableUnits(); track unit.id) {
+                   @if (unit.id !== activeUnitId()) {
+                      <option [value]="unit.id">{{ unit.name }}</option>
+                   }
+                 }
+               </select>
+               <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+             </div>
+          }
+
+          <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Praça de Destino (Para onde vai?)</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
             <select [ngModel]="selectedStationId()" (ngModelChange)="selectedStationId.set($event)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all cursor-pointer">

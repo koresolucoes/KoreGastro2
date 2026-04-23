@@ -764,7 +764,8 @@ export interface StationStock {
 
 export interface Requisition {
   id: string;
-  user_id: string;
+  user_id: string; // The store that created the request (Loja A)
+  target_unit_id: string | null; // The store that should fulfill the request (Cozinha Central)
   requested_by: string | null;
   station_id: string | null;
   status: RequisitionStatus;
@@ -775,10 +776,11 @@ export interface Requisition {
   requester?: { name: string };
   processor?: { name: string };
   stations?: { name: string };
+  target_unit?: { name: string };
   requisition_items?: RequisitionItem[];
 }
 
-export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL';
+export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL' | 'IN_TRANSIT';
 
 export interface RequisitionItem {
   id: string;

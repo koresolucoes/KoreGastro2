@@ -7,6 +7,7 @@ import { PosStateService } from '../../../services/pos-state.service';
 import { InventoryStateService } from '../../../services/inventory-state.service';
 import { RequisitionService } from '../../../services/requisition.service';
 import { NotificationService } from '../../../services/notification.service';
+import { UnitContextService } from '../../../services/unit-context.service';
 import { Ingredient, RequisitionTemplate } from '../../../models/db.models';
 
 interface RequestItem {
@@ -26,11 +27,18 @@ export class RequisitionCreateComponent implements OnInit {
   inventoryState = inject(InventoryStateService);
   requisitionService = inject(RequisitionService);
   notificationService = inject(NotificationService);
+  private unitContextService = inject(UnitContextService);
 
   stations = this.posState.stations;
   ingredients = this.inventoryState.ingredients;
   templates = this.inventoryState.requisitionTemplates;
   
+  availableUnits = signal<{ id: string, name: string, role: string }[]>([]);
+  activeUnitId = signal<string | null>(null);
+
+  isExternalRequest = signal(false);
+  selectedTargetUnitId = signal<string | null>(null);
+
   selectedStationId = signal<string | null>(null);
   selectedTemplateId = signal<string | null>(null);
 
@@ -42,6 +50,8 @@ export class RequisitionCreateComponent implements OnInit {
   ngOnInit() {
       // Load templates when component initializes
       this.requisitionService.loadTemplates();
+      this.availableUnits.set(this.unitContextService.availableUnits());
+      this.activeUnitId.set(this.unitContextService.activeUnitId());
   }
 
   filteredIngredients = computed(() => {
@@ -157,7 +167,14 @@ export class RequisitionCreateComponent implements OnInit {
        }
   }
 
-  canSubmit = computed(() => !!this.selectedStationId() && this.cartItems().length > 0 && this.cartItems().every(i => i.quantity > 0));
+  canSubmit = computed(() => {
+    const hasStation = !!this.selectedStationId();
+    const hasItems = this.cartItems().length > 0;
+    const itemsValid = this.cartItems().every(i => i.quantity > 0);
+    const targetValid = !this.isExternalRequest() || (this.isExternalRequest() && !!this.selectedTargetUnitId());
+
+    return hasStation && hasItems && itemsValid && targetValid;
+  });
 
   async submitRequisition() {
     if (!this.canSubmit()) return;
@@ -169,7 +186,14 @@ export class RequisitionCreateComponent implements OnInit {
         unit: i.ingredient.unit
     }));
 
-    const { success, error } = await this.requisitionService.createRequisition(this.selectedStationId()!, payload, this.notes());
+    const targetUnit = this.isExternalRequest() ? this.selectedTargetUnitId() : undefined;
+
+    const { success, error } = await this.requisitionService.createRequisition(
+        this.selectedStationId()!, 
+        payload, 
+        this.notes(),
+        targetUnit
+    );
 
     if (success) {
         this.notificationService.show('Requisição enviada com sucesso!', 'success');
