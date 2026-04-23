@@ -6,6 +6,38 @@
   <title>ChefOS - Gestão de Restaurantes</title>
   <link rel="icon" type="image/x-icon" href="https://app.chefos.online/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            app: 'var(--bg-app)',
+            surface: {
+              DEFAULT: 'var(--surface-base)',
+              elevated: 'var(--surface-elevated)',
+              glass: 'var(--surface-glass-bg)',
+            },
+            title: 'var(--text-title)',
+            body: 'var(--text-body)',
+            muted: 'var(--text-muted)',
+            brand: {
+              DEFAULT: 'var(--brand-primary)',
+              hover: 'var(--brand-hover)',
+            },
+            success: 'var(--accent-success)',
+            warning: 'var(--accent-warning)',
+            danger: 'var(--accent-danger)',
+            info: 'var(--accent-info)',
+            purple: 'var(--accent-purple)',
+            subtle: 'var(--border-subtle)',
+            strong: 'var(--border-strong)',
+            focus: 'var(--border-focus)',
+          }
+        }
+      }
+    }
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
