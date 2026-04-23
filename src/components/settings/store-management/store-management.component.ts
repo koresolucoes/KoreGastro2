@@ -7,6 +7,7 @@ import { SettingsDataService } from '../../../services/settings-data.service';
 import { NotificationService } from '../../../services/notification.service';
 import { SubscriptionStateService } from '../../../services/subscription-state.service';
 import { AuthService } from '../../../services/auth.service';
+import { RecipeDataService } from '../../../services/recipe-data.service';
 
 @Component({
   selector: 'app-store-management',
@@ -21,10 +22,15 @@ export class StoreManagementComponent implements OnInit {
   notificationService = inject(NotificationService);
   subscriptionState = inject(SubscriptionStateService);
   authService = inject(AuthService);
+  recipeDataService = inject(RecipeDataService);
 
   stores = this.unitContextService.availableUnits;
   activeStoreId = this.unitContextService.activeUnitId;
   
+  otherUnits = computed(() => 
+    this.stores().filter(u => u.id !== this.activeStoreId())
+  );
+
   // Computed values from Subscription State
   currentPlan = this.subscriptionState.currentPlan;
   ownerStoreCount = this.subscriptionState.ownerStoreCount;
@@ -40,6 +46,10 @@ export class StoreManagementComponent implements OnInit {
   editingStore = signal<{ id: string, name: string } | null>(null);
   storeNameInput = signal('');
   isSaving = signal(false);
+
+  // Menu Cloning State
+  selectedSourceStoreId = signal('');
+  isCloning = signal(false);
 
   ngOnInit() {
       // Logic removed: The SubscriptionStateService already has an effect that loads 
@@ -145,5 +155,33 @@ export class StoreManagementComponent implements OnInit {
               this.notificationService.show('Nome incorreto. Ação cancelada.', 'warning');
           }
       }
+  }
+
+  async cloneMenu() {
+    const sourceId = this.selectedSourceStoreId();
+    if (!sourceId) return;
+
+    const sourceStore = this.otherUnits().find(u => u.id === sourceId);
+    if (!sourceStore) return;
+
+    const confirmed = await this.notificationService.confirm(
+      `Deseja realmente copiar o cardápio de "${sourceStore.name}" para a unidade **ATUALMENTE ATIVA**? Isso adicionará as categorias e receitas de forma independente.`,
+      'Confirmar Clonagem'
+    );
+
+    if (confirmed) {
+      this.isCloning.set(true);
+      const { success, error } = await this.recipeDataService.cloneMenuFromStore(sourceId);
+      
+      if (success) {
+        this.notificationService.show('Cardápio clonado com sucesso! Recarregando dados...', 'success');
+        this.selectedSourceStoreId.set('');
+        // Force refresh to reload the entire App state
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        await this.notificationService.alert(`Erro ao clonar cardápio: ${error?.message || 'Erro desconhecido'}`);
+      }
+      this.isCloning.set(false);
+    }
   }
 }

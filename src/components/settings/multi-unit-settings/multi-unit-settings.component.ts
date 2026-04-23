@@ -1,11 +1,13 @@
 
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsDataService } from '../../../services/settings-data.service';
 import { NotificationService } from '../../../services/notification.service';
 import { StoreManager } from '../../../models/app.models';
 import { UnitContextService } from '../../../services/unit-context.service';
+import { RecipeDataService } from '../../../services/recipe-data.service';
+import { SupabaseStateService } from '../../../services/supabase-state.service';
 
 @Component({
   selector: 'app-multi-unit-settings',
@@ -17,13 +19,23 @@ import { UnitContextService } from '../../../services/unit-context.service';
 export class MultiUnitSettingsComponent implements OnInit {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
-  private unitContext = inject(UnitContextService);
+  unitContext = inject(UnitContextService);
+  private recipeDataService = inject(RecipeDataService);
+  private supabaseState = inject(SupabaseStateService);
 
   isLoading = signal(true);
   managers = signal<StoreManager[]>([]);
   
   inviteEmail = signal('');
   isInviting = signal(false);
+
+  // Menu Cloning
+  selectedSourceStoreId = signal('');
+  isCloning = signal(false);
+
+  otherUnits = computed(() => 
+    this.unitContext.availableUnits().filter(u => u.id !== this.unitContext.activeUnitId())
+  );
 
   ngOnInit() {
     this.loadManagers();

@@ -105,6 +105,58 @@
           </button>
       </div>
   }
+
+  <!-- Menu Cloning Section -->
+  <div class="mt-8 border-t border-subtle pt-8">
+    <div class="flex items-center gap-4 mb-6">
+        <div class="bg-warning/10 p-3 rounded-2xl border border-warning/20">
+            <span class="material-symbols-outlined text-3xl text-warning">content_copy</span>
+        </div>
+        <div>
+            <h2 class="text-xl font-black text-title title-display tracking-tight">Transferir Cardápio</h2>
+            <p class="text-muted text-sm font-medium">Copie o cardápio de outra unidade para a <strong class="text-title">unidade que você está acessando no momento</strong>.</p>
+        </div>
+    </div>
+
+    @if (otherUnits().length === 0) {
+        <div class="bg-surface-elevated border border-dashed border-strong rounded-2xl p-6 flex items-center justify-center text-center">
+            <p class="text-muted font-bold text-sm">Você precisa de pelo menos duas unidades para usar esta ferramenta.</p>
+        </div>
+    } @else {
+        <div class="bg-surface border border-strong rounded-2xl p-6 shadow-sm">
+            <label class="block text-xs font-black text-title uppercase tracking-widest mb-3">Origem do Cardápio (COPIAR DE:)</label>
+            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <select 
+                    [ngModel]="selectedSourceStoreId()" 
+                    (ngModelChange)="selectedSourceStoreId.set($event)"
+                    class="flex-1 bg-surface-elevated border border-subtle rounded-xl px-4 py-3 text-title focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-inner transition-colors font-medium">
+                    <option value="" disabled>Selecione uma loja...</option>
+                    @for (unit of otherUnits(); track unit.id) {
+                        <option [value]="unit.id">{{ unit.name }}</option>
+                    }
+                </select>
+
+                <button 
+                    (click)="cloneMenu()"
+                    [disabled]="!selectedSourceStoreId() || isCloning()"
+                    class="bg-warning hover:bg-warning/90 text-white font-black uppercase tracking-wider px-6 py-3 rounded-xl disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all text-sm min-w-[180px]">
+                    @if(isCloning()) {
+                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Clonando...
+                    } @else {
+                        <span class="material-symbols-outlined text-[18px]">file_copy</span>
+                        Transferir
+                    }
+                </button>
+            </div>
+            
+            <p class="text-xs text-muted flex gap-2 items-start bg-warning/5 p-3 rounded-lg border border-warning/10">
+                <span class="material-symbols-outlined text-[16px] text-warning shrink-0">info</span>
+                <span>As categorias e pratos da origem serão adicionados à unidade atualmente selecionada. Fichas técnicas serão copiadas, mas variações manuais de preço por loja não serão consideradas.</span>
+            </p>
+        </div>
+    }
+  </div>
 </div>
 
 <!-- Create/Edit Modal -->
