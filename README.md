@@ -29,9 +29,9 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 ### 🏢 **Multi-Loja e Painel de Administração (Novo!)**
 - **Gestão Centralizada:** Gerencie múltiplas unidades ou franquias com um único login de proprietário.
 - **Painel de Administração:** Acesse métricas globais (MRR, Total de Lojas) e gerencie assinaturas e planos de todos os clientes.
-- **Troca Rápida:** Alterne entre lojas (ex: "Matriz" e "Filial") com um clique na barra superior ou lateral.
-- **Segregação de Dados:** Cada loja possui seu próprio cardápio, estoque, funcionários e relatórios, mantendo a organização total.
-- **Gestão de Equipe:** Convide gestores específicos para cada unidade por e-mail.
+- **Clonagem e Transferência de Unidade:** Configure novas filiais em segundos clonando categorias, receitas, ingredientes e fichas técnicas de uma unidade "Matriz".
+- **Troca Rápida:** Alterne seu ambiente de gestão local entre as lojas sem necessidade de logout.
+- **Total Segregação de Dados:** Cada loja atua com seu próprio cardápio, estoque local e escala de funcionários.
 
 ### 📊 **Dashboard Analítico**
 - **Visão Geral em Tempo Real:** Acompanhe os principais indicadores de desempenho (KPIs) do dia assim que você entra no sistema.
@@ -41,10 +41,10 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 
 ### 🍽️ **PDV (Ponto de Venda)**
 - **Gerenciamento Visual de Mesas:** Crie múltiplos salões e organize as mesas com uma interface de arrastar e soltar (drag-and-drop).
-- **Lançamento de Pedidos:** Interface rápida para garçons lançarem pedidos diretamente na mesa a partir de um menu categorizado e com busca.
+- **Interface Otimizada e Limpa:** Design recriado focado na usabilidade de caixas de alta velocidade, cartões de produto transparentes, limpos e com alerta visual dinâmico de falta de estoque.
+- **Recibo Inteligente via WhatsApp:** Ao fechar contas, dispare automaticamente resumos de itens, impostos e cupons com uma saudação formal para o WhatsApp do cliente.
 - **Status em Tempo Real:** As cores das mesas mudam instantaneamente (`Livre`, `Ocupada`, `Pagando`), mantendo toda a equipe sincronizada.
-- **Divisão de Itens:** Funcionalidade avançada para dividir itens da conta entre múltiplas pessoas na mesa.
-- **Taxa de Serviço:** Controle flexível da aplicação da taxa de serviço (10%) no fechamento da conta.
+- **Divisão de Custos:** Funcionalidade avançada para parcelar ou ratear a conta na mesa conforme o consumo.
 
 ### 🛵 **Integração Completa com iFood**
 #### KDS Delivery & Gestão de Pedidos
@@ -76,6 +76,14 @@ O ChefOS é modular e cobre todas as áreas críticas da gestão de um restauran
 - **Integração FocusNFe:** Emissão de Nota Fiscal de Consumidor Eletrônica integrada.
 - **Emissão Simplificada:** Emita a nota fiscal diretamente após o pagamento no PDV ou na tela de Vendas Finalizadas.
 - **Gestão de Documentos:** Visualize DANFE, cancele notas e monitore o status fiscal. Suporte a certificado digital A1.
+
+### 🔌 **Arquitetura de API e Webhooks Ominichannel**
+A nova **API V2 e Webhooks** agora estão padronizados e trazem super-poderes de personalização e integração para sistemas externos:
+- [Consultar Documentação V1 e Webhooks](API.md)
+- [Consultar a Nova API V2](apiv2.md)
+- **Extensível via API V2 REST:** Total controle e CRUD sobre salões temporários (`/halls`), lançamento de comandas fora do site (`/orders`), atualização contínua do estoque e gestão e autenticação de usuários via rotas (`/customers` e `/menu-items`).
+- **Gatilhos em Tempo Real:** Subscrição em Webhooks (ex: `order.created`) para conectar ferramentas externas, ERPs contábeis e sistemas locais de Paging.
+- **Ponto e RH Inteligente:** Consumo e atualização interativa da rotina de folha, gestão de férias e "bater ponto" com restrição de GPS via Endpoints. Cargo ACL altamente granular.
 
 ### 🍳 **KDS (Kitchen Display System)**
 - **Comandas Digitais:** Envie pedidos diretamente para as estações (Cozinha, Bar).
