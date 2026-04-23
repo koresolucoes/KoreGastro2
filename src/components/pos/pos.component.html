@@ -1,7 +1,7 @@
 
 <div class="h-full flex flex-col" (click)="closeContextMenu()">
   <!-- Header -->
-  <header class="flex-shrink-0 chef-glass shadow-sm z-30 no-print sticky top-0">
+  <header class="flex-shrink-0 bg-surface shadow-sm z-30 no-print">
     <div class="flex flex-col">
         <!-- Top Bar: Logo & Main Toggle & Actions -->
         <div class="flex justify-between items-center p-3">
@@ -109,7 +109,7 @@
     <!-- Order Panel: Overlay on mobile, sidebar on desktop -->
     @if (isOrderPanelOpen()) {
       <!-- Mobile: Full screen overlay -->
-      <div class="md:hidden fixed inset-0 bg-black/60 backdrop-blur-md z-30 animate-in fade-in">
+      <div class="md:hidden fixed inset-0 bg-black/60 backdrop-blur-md z-[60] animate-in fade-in">
         <app-order-panel
           [selectedTable]="selectedTable()"
           [currentOrder]="activeOrder()"
