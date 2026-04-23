@@ -16,6 +16,7 @@ import { map } from 'rxjs';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { PosStateService } from '../../services/pos-state.service';
+import { PricingService } from '../../services/pricing.service';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType, Chart, registerables } from 'chart.js';
 
@@ -69,6 +70,7 @@ export class TechnicalSheetsComponent {
   private recipeState: RecipeStateService = inject(RecipeStateService);
   private inventoryState: InventoryStateService = inject(InventoryStateService);
   private posState: PosStateService = inject(PosStateService);
+  private pricingService = inject(PricingService);
 
   @ViewChild('searchInput') searchInput!: ElementRef;
 
@@ -283,6 +285,7 @@ export class TechnicalSheetsComponent {
     const ingredients = this.recipeIngredients().filter(i => i.recipe_id === recipe.id);
     const subRecipes = this.recipeSubRecipes().filter(sr => sr.parent_recipe_id === recipe.id);
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
+    const customPriceOverride = this.pricingService.customPrices().find(cp => cp.recipe_id === recipe.id);
 
     // Map ingredients to form structure
     const mappedIngredients = ingredients.map(i => {
@@ -310,7 +313,8 @@ export class TechnicalSheetsComponent {
       preparations: preparations.map(p => ({...p})),
       ingredients: mappedIngredients,
       subRecipes: subRecipes.map(({ parent_recipe_id, user_id, recipes, ...rest }) => rest),
-      image_file: null
+      image_file: null,
+      custom_store_price: customPriceOverride?.custom_price
     });
 
     this.recipeImagePreviewUrl.set(recipe.image_url);
@@ -436,6 +440,14 @@ export class TechnicalSheetsComponent {
         ...form,
         recipe: { ...form.recipe, labor_cost: laborCost }
     }));
+  }
+
+  updateCustomStorePrice(customPrice: string) {
+      const price = parseFloat(customPrice);
+      this.recipeForm.update(form => ({
+          ...form,
+          custom_store_price: isNaN(price) ? null : price
+      }));
   }
 
   removeFormIngredient(prepId: string, ingredientId: string) {
@@ -621,19 +633,28 @@ export class TechnicalSheetsComponent {
     }).filter((i): i is any => i !== null);
 
     if (this.selectedRecipeId()) {
-        const { success, error } = await this.recipeDataService.saveTechnicalSheet(
-            this.selectedRecipeId()!, recipeDataToSave, form.preparations as any, ingredientsToSave, form.subRecipes as any
+        const { success, error } = await this.recipeDataService.updateRecipeDetails(
+            this.selectedRecipeId()!, recipeDataToSave, form.custom_store_price
         );
-        if (success) {
+        const { success: sheetSuccess, error: sheetError } = await this.recipeDataService.saveTechnicalSheet(
+             this.selectedRecipeId()!, recipeDataToSave, form.preparations as any, ingredientsToSave, form.subRecipes as any
+        );
+
+        if (success && sheetSuccess) {
             if (form.image_file) await this.recipeDataService.updateRecipeImage(this.selectedRecipeId()!, form.image_file);
             this.notificationService.show('Receita salva com sucesso!', 'success');
             this.closeModal();
         } else {
-            this.notificationService.show(`Erro: ${error?.message}`, 'error');
+            this.notificationService.show(`Erro: ${error?.message || sheetError?.message}`, 'error');
         }
     } else {
         const { success, error, data } = await this.recipeDataService.addRecipe(recipeDataToSave);
         if (success && data) {
+             // If a custom store price was provided, save it as an override for this store
+             if (form.custom_store_price !== undefined) {
+                 await this.recipeDataService.updateRecipeDetails(data.id, {}, form.custom_store_price);
+             }
+
              const { success: tsSuccess, error: tsError } = await this.recipeDataService.saveTechnicalSheet(
                 data.id, {}, form.preparations as any, ingredientsToSave, form.subRecipes as any
             );

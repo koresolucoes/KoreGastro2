@@ -33,7 +33,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-black text-title title-display">
-                            {{ table() ? 'Mesa ' + table()?.number : 'Resumo do Pedido' }}
+                            {{ table() ? 'Mesa ' + table()?.number : (lastKnownOrder()?.command_number ? 'Comanda #' + lastKnownOrder()?.command_number : 'Resumo do Pedido') }}
                         </h3>
                         <p class="text-[10px] font-black text-muted uppercase tracking-widest">{{ lastKnownOrder()?.order_items?.length }} itens no total</p>
                     </div>
@@ -448,51 +448,62 @@
         </div>
         } @else {
         <!-- SUCCESS SCREEN -->
-        <div class="w-full h-full flex flex-col items-center justify-center p-6 md:p-12 text-center bg-surface relative overflow-hidden backdrop-blur-3xl animate-in fade-in duration-500">
+        <div class="w-full h-full flex flex-col items-center justify-start lg:justify-center p-6 md:p-12 text-center bg-surface relative overflow-y-auto backdrop-blur-3xl animate-in fade-in duration-500 custom-scrollbar">
              <!-- Interactive Background -->
              <div class="absolute inset-0 -z-10">
                 <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-success/10 to-transparent"></div>
-                <div class="absolute -top-40 -right-40 w-96 h-96 bg-success/20 rounded-full blur-[120px] animate-pulse"></div>
-                <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-brand/10 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1s"></div>
+                <div class="absolute -top-40 -right-40 w-80 h-80 bg-success/20 rounded-full blur-[100px] animate-pulse"></div>
+                <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 1s"></div>
              </div>
              
              <!-- Animated Check Icon -->
-             <div class="mb-10 relative">
+             <div class="mb-6 md:mb-10 relative shrink-0">
                 <div class="absolute inset-0 bg-success rounded-full blur-2xl opacity-20 animate-ping"></div>
-                <div class="bg-success text-white p-10 rounded-[40px] shadow-2xl shadow-success/40 border-4 border-white/20 relative animate-in zoom-in-50 duration-700 ease-elastic">
-                    <span class="material-symbols-outlined text-8xl leading-none">check_circle</span>
+                <div class="bg-success text-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] shadow-2xl shadow-success/40 border-4 border-white/20 relative animate-in zoom-in-50 duration-700 ease-elastic">
+                    <span class="material-symbols-outlined text-6xl md:text-8xl leading-none">check_circle</span>
                 </div>
              </div>
              
-             <div class="max-w-2xl animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
-                 <h2 class="text-5xl md:text-7xl font-black text-title mb-4 tracking-tighter drop-shadow-sm title-display">Venda Concluída!</h2>
-                 <p class="text-muted text-lg md:text-xl font-bold uppercase tracking-[0.3em] mb-12 opacity-60">Pedido Processado com Sucesso</p>
+             <div class="max-w-xl w-full animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
+                 <h2 class="text-4xl md:text-6xl font-black text-title mb-2 tracking-tighter drop-shadow-sm title-display">Venda Concluída!</h2>
+                 <p class="text-muted text-sm md:text-base font-bold uppercase tracking-[0.3em] mb-8 md:mb-12 opacity-60">Pedido Processado com Sucesso</p>
                  
-                 <div class="chef-surface border-success/30 bg-success/5 p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 mb-12 shadow-[0_15px_40px_rgba(34,197,94,0.1)]">
+                 <div class="chef-surface border-success/30 bg-success/5 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col items-center gap-2 md:gap-4 mb-8 md:mb-10 shadow-[0_15px_40px_rgba(34,197,94,0.1)]">
                     <span class="text-[10px] text-success/70 font-black uppercase tracking-[0.2em]">Valor Total Recebido</span>
-                    <span class="text-6xl md:text-7xl font-black text-title data-mono tracking-tighter">{{ displayTotal() | currency:'BRL' }}</span>
+                    <span class="text-4xl md:text-6xl font-black text-title data-mono tracking-tighter">{{ displayTotal() | currency:'BRL' }}</span>
+                 </div>
+
+                 <!-- WhatsApp Input -->
+                 <div class="mb-8 w-full max-w-sm mx-auto animate-in slide-in-from-bottom-4 delay-300 fill-mode-both">
+                    <label class="block text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-3">WhatsApp para Recibo</label>
+                    <div class="relative group">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-success text-xl group-focus-within:scale-110 transition-transform">chat</span>
+                        <input type="text" [value]="whatsappNumber()" (input)="whatsappNumber.set($any($event.target).value)" 
+                               placeholder="Ex: 11999999999" 
+                               class="w-full bg-surface-elevated text-title placeholder:text-muted/30 pl-14 pr-6 py-4 rounded-2xl border-2 border-transparent focus:border-success/40 outline-none text-lg font-bold shadow-inner transition-all">
+                    </div>
                  </div>
                  
-                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                     <button (click)="printReceipt()" class="flex flex-col items-center justify-center p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-brand/40 active:scale-95 group">
-                        <div class="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center text-brand mb-4 group-hover:scale-110 transition-transform">
+                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 w-full">
+                     <button (click)="printReceipt()" class="flex flex-col items-center justify-center p-4 md:p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-brand/40 active:scale-95 group">
+                        <div class="w-10 h-10 md:w-12 md:h-12 bg-brand/10 rounded-2xl flex items-center justify-center text-brand mb-3 md:mb-4 group-hover:scale-110 transition-transform">
                             <span class="material-symbols-outlined">receipt</span>
                         </div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-title">Imprimir Comprovante</span>
+                        <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-title">Imprimir Recibo</span>
                      </button>
                      
-                     <button (click)="shareReceipt()" class="flex flex-col items-center justify-center p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-success/40 active:scale-95 group">
-                        <div class="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center text-success mb-4 group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined">share</span>
+                     <button (click)="shareReceipt()" class="flex flex-col items-center justify-center p-4 md:p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-success/40 active:scale-95 group">
+                        <div class="w-10 h-10 md:w-12 md:h-12 bg-success/10 rounded-2xl flex items-center justify-center text-success mb-3 md:mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined">send_and_archive</span>
                         </div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-title">Enviar via WhatsApp</span>
+                        <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-title">Enviar WhatsApp</span>
                      </button>
                      
-                     <button (click)="closeModal.emit(true)" class="flex flex-col items-center justify-center p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-title/20 active:scale-95 group">
-                        <div class="w-12 h-12 bg-title/5 rounded-2xl flex items-center justify-center text-title mb-4 group-hover:scale-110 transition-transform">
+                     <button (click)="closeModal.emit(true)" class="flex flex-col items-center justify-center p-4 md:p-6 bg-surface-elevated hover:bg-surface border border-subtle rounded-3xl transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-title/20 active:scale-95 group">
+                        <div class="w-10 h-10 md:w-12 md:h-12 bg-title/5 rounded-2xl flex items-center justify-center text-title mb-3 md:mb-4 group-hover:scale-110 transition-transform">
                             <span class="material-symbols-outlined">logout</span>
                         </div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-title">Sair da Tela</span>
+                        <span class="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-title">Novo Pedido</span>
                      </button>
                  </div>
              </div>

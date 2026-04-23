@@ -8,6 +8,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
 import { OperationalAuthService } from '../../../services/operational-auth.service';
+import { UnitContextService } from '../../../services/unit-context.service';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -35,6 +36,7 @@ export class PaymentModalComponent {
   notificationService = inject(NotificationService);
   focusNFeService = inject(FocusNFeService);
   private operationalAuthService = inject(OperationalAuthService);
+  private unitContextService = inject(UnitContextService);
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -63,6 +65,8 @@ export class PaymentModalComponent {
   // Global Discount
   globalDiscountType = signal<DiscountType>('percentage');
   globalDiscountValue = signal<number | null>(null);
+
+  whatsappNumber = signal('');
 
   itemGroups = signal<ItemGroup[]>([]);
   unassignedItems = signal<OrderItem[]>([]);
@@ -189,6 +193,13 @@ export class PaymentModalComponent {
     effect(() => {
       this.splitMode(); 
       this.resetPaymentState();
+    });
+
+    effect(() => {
+      const ord = this.lastKnownOrder();
+      if (ord?.customers?.phone) {
+        untracked(() => this.whatsappNumber.set(ord.customers?.phone || ''));
+      }
     });
 
     effect(() => {
@@ -420,6 +431,38 @@ export class PaymentModalComponent {
     if (order) {
       this.printingService.printCustomerReceipt(order, allPayments);
     }
+  }
+
+  shareReceipt() {
+    const order = this.lastKnownOrder();
+    if (!order) return;
+
+    let phone = this.whatsappNumber().replace(/\D/g, '');
+    if (!phone) {
+      this.notificationService.alert('Por favor, informe o número do WhatsApp.');
+      return;
+    }
+
+    // Ensure it has country code, default to 55 if missing and looks like BR number
+    if (phone.length === 10 || phone.length === 11) {
+      phone = '55' + phone;
+    }
+
+    const itemsText = order.order_items.map(item => `${item.quantity}x ${item.name} - ${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('%0A');
+    
+    const totalValue = this.displayTotal();
+    const storeName = this.unitContextService.activeUnitName() || 'ChefOS';
+
+    const message = `*RESUMO DO PEDIDO - ${storeName}*%0A%0A` +
+                    `Pedido: #${order.id.slice(-6).toUpperCase()}%0A` +
+                    (order.command_number ? `Comanda: #${order.command_number}%0A` : '') +
+                    `Data: ${new Date(order.timestamp).toLocaleString('pt-BR')}%0A%0A` +
+                    `*ITENS:*%0A${itemsText}%0A%0A` +
+                    `*TOTAL: ${totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*%0A%0A` +
+                    `Obrigado pela preferência!`;
+
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${message}`;
+    window.open(url, '_blank');
   }
 
   async emitNfce() {

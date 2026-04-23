@@ -19,12 +19,20 @@ export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLET
 export type LeaveRequestType = 'Férias' | 'Folga' | 'Falta Justificada' | 'Atestado';
 export type LeaveRequestStatus = 'Pendente' | 'Aprovada' | 'Rejeitada';
 export type LoyaltyRewardType = 'discount_fixed' | 'discount_percentage' | 'free_item';
-export type OrderStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'OPEN' | 'PAYING' | 'AWAITING' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'Dine-in' | 'QuickSale' | 'iFood-Delivery' | 'iFood-Takeout' | 'External-Delivery' | 'Tab';
 export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DISPATCHED' | 'READY_FOR_PICKUP' | 'CONCLUDED' | 'CANCELLED';
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
 export type LabelType = 'OPENING' | 'PREPARED' | 'PORTION' | 'DEFROST' | 'GENERIC';
+
+export interface StoreCustomPrice {
+  id: string;
+  store_id: string;
+  recipe_id: string;
+  custom_price: number;
+  created_at: string;
+}
 
 export interface Recipe {
   id: string;

@@ -117,9 +117,12 @@ export class CashierComponent implements OnInit, OnDestroy {
     this.posState.orders().filter(o => o.order_type === 'QuickSale' && o.status === 'OPEN')
   );
 
+  payingTabs = this.posState.payingTabs;
+
   // Modal States
   isTablePaymentModalOpen = signal(false);
   isQuickSalePaymentModalOpen = signal(false);
+  isTabPaymentModalOpen = signal(false);
   isPreBillModalOpen = signal(false);
   isClosingModalOpen = signal(false);
   isTableOptionsModalOpen = signal(false);
@@ -127,14 +130,19 @@ export class CashierComponent implements OnInit, OnDestroy {
   isCustomerSelectModalOpen = signal(false);
 
   selectedTableForPayment = signal<Table | null>(null);
+  selectedTabForPayment = signal<Order | null>(null);
   selectedTableForOptions = signal<Table | null>(null);
   selectedOrderForDetails = signal<Order | null>(null);
   selectedTableForPreBill = signal<Table | null>(null);
 
   selectedOrderForPayment = computed(() => {
     const table = this.selectedTableForPayment();
-    if (!table) return this.processingQuickSaleOrder();
-    return this.posState.openOrders().find(o => o.table_number === table.number) ?? null;
+    if (table) return this.posState.openOrders().find(o => o.table_number === table.number && o.order_type === 'Dine-in') ?? null;
+    
+    const tab = this.selectedTabForPayment();
+    if (tab) return tab;
+
+    return this.processingQuickSaleOrder();
   });
 
   selectedOrderForPreBill = computed(() => {
@@ -424,6 +432,26 @@ export class CashierComponent implements OnInit, OnDestroy {
     }
   }
 
+  async openPaymentForTab(order: Order) {
+    this.selectedTabForPayment.set(order);
+    this.isTablePaymentModalOpen.set(true);
+  }
+
+  async reopenTab(order: Order) {
+    const confirmed = await this.notificationService.confirm(
+      `Reabrir Comanda #${order.command_number}?`,
+      'Confirmar Reabertura'
+    );
+    if (confirmed) {
+      const { success, error } = await this.posDataService.updateOrderStatus(order.id, 'OPEN');
+      if (success) {
+        this.notificationService.show('Comanda reaberta.', 'success');
+      } else {
+        this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      }
+    }
+  }
+
   async openPreBillForTable(table: Table) {
     const order = this.posState.openOrders().find(o => o.table_number === table.number);
     if (order) {
@@ -435,12 +463,14 @@ export class CashierComponent implements OnInit, OnDestroy {
   handlePaymentFinalized() {
     this.isTablePaymentModalOpen.set(false);
     this.selectedTableForPayment.set(null);
+    this.selectedTabForPayment.set(null);
     this.processingQuickSaleOrder.set(null);
   }
 
   handlePaymentModalClosed(revertStatus: boolean) {
     this.isTablePaymentModalOpen.set(false);
     this.selectedTableForPayment.set(null);
+    this.selectedTabForPayment.set(null);
     this.processingQuickSaleOrder.set(null);
   }
 

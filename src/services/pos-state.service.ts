@@ -11,10 +11,11 @@ export class PosStateService {
   customers = signal<Customer[]>([]);
 
   // Computed for tables that have open orders
-  openOrders = computed(() => this.orders().filter(o => o.status === 'OPEN'));
+  openOrders = computed(() => this.orders().filter(o => o.status === 'OPEN' || o.status === 'PAYING'));
   
   // Computed specifically for Tabs/Commands
   openTabs = computed(() => this.orders().filter(o => o.status === 'OPEN' && o.order_type === 'Tab'));
+  payingTabs = computed(() => this.orders().filter(o => o.status === 'PAYING' && o.order_type === 'Tab'));
 
   clearData() {
     this.halls.set([]);

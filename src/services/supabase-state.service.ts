@@ -152,7 +152,7 @@ export class SupabaseStateService {
         halls, tables, stations, 
         // Menu & Stock Definition (Lightweight)
         categories, recipes, promotions, promotionRecipes, 
-        recipeIngredients, recipePreparations, recipeSubRecipes,
+        recipeIngredients, recipePreparations, recipeSubRecipes, storeCustomPrices,
         ingredients, ingredientCategories, suppliers, stationStocks,
         // Active Operations
         customers, orders, deliveryDrivers,
@@ -171,6 +171,7 @@ export class SupabaseStateService {
         supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
         supabase.from('recipe_preparations').select('*').eq('user_id', userId),
         supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
+        supabase.from('store_custom_prices').select('*').eq('store_id', userId),
 
         supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
         supabase.from('ingredient_categories').select('*').eq('user_id', userId),
@@ -182,7 +183,7 @@ export class SupabaseStateService {
         supabase.from('orders')
           .select('*, order_items(*), customers(*), delivery_drivers(*), waiter:employees!created_by_employee_id(name)')
           .eq('user_id', userId)
-          .or(`status.eq.OPEN,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
+          .or(`status.eq.OPEN,status.eq.PAYING,status.eq.AWAITING,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
         supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
         
         // Settings
@@ -203,6 +204,7 @@ export class SupabaseStateService {
     this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
     this.recipeState.recipePreparations.set(recipePreparations.data || []);
     this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
+    this.pricingService.customPrices.set(storeCustomPrices.data || []);
 
     this.inventoryState.ingredients.set(ingredients.data || []);
     this.inventoryState.ingredientCategories.set(ingredientCategories.data || []);
@@ -420,6 +422,8 @@ export class SupabaseStateService {
     const processedOrder = (this.processOrdersWithPrices([fullOrder]))[0];
     const isRelevantForPos = 
         processedOrder.status === 'OPEN' || 
+        processedOrder.status === 'PAYING' ||
+        processedOrder.status === 'AWAITING' ||
         (processedOrder.status === 'CANCELLED' && new Date().getTime() - new Date(processedOrder.completed_at || '').getTime() < 12 * 60 * 60 * 1000);
 
     this.posState.orders.update(orders => {

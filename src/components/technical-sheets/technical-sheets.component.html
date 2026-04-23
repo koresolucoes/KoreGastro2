@@ -195,12 +195,19 @@
                      </div>
                      
                      <!-- Details Row -->
-                     <div class="grid grid-cols-2 md:grid-cols-3 gap-5 border-t border-subtle pt-5 mt-5">
+                     <div class="grid grid-cols-2 md:grid-cols-4 gap-5 border-t border-subtle pt-5 mt-5">
                          <div>
-                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Preço Venda</label>
+                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Preço Base (Matriz)</label>
                              <div class="relative">
                                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold">R$</span>
                                  <input type="number" [value]="recipeForm().recipe.price" (input)="updateRecipeField('price', +$any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl pl-9 pr-3 py-3 text-body focus:border-brand focus:ring-1 focus:ring-brand outline-none data-mono font-bold">
+                             </div>
+                         </div>
+                         <div>
+                             <label class="block text-[10px] font-bold text-warning uppercase tracking-widest mb-1.5 ml-1" title="Substitui o preço base apenas nesta loja">Preço Local (Custom)</label>
+                             <div class="relative">
+                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-warning font-bold">R$</span>
+                                 <input type="number" [value]="recipeForm().custom_store_price || ''" (input)="updateCustomStorePrice($any($event.target).value)" class="w-full bg-warning/10 border border-warning/50 rounded-xl pl-9 pr-3 py-3 text-body focus:border-warning focus:ring-1 focus:ring-warning outline-none data-mono font-bold placeholder-warning/30" placeholder="Herdar Matriz">
                              </div>
                          </div>
                          <div>
@@ -214,7 +221,7 @@
                              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Cód. PDV</label>
                              <input type="text" [value]="recipeForm().recipe.external_code || ''" (input)="updateRecipeField('external_code', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body focus:border-brand focus:ring-1 focus:ring-brand outline-none uppercase data-mono font-bold text-sm" placeholder="SKU-123">
                          </div>
-                         <div class="flex items-center col-span-2 md:col-span-3 mt-2 bg-surface p-4 rounded-xl border border-strong">
+                         <div class="flex items-center col-span-2 md:col-span-4 mt-2 bg-surface p-4 rounded-xl border border-strong">
                              <label class="flex items-center cursor-pointer group w-full justify-between">
                                  <div class="flex flex-col">
                                     <span class="text-sm font-bold text-title uppercase tracking-widest">É Sub-receita?</span>

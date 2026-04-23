@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer } from '../models/db.models';
+import { Order, OrderItem, Recipe, Table, TableStatus, OrderItemStatus, Transaction, TransactionType, DiscountType, Customer, OrderStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { PosStateService } from './pos-state.service';
 import { SupabaseStateService } from './supabase-state.service';
@@ -488,6 +488,11 @@ export class PosDataService {
   
   async updateTableCustomerCount(tableId: string, count: number): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('tables').update({ customer_count: count }).eq('id', tableId);
+    return { success: !error, error };
+  }
+
+  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
     return { success: !error, error };
   }
 

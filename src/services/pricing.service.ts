@@ -1,6 +1,6 @@
 
 import { Injectable, signal, computed, OnDestroy } from '@angular/core';
-import { Recipe, Promotion, PromotionRecipe } from '../models/db.models';
+import { Recipe, Promotion, PromotionRecipe, StoreCustomPrice } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +11,7 @@ export class PricingService implements OnDestroy {
   // Public signals to be set by SupabaseService, breaking the circular dependency.
   promotions = signal<Promotion[]>([]);
   promotionRecipes = signal<PromotionRecipe[]>([]);
+  customPrices = signal<StoreCustomPrice[]>([]);
 
   // A signal that updates periodically to trigger computations involving time.
   private currentTime = signal(new Date());
@@ -69,21 +70,25 @@ export class PricingService implements OnDestroy {
   public getEffectivePrice(recipe: Recipe): number {
     if (!recipe) return 0;
 
+    // Resolve Base Price: If there is a Custom Store Price, it overrides the global Matriz price
+    const customPriceOverride = this.customPrices().find(cp => cp.recipe_id === recipe.id);
+    const basePrice = customPriceOverride ? customPriceOverride.custom_price : recipe.price;
+
     const applicablePromo = this.activePromotionsWithRecipes().get(recipe.id);
     
     if (!applicablePromo) {
-      return recipe.price;
+      return basePrice;
     }
 
     if (applicablePromo.discount_type === 'percentage') {
-      const discountAmount = recipe.price * (applicablePromo.discount_value / 100);
-      return Math.max(0, recipe.price - discountAmount);
+      const discountAmount = basePrice * (applicablePromo.discount_value / 100);
+      return Math.max(0, basePrice - discountAmount);
     }
 
     if (applicablePromo.discount_type === 'fixed_value') {
-      return Math.max(0, recipe.price - applicablePromo.discount_value);
+      return Math.max(0, basePrice - applicablePromo.discount_value);
     }
 
-    return recipe.price;
+    return basePrice;
   }
 }

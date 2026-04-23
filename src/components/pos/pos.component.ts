@@ -187,12 +187,15 @@ export class PosComponent implements OnInit {
   
   async handleCheckoutStarted() {
     // Check if it's a tab
-    if (this.selectedTabOrder()) {
-        // Tabs don't have "PAGANDO" status yet, we could just send to cashier logic, 
-        // but for now, let's just close the panel as "Sent".
-        // In V2 we might want a 'PAGANDO' status for orders too.
-        this.closeOrderPanel();
-        await this.notificationService.alert(`Comanda #${this.selectedTabOrder()?.command_number} disponível no Caixa.`, 'Info');
+    const tabOrder = this.selectedTabOrder();
+    if (tabOrder) {
+        const { success, error } = await this.posDataService.updateOrderStatus(tabOrder.id, 'PAYING');
+        if (success) {
+            this.closeOrderPanel();
+            await this.notificationService.alert(`Comanda #${tabOrder.command_number} enviada para o Caixa.`, 'Info');
+        } else {
+            await this.notificationService.alert(`Falha ao enviar comanda para o caixa. Erro: ${error?.message}`);
+        }
         return;
     }
 

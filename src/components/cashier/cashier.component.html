@@ -20,8 +20,8 @@
               [class.text-muted]="view() !== 'payingTables'"
               [class.hover:text-title]="view() !== 'payingTables'">
         A Receber
-        @if(tablesForPayment().length > 0) {
-          <span class="ml-1 bg-brand text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{{ tablesForPayment().length }}</span>
+        @if(tablesForPayment().length + payingTabs().length > 0) {
+          <span class="ml-1 bg-brand text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{{ tablesForPayment().length + payingTabs().length }}</span>
         }
         @if(view() === 'payingTables') {
           <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
@@ -132,6 +132,44 @@
                   <p class="text-sm text-muted mt-2 font-medium">Todas as mesas estão em operação normal ou livres.</p>
                 </div>
               }
+            </div>
+            
+            <!-- Section: Paying Tabs (Comandas) -->
+            <div class="flex flex-col h-full mt-8 lg:mt-0">
+               <h2 class="text-xl font-black text-title mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px]">
+                <span class="material-symbols-outlined text-warning drop-shadow-sm">style</span>
+                Comandas Aguardando Pagamento
+              </h2>
+               @if(payingTabs().length > 0) {
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                   @for(order of payingTabs(); track order.id) {
+                    <div (click)="openPaymentForTab(order)" 
+                         class="chef-surface p-6 cursor-pointer group hover:border-brand/40 transition-all border-l-4 border-l-warning">
+                       
+                       <div class="flex justify-between items-start mb-4">
+                          <div>
+                             <span class="text-[10px] font-black font-mono text-muted tracking-widest">COMANDA #{{ order.command_number }}</span>
+                             <h4 class="font-black text-title text-xl tracking-tight">{{ order.tab_name || 'Individual' }}</h4>
+                          </div>
+                          <div class="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center text-warning border border-warning/20">
+                             <span class="material-symbols-outlined">payments</span>
+                          </div>
+                       </div>
+
+                       <div class="flex justify-between items-center mt-4">
+                          <button (click)="$event.stopPropagation(); reopenTab(order)" class="text-[10px] font-black uppercase tracking-widest text-muted hover:text-warning transition-colors border border-subtle px-3 py-1.5 rounded-lg">
+                             Reabrir
+                          </button>
+                          <span class="font-black text-title text-lg tracking-tight">{{ getOrderTotal(order) | currency:'BRL' }}</span>
+                       </div>
+                    </div>
+                  }
+                </div>
+               } @else {
+                  <div class="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-subtle rounded-3xl bg-surface/30 backdrop-blur-sm">
+                     <p class="text-sm text-muted font-medium">Nenhuma comanda aguardando pagamento.</p>
+                  </div>
+               }
             </div>
 
             <!-- Section: Quick Sales -->

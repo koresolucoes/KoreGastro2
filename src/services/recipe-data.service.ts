@@ -73,12 +73,39 @@ export class RecipeDataService {
     return { success: true, error: null };
   }
 
-  async updateRecipeDetails(recipeId: string, recipeData: Partial<Recipe>): Promise<{ success: boolean; error: any }> {
+  async updateRecipeDetails(recipeId: string, recipeData: Partial<Recipe>, customPrice?: number | null): Promise<{ success: boolean; error: any }> {
     const { id, created_at, hasStock, ...updateData } = recipeData as any;
     const { error } = await supabase
       .from('recipes')
       .update(updateData)
       .eq('id', recipeId);
+      
+    if (!error) {
+         // Also update/insert the custom price
+         const storeId = this.getActiveUnitId();
+         if (storeId) {
+             if (customPrice === null) {
+                 // Explicitly remove the override for this store
+                 await supabase.from('store_custom_prices').delete().eq('store_id', storeId).eq('recipe_id', recipeId);
+             } else if (customPrice !== undefined) {
+                 const { data: existingPrice } = await supabase
+                    .from('store_custom_prices')
+                    .select('*')
+                    .eq('store_id', storeId)
+                    .eq('recipe_id', recipeId)
+                    .maybeSingle();
+
+                 if (existingPrice) {
+                     await supabase.from('store_custom_prices')
+                        .update({ custom_price: customPrice })
+                        .eq('id', existingPrice.id);
+                 } else {
+                     await supabase.from('store_custom_prices')
+                        .insert({ store_id: storeId, recipe_id: recipeId, custom_price: customPrice });
+                 }
+             }
+         }
+    }
       
     return { success: !error, error };
   }
