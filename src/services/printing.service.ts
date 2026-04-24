@@ -380,7 +380,93 @@ export class PrintingService {
   }
   
   // Placeholder methods for other types to satisfy compilation, actual implementation remains same
-  async printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) { /* ... */ }
+  async printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      return;
+    }
+
+    const date = this.datePipe.transform(closingData.closed_at || new Date(), 'dd/MM/yyyy HH:mm:ss');
+    const identifier = `Fechamento de Caixa #${closingData.id ? closingData.id.substring(0, 8).toUpperCase() : 'N/A'}`;
+    
+    printWindow.document.title = identifier;
+
+    let paymentHtml = '';
+    if (closingData.payment_summary && closingData.payment_summary.length > 0) {
+        paymentHtml = closingData.payment_summary.map((method: any) => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 13px;">
+                <span>${method.method || method.name || 'Outro'}</span>
+                <span>
+                   Esp: ${this.currencyPipe.transform(method.expected || method.total || 0, 'BRL', 'R$', '1.2-2')} | 
+                   Cont: ${this.currencyPipe.transform(method.counted || 0, 'BRL', 'R$', '1.2-2')} | 
+                   Dif: <span style="color: ${(method.difference || 0) < 0 ? '#dc2626' : 'inherit'}">${this.currencyPipe.transform(method.difference || 0, 'BRL', 'R$', '1.2-2')}</span>
+                </span>
+            </div>
+        `).join('');
+    } else {
+        paymentHtml = `<div style="font-size: 13px; color: #666;">Nenhum detalhe de pagamento registrado.</div>`;
+    }
+
+    const html = `
+      <html>
+        <head>
+          <title>${identifier}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; max-width: 300px; margin: 0 auto; color: #000; background: #fff; }
+            .center { text-align: center; }
+            .divider { border-bottom: 1px dashed #000; margin: 10px 0; }
+            .header { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+            .bold { font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="center header">ChefOS</div>
+          <div class="center">RELATÓRIO DE FECHAMENTO</div>
+          <div class="divider"></div>
+          <div style="font-size: 12px; margin-bottom: 5px;">Data: ${date}</div>
+          <div style="font-size: 12px;">ID: ${identifier}</div>
+          <div class="divider"></div>
+          
+          <div class="row"><span class="bold">Saldo Inicial</span><span>${this.currencyPipe.transform(closingData.opening_balance, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span class="bold">Receitas</span><span>${this.currencyPipe.transform(closingData.total_revenue, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span class="bold">Despesas</span><span>${this.currencyPipe.transform(closingData.total_expenses, 'BRL', 'R$', '1.2-2')}</span></div>
+          
+          <div class="divider"></div>
+          <div class="center bold" style="margin-bottom: 5px;">CONFERÊNCIA (Dinheiro)</div>
+          <div class="row"><span>Esperado na Gaveta:</span><span>${this.currencyPipe.transform(closingData.expected_cash_in_drawer, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span>Dinheiro Informado:</span><span>${this.currencyPipe.transform(closingData.counted_cash, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span class="bold">Diferença Total:</span><span class="bold" style="color: ${closingData.difference < 0 ? '#dc2626' : 'inherit'}">${this.currencyPipe.transform(closingData.difference, 'BRL', 'R$', '1.2-2')}</span></div>
+          
+          <div class="divider"></div>
+          <div class="center bold" style="margin-bottom: 5px;">FORMAS DE PAGAMENTO</div>
+          ${paymentHtml}
+          
+          <div class="divider"></div>
+          ${closingData.notes ? `
+              <div style="font-size: 12px; margin-bottom: 10px;">
+                <span class="bold">Observações:</span>
+                <div>${closingData.notes}</div>
+              </div>
+              <div class="divider"></div>
+          ` : ''}
+          <div class="center" style="font-size: 12px; margin-top: 20px;">Assinatura do Responsável</div>
+          <div style="border-bottom: 1px solid #000; width: 80%; margin: 30px auto 10px auto;"></div>
+          
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
   async printPayslip(payslipHtml: string, employeeName: string) { /* ... */ }
   async printIfoodReceipt(order: ProcessedIfoodOrder) { /* ... */ }
   async printDeliveryGuide(order: Order) { /* ... */ }

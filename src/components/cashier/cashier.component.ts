@@ -564,17 +564,19 @@ export class CashierComponent implements OnInit, OnDestroy {
         return;
     }
 
-    const totalCounted = breakdown.reduce((acc, i) => acc + (i.counted || 0), 0);
-    const totalExpected = breakdown.reduce((acc, i) => acc + i.expected, 0);
+    const cashBreakdown = breakdown.find(i => i.method === 'Dinheiro');
+    const totalCountedCash = cashBreakdown?.counted || 0;
+    const totalExpectedCash = cashBreakdown?.expected || 0;
+    const totalDifference = breakdown.reduce((acc, i) => acc + i.difference, 0);
 
     const closingData = {
         opening_balance: this.openingBalance(),
         total_revenue: this.totalRevenue(),
         total_expenses: this.totalExpenses(),
-        expected_cash_in_drawer: totalExpected,
-        counted_cash: totalCounted,
-        difference: this.totalDifference(),
-        payment_summary: breakdown.map(i => ({ method: i.method, total: i.expected, count: 0 })), // Backend expects this structure roughly
+        expected_cash_in_drawer: totalExpectedCash,
+        counted_cash: totalCountedCash,
+        difference: totalDifference,
+        payment_summary: breakdown.map(i => ({ method: i.method, expected: i.expected, counted: i.counted || 0, difference: i.difference })),
         notes: this.closingNotes().trim() || null,
     };
     
@@ -584,13 +586,21 @@ export class CashierComponent implements OnInit, OnDestroy {
 
     if (success && data) {
         this.notificationService.show('Caixa fechado com sucesso!', 'success');
-        this.printingService.printCashierClosingReport(data, this.expenseTransactions());
+        this.printingService.printCashierClosingReport({
+            ...data,
+            payment_summary: closingData.payment_summary as any
+        }, this.expenseTransactions());
         
         // Reset UI for next shift
         this.cashierState.clearData();
         this.closingBreakdown.set([]);
         
         this.closeClosingModal();
+        
+        // Let the user know they need to open again (a subtle hint or just UI clears)
+        setTimeout(() => {
+            this.notificationService.show('Caixa Encerrado. Abra um novo caixa para iniciar um novo turno.', 'info');
+        }, 1500);
         
         // Optionally reload page or navigate to reset state fully
         // window.location.reload(); // Simple brute force reset

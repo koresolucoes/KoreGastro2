@@ -962,3 +962,13 @@ export interface EquipmentPurchase {
   created_at: string;
   updated_at: string;
 }
+
+export interface SystemLog {
+  id: string;
+  user_id: string;
+  employee_id: string | null;
+  action: string;
+  details: string;
+  created_at: string;
+  employees?: { name: string };
+}

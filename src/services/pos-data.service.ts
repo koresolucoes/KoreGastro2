@@ -13,6 +13,7 @@ import { WebhookService } from './webhook.service';
 import { DeliveryDataService } from './delivery-data.service';
 import { UnitContextService } from './unit-context.service';
 import { RecipeStateService } from './recipe-state.service';
+import { AuditDataService } from './audit-data.service';
 
 export type PaymentInfo = { method: string; amount: number };
 
@@ -30,6 +31,7 @@ export class PosDataService {
   private deliveryDataService = inject(DeliveryDataService);
   private unitContextService = inject(UnitContextService);
   private recipeState = inject(RecipeStateService);
+  private auditDataService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -381,6 +383,8 @@ export class PosDataService {
 
     if (error) return { success: false, error };
 
+    await this.auditDataService.logAction('CANCEL_ORDER', `Pedido #${orderId.substring(0,8).toUpperCase()} cancelado. Motivo: ${reason}`, employeeId);
+
     if (order && order.table_number > 0 && userId) {
         const { error: tableError } = await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('number', order.table_number).eq('user_id', userId);
         if (tableError) console.error("Failed to free table after cancellation:", tableError);
@@ -416,6 +420,7 @@ export class PosDataService {
         .in('id', itemIds);
       
       if (!error) {
+           await this.auditDataService.logAction('CANCEL_ITEM', `${itemIds.length} item(s) cancelado(s). Motivo: ${reason}`, employeeId);
            if (returnToStock && itemsToReturn.length > 0) {
                await this.inventoryDataService.returnStockForOrderItems(itemsToReturn, itemsToReturn[0].order_id, employeeId);
            }

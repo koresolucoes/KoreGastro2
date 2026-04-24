@@ -4,6 +4,7 @@ import { Recipe, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Category 
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
+import { AuditDataService } from './audit-data.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +12,7 @@ import { UnitContextService } from './unit-context.service';
 export class RecipeDataService {
   private authService = inject(AuthService);
   private unitContextService = inject(UnitContextService);
+  private auditDataService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -104,6 +106,13 @@ export class RecipeDataService {
                         .insert({ store_id: storeId, recipe_id: recipeId, custom_price: customPrice });
                  }
              }
+         }
+         
+         if (updateData.price !== undefined || customPrice !== undefined) {
+             const priceMsg = customPrice !== undefined ? customPrice : updateData.price;
+             await this.auditDataService.logAction('UPDATE_PRICE', `Preço da ficha técnica atualizado. Novo Valor: R$ ${priceMsg}`);
+         } else {
+             await this.auditDataService.logAction('UPDATE_RECIPE', `Ficha técnica editada.`);
          }
     }
       

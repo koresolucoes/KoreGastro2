@@ -12,6 +12,7 @@ import { Order, OrderItem, Recipe, Transaction, TransactionType, CashierClosing,
 import { Payment } from '../components/cashier/cashier.component';
 import { v4 as uuidv4 } from 'uuid';
 import { UnitContextService } from './unit-context.service';
+import { AuditDataService } from './audit-data.service';
 
 interface CartItem {
   recipe: Recipe;
@@ -105,6 +106,7 @@ export class CashierDataService {
   private posState = inject(PosStateService);
   private hrState = inject(HrStateService);
   private unitContextService = inject(UnitContextService);
+  private auditDataService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -784,6 +786,10 @@ export class CashierDataService {
         competence_date: competenceDate || null
     });
     
+    if (!error) {
+        await this.auditDataService.logAction('NEW_TRANSACTION', `Nova ${type} adicionada. Descrição: ${description}, Valor: R$ ${amount.toFixed(2)}.`, cashierEmployeeId);
+    }
+    
     return { success: !error, error };
   }
   
@@ -798,6 +804,22 @@ export class CashierDataService {
         .single();
     
     if (error) return { success: false, error, data: null };
+
+    // Immutable Audit Log
+    try {
+        const cashierRoleId = this.hrState.roles().find(r => r.name === 'Caixa')?.id;
+        const cashierEmployeeId = this.hrState.employees().find(e => e.role_id === cashierRoleId)?.id ?? null;
+        
+        await supabase.from('system_logs').insert({
+            user_id: userId,
+            action: 'FECHAMENTO_CAIXA',
+            details: `Caixa fechado. Esperado (Dinheiro): R$ ${closingData.expected_cash_in_drawer.toFixed(2)}. Contado: R$ ${closingData.counted_cash.toFixed(2)}. Diferença: R$ ${closingData.difference.toFixed(2)}. Obs: ${closingData.notes || 'Nenhuma'}`,
+            employee_id: cashierEmployeeId,
+            created_at: new Date().toISOString()
+        });
+    } catch (err) {
+        console.warn('Could not register immutable audit log. Maybe system_logs table doesnt exist yet.', err);
+    }
 
     // Register opening balance for next session
     const { error: openError } = await supabase.from('transactions').insert({
