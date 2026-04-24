@@ -265,20 +265,20 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         }
 
-        // 2. Apply hold logic
+        // 2. Apply chronological sorting / structure, removing the strict hold block
         const finalItems: ProcessedOrderItem[] = [];
         for (const orderItems of itemsByOrder.values()) {
             if (orderItems.length === 0) continue;
             
-            const activeItems = orderItems.filter(i => !i.isCancelled);
+            const activeItems = orderItems.filter(i => !i.isCancelled && i.status !== 'PRONTO');
             const longestPrepTime = activeItems.length > 0 ? Math.max(...activeItems.map(item => item.prepTime)) : 0;
             
             for (const item of orderItems) {
-                if (!item.isCancelled) {
+                if (!item.isCancelled && item.status === 'PENDENTE') {
                     const timeToStart = longestPrepTime - item.prepTime;
-                    if (item.status === 'PENDENTE' && item.elapsedTimeSeconds < timeToStart) {
-                        item.isHeld = true;
+                    if (item.elapsedTimeSeconds < timeToStart) {
                         item.timeToStart = timeToStart - item.elapsedTimeSeconds;
+                        // item.isHeld = true; // Limitation removed per user request
                     }
                 }
                 finalItems.push(item);
