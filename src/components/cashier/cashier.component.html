@@ -442,7 +442,7 @@
                         <div class="md:col-span-1">
                             <label class="block text-[9px] font-black text-muted uppercase tracking-widest mb-2">Categoria</label>
                             <select [value]="newExpenseCategoryId() || ''" (change)="newExpenseCategoryId.set($any($event.target).value)" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-3 text-sm text-title font-bold focus:ring-2 focus:ring-brand outline-none transition-all appearance-none">
-                                <option value="" disabled selected>Selecione...</option>
+                                <option value="">Sem Categoria</option>
                                 @for (cat of financialCategories(); track cat.id) {
                                     <option [value]="cat.id">{{ cat.name }}</option>
                                 }
@@ -456,10 +456,10 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button (click)="handleLogExpense()" [disabled]="!newExpenseCategoryId() || !newExpenseAmount()" class="flex-1 bg-surface hover-surface-elevated border border-subtle text-title font-black text-[10px] uppercase tracking-widest py-3 rounded-xl transition-all disabled:opacity-40">
+                            <button (click)="handleLogExpense()" [disabled]="!newExpenseAmount()" class="flex-1 bg-surface hover-surface-elevated border border-subtle text-title font-black text-[10px] uppercase tracking-widest py-3 rounded-xl transition-all disabled:opacity-40">
                                 Despesa
                             </button>
-                            <button (click)="handleLogExpense(true)" [disabled]="!newExpenseCategoryId() || !newExpenseAmount()" class="flex-1 bg-danger text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-xl transition-all disabled:opacity-40 shadow-lg shadow-danger/20">
+                            <button (click)="handleLogExpense(true)" [disabled]="!newExpenseAmount()" class="flex-1 bg-danger text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-xl transition-all disabled:opacity-40 shadow-lg shadow-danger/20">
                                 Sangria
                             </button>
                         </div>

@@ -485,7 +485,13 @@ export class CashierComponent implements OnInit, OnDestroy {
     }
 
     const amount = this.newExpenseAmount();
-    const categoryId = this.newExpenseCategoryId();
+    let categoryId = this.newExpenseCategoryId();
+    
+    // Explicitly map empty string to null to avoid UUID parse errors in Supabase
+    if (!categoryId || categoryId.trim() === '') {
+        categoryId = null;
+    }
+    
     const competenceDate = this.newExpenseCompetenceDate();
 
     if (!description || !amount || amount <= 0) {
