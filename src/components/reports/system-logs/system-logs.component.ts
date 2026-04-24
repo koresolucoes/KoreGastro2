@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, inject, signal, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, inject, signal, effect, untracked } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { AuditDataService } from '../../../services/audit-data.service';
 import { SystemLog } from '../../../models/db.models';
@@ -108,7 +108,9 @@ export class SystemLogsReportComponent {
         const start = this.startDate();
         const end = this.endDate();
         if (start && end) {
-            this.loadLogs(start, end);
+            untracked(() => {
+                this.loadLogs(start, end);
+            });
         }
     });
   }
