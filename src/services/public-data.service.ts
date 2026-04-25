@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Station } from '../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Station, IfoodOptionGroup, RecipeIfoodOptionGroup } from '../models/db.models';
 
 @Injectable({
   providedIn: 'root',
@@ -133,5 +133,30 @@ export class PublicDataService {
       return null;
     }
     return data;
+  }
+
+  async getPublicOptionGroups(userId: string): Promise<IfoodOptionGroup[]> {
+    const { data, error } = await supabase
+      .from('ifood_option_groups')
+      .select('*, ifood_options(*)')
+      .eq('user_id', userId)
+      .order('sequence', { ascending: true });
+    if (error) {
+      console.error('Error fetching public option groups:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async getPublicRecipeOptionGroups(userId: string): Promise<RecipeIfoodOptionGroup[]> {
+    const { data, error } = await supabase
+      .from('recipe_ifood_option_groups')
+      .select('*')
+      .eq('user_id', userId);
+    if (error) {
+      console.error('Error fetching public recipe option groups:', error);
+      return [];
+    }
+    return data || [];
   }
 }

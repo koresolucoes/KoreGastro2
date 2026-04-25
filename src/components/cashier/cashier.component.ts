@@ -582,11 +582,26 @@ export class CashierComponent implements OnInit, OnDestroy {
         expected_cash_in_drawer: totalExpectedCash,
         counted_cash: totalCountedCash,
         difference: totalDifference,
-        payment_summary: breakdown.map(i => ({ method: i.method, expected: i.expected, counted: i.counted || 0, difference: i.difference })),
+        payment_summary: breakdown.map(i => ({ 
+            method: i.method, 
+            expected: i.expected, 
+            counted: i.counted || 0, 
+            difference: i.difference,
+            total: i.expected,
+            count: 0
+        })),
         notes: this.closingNotes().trim() || null,
     };
     
-    // We send just the aggregated data for the closing record, but the breakdown logic happens here visually.
+    // Fetch items sold today for the message
+    const today = new Date().toISOString().split('T')[0];
+    let topItems: any[] = [];
+    try {
+        const report = await this.cashierDataService.generateReportData(today, today, 'items');
+        topItems = report.bestSellingItems || [];
+    } catch (err) {
+        console.error("Failed to fetch items for summary:", err);
+    }
     
     const { success, error, data } = await this.cashierDataService.closeCashier(closingData);
 
@@ -597,6 +612,9 @@ export class CashierComponent implements OnInit, OnDestroy {
             payment_summary: closingData.payment_summary as any
         }, this.expenseTransactions());
         
+        // Generate and send WhatsApp message
+        this.sendWhatsAppClosingSummary(data, closingData.payment_summary, topItems);
+
         // Reset UI for next shift
         this.cashierState.clearData();
         this.closingBreakdown.set([]);
@@ -687,5 +705,54 @@ export class CashierComponent implements OnInit, OnDestroy {
       newSet.delete(order.id);
       return newSet;
     });
+  }
+
+  private sendWhatsAppClosingSummary(closing: CashierClosing, methods: any[], items: any[]) {
+      const date = new Date().toLocaleDateString('pt-BR');
+      const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+      let msg = `📊 *RESUMO DE FECHAMENTO DE CAIXA*\n`;
+      msg += `📅 Data: ${date} às ${time}\n\n`;
+      
+      msg += `💰 *FINANCEIRO*\n`;
+      msg += `• Saldo Inicial: ${fmt(closing.opening_balance)}\n`;
+      msg += `• Vendas Totais: ${fmt(closing.total_revenue)}\n`;
+      msg += `• Despesas: ${fmt(closing.total_expenses)}\n`;
+      msg += `• *TOTAL ESPERADO:* ${fmt(closing.expected_cash_in_drawer)}\n`;
+      msg += `• *TOTAL CONTADO:* ${fmt(closing.counted_cash)}\n`;
+      
+      const diff = closing.difference;
+      msg += `• Diferença: ${diff >= 0 ? '+' : ''}${fmt(diff)}\n\n`;
+
+      if (methods.length > 0) {
+          msg += `💳 *METODOS DE PAGAMENTO*\n`;
+          methods.forEach(m => {
+              msg += `- ${m.method}: ${fmt(m.counted)}\n`;
+          });
+          msg += `\n`;
+      }
+
+      if (items.length > 0) {
+          msg += `🍴 *ITENS VENDIDOS*\n`;
+          // Limit to top 15 items to avoid message being too long
+          items.slice(0, 15).forEach(item => {
+              msg += `- ${item.quantity}x ${item.name} (${fmt(item.revenue)})\n`;
+          });
+          if (items.length > 15) msg += `... e mais ${items.length - 15} itens.\n`;
+          msg += `\n`;
+      }
+
+      if (closing.notes) {
+          msg += `📝 *OBSERVAÇÕES:*\n${closing.notes}\n\n`;
+      }
+
+      msg += `--------------------------\n`;
+      msg += `🚀 *ChefOS - Gestão Inteligente*\n`;
+      msg += `_Mensagem enviada automaticamente_`;
+
+      const encodedMsg = encodeURIComponent(msg);
+      window.open(`https://api.whatsapp.com/send?text=${encodedMsg}`, '_blank');
   }
 }

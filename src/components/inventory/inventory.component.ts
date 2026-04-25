@@ -513,7 +513,7 @@ export class InventoryComponent implements OnInit {
                   .map(([id, quantity]) => {
                     const ingredient = ingredientsById.get(id);
                     if (ingredient) {
-                        return `${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês`;
+                        return `[ID: ${ingredient.id}] ${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês`;
                     }
                     return '';
                   })

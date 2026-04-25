@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, ViewportScroller } from '@angular/common';
-import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PublicDataService } from '../../services/public-data.service';
@@ -49,7 +49,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = signal('');
   isPublicView = signal(false);
   isLoading = signal(true);
-  view = signal<'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout'>('cover');
+  view = signal<'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout' | 'reservations'>('cover');
   activeCategorySlug = signal<string | null>(null);
   
   // Checkout state
@@ -72,11 +72,22 @@ export class MenuComponent implements OnInit, OnDestroy {
   publicReservationSettings = signal<ReservationSettings | null>(null);
   private publicStations = signal<Station[]>([]);
 
+  // Customization state
+  publicOptionGroups = signal<IfoodOptionGroup[]>([]);
+  publicRecipeOptionGroups = signal<RecipeIfoodOptionGroup[]>([]);
+  customizingRecipe = signal<Recipe | null>(null);
+  selectedOptions = signal<IfoodOption[]>([]);
+  customizationNotes = signal('');
+
+  // Integrated Booking View State (simplified or linking)
+  userId = signal<string | null>(null);
+
   ngOnInit() {
     this.routeSub = this.route.paramMap.subscribe(params => {
       const userId = params.get('userId');
       if (userId) {
         // Public View
+        this.userId.set(userId);
         this.isPublicView.set(true);
         this.view.set('cover'); // Start with the cover page for public
         this.loadPublicData(userId);
@@ -95,31 +106,39 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   async loadPublicData(userId: string) {
     this.isLoading.set(true);
-    const [companyProfile, recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards, reservationSettings, stations] = await Promise.all([
-      this.publicDataService.getPublicCompanyProfile(userId),
-      this.publicDataService.getPublicRecipes(userId),
-      this.publicDataService.getPublicCategories(userId),
-      this.publicDataService.getPublicPromotions(userId),
-      this.publicDataService.getPublicPromotionRecipes(userId),
-      this.publicDataService.getPublicLoyaltySettings(userId),
-      this.publicDataService.getPublicLoyaltyRewards(userId),
-      this.publicDataService.getPublicReservationSettings(userId),
-      this.publicDataService.getPublicStations(userId),
-    ]);
-    
-    // Set data for pricing service to use
-    this.pricingService.promotions.set(promotions);
-    this.pricingService.promotionRecipes.set(promotionRecipes);
+    try {
+      const [companyProfile, recipes, categories, promotions, promotionRecipes, loyaltySettings, loyaltyRewards, reservationSettings, stations, optionGroups, recipeOptionGroups] = await Promise.all([
+        this.publicDataService.getPublicCompanyProfile(userId),
+        this.publicDataService.getPublicRecipes(userId),
+        this.publicDataService.getPublicCategories(userId),
+        this.publicDataService.getPublicPromotions(userId),
+        this.publicDataService.getPublicPromotionRecipes(userId),
+        this.publicDataService.getPublicLoyaltySettings(userId),
+        this.publicDataService.getPublicLoyaltyRewards(userId),
+        this.publicDataService.getPublicReservationSettings(userId),
+        this.publicDataService.getPublicStations(userId),
+        this.publicDataService.getPublicOptionGroups(userId),
+        this.publicDataService.getPublicRecipeOptionGroups(userId),
+      ]);
+      
+      // Set data for pricing service to use
+      this.pricingService.promotions.set(promotions);
+      this.pricingService.promotionRecipes.set(promotionRecipes);
 
-    this.publicCompanyProfile.set(companyProfile);
-    this.publicRecipes.set(recipes);
-    this.publicCategories.set(categories);
-    this.publicLoyaltySettings.set(loyaltySettings);
-    this.publicLoyaltyRewards.set(loyaltyRewards);
-    this.publicReservationSettings.set(reservationSettings);
-    this.publicStations.set(stations);
-    
-    this.isLoading.set(false);
+      this.publicCompanyProfile.set(companyProfile);
+      this.publicRecipes.set(recipes);
+      this.publicCategories.set(categories);
+      this.publicLoyaltySettings.set(loyaltySettings);
+      this.publicLoyaltyRewards.set(loyaltyRewards);
+      this.publicReservationSettings.set(reservationSettings);
+      this.publicStations.set(stations);
+      this.publicOptionGroups.set(optionGroups);
+      this.publicRecipeOptionGroups.set(recipeOptionGroups);
+    } catch (error) {
+      console.error('Error loading public menu data:', error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   baseMenu = computed<MenuGroup[]>(() => {
@@ -223,12 +242,10 @@ export class MenuComponent implements OnInit, OnDestroy {
   });
 
   publicBookingUrl = computed(() => {
-    const userId = this.isPublicView() 
-        ? this.route.snapshot.paramMap.get('userId') 
-        : (this.demoService.isDemoMode() ? 'demo-user' : this.authService.currentUser()?.id);
+    const userId = this.userId();
     if (!userId) return '#';
-    // Updated base URL
-    return `https://app.chefos.online/#/book/${userId}`;
+    // Use local relative path for better reliability
+    return `/book/${userId}`;
   });
 
   isRestaurantOpen = computed(() => {
@@ -245,16 +262,14 @@ export class MenuComponent implements OnInit, OnDestroy {
       const [openH, openM] = todaySettings.opening_time.split(':').map(Number);
       const [closeH, closeM] = todaySettings.closing_time.split(':').map(Number);
       const openMinutes = openH * 60 + openM;
-      const closeMinutes = closeH * 60 + closeM;
+      let closeMinutes = closeH * 60 + closeM;
 
-      if (closeMinutes > openMinutes) { // Same day
-        if (currentMinutes >= openMinutes && currentMinutes <= closeMinutes) {
+      if (closeMinutes < openMinutes) { // Overnight
+          closeMinutes += 1440; // Add 24 hours
+      }
+
+      if (currentMinutes >= openMinutes && currentMinutes <= closeMinutes) {
           return true;
-        }
-      } else { // Overnight
-        if (currentMinutes >= openMinutes) { // After opening on the same day
-          return true;
-        }
       }
     }
 
@@ -267,7 +282,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       const openMinutes = openH * 60 + openM;
       const closeMinutes = closeH * 60 + closeM;
 
-      if (closeMinutes <= openMinutes) { // Is overnight
+      if (closeMinutes < openMinutes) { // Is overnight
         if (currentMinutes <= closeMinutes) { // Before closing on the next day
           return true;
         }
@@ -279,9 +294,14 @@ export class MenuComponent implements OnInit, OnDestroy {
   
   setView(newView: 'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout') {
     this.view.set(newView);
-    if (newView === 'menu' || newView === 'cover' || newView === 'loyalty' || newView === 'cart' || newView === 'checkout') {
-        setTimeout(() => (this.viewportScroller as any).scrollToPosition([0, 0]), 0);
-    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  goToReservations() {
+      const userId = this.userId();
+      if (userId) {
+          this.router.navigate(['/book', userId]);
+      }
   }
   
   setSelectedCategory(slug: string | null) {
@@ -302,7 +322,99 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
   
   addToCart(recipe: Recipe, effectivePrice: number) {
-    this.cartService.addToCart(recipe, effectivePrice);
+    // Check if recipe has option groups
+    const linkedGroups = this.publicRecipeOptionGroups()
+      .filter(l => l.recipe_id === recipe.id)
+      .map(l => l.ifood_option_group_id);
+
+    if (linkedGroups.length > 0) {
+      this.openCustomization(recipe);
+    } else {
+      this.cartService.addToCart(recipe, effectivePrice);
+    }
+  }
+
+  // --- Customization Logic ---
+  
+  recipeGroups = computed(() => {
+    const r = this.customizingRecipe();
+    if (!r) return [];
+    
+    const linkedIds = this.publicRecipeOptionGroups()
+      .filter(l => l.recipe_id === r.id)
+      .map(l => l.ifood_option_group_id);
+      
+    return this.publicOptionGroups().filter(g => linkedIds.includes(g.id));
+  });
+
+  currentCustomPrice = computed(() => {
+    const r = this.customizingRecipe();
+    if (!r) return 0;
+    const base = this.pricingService.getEffectivePrice(r);
+    const optionsTotal = this.selectedOptions().reduce((sum, o) => sum + (o.price || 0), 0);
+    return base + optionsTotal;
+  });
+
+  openCustomization(recipe: Recipe) {
+    this.customizingRecipe.set(recipe);
+    this.selectedOptions.set([]);
+    this.customizationNotes.set('');
+  }
+
+  closeCustomization() {
+    this.customizingRecipe.set(null);
+  }
+
+  toggleOption(group: IfoodOptionGroup, option: IfoodOption) {
+    const current = this.selectedOptions();
+    const groupOptions = group.ifood_options || [];
+    const isAlreadySelected = current.some(o => o.id === option.id);
+
+    if (isAlreadySelected) {
+      this.selectedOptions.set(current.filter(o => o.id !== option.id));
+    } else {
+      // Check max limit
+      const currentInGroup = current.filter(o => groupOptions.some(go => go.id === o.id));
+      if (group.max_options === 1) {
+        // Replace existing in group
+        const filtered = current.filter(o => !groupOptions.some(go => go.id === o.id));
+        this.selectedOptions.set([...filtered, option]);
+      } else if (currentInGroup.length < group.max_options) {
+        this.selectedOptions.set([...current, option]);
+      }
+    }
+  }
+
+  isOptionSelected(optionId: string): boolean {
+    return this.selectedOptions().some(o => o.id === optionId);
+  }
+
+  canConfirmCustomization(): boolean {
+    const r = this.customizingRecipe();
+    if (!r) return false;
+    
+    const groups = this.recipeGroups();
+    const selected = this.selectedOptions();
+    
+    for (const group of groups) {
+      const selectedInGroup = selected.filter(o => (group.ifood_options || []).some(go => go.id === o.id)).length;
+      if (selectedInGroup < group.min_required) return false;
+    }
+    
+    return true;
+  }
+
+  confirmCustomization() {
+    const recipe = this.customizingRecipe();
+    if (!recipe || !this.canConfirmCustomization()) return;
+
+    this.cartService.addToCart(
+      recipe, 
+      this.currentCustomPrice(), 
+      this.selectedOptions(), 
+      this.customizationNotes()
+    );
+    this.closeCustomization();
   }
 
   async submitOrder() {

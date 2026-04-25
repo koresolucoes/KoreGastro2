@@ -1,11 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Recipe } from '../models/db.models';
+import { Recipe, IfoodOption } from '../models/db.models';
 
 export interface CartItem {
+  id: string; // Unique ID for each cart entry
   recipe: Recipe;
   quantity: number;
   notes?: string;
-  effectivePrice: number;
+  effectivePrice: number; // Base price + options price
+  options?: IfoodOption[];
 }
 
 @Injectable({
@@ -18,26 +20,48 @@ export class CartService {
   
   subtotal = computed(() => this.items().reduce((acc, item) => acc + (item.effectivePrice * item.quantity), 0));
 
-  addToCart(recipe: Recipe, effectivePrice: number) {
+  addToCart(recipe: Recipe, effectivePrice: number, options: IfoodOption[] = [], notes: string = '') {
     this.items.update(items => {
-      const existingItem = items.find(i => i.recipe.id === recipe.id);
+      // Check for item with same recipe and SAME options
+      const existingItem = items.find(i => 
+        i.recipe.id === recipe.id && 
+        this.areOptionsEqual(i.options || [], options) &&
+        i.notes === notes
+      );
+
       if (existingItem) {
-        return items.map(i => i.recipe.id === recipe.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return items.map(i => i.id === existingItem.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...items, { recipe, quantity: 1, effectivePrice }];
+      
+      const newItem: CartItem = {
+        id: Math.random().toString(36).substring(2),
+        recipe,
+        quantity: 1,
+        effectivePrice,
+        options,
+        notes
+      };
+      return [...items, newItem];
     });
   }
 
-  removeFromCart(recipeId: string) {
-    this.items.update(items => items.filter(i => i.recipe.id !== recipeId));
+  private areOptionsEqual(a: IfoodOption[], b: IfoodOption[]): boolean {
+    if (a.length !== b.length) return false;
+    const aIds = a.map(o => o.id).sort();
+    const bIds = b.map(o => o.id).sort();
+    return aIds.every((id, index) => id === bIds[index]);
   }
 
-  updateQuantity(recipeId: string, quantity: number) {
+  removeFromCart(itemId: string) {
+    this.items.update(items => items.filter(i => i.id !== itemId));
+  }
+
+  updateQuantity(itemId: string, quantity: number) {
     if (quantity <= 0) {
-      this.removeFromCart(recipeId);
+      this.removeFromCart(itemId);
       return;
     }
-    this.items.update(items => items.map(i => i.recipe.id === recipeId ? { ...i, quantity } : i));
+    this.items.update(items => items.map(i => i.id === itemId ? { ...i, quantity } : i));
   }
 
   clearCart() {

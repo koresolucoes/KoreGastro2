@@ -24,7 +24,7 @@ export class AiRecipeService {
   async callGeminiForPrediction(prompt: string): Promise<{ ingredientId: string; predictedUsage: number; }[]> {
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -61,7 +61,7 @@ export class AiRecipeService {
   private async callGeminiForText(prompt: string): Promise<string> {
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: prompt,
       });
       return response.text;
