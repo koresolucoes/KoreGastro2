@@ -80,9 +80,16 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                                   
                                   <!-- Stock Visibility for Pending -->
                                   <td class="py-3 px-2 text-center" *ngIf="req.status === 'PENDING'">
-                                      <span class="font-mono font-bold" [class.text-danger]="stock < item.quantity_requested" [class.text-success]="stock >= item.quantity_requested">
-                                          {{ stock | number:'1.0-2' }}
-                                      </span>
+                                      <div class="flex flex-col items-center">
+                                          <span class="font-mono font-bold" [class.text-danger]="stock < item.quantity_requested" [class.text-success]="stock >= item.quantity_requested">
+                                              {{ stock | number:'1.0-2' }}
+                                          </span>
+                                          @if (stock < item.quantity_requested) {
+                                              <span class="text-[9px] text-danger font-black flex items-center gap-1 mt-0.5">
+                                                  <span class="material-symbols-outlined text-[10px]">warning</span> insf.
+                                              </span>
+                                          }
+                                      </div>
                                   </td>
 
                                   <!-- Input for delivery amount if Pending AND INTERNAL -->
@@ -240,16 +247,16 @@ export class RequisitionListComponent {
       }
 
       const confirmed = await this.notificationService.confirm(
-          `Confirmar a entrega de ${itemsToDeliver.length} itens para ${req.stations?.name}? Isso irá baixar o estoque central.`,
-          'Confirmar Entrega'
+          `Confirmar o despacho de ${itemsToDeliver.length} itens para ${req.stations?.name}? Isso irá baixar o estoque central.`,
+          'Confirmar Despacho'
       );
 
       if (!confirmed) return;
 
-      const { success, error } = await this.requisitionService.updateRequisitionStatus(req.id, 'DELIVERED', itemsToDeliver);
+      const { success, error } = await this.requisitionService.updateRequisitionStatus(req.id, 'APPROVED', itemsToDeliver);
       
       if (success) {
-          this.notificationService.show('Estoque transferido com sucesso!', 'success');
+          this.notificationService.show('Estoque despachado com sucesso!', 'success');
           
           // Logic for Backorder (Partial Delivery)
           if (backorderItems.length > 0) {
@@ -272,7 +279,7 @@ export class RequisitionListComponent {
               return newMap;
           });
       } else {
-          this.notificationService.show(`Erro na entrega: ${error?.message}`, 'error');
+          this.notificationService.show(`Erro no despacho: ${error?.message}`, 'error');
       }
   }
 

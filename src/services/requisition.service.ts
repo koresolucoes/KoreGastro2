@@ -255,15 +255,8 @@ export class RequisitionService {
              }
         } else {
             // Internal Transfer Logging (Main Inventory -> Station)
-            const deductResult = await this.inventoryDataService.adjustIngredientStock({
-                ingredientId: item.ingredient_id,
-                quantityChange: -qty,
-                reason: `Transferência O.I para Praça (Req #${requisitionId.slice(0,8)})`
-            });
-
-            if (!deductResult.success) {
-                console.error(`Failed to deduct stock for item ${item.id}`, deductResult.error);
-            }
+            // Stock was ALREADY deducted from Main Inventory when the requisition was 'APPROVED' e.g. dispatched.
+            // So we only need to credit the station_stocks.
 
             const { data: existingStock } = await supabase
                 .from('station_stocks')

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RequisitionService } from '../../../services/requisition.service';
 import { NotificationService } from '../../../services/notification.service';
+import { InventoryStateService } from '../../../services/inventory-state.service';
 import { RequisitionStatus } from '../../../models/db.models';
 
 @Component({
@@ -76,7 +77,20 @@ import { RequisitionStatus } from '../../../models/db.models';
                     @for (item of req.requisition_items; track item.id) {
                       <tr>
                         <td class="py-2 text-xs font-medium text-title">{{ item.ingredients?.name || 'Item Removido' }}</td>
-                        <td class="py-2 text-xs font-bold text-brand text-right">{{ item.quantity_requested }} {{ item.unit }}</td>
+                        <td class="py-2 text-xs font-bold text-right" [class.text-brand]="getIngredientStock(item.ingredients?.name) >= item.quantity_requested" [class.text-danger]="getIngredientStock(item.ingredients?.name) < item.quantity_requested">
+                           <div class="flex flex-col items-end">
+                               <span>{{ item.quantity_requested }} {{ item.unit }}</span>
+                               @if (getIngredientStock(item.ingredients?.name) < item.quantity_requested) {
+                                   <span class="text-[9px] text-danger font-black flex items-center gap-1 mt-0.5" title="Seu Estoque Atual: {{ getIngredientStock(item.ingredients?.name) }} {{ item.unit }}">
+                                       <span class="material-symbols-outlined text-[10px]">warning</span> estoque insf. ({{ getIngredientStock(item.ingredients?.name) }})
+                                   </span>
+                               } @else {
+                                   <span class="text-[9px] text-muted font-medium mt-0.5">
+                                       disp: {{ getIngredientStock(item.ingredients?.name) }} {{ item.unit }}
+                                   </span>
+                               }
+                           </div>
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -109,9 +123,15 @@ import { RequisitionStatus } from '../../../models/db.models';
 export class RequisitionInboxComponent implements OnInit {
   private requisitionService = inject(RequisitionService);
   private notificationService = inject(NotificationService);
+  private inventoryState = inject(InventoryStateService);
 
   loading = signal(true);
   inboxItems = signal<any[]>([]);
+
+  getIngredientStock(name: string): number {
+      const match = this.inventoryState.ingredients().find(i => i.name === name);
+      return match ? match.stock : 0;
+  }
 
   async ngOnInit() {
     await this.loadInbox();
