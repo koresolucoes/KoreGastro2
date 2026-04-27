@@ -16,48 +16,50 @@
       <div class="bg-app min-h-screen pb-24 lg:pb-0">
 
         <!-- Mobile/Tablet Tab Bar (Floating at bottom for app-like feel) -->
-        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-1 p-1 bg-surface/80 backdrop-blur-xl border border-subtle rounded-full shadow-2xl md:hidden">
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-1 p-1 bg-white/95 backdrop-blur-xl border border-zinc-200 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] md:hidden w-[90%] max-w-sm">
           <button (click)="setView('menu')" 
-            class="flex flex-col items-center justify-center w-16 h-12 rounded-full transition-all"
+            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
             [class.text-brand]="view() === 'menu'"
             [class.bg-brand/10]="view() === 'menu'"
-            [class.text-muted]="view() !== 'menu'">
-            <span class="material-symbols-outlined text-2xl">restaurant_menu</span>
-            <span class="text-[8px] font-black uppercase tracking-tighter">Menu</span>
+            [class.text-zinc-500]="view() !== 'menu'">
+            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'menu'">restaurant_menu</span>
+            <span class="text-[8px] font-black uppercase tracking-tighter">Cardápio</span>
           </button>
           
           @if(reservationSettings()?.is_enabled) {
-            <a [href]="publicBookingUrl()" 
-              class="flex flex-col items-center justify-center w-16 h-12 rounded-full transition-all text-muted">
-              <span class="material-symbols-outlined text-2xl">calendar_month</span>
+            <button (click)="setView('reservations')" 
+              class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
+              [class.text-brand]="view() === 'reservations'"
+              [class.bg-brand/10]="view() === 'reservations'"
+              [class.text-zinc-500]="view() !== 'reservations'">
+              <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'reservations'">calendar_today</span>
               <span class="text-[8px] font-black uppercase tracking-tighter">Reserva</span>
-            </a>
+            </button>
           }
 
-          <button (click)="setView('loyalty')" 
-            class="flex flex-col items-center justify-center w-16 h-12 rounded-full transition-all"
-            [class.text-brand]="view() === 'loyalty'"
-            [class.bg-brand/10]="view() === 'loyalty'"
-            [class.text-muted]="view() !== 'loyalty'">
-            <span class="material-symbols-outlined text-2xl">loyalty</span>
-            <span class="text-[8px] font-black uppercase tracking-tighter">Fidelidade</span>
+          <button (click)="setView('hours')" 
+            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
+            [class.text-brand]="view() === 'hours'"
+            [class.bg-brand/10]="view() === 'hours'"
+            [class.text-zinc-500]="view() !== 'hours'">
+            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'hours'">schedule</span>
+            <span class="text-[8px] font-black uppercase tracking-tighter">Horário</span>
           </button>
 
           <button (click)="setView('info')" 
-            class="flex flex-col items-center justify-center w-16 h-12 rounded-full transition-all"
+            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
             [class.text-brand]="view() === 'info'"
             [class.bg-brand/10]="view() === 'info'"
-            [class.text-muted]="view() !== 'info'">
-            <span class="material-symbols-outlined text-2xl">info</span>
+            [class.text-zinc-500]="view() !== 'info'">
+            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'info'">info</span>
             <span class="text-[8px] font-black uppercase tracking-tighter">Sobre</span>
           </button>
 
           @if(cartService.totalItems() > 0) {
             <button (click)="setView('cart')" 
-              class="flex flex-col items-center justify-center w-16 h-12 rounded-full transition-all text-white bg-brand shadow-lg relative ml-2">
+              class="flex flex-col items-center justify-center w-14 h-12 rounded-full transition-all text-white bg-brand shadow-lg relative ml-1">
               <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-              <span class="text-[8px] font-black uppercase tracking-tighter">{{ cartService.subtotal() | currency:'BRL' }}</span>
-              <span class="absolute -top-1 -right-1 bg-danger text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">{{ cartService.totalItems() }}</span>
+              <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white font-bold">{{ cartService.totalItems() }}</span>
             </button>
           }
         </nav>
@@ -118,60 +120,99 @@
           </div>
         }
 
-        @switch (view()) {
-        <!-- Case 1: Brand Cover / Landing -->
-        @case ('cover') {
-          <div class="h-screen flex flex-col relative overflow-hidden bg-app">
-            <!-- Background Image -->
-            <div class="absolute inset-0 z-0">
-               <div class="absolute inset-0 bg-black/60 z-10 backdrop-blur-[2px]"></div>
-               <img [src]="companyProfile()?.cover_url || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=2070&auto=format&fit=crop'" class="w-full h-full object-cover">
-            </div>
-
-            <!-- Content -->
-            <div class="relative z-20 flex-1 flex flex-col items-center justify-center p-6 text-center text-white mt-10">
-                <div class="w-28 h-28 bg-surface p-2 rounded-3xl shadow-2xl mb-6 mx-auto transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-                    <img [src]="companyProfile()?.logo_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + companyProfile()?.id" class="w-full h-full object-contain rounded-2xl">
+        <!-- Case 8: Hours Page -->
+        @case ('hours') {
+           <div class="max-w-xl mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-500">
+              <div class="bg-white rounded-[3rem] p-8 md:p-12 border border-zinc-100 shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand/5 rounded-full blur-3xl"></div>
+                
+                <div class="text-center mb-10">
+                  <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4 rotate-3">
+                    <span class="material-symbols-outlined text-3xl">schedule</span>
+                  </div>
+                  <h2 class="text-3xl font-black text-zinc-900 tracking-tight">Horários de Funcionamento</h2>
+                  <p class="text-zinc-500 text-sm mt-2">Consulte quando estamos atendendo.</p>
                 </div>
-                <h1 class="text-5xl font-black mb-2 tracking-tighter drop-shadow-md">{{ companyProfile()?.name || 'ChefOS' }}</h1>
-                <p class="text-lg opacity-90 mb-10 font-medium drop-shadow-sm max-w-sm">{{ companyProfile()?.slogan || 'Sua melhor experiência gastronômica' }}</p>
 
-                <button (click)="setView('menu')" class="bg-brand text-white hover:bg-brand-hover font-bold py-4 px-10 rounded-full shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 text-lg">
-                    <span class="material-symbols-outlined">restaurant_menu</span> Ver Cardápio
-                </button>
-            </div>
-          </div>
+                <div class="space-y-3">
+                   @for(day of sortedWeeklyHours(); track day.day_of_week) {
+                      <div class="flex items-center justify-between p-4 rounded-2xl border transition-all"
+                        [class.bg-emerald-50]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])"
+                        [class.border-emerald-200]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])"
+                        [class.bg-zinc-50]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])"
+                        [class.border-zinc-100]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])">
+                         <div class="flex items-center gap-3">
+                           <span class="text-xs font-black uppercase tracking-widest" [class.text-emerald-700]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])" [class.text-zinc-400]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])">{{ daysOfWeek[day.day_of_week] }}</span>
+                           @if(!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])) {
+                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                           }
+                         </div>
+                         @if(day.is_closed) {
+                           <span class="text-[10px] font-black uppercase tracking-tighter text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100">Fechado</span>
+                         } @else {
+                           <span class="text-sm font-black text-zinc-800 data-mono">{{ day.opening_time }} – {{ day.closing_time }}</span>
+                         }
+                      </div>
+                   }
+                </div>
+
+                <div class="mt-10 p-6 bg-zinc-50 rounded-3xl border border-dashed border-zinc-200 text-center">
+                  <p class="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Dúvidas sobre o horário?</p>
+                  <a [href]="'https://wa.me/55' + companyProfile()?.phone" target="_blank" class="text-brand font-black flex items-center justify-center gap-2">
+                    Fale conosco no WhatsApp
+                    <span class="material-symbols-outlined text-sm">open_in_new</span>
+                  </a>
+                </div>
+              </div>
+           </div>
         }
+      }
 
         <!-- Case 2: Menu Page (The Main Experience) -->
         @case ('menu') {
-          <div class="min-h-screen bg-app">
-              <!-- Sticky Category Nav (Mobile) -->
-              <div class="md:hidden sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-subtle overflow-x-auto hide-scrollbar">
-                  <div class="flex items-center gap-4 px-4 py-4 min-w-max">
-                      @if(companyProfile()?.logo_url; as logo) {
-                          <img [src]="logo" class="w-8 h-8 rounded-lg shadow-sm border border-subtle" (click)="setView('cover')">
-                      }
-                      <div class="flex gap-2">
+          <div class="min-h-screen bg-zinc-50">
+              <!-- Banner Hero (Mobile/Desktop) -->
+              <div class="relative h-48 md:h-64 overflow-hidden mb-6">
+                <img [src]="companyProfile()?.cover_url || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=2070&auto=format&fit=crop'" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+                  <div>
+                    <h2 class="text-3xl font-black text-white title-display tracking-tight leading-none mb-1">{{ companyProfile()?.company_name || 'ChefOS' }}</h2>
+                    <p class="text-xs font-bold text-white/80 uppercase tracking-widest flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                      Brusque • Aberto • 2.5km
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white">
+                      <span class="material-symbols-outlined text-xl">favorite</span>
+                    </button>
+                    <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white">
+                      <span class="material-symbols-outlined text-xl">share</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sticky Category Nav -->
+              <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 overflow-x-auto hide-scrollbar">
+                  <div class="flex items-center gap-4 px-4 py-3 min-w-max">
+                      <div class="flex gap-1.5">
                         <button (click)="setSelectedCategory(null)" 
-                            class="whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border"
+                            class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all"
                             [class.bg-brand]="activeCategorySlug() === null"
                             [class.text-white]="activeCategorySlug() === null"
-                            [class.border-brand]="activeCategorySlug() === null"
-                            [class.bg-surface-elevated]="activeCategorySlug() !== null"
-                            [class.text-muted]="activeCategorySlug() !== null"
-                            [class.border-strong]="activeCategorySlug() !== null">
-                            Todos
+                            [class.bg-zinc-100]="activeCategorySlug() !== null"
+                            [class.text-zinc-500]="activeCategorySlug() !== null">
+                            Destaques
                         </button>
                         @for(category of menuCategories(); track category.id) {
                             <button (click)="setSelectedCategory(createSlug(category.name))" 
-                                class="whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all border"
+                                class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all"
                                 [class.bg-brand]="activeCategorySlug() === createSlug(category.name)"
                                 [class.text-white]="activeCategorySlug() === createSlug(category.name)"
-                                [class.border-brand]="activeCategorySlug() === createSlug(category.name)"
-                                [class.bg-surface-elevated]="activeCategorySlug() !== createSlug(category.name)"
-                                [class.text-muted]="activeCategorySlug() !== createSlug(category.name)"
-                                [class.border-strong]="activeCategorySlug() !== createSlug(category.name)">
+                                [class.bg-zinc-100]="activeCategorySlug() !== createSlug(category.name)"
+                                [class.text-zinc-500]="activeCategorySlug() !== createSlug(category.name)">
                                 {{ category.name }}
                             </button>
                         }
@@ -180,123 +221,65 @@
               </div>
 
               <!-- Page Contents -->
-              <div class="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div class="max-w-4xl mx-auto px-4 py-8 space-y-12">
                 
-                <!-- Main Products Feed -->
-                <main class="lg:col-span-8 space-y-16">
-                  
-                  <!-- Mobile Search -->
-                  <div class="md:hidden relative mb-8">
-                    <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar no cardápio..." class="w-full bg-surface-elevated border-2 border-subtle rounded-2xl px-12 py-4 text-sm font-bold outline-none focus:border-brand transition-all shadow-inner">
-                    <span class="material-symbols-outlined absolute left-4 top-4 text-muted">search</span>
-                  </div>
+                <!-- Search -->
+                <div class="relative mb-8">
+                  <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="O que vamos pedir hoje?" class="w-full bg-white border border-zinc-200 rounded-2xl px-12 py-4 text-sm font-bold outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-sm">
+                  <span class="material-symbols-outlined absolute left-4 top-4 text-zinc-400">search</span>
+                </div>
 
-                  @for (group of filteredMenu(); track group.category.id) {
-                      <section [id]="createSlug(group.category.name)" class="scroll-mt-32">
-                          <div class="flex items-center gap-6 mb-8 group">
-                              <h2 class="text-3xl font-black text-title title-display tracking-tight group-hover:text-brand transition-colors">
-                                  {{ group.category.name }}
-                              </h2>
-                              <div class="h-px bg-subtle flex-1 group-hover:bg-brand/30 transition-colors"></div>
-                              <span class="text-[10px] uppercase font-black tracking-widest text-muted">{{ group.recipes.length }} Itens</span>
-                          </div>
-                          
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
-                              @for (recipe of group.recipes; track recipe.id) {
-                                  <div class="flex flex-col group cursor-pointer" (click)="addToCart(recipe, recipe.effectivePrice)">
-                                      <!-- Image Container -->
-                                      <div class="aspect-[4/3] rounded-[2rem] overflow-hidden bg-surface-elevated border border-subtle mb-4 relative shadow-sm group-hover:shadow-xl transition-all duration-500">
-                                          <img [src]="recipe.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1760&auto=format&fit=crop'" [alt]="recipe.name" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                                          
-                                          <!-- Floating Badge for Discount -->
+                @for (group of filteredMenu(); track group.category.id) {
+                    <section [id]="createSlug(group.category.name)" class="scroll-mt-24">
+                        <h2 class="text-2xl font-black text-zinc-900 mb-6 tracking-tight flex items-center gap-3">
+                            <span class="w-1.5 h-6 bg-brand rounded-full"></span>
+                            {{ group.category.name }}
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            @for (recipe of group.recipes; track recipe.id) {
+                                <div class="flex items-center gap-4 p-4 bg-white rounded-3xl border border-zinc-100 shadow-sm hover:shadow-md transition-all group overflow-hidden cursor-pointer" (click)="addToCart(recipe, recipe.effectivePrice)">
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="font-black text-zinc-800 text-lg leading-tight mb-1 group-hover:text-brand transition-colors">{{ recipe.name }}</h3>
+                                        <p class="text-zinc-500 text-xs line-clamp-2 leading-relaxed mb-3">{{ recipe.description || 'Descrição não disponível para este item.' }}</p>
+                                        <div class="flex items-center gap-3">
+                                          <div class="font-black text-zinc-900 data-mono text-lg">{{ recipe.effectivePrice | currency:'BRL' }}</div>
                                           @if (recipe.effectivePrice < recipe.price) {
-                                            <div class="absolute top-4 left-4 bg-danger text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg border border-white/20 uppercase tracking-widest">
-                                                Oferta
-                                            </div>
+                                              <div class="text-[10px] text-zinc-400 line-through data-mono">{{ recipe.price | currency:'BRL' }}</div>
                                           }
+                                        </div>
+                                    </div>
 
-                                          <!-- Add Button Overlay -->
-                                          <div class="absolute inset-0 bg-brand/40 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all flex items-center justify-center">
-                                              <div class="bg-white text-brand w-14 h-14 rounded-full flex items-center justify-center shadow-2xl scale-50 group-hover:scale-100 transition-transform duration-300">
-                                                  <span class="material-symbols-outlined text-3xl font-bold">add</span>
-                                              </div>
-                                          </div>
-                                      </div>
-                                      
-                                      <!-- Product Details -->
-                                      <div class="px-2">
-                                          <div class="flex justify-between items-start gap-2 mb-1">
-                                              <h3 class="font-black text-title text-lg leading-tight tracking-tight group-hover:text-brand transition-colors">{{ recipe.name }}</h3>
-                                              <div class="text-right">
-                                                  <div class="font-black text-title data-mono">{{ recipe.effectivePrice | currency:'BRL' }}</div>
-                                                  @if (recipe.effectivePrice < recipe.price) {
-                                                      <div class="text-[10px] text-muted line-through data-mono">{{ recipe.price | currency:'BRL' }}</div>
-                                                  }
-                                              </div>
-                                          </div>
-                                          @if (recipe.description) {
-                                              <p class="text-muted text-sm line-clamp-2 leading-relaxed font-medium opacity-80">{{ recipe.description }}</p>
-                                          }
-                                      </div>
-                                  </div>
-                              }
-                          </div>
-                      </section>
-                  } @empty {
-                      <div class="text-center py-20 bg-surface-elevated rounded-[3rem] border border-dashed border-subtle">
-                          <div class="text-6xl mb-6 grayscale opacity-30">🍽️</div>
-                          <h3 class="text-2xl font-black text-title title-display">Nenhum prato por aqui</h3>
-                          <p class="text-muted mt-2 font-medium max-w-xs mx-auto">Tente buscar por algo diferente ou limpe os filtros para ver tudo.</p>
-                          <button (click)="searchTerm.set(''); setSelectedCategory(null)" class="mt-8 bg-title text-surface px-8 py-3 rounded-full font-bold text-sm uppercase tracking-widest">Ver tudo</button>
-                      </div>
-                  }
-                </main>
-
-                <!-- Sidebar Content (Desktop Only) -->
-                <aside class="hidden lg:block lg:col-span-4 sticky top-32 h-fit space-y-8">
-                  
-                  <!-- Booking Widget (Quick Access) -->
-                  @if(reservationSettings()?.is_enabled) {
-                    <div class="chef-surface p-8 bg-gradient-to-br from-brand/5 to-transparent border border-brand/20 rounded-[2.5rem] relative overflow-hidden group">
-                      <div class="relative z-10">
-                        <h4 class="text-title font-black text-xl mb-2 tracking-tight">Mesa Reservada?</h4>
-                        <p class="text-muted text-sm mb-6 leading-relaxed">Garanta seu lugar sem filas. Faça sua reserva agora pelo nosso sistema online.</p>
-                        <a [href]="publicBookingUrl()" class="block w-full bg-brand text-white py-4 rounded-full font-black text-center shadow-xl shadow-brand/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-xs border border-brand border-t-white/30">
-                          Reservar Agora
-                        </a>
-                      </div>
-                      <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl text-brand/10 rotate-12 group-hover:rotate-0 transition-transform duration-700">calendar_month</span>
-                    </div>
-                  }
-
-                  <!-- Category List (Sidebar Nav) -->
-                  <div class="space-y-4">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-muted ml-4">Navegar Categorias</h4>
-                    <nav class="flex flex-col gap-1">
-                      <button (click)="setSelectedCategory(null)" 
-                        class="flex items-center justify-between px-6 py-4 rounded-2xl transition-all font-bold group"
-                        [class.bg-brand]="activeCategorySlug() === null"
-                        [class.text-white]="activeCategorySlug() === null"
-                        [class.text-title]="activeCategorySlug() !== null"
-                        [class.hover:bg-surface-elevated]="activeCategorySlug() !== null">
-                        <span>Todos os Itens</span>
-                        <span class="material-symbols-outlined text-lg opacity-40 group-hover:opacity-100 transition-opacity">chevron_right</span>
-                      </button>
-                      @for(category of menuCategories(); track category.id) {
-                        <button (click)="setSelectedCategory(createSlug(category.name))" 
-                          class="flex items-center justify-between px-6 py-4 rounded-2xl transition-all font-bold group"
-                          [class.bg-brand]="activeCategorySlug() === createSlug(category.name)"
-                          [class.text-white]="activeCategorySlug() === createSlug(category.name)"
-                          [class.text-title]="activeCategorySlug() !== createSlug(category.name)"
-                          [class.hover:bg-surface-elevated]="activeCategorySlug() !== createSlug(category.name)">
-                          <span>{{ category.name }}</span>
-                          <span class="material-symbols-outlined text-lg opacity-40 group-hover:opacity-100 transition-opacity">chevron_right</span>
-                        </button>
-                      }
-                    </nav>
-                  </div>
-                </aside>
+                                    <div class="w-28 h-28 rounded-2xl overflow-hidden bg-zinc-100 flex-shrink-0 relative">
+                                        <img [src]="recipe.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1760&auto=format&fit=crop'" [alt]="recipe.name" class="w-full h-full object-cover">
+                                        <div class="absolute bottom-2 right-2 w-8 h-8 bg-brand text-white rounded-xl shadow-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                                          <span class="material-symbols-outlined text-xl">add</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
               </div>
+
+              <!-- Floating Cart Summary (Mobile) -->
+              @if(cartService.totalItems() > 0) {
+                <div class="fixed bottom-24 left-4 right-4 z-40 md:hidden animate-in slide-in-from-bottom duration-500">
+                  <button (click)="setView('cart')" class="w-full bg-brand text-white p-5 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(239,68,68,0.4)]">
+                    <div class="flex items-center gap-4">
+                      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/30">
+                        <span class="material-symbols-outlined">shopping_bag</span>
+                      </div>
+                      <div class="text-left">
+                        <p class="text-[10px] font-black uppercase tracking-widest leading-none mb-1 opacity-80">Ver sua cesta</p>
+                        <p class="text-lg font-black leading-none">{{ cartService.subtotal() | currency:'BRL' }}</p>
+                      </div>
+                    </div>
+                    <div class="bg-white text-brand px-3 py-1 rounded-lg text-xs font-black">{{ cartService.totalItems() }} ITENS</div>
+                  </button>
+                </div>
+              }
           </div>
         }
 
@@ -546,169 +529,173 @@
 
         <!-- Case 6: Checkout Page -->
         @case ('checkout') {
-          <div class="max-w-4xl mx-auto px-6 py-12 md:py-20 animate-in slide-in-from-right duration-500">
-              <div class="flex items-center gap-4 mb-12">
-                  <button (click)="setView('cart')" class="w-12 h-12 bg-surface rounded-full flex items-center justify-center border border-subtle shadow-sm hover:bg-surface-elevated">
-                      <span class="material-symbols-outlined">arrow_back</span>
+          <div class="max-w-xl mx-auto px-6 py-8 md:py-16 animate-in slide-in-from-right duration-500 pb-32">
+              <div class="flex items-center gap-4 mb-8">
+                  <button (click)="setView('cart')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-zinc-200 shadow-sm transition-transform active:scale-90">
+                      <span class="material-symbols-outlined text-zinc-600">arrow_back</span>
                   </button>
-                  <h2 class="text-4xl font-black text-title title-display tracking-tight">Finalização</h2>
+                  <h2 class="text-2xl font-black text-zinc-900 tracking-tight">Finalizar Pedido</h2>
               </div>
 
-              <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                  <div class="lg:col-span-7 space-y-8">
-                      <!-- Step 1: Mode -->
-                      <div class="chef-surface rounded-3xl p-8 border border-subtle shadow-sm">
-                          <h3 class="text-xs font-black uppercase tracking-widest text-brand mb-6">Como deseja receber?</h3>
-                          <div class="grid grid-cols-2 gap-4">
-                              <button (click)="orderType.set('External-Delivery')" 
-                                  class="flex flex-col items-center gap-4 p-6 rounded-2xl border-2 transition-all group"
-                                  [class.border-brand]="orderType() === 'External-Delivery'"
-                                  [class.bg-brand/5]="orderType() === 'External-Delivery'"
-                                  [class.border-subtle]="orderType() !== 'External-Delivery'"
-                                  [class.grayscale]="orderType() !== 'External-Delivery'">
-                                  <span class="material-symbols-outlined text-3xl text-brand group-hover:scale-110 transition-transform">delivery_dining</span>
-                                  <span class="text-xs font-black uppercase tracking-widest">Delivery</span>
-                              </button>
-                              <button (click)="orderType.set('Pickup')" 
-                                  class="flex flex-col items-center gap-4 p-6 rounded-2xl border-2 transition-all group"
-                                  [class.border-brand]="orderType() === 'Pickup'"
-                                  [class.bg-brand/5]="orderType() === 'Pickup'"
-                                  [class.border-subtle]="orderType() !== 'Pickup'"
-                                  [class.grayscale]="orderType() !== 'Pickup'">
-                                  <span class="material-symbols-outlined text-3xl text-brand group-hover:scale-110 transition-transform">takeout_dining</span>
-                                  <span class="text-xs font-black uppercase tracking-widest">Retirada</span>
-                              </button>
-                          </div>
-                      </div>
-
-                      <!-- Step 2: Details -->
-                      <div class="chef-surface rounded-3xl p-8 border border-subtle shadow-sm space-y-6">
-                          <h3 class="text-xs font-black uppercase tracking-widest text-brand mb-2">Dados de Contato</h3>
-                          <div class="space-y-4">
-                              <div>
-                                  <label class="text-[10px] font-black uppercase tracking-widest text-muted ml-4 mb-2 block">Nome Completo</label>
-                                  <input type="text" [(ngModel)]="customerName" placeholder="Ex: Maria Silva" class="w-full bg-surface-elevated border border-subtle rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all">
-                              </div>
-                              <div>
-                                  <label class="text-[10px] font-black uppercase tracking-widest text-muted ml-4 mb-2 block">WhatsApp</label>
-                                  <input type="tel" [(ngModel)]="customerPhone" placeholder="(00) 00000-0000" class="w-full bg-surface-elevated border border-subtle rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all">
-                              </div>
-                              @if(orderType() === 'External-Delivery') {
-                                <div>
-                                    <label class="text-[10px] font-black uppercase tracking-widest text-muted ml-4 mb-2 block">Endereço de Entrega</label>
-                                    <textarea [(ngModel)]="deliveryAddress" placeholder="Rua, Número, Bairro, Complemento" rows="3" class="w-full bg-surface-elevated border border-subtle rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all resize-none"></textarea>
-                                </div>
-                              }
-                          </div>
-                      </div>
-                  </div>
-
-                  <div class="lg:col-span-5">
-                      <div class="chef-surface rounded-[2.5rem] p-8 border border-subtle shadow-2xl sticky top-24">
-                          <h3 class="text-xl font-black text-title title-display mb-8 tracking-tight">Resumo Final</h3>
-                          <div class="space-y-4 mb-10 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                              @for(item of cartService.items(); track item.id) {
-                                  <div class="flex justify-between items-start text-xs border-b border-subtle pb-3">
-                                      <div class="flex-1 min-w-0 pr-4">
-                                          <p class="font-black text-title truncate">{{ item.quantity }}x {{ item.recipe.name }}</p>
-                                          @if(item.options && item.options.length > 0) {
-                                            <p class="text-[9px] text-muted italic line-clamp-1 mt-0.5">
-                                              @for(o of item.options; track o.id; let last = $last) {
-                                                {{ o.name }}{{ !last ? ', ' : '' }}
-                                              }
-                                            </p>
-                                          }
-                                      </div>
-                                      <span class="font-bold text-title data-mono flex-shrink-0">{{ item.effectivePrice * item.quantity | currency:'BRL' }}</span>
-                                  </div>
-                              }
-                          </div>
-                          <div class="space-y-4 mb-10">
-                              <div class="flex justify-between items-center text-sm font-bold tracking-tight">
-                                  <span class="text-muted">Subtotal</span>
-                                  <span class="text-title data-mono">{{ cartService.subtotal() | currency:'BRL' }}</span>
-                              </div>
-                              <div class="flex justify-between items-center text-sm font-bold tracking-tight">
-                                  <span class="text-muted">Taxa de Entrega</span>
-                                  <span class="text-success uppercase text-[10px] font-black data-mono">Grátis</span>
-                              </div>
-                              <div class="h-px bg-title opacity-10"></div>
-                              <div class="flex justify-between items-center">
-                                  <span class="text-2xl font-black text-title title-display tracking-tight">Total</span>
-                                  <span class="text-3xl font-black text-brand data-mono">{{ cartService.subtotal() | currency:'BRL' }}</span>
-                              </div>
-                          </div>
-
-                          <button (click)="submitOrder()" 
-                              [disabled]="isSubmittingOrder() || !customerName() || !customerPhone() || (orderType() === 'External-Delivery' && !deliveryAddress())"
-                              class="w-full bg-brand text-white py-5 rounded-full font-black uppercase tracking-widest text-sm shadow-xl shadow-brand/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale transition-all border border-brand border-t-white/30 flex items-center justify-center gap-3">
-                              @if(isSubmittingOrder()) {
-                                <div class="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
-                                <span>Calculando Rota...</span>
-                              } @else {
-                                <span>Confirmar & Pedir</span>
-                                <span class="material-symbols-outlined text-lg">bolt</span>
-                              }
+              <div class="space-y-8">
+                  <!-- Mode Selector -->
+                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm">
+                      <p class="text-[10px] font-black uppercase tracking-widest text-brand mb-4">Escolha o modo</p>
+                      <div class="grid grid-cols-2 gap-4">
+                          <button (click)="orderType.set('External-Delivery')" 
+                              class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all"
+                              [class.border-brand]="orderType() === 'External-Delivery'"
+                              [class.bg-brand/5]="orderType() === 'External-Delivery'"
+                              [class.border-zinc-100]="orderType() !== 'External-Delivery'">
+                              <span class="material-symbols-outlined text-3xl" [class.text-brand]="orderType() === 'External-Delivery'" [class.text-zinc-400]="orderType() !== 'External-Delivery'">delivery_dining</span>
+                              <span class="text-[10px] font-black uppercase tracking-widest">Delivery</span>
+                          </button>
+                          <button (click)="orderType.set('Pickup')" 
+                              class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all"
+                              [class.border-brand]="orderType() === 'Pickup'"
+                              [class.bg-brand/5]="orderType() === 'Pickup'"
+                              [class.border-zinc-100]="orderType() !== 'Pickup'">
+                              <span class="material-symbols-outlined text-3xl" [class.text-brand]="orderType() === 'Pickup'" [class.text-zinc-400]="orderType() !== 'Pickup'">shopping_bag</span>
+                              <span class="text-[10px] font-black uppercase tracking-widest">Retirada</span>
                           </button>
                       </div>
                   </div>
+
+                  <!-- Details -->
+                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm space-y-5">
+                      <p class="text-[10px] font-black uppercase tracking-widest text-brand">Seus Dados</p>
+                      
+                      <div class="space-y-4">
+                        <div class="relative">
+                          <input type="text" [(ngModel)]="customerName" placeholder="Seu nome" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all">
+                        </div>
+                        <div class="relative">
+                          <input type="tel" [(ngModel)]="customerPhone" placeholder="Seu WhatsApp" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all">
+                        </div>
+
+                        @if(orderType() === 'External-Delivery') {
+                          <div class="pt-2 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                             <select [(ngModel)]="deliveryNeighborhood" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all appearance-none">
+                                <option value="">Selecione seu Bairro</option>
+                                @for(n of getNeighborhoods(); track n) {
+                                  <option [value]="n">{{ n }}</option>
+                                }
+                             </select>
+                             <textarea [(ngModel)]="deliveryAddress" placeholder="Endereço completo (Rua, Número, Referência)" rows="3" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-sm font-bold outline-none focus:border-brand transition-all resize-none"></textarea>
+                          </div>
+                        }
+                      </div>
+                  </div>
+
+                  <!-- Payment Method -->
+                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm space-y-4">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-brand">Forma de Pagamento</p>
+                    <div class="grid grid-cols-1 gap-3">
+                      @for(opt of paymentOptions; track opt.id) {
+                        <button (click)="paymentMethod.set(opt.id)" 
+                          class="flex items-center justify-between p-4 rounded-xl border transition-all"
+                          [class.border-brand]="paymentMethod() === opt.id"
+                          [class.bg-brand/5]="paymentMethod() === opt.id"
+                          [class.border-zinc-100]="paymentMethod() !== opt.id">
+                          <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-xl" [class.text-brand]="paymentMethod() === opt.id" [class.text-zinc-400]="paymentMethod() !== opt.id">{{ opt.icon }}</span>
+                            <span class="text-xs font-bold text-zinc-700">{{ opt.name }}</span>
+                          </div>
+                          @if(opt.badge) {
+                            <span class="bg-amber-400 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">{{ opt.badge }}</span>
+                          }
+                        </button>
+                      }
+                    </div>
+
+                    @if(paymentMethod() === 'dinheiro') {
+                      <div class="pt-4 animate-in fade-in slide-in-from-top-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2 block">Troco para quanto?</label>
+                        <input type="number" [(ngModel)]="customerChangeFor" placeholder="Ex: 50.00" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-black data-mono outline-none focus:border-brand transition-all">
+                      </div>
+                    }
+
+                    @if(paymentMethod() === 'pix_manual') {
+                      <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-center animate-in fade-in duration-300">
+                        <span class="material-symbols-outlined text-amber-500 mb-2">qr_code</span>
+                        <p class="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Chave Pix (CNPJ)</p>
+                        <p class="text-sm font-black text-amber-900 select-all">12.345.678/0001-99</p>
+                        <p class="text-[9px] text-amber-700 mt-2">Envie o comprovante no WhatsApp após o pedido.</p>
+                      </div>
+                    }
+                  </div>
+              </div>
+
+              <!-- Fixed Footer Button -->
+              <div class="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-zinc-100 md:relative md:bg-transparent md:border-none md:p-0 md:mt-10">
+                <button (click)="submitOrder()" 
+                    [disabled]="isSubmittingOrder() || !customerName() || !customerPhone() || !paymentMethod() || (orderType() === 'External-Delivery' && (!deliveryAddress() || !deliveryNeighborhood()))"
+                    class="w-full bg-brand text-white py-5 rounded-3xl font-black uppercase tracking-widest text-sm shadow-[0_20px_50px_rgba(239,68,68,0.4)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3">
+                    @if(isSubmittingOrder()) {
+                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
+                      <span>Enviando...</span>
+                    } @else {
+                      <span>Finalizar e Enviar</span>
+                      <span class="material-symbols-outlined text-xl">send</span>
+                    }
+                </button>
               </div>
           </div>
         }
 
         <!-- Case 7: Reservations Page -->
         @case ('reservations') {
-          <div class="max-w-4xl mx-auto px-6 py-12 md:py-20">
-              <div class="chef-surface rounded-[3rem] p-8 md:p-16 border border-subtle shadow-2xl relative overflow-hidden">
+          <div class="max-w-xl mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-500">
+              <div class="bg-white rounded-[3rem] p-8 md:p-16 border border-zinc-100 shadow-2xl relative overflow-hidden">
                   <div class="absolute top-0 right-0 w-64 h-64 bg-brand/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                   
                   <div class="text-center space-y-4 mb-12">
-                      <div class="w-20 h-20 bg-brand text-white rounded-3xl flex items-center justify-center mx-auto shadow-xl rotate-6">
+                      <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center mx-auto shadow-xl rotate-6">
                         <span class="material-symbols-outlined text-4xl">event_available</span>
                       </div>
-                      <h2 class="text-4xl font-black text-title title-display tracking-tight">Reserve sua Mesa</h2>
-                      <p class="text-muted font-medium max-w-sm mx-auto">Garanta seu lugar para uma experiência gastronômica inesquecível.</p>
+                      <h2 class="text-3xl font-black text-zinc-900 tracking-tight">Reserve sua Mesa</h2>
+                      <p class="text-zinc-500 text-sm max-w-xs mx-auto leading-relaxed">Garanta seu lugar para uma experiência gastronômica inesquecível.</p>
                   </div>
 
-                  <div class="bg-surface-elevated rounded-3xl p-8 border border-subtle shadow-inner mb-10">
+                  <div class="bg-zinc-50 rounded-3xl p-8 border border-zinc-200 shadow-inner mb-10">
                       @if(publicBookingUrl(); as url) {
                         <div class="space-y-6">
-                            <div class="flex items-center gap-4 p-4 bg-surface rounded-2xl border border-subtle">
+                            <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-zinc-100">
                                 <span class="material-symbols-outlined text-brand">info</span>
-                                <p class="text-sm font-medium text-title">Utilizamos uma plataforma segura para gerenciar nossas reservas.</p>
+                                <p class="text-xs font-medium text-zinc-700 leading-tight">Utilizamos uma plataforma segura para gerenciar nossas reservas.</p>
                             </div>
-                            <a [href]="url" target="_blank" class="block w-full bg-title text-surface text-center py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                            <button (click)="goToReservations()" class="block w-full bg-brand text-white text-center py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                                 Abrir Sistema de Reservas
-                            </a>
+                            </button>
                         </div>
                       } @else {
                         <div class="text-center space-y-4 py-8">
-                            <span class="material-symbols-outlined text-4xl text-muted/30">contact_support</span>
-                            <p class="text-muted font-bold text-sm uppercase tracking-widest">Entre em contato via WhatsApp para reservar</p>
-                            <a [href]="'https://wa.me/' + companyProfile()?.phone" target="_blank" class="inline-flex items-center gap-2 bg-success text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-xs">
+                            <span class="material-symbols-outlined text-4xl text-zinc-300">contact_support</span>
+                            <p class="text-zinc-400 font-bold text-[10px] uppercase tracking-widest">Entre em contato via WhatsApp para reservar</p>
+                            <a [href]="'https://wa.me/55' + companyProfile()?.phone" target="_blank" class="inline-flex items-center gap-2 bg-emerald-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-xs">
                               WhatsApp <span class="material-symbols-outlined text-sm">chat</span>
                             </a>
                         </div>
                       }
                   </div>
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div class="flex gap-4">
-                          <div class="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                            <span class="material-symbols-outlined">groups</span>
+                  <div class="space-y-4">
+                      <div class="flex gap-4 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100">
+                          <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-xl">groups</span>
                           </div>
                           <div>
-                            <h4 class="font-black text-title text-sm tracking-tight">Grupos Grandes</h4>
-                            <p class="text-xs text-muted font-medium leading-relaxed">Para eventos acima de 10 pessoas, solicitamos reserva com 48h de antecedência.</p>
+                            <h4 class="font-black text-zinc-900 text-xs tracking-tight uppercase">Grupos Grandes</h4>
+                            <p class="text-[10px] text-zinc-500 font-medium leading-relaxed mt-1">Para eventos acima de 10 pessoas, solicitamos reserva com 48h de antecedência.</p>
                           </div>
                       </div>
-                      <div class="flex gap-4">
-                          <div class="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                            <span class="material-symbols-outlined">timer_off</span>
+                      <div class="flex gap-4 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100">
+                          <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-xl">timer_off</span>
                           </div>
                           <div>
-                            <h4 class="font-black text-title text-sm tracking-tight">Tolerância</h4>
-                            <p class="text-xs text-muted font-medium leading-relaxed">Seguramos sua mesa por até 15 minutos após o horário agendado.</p>
+                            <h4 class="font-black text-zinc-900 text-xs tracking-tight uppercase">Tolerância</h4>
+                            <p class="text-[10px] text-zinc-500 font-medium leading-relaxed mt-1">Seguramos sua mesa por até 15 minutos após o horário agendado.</p>
                           </div>
                       </div>
                   </div>
