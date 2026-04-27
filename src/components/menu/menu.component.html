@@ -137,13 +137,13 @@
                 <div class="space-y-3">
                    @for(day of sortedWeeklyHours(); track day.day_of_week) {
                       <div class="flex items-center justify-between p-4 rounded-2xl border transition-all"
-                        [class.bg-emerald-50]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])"
-                        [class.border-emerald-200]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])"
-                        [class.bg-zinc-50]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])"
-                        [class.border-zinc-100]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])">
+                        [class.bg-emerald-50]="!day.is_closed && (day.day_of_week === currentDay())"
+                        [class.border-emerald-200]="!day.is_closed && (day.day_of_week === currentDay())"
+                        [class.bg-zinc-50]="day.is_closed || (day.day_of_week !== currentDay())"
+                        [class.border-zinc-100]="day.is_closed || (day.day_of_week !== currentDay())">
                          <div class="flex items-center gap-3">
-                           <span class="text-xs font-black uppercase tracking-widest" [class.text-emerald-700]="!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])" [class.text-zinc-400]="day.is_closed || (daysOfWeek[day.day_of_week] !== daysOfWeek[new Date().getDay()])">{{ daysOfWeek[day.day_of_week] }}</span>
-                           @if(!day.is_closed && (daysOfWeek[day.day_of_week] === daysOfWeek[new Date().getDay()])) {
+                           <span class="text-xs font-black uppercase tracking-widest" [class.text-emerald-700]="!day.is_closed && (day.day_of_week === currentDay())" [class.text-zinc-400]="day.is_closed || (day.day_of_week !== currentDay())">{{ daysOfWeek[day.day_of_week] }}</span>
+                           @if(!day.is_closed && (day.day_of_week === currentDay())) {
                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                            }
                          </div>
@@ -746,7 +746,7 @@
                           </div>
 
                           <div class="grid grid-cols-1 gap-3">
-                              @for(option of group.options; track option.id) {
+                              @for(option of group.ifood_options; track option.id) {
                                   <button (click)="toggleOption(group, option)" 
                                       class="flex items-center justify-between p-4 rounded-2xl border-2 transition-all group"
                                       [class.border-brand]="isOptionSelected(option.id)"

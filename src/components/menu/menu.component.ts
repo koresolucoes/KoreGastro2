@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, ViewportScroller } from '@angular/common';
+import { CommonModule, ViewportScroller, CurrencyPipe } from '@angular/common';
 import { Recipe, Category, Promotion, PromotionRecipe, LoyaltySettings, LoyaltyReward, CompanyProfile, ReservationSettings, Order, OrderItem, Station, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -26,6 +26,7 @@ interface MenuGroup {
   selector: 'app-menu',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [CurrencyPipe],
   templateUrl: './menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,6 +42,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private demoService = inject(DemoService);
   private viewportScroller = inject(ViewportScroller);
+  private currencyPipe = inject(CurrencyPipe);
   public cartService = inject(CartService);
   
   private routeSub: Subscription | undefined;
@@ -92,6 +94,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   // Integrated Booking View State (simplified or linking)
   userId = signal<string | null>(null);
+  currentDay = signal(new Date().getDay());
 
   ngOnInit() {
     this.routeSub = this.route.paramMap.subscribe(params => {
@@ -403,6 +406,13 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   isOptionSelected(optionId: string): boolean {
     return this.selectedOptions().some(o => o.id === optionId);
+  }
+
+  getSelectedCount(groupId: string): number {
+    const group = this.publicOptionGroups().find(g => g.id === groupId);
+    if (!group) return 0;
+    const groupOptions = group.ifood_options || [];
+    return this.selectedOptions().filter(o => groupOptions.some(go => go.id === o.id)).length;
   }
 
   canConfirmCustomization(): boolean {
