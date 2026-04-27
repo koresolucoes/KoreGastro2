@@ -238,7 +238,7 @@ export class SupabaseStateService {
         supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit))').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('inventory_lots').select('*').eq('user_id', userId).gt('quantity', 0).order('created_at', { ascending: true }),
         supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
-        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name), target_unit:stores!requisitions_target_unit_id_fkey(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
         supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
         supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }).limit(50),
         // Load only future or today's reservations to save bandwidth

@@ -242,106 +242,123 @@ export class RecipeDataService {
     if (sourceStoreId === targetStoreId) return { success: false, error: { message: 'Source and target stores are the same' } };
 
     try {
-      // 1. Fetch source categories
-      const { data: sourceCategories, error: catError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', sourceStoreId);
+      // 0. Fetch source & target stations
+      const { data: sourceStations } = await supabase.from('stations').select('*').eq('user_id', sourceStoreId);
+      const { data: targetStations } = await supabase.from('stations').select('*').eq('user_id', targetStoreId);
       
-      if (catError) throw catError;
-      if (!sourceCategories || sourceCategories.length === 0) return { success: true, error: null };
+      const existingStationsMap = new Map(targetStations?.map(s => [s.name.trim().toLowerCase(), s.id]) || []);
+      const stationIdMap = new Map<string, string>();
 
-      // 2. Fetch source recipes
-      const { data: sourceRecipes, error: recError } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('store_id', sourceStoreId);
-      
-      if (recError) throw recError;
+      if (sourceStations && sourceStations.length > 0) {
+          for (const st of sourceStations) {
+              const lowerName = st.name.trim().toLowerCase();
+              if (existingStationsMap.has(lowerName)) {
+                  stationIdMap.set(st.id, existingStationsMap.get(lowerName)!);
+              } else {
+                  const { data: newSt, error } = await supabase.from('stations').insert({
+                      name: st.name,
+                      user_id: targetStoreId
+                  }).select().single();
+                  if (!error && newSt) {
+                      stationIdMap.set(st.id, newSt.id);
+                      existingStationsMap.set(lowerName, newSt.id);
+                  }
+              }
+          }
+      }
 
-      // 2.5 Fetch target categories to avoid duplicating names
-      const { data: targetCategories } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', targetStoreId);
+      // 1. Fetch source & target categories
+      const { data: sourceCategories } = await supabase.from('categories').select('*').eq('user_id', sourceStoreId);
+      const { data: targetCategories } = await supabase.from('categories').select('*').eq('user_id', targetStoreId);
         
       const existingCategoriesMap = new Map(targetCategories?.map(c => [c.name.trim().toLowerCase(), c.id]) || []);
-
-      // 3. Map old category IDs to new ones
       const categoryIdMap = new Map<string, string>();
 
-      for (const cat of sourceCategories) {
-        const lowerName = cat.name.trim().toLowerCase();
-        
-        if (existingCategoriesMap.has(lowerName)) {
-            categoryIdMap.set(cat.id, existingCategoriesMap.get(lowerName)!);
-        } else {
-            const { data: newCat, error: newCatError } = await supabase
-              .from('categories')
-              .insert({
-                name: cat.name,
-                image_url: cat.image_url,
-                user_id: targetStoreId
-              })
-              .select()
-              .single();
+      if (sourceCategories && sourceCategories.length > 0) {
+          for (const cat of sourceCategories) {
+            const lowerName = cat.name.trim().toLowerCase();
+            if (existingCategoriesMap.has(lowerName)) {
+                categoryIdMap.set(cat.id, existingCategoriesMap.get(lowerName)!);
+            } else {
+                const { data: newCat, error } = await supabase.from('categories')
+                  .insert({ name: cat.name, image_url: cat.image_url, user_id: targetStoreId })
+                  .select().single();
+                if (!error && newCat) {
+                    categoryIdMap.set(cat.id, newCat.id);
+                    existingCategoriesMap.set(lowerName, newCat.id);
+                }
+            }
+          }
+      }
+
+      // 2. Fetch source & target recipes
+      const { data: sourceRecipes } = await supabase.from('recipes').select('*').eq('store_id', sourceStoreId);
+      const { data: targetRecipes } = await supabase.from('recipes').select('id, name').eq('store_id', targetStoreId);
+      
+      const existingRecipesMap = new Map(targetRecipes?.map(r => [r.name.trim().toLowerCase(), r.id]) || []);
+      const recipeIdMap = new Map<string, string>();
+      const newSourceRecipeIds = new Set<string>(); // to track which recipes are new so we clone their preps/ingredients
+
+      if (sourceRecipes && sourceRecipes.length > 0) {
+        const recipesToInsert: any[] = [];
+        const sourceRecsToInsertIdx: number[] = [];
+
+        sourceRecipes.forEach((r, index) => {
+             const lowerName = r.name.trim().toLowerCase();
+             if (existingRecipesMap.has(lowerName)) {
+                 recipeIdMap.set(r.id, existingRecipesMap.get(lowerName)!);
+             } else {
+                 newSourceRecipeIds.add(r.id);
+                 recipesToInsert.push({
+                   name: r.name,
+                   description: r.description,
+                   price: r.price,
+                   image_url: r.image_url,
+                   category_id: categoryIdMap.get(r.category_id) || r.category_id,
+                   is_available: r.is_available,
+                   is_sub_recipe: r.is_sub_recipe,
+                   user_id: ownerId,
+                   store_id: targetStoreId,
+                   prep_time_in_minutes: r.prep_time_in_minutes,
+                   operational_cost: r.operational_cost,
+                   external_code: r.external_code,
+                   ncm_code: r.ncm_code,
+                   shelf_life_prepared_days: r.shelf_life_prepared_days,
+                   storage_conditions: r.storage_conditions,
+                   par_level: r.par_level
+                 });
+                 sourceRecsToInsertIdx.push(index);
+             }
+        });
+
+        if (recipesToInsert.length > 0) {
+            const { data: insertedRecipes, error: insertRecError } = await supabase.from('recipes').insert(recipesToInsert).select();
             
-            if (newCatError) throw newCatError;
-            categoryIdMap.set(cat.id, newCat.id);
-            existingCategoriesMap.set(lowerName, newCat.id);
+            if (!insertRecError && insertedRecipes && insertedRecipes.length > 0) {
+                insertedRecipes.forEach((newRec: any, i: number) => {
+                    const originalIdx = sourceRecsToInsertIdx[i];
+                    const oldId = sourceRecipes[originalIdx].id;
+                    recipeIdMap.set(oldId, newRec.id);
+                    existingRecipesMap.set(newRec.name.trim().toLowerCase(), newRec.id);
+                });
+            }
         }
       }
 
-      // 4. Insert recipes with new category IDs
-      let recipeIdMap = new Map<string, string>();
-      if (sourceRecipes && sourceRecipes.length > 0) {
-        const recipesToInsert = sourceRecipes.map(r => ({
-          name: r.name,
-          description: r.description,
-          price: r.price,
-          image_url: r.image_url,
-          category_id: categoryIdMap.get(r.category_id) || r.category_id,
-          is_available: r.is_available,
-          is_sub_recipe: r.is_sub_recipe,
-          user_id: ownerId,
-          store_id: targetStoreId,
-          prep_time_in_minutes: r.prep_time_in_minutes,
-          operational_cost: r.operational_cost,
-          external_code: r.external_code,
-          ncm_code: r.ncm_code,
-          shelf_life_prepared_days: r.shelf_life_prepared_days,
-          storage_conditions: r.storage_conditions,
-          par_level: r.par_level
-        }));
+      // 3. Clone Preparations only for NEW recipes
+      if (newSourceRecipeIds.size > 0) {
+          const { data: sourcePreparations } = await supabase.from('recipe_preparations')
+              .select('*').in('recipe_id', Array.from(newSourceRecipeIds));
 
-        const { data: insertedRecipes, error: insertRecError } = await supabase
-          .from('recipes')
-          .insert(recipesToInsert)
-          .select();
-        
-        if (insertRecError) throw insertRecError;
-
-        if (insertedRecipes && insertedRecipes.length > 0) {
-            sourceRecipes.forEach((oldR, index) => {
-                recipeIdMap.set(oldR.id, insertedRecipes[index].id);
-            });
-
-            // Clone Preparations (Instructions)
-            const { data: sourcePreparations } = await supabase
-                .from('recipe_preparations')
-                .select('*')
-                .in('recipe_id', sourceRecipes.map(r => r.id));
-
-            if (sourcePreparations && sourcePreparations.length > 0) {
-                 const prepsToInsert = sourcePreparations.map(p => ({
-                     recipe_id: recipeIdMap.get(p.recipe_id) || p.recipe_id,
-                     step_order: p.step_order,
-                     description: p.description,
-                     user_id: targetStoreId // use active context as user_id for this table
-                 }));
-                 await supabase.from('recipe_preparations').insert(prepsToInsert);
-            }
-        }
+          if (sourcePreparations && sourcePreparations.length > 0) {
+               const prepsToInsert = sourcePreparations.map(p => ({
+                   recipe_id: recipeIdMap.get(p.recipe_id) || p.recipe_id,
+                   step_order: p.step_order,
+                   description: p.description,
+                   user_id: targetStoreId
+               }));
+               await supabase.from('recipe_preparations').insert(prepsToInsert);
+          }
       }
 
       // --- INGREDIENT CLONING ---
@@ -398,7 +415,7 @@ export class RecipeDataService {
                       is_sellable: ing.is_sellable,
                       price: ing.price,
                       pos_category_id: null,
-                      station_id: null, // Reset station assignment
+                      station_id: ing.station_id ? (stationIdMap.get(ing.station_id) || null) : null,
                       external_code: ing.external_code,
                       is_portionable: ing.is_portionable,
                       is_yield_product: ing.is_yield_product,
@@ -424,25 +441,36 @@ export class RecipeDataService {
           }
       }
 
-      // 7. Fetch and insert Recipe Ingredients (Ficha Técnica)
+      // 7. Fetch and insert Recipe Ingredients (Ficha Técnica) ONLY for NEW recipes OR for EXISTING recipes IF they don't have ingredients yet
       if (sourceRecipes && sourceRecipes.length > 0) {
-          const { data: sourceRecipeIngs } = await supabase
-              .from('recipe_ingredients')
-              .select('*')
-              .in('recipe_id', sourceRecipes.map(r => r.id));
+          // Instead of assuming, fetch all to be safe? Or just fetch recipe_ingredients for sourceRecipes
+          const { data: sourceRecipeIngs } = await supabase.from('recipe_ingredients').select('*').in('recipe_id', sourceRecipes.map(r => r.id));
+          const { data: targetRecipeIngs } = await supabase.from('recipe_ingredients').select('recipe_id, ingredient_id').eq('user_id', targetStoreId);
 
           if (sourceRecipeIngs && sourceRecipeIngs.length > 0) {
-              const recIngsToInsert = sourceRecipeIngs.map(ri => ({
-                  recipe_id: recipeIdMap.get(ri.recipe_id) || ri.recipe_id,
-                  ingredient_id: ingredientIdMap.get(ri.ingredient_id) || ri.ingredient_id, // Map to new ingredient
-                  quantity: ri.quantity,
-                  preparation_id: ri.preparation_id,
-                  user_id: targetStoreId, // Some tables use user_id to isolate
-                  correction_factor: ri.correction_factor
-              }));
+              const recIngsToInsert: any[] = [];
+              const targetPairs = new Set(targetRecipeIngs?.map(tri => `${tri.recipe_id}_${tri.ingredient_id}`) || []);
 
-              // Ignore failures on individual recipe ingredients if some mapping failed, just try to insert
-              await supabase.from('recipe_ingredients').insert(recIngsToInsert);
+              sourceRecipeIngs.forEach(ri => {
+                  const targetRecipeId = recipeIdMap.get(ri.recipe_id) || ri.recipe_id;
+                  const targetIngredientId = ingredientIdMap.get(ri.ingredient_id) || ri.ingredient_id;
+                  
+                  // Skip if this specific recipe/ingredient pair already exists in the target
+                  if (!targetPairs.has(`${targetRecipeId}_${targetIngredientId}`)) {
+                      recIngsToInsert.push({
+                          recipe_id: targetRecipeId,
+                          ingredient_id: targetIngredientId,
+                          quantity: ri.quantity,
+                          preparation_id: ri.preparation_id,
+                          user_id: targetStoreId,
+                          correction_factor: ri.correction_factor
+                      });
+                  }
+              });
+
+              if (recIngsToInsert.length > 0) {
+                  await supabase.from('recipe_ingredients').insert(recIngsToInsert);
+              }
           }
       }
 

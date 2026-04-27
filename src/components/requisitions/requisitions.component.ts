@@ -42,7 +42,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.text-muted]="activeTab() !== 'inbox'"
                     [class.hover:text-title]="activeTab() !== 'inbox'">
                 <span class="material-symbols-outlined text-[16px]">move_to_inbox</span>
-                Pedidos da Matriz
+                Pedidos Externos
             </button>
             <button (click)="activeTab.set('stock')" 
                     class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap outline-none"

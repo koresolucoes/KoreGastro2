@@ -788,7 +788,7 @@ export interface Requisition {
   requisition_items?: RequisitionItem[];
 }
 
-export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL' | 'IN_TRANSIT';
+export type RequisitionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELIVERED' | 'PARTIAL';
 
 export interface RequisitionItem {
   id: string;

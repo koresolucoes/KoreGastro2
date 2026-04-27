@@ -8,7 +8,7 @@
           <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Tipo de Requisição</label>
           <div class="flex gap-2 mb-3">
              <button (click)="isExternalRequest.set(false)" [class.bg-brand]="!isExternalRequest()" [class.text-white]="!isExternalRequest()" [class.bg-surface-elevated]="isExternalRequest()" [class.border-strong]="isExternalRequest()" class="flex-1 py-2 px-3 border rounded-lg text-xs font-bold transition-colors">Estoque Interno</button>
-             <button (click)="isExternalRequest.set(true)" [class.bg-brand]="isExternalRequest()" [class.text-white]="isExternalRequest()" [class.bg-surface-elevated]="!isExternalRequest()" [class.border-strong]="!isExternalRequest()" class="flex-1 py-2 px-3 border rounded-lg text-xs font-bold transition-colors">Outra Loja / Matriz</button>
+             <button (click)="isExternalRequest.set(true)" [class.bg-brand]="isExternalRequest()" [class.text-white]="isExternalRequest()" [class.bg-surface-elevated]="!isExternalRequest()" [class.border-strong]="!isExternalRequest()" class="flex-1 py-2 px-3 border rounded-lg text-xs font-bold transition-colors">Outra Unidade</button>
           </div>
 
           @if(isExternalRequest()) {
@@ -31,10 +31,13 @@
           <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
             <select [ngModel]="selectedStationId()" (ngModelChange)="selectedStationId.set($event)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all cursor-pointer">
-              <option [value]="null">Selecione...</option>
-              @for(station of stations(); track station.id) {
-                <option [value]="station.id">{{ station.name }}</option>
-              }
+              <option [ngValue]="null">Selecione...</option>
+              <option value="main">⭐ Estoque Principal (Geral)</option>
+              <optgroup label="Praças de Produção">
+                @for(station of stations(); track station.id) {
+                  <option [value]="station.id">{{ station.name }}</option>
+                }
+              </optgroup>
             </select>
             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
           </div>

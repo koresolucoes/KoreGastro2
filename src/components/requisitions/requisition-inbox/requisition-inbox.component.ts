@@ -13,7 +13,7 @@ import { RequisitionStatus } from '../../../models/db.models';
     <div class="bg-surface border border-subtle rounded-3xl p-6">
       <div class="flex justify-between items-center mb-6">
         <div>
-          <h2 class="text-xl font-bold tracking-tight text-title">Central de Pedidos (Cozinha Matriz)</h2>
+          <h2 class="text-xl font-bold tracking-tight text-title">Central de Pedidos (Outras Unidades)</h2>
           <p class="text-xs font-medium text-muted mt-1">Gerencie requisições enviadas por outras filiais para o seu estoque.</p>
         </div>
       </div>
@@ -56,10 +56,10 @@ import { RequisitionStatus } from '../../../models/db.models';
                         [ngClass]="{
                           'bg-amber-500/10 text-amber-500': req.status === 'PENDING',
                           'bg-emerald-500/10 text-emerald-500': req.status === 'DELIVERED',
-                          'bg-blue-500/10 text-blue-500': req.status === 'IN_TRANSIT',
+                          'bg-blue-500/10 text-blue-500': req.status === 'APPROVED',
                           'bg-red-500/10 text-red-500': req.status === 'REJECTED'
                         }">
-                    {{ req.status === 'IN_TRANSIT' ? 'EM TRÂNSITO' : req.status === 'DELIVERED' ? 'ENTREGUE' : req.status === 'PENDING' ? 'PENDENTE' : req.status === 'REJECTED' ? 'REJEITADO' : req.status }}
+                    {{ req.status === 'APPROVED' ? 'EM TRÂNSITO' : req.status === 'DELIVERED' ? 'ENTREGUE' : req.status === 'PENDING' ? 'PENDENTE' : req.status === 'REJECTED' ? 'REJEITADO' : req.status }}
                   </span>
                 </div>
               </div>
@@ -91,7 +91,7 @@ import { RequisitionStatus } from '../../../models/db.models';
                    <button (click)="dispatchRequest(req)" class="px-4 py-2 border border-brand text-brand hover:bg-brand hover:text-white rounded-xl text-xs font-bold transition-colors">
                      Aprovar e Expedir (Carregar Caminhão)
                    </button>
-                } @else if (req.status === 'IN_TRANSIT') {
+                } @else if (req.status === 'APPROVED') {
                    <span class="text-xs text-muted italic flex items-center gap-1">
                      <span class="material-symbols-outlined text-[14px]">local_shipping</span>
                      Aguardando filial confirmar recebimento
@@ -124,6 +124,7 @@ export class RequisitionInboxComponent implements OnInit {
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
     const { data } = await this.requisitionService.getInboxRequisitions(startDate, endDate);
+    console.log("Load Inbox Result:", data);
     if (data) {
         this.inboxItems.set(data);
     }
@@ -132,7 +133,7 @@ export class RequisitionInboxComponent implements OnInit {
 
   async dispatchRequest(req: any) {
     const confirmed = await this.notificationService.confirm(
-       `Confirma a expedição do pedido ${req.id.split('-')[0].toUpperCase()} para ${req.origin_store?.name}? O status mudará para EM TRÂNSITO. O estoque atual da matriz será debitado.`,
+       `Confirma a expedição do pedido ${req.id.split('-')[0].toUpperCase()} para ${req.origin_store?.name}? O status mudará para EM TRÂNSITO. O seu estoque atual será debitado.`,
        'Confirma Despacho'
     );
     if (!confirmed) return;
@@ -145,9 +146,9 @@ export class RequisitionInboxComponent implements OnInit {
     }));
 
     this.loading.set(true);
-    const { success, error } = await this.requisitionService.updateRequisitionStatus(req.id, 'IN_TRANSIT', itemsToDispatch);
+    const { success, error } = await this.requisitionService.updateRequisitionStatus(req.id, 'APPROVED', itemsToDispatch);
     if (success) {
-       this.notificationService.show('Pedido expedido e estoque debitado da Matriz!', 'success');
+       this.notificationService.show('Pedido expedido e estoque debitado da sua unidade!', 'success');
        await this.loadInbox();
     } else {
        this.notificationService.show(`Erro ao expedir pedido: ${error?.message}`, 'error');

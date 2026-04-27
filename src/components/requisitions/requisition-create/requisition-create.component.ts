@@ -168,12 +168,17 @@ export class RequisitionCreateComponent implements OnInit {
   }
 
   canSubmit = computed(() => {
-    const hasStation = !!this.selectedStationId();
+    const hasStation = this.selectedStationId() !== null;
     const hasItems = this.cartItems().length > 0;
     const itemsValid = this.cartItems().every(i => i.quantity > 0);
+    
+    // External transfers require a target unit.
     const targetValid = !this.isExternalRequest() || (this.isExternalRequest() && !!this.selectedTargetUnitId());
+    
+    // Internal transfers MUST select a specific station (not main stock)
+    const validInternalStation = this.isExternalRequest() || (!this.isExternalRequest() && this.selectedStationId() !== 'main');
 
-    return hasStation && hasItems && itemsValid && targetValid;
+    return hasStation && hasItems && itemsValid && targetValid && validInternalStation;
   });
 
   async submitRequisition() {
@@ -187,9 +192,10 @@ export class RequisitionCreateComponent implements OnInit {
     }));
 
     const targetUnit = this.isExternalRequest() ? this.selectedTargetUnitId() : undefined;
+    const actualStationId = this.selectedStationId() === 'main' ? null : this.selectedStationId();
 
     const { success, error } = await this.requisitionService.createRequisition(
-        this.selectedStationId()!, 
+        actualStationId, 
         payload, 
         this.notes(),
         targetUnit

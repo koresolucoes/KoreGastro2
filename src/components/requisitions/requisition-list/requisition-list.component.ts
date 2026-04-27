@@ -17,7 +17,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
         <!-- Filters -->
        <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
           <button (click)="filterStatus.set('PENDING')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-warning]="filterStatus() === 'PENDING'" [class.text-white]="filterStatus() === 'PENDING'" [class.bg-surface]="filterStatus() !== 'PENDING'" [class.text-muted]="filterStatus() !== 'PENDING'" [class.hover:bg-surface-elevated]="filterStatus() !== 'PENDING'">Pendentes Internos</button>
-          <button (click)="filterStatus.set('IN_TRANSIT')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-blue-500]="filterStatus() === 'IN_TRANSIT'" [class.text-white]="filterStatus() === 'IN_TRANSIT'" [class.bg-surface]="filterStatus() !== 'IN_TRANSIT'" [class.text-muted]="filterStatus() !== 'IN_TRANSIT'" [class.hover:bg-surface-elevated]="filterStatus() !== 'IN_TRANSIT'">A Receber da Matriz</button>
+          <button (click)="filterStatus.set('APPROVED')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-blue-500]="filterStatus() === 'APPROVED'" [class.text-white]="filterStatus() === 'APPROVED'" [class.bg-surface]="filterStatus() !== 'APPROVED'" [class.text-muted]="filterStatus() !== 'APPROVED'" [class.hover:bg-surface-elevated]="filterStatus() !== 'APPROVED'">A Receber (Ext)</button>
           <button (click)="filterStatus.set('DELIVERED')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-success]="filterStatus() === 'DELIVERED'" [class.text-white]="filterStatus() === 'DELIVERED'" [class.bg-surface]="filterStatus() !== 'DELIVERED'" [class.text-muted]="filterStatus() !== 'DELIVERED'" [class.hover:bg-surface-elevated]="filterStatus() !== 'DELIVERED'">Entregues</button>
           <button (click)="filterStatus.set('REJECTED')" class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none" [class.bg-danger]="filterStatus() === 'REJECTED'" [class.text-white]="filterStatus() === 'REJECTED'" [class.bg-surface]="filterStatus() !== 'REJECTED'" [class.text-muted]="filterStatus() !== 'REJECTED'" [class.hover:bg-surface-elevated]="filterStatus() !== 'REJECTED'">Rejeitadas</button>
        </div>
@@ -25,18 +25,18 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
        <!-- List -->
        <div class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pb-6 pr-2">
           @for (req of filteredRequisitions(); track req.id) {
-             <div class="bg-surface-elevated border border-subtle rounded-2xl p-5 shadow-sm transition-all group" [class.border-l-4]="true" [class.border-l-warning]="req.status === 'PENDING'" [class.border-l-success]="req.status === 'DELIVERED'" [class.border-l-danger]="req.status === 'REJECTED'" [class.border-l-blue-500]="req.status === 'IN_TRANSIT'">
+             <div class="bg-surface-elevated border border-subtle rounded-2xl p-5 shadow-sm transition-all group" [class.border-l-4]="true" [class.border-l-warning]="req.status === 'PENDING'" [class.border-l-success]="req.status === 'DELIVERED'" [class.border-l-danger]="req.status === 'REJECTED'" [class.border-l-blue-500]="req.status === 'APPROVED'">
                 <div class="flex justify-between items-start mb-2 cursor-pointer" (click)="toggleExpand(req.id)">
                    <div>
                       <h3 class="font-black text-title text-lg tracking-tight">
-                         @if(req.target_unit_id && req.status === 'IN_TRANSIT') {
-                            Recebimento Externo: {{ req.target_unit?.name || 'Matriz' }}
+                         @if(req.target_unit_id && req.status === 'APPROVED') {
+                            Recebimento Externo: {{ req.target_unit?.name || 'Unidade Externa' }}
                          } @else {
                             {{ req.stations?.name || 'Estação Desconhecida' }}
                          }
                       </h3>
                       <p class="text-[11px] font-bold text-muted uppercase tracking-wider mt-1">Solicitado em: {{ req.created_at | date:'dd/MM/yy HH:mm' }} por {{ req.requester?.name || 'Usuário' }}</p>
-                      @if(req.target_unit_id && req.status === 'IN_TRANSIT') {
+                      @if(req.target_unit_id && req.status === 'APPROVED') {
                          <p class="text-[11px] font-bold text-blue-500 uppercase tracking-wider mt-1">Destino: Estoque/{{ req.stations?.name }}</p>
                       }
                       @if(req.notes) {
@@ -48,8 +48,8 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                         [class.bg-warning/20]="req.status === 'PENDING'" [class.text-warning]="req.status === 'PENDING'"
                         [class.bg-success/20]="req.status === 'DELIVERED'" [class.text-success]="req.status === 'DELIVERED'"
                         [class.bg-danger/20]="req.status === 'REJECTED'" [class.text-danger]="req.status === 'REJECTED'"
-                        [class.bg-blue-500/20]="req.status === 'IN_TRANSIT'" [class.text-blue-500]="req.status === 'IN_TRANSIT'">
-                        {{ req.status === 'IN_TRANSIT' ? 'EM TRÂNSITO' : req.status }}
+                        [class.bg-blue-500/20]="req.status === 'APPROVED'" [class.text-blue-500]="req.status === 'APPROVED'">
+                        {{ req.status === 'APPROVED' ? 'EM TRÂNSITO' : req.status }}
                       </span>
                       <button class="p-1.5 rounded-full hover:bg-surface transition-colors flex items-center justify-center">
                         <span class="material-symbols-outlined text-muted transform transition-transform" [class.rotate-180]="expandedId() === req.id">expand_more</span>
@@ -66,8 +66,8 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                                <th class="py-2 px-2 text-center w-24">Solicitado</th>
                                <th class="py-2 px-2 text-center w-24" *ngIf="req.status === 'PENDING'">Estoque Qtd.</th>
                                <th class="py-2 px-2 text-center w-28" *ngIf="req.status === 'PENDING' && !req.target_unit_id">Entregar</th>
-                               <th class="py-2 px-2 text-center w-28" *ngIf="req.status === 'IN_TRANSIT'">Recebido Físico</th>
-                               <th class="py-2 px-2 text-center w-24" *ngIf="req.status !== 'PENDING' && req.status !== 'IN_TRANSIT'">Entregue</th>
+                               <th class="py-2 px-2 text-center w-28" *ngIf="req.status === 'APPROVED'">Recebido Físico</th>
+                               <th class="py-2 px-2 text-center w-24" *ngIf="req.status !== 'PENDING' && req.status !== 'APPROVED'">Entregue</th>
                             </tr>
                          </thead>
                          <tbody class="text-sm">
@@ -91,12 +91,12 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                                   </td>
 
                                   <!-- Input for receiving target amount (Blind check) -->
-                                  <td class="py-3 px-2 text-center" *ngIf="req.status === 'IN_TRANSIT'">
+                                  <td class="py-3 px-2 text-center" *ngIf="req.status === 'APPROVED'">
                                      <input type="number" [value]="deliveryQty" (input)="updateDeliveryQty(req.id, item.id, $any($event.target).value)" class="w-20 bg-surface border border-blue-500 rounded-lg py-1.5 px-2 text-center text-title focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold transition-all" min="0">
                                   </td>
                                   
                                   <!-- Display delivered amount if processed -->
-                                  <td class="py-3 px-2 text-center" *ngIf="req.status !== 'PENDING' && req.status !== 'IN_TRANSIT'">
+                                  <td class="py-3 px-2 text-center" *ngIf="req.status !== 'PENDING' && req.status !== 'APPROVED'">
                                     <span class="font-mono font-black text-success">{{ item.quantity_delivered || 0 }} {{ item.unit }}</span>
                                   </td>
                                </tr>
@@ -116,7 +116,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                                    <span class="material-symbols-outlined text-[16px]">check_circle</span> Aprovar
                                 </button>
                              </div>
-                         } @else if (req.status === 'IN_TRANSIT') {
+                         } @else if (req.status === 'APPROVED') {
                              <div class="flex gap-3 w-full sm:w-auto">
                                 <button (click)="receiveExternalDelivery(req)" class="flex-1 sm:flex-none py-2.5 px-5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2">
                                    <span class="material-symbols-outlined text-[16px]">inventory</span> Confirmar Recebimento (Blind Check)
@@ -155,7 +155,7 @@ export class RequisitionListComponent {
   requisitions = this.inventoryState.requisitions;
   ingredients = this.inventoryState.ingredients;
   
-  filterStatus = signal<'PENDING' | 'IN_TRANSIT' | 'APPROVED' | 'REJECTED' | 'DELIVERED'>('PENDING');
+  filterStatus = signal<'PENDING' | 'APPROVED' | 'APPROVED' | 'REJECTED' | 'DELIVERED'>('PENDING');
   expandedId = signal<string | null>(null);
 
   // Local state to track "Quantity to Deliver" inputs before saving

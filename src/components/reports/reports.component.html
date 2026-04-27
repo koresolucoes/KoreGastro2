@@ -1,428 +1,1000 @@
-<div class="h-full flex flex-col md:flex-row bg-background">
-  
+<div class="h-full flex flex-col md:flex-row bg-background overflow-hidden">
   <!-- Sidebar Categories -->
-  <div class="w-full md:w-64 flex-shrink-0 bg-surface border-r border-subtle md:h-full flex flex-col no-print z-10 shadow-lg">
-     <div class="p-6 border-b border-subtle pb-8">
-        <h1 class="text-3xl font-black text-title title-display tracking-tight leading-none mb-2">Relatórios<br>& Gestão</h1>
-        <p class="text-muted text-[11px] font-bold uppercase tracking-widest leading-relaxed mt-4">Inteligência Operacional</p>
-     </div>
-     
-     <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-        <!-- BI Category -->
-        <button (click)="setCategory('bi')"
-                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
-                [class.bg-brand/10]="activeCategory() === 'bi'" [class.border-brand/30]="activeCategory() === 'bi'"
-                [class.bg-surface]="activeCategory() !== 'bi'" [class.border-strong]="activeCategory() !== 'bi'" [class.hover:bg-surface-elevated]="activeCategory() !== 'bi'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
-                 [class.bg-brand]="activeCategory() === 'bi'" [class.text-white]="activeCategory() === 'bi'" [class.border-transparent]="activeCategory() === 'bi'"
-                 [class.bg-surface-elevated]="activeCategory() !== 'bi'" [class.text-brand]="activeCategory() !== 'bi'" [class.border-strong]="activeCategory() !== 'bi'">
-                <span class="material-symbols-outlined">query_stats</span>
-            </div>
-            <div>
-               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'bi'" [class.text-brand]="activeCategory() === 'bi'">Inteligência BI</p>
-               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Vendas & Clientes</p>
-            </div>
-        </button>
+  <div
+    class="w-full md:w-64 flex-shrink-0 bg-surface border-b md:border-b-0 md:border-r border-subtle md:h-full flex flex-col no-print z-30 shadow-sm md:shadow-lg"
+  >
+    <div
+      class="p-4 md:p-6 border-b border-subtle md:pb-8 flex justify-between items-center md:block"
+    >
+      <div>
+        <h1
+          class="text-xl md:text-3xl font-black text-title title-display tracking-tight leading-none md:mb-2 whitespace-nowrap"
+        >
+          Relatórios <span class="md:hidden">&</span
+          ><br class="hidden md:block" />
+          <span class="hidden md:inline">Gestão</span
+          ><span class="md:hidden">Gestão</span>
+        </h1>
+        <p
+          class="hidden md:block text-muted text-[11px] font-bold uppercase tracking-widest leading-relaxed mt-4"
+        >
+          Inteligência Operacional
+        </p>
+      </div>
+    </div>
 
-        <!-- Financial Category -->
-        <button (click)="setCategory('financial')"
-                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
-                [class.bg-emerald-500/10]="activeCategory() === 'financial'" [class.border-emerald-500/30]="activeCategory() === 'financial'"
-                [class.bg-surface]="activeCategory() !== 'financial'" [class.border-strong]="activeCategory() !== 'financial'" [class.hover:bg-surface-elevated]="activeCategory() !== 'financial'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
-                 [class.bg-emerald-500]="activeCategory() === 'financial'" [class.text-white]="activeCategory() === 'financial'" [class.border-transparent]="activeCategory() === 'financial'"
-                 [class.bg-surface-elevated]="activeCategory() !== 'financial'" [class.text-emerald-500]="activeCategory() !== 'financial'" [class.border-strong]="activeCategory() !== 'financial'">
-                <span class="material-symbols-outlined">account_balance</span>
-            </div>
-            <div>
-               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'financial'" [class.text-emerald-600]="activeCategory() === 'financial'">DRE & Financeiro</p>
-               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Fluxo e CMV</p>
-            </div>
-        </button>
-        
-        <!-- Audit Category -->
-        <button (click)="setCategory('audit')"
-                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
-                [class.bg-indigo-500/10]="activeCategory() === 'audit'" [class.border-indigo-500/30]="activeCategory() === 'audit'"
-                [class.bg-surface]="activeCategory() !== 'audit'" [class.border-strong]="activeCategory() !== 'audit'" [class.hover:bg-surface-elevated]="activeCategory() !== 'audit'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
-                 [class.bg-indigo-500]="activeCategory() === 'audit'" [class.text-white]="activeCategory() === 'audit'" [class.border-transparent]="activeCategory() === 'audit'"
-                 [class.bg-surface-elevated]="activeCategory() !== 'audit'" [class.text-indigo-500]="activeCategory() !== 'audit'" [class.border-strong]="activeCategory() !== 'audit'">
-                <span class="material-symbols-outlined">policy</span>
-            </div>
-            <div>
-               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'audit'" [class.text-indigo-600]="activeCategory() === 'audit'">Auditoria</p>
-               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Logs e Fraudes</p>
-            </div>
-        </button>
-        
-        <!-- Losses Category -->
-        <button (click)="setCategory('losses')"
-                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group"
-                [class.bg-amber-500/10]="activeCategory() === 'losses'" [class.border-amber-500/30]="activeCategory() === 'losses'"
-                [class.bg-surface]="activeCategory() !== 'losses'" [class.border-strong]="activeCategory() !== 'losses'" [class.hover:bg-surface-elevated]="activeCategory() !== 'losses'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
-                 [class.bg-amber-500]="activeCategory() === 'losses'" [class.text-white]="activeCategory() === 'losses'" [class.border-transparent]="activeCategory() === 'losses'"
-                 [class.bg-surface-elevated]="activeCategory() !== 'losses'" [class.text-amber-500]="activeCategory() !== 'losses'" [class.border-strong]="activeCategory() !== 'losses'">
-                <span class="material-symbols-outlined">trending_down</span>
-            </div>
-            <div>
-               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="activeCategory() !== 'losses'" [class.text-amber-600]="activeCategory() === 'losses'">Perdas (Waste)</p>
-               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Custo com erros</p>
-            </div>
-        </button>
+    <div
+      class="flex flex-row overflow-x-auto md:flex-col md:flex-1 p-2 md:p-4 gap-2 md:overflow-y-auto custom-scrollbar scrollbar-none items-center md:items-stretch"
+    >
+      <!-- BI Category -->
+      <button
+        (click)="setCategory('bi')"
+        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
+        [class.bg-brand/10]="activeCategory() === 'bi'"
+        [class.border-brand/30]="activeCategory() === 'bi'"
+        [class.bg-surface]="activeCategory() !== 'bi'"
+        [class.border-strong]="activeCategory() !== 'bi'"
+        [class.hover:bg-surface-elevated]="activeCategory() !== 'bi'"
+      >
+        <div
+          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
+          [class.bg-brand]="activeCategory() === 'bi'"
+          [class.text-white]="activeCategory() === 'bi'"
+          [class.border-transparent]="activeCategory() === 'bi'"
+          [class.bg-surface-elevated]="activeCategory() !== 'bi'"
+          [class.text-brand]="activeCategory() !== 'bi'"
+          [class.border-strong]="activeCategory() !== 'bi'"
+        >
+          <span class="material-symbols-outlined text-sm md:text-base"
+            >query_stats</span
+          >
+        </div>
+        <div class="hidden md:block">
+          <p
+            class="text-sm font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'bi'"
+            [class.text-brand]="activeCategory() === 'bi'"
+          >
+            Inteligência BI
+          </p>
+          <p
+            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
+          >
+            Vendas & Clientes
+          </p>
+        </div>
+        <div class="md:hidden pr-2">
+          <p
+            class="text-xs font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'bi'"
+            [class.text-brand]="activeCategory() === 'bi'"
+          >
+            Inteligência BI
+          </p>
+        </div>
+      </button>
 
-        <!-- Custom Category -->
-        <button (click)="setCategory('custom')"
-                class="w-full text-left px-4 py-4 rounded-2xl transition-all flex items-center gap-3 border shadow-sm group mt-4"
-                [class.bg-title/5]="activeCategory() === 'custom'" [class.border-title/30]="activeCategory() === 'custom'"
-                [class.bg-surface]="activeCategory() !== 'custom'" [class.border-strong]="activeCategory() !== 'custom'" [class.hover:bg-surface-elevated]="activeCategory() !== 'custom'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner border transition-colors"
-                 [class.bg-title]="activeCategory() === 'custom'" [class.text-surface]="activeCategory() === 'custom'" [class.border-transparent]="activeCategory() === 'custom'"
-                 [class.bg-surface-elevated]="activeCategory() !== 'custom'" [class.text-title]="activeCategory() !== 'custom'" [class.border-strong]="activeCategory() !== 'custom'">
-                <span class="material-symbols-outlined">construction</span>
-            </div>
-            <div>
-               <p class="text-sm font-black title-display tracking-tight" [class.text-title]="true">Personalizado</p>
-               <p class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5">Construtor Próprio</p>
-            </div>
-        </button>
-     </div>
+      <!-- Financial Category -->
+      <button
+        (click)="setCategory('financial')"
+        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
+        [class.bg-emerald-500/10]="activeCategory() === 'financial'"
+        [class.border-emerald-500/30]="activeCategory() === 'financial'"
+        [class.bg-surface]="activeCategory() !== 'financial'"
+        [class.border-strong]="activeCategory() !== 'financial'"
+        [class.hover:bg-surface-elevated]="activeCategory() !== 'financial'"
+      >
+        <div
+          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
+          [class.bg-emerald-500]="activeCategory() === 'financial'"
+          [class.text-white]="activeCategory() === 'financial'"
+          [class.border-transparent]="activeCategory() === 'financial'"
+          [class.bg-surface-elevated]="activeCategory() !== 'financial'"
+          [class.text-emerald-500]="activeCategory() !== 'financial'"
+          [class.border-strong]="activeCategory() !== 'financial'"
+        >
+          <span class="material-symbols-outlined text-sm md:text-base"
+            >account_balance</span
+          >
+        </div>
+        <div class="hidden md:block">
+          <p
+            class="text-sm font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'financial'"
+            [class.text-emerald-600]="activeCategory() === 'financial'"
+          >
+            DRE & Financeiro
+          </p>
+          <p
+            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
+          >
+            Fluxo e CMV
+          </p>
+        </div>
+        <div class="md:hidden pr-2">
+          <p
+            class="text-xs font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'financial'"
+            [class.text-emerald-600]="activeCategory() === 'financial'"
+          >
+            Financeiro
+          </p>
+        </div>
+      </button>
+
+      <!-- Audit Category -->
+      <button
+        (click)="setCategory('audit')"
+        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
+        [class.bg-indigo-500/10]="activeCategory() === 'audit'"
+        [class.border-indigo-500/30]="activeCategory() === 'audit'"
+        [class.bg-surface]="activeCategory() !== 'audit'"
+        [class.border-strong]="activeCategory() !== 'audit'"
+        [class.hover:bg-surface-elevated]="activeCategory() !== 'audit'"
+      >
+        <div
+          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
+          [class.bg-indigo-500]="activeCategory() === 'audit'"
+          [class.text-white]="activeCategory() === 'audit'"
+          [class.border-transparent]="activeCategory() === 'audit'"
+          [class.bg-surface-elevated]="activeCategory() !== 'audit'"
+          [class.text-indigo-500]="activeCategory() !== 'audit'"
+          [class.border-strong]="activeCategory() !== 'audit'"
+        >
+          <span class="material-symbols-outlined text-sm md:text-base"
+            >policy</span
+          >
+        </div>
+        <div class="hidden md:block">
+          <p
+            class="text-sm font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'audit'"
+            [class.text-indigo-600]="activeCategory() === 'audit'"
+          >
+            Auditoria
+          </p>
+          <p
+            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
+          >
+            Logs e Fraudes
+          </p>
+        </div>
+        <div class="md:hidden pr-2">
+          <p
+            class="text-xs font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'audit'"
+            [class.text-indigo-600]="activeCategory() === 'audit'"
+          >
+            Auditoria
+          </p>
+        </div>
+      </button>
+
+      <!-- Losses Category -->
+      <button
+        (click)="setCategory('losses')"
+        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
+        [class.bg-amber-500/10]="activeCategory() === 'losses'"
+        [class.border-amber-500/30]="activeCategory() === 'losses'"
+        [class.bg-surface]="activeCategory() !== 'losses'"
+        [class.border-strong]="activeCategory() !== 'losses'"
+        [class.hover:bg-surface-elevated]="activeCategory() !== 'losses'"
+      >
+        <div
+          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
+          [class.bg-amber-500]="activeCategory() === 'losses'"
+          [class.text-white]="activeCategory() === 'losses'"
+          [class.border-transparent]="activeCategory() === 'losses'"
+          [class.bg-surface-elevated]="activeCategory() !== 'losses'"
+          [class.text-amber-500]="activeCategory() !== 'losses'"
+          [class.border-strong]="activeCategory() !== 'losses'"
+        >
+          <span class="material-symbols-outlined text-sm md:text-base"
+            >trending_down</span
+          >
+        </div>
+        <div class="hidden md:block">
+          <p
+            class="text-sm font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'losses'"
+            [class.text-amber-600]="activeCategory() === 'losses'"
+          >
+            Perdas (Waste)
+          </p>
+          <p
+            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
+          >
+            Custo com erros
+          </p>
+        </div>
+        <div class="md:hidden pr-2">
+          <p
+            class="text-xs font-black title-display tracking-tight"
+            [class.text-title]="activeCategory() !== 'losses'"
+            [class.text-amber-600]="activeCategory() === 'losses'"
+          >
+            Perdas
+          </p>
+        </div>
+      </button>
+
+      <!-- Custom Category -->
+      <button
+        (click)="setCategory('custom')"
+        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group md:mt-4"
+        [class.bg-title/5]="activeCategory() === 'custom'"
+        [class.border-title/30]="activeCategory() === 'custom'"
+        [class.bg-surface]="activeCategory() !== 'custom'"
+        [class.border-strong]="activeCategory() !== 'custom'"
+        [class.hover:bg-surface-elevated]="activeCategory() !== 'custom'"
+      >
+        <div
+          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
+          [class.bg-title]="activeCategory() === 'custom'"
+          [class.text-surface]="activeCategory() === 'custom'"
+          [class.border-transparent]="activeCategory() === 'custom'"
+          [class.bg-surface-elevated]="activeCategory() !== 'custom'"
+          [class.text-title]="activeCategory() !== 'custom'"
+          [class.border-strong]="activeCategory() !== 'custom'"
+        >
+          <span class="material-symbols-outlined text-sm md:text-base"
+            >construction</span
+          >
+        </div>
+        <div class="hidden md:block">
+          <p
+            class="text-sm font-black title-display tracking-tight"
+            [class.text-title]="true"
+          >
+            Personalizado
+          </p>
+          <p
+            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
+          >
+            Construtor Próprio
+          </p>
+        </div>
+        <div class="md:hidden pr-2">
+          <p
+            class="text-xs font-black title-display tracking-tight"
+            [class.text-title]="true"
+          >
+            Personalizado
+          </p>
+        </div>
+      </button>
+    </div>
   </div>
 
   <!-- Main Content Area -->
-  <div class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
-      <!-- Top Filters -->
-      <div class="absolute top-0 right-0 left-0 bg-surface/80 backdrop-blur-xl border-b border-subtle p-4 px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 no-print gap-4">
-         
-         <!-- Sub-tabs based on Active Category -->
-         <nav class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full md:w-auto pb-2 md:pb-0">
-             @if (activeCategory() === 'bi') {
-                 <button (click)="activeReport.set('menuEngineering')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-brand]="activeReport() === 'menuEngineering'" [class.text-white]="activeReport() === 'menuEngineering'" [class.border-transparent]="activeReport() === 'menuEngineering'"
-                         [class.bg-surface]="activeReport() !== 'menuEngineering'" [class.text-muted]="activeReport() !== 'menuEngineering'" [class.border-strong]="activeReport() !== 'menuEngineering'" [class.hover:text-title]="activeReport() !== 'menuEngineering'">
-                     <span class="material-symbols-outlined text-base">grid_goldenratio</span> Engenharia BCG
-                 </button>
-                 <button (click)="activeReport.set('customerBehavior')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-brand]="activeReport() === 'customerBehavior'" [class.text-white]="activeReport() === 'customerBehavior'" [class.border-transparent]="activeReport() === 'customerBehavior'"
-                         [class.bg-surface]="activeReport() !== 'customerBehavior'" [class.text-muted]="activeReport() !== 'customerBehavior'" [class.border-strong]="activeReport() !== 'customerBehavior'" [class.hover:text-title]="activeReport() !== 'customerBehavior'">
-                     <span class="material-symbols-outlined text-base">psychology</span> CRM Frequência
-                 </button>
-                 <button (click)="activeReport.set('peakHours')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-brand]="activeReport() === 'peakHours'" [class.text-white]="activeReport() === 'peakHours'" [class.border-transparent]="activeReport() === 'peakHours'"
-                         [class.bg-surface]="activeReport() !== 'peakHours'" [class.text-muted]="activeReport() !== 'peakHours'" [class.border-strong]="activeReport() !== 'peakHours'" [class.hover:text-title]="activeReport() !== 'peakHours'">
-                     <span class="material-symbols-outlined text-base">schedule</span> Mapa de Calor
-                 </button>
-             }
-             @if (activeCategory() === 'financial') {
-                 <button (click)="activeReport.set('summary')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-emerald-500]="activeReport() === 'summary'" [class.text-white]="activeReport() === 'summary'" [class.border-transparent]="activeReport() === 'summary'"
-                         [class.bg-surface]="activeReport() !== 'summary'" [class.text-muted]="activeReport() !== 'summary'" [class.border-strong]="activeReport() !== 'summary'" [class.hover:text-title]="activeReport() !== 'summary'">
-                     <span class="material-symbols-outlined text-base">dashboard</span> Resumo Geral
-                 </button>
-                 <button (click)="activeReport.set('comparative')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-emerald-500]="activeReport() === 'comparative'" [class.text-white]="activeReport() === 'comparative'" [class.border-transparent]="activeReport() === 'comparative'"
-                         [class.bg-surface]="activeReport() !== 'comparative'" [class.text-muted]="activeReport() !== 'comparative'" [class.border-strong]="activeReport() !== 'comparative'" [class.hover:text-title]="activeReport() !== 'comparative'">
-                     <span class="material-symbols-outlined text-base">compare_arrows</span> Conciliação DRE
-                 </button>
-             }
-             @if (activeCategory() === 'audit') {
-                 <button (click)="activeReport.set('audit')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-indigo-500]="activeReport() === 'audit'" [class.text-white]="activeReport() === 'audit'" [class.border-transparent]="activeReport() === 'audit'"
-                         [class.bg-surface]="activeReport() !== 'audit'" [class.text-muted]="activeReport() !== 'audit'" [class.border-strong]="activeReport() !== 'audit'" [class.hover:text-title]="activeReport() !== 'audit'">
-                     <span class="material-symbols-outlined text-base">cancel</span> Descontos & Canc.
-                 </button>
-                 <button (click)="activeReport.set('systemLogs')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-indigo-500]="activeReport() === 'systemLogs'" [class.text-white]="activeReport() === 'systemLogs'" [class.border-transparent]="activeReport() === 'systemLogs'"
-                         [class.bg-surface]="activeReport() !== 'systemLogs'" [class.text-muted]="activeReport() !== 'systemLogs'" [class.border-strong]="activeReport() !== 'systemLogs'" [class.hover:text-title]="activeReport() !== 'systemLogs'">
-                     <span class="material-symbols-outlined text-base">history</span> Logs Imutáveis
-                 </button>
-             }
-             @if (activeCategory() === 'losses') {
-                  <button (click)="activeReport.set('lossReport')"
-                         class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-                         [class.bg-amber-500]="activeReport() === 'lossReport'" [class.text-white]="activeReport() === 'lossReport'" [class.border-transparent]="activeReport() === 'lossReport'"
-                         [class.bg-surface]="activeReport() !== 'lossReport'" [class.text-muted]="activeReport() !== 'lossReport'" [class.border-strong]="activeReport() !== 'lossReport'" [class.hover:text-title]="activeReport() !== 'lossReport'">
-                     <span class="material-symbols-outlined text-base">warning</span> Desperdícios
-                 </button>
-             }
-         </nav>
-         
-         <!-- Global Date Filter -->
-         <div class="flex items-center gap-2 bg-surface p-1.5 rounded-2xl border border-strong shadow-inner">
-             <input type="date" [value]="startDate()" (input)="startDate.set($any($event.target).value)" 
-                    class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]">
-             <span class="text-muted text-[10px] font-black uppercase">até</span>
-             <input type="date" [value]="endDate()" (input)="endDate.set($any($event.target).value)" 
-                    class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]">
-         </div>
-      </div>
+  <div
+    class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative"
+  >
+    <!-- Top Filters -->
+    <div
+      class="absolute top-0 right-0 left-0 bg-surface/80 backdrop-blur-xl border-b border-subtle p-4 px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center z-20 no-print gap-4"
+    >
+      <!-- Sub-tabs based on Active Category -->
+      <nav
+        class="flex items-center gap-2 overflow-x-auto scrollbar-none w-full md:w-auto pb-2 md:pb-0"
+      >
+        @if (activeCategory() === "bi") {
+          <button
+            (click)="activeReport.set('menuEngineering')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-brand]="activeReport() === 'menuEngineering'"
+            [class.text-white]="activeReport() === 'menuEngineering'"
+            [class.border-transparent]="activeReport() === 'menuEngineering'"
+            [class.bg-surface]="activeReport() !== 'menuEngineering'"
+            [class.text-muted]="activeReport() !== 'menuEngineering'"
+            [class.border-strong]="activeReport() !== 'menuEngineering'"
+            [class.hover:text-title]="activeReport() !== 'menuEngineering'"
+          >
+            <span class="material-symbols-outlined text-base"
+              >grid_goldenratio</span
+            >
+            Engenharia BCG
+          </button>
+          <button
+            (click)="activeReport.set('customerBehavior')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-brand]="activeReport() === 'customerBehavior'"
+            [class.text-white]="activeReport() === 'customerBehavior'"
+            [class.border-transparent]="activeReport() === 'customerBehavior'"
+            [class.bg-surface]="activeReport() !== 'customerBehavior'"
+            [class.text-muted]="activeReport() !== 'customerBehavior'"
+            [class.border-strong]="activeReport() !== 'customerBehavior'"
+            [class.hover:text-title]="activeReport() !== 'customerBehavior'"
+          >
+            <span class="material-symbols-outlined text-base">psychology</span>
+            CRM Frequência
+          </button>
+          <button
+            (click)="activeReport.set('peakHours')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-brand]="activeReport() === 'peakHours'"
+            [class.text-white]="activeReport() === 'peakHours'"
+            [class.border-transparent]="activeReport() === 'peakHours'"
+            [class.bg-surface]="activeReport() !== 'peakHours'"
+            [class.text-muted]="activeReport() !== 'peakHours'"
+            [class.border-strong]="activeReport() !== 'peakHours'"
+            [class.hover:text-title]="activeReport() !== 'peakHours'"
+          >
+            <span class="material-symbols-outlined text-base">schedule</span>
+            Mapa de Calor
+          </button>
+        }
+        @if (activeCategory() === "financial") {
+          <button
+            (click)="activeReport.set('summary')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-emerald-500]="activeReport() === 'summary'"
+            [class.text-white]="activeReport() === 'summary'"
+            [class.border-transparent]="activeReport() === 'summary'"
+            [class.bg-surface]="activeReport() !== 'summary'"
+            [class.text-muted]="activeReport() !== 'summary'"
+            [class.border-strong]="activeReport() !== 'summary'"
+            [class.hover:text-title]="activeReport() !== 'summary'"
+          >
+            <span class="material-symbols-outlined text-base">dashboard</span>
+            Resumo Geral
+          </button>
+          <button
+            (click)="activeReport.set('comparative')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-emerald-500]="activeReport() === 'comparative'"
+            [class.text-white]="activeReport() === 'comparative'"
+            [class.border-transparent]="activeReport() === 'comparative'"
+            [class.bg-surface]="activeReport() !== 'comparative'"
+            [class.text-muted]="activeReport() !== 'comparative'"
+            [class.border-strong]="activeReport() !== 'comparative'"
+            [class.hover:text-title]="activeReport() !== 'comparative'"
+          >
+            <span class="material-symbols-outlined text-base"
+              >compare_arrows</span
+            >
+            Conciliação DRE
+          </button>
+        }
+        @if (activeCategory() === "audit") {
+          <button
+            (click)="activeReport.set('audit')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-indigo-500]="activeReport() === 'audit'"
+            [class.text-white]="activeReport() === 'audit'"
+            [class.border-transparent]="activeReport() === 'audit'"
+            [class.bg-surface]="activeReport() !== 'audit'"
+            [class.text-muted]="activeReport() !== 'audit'"
+            [class.border-strong]="activeReport() !== 'audit'"
+            [class.hover:text-title]="activeReport() !== 'audit'"
+          >
+            <span class="material-symbols-outlined text-base">cancel</span>
+            Descontos & Canc.
+          </button>
+          <button
+            (click)="activeReport.set('systemLogs')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-indigo-500]="activeReport() === 'systemLogs'"
+            [class.text-white]="activeReport() === 'systemLogs'"
+            [class.border-transparent]="activeReport() === 'systemLogs'"
+            [class.bg-surface]="activeReport() !== 'systemLogs'"
+            [class.text-muted]="activeReport() !== 'systemLogs'"
+            [class.border-strong]="activeReport() !== 'systemLogs'"
+            [class.hover:text-title]="activeReport() !== 'systemLogs'"
+          >
+            <span class="material-symbols-outlined text-base">history</span>
+            Logs Imutáveis
+          </button>
+        }
+        @if (activeCategory() === "losses") {
+          <button
+            (click)="activeReport.set('lossReport')"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
+            [class.bg-amber-500]="activeReport() === 'lossReport'"
+            [class.text-white]="activeReport() === 'lossReport'"
+            [class.border-transparent]="activeReport() === 'lossReport'"
+            [class.bg-surface]="activeReport() !== 'lossReport'"
+            [class.text-muted]="activeReport() !== 'lossReport'"
+            [class.border-strong]="activeReport() !== 'lossReport'"
+            [class.hover:text-title]="activeReport() !== 'lossReport'"
+          >
+            <span class="material-symbols-outlined text-base">warning</span>
+            Desperdícios
+          </button>
+        }
+      </nav>
 
-      <!-- Report Viewport -->
-      <div class="flex-1 overflow-y-auto px-6 md:px-10 pt-[100px] md:pt-[100px] pb-24 custom-scrollbar">
-          @switch (activeReport()) {
-            @case('summary') {
-        <!-- Report Generation Form -->
-        <div class="chef-surface rounded-[32px] p-8 mb-8 no-print border border-subtle shadow-xl group">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div class="flex items-center gap-6">
-               <div class="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner group-hover:bg-brand/5 transition-colors">
-                 <span class="material-symbols-outlined text-brand text-4xl">auto_graph</span>
-               </div>
-               <div>
-                  <h2 class="text-2xl font-black text-title title-display tracking-tight">Explorador de Resumos</h2>
-                  <p class="text-muted text-xs font-bold uppercase tracking-widest mt-1">Gere visualizações rápidas de KPIs específicos</p>
-               </div>
-            </div>
-            <div class="flex flex-col sm:flex-row items-end gap-4 w-full md:w-auto">
-              <div class="w-full sm:w-64">
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Tipo de Resumo</label>
-                <div class="relative">
-                  <select [value]="summaryReportType()" (change)="summaryReportType.set($any($event.target).value)" 
-                          class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none">
-                    <option value="financial">Resumo Financeiro Consolidado</option>
-                    <option value="items">Ranking de Desempenho por Item</option>
-                    <option value="sales">Detalhamento de Fluxo de Vendas</option>
-                  </select>
-                  <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+      <!-- Global Date Filter -->
+      <div
+        class="flex items-center gap-2 bg-surface p-1.5 rounded-2xl border border-strong shadow-inner"
+      >
+        <input
+          type="date"
+          [value]="startDate()"
+          (input)="startDate.set($any($event.target).value)"
+          class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]"
+        />
+        <span class="text-muted text-[10px] font-black uppercase">até</span>
+        <input
+          type="date"
+          [value]="endDate()"
+          (input)="endDate.set($any($event.target).value)"
+          class="bg-transparent border-none px-2 py-1 text-title font-bold text-xs focus:ring-0 outline-none w-[120px]"
+        />
+      </div>
+    </div>
+
+    <!-- Report Viewport -->
+    <div
+      class="flex-1 overflow-y-auto px-4 md:px-10 pt-[140px] md:pt-[100px] pb-24 custom-scrollbar"
+    >
+      @switch (activeReport()) {
+        @case ("summary") {
+          <!-- Report Generation Form -->
+          <div
+            class="chef-surface rounded-[32px] p-8 mb-8 no-print border border-subtle shadow-xl group"
+          >
+            <div
+              class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8"
+            >
+              <div class="flex items-center gap-6">
+                <div
+                  class="w-16 h-16 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner group-hover:bg-brand/5 transition-colors"
+                >
+                  <span class="material-symbols-outlined text-brand text-4xl"
+                    >auto_graph</span
+                  >
+                </div>
+                <div>
+                  <h2
+                    class="text-2xl font-black text-title title-display tracking-tight"
+                  >
+                    Explorador de Resumos
+                  </h2>
+                  <p
+                    class="text-muted text-xs font-bold uppercase tracking-widest mt-1"
+                  >
+                    Gere visualizações rápidas de KPIs específicos
+                  </p>
                 </div>
               </div>
-              <button (click)="generateSummaryReport()" [disabled]="isSummaryLoading()" 
-                      class="px-10 py-4 bg-brand hover:bg-brand-hover text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 border border-brand disabled:opacity-50">
-                @if(isSummaryLoading()) { <div class="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white"></div> }
-                @else { <span>Gerar Dados</span> }
-              </button>
+              <div
+                class="flex flex-col sm:flex-row items-end gap-4 w-full md:w-auto"
+              >
+                <div class="w-full sm:w-64">
+                  <label
+                    class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 pl-1"
+                    >Tipo de Resumo</label
+                  >
+                  <div class="relative">
+                    <select
+                      [value]="summaryReportType()"
+                      (change)="
+                        summaryReportType.set($any($event.target).value)
+                      "
+                      class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none"
+                    >
+                      <option value="financial">
+                        Resumo Financeiro Consolidado
+                      </option>
+                      <option value="items">
+                        Ranking de Desempenho por Item
+                      </option>
+                      <option value="sales">
+                        Detalhamento de Fluxo de Vendas
+                      </option>
+                    </select>
+                    <span
+                      class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none"
+                      >expand_more</span
+                    >
+                  </div>
+                </div>
+                <button
+                  (click)="generateSummaryReport()"
+                  [disabled]="isSummaryLoading()"
+                  class="px-10 py-4 bg-brand hover:bg-brand-hover text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 border border-brand disabled:opacity-50"
+                >
+                  @if (isSummaryLoading()) {
+                    <div
+                      class="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white"
+                    ></div>
+                  } @else {
+                    <span>Gerar Dados</span>
+                  }
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Report Display Area -->
-        <div class="printable-area pb-20">
-          @if (isSummaryLoading()) {
-            <div class="flex flex-col items-center justify-center h-96 chef-surface rounded-[40px] border border-subtle">
-              <div class="relative w-20 h-20 mb-6">
-                <div class="absolute inset-0 border-4 border-brand/10 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <p class="text-[11px] font-black text-title uppercase tracking-widest animate-pulse">Processando Inteligência de Dados...</p>
-            </div>
-          } @else if (generatedSummaryReport(); as report) {
-            <div class="chef-surface rounded-[40px] border border-subtle shadow-2xl p-10">
-              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-8 mb-12 border-b border-subtle pb-10">
-                <div class="flex items-center gap-6">
-                   <div class="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner">
-                     <span class="material-symbols-outlined text-brand text-3xl">analytics</span>
-                   </div>
-                   <div>
-                     <h2 class="text-3xl font-black text-title title-display tracking-tight">{{ summaryReportTitle() }}</h2>
-                     <p class="text-muted font-bold text-xs uppercase tracking-widest mt-1 flex items-center gap-2">
-                       <span class="material-symbols-outlined text-sm">calendar_today</span>
-                       Período indexado: {{ startDate() | date:'dd/MM/yyyy' }} a {{ endDate() | date:'dd/MM/yyyy' }}
-                     </p>
-                   </div>
+          <!-- Report Display Area -->
+          <div class="printable-area pb-20">
+            @if (isSummaryLoading()) {
+              <div
+                class="flex flex-col items-center justify-center h-96 chef-surface rounded-[40px] border border-subtle"
+              >
+                <div class="relative w-20 h-20 mb-6">
+                  <div
+                    class="absolute inset-0 border-4 border-brand/10 rounded-full"
+                  ></div>
+                  <div
+                    class="absolute inset-0 border-4 border-brand border-t-transparent rounded-full animate-spin"
+                  ></div>
                 </div>
-                <div class="no-print flex gap-3">
-                  <button (click)="exportReportAsCsv()" class="px-6 py-3 bg-surface hover:bg-surface-elevated text-title rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-strong flex items-center gap-2 shadow-sm">
-                    <span class="material-symbols-outlined text-lg">download</span>
-                    Exportar Planilha
-                  </button>
-                  <button (click)="printReport()" class="px-6 py-3 bg-title hover:bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
-                    <span class="material-symbols-outlined text-lg">print</span>
-                    Imprimir Relatório
-                  </button>
-                </div>
+                <p
+                  class="text-[11px] font-black text-title uppercase tracking-widest animate-pulse"
+                >
+                  Processando Inteligência de Dados...
+                </p>
               </div>
-              
-              @switch (summaryReportType()) {
-                @case('financial') {
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div class="space-y-6">
-                       <div class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-emerald-500/20 transition-all shadow-inner">
-                         <span class="text-[10px] font-black text-muted uppercase tracking-widest">Faturamento Bruto</span>
-                         <span class="text-2xl font-black text-emerald-500 tracking-tight">{{ report.grossRevenue | currency:'BRL' }}</span>
-                       </div>
-                       <div class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-amber-500/20 transition-all shadow-inner">
-                         <span class="text-[10px] font-black text-muted uppercase tracking-widest">Custo de Mercadoria (CMV)</span>
-                         <span class="text-2xl font-black text-amber-500 tracking-tight">- {{ report.cogs | currency:'BRL' }}</span>
-                       </div>
-                       <div class="flex justify-between items-center bg-surface p-8 rounded-[32px] border border-strong shadow-lg">
-                         <strong class="text-xs font-black text-title uppercase tracking-widest">Lucro Bruto Operacional</strong>
-                         <strong class="text-3xl font-black text-title title-display tracking-tight">{{ report.grossProfit | currency:'BRL' }}</strong>
-                       </div>
-                       <div class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-red-500/20 transition-all shadow-inner">
-                         <span class="text-[10px] font-black text-muted uppercase tracking-widest">Despesas Totais</span>
-                         <span class="text-2xl font-black text-red-500 tracking-tight">- {{ report.totalExpenses | currency:'BRL' }}</span>
-                       </div>
-                       <div class="flex justify-between items-center p-8 rounded-[32px] shadow-2xl transition-all border-4" 
-                            [class.bg-emerald-500/10]="(report.netProfit ?? 0) >= 0" [class.border-emerald-500/20]="(report.netProfit ?? 0) >= 0"
-                            [class.bg-red-500/10]="(report.netProfit ?? 0) < 0" [class.border-red-500/20]="(report.netProfit ?? 0) < 0">
-                         <div class="flex flex-col">
-                           <span class="text-[11px] font-black uppercase tracking-widest mb-1" [class.text-emerald-600]="(report.netProfit ?? 0) >= 0" [class.text-red-600]="(report.netProfit ?? 0) < 0">Resultado Líquido Final</span>
-                           <p class="text-muted text-[10px] font-medium leading-tight max-w-[200px]">Indicador após todas as deduções operacionais e financeiras.</p>
-                         </div>
-                         <strong class="text-5xl font-black title-display tracking-tighter" [class.text-emerald-500]="(report.netProfit ?? 0) >= 0" [class.text-red-500]="(report.netProfit ?? 0) < 0">
-                           {{ report.netProfit | currency:'BRL' }}
-                         </strong>
-                       </div>
+            } @else if (generatedSummaryReport(); as report) {
+              <div
+                class="chef-surface rounded-[40px] border border-subtle shadow-2xl p-10"
+              >
+                <div
+                  class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-8 mb-12 border-b border-subtle pb-10"
+                >
+                  <div class="flex items-center gap-6">
+                    <div
+                      class="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner"
+                    >
+                      <span
+                        class="material-symbols-outlined text-brand text-3xl"
+                        >analytics</span
+                      >
                     </div>
-                    <div class="hidden md:flex flex-col items-center justify-center p-8 bg-surface-elevated/20 rounded-[40px] border border-dashed border-strong">
-                       <span class="material-symbols-outlined text-brand/20 text-9xl mb-6">query_stats</span>
-                       <p class="text-muted font-black uppercase tracking-widest text-xs text-center max-w-sm">Análise visual e projeções gráficas em desenvolvimento.</p>
+                    <div>
+                      <h2
+                        class="text-3xl font-black text-title title-display tracking-tight"
+                      >
+                        {{ summaryReportTitle() }}
+                      </h2>
+                      <p
+                        class="text-muted font-bold text-xs uppercase tracking-widest mt-1 flex items-center gap-2"
+                      >
+                        <span class="material-symbols-outlined text-sm"
+                          >calendar_today</span
+                        >
+                        Período indexado:
+                        {{ startDate() | date: "dd/MM/yyyy" }} a
+                        {{ endDate() | date: "dd/MM/yyyy" }}
+                      </p>
                     </div>
                   </div>
-                }
-                @case ('sales') {
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                    <div class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all">
-                      <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Faturamento Bruto</p>
-                      <p class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors">{{ report.grossRevenue | currency:'BRL' }}</p>
-                    </div>
-                    <div class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all">
-                      <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Total de Pedidos</p>
-                      <p class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors">{{ report.totalOrders }}</p>
-                    </div>
-                    <div class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all">
-                      <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Ticket Médio (VPA)</p>
-                      <p class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors">{{ report.averageTicket | currency:'BRL' }}</p>
-                    </div>
+                  <div class="no-print flex gap-3">
+                    <button
+                      (click)="exportReportAsCsv()"
+                      class="px-6 py-3 bg-surface hover:bg-surface-elevated text-title rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-strong flex items-center gap-2 shadow-sm"
+                    >
+                      <span class="material-symbols-outlined text-lg"
+                        >download</span
+                      >
+                      Exportar Planilha
+                    </button>
+                    <button
+                      (click)="printReport()"
+                      class="px-6 py-3 bg-title hover:bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+                    >
+                      <span class="material-symbols-outlined text-lg"
+                        >print</span
+                      >
+                      Imprimir Relatório
+                    </button>
                   </div>
-                  
-                  <div class="space-y-6">
-                    <div class="flex items-center gap-3 border-b border-subtle pb-3">
-                       <span class="material-symbols-outlined text-brand text-lg">payments</span>
-                       <h4 class="text-[11px] font-black text-title uppercase tracking-widest">Distribuição por Meio de Pagamento</h4>
-                    </div>
-                    <div class="rounded-[32px] border border-subtle overflow-hidden">
-                      <table class="w-full text-left">
-                        <thead class="bg-surface-elevated/60 text-[10px] font-black text-muted uppercase tracking-widest border-b border-subtle">
-                          <tr>
-                            <th class="px-8 py-5">Método de Captura</th>
-                            <th class="px-8 py-5 text-right pr-12">Volume Total (R$)</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-subtle/40">
-                          @for(item of report.paymentSummary; track item.method) {
-                            <tr class="hover:bg-surface/60 transition-colors">
-                              <td class="px-8 py-5 flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-lg bg-surface border border-strong flex items-center justify-center text-muted">
-                                  <span class="material-symbols-outlined text-lg">credit_card</span>
-                                </div>
-                                <span class="font-bold text-title text-sm tracking-tight">{{ item.method }}</span>
-                              </td>
-                              <td class="px-8 py-5 text-right pr-12 font-black text-title title-display text-lg tracking-tight">{{ item.total | currency:'BRL' }}</td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                }
-                @case ('items') {
-                  @if(report.bestSellingItems && report.bestSellingItems.length > 0) {
-                    <div class="rounded-[32px] border border-subtle overflow-hidden shadow-sm">
-                      <table class="w-full text-left">
-                        <thead class="bg-surface-elevated/60 text-[9px] font-black text-muted uppercase tracking-widest border-b border-subtle">
-                          <tr>
-                            <th class="px-8 py-5">Item do Cardápio</th>
-                            <th class="px-8 py-5 text-center">Qtd.</th>
-                            <th class="px-8 py-5 text-right">Receita Acum.</th>
-                            <th class="px-8 py-5 text-right">Custo Unt.</th>
-                            <th class="px-8 py-5 text-right">Lucro Total</th>
-                            <th class="px-8 py-5 text-right pr-12">Margem (%)</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-subtle/40">
-                          @for(item of report.bestSellingItems; track item.name) {
-                            <tr class="hover:bg-surface/60 transition-colors">
-                              <td class="px-8 py-6">
-                                <span class="font-black text-title title-display tracking-tight text-sm">{{ item.name }}</span>
-                              </td>
-                              <td class="px-8 py-6 text-center">
-                                <span class="px-3 py-1 bg-surface-elevated/60 border border-strong rounded-lg text-xs font-black text-muted">{{ item.quantity }}</span>
-                              </td>
-                              <td class="px-8 py-6 text-right font-bold text-title text-sm">{{ item.revenue | currency:'BRL' }}</td>
-                              <td class="px-8 py-6 text-right font-medium text-amber-600 text-xs">{{ item.totalCost | currency:'BRL' }}</td>
-                              <td class="px-8 py-6 text-right font-black text-emerald-600 title-display text-sm">{{ item.totalProfit | currency:'BRL' }}</td>
-                              <td class="px-8 py-6 text-right pr-12">
-                                <div class="inline-flex items-center px-4 py-1.5 rounded-xl font-black text-[11px] title-display tracking-tighter"
-                                     [class.bg-emerald-500/10]="item.profitMargin > 20" [class.text-emerald-600]="item.profitMargin > 20"
-                                     [class.bg-amber-500/10]="item.profitMargin <= 20 && item.profitMargin >= 0" [class.text-amber-600]="item.profitMargin <= 20 && item.profitMargin >= 0"
-                                     [class.bg-red-500/10]="item.profitMargin < 0" [class.text-red-600]="item.profitMargin < 0">
-                                  {{ item.profitMargin | number:'1.0-1' }}%
-                                </div>
-                              </td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  } @else {
-                    <div class="flex flex-col items-center justify-center py-32 chef-surface border border-dashed border-strong rounded-[40px]">
-                      <span class="material-symbols-outlined text-muted/30 text-6xl mb-6">search_off</span>
-                      <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum registro de venda indexado para este filtro.</p>
+                </div>
+
+                @switch (summaryReportType()) {
+                  @case ("financial") {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <div class="space-y-6">
+                        <div
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-emerald-500/20 transition-all shadow-inner"
+                        >
+                          <span
+                            class="text-[10px] font-black text-muted uppercase tracking-widest"
+                            >Faturamento Bruto</span
+                          >
+                          <span
+                            class="text-2xl font-black text-emerald-500 tracking-tight"
+                            >{{ report.grossRevenue | currency: "BRL" }}</span
+                          >
+                        </div>
+                        <div
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-amber-500/20 transition-all shadow-inner"
+                        >
+                          <span
+                            class="text-[10px] font-black text-muted uppercase tracking-widest"
+                            >Custo de Mercadoria (CMV)</span
+                          >
+                          <span
+                            class="text-2xl font-black text-amber-500 tracking-tight"
+                            >- {{ report.cogs | currency: "BRL" }}</span
+                          >
+                        </div>
+                        <div
+                          class="flex justify-between items-center bg-surface p-8 rounded-[32px] border border-strong shadow-lg"
+                        >
+                          <strong
+                            class="text-xs font-black text-title uppercase tracking-widest"
+                            >Lucro Bruto Operacional</strong
+                          >
+                          <strong
+                            class="text-3xl font-black text-title title-display tracking-tight"
+                            >{{ report.grossProfit | currency: "BRL" }}</strong
+                          >
+                        </div>
+                        <div
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-red-500/20 transition-all shadow-inner"
+                        >
+                          <span
+                            class="text-[10px] font-black text-muted uppercase tracking-widest"
+                            >Despesas Totais</span
+                          >
+                          <span
+                            class="text-2xl font-black text-red-500 tracking-tight"
+                            >-
+                            {{ report.totalExpenses | currency: "BRL" }}</span
+                          >
+                        </div>
+                        <div
+                          class="flex justify-between items-center p-8 rounded-[32px] shadow-2xl transition-all border-4"
+                          [class.bg-emerald-500/10]="
+                            (report.netProfit ?? 0) >= 0
+                          "
+                          [class.border-emerald-500/20]="
+                            (report.netProfit ?? 0) >= 0
+                          "
+                          [class.bg-red-500/10]="(report.netProfit ?? 0) < 0"
+                          [class.border-red-500/20]="
+                            (report.netProfit ?? 0) < 0
+                          "
+                        >
+                          <div class="flex flex-col">
+                            <span
+                              class="text-[11px] font-black uppercase tracking-widest mb-1"
+                              [class.text-emerald-600]="
+                                (report.netProfit ?? 0) >= 0
+                              "
+                              [class.text-red-600]="(report.netProfit ?? 0) < 0"
+                              >Resultado Líquido Final</span
+                            >
+                            <p
+                              class="text-muted text-[10px] font-medium leading-tight max-w-[200px]"
+                            >
+                              Indicador após todas as deduções operacionais e
+                              financeiras.
+                            </p>
+                          </div>
+                          <strong
+                            class="text-5xl font-black title-display tracking-tighter"
+                            [class.text-emerald-500]="
+                              (report.netProfit ?? 0) >= 0
+                            "
+                            [class.text-red-500]="(report.netProfit ?? 0) < 0"
+                          >
+                            {{ report.netProfit | currency: "BRL" }}
+                          </strong>
+                        </div>
+                      </div>
+                      <div
+                        class="hidden md:flex flex-col items-center justify-center p-8 bg-surface-elevated/20 rounded-[40px] border border-dashed border-strong"
+                      >
+                        <span
+                          class="material-symbols-outlined text-brand/20 text-9xl mb-6"
+                          >query_stats</span
+                        >
+                        <p
+                          class="text-muted font-black uppercase tracking-widest text-xs text-center max-w-sm"
+                        >
+                          Análise visual e projeções gráficas em
+                          desenvolvimento.
+                        </p>
+                      </div>
                     </div>
                   }
+                  @case ("sales") {
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                      <div
+                        class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all"
+                      >
+                        <p
+                          class="text-[10px] font-black text-muted uppercase tracking-widest mb-3"
+                        >
+                          Faturamento Bruto
+                        </p>
+                        <p
+                          class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors"
+                        >
+                          {{ report.grossRevenue | currency: "BRL" }}
+                        </p>
+                      </div>
+                      <div
+                        class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all"
+                      >
+                        <p
+                          class="text-[10px] font-black text-muted uppercase tracking-widest mb-3"
+                        >
+                          Total de Pedidos
+                        </p>
+                        <p
+                          class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors"
+                        >
+                          {{ report.totalOrders }}
+                        </p>
+                      </div>
+                      <div
+                        class="bg-surface-elevated/40 border border-strong rounded-3xl p-8 shadow-inner group hover:border-brand/30 transition-all"
+                      >
+                        <p
+                          class="text-[10px] font-black text-muted uppercase tracking-widest mb-3"
+                        >
+                          Ticket Médio (VPA)
+                        </p>
+                        <p
+                          class="text-4xl font-black text-title title-display tracking-tight leading-none group-hover:text-brand transition-colors"
+                        >
+                          {{ report.averageTicket | currency: "BRL" }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="space-y-6">
+                      <div
+                        class="flex items-center gap-3 border-b border-subtle pb-3"
+                      >
+                        <span
+                          class="material-symbols-outlined text-brand text-lg"
+                          >payments</span
+                        >
+                        <h4
+                          class="text-[11px] font-black text-title uppercase tracking-widest"
+                        >
+                          Distribuição por Meio de Pagamento
+                        </h4>
+                      </div>
+                      <div
+                        class="rounded-[32px] border border-subtle overflow-hidden"
+                      >
+                        <table class="w-full text-left">
+                          <thead
+                            class="bg-surface-elevated/60 text-[10px] font-black text-muted uppercase tracking-widest border-b border-subtle"
+                          >
+                            <tr>
+                              <th class="px-8 py-5">Método de Captura</th>
+                              <th class="px-8 py-5 text-right pr-12">
+                                Volume Total (R$)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-subtle/40">
+                            @for (
+                              item of report.paymentSummary;
+                              track item.method
+                            ) {
+                              <tr class="hover:bg-surface/60 transition-colors">
+                                <td class="px-8 py-5 flex items-center gap-4">
+                                  <div
+                                    class="w-8 h-8 rounded-lg bg-surface border border-strong flex items-center justify-center text-muted"
+                                  >
+                                    <span
+                                      class="material-symbols-outlined text-lg"
+                                      >credit_card</span
+                                    >
+                                  </div>
+                                  <span
+                                    class="font-bold text-title text-sm tracking-tight"
+                                    >{{ item.method }}</span
+                                  >
+                                </td>
+                                <td
+                                  class="px-8 py-5 text-right pr-12 font-black text-title title-display text-lg tracking-tight"
+                                >
+                                  {{ item.total | currency: "BRL" }}
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
+                  @case ("items") {
+                    @if (
+                      report.bestSellingItems &&
+                      report.bestSellingItems.length > 0
+                    ) {
+                      <div
+                        class="rounded-[32px] border border-subtle overflow-hidden shadow-sm"
+                      >
+                        <table class="w-full text-left">
+                          <thead
+                            class="bg-surface-elevated/60 text-[9px] font-black text-muted uppercase tracking-widest border-b border-subtle"
+                          >
+                            <tr>
+                              <th class="px-8 py-5">Item do Cardápio</th>
+                              <th class="px-8 py-5 text-center">Qtd.</th>
+                              <th class="px-8 py-5 text-right">
+                                Receita Acum.
+                              </th>
+                              <th class="px-8 py-5 text-right">Custo Unt.</th>
+                              <th class="px-8 py-5 text-right">Lucro Total</th>
+                              <th class="px-8 py-5 text-right pr-12">
+                                Margem (%)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-subtle/40">
+                            @for (
+                              item of report.bestSellingItems;
+                              track item.name
+                            ) {
+                              <tr class="hover:bg-surface/60 transition-colors">
+                                <td class="px-8 py-6">
+                                  <span
+                                    class="font-black text-title title-display tracking-tight text-sm"
+                                    >{{ item.name }}</span
+                                  >
+                                </td>
+                                <td class="px-8 py-6 text-center">
+                                  <span
+                                    class="px-3 py-1 bg-surface-elevated/60 border border-strong rounded-lg text-xs font-black text-muted"
+                                    >{{ item.quantity }}</span
+                                  >
+                                </td>
+                                <td
+                                  class="px-8 py-6 text-right font-bold text-title text-sm"
+                                >
+                                  {{ item.revenue | currency: "BRL" }}
+                                </td>
+                                <td
+                                  class="px-8 py-6 text-right font-medium text-amber-600 text-xs"
+                                >
+                                  {{ item.totalCost | currency: "BRL" }}
+                                </td>
+                                <td
+                                  class="px-8 py-6 text-right font-black text-emerald-600 title-display text-sm"
+                                >
+                                  {{ item.totalProfit | currency: "BRL" }}
+                                </td>
+                                <td class="px-8 py-6 text-right pr-12">
+                                  <div
+                                    class="inline-flex items-center px-4 py-1.5 rounded-xl font-black text-[11px] title-display tracking-tighter"
+                                    [class.bg-emerald-500/10]="
+                                      item.profitMargin > 20
+                                    "
+                                    [class.text-emerald-600]="
+                                      item.profitMargin > 20
+                                    "
+                                    [class.bg-amber-500/10]="
+                                      item.profitMargin <= 20 &&
+                                      item.profitMargin >= 0
+                                    "
+                                    [class.text-amber-600]="
+                                      item.profitMargin <= 20 &&
+                                      item.profitMargin >= 0
+                                    "
+                                    [class.bg-red-500/10]="
+                                      item.profitMargin < 0
+                                    "
+                                    [class.text-red-600]="item.profitMargin < 0"
+                                  >
+                                    {{ item.profitMargin | number: "1.0-1" }}%
+                                  </div>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    } @else {
+                      <div
+                        class="flex flex-col items-center justify-center py-32 chef-surface border border-dashed border-strong rounded-[40px]"
+                      >
+                        <span
+                          class="material-symbols-outlined text-muted/30 text-6xl mb-6"
+                          >search_off</span
+                        >
+                        <p
+                          class="text-muted font-black uppercase tracking-widest text-sm"
+                        >
+                          Nenhum registro de venda indexado para este filtro.
+                        </p>
+                      </div>
+                    }
+                  }
                 }
-              }
-            </div>
-          } @else {
-            <div class="flex flex-col items-center justify-center h-[500px] chef-surface rounded-[40px] border border-dashed border-strong opacity-80">
-              <div class="w-32 h-32 bg-surface-elevated rounded-full flex items-center justify-center mb-8 border border-strong shadow-inner">
-                <span class="material-symbols-outlined text-muted/40 text-6xl">insights</span>
               </div>
-              <h3 class="text-xl font-black text-title title-display tracking-tight mb-2">Aguardando Parâmetros</h3>
-              <p class="text-muted text-sm font-medium mb-10 max-w-xs text-center leading-relaxed">Selecione as dimensões do relatório e as datas para processar os indicadores operacionais.</p>
-            </div>
-          }
-        </div>
-      }
-      @case('comparative') {
-          <div class="pb-20">
-            <app-comparative-report [startDate]="startDate()" [endDate]="endDate()"></app-comparative-report>
+            } @else {
+              <div
+                class="flex flex-col items-center justify-center h-[500px] chef-surface rounded-[40px] border border-dashed border-strong opacity-80"
+              >
+                <div
+                  class="w-32 h-32 bg-surface-elevated rounded-full flex items-center justify-center mb-8 border border-strong shadow-inner"
+                >
+                  <span class="material-symbols-outlined text-muted/40 text-6xl"
+                    >insights</span
+                  >
+                </div>
+                <h3
+                  class="text-xl font-black text-title title-display tracking-tight mb-2"
+                >
+                  Aguardando Parâmetros
+                </h3>
+                <p
+                  class="text-muted text-sm font-medium mb-10 max-w-xs text-center leading-relaxed"
+                >
+                  Selecione as dimensões do relatório e as datas para processar
+                  os indicadores operacionais.
+                </p>
+              </div>
+            }
           </div>
-      }
-      @case('peakHours') {
+        }
+        @case ("comparative") {
           <div class="pb-20">
-            <app-peak-hours-report [startDate]="startDate()" [endDate]="endDate()"></app-peak-hours-report>
+            <app-comparative-report
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-comparative-report>
           </div>
-      }
-      @case('audit') {
+        }
+        @case ("peakHours") {
           <div class="pb-20">
-            <app-cancellation-report [startDate]="startDate()" [endDate]="endDate()"></app-cancellation-report>
+            <app-peak-hours-report
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-peak-hours-report>
           </div>
-      }
-      @case('builder') {
+        }
+        @case ("audit") {
           <div class="pb-20">
-            <app-report-builder [startDate]="startDate()" [endDate]="endDate()"></app-report-builder>
+            <app-cancellation-report
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-cancellation-report>
           </div>
-      }
-      @case('menuEngineering') {
+        }
+        @case ("builder") {
           <div class="pb-20">
-            <app-menu-engineering [startDate]="startDate()" [endDate]="endDate()"></app-menu-engineering>
+            <app-report-builder
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-report-builder>
           </div>
-      }
-      @case('customerBehavior') {
+        }
+        @case ("menuEngineering") {
+          <div class="pb-20">
+            <app-menu-engineering
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-menu-engineering>
+          </div>
+        }
+        @case ("customerBehavior") {
           <div class="pb-20 h-full">
-            <app-customer-behavior [startDate]="startDate()" [endDate]="endDate()"></app-customer-behavior>
+            <app-customer-behavior
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-customer-behavior>
           </div>
-      }
-      @case('systemLogs') {
+        }
+        @case ("systemLogs") {
           <div class="pb-20 h-full">
-            <app-system-logs [startDate]="startDate()" [endDate]="endDate()"></app-system-logs>
+            <app-system-logs
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-system-logs>
           </div>
-      }
-      @case('lossReport') {
+        }
+        @case ("lossReport") {
           <div class="pb-20 h-full">
-            <app-loss-report [startDate]="startDate()" [endDate]="endDate()"></app-loss-report>
+            <app-loss-report
+              [startDate]="startDate()"
+              [endDate]="endDate()"
+            ></app-loss-report>
           </div>
+        }
       }
-    }
+    </div>
   </div>
 </div>
