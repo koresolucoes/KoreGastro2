@@ -49,27 +49,16 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = signal('');
   isPublicView = signal(false);
   isLoading = signal(true);
-  view = signal<'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout' | 'reservations' | 'hours'>('cover');
+  view = signal<'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout' | 'reservations'>('cover');
   activeCategorySlug = signal<string | null>(null);
   
   // Checkout state
   orderType = signal<'External-Delivery' | 'Pickup'>('External-Delivery');
-  paymentMethod = signal<string | null>(null);
   customerName = signal('');
   customerPhone = signal('');
   deliveryAddress = signal('');
-  deliveryNeighborhood = signal('');
-  customerChangeFor = signal('');
   isSubmittingOrder = signal(false);
   orderSuccess = signal(false);
-
-  paymentOptions = [
-    { id: 'dinheiro', name: 'Dinheiro', icon: 'payments' },
-    { id: 'pix_manual', name: 'Pix (Chave Manual)', icon: 'qrcode_scanner' },
-    { id: 'cartao_maquininha_debito', name: 'Cartão de Débito (Entregador leva Maquininha)', icon: 'credit_score' },
-    { id: 'cartao_maquininha_credito', name: 'Cartão de Crédito (Entregador leva Maquininha)', icon: 'credit_card' },
-    { id: 'pix_auto', name: 'Pix Automático (Pagar Agora)', icon: 'bolt', badge: 'Fast' },
-  ];
   
   // For template display
   daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -303,14 +292,9 @@ export class MenuComponent implements OnInit, OnDestroy {
     return false;
   });
   
-  setView(newView: 'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout' | 'reservations' | 'hours') {
+  setView(newView: 'cover' | 'menu' | 'info' | 'loyalty' | 'cart' | 'checkout') {
     this.view.set(newView);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }
-
-  getNeighborhoods() {
-    // This could come from a service/DB, but for now some defaults based on the screenshot vibe
-    return ['Centro', 'Bairro Novo', 'Jardim das Flores', 'São Tomé', 'Rio Negro'];
   }
 
   goToReservations() {
@@ -441,16 +425,13 @@ export class MenuComponent implements OnInit, OnDestroy {
 
     try {
       const orderId = crypto.randomUUID();
-      const paymentInfo = this.paymentOptions.find(p => p.id === this.paymentMethod())?.name || 'Não informado';
-      const changeText = this.customerChangeFor() ? ` | Troco para: R$ ${this.customerChangeFor()}` : '';
-      
       const orderData: Partial<Order> = {
         id: orderId,
         user_id: userId,
         status: 'OPEN',
         order_type: this.orderType() === 'Pickup' ? 'QuickSale' : 'External-Delivery',
         table_number: 0,
-        notes: `CLIENTE: ${this.customerName()} | TEL: ${this.customerPhone()} | PGTO: ${paymentInfo}${changeText} ${this.orderType() === 'External-Delivery' ? '| ENDEREÇO: ' + this.deliveryAddress() + ' (' + this.deliveryNeighborhood() + ')' : '| RETIRADA NO LOCAL'}`,
+        notes: `Cliente: ${this.customerName()} | Tel: ${this.customerPhone()} ${this.orderType() === 'External-Delivery' ? '| Endereço: ' + this.deliveryAddress() : '| Retirada no local'}`,
         timestamp: new Date().toISOString(),
       };
 
@@ -492,9 +473,6 @@ export class MenuComponent implements OnInit, OnDestroy {
 
       if (itemsError) throw itemsError;
 
-      // Finalize and notify via WhatsApp if possible (UX choice - typically these apps do this)
-      this.notifyViaWhatsApp(orderId);
-
       this.orderSuccess.set(true);
       this.cartService.clearCart();
       setTimeout(() => {
@@ -508,35 +486,6 @@ export class MenuComponent implements OnInit, OnDestroy {
     } finally {
       this.isSubmittingOrder.set(false);
     }
-  }
-
-  private notifyViaWhatsApp(orderId: string) {
-    const profile = this.companyProfile();
-    if (!profile?.phone) return;
-
-    const items = this.cartService.items();
-    const itemsText = items.map(i => {
-      let text = `• ${i.quantity}x ${i.recipe.name} (${this.currencyPipe.transform(i.effectivePrice * i.quantity, 'BRL')})`;
-      if (i.options && i.options.length > 0) {
-        text += `\n   _${i.options.map(o => o.name).join(', ')}_`;
-      }
-      return text;
-    }).join('%0A');
-
-    const total = this.currencyPipe.transform(this.cartService.subtotal(), 'BRL');
-    const type = this.orderType() === 'External-Delivery' ? '🚀 DELIVERY' : '🛍️ RETIRADA';
-    const address = this.orderType() === 'External-Delivery' ? `%0A*Bairro:* ${this.deliveryNeighborhood()}%0A*Endereço:* ${this.deliveryAddress()}` : '';
-    const payment = this.paymentOptions.find(p => p.id === this.paymentMethod())?.name || 'A definir';
-    const change = (this.paymentMethod() === 'dinheiro' && this.customerChangeFor()) ? `%0A*Troco p/:* ${this.currencyPipe.transform(this.customerChangeFor(), 'BRL')}` : '';
-
-    const message = `*🍕 NOVO PEDIDO - #${orderId.substring(0, 4).toUpperCase()}*%0A%0A*Cliente:* ${this.customerName()}%0A*WhatsApp:* ${this.customerPhone()}%0A*Tipo:* ${type}${address}%0A*Pagamento:* ${payment}${change}%0A%0A*Ítens:*%0A${itemsText}%0A%0A*TOTAL: ${total}*%0A%0A_Favor confirmar o recebimento deste pedido._`;
-    
-    // Ensure phone has 55 prefix if not present and clean non-digits
-    let cleanPhone = profile.phone.replace(/\D/g, '');
-    if (cleanPhone.length <= 11) cleanPhone = '55' + cleanPhone;
-
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
-    window.open(whatsappUrl, '_blank');
   }
 
   createSlug(text: string): string {
