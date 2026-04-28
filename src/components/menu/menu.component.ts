@@ -13,6 +13,9 @@ import { Recipe, Category, Promotion, PromotionRecipe, CompanyProfile, LoyaltySe
 import { MenuCustomizationComponent } from './customization/menu-customization.component';
 import { MenuCartComponent } from './cart/menu-cart.component';
 import { MenuCheckoutComponent } from './checkout/menu-checkout.component';
+import { MenuAuthComponent } from './auth/menu-auth.component';
+import { MenuProfileComponent } from './profile/menu-profile.component';
+import { CustomerAuthService } from '../../services/customer-auth.service';
 
 interface MenuGroup {
   category: Category;
@@ -27,7 +30,9 @@ interface MenuGroup {
     FormsModule,
     MenuCustomizationComponent,
     MenuCartComponent,
-    MenuCheckoutComponent
+    MenuCheckoutComponent,
+    MenuAuthComponent,
+    MenuProfileComponent
   ],
   templateUrl: './menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,11 +45,12 @@ export class MenuComponent implements OnInit {
   private authService = inject(AuthService);
   public cart = inject(CartService);
   private unitContext = inject(UnitContextService);
+  public customerAuthService = inject(CustomerAuthService);
 
   // State
   userId = signal<string | null>(null);
   isLoading = signal(true);
-  view = signal<'menu' | 'cart' | 'checkout' | 'success' | 'info' | 'loyalty' | 'reservations'>('menu');
+  view = signal<'menu' | 'cart' | 'checkout' | 'success' | 'info' | 'loyalty' | 'reservations' | 'auth' | 'profile'>('menu');
   searchTerm = signal('');
   activeCategorySlug = signal<string | null>(null);
 
@@ -234,6 +240,7 @@ export class MenuComponent implements OnInit {
         user_id: uid,
         table_number: 0,
         customer_name: event.name,
+        customer_id: this.customerAuthService.customer()?.id || null, // ADDED HERE
         order_type: event.type === 'delivery' ? 'External-Delivery' : 'QuickSale',
         status: 'OPEN',
         notes: `Contato: ${event.phone}${event.address ? ' | Endereço: ' + event.address : ''}`,

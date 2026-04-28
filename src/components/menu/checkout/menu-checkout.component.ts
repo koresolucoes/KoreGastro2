@@ -1,8 +1,9 @@
 
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, OnInit, inject, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../../services/cart.service';
+import { CustomerAuthService } from '../../../services/customer-auth.service';
 
 @Component({
   selector: 'app-menu-checkout',
@@ -116,8 +117,9 @@ import { CartService } from '../../../services/cart.service';
     :host { display: contents; }
   `]
 })
-export class MenuCheckoutComponent {
+export class MenuCheckoutComponent implements OnInit {
   cart = inject(CartService);
+  authService = inject(CustomerAuthService);
   close = output<void>();
   submit = output<any>();
 
@@ -125,6 +127,14 @@ export class MenuCheckoutComponent {
   name = '';
   phone = '';
   address = '';
+
+  ngOnInit() {
+    const customer = this.authService.customer();
+    if (customer) {
+      this.name = customer.name;
+      this.phone = customer.phone;
+    }
+  }
 
   isValid(): boolean {
     const basic = this.name.length > 2 && this.phone.length >= 8;

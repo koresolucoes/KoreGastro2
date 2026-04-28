@@ -1,54 +1,55 @@
 
-<div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" (click)="closeModal.emit()">
-  <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
-    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-      <h3 class="text-xl font-bold text-white">Gerenciar Lojas</h3>
-      <button (click)="closeModal.emit()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+<div class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 transition-all duration-300" (click)="closeModal.emit()">
+  <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-strong overflow-hidden" (click)="$event.stopPropagation()">
+    <div class="p-5 border-b border-subtle flex justify-between items-center">
+      <h3 class="text-xl font-bold text-title">Gerenciar Lojas</h3>
+      <button (click)="closeModal.emit()" class="p-1 rounded-full text-muted hover:bg-surface hover:text-title transition-colors">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
     
-    <div class="flex border-b border-gray-700">
-        <button (click)="activeTab.set('create')" class="flex-1 py-3 text-sm font-medium transition-colors" [class.bg-gray-700]="activeTab() === 'create'" [class.text-white]="activeTab() === 'create'" [class.text-gray-400]="activeTab() !== 'create'">Criar Nova</button>
-        <button (click)="activeTab.set('link')" class="flex-1 py-3 text-sm font-medium transition-colors" [class.bg-gray-700]="activeTab() === 'link'" [class.text-white]="activeTab() === 'link'" [class.text-gray-400]="activeTab() !== 'link'">Vincular Existente</button>
+    <div class="flex border-b border-subtle">
+        <button (click)="activeTab.set('create')" class="flex-1 py-3 text-sm font-medium transition-colors" [class.bg-surface]="activeTab() === 'create'" [class.text-title]="activeTab() === 'create'" [class.border-b-2]="activeTab() === 'create'" [class.border-brand]="activeTab() === 'create'" [class.text-muted]="activeTab() !== 'create'">Criar Nova</button>
+        <button (click)="activeTab.set('link')" class="flex-1 py-3 text-sm font-medium transition-colors" [class.bg-surface]="activeTab() === 'link'" [class.text-title]="activeTab() === 'link'" [class.border-b-2]="activeTab() === 'link'" [class.border-brand]="activeTab() === 'link'" [class.text-muted]="activeTab() !== 'link'">Vincular Existente</button>
     </div>
 
     <div class="p-6">
         @if(activeTab() === 'create') {
             <div class="space-y-4">
-                <p class="text-sm text-gray-300">Crie uma nova loja gerenciada por este e-mail.</p>
+                <p class="text-sm text-body">Crie uma nova loja gerenciada por este e-mail.</p>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome da Nova Loja</label>
-                    <input type="text" [value]="newStoreName()" (input)="newStoreName.set($any($event.target).value)" (keydown.enter)="createStore()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Filial Centro">
+                    <label class="block text-xs font-bold text-muted uppercase tracking-widest mb-1.5">Nome da Nova Loja</label>
+                    <input type="text" [value]="newStoreName()" (input)="newStoreName.set($any($event.target).value)" (keydown.enter)="createStore()" class="w-full bg-surface border border-strong rounded-xl px-4 py-2.5 text-title focus:outline-none focus:ring-2 focus:ring-brand" placeholder="Ex: Filial Centro">
                 </div>
-                <button (click)="createStore()" [disabled]="!newStoreName().trim() || isCreating()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center">
+                <button (click)="createStore()" [disabled]="!newStoreName().trim() || isCreating()" class="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 py-3 rounded-xl mt-2">
                      @if(isCreating()) {
                         <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                      } @else {
+                        <span class="material-symbols-outlined">add_business</span>
                         <span>Criar Loja</span>
                      }
                 </button>
             </div>
         } @else {
              <div class="space-y-4">
-                <div class="bg-blue-900/30 p-4 rounded-lg border border-blue-800">
-                    <p class="text-blue-200 text-sm mb-2 font-semibold">Como vincular?</p>
-                    <p class="text-gray-300 text-xs">
+                <div class="bg-brand/10 p-4 rounded-xl border border-brand/20">
+                    <p class="text-brand text-sm mb-2 font-bold flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">info</span> Como vincular?</p>
+                    <p class="text-body text-xs">
                     Para acessar uma loja criada por outro usuário, você deve ser <strong>convidado</strong>.
                     </p>
                 </div>
 
-                <div class="text-xs text-gray-400">
+                <div class="text-xs text-muted leading-relaxed">
                     Peça para o proprietário acessar: <br>
-                    <strong>Configurações > Gestão de Equipe</strong> e adicionar seu e-mail.
+                    <strong>Configurações > Equipe</strong> e convidar este seu e-mail como gestor.
                 </div>
 
-                <div class="bg-gray-700 p-3 rounded-lg">
-                    <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Seu E-mail</label>
-                    <div class="flex items-center gap-2">
-                    <code class="flex-1 bg-gray-900 text-white px-3 py-2 rounded text-sm font-mono truncate">{{ currentUserEmail }}</code>
-                    <button (click)="copyEmail()" class="p-2 bg-gray-600 hover:bg-gray-500 rounded text-white" title="Copiar">
-                        <span class="material-symbols-outlined text-sm">content_copy</span>
+                <div class="bg-surface p-4 rounded-xl border border-subtle">
+                    <label class="block text-xs text-muted tracking-widest mb-1.5 uppercase font-bold">Aguardando convite para:</label>
+                    <div class="flex items-center gap-2 mt-1">
+                    <code class="flex-1 bg-surface-elevated text-title px-3 py-2 rounded-lg text-sm font-mono border border-strong truncate">{{ currentUserEmail }}</code>
+                    <button (click)="copyEmail()" class="p-2.5 bg-surface-elevated hover-surface-elevated border border-strong rounded-lg text-title transition-colors" title="Copiar E-mail">
+                        <span class="material-symbols-outlined text-[18px]">content_copy</span>
                     </button>
                     </div>
                 </div>
