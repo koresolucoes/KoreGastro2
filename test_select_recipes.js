@@ -7,10 +7,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function test() {
   const { data, error } = await supabase
-    .from('ifood_option_groups')
+    .from('modifier_groups')
     .select('*')
     .limit(1);
 
-  console.log('ifood_option_groups:', error, data);
+  console.log('modifier_groups:', error, data);
 }
 test();

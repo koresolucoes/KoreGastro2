@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -58,76 +58,76 @@ export class TopNavComponent {
   
   allNavLinks: CombinedNavItem[] = [
     {
-      name: 'Vendas',
+      name: 'Salão & PDV',
       icon: 'point_of_sale',
       children: [
-        { name: 'PDV', path: '/pos', icon: 'receipt_long', roles: ['Gerente', 'Caixa', 'Garçom'] },
-        { name: 'Caixa', path: '/cashier', icon: 'point_of_sale', roles: ['Gerente', 'Caixa'] },
+        { name: 'PDV', path: '/pos', icon: 'point_of_sale', roles: ['Gerente', 'Caixa', 'Garçom'] },
+        { name: 'Caixa', path: '/cashier', icon: 'payments', roles: ['Gerente', 'Caixa'] },
         { name: 'Reservas', path: '/reservations', icon: 'calendar_month', roles: ['Gerente', 'Caixa', 'Garçom'] },
         { name: 'Clientes', path: '/customers', icon: 'group', roles: ['Gerente', 'Caixa'] },
       ]
     },
     {
-      name: 'Delivery',
-      icon: 'local_shipping',
-      children: [
-        { name: 'Painel de Entregas', path: '/delivery', icon: 'dashboard', roles: ['Gerente', 'Caixa'] },
-      ]
-    },
-    {
-      name: 'iFood',
-      imageUrl: 'https://i.imgur.com/NzlCBGX.png',
-      children: [
-        { name: 'KDS Delivery', path: '/ifood-kds', icon: 'delivery_dining', roles: ['Gerente', 'Caixa'] },
-        { name: 'Gerenciar Cardápio', path: '/ifood-menu', icon: 'menu_book', roles: ['Gerente'] },
-        { name: 'Gestor de Loja', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
-      ]
-    },
-    {
-      name: 'Produção',
+      name: 'Cozinha & KDS',
       icon: 'soup_kitchen',
       children: [
-        { name: 'Cozinha (KDS)', path: '/kds', icon: 'deck', roles: ['Gerente', 'Cozinha'] },
-        { name: 'Requisições', path: '/requisitions', icon: 'move_to_inbox', roles: ['Gerente', 'Cozinha', 'Caixa'] },
+        { name: 'KDS Cozinha', path: '/kds', icon: 'soup_kitchen', roles: ['Gerente', 'Cozinha'] },
+        { name: 'KDS Delivery', path: '/delivery', icon: 'pedal_bike', roles: ['Gerente', 'Caixa'] },
+        { name: 'KDS iFood', path: '/ifood-kds', icon: 'app_shortcut', roles: ['Gerente', 'Caixa'] },
         { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] },
-        { name: 'Fichas Técnicas', path: '/technical-sheets', icon: 'list_alt', roles: ['Gerente'] },
-      ]
-    },
-    {
-      name: 'Operacional',
-      icon: 'fact_check',
-      children: [
-        { name: 'Checklists', path: '/checklists', icon: 'checklist_rtl', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
-        { name: 'Temperaturas', path: '/temperatures', icon: 'thermostat', roles: ['Gerente', 'Cozinha'] },
       ]
     },
     {
       name: 'Gestão',
-      icon: 'bar_chart_4_bars',
+      icon: 'bar_chart',
       children: [
         { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Gerente'] },
-        { name: 'Estoque', path: '/inventory', icon: 'inventory_2', roles: ['Gerente'] },
-        { name: 'Compras', path: '/purchasing', icon: 'shopping_cart', roles: ['Gerente'] },
-        { name: 'Fornecedores', path: '/suppliers', icon: 'local_shipping', roles: ['Gerente'] },
-        { name: 'Desempenho', path: '/performance', icon: 'trending_up', roles: ['Gerente'] },
         { name: 'Relatórios', path: '/reports', icon: 'analytics', roles: ['Gerente'] },
+        { name: 'Desempenho', path: '/performance', icon: 'trending_up', roles: ['Gerente'] },
+        { name: 'Configurações', path: '/settings', icon: 'settings', roles: ['Gerente'] },
       ]
     },
     {
-      name: 'RH',
-      icon: 'groups',
+      name: 'Estoque',
+      icon: 'inventory_2',
       children: [
-        { name: 'Funcionários', path: '/employees', icon: 'badge', roles: ['Gerente'] },
-        { name: 'Escalas', path: '/schedules', icon: 'calendar_view_week', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
-        { name: 'Minhas Ausências', path: '/my-leave', icon: 'event_busy', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
-        { name: 'Gestão de Ausências', path: '/leave-management', icon: 'manage_history', roles: ['Gerente'] },
-        { name: 'Controle de Ponto', path: '/time-clock', icon: 'schedule', roles: ['Gerente'] },
-        { name: 'Folha de Pagamento', path: '/payroll', icon: 'payments', roles: ['Gerente'] },
+        { name: 'Estoque', path: '/inventory', icon: 'inventory', roles: ['Gerente'] },
+        { name: 'Compras', path: '/purchasing', icon: 'shopping_cart', roles: ['Gerente'] },
+        { name: 'Fornecedores', path: '/suppliers', icon: 'local_shipping', roles: ['Gerente'] },
+        { name: 'Fichas Técnicas', path: '/technical-sheets', icon: 'menu_book', roles: ['Gerente'] },
+        { name: 'Requisições', path: '/requisitions', icon: 'assignment_returned', roles: ['Gerente', 'Cozinha', 'Caixa'] },
       ]
     },
-    { name: 'Cardápio Online', path: '/menu', icon: 'menu_book', roles: ['Gerente', 'Caixa', 'Garçom'] },
-    { name: 'Tutoriais', path: '/tutorials', icon: 'school', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
-    { name: 'Configurações', path: '/settings', icon: 'settings', roles: ['Gerente'] }
+    {
+      name: 'Delivery/iFood',
+      icon: 'storefront',
+      children: [
+        { name: 'Cardápio Digital', path: '/menu', icon: 'qr_code_2', roles: ['Gerente', 'Caixa', 'Garçom'] },
+        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'sync_alt', roles: ['Gerente'] },
+        { name: 'Gestor iFood', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
+      ]
+    },
+    {
+      name: 'Equipe',
+      icon: 'badge',
+      children: [
+        { name: 'Funcionários', path: '/employees', icon: 'group', roles: ['Gerente'] },
+        { name: 'Escalas', path: '/schedules', icon: 'calendar_view_week', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+        { name: 'Ponto Eletrônico', path: '/time-clock', icon: 'schedule', roles: ['Gerente'] },
+        { name: 'Folha', path: '/payroll', icon: 'request_quote', roles: ['Gerente'] },
+        { name: 'Gestão de Férias', path: '/leave-management', icon: 'event_busy', roles: ['Gerente'] },
+        { name: 'Minhas Ausências', path: '/my-leave', icon: 'event_available', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+      ]
+    },
+    {
+      name: 'Rotinas',
+      icon: 'fact_check',
+      children: [
+        { name: 'Checklists', path: '/checklists', icon: 'playlist_add_check', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+        { name: 'Temperaturas', path: '/temperatures', icon: 'thermostat', roles: ['Gerente', 'Cozinha'] },
+        { name: 'Tutoriais', path: '/tutorials', icon: 'school', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+      ]
+    }
   ];
 
   navItems = computed(() => {
@@ -135,8 +135,8 @@ export class TopNavComponent {
     if (!employee) return [];
     
     const isDemo = this.isDemoMode();
-    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão', 'Operacional'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures'];
+    const demoAllowedGroups = ['Salão & PDV', 'Cozinha & KDS', 'Gestão', 'Estoque', 'Rotinas', 'Delivery/iFood'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/ifood-kds', '/delivery'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {
@@ -183,6 +183,7 @@ export class TopNavComponent {
     }
   }
 
+  @HostListener('document:click', ['$event'])
   closeDropdowns() {
     this.openDropdown.set(null);
     this.isStoreDropdownOpen.set(false);
