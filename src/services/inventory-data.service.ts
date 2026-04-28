@@ -221,7 +221,7 @@ export class InventoryDataService {
 
     const { data: originalIngredient, error: fetchError } = await supabase
         .from('ingredients')
-        .select('name, stock, unit, user_id')
+        .select('name, stock, unit')
         .eq('id', ingredientId)
         .single();
     
@@ -229,45 +229,27 @@ export class InventoryDataService {
         return { success: false, error: fetchError };
     }
         
-    const currentUserId = this.authService.currentUser()?.id;
     const { error } = await supabase.rpc('adjust_stock_by_lot', {
         p_ingredient_id: ingredientId,
         p_quantity_change: quantityChange,
         p_reason: reason,
-        p_user_id: originalIngredient.user_id,
+        p_user_id: userId,
         p_lot_id_for_exit: lotIdForExit,
         p_lot_number_for_entry: lotNumberForEntry,
         p_expiration_date_for_entry: expirationDateForEntry,
     });
 
     if (error) {
-        // Detailed check for specific FK errors (23503) often caused by Store ID vs Auth User ID mismatch in some schemas.
-        // If this fails, we proceed with the manual fallback stock update.
-        if (error.code === '23503' && error.message?.includes('users')) {
-             console.warn("RPC [adjust_stock_by_lot] noted a FK mismatch (likely Store ID vs User ID). Proceeding with manual stock update fallback.");
-        } else {
-            console.error("RPC adjust_stock_by_lot failed. Payload:", {
-                p_ingredient_id: ingredientId,
-                p_quantity_change: quantityChange,
-                p_reason: reason,
-                p_user_id: originalIngredient.user_id,
-                p_lot_id_for_exit: lotIdForExit,
-            });
-            console.error("RPC Error Details:", error);
-        }
-
+        console.error("RPC adjust_stock_by_lot failed:", error);
         // Fallback: manually update existing stock if RPC throws FK violation or similar.
-        // Note: Using only ingredientId ensures we update the correct row regardless of tenant context.
+        // This ensures external transfers and requisitions are not blocked.
         const newStock = originalIngredient.stock + quantityChange;
         const { error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ 
-                                              stock: newStock, 
-                                              last_movement_at: new Date().toISOString() 
-                                          })
-                                          .eq('id', ingredientId);
-        
+                                          .update({ stock: newStock, updated_at: new Date().toISOString() })
+                                          .eq('id', ingredientId)
+                                          .eq('user_id', userId);
         if (fallbackError) {
-             console.error("Critical: Fallback manual stock update failed:", fallbackError);
+             console.error("Fallback update failed:", fallbackError);
              return { success: false, error: fallbackError };
         }
     }
@@ -294,27 +276,17 @@ export class InventoryDataService {
     
     // AUDIT: Insert into inventory_logs (Phase 2 Requirement)
     const newStock = originalIngredient.stock + quantityChange;
-    // We try to log with the ingredient's user_id (tenant), but if it fails (due to FK), we fallback to current user.
-    let logPayload = {
-        user_id: originalIngredient.user_id,
+    const { error: logError } = await supabase.from('inventory_logs').insert({
+        user_id: userId,
         ingredient_id: ingredientId,
-        employee_id: employeeId,
+        employee_id: employeeId, // Traceability!
         quantity_change: quantityChange,
         previous_balance: originalIngredient.stock,
         new_balance: newStock,
         reason: reason
-    };
+    });
 
-    const { error: logError } = await supabase.from('inventory_logs').insert(logPayload);
-
-    if (logError && logError.code === '23503' && currentUserId) {
-        // Retry logging with the actual person's ID if the store ID is not in the 'users' table.
-        await supabase.from('inventory_logs').insert({
-            ...logPayload,
-            user_id: currentUserId,
-            reason: reason + ' (Store ID Log FK Fallback)'
-        });
-    } else if (logError) {
+    if (logError) {
         console.error("Failed to insert inventory log audit trail:", logError);
     }
 

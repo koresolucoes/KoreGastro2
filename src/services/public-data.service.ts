@@ -22,7 +22,7 @@ export class PublicDataService {
     const { data, error } = await supabase
       .from('recipes')
       .select('*')
-      .eq('store_id', userId)
+      .eq('user_id', userId)
       .eq('is_available', true)
       .eq('is_sub_recipe', false);
     if (error) {

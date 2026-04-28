@@ -8114,3 +8114,48 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 RESET ALL;
+
+-- iFood Options Support
+CREATE TABLE IF NOT EXISTS "public"."ifood_option_groups" (
+    "id" uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    "user_id" uuid NOT NULL REFERENCES "public"."stores"("id") ON DELETE CASCADE,
+    "name" text NOT NULL,
+    "external_code" text,
+    "min_required" integer DEFAULT 0,
+    "max_options" integer DEFAULT 1,
+    "sequence" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT now(),
+    "ifood_id" text
+);
+
+CREATE TABLE IF NOT EXISTS "public"."ifood_options" (
+    "id" uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    "user_id" uuid NOT NULL REFERENCES "public"."stores"("id") ON DELETE CASCADE,
+    "ifood_option_group_id" uuid NOT NULL REFERENCES "public"."ifood_option_groups"("id") ON DELETE CASCADE,
+    "name" text NOT NULL,
+    "external_code" text,
+    "price" numeric(10,2) DEFAULT 0,
+    "sequence" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT now(),
+    "ifood_product_id" text,
+    "ifood_option_id" text
+);
+
+CREATE TABLE IF NOT EXISTS "public"."recipe_ifood_option_groups" (
+    "recipe_id" uuid NOT NULL REFERENCES "public"."recipes"("id") ON DELETE CASCADE,
+    "ifood_option_group_id" uuid NOT NULL REFERENCES "public"."ifood_option_groups"("id") ON DELETE CASCADE,
+    "user_id" uuid NOT NULL REFERENCES "public"."stores"("id") ON DELETE CASCADE,
+    PRIMARY KEY ("recipe_id", "ifood_option_group_id")
+);
+
+ALTER TABLE "public"."ifood_option_groups" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."ifood_options" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."recipe_ifood_option_groups" ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable all access for authenticated users" ON "public"."ifood_option_groups" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Enable all access for authenticated users" ON "public"."ifood_options" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Enable all access for authenticated users" ON "public"."recipe_ifood_option_groups" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+CREATE POLICY "Permitir leitura publica" ON "public"."ifood_option_groups" FOR SELECT USING (true);
+CREATE POLICY "Permitir leitura publica" ON "public"."ifood_options" FOR SELECT USING (true);
+CREATE POLICY "Permitir leitura publica" ON "public"."recipe_ifood_option_groups" FOR SELECT USING (true);

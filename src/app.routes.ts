@@ -7,14 +7,6 @@ import { systemAdminGuard } from './guards/system-admin.guard';
 
 export const APP_ROUTES: Routes = [
   { 
-    path: 'menu/:userId', 
-    loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent) 
-  }, // Public menu route
-  { 
-    path: 'book/:userId', 
-    loadComponent: () => import('./components/public-booking/public-booking.component').then(m => m.PublicBookingComponent) 
-  }, // Public booking route
-  { 
     path: 'login', 
     loadComponent: () => import('./components/auth/login.component').then(m => m.LoginComponent),
     canActivate: [loginGuard] 
@@ -123,6 +115,10 @@ export const APP_ROUTES: Routes = [
     canActivate: [roleGuard] 
   },
   { 
+    path: 'menu/:userId', 
+    loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent) 
+  }, // Public menu route
+  { 
     path: 'ifood-menu', 
     loadComponent: () => import('./components/ifood-menu/ifood-menu.component').then(m => m.IfoodMenuComponent), 
     canActivate: [roleGuard] 
@@ -132,6 +128,10 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./components/ifood-store-manager/ifood-store-manager.component').then(m => m.IfoodStoreManagerComponent), 
     canActivate: [roleGuard] 
   },
+  { 
+    path: 'book/:userId', 
+    loadComponent: () => import('./components/public-booking/public-booking.component').then(m => m.PublicBookingComponent) 
+  }, // Public booking route
   { 
     path: 'technical-sheets', 
     loadComponent: () => import('./components/technical-sheets/technical-sheets.component').then(m => m.TechnicalSheetsComponent), 

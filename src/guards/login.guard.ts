@@ -25,19 +25,12 @@ export const loginGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   return toObservable(authService.authInitialized).pipe(
     filter(initialized => initialized),
     take(1),
-    map((state) => {
-      // Allow public routes to bypass redirect if not logged in
-      const currentUrl = router.url;
-      const isPublicRoute = currentUrl.startsWith('/menu/') || currentUrl.startsWith('/book/');
-      
+    map(() => {
       // If there is a system user logged in...
       if (authService.currentUser()) {
         // ...redirect to their default route (usually dashboard or employee selection).
         const defaultRoute = operationalAuthService.getDefaultRoute();
         return router.createUrlTree([defaultRoute]);
-      } else if (isPublicRoute) {
-        // If not logged in but on a public route, allow access
-        return true;
       } else {
         // If no one is logged in, allow access to the login page.
         return true;

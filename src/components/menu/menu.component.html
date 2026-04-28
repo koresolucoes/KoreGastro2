@@ -1,857 +1,206 @@
-<!-- Main container: Handles public vs. internal view styling -->
-<div class="bg-app min-h-screen text-body font-sans transition-colors duration-300">
 
-  <!-- =================================================================== -->
-  <!-- ========================= PUBLIC VIEW ========================= -->
-  <!-- =================================================================== -->
-  @if (isPublicView()) {
-    @if (isLoading()) {
-      <div class="flex flex-col items-center justify-center h-screen bg-app">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand mb-4"></div>
-        <p class="text-muted font-medium tracking-wide animate-pulse text-sm uppercase">Carregando Experiência...</p>
-      </div>
-    } @else {
-      
-      <!-- Integrated Public Layout -->
-      <div class="bg-app min-h-screen pb-24 lg:pb-0">
-
-        <!-- Mobile/Tablet Tab Bar (Floating at bottom for app-like feel) -->
-        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-1 p-1 bg-white/95 backdrop-blur-xl border border-zinc-200 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] md:hidden w-[90%] max-w-sm">
-          <button (click)="setView('menu')" 
-            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
-            [class.text-brand]="view() === 'menu'"
-            [class.bg-brand/10]="view() === 'menu'"
-            [class.text-zinc-500]="view() !== 'menu'">
-            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'menu'">restaurant_menu</span>
-            <span class="text-[8px] font-black uppercase tracking-tighter">Cardápio</span>
-          </button>
-          
-          @if(reservationSettings()?.is_enabled) {
-            <button (click)="setView('reservations')" 
-              class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
-              [class.text-brand]="view() === 'reservations'"
-              [class.bg-brand/10]="view() === 'reservations'"
-              [class.text-zinc-500]="view() !== 'reservations'">
-              <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'reservations'">calendar_today</span>
-              <span class="text-[8px] font-black uppercase tracking-tighter">Reserva</span>
-            </button>
-          }
-
-          <button (click)="setView('hours')" 
-            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
-            [class.text-brand]="view() === 'hours'"
-            [class.bg-brand/10]="view() === 'hours'"
-            [class.text-zinc-500]="view() !== 'hours'">
-            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'hours'">schedule</span>
-            <span class="text-[8px] font-black uppercase tracking-tighter">Horário</span>
-          </button>
-
-          <button (click)="setView('info')" 
-            class="flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all"
-            [class.text-brand]="view() === 'info'"
-            [class.bg-brand/10]="view() === 'info'"
-            [class.text-zinc-500]="view() !== 'info'">
-            <span class="material-symbols-outlined text-2xl" [class.fill-current]="view() === 'info'">info</span>
-            <span class="text-[8px] font-black uppercase tracking-tighter">Sobre</span>
-          </button>
-
-          @if(cartService.totalItems() > 0) {
-            <button (click)="setView('cart')" 
-              class="flex flex-col items-center justify-center w-14 h-12 rounded-full transition-all text-white bg-brand shadow-lg relative ml-1">
-              <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-              <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white font-bold">{{ cartService.totalItems() }}</span>
-            </button>
-          }
-        </nav>
-
-        <!-- Desktop Sidebar / Header -->
-        <header class="hidden md:block sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-subtle">
-          <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-              <div class="flex items-center gap-4 cursor-pointer" (click)="setView('cover')">
-                <img [src]="companyProfile()?.logo_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=chefos'" class="w-12 h-12 rounded-2xl shadow-md border border-subtle">
-                <div>
-                  <h1 class="text-xl font-black text-title tracking-tighter">{{ companyProfile()?.company_name || 'ChefOS' }}</h1>
-                  <p class="text-[10px] uppercase font-bold tracking-widest text-success flex items-center gap-1" *ngIf="isRestaurantOpen()">
-                    <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> Aberto Agora
-                  </p>
-                  <p class="text-[10px] uppercase font-bold tracking-widest text-danger" *ngIf="!isRestaurantOpen()">Fechado</p>
-                </div>
-              </div>
-
-              <nav class="flex items-center gap-2 ml-10">
-                <button (click)="setView('menu')" class="px-4 py-2 rounded-full text-sm font-bold transition-all" [class.bg-brand]="view() === 'menu'" [class.text-white]="view() === 'menu'" [class.text-muted]="view() !== 'menu'" [class.hover:bg-brand/10]="view() !== 'menu'">Cardápio</button>
-                @if(reservationSettings()?.is_enabled) {
-                  <a [href]="publicBookingUrl()" class="px-4 py-2 rounded-full text-sm font-bold text-muted hover:bg-brand/10 transition-all">Reservas</a>
-                }
-                <button (click)="setView('loyalty')" class="px-4 py-2 rounded-full text-sm font-bold transition-all" [class.bg-brand]="view() === 'loyalty'" [class.text-white]="view() === 'loyalty'" [class.text-muted]="view() !== 'loyalty'" [class.hover:bg-brand/10]="view() !== 'loyalty'">Fidelidade</button>
-                <button (click)="setView('info')" class="px-4 py-2 rounded-full text-sm font-bold transition-all" [class.bg-brand]="view() === 'info'" [class.text-white]="view() === 'info'" [class.text-muted]="view() !== 'info'" [class.hover:bg-brand/10]="view() !== 'info'">Sobre</button>
-              </nav>
-            </div>
-
-            <div class="flex items-center gap-4">
-              <!-- Search (Desktop) -->
-              <div class="relative">
-                <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="O que você deseja hoje?" class="pl-10 pr-4 py-2.5 bg-surface-elevated border border-subtle rounded-full text-sm w-64 focus:w-80 transition-all outline-none">
-                <span class="material-symbols-outlined absolute left-3 top-2.5 text-muted">search</span>
-              </div>
-
-              @if(cartService.totalItems() > 0) {
-                <button (click)="setView('cart')" class="bg-brand text-white px-6 py-2.5 rounded-full font-black text-sm shadow-xl shadow-brand/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                  <span class="material-symbols-outlined text-lg">shopping_cart</span>
-                  {{ cartService.subtotal() | currency:'BRL' }}
-                </button>
-              }
-            </div>
-          </div>
-        </header>
-
-        <!-- Order Success Overlay -->
-        @if(orderSuccess()) {
-          <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <div class="chef-surface rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in border border-success/30">
-                  <div class="w-24 h-24 bg-success/10 text-success rounded-full flex items-center justify-center mx-auto mb-6 border border-success/20 shadow-inner">
-                      <span class="material-symbols-outlined text-5xl">check_circle</span>
-                  </div>
-                  <h2 class="text-3xl font-black text-title mb-3 tracking-tighter title-display">Pedido Enviado!</h2>
-                  <p class="text-muted mb-8 leading-relaxed">Seu pedido foi recebido com sucesso. Continue acompanhando sua experiência conosco.</p>
-                  <button (click)="orderSuccess.set(false); setView('cover')" class="w-full bg-title text-surface py-4 rounded-full font-black uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform">Maravilha!</button>
-              </div>
-          </div>
-        }
-
-        <!-- Case 8: Hours Page -->
-        @case ('hours') {
-           <div class="max-w-xl mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-500">
-              <div class="bg-white rounded-[3rem] p-8 md:p-12 border border-zinc-100 shadow-2xl relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand/5 rounded-full blur-3xl"></div>
-                
-                <div class="text-center mb-10">
-                  <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4 rotate-3">
-                    <span class="material-symbols-outlined text-3xl">schedule</span>
-                  </div>
-                  <h2 class="text-3xl font-black text-zinc-900 tracking-tight">Horários de Funcionamento</h2>
-                  <p class="text-zinc-500 text-sm mt-2">Consulte quando estamos atendendo.</p>
-                </div>
-
-                <div class="space-y-3">
-                   @for(day of sortedWeeklyHours(); track day.day_of_week) {
-                      <div class="flex items-center justify-between p-4 rounded-2xl border transition-all"
-                        [class.bg-emerald-50]="!day.is_closed && (day.day_of_week === currentDay())"
-                        [class.border-emerald-200]="!day.is_closed && (day.day_of_week === currentDay())"
-                        [class.bg-zinc-50]="day.is_closed || (day.day_of_week !== currentDay())"
-                        [class.border-zinc-100]="day.is_closed || (day.day_of_week !== currentDay())">
-                         <div class="flex items-center gap-3">
-                           <span class="text-xs font-black uppercase tracking-widest" [class.text-emerald-700]="!day.is_closed && (day.day_of_week === currentDay())" [class.text-zinc-400]="day.is_closed || (day.day_of_week !== currentDay())">{{ daysOfWeek[day.day_of_week] }}</span>
-                           @if(!day.is_closed && (day.day_of_week === currentDay())) {
-                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                           }
-                         </div>
-                         @if(day.is_closed) {
-                           <span class="text-[10px] font-black uppercase tracking-tighter text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100">Fechado</span>
-                         } @else {
-                           <span class="text-sm font-black text-zinc-800 data-mono">{{ day.opening_time }} – {{ day.closing_time }}</span>
-                         }
-                      </div>
-                   }
-                </div>
-
-                <div class="mt-10 p-6 bg-zinc-50 rounded-3xl border border-dashed border-zinc-200 text-center">
-                  <p class="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Dúvidas sobre o horário?</p>
-                  <a [href]="'https://wa.me/55' + companyProfile()?.phone" target="_blank" class="text-brand font-black flex items-center justify-center gap-2">
-                    Fale conosco no WhatsApp
-                    <span class="material-symbols-outlined text-sm">open_in_new</span>
-                  </a>
-                </div>
-              </div>
-           </div>
-        }
-      }
-
-        <!-- Case 2: Menu Page (The Main Experience) -->
-        @case ('menu') {
-          <div class="min-h-screen bg-zinc-50">
-              <!-- Banner Hero (Mobile/Desktop) -->
-              <div class="relative h-48 md:h-64 overflow-hidden mb-6">
-                <img [src]="companyProfile()?.cover_url || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=2070&auto=format&fit=crop'" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between">
-                  <div>
-                    <h2 class="text-3xl font-black text-white title-display tracking-tight leading-none mb-1">{{ companyProfile()?.company_name || 'ChefOS' }}</h2>
-                    <p class="text-xs font-bold text-white/80 uppercase tracking-widest flex items-center gap-2">
-                      <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
-                      Brusque • Aberto • 2.5km
-                    </p>
-                  </div>
-                  <div class="flex gap-2">
-                    <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white">
-                      <span class="material-symbols-outlined text-xl">favorite</span>
-                    </button>
-                    <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white">
-                      <span class="material-symbols-outlined text-xl">share</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Sticky Category Nav -->
-              <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 overflow-x-auto hide-scrollbar">
-                  <div class="flex items-center gap-4 px-4 py-3 min-w-max">
-                      <div class="flex gap-1.5">
-                        <button (click)="setSelectedCategory(null)" 
-                            class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all"
-                            [class.bg-brand]="activeCategorySlug() === null"
-                            [class.text-white]="activeCategorySlug() === null"
-                            [class.bg-zinc-100]="activeCategorySlug() !== null"
-                            [class.text-zinc-500]="activeCategorySlug() !== null">
-                            Destaques
-                        </button>
-                        @for(category of menuCategories(); track category.id) {
-                            <button (click)="setSelectedCategory(createSlug(category.name))" 
-                                class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all"
-                                [class.bg-brand]="activeCategorySlug() === createSlug(category.name)"
-                                [class.text-white]="activeCategorySlug() === createSlug(category.name)"
-                                [class.bg-zinc-100]="activeCategorySlug() !== createSlug(category.name)"
-                                [class.text-zinc-500]="activeCategorySlug() !== createSlug(category.name)">
-                                {{ category.name }}
-                            </button>
-                        }
-                      </div>
-                  </div>
-              </div>
-
-              <!-- Page Contents -->
-              <div class="max-w-4xl mx-auto px-4 py-8 space-y-12">
-                
-                <!-- Search -->
-                <div class="relative mb-8">
-                  <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="O que vamos pedir hoje?" class="w-full bg-white border border-zinc-200 rounded-2xl px-12 py-4 text-sm font-bold outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-sm">
-                  <span class="material-symbols-outlined absolute left-4 top-4 text-zinc-400">search</span>
-                </div>
-
-                @for (group of filteredMenu(); track group.category.id) {
-                    <section [id]="createSlug(group.category.name)" class="scroll-mt-24">
-                        <h2 class="text-2xl font-black text-zinc-900 mb-6 tracking-tight flex items-center gap-3">
-                            <span class="w-1.5 h-6 bg-brand rounded-full"></span>
-                            {{ group.category.name }}
-                        </h2>
-                        
-                        <div class="grid grid-cols-1 gap-4">
-                            @for (recipe of group.recipes; track recipe.id) {
-                                <div class="flex items-center gap-4 p-4 bg-white rounded-3xl border border-zinc-100 shadow-sm hover:shadow-md transition-all group overflow-hidden cursor-pointer" (click)="addToCart(recipe, recipe.effectivePrice)">
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="font-black text-zinc-800 text-lg leading-tight mb-1 group-hover:text-brand transition-colors">{{ recipe.name }}</h3>
-                                        <p class="text-zinc-500 text-xs line-clamp-2 leading-relaxed mb-3">{{ recipe.description || 'Descrição não disponível para este item.' }}</p>
-                                        <div class="flex items-center gap-3">
-                                          <div class="font-black text-zinc-900 data-mono text-lg">{{ recipe.effectivePrice | currency:'BRL' }}</div>
-                                          @if (recipe.effectivePrice < recipe.price) {
-                                              <div class="text-[10px] text-zinc-400 line-through data-mono">{{ recipe.price | currency:'BRL' }}</div>
-                                          }
-                                        </div>
-                                    </div>
-
-                                    <div class="w-28 h-28 rounded-2xl overflow-hidden bg-zinc-100 flex-shrink-0 relative">
-                                        <img [src]="recipe.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1760&auto=format&fit=crop'" [alt]="recipe.name" class="w-full h-full object-cover">
-                                        <div class="absolute bottom-2 right-2 w-8 h-8 bg-brand text-white rounded-xl shadow-lg flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                                          <span class="material-symbols-outlined text-xl">add</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </section>
-                }
-              </div>
-
-              <!-- Floating Cart Summary (Mobile) -->
-              @if(cartService.totalItems() > 0) {
-                <div class="fixed bottom-24 left-4 right-4 z-40 md:hidden animate-in slide-in-from-bottom duration-500">
-                  <button (click)="setView('cart')" class="w-full bg-brand text-white p-5 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(239,68,68,0.4)]">
-                    <div class="flex items-center gap-4">
-                      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/30">
-                        <span class="material-symbols-outlined">shopping_bag</span>
-                      </div>
-                      <div class="text-left">
-                        <p class="text-[10px] font-black uppercase tracking-widest leading-none mb-1 opacity-80">Ver sua cesta</p>
-                        <p class="text-lg font-black leading-none">{{ cartService.subtotal() | currency:'BRL' }}</p>
-                      </div>
-                    </div>
-                    <div class="bg-white text-brand px-3 py-1 rounded-lg text-xs font-black">{{ cartService.totalItems() }} ITENS</div>
-                  </button>
-                </div>
-              }
-          </div>
-        }
-
-        <!-- Case 3: Loyalty Page -->
-        @case ('loyalty') {
-          <div class="max-w-4xl mx-auto px-6 py-12 md:py-20">
-              <div class="chef-surface rounded-[3rem] p-8 md:p-16 relative overflow-hidden bg-gradient-to-br from-brand/10 to-transparent border border-brand/20 shadow-2xl">
-                  <div class="absolute -top-20 -right-20 w-64 h-64 bg-brand/20 rounded-full blur-[80px]"></div>
-                  
-                  <div class="relative z-10">
-                    <div class="flex items-center gap-4 mb-8">
-                       <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center shadow-xl rotate-3">
-                          <span class="material-symbols-outlined text-4xl">loyalty</span>
-                       </div>
-                       <div>
-                         <h2 class="text-3xl font-black text-title title-display tracking-tight">Fidelidade</h2>
-                         <p class="text-sm font-bold text-brand uppercase tracking-widest">{{ publicLoyaltySettings()?.points_per_real || 0 }} Pontos por R$ 1,00</p>
-                       </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="space-y-6">
-                            <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2">
-                                <span class="w-2 h-8 bg-brand rounded-full"></span>
-                                Recompensas Disponíveis
-                            </h3>
-                            <div class="space-y-3">
-                                @for(reward of loyaltyRewardsDisplay(); track reward.id) {
-                                  <div class="flex items-center justify-between p-5 bg-surface rounded-2xl border border-subtle shadow-sm hover:border-brand/40 transition-colors">
-                                      <div>
-                                          <p class="font-black text-title">{{ reward.name }}</p>
-                                          <p class="text-[11px] text-muted font-bold uppercase tracking-wide">{{ reward.valueLabel }}</p>
-                                      </div>
-                                      <div class="text-right">
-                                          <span class="bg-brand/10 text-brand px-3 py-1 rounded-lg text-xs font-black data-mono shadow-sm border border-brand/10">{{ reward.points_cost }} PTS</span>
-                                      </div>
-                                  </div>
-                                } @empty {
-                                  <div class="p-8 text-center bg-surface/50 rounded-2xl border border-dashed border-subtle">
-                                      <p class="text-muted font-medium italic">Nenhuma recompensa ativa no momento.</p>
-                                  </div>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="bg-surface rounded-3xl p-8 border border-subtle shadow-inner">
-                            <h3 class="text-xl font-black text-title mb-6 tracking-tight">Como participar?</h3>
-                            <div class="space-y-6">
-                                <div class="flex gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-title text-surface flex items-center justify-center font-black flex-shrink-0">1</div>
-                                    <p class="text-sm font-medium text-muted leading-relaxed">Identifique-se com seu <span class="text-title font-black uppercase tracking-widest text-[10px]">CPF</span> ou <span class="text-title font-black uppercase tracking-widest text-[10px]">Celular</span> no fechamento da conta.</p>
-                                </div>
-                                <div class="flex gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-title text-surface flex items-center justify-center font-black flex-shrink-0">2</div>
-                                    <p class="text-sm font-medium text-muted leading-relaxed">Acumule pontos automaticamente em cada compra: <span class="text-title font-black">{{ publicLoyaltySettings()?.points_per_real || 0 }} ponto(s) para cada real gasto.</span></p>
-                                </div>
-                                <div class="flex gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-title text-surface flex items-center justify-center font-black flex-shrink-0">3</div>
-                                    <p class="text-sm font-medium text-muted leading-relaxed">Troque seus pontos por experiências e produtos exclusivos do nosso cardápio.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                  </div>
-              </div>
-          </div>
-        }
-
-        <!-- Case 4: Info Page -->
-        @case ('info') {
-          <div class="max-w-4xl mx-auto px-6 py-12 md:py-20 space-y-12">
-              <!-- Profile Header -->
-              <div class="text-center space-y-6">
-                  <div class="relative inline-block">
-                    <img [src]="companyProfile()?.logo_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=chefos'" class="w-32 h-32 rounded-[2.5rem] mx-auto shadow-2xl border-4 border-surface ring-1 ring-subtle">
-                    <div class="absolute -bottom-2 -right-2 bg-success text-white w-10 h-10 rounded-full flex items-center justify-center border-4 border-surface shadow-lg" title="Verificado">
-                        <span class="material-symbols-outlined text-xl">verified</span>
-                    </div>
-                  </div>
-                  <h2 class="text-4xl font-black text-title title-display tracking-tight">{{ companyProfile()?.company_name }}</h2>
-                  <div class="flex flex-wrap justify-center gap-2">
-                    <span class="px-4 py-1.5 bg-surface-elevated rounded-full text-[10px] font-black uppercase tracking-widest border border-subtle text-muted">Aberto desde 2024</span>
-                    <span class="px-4 py-1.5 bg-surface-elevated rounded-full text-[10px] font-black uppercase tracking-widest border border-subtle text-muted">Cozinha Autoral</span>
-                  </div>
-              </div>
-
-              <!-- Content Grid -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <!-- Contact & Socials -->
-                  <div class="md:col-span-1 space-y-6">
-                      <div class="chef-surface rounded-3xl p-6 border border-subtle">
-                        <h3 class="text-xs font-black uppercase tracking-widest text-muted mb-4 ml-1">Fale Conosco</h3>
-                        <div class="space-y-4">
-                          <div class="flex items-center gap-4 group">
-                             <div class="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center border border-subtle group-hover:bg-brand group-hover:text-white transition-all">
-                                <span class="material-symbols-outlined text-lg">call</span>
-                             </div>
-                             <p class="text-sm font-bold text-title">{{ companyProfile()?.phone || 'Não informado' }}</p>
-                          </div>
-                          @if(companyProfile()?.address) {
-                            <div class="flex items-start gap-4 group">
-                              <div class="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center border border-subtle group-hover:bg-brand group-hover:text-white transition-all flex-shrink-0">
-                                  <span class="material-symbols-outlined text-lg">location_on</span>
-                              </div>
-                              <p class="text-sm font-medium text-muted leading-tight group-hover:text-title transition-colors">{{ companyProfile()?.address }}</p>
-                            </div>
-                          }
-                        </div>
-                      </div>
-
-                      <div class="flex flex-col gap-3">
-                         <button class="flex items-center justify-between px-6 py-4 bg-title text-surface rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl">
-                            Instagram
-                            <span class="material-symbols-outlined text-lg opacity-50">arrow_outward</span>
-                         </button>
-                         <button class="flex items-center justify-between px-6 py-4 border-2 border-subtle rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-surface-elevated transition-colors">
-                            WhatsApp
-                            <span class="material-symbols-outlined text-lg opacity-50">chat</span>
-                         </button>
-                      </div>
-                  </div>
-
-                  <!-- Schedule & Highlights -->
-                  <div class="md:col-span-2 space-y-8">
-                     <div class="chef-surface rounded-[2.5rem] p-8 border border-subtle shadow-sm">
-                        <h3 class="text-xl font-black text-title mb-6 tracking-tight flex items-center gap-3">
-                           <span class="material-symbols-outlined text-brand">schedule</span>
-                           Horários de Funcionamento
-                        </h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4">
-                           @for(day of sortedWeeklyHours(); track day.day_of_week) {
-                              <div class="flex items-center justify-between py-2 border-b border-subtle/50 group">
-                                 <span class="text-xs font-black uppercase tracking-widest text-muted group-hover:text-title transition-colors">{{ daysOfWeek[day.day_of_week] }}</span>
-                                 @if(day.is_closed) {
-                                   <span class="text-[10px] font-black uppercase tracking-tighter text-danger bg-danger/10 px-2 py-0.5 rounded-lg border border-danger/10">Fechado</span>
-                                 } @else {
-                                   <span class="text-xs font-black text-title data-mono">{{ day.opening_time }} – {{ day.closing_time }}</span>
-                                 }
-                              </div>
-                           }
-                        </div>
-                     </div>
-
-                     <div class="grid grid-cols-2 gap-6">
-                        <div class="chef-surface rounded-3xl p-6 border border-subtle bg-success/5 border-success/10 text-center">
-                           <span class="material-symbols-outlined text-3xl text-success mb-2">wifi</span>
-                           <h4 class="font-black text-title text-sm mb-1">Wi-Fi Grátis</h4>
-                           <p class="text-[10px] text-muted font-bold uppercase tracking-wide">Para Clientes</p>
-                        </div>
-                        <div class="chef-surface rounded-3xl p-6 border border-subtle bg-brand/5 border-brand/10 text-center">
-                           <span class="material-symbols-outlined text-3xl text-brand mb-2">accessible</span>
-                           <h4 class="font-black text-title text-sm mb-1">Acessível</h4>
-                           <p class="text-[10px] text-muted font-bold uppercase tracking-wide">Rampas e Elevador</p>
-                        </div>
-                     </div>
-                  </div>
-              </div>
-          </div>
-        }
-
-        <!-- Case 5: Shopping Cart -->
-        @case ('cart') {
-          <div class="max-w-2xl mx-auto px-6 py-12 md:py-20 h-full flex flex-col">
-              <div class="flex items-center justify-between mb-10">
-                  <div>
-                    <h2 class="text-4xl font-black text-title title-display tracking-tight">Cesta</h2>
-                    <p class="text-sm font-bold text-muted uppercase tracking-widest">{{ cartService.totalItems() }} Itens selecionados</p>
-                  </div>
-                  <button (click)="setView('menu')" class="w-12 h-12 bg-surface-elevated rounded-full flex items-center justify-center border border-subtle text-title hover:bg-brand hover:text-white transition-all shadow-sm">
-                      <span class="material-symbols-outlined">close</span>
-                  </button>
-              </div>
-
-              @if(cartService.items().length > 0) {
-                <div class="flex-1 space-y-6 mb-12">
-                    @for(item of cartService.items(); track item.id) {
-                        <div class="chef-surface rounded-[2rem] p-6 border border-subtle shadow-sm flex items-center gap-6 group hover:border-brand/30 transition-all">
-                            <div class="w-20 h-20 rounded-2xl overflow-hidden bg-surface-elevated flex-shrink-0 border border-subtle">
-                                <img [src]="item.recipe.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1760&auto=format&fit=crop'" class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-start mb-1">
-                                    <h3 class="font-black text-title tracking-tight leading-tight group-hover:text-brand transition-colors">{{ item.recipe.name }}</h3>
-                                    <span class="font-black text-title data-mono">{{ (item.effectivePrice * item.quantity) | currency:'BRL' }}</span>
-                                </div>
-                                @if(item.options && item.options.length > 0) {
-                                  <div class="flex flex-wrap gap-1 mt-1">
-                                    @for(opt of item.options; track opt.id) {
-                                      <span class="text-[9px] font-black uppercase tracking-tighter bg-surface-elevated px-2 py-0.5 rounded-lg border border-subtle text-muted">{{ opt.name }}</span>
-                                    }
-                                  </div>
-                                }
-                                @if(item.notes) {
-                                    <p class="text-[11px] text-muted italic mt-1 font-medium bg-surface-elevated px-3 py-1 rounded-lg">"{{ item.notes }}"</p>
-                                }
-                                <div class="mt-4 flex items-center gap-2">
-                                    <div class="flex items-center bg-surface-elevated rounded-full p-1 border border-subtle">
-                                        <button (click)="cartService.updateQuantity(item.id, item.quantity - 1)" class="w-8 h-8 rounded-full flex items-center justify-center text-title hover:bg-surface transition-colors">
-                                            <span class="material-symbols-outlined text-lg">remove</span>
-                                        </button>
-                                        <span class="w-10 text-center font-black text-title text-sm data-mono">{{ item.quantity }}</span>
-                                        <button (click)="cartService.updateQuantity(item.id, item.quantity + 1)" class="w-8 h-8 rounded-full flex items-center justify-center text-title hover:bg-surface transition-colors">
-                                            <span class="material-symbols-outlined text-lg">add</span>
-                                        </button>
-                                    </div>
-                                    <button (click)="cartService.removeFromCart(item.id)" class="text-muted hover:text-danger p-2 transition-colors">
-                                        <span class="material-symbols-outlined text-lg">delete</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                <div class="chef-surface rounded-[2.5rem] p-8 border border-subtle shadow-2xl space-y-6">
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="text-muted font-bold uppercase tracking-widest">Subtotal</span>
-                            <span class="text-title font-black data-mono text-lg">{{ cartService.subtotal() | currency:'BRL' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs">
-                          <span class="text-muted font-bold uppercase tracking-widest">Taxas e Entrega</span>
-                          <span class="text-title font-black text-[10px] uppercase tracking-tighter bg-success/10 text-success px-2 py-0.5 rounded-lg">Calculado no Checkout</span>
-                        </div>
-                        <div class="h-px bg-subtle"></div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-title font-black text-xl title-display tracking-tight">Total</span>
-                            <span class="text-brand font-black text-2xl data-mono">{{ cartService.subtotal() | currency:'BRL' }}</span>
-                        </div>
-                    </div>
-                    <button (click)="setView('checkout')" class="w-full bg-brand text-white py-5 rounded-full font-black uppercase tracking-widest text-sm shadow-xl shadow-brand/30 hover:scale-[1.02] active:scale-95 transition-all border border-brand border-t-white/30">
-                        Ir para Pagamento
-                    </button>
-                </div>
-              } @else {
-                  <div class="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                      <div class="w-32 h-32 bg-surface-elevated rounded-full flex items-center justify-center grayscale opacity-30 border border-dashed border-subtle">
-                          <span class="material-symbols-outlined text-6xl">shopping_basket</span>
-                      </div>
-                      <h3 class="text-2xl font-black text-title title-display">Sua cesta está vazia</h3>
-                      <p class="text-muted font-medium max-w-xs leading-relaxed">Explore nosso cardápio e adicione seus sabores favoritos aqui.</p>
-                      <button (click)="setView('menu')" class="bg-title text-surface px-10 py-4 rounded-full font-black uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform">Explorar Cardápio</button>
-                  </div>
-              }
-          </div>
-        }
-
-        <!-- Case 6: Checkout Page -->
-        @case ('checkout') {
-          <div class="max-w-xl mx-auto px-6 py-8 md:py-16 animate-in slide-in-from-right duration-500 pb-32">
-              <div class="flex items-center gap-4 mb-8">
-                  <button (click)="setView('cart')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-zinc-200 shadow-sm transition-transform active:scale-90">
-                      <span class="material-symbols-outlined text-zinc-600">arrow_back</span>
-                  </button>
-                  <h2 class="text-2xl font-black text-zinc-900 tracking-tight">Finalizar Pedido</h2>
-              </div>
-
-              <div class="space-y-8">
-                  <!-- Mode Selector -->
-                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm">
-                      <p class="text-[10px] font-black uppercase tracking-widest text-brand mb-4">Escolha o modo</p>
-                      <div class="grid grid-cols-2 gap-4">
-                          <button (click)="orderType.set('External-Delivery')" 
-                              class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all"
-                              [class.border-brand]="orderType() === 'External-Delivery'"
-                              [class.bg-brand/5]="orderType() === 'External-Delivery'"
-                              [class.border-zinc-100]="orderType() !== 'External-Delivery'">
-                              <span class="material-symbols-outlined text-3xl" [class.text-brand]="orderType() === 'External-Delivery'" [class.text-zinc-400]="orderType() !== 'External-Delivery'">delivery_dining</span>
-                              <span class="text-[10px] font-black uppercase tracking-widest">Delivery</span>
-                          </button>
-                          <button (click)="orderType.set('Pickup')" 
-                              class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all"
-                              [class.border-brand]="orderType() === 'Pickup'"
-                              [class.bg-brand/5]="orderType() === 'Pickup'"
-                              [class.border-zinc-100]="orderType() !== 'Pickup'">
-                              <span class="material-symbols-outlined text-3xl" [class.text-brand]="orderType() === 'Pickup'" [class.text-zinc-400]="orderType() !== 'Pickup'">shopping_bag</span>
-                              <span class="text-[10px] font-black uppercase tracking-widest">Retirada</span>
-                          </button>
-                      </div>
-                  </div>
-
-                  <!-- Details -->
-                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm space-y-5">
-                      <p class="text-[10px] font-black uppercase tracking-widest text-brand">Seus Dados</p>
-                      
-                      <div class="space-y-4">
-                        <div class="relative">
-                          <input type="text" [(ngModel)]="customerName" placeholder="Seu nome" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all">
-                        </div>
-                        <div class="relative">
-                          <input type="tel" [(ngModel)]="customerPhone" placeholder="Seu WhatsApp" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all">
-                        </div>
-
-                        @if(orderType() === 'External-Delivery') {
-                          <div class="pt-2 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-                             <select [(ngModel)]="deliveryNeighborhood" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-bold outline-none focus:border-brand transition-all appearance-none">
-                                <option value="">Selecione seu Bairro</option>
-                                @for(n of getNeighborhoods(); track n) {
-                                  <option [value]="n">{{ n }}</option>
-                                }
-                             </select>
-                             <textarea [(ngModel)]="deliveryAddress" placeholder="Endereço completo (Rua, Número, Referência)" rows="3" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-sm font-bold outline-none focus:border-brand transition-all resize-none"></textarea>
-                          </div>
-                        }
-                      </div>
-                  </div>
-
-                  <!-- Payment Method -->
-                  <div class="bg-white rounded-[2rem] p-6 border border-zinc-100 shadow-sm space-y-4">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-brand">Forma de Pagamento</p>
-                    <div class="grid grid-cols-1 gap-3">
-                      @for(opt of paymentOptions; track opt.id) {
-                        <button (click)="paymentMethod.set(opt.id)" 
-                          class="flex items-center justify-between p-4 rounded-xl border transition-all"
-                          [class.border-brand]="paymentMethod() === opt.id"
-                          [class.bg-brand/5]="paymentMethod() === opt.id"
-                          [class.border-zinc-100]="paymentMethod() !== opt.id">
-                          <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-xl" [class.text-brand]="paymentMethod() === opt.id" [class.text-zinc-400]="paymentMethod() !== opt.id">{{ opt.icon }}</span>
-                            <span class="text-xs font-bold text-zinc-700">{{ opt.name }}</span>
-                          </div>
-                          @if(opt.badge) {
-                            <span class="bg-amber-400 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">{{ opt.badge }}</span>
-                          }
-                        </button>
-                      }
-                    </div>
-
-                    @if(paymentMethod() === 'dinheiro') {
-                      <div class="pt-4 animate-in fade-in slide-in-from-top-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2 block">Troco para quanto?</label>
-                        <input type="number" [(ngModel)]="customerChangeFor" placeholder="Ex: 50.00" class="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-sm font-black data-mono outline-none focus:border-brand transition-all">
-                      </div>
-                    }
-
-                    @if(paymentMethod() === 'pix_manual') {
-                      <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-center animate-in fade-in duration-300">
-                        <span class="material-symbols-outlined text-amber-500 mb-2">qr_code</span>
-                        <p class="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Chave Pix (CNPJ)</p>
-                        <p class="text-sm font-black text-amber-900 select-all">12.345.678/0001-99</p>
-                        <p class="text-[9px] text-amber-700 mt-2">Envie o comprovante no WhatsApp após o pedido.</p>
-                      </div>
-                    }
-                  </div>
-              </div>
-
-              <!-- Fixed Footer Button -->
-              <div class="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-zinc-100 md:relative md:bg-transparent md:border-none md:p-0 md:mt-10">
-                <button (click)="submitOrder()" 
-                    [disabled]="isSubmittingOrder() || !customerName() || !customerPhone() || !paymentMethod() || (orderType() === 'External-Delivery' && (!deliveryAddress() || !deliveryNeighborhood()))"
-                    class="w-full bg-brand text-white py-5 rounded-3xl font-black uppercase tracking-widest text-sm shadow-[0_20px_50px_rgba(239,68,68,0.4)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-3">
-                    @if(isSubmittingOrder()) {
-                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
-                      <span>Enviando...</span>
-                    } @else {
-                      <span>Finalizar e Enviar</span>
-                      <span class="material-symbols-outlined text-xl">send</span>
-                    }
-                </button>
-              </div>
-          </div>
-        }
-
-        <!-- Case 7: Reservations Page -->
-        @case ('reservations') {
-          <div class="max-w-xl mx-auto px-6 py-12 md:py-20 animate-in fade-in duration-500">
-              <div class="bg-white rounded-[3rem] p-8 md:p-16 border border-zinc-100 shadow-2xl relative overflow-hidden">
-                  <div class="absolute top-0 right-0 w-64 h-64 bg-brand/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                  
-                  <div class="text-center space-y-4 mb-12">
-                      <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center mx-auto shadow-xl rotate-6">
-                        <span class="material-symbols-outlined text-4xl">event_available</span>
-                      </div>
-                      <h2 class="text-3xl font-black text-zinc-900 tracking-tight">Reserve sua Mesa</h2>
-                      <p class="text-zinc-500 text-sm max-w-xs mx-auto leading-relaxed">Garanta seu lugar para uma experiência gastronômica inesquecível.</p>
-                  </div>
-
-                  <div class="bg-zinc-50 rounded-3xl p-8 border border-zinc-200 shadow-inner mb-10">
-                      @if(publicBookingUrl(); as url) {
-                        <div class="space-y-6">
-                            <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-zinc-100">
-                                <span class="material-symbols-outlined text-brand">info</span>
-                                <p class="text-xs font-medium text-zinc-700 leading-tight">Utilizamos uma plataforma segura para gerenciar nossas reservas.</p>
-                            </div>
-                            <button (click)="goToReservations()" class="block w-full bg-brand text-white text-center py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
-                                Abrir Sistema de Reservas
-                            </button>
-                        </div>
-                      } @else {
-                        <div class="text-center space-y-4 py-8">
-                            <span class="material-symbols-outlined text-4xl text-zinc-300">contact_support</span>
-                            <p class="text-zinc-400 font-bold text-[10px] uppercase tracking-widest">Entre em contato via WhatsApp para reservar</p>
-                            <a [href]="'https://wa.me/55' + companyProfile()?.phone" target="_blank" class="inline-flex items-center gap-2 bg-emerald-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-xs">
-                              WhatsApp <span class="material-symbols-outlined text-sm">chat</span>
-                            </a>
-                        </div>
-                      }
-                  </div>
-
-                  <div class="space-y-4">
-                      <div class="flex gap-4 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100">
-                          <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                            <span class="material-symbols-outlined text-xl">groups</span>
-                          </div>
-                          <div>
-                            <h4 class="font-black text-zinc-900 text-xs tracking-tight uppercase">Grupos Grandes</h4>
-                            <p class="text-[10px] text-zinc-500 font-medium leading-relaxed mt-1">Para eventos acima de 10 pessoas, solicitamos reserva com 48h de antecedência.</p>
-                          </div>
-                      </div>
-                      <div class="flex gap-4 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100">
-                          <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
-                            <span class="material-symbols-outlined text-xl">timer_off</span>
-                          </div>
-                          <div>
-                            <h4 class="font-black text-zinc-900 text-xs tracking-tight uppercase">Tolerância</h4>
-                            <p class="text-[10px] text-zinc-500 font-medium leading-relaxed mt-1">Seguramos sua mesa por até 15 minutos após o horário agendado.</p>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-        }
-      }
-
-      <!-- Item Customization Modal (Combo/Variant) -->
-      @if(customizingRecipe(); as recipe) {
-        <div class="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 bg-title/40 backdrop-blur-sm animate-in fade-in duration-300">
-            <div class="chef-surface w-full max-w-xl max-h-[90vh] md:rounded-[3rem] rounded-t-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500">
-                <!-- Modal Header -->
-                <div class="relative h-48 flex-shrink-0 overflow-hidden">
-                    <img [src]="recipe.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1760&auto=format&fit=crop'" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent"></div>
-                    <button (click)="customizingRecipe.set(null)" class="absolute top-6 right-6 w-10 h-10 bg-surface/80 backdrop-blur-md rounded-full flex items-center justify-center text-title border border-subtle shadow-sm hover:bg-brand hover:text-white transition-all">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                    <div class="absolute bottom-6 left-8 right-8">
-                        <div class="flex justify-between items-end">
-                            <div>
-                              <h3 class="text-3xl font-black text-title title-display tracking-tight leading-tight">{{ recipe.name }}</h3>
-                              <p class="text-xs font-bold text-brand uppercase tracking-widest mt-1">{{ recipe.effectivePrice | currency:'BRL' }} <span class="text-muted font-medium lowercase">base</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modal Body -->
-                <div class="flex-1 overflow-y-auto px-8 py-8 space-y-10 custom-scrollbar">
-                    @for(group of recipeGroups(); track group.id) {
-                      <div class="space-y-4">
-                          <div class="flex justify-between items-center">
-                              <div>
-                                <h4 class="text-sm font-black text-title uppercase tracking-widest">{{ group.name }}</h4>
-                                <p class="text-[10px] font-bold text-muted uppercase tracking-tighter">
-                                  @if(group.min_required > 0) {
-                                      <span class="text-brand">Obrigatório</span> • Selecione pelo menos {{ group.min_required }}
-                                  } @else {
-                                      Opcional • Máximo de {{ group.max_options }}
-                                  }
-                                </p>
-                              </div>
-                              <span class="bg-surface-elevated text-[10px] font-black data-mono px-2 py-1 rounded-lg border border-subtle">
-                                {{ getSelectedCount(group.id) }}/{{ group.max_options }}
-                              </span>
-                          </div>
-
-                          <div class="grid grid-cols-1 gap-3">
-                              @for(option of group.ifood_options; track option.id) {
-                                  <button (click)="toggleOption(group, option)" 
-                                      class="flex items-center justify-between p-4 rounded-2xl border-2 transition-all group"
-                                      [class.border-brand]="isOptionSelected(option.id)"
-                                      [class.bg-brand/5]="isOptionSelected(option.id)"
-                                      [class.border-subtle]="!isOptionSelected(option.id)"
-                                      [class.hover:border-brand/40]="!isOptionSelected(option.id)">
-                                      <div class="flex items-center gap-4">
-                                          <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                              [class.border-brand]="isOptionSelected(option.id)"
-                                              [class.bg-brand]="isOptionSelected(option.id)"
-                                              [class.border-subtle]="!isOptionSelected(option.id)">
-                                              @if(isOptionSelected(option.id)) {
-                                                <span class="material-symbols-outlined text-white text-[14px] font-black">check</span>
-                                              }
-                                          </div>
-                                          <span class="text-sm font-bold text-title group-hover:text-brand transition-colors">{{ option.name }}</span>
-                                      </div>
-                                      @if(option.price > 0) {
-                                          <span class="text-xs font-black text-brand data-mono">+ {{ option.price | currency:'BRL' }}</span>
-                                      }
-                                  </button>
-                              }
-                          </div>
-                      </div>
-                    }
-
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-black text-title uppercase tracking-widest">Observações</h4>
-                        <textarea [(ngModel)]="customizationNotes" placeholder="Remover cebola, bem passado, etc..." rows="3" class="w-full bg-surface-elevated border border-subtle rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all resize-none"></textarea>
-                    </div>
-                </div>
-
-                <!-- Modal Footer -->
-                <div class="p-8 chef-surface border-t border-subtle bg-surface-elevated/50">
-                    <div class="flex items-center gap-6">
-                        <div class="flex-shrink-0">
-                            <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Total do Item</p>
-                            <p class="text-2xl font-black text-title data-mono">{{ currentCustomPrice() | currency:'BRL' }}</p>
-                        </div>
-                        <button (click)="confirmCustomization()" 
-                            [disabled]="!canConfirmCustomization()"
-                            class="flex-1 bg-brand text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-brand/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale transition-all border border-brand border-t-white/30">
-                            Adicionar à Cesta
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-      }
-  <!-- =================================================================== -->
-  <!-- ========================= INTERNAL VIEW ========================= -->
-  <!-- =================================================================== -->
-    <div class="container mx-auto">
-        <h1 class="text-4xl text-title title-display tracking-tight mb-6">Cardápio & Disponibilidade</h1>
-        <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar no cardápio..." class="w-full chef-surface border border-subtle rounded-xl pl-4 pr-4 py-3 mb-6 text-body focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all shadow-sm">
-
-        <!-- Category Filters -->
-        <div class="flex flex-wrap items-start gap-2 mb-8">
-            <button (click)="setSelectedCategory(null)" class="h-10 px-5 text-sm font-bold rounded-lg transition-all border shadow-sm outline-none" 
-            [class.bg-brand]="activeCategorySlug() === null" 
-            [class.border-brand]="activeCategorySlug() === null" 
-            [class.text-white]="activeCategorySlug() === null" 
-            [class.chef-surface]="activeCategorySlug() !== null" 
-            [class.border-subtle]="activeCategorySlug() !== null" 
-            [class.text-muted]="activeCategorySlug() !== null" 
-            [class.hover:border-strong]="activeCategorySlug() !== null">
-                Todas
-            </button>
-            @for(category of menuCategories(); track category.id) {
-                 <button (click)="setSelectedCategory(createSlug(category.name))" class="h-10 px-5 text-sm font-bold rounded-lg transition-all border shadow-sm outline-none" 
-                 [class.bg-brand]="activeCategorySlug() === createSlug(category.name)" 
-                 [class.border-brand]="activeCategorySlug() === createSlug(category.name)" 
-                 [class.text-white]="activeCategorySlug() === createSlug(category.name)" 
-                 [class.chef-surface]="activeCategorySlug() !== createSlug(category.name)" 
-                 [class.border-subtle]="activeCategorySlug() !== createSlug(category.name)" 
-                 [class.text-muted]="activeCategorySlug() !== createSlug(category.name)" 
-                 [class.hover:border-strong]="activeCategorySlug() !== createSlug(category.name)">
-                      {{ category.name }}
-                 </button>
-            }
-        </div>
-
-        <!-- Recipe List -->
-        <div class="space-y-8 pb-10">
-            @for (group of filteredMenu(); track group.category.id) {
-                <section>
-                    <h2 class="text-2xl font-bold text-title mb-4 border-b border-subtle pb-2">{{ group.category.name }}</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        @for (recipe of group.recipes; track recipe.id) {
-                            <div class="chef-surface p-5 rounded-xl border-l-[6px] shadow-sm hover:shadow-md transition-shadow" [class.border-l-success]="recipe.is_available && recipe.hasStock" [class.border-l-danger]="!recipe.is_available || !recipe.hasStock">
-                                <div class="flex justify-between items-start gap-4">
-                                    <h3 class="text-base font-bold text-title flex-1 leading-tight">{{ recipe.name }}</h3>
-                                    <p class="font-bold text-title data-mono whitespace-nowrap">{{ recipe.effectivePrice | currency:'BRL' }}</p>
-                                </div>
-                                @if (recipe.description) { <p class="text-xs text-muted mt-2 line-clamp-2 leading-relaxed">{{ recipe.description }}</p> }
-                                <div class="mt-4 pt-3 border-t border-subtle text-[11px] font-bold uppercase tracking-wider flex justify-end gap-3">
-                                    <span [class.text-success]="recipe.is_available" [class.text-muted]="!recipe.is_available">{{ recipe.is_available ? 'Disponível' : 'Indisponível' }}</span>
-                                    <span [class.text-success]="recipe.hasStock" [class.text-danger]="!recipe.hasStock">{{ recipe.hasStock ? 'Com Estoque' : 'Sem Estoque' }}</span>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </section>
-            }
-        </div>
+<!-- Loading Overlay -->
+@if (isLoading()) {
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-surface/80 backdrop-blur-sm">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-subtle border-t-brand rounded-full animate-spin"></div>
+      <p class="text-muted font-medium animate-pulse">Carregando cardápio...</p>
     </div>
-  }
-</div>
+  </div>
+}
+
+<!-- Main Layout -->
+<main class="max-w-7xl mx-auto min-h-screen flex flex-col py-6 relative">
+  
+  <!-- Header / Cover Section -->
+  <header class="relative w-full overflow-hidden sm:rounded-3xl bg-brand sm:mx-0">
+    <div class="aspect-[21/9] w-full">
+      @if (companyProfile()?.menu_header_url) {
+        <img [src]="companyProfile()?.menu_header_url" class="w-full h-full object-cover opacity-60" referrerpolicy="no-referrer">
+      } @else if (companyProfile()?.logo_url) {
+        <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover opacity-20 blur-sm" referrerpolicy="no-referrer">
+      }
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+    </div>
+
+    <!-- Company Badge -->
+    <div class="absolute -bottom-1 left-4 sm:left-8 flex items-end gap-4 sm:gap-6 pb-6">
+      <div class="w-24 h-24 sm:w-32 sm:h-32 bg-surface rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 shadow-2xl">
+        <div class="w-full h-full rounded-xl sm:rounded-2xl overflow-hidden bg-surface-elevated">
+          @if (companyProfile()?.logo_url) {
+            <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+          } @else {
+            <div class="w-full h-full flex items-center justify-center text-muted">
+              <span class="material-symbols-outlined !text-5xl">store</span>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="mb-2">
+        <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight">{{ companyProfile()?.company_name || 'Nosso Cardápio' }}</h1>
+        <div class="flex items-center gap-2 mt-1 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">
+          <div class="w-2 h-2 rounded-full" [class]="isRestaurantOpen() ? 'bg-success' : 'bg-danger'"></div>
+          <span class="text-[10px] sm:text-xs font-bold text-white uppercase tracking-widest leading-none">
+            {{ isRestaurantOpen() ? 'Aberto agora' : 'Fechado no momento' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Category Nav -->
+  <nav class="sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-strong py-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div class="flex items-center gap-3 overflow-x-auto no-scrollbar">
+      @for (group of menuGroups(); track group.category.id) {
+        <button (click)="scrollToCategory(group.category.id)"
+                [class]="activeCategorySlug() === group.category.id ? 'bg-brand text-on-brand shadow-lg border-brand' : 'bg-surface text-muted hover:bg-surface-elevated border-strong'"
+                class="whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold border transition-all duration-300">
+          {{ group.category.name }}
+        </button>
+      }
+    </div>
+  </nav>
+
+  <!-- Search -->
+  <div class="px-4 sm:px-0 mb-12">
+    <div class="relative group max-w-2xl mx-auto">
+      <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-title transition-colors">search</span>
+      <input type="text" 
+             [ngModel]="searchTerm()"
+             (ngModelChange)="searchTerm.set($event)"
+             placeholder="O que vamos pedir hoje?"
+             class="w-full pl-16 pr-6 py-5 bg-surface border border-strong rounded-[2rem] text-title font-medium shadow-sm focus:shadow-xl outline-none transition-all placeholder:text-muted">
+    </div>
+  </div>
+
+  <!-- Menu Feed -->
+  <section class="flex-1 px-4 sm:px-0 pb-32">
+    @for (group of menuGroups(); track group.category.id) {
+      <div [id]="'cat-' + group.category.id" class="mb-16 scroll-mt-24">
+        <h2 class="text-2xl font-black text-title mb-8 pl-1 flex items-center gap-4">
+          {{ group.category.name }}
+          <div class="h-px bg-strong flex-1"></div>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          @for (recipe of group.recipes; track recipe.id) {
+            <div (click)="onSelectRecipe(recipe)" 
+                 class="group bg-surface rounded-[2rem] border border-subtle p-4 hover:border-brand hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden flex flex-col">
+              
+              <!-- Image Container -->
+              <div class="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-surface-elevated">
+                @if (recipe.image_url) {
+                   <img [src]="recipe.image_url" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerpolicy="no-referrer">
+                } @else {
+                  <div class="w-full h-full flex items-center justify-center text-muted group-hover:text-brand transition-colors">
+                    <span class="material-symbols-outlined !text-6xl">restaurant</span>
+                  </div>
+                }
+                <!-- Price Tag on Image -->
+                <div class="absolute bottom-4 right-4 px-4 py-2 bg-surface backdrop-blur-md rounded-xl shadow-lg border border-strong">
+                  <span class="text-sm font-black text-title">{{ getEffectivePrice(recipe) | currency : 'BRL' }}</span>
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div class="flex-1 px-2 pb-2">
+                <h3 class="text-lg font-black text-title group-hover:text-brand transition-colors leading-tight mb-2">{{ recipe.name }}</h3>
+                @if (recipe.description) {
+                  <p class="text-sm text-muted line-clamp-2 leading-relaxed">{{ recipe.description }}</p>
+                }
+              </div>
+
+              <!-- Button -->
+              <div class="mt-4 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-muted">
+                  <span class="material-symbols-outlined !text-xs font-bold">schedule</span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider">{{ recipe.prep_time_in_minutes || 15 }}-{{ (recipe.prep_time_in_minutes || 15) + 10 }} min</span>
+                </div>
+                <button class="w-12 h-12 bg-surface-elevated text-title rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl border border-strong hover:bg-brand hover:text-on-brand hover:border-brand">
+                  <span class="material-symbols-outlined">add</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (menuGroups().length === 0 && searchTerm()) {
+      <div class="py-24 flex flex-col items-center justify-center text-center space-y-6">
+        <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center text-muted">
+          <span class="material-symbols-outlined !text-5xl">search_off</span>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-title">Nenhum resultado para "{{ searchTerm() }}"</h3>
+          <p class="text-muted">Tente buscar por outro termo ou categoria.</p>
+        </div>
+        <button (click)="searchTerm.set('')" class="px-8 py-3 bg-brand text-on-brand rounded-2xl font-bold transition-all hover:bg-opacity-90 active:scale-95 shadow-xl">
+          Limpar busca
+        </button>
+      </div>
+    }
+  </section>
+</main>
+
+<!-- Floating Cart Button -->
+@if (cart.totalItems() > 0 && view() === 'menu') {
+  <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-30 animate-in slide-in-from-bottom-8 duration-500">
+    <button (click)="view.set('cart')" 
+            class="w-full bg-brand text-on-brand p-4 rounded-3xl shadow-2xl flex items-center justify-between group overflow-hidden relative">
+      <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center relative">
+          <span class="material-symbols-outlined">shopping_bag</span>
+          <span class="absolute -top-2 -right-2 w-6 h-6 bg-surface text-title text-[10px] font-black rounded-lg flex items-center justify-center shadow-lg border-2 border-brand">
+            {{ cart.totalItems() }}
+          </span>
+        </div>
+        <div class="text-left">
+          <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Ver sacola</p>
+          <p class="text-lg font-black leading-none">{{ cart.subtotal() | currency : 'BRL' }}</p>
+        </div>
+      </div>
+      <span class="material-symbols-outlined translate-x-0 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+    </button>
+  </div>
+}
+
+<!-- Modals & Sub-views -->
+
+@if (customizingRecipe()) {
+  <app-menu-customization 
+    [recipe]="customizingRecipe()"
+    [groups]="getRecipeOptionGroups(customizingRecipe()!.id)"
+    [basePrice]="getEffectivePrice(customizingRecipe()!)"
+    (confirm)="onConfirmCustomization($event)"
+    (close)="customizingRecipe.set(null)">
+  </app-menu-customization>
+}
+
+@if (view() === 'cart') {
+  <app-menu-cart 
+    (close)="view.set('menu')"
+    (checkout)="view.set('checkout')">
+  </app-menu-cart>
+}
+
+@if (view() === 'checkout') {
+  <app-menu-checkout
+    (close)="view.set('cart')"
+    (submit)="onConfirmOrder($event)">
+  </app-menu-checkout>
+}
+
+@if (view() === 'success') {
+  <div class="fixed inset-0 z-[60] bg-surface flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
+    <div class="w-24 h-24 bg-brand text-on-brand rounded-3xl flex items-center justify-center shadow-2xl mb-8 animate-bounce">
+      <span class="material-symbols-outlined !text-5xl">check</span>
+    </div>
+    <h2 class="text-3xl font-black text-title mb-4">Pedido Enviado!</h2>
+    <p class="text-muted max-w-sm mb-12 leading-relaxed">Seu pedido foi recebido com sucesso. Em breve entraremos em contato via WhatsApp se necessário.</p>
+    <button (click)="view.set('menu')" class="w-full max-w-xs py-4 bg-brand text-on-brand rounded-2xl font-bold shadow-2xl hover:opacity-90 transition-opacity">
+      Voltar ao Cardápio
+    </button>
+  </div>
+}
