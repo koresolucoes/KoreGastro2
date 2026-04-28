@@ -142,7 +142,9 @@ export class PublicDataService {
       .eq('user_id', userId)
       .order('sequence', { ascending: true });
     if (error) {
-      console.error('Error fetching public option groups:', error);
+      if (error.code !== 'PGRST205') {
+        console.error('Error fetching public option groups:', error);
+      }
       return [];
     }
     return data || [];
@@ -154,7 +156,9 @@ export class PublicDataService {
       .select('*')
       .eq('user_id', userId);
     if (error) {
-      console.error('Error fetching public recipe option groups:', error);
+      if (error.code !== 'PGRST205') {
+        console.error('Error fetching public recipe option groups:', error);
+      }
       return [];
     }
     return data || [];

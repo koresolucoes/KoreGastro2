@@ -227,7 +227,10 @@ export class MenuComponent implements OnInit {
     try {
       const stationId = this.stations()[0]?.id;
       
+      const orderId = crypto.randomUUID();
+
       const orderData = {
+        id: orderId,
         user_id: uid,
         table_number: 0,
         customer_name: event.name,
@@ -237,16 +240,14 @@ export class MenuComponent implements OnInit {
         delivery_info: event.type === 'delivery' ? { address: event.address } : null
       };
 
-      const { data: order, error: orderError } = await supabase
+      const { error: orderError } = await supabase
         .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+        .insert(orderData);
 
       if (orderError) throw orderError;
 
       const orderItems = this.cart.items().map(item => ({
-        order_id: order.id,
+        order_id: orderId,
         recipe_id: item.recipe.id,
         name: item.recipe.name,
         quantity: item.quantity,

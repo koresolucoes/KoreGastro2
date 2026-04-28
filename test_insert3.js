@@ -1,0 +1,22 @@
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://illjaoognbolqzneguqf.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function test() {
+  const { data, error } = await supabase
+    .from('orders')
+    .insert({
+      user_id: "ff621b56-db4a-438c-b208-2c82244df08e",
+      table_number: 0,
+      customer_name: "Test",
+      order_type: 'QuickSale',
+      status: 'OPEN',
+      notes: "Test"
+    });
+
+  console.log('Without select:', error);
+}
+test();
