@@ -7,6 +7,7 @@ import { PublicDataService } from '../../services/public-data.service';
 import { PricingService } from '../../services/pricing.service';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
+import { UnitContextService } from '../../services/unit-context.service';
 import { Recipe, Category, Promotion, PromotionRecipe, CompanyProfile, LoyaltySettings, LoyaltyReward, ReservationSettings, Station, IfoodOptionGroup, RecipeIfoodOptionGroup, IfoodOption } from '../../models/db.models';
 
 import { MenuCustomizationComponent } from './customization/menu-customization.component';
@@ -38,6 +39,7 @@ export class MenuComponent implements OnInit {
   private pricing = inject(PricingService);
   private authService = inject(AuthService);
   public cart = inject(CartService);
+  private unitContext = inject(UnitContextService);
 
   // State
   userId = signal<string | null>(null);
@@ -69,14 +71,21 @@ export class MenuComponent implements OnInit {
       let id = params['userId'];
       
       if (!id) {
-        const currentUser = this.authService.currentUser();
-        if (currentUser) {
-          id = currentUser.id;
+        // Se estiver logado, pegue a loja ativa. Isso conserta o erro onde gerentes
+        // que administram lojas de terceiros tentavam carregar com seu próprio user.id e era redirecionado ou não carregava.
+        const activeUnit = this.unitContext.activeUnitId();
+        if (activeUnit) {
+          id = activeUnit;
         } else {
-          // Fallback if signal is not populated yet
-          const { data: { session } } = await (supabase.auth as any).getSession();
-          if (session?.user) {
-            id = session.user.id;
+          const currentUser = this.authService.currentUser();
+          if (currentUser) {
+            id = currentUser.id;
+          } else {
+            // Fallback if signal is not populated yet
+            const { data: { session } } = await (supabase.auth as any).getSession();
+            if (session?.user) {
+              id = session.user.id;
+            }
           }
         }
       }
@@ -85,6 +94,7 @@ export class MenuComponent implements OnInit {
         this.userId.set(id);
         this.loadPublicData(id);
       } else {
+        console.error('Menu Online: Nenhum ID de loja encontrado. Redirecionando para home.');
         this.router.navigate(['/home']);
       }
     });

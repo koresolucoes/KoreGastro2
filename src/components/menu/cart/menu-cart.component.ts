@@ -7,7 +7,7 @@ import { CartService } from '../../../services/cart.service';
   selector: 'app-menu-cart',
   imports: [CommonModule],
   template: `
-    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+    <div class="fixed inset-0 z-30 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
       <div class="bg-surface w-full max-w-lg sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all duration-300 translate-y-0">
         
         <!-- Header -->

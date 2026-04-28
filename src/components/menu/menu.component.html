@@ -1,7 +1,7 @@
 
 <!-- Loading Overlay -->
 @if (isLoading()) {
-  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-surface/80 backdrop-blur-sm">
+  <div class="fixed inset-0 z-30 flex items-center justify-center bg-surface/80 backdrop-blur-sm">
     <div class="flex flex-col items-center gap-4">
       <div class="w-12 h-12 border-4 border-subtle border-t-brand rounded-full animate-spin"></div>
       <p class="text-muted font-medium animate-pulse">Carregando cardápio...</p>
@@ -193,7 +193,7 @@
 }
 
 @if (view() === 'success') {
-  <div class="fixed inset-0 z-[60] bg-surface flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
+  <div class="fixed inset-0 z-30 bg-surface flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
     <div class="w-24 h-24 bg-brand text-on-brand rounded-3xl flex items-center justify-center shadow-2xl mb-8 animate-bounce">
       <span class="material-symbols-outlined !text-5xl">check</span>
     </div>
