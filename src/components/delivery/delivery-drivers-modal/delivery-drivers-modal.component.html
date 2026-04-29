@@ -12,9 +12,9 @@
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-5 sm:p-8 overflow-y-auto custom-scrollbar flex flex-col md:flex-row gap-8">
+    <div class="flex-1 p-5 sm:p-8 overflow-y-auto md:overflow-y-hidden flex flex-col md:flex-row gap-8">
       <!-- Left: Driver List -->
-      <div class="flex-[2] flex flex-col min-h-0">
+      <div class="flex-none md:flex-[2] flex flex-col min-h-[40vh] md:min-h-0 h-[40vh] md:h-auto overflow-hidden">
         <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">Entregadores Cadastrados</h4>
         @if (drivers().length === 0) {
             <div class="flex flex-col items-center justify-center py-10 opacity-50 bg-surface-elevated border border-dashed border-strong rounded-xl">
@@ -55,9 +55,9 @@
       </div>
 
       <!-- Right: Add/Edit Form -->
-      <div class="flex-1 flex flex-col min-h-0">
+      <div class="flex-none md:flex-1 flex flex-col min-h-0 md:overflow-hidden">
         <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">{{ editingDriver() ? 'Editar Entregador' : 'Novo Entregador' }}</h4>
-        <form (ngSubmit)="saveDriver()" class="space-y-4 bg-surface-elevated border border-strong p-5 rounded-xl shadow-sm overflow-y-auto custom-scrollbar">
+        <form (ngSubmit)="saveDriver()" class="flex-none md:flex-1 space-y-4 bg-surface-elevated border border-strong p-5 rounded-xl shadow-sm overflow-visible md:overflow-y-auto custom-scrollbar">
           <div>
             <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nome *</label>
             <input type="text" [(ngModel)]="driverForm().name" name="name" required class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">

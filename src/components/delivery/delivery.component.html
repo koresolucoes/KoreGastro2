@@ -33,9 +33,9 @@
   @switch (view()) {
     @case ('kanban') {
       <!-- Kanban Board -->
-      <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 overflow-hidden min-h-[500px]" cdkDropListGroup>
+      <div class="flex-1 flex lg:grid lg:grid-cols-5 gap-4 sm:gap-6 overflow-x-auto lg:overflow-hidden pb-4 snap-x min-h-[500px]" cdkDropListGroup>
         <!-- Column: Fila de Pedidos -->
-        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm">
+        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-warning/10 pointer-events-none"></div>
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-warning relative z-10 flex items-center gap-2">
@@ -73,7 +73,7 @@
         </div>
         
         <!-- Column: Em Preparo -->
-        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm">
+        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-info/10 pointer-events-none"></div>
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-info relative z-10 flex items-center gap-2">
@@ -110,7 +110,7 @@
         </div>
 
         <!-- Column: Pronto para Envio -->
-        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm">
+        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-brand/10 pointer-events-none"></div>
              <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-brand relative z-10 flex items-center gap-2">
@@ -152,7 +152,7 @@
         </div>
         
         <!-- Column: Em Rota -->
-        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm">
+        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-success/10 pointer-events-none"></div>
              <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-success relative z-10 flex items-center gap-2">
@@ -195,7 +195,7 @@
         </div>
         
         <!-- Column: Entregue -->
-        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm">
+        <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center">
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-muted flex items-center gap-2">
               <span class="material-symbols-outlined text-[16px]">done_all</span> Entregue ({{ entregues().length }})

@@ -12,9 +12,9 @@
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-5 sm:p-8 overflow-y-hidden flex flex-col md:flex-row gap-8">
+    <div class="flex-1 p-5 sm:p-8 overflow-y-auto lg:overflow-y-hidden flex flex-col lg:flex-row gap-8">
       <!-- Left: Menu -->
-      <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="flex flex-col flex-none lg:flex-1 h-[50vh] lg:h-auto overflow-hidden shrink-0">
         <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">Cardápio</h4>
         <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" placeholder="Buscar item..." class="w-full bg-surface-elevated border border-strong rounded-xl pl-4 pr-4 py-3 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50 mb-4 shadow-inner">
         <div class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-2 items-start pb-4">
@@ -28,14 +28,14 @@
       </div>
 
       <!-- Right: Order Details -->
-      <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="flex flex-col flex-none lg:flex-1 overflow-visible lg:overflow-hidden">
         <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4">Detalhes do Pedido</h4>
         
-        <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6">
+        <div class="flex-none lg:flex-1 overflow-y-visible lg:overflow-y-auto custom-scrollbar pr-2 space-y-6">
             <!-- Customer -->
             <div>
                 @if(selectedCustomer(); as customer) {
-                    <div class="bg-surface-elevated border border-strong p-4 rounded-xl flex justify-between items-center group shadow-sm transition-all">
+                    <div class="bg-surface-elevated border border-strong p-4 rounded-xl flex justify-between items-center group shadow-sm transition-all mb-4">
                         <div>
                             <p class="font-black text-title text-sm">{{ customer.name }}</p>
                             <p class="text-xs font-bold text-muted mt-1 data-mono">{{ customer.phone }}</p>
@@ -45,10 +45,33 @@
                         </button>
                     </div>
                 } @else {
-                    <button (click)="isCustomerSelectModalOpen.set(true)" class="w-full py-4 border-2 border-dashed border-strong bg-surface-elevated/40 text-brand font-black rounded-xl hover:bg-surface-elevated hover:border-brand/40 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest active:scale-[0.98]">
+                    <button (click)="isCustomerSelectModalOpen.set(true)" class="w-full py-4 border-2 border-dashed border-strong bg-surface-elevated/40 text-brand font-black rounded-xl hover:bg-surface-elevated hover:border-brand/40 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest active:scale-[0.98] mb-4">
                         <span class="material-symbols-outlined text-[18px]">person_add</span> Associar Cliente
                     </button>
                 }
+
+                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 border-b border-subtle pb-2">Endereço de Entrega</label>
+                <div class="space-y-3 mt-3">
+                    <div class="flex gap-3">
+                        <div class="flex-[3]">
+                            <input type="text" [ngModel]="street()" (ngModelChange)="street.set($event)" placeholder="Rua / Avenida" class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2.5 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                        </div>
+                        <div class="flex-1">
+                            <input type="text" [ngModel]="addressNumber()" (ngModelChange)="addressNumber.set($event)" placeholder="Nº" class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2.5 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <input type="text" [ngModel]="complement()" (ngModelChange)="complement.set($event)" placeholder="Complemento" class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2.5 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                        </div>
+                        <div class="flex-1">
+                            <input type="text" [ngModel]="neighborhood()" (ngModelChange)="neighborhood.set($event)" placeholder="Bairro" class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2.5 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" [ngModel]="city()" (ngModelChange)="city.set($event)" placeholder="Cidade" class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2.5 text-sm text-title font-medium focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                    </div>
+                </div>
             </div>
             
             <!-- Distance & Fee -->

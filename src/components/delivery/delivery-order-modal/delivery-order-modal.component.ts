@@ -41,6 +41,12 @@ export class DeliveryOrderModalComponent {
   isSaving = signal(false);
   isCustomerSelectModalOpen = signal(false);
 
+  street = signal('');
+  addressNumber = signal('');
+  complement = signal('');
+  neighborhood = signal('');
+  city = signal('');
+
   recipes = this.recipeState.recipesWithStockStatus;
 
   constructor() {
@@ -50,9 +56,29 @@ export class DeliveryOrderModalComponent {
             // Populate state for editing
             this.isSaving.set(false);
             this.selectedCustomer.set(order.customers || null);
-            this.paymentMethod = order.notes?.replace('Pagamento: ', '') || 'Dinheiro';
+            this.paymentMethod = order.notes?.match(/Pagamento: ([^\n|]+)/)?.[1]?.trim() || 'Dinheiro';
             this.distance.set(order.delivery_distance_km ?? 0);
             this.deliveryFee.set(order.delivery_cost ?? 0);
+
+            // Try to extract address from notes if it exists
+            const addressMatch = order.notes?.match(/Endereço: (.+)/);
+            if (addressMatch) {
+              const parts = addressMatch[1].split(' - ');
+              if (parts[0]) {
+                const streetMatch = parts[0].match(/(.+), (.+)/);
+                if (streetMatch) {
+                  this.street.set(streetMatch[1] || parts[0]);
+                  this.addressNumber.set(streetMatch[2] || '');
+                } else {
+                  this.street.set(parts[0]);
+                }
+              }
+              if (parts[1]) this.complement.set(parts[1]);
+              if (parts[2]) this.neighborhood.set(parts[2]);
+              if (parts[3]) this.city.set(parts[3]);
+            } else if (order.customers?.address) {
+                this.street.set(order.customers.address);
+            }
 
             const recipesMap = this.recipeState.recipesById();
             
@@ -160,18 +186,29 @@ export class DeliveryOrderModalComponent {
       return;
     }
     this.isSaving.set(true);
+
+    let addressParts = [];
+    if (this.street()) {
+      addressParts.push(`${this.street()}${this.addressNumber() ? ', ' + this.addressNumber() : ''}`);
+    }
+    if (this.complement()) addressParts.push(this.complement());
+    if (this.neighborhood()) addressParts.push(this.neighborhood());
+    if (this.city()) addressParts.push(this.city());
+    
+    const fullAddress = addressParts.join(' - ');
+    const finalNotes = `Pagamento: ${this.paymentMethod}${fullAddress ? ' | Endereço: ' + fullAddress : ''}`;
     
     const order = this.editingOrder();
     let result;
     if (order) {
       result = await this.deliveryDataService.updateExternalDeliveryOrder(
-        order.id, this.cart(), this.selectedCustomer()?.id || null, this.paymentMethod, this.distance(), this.deliveryFee()
+        order.id, this.cart(), this.selectedCustomer()?.id || null, finalNotes, this.distance(), this.deliveryFee()
       );
     } else {
       result = await this.deliveryDataService.createExternalDeliveryOrder(
         this.cart(),
         this.selectedCustomer()?.id || null,
-        this.paymentMethod,
+        finalNotes,
         this.distance(),
         this.deliveryFee()
       );

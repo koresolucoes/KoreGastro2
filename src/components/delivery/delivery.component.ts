@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, transferArrayItem, CdkDrag, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { Order } from '../../models/db.models';
@@ -28,12 +28,11 @@ interface OrderWithDriver extends Order {
   templateUrl: './delivery.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DeliveryComponent {
+export class DeliveryComponent implements OnInit {
   private posState = inject(PosStateService);
   private deliveryDataService = inject(DeliveryDataService);
   private notificationService = inject(NotificationService);
   private deliveryState = inject(DeliveryStateService);
-  private cashierState = inject(CashierStateService);
   private webhookService = inject(WebhookService);
 
   view = signal<DeliveryView>('kanban');
@@ -46,6 +45,8 @@ export class DeliveryComponent {
   
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<OrderWithDriver | null>(null);
+  
+  todayDelivered = signal<OrderWithDriver[]>([]);
   
   deliveryOrders = computed<OrderWithDriver[]>(() => 
     this.posState.openOrders()
@@ -60,12 +61,21 @@ export class DeliveryComponent {
   prontoParaEnvio = computed(() => this.deliveryOrders().filter(o => o.delivery_status === 'READY_FOR_DISPATCH'));
   emRota = computed(() => this.deliveryOrders().filter(o => o.delivery_status === 'OUT_FOR_DELIVERY'));
   entregues = computed(() => 
-    this.cashierState.completedOrders()
-      .filter(o => o.order_type === 'External-Delivery' && o.delivery_status === 'DELIVERED')
+    this.todayDelivered()
       .map(o => ({...o, driverName: o.delivery_drivers?.name ?? 'Não atribuído' }))
-      .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
+      .sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime())
   );
 
+  async ngOnInit() {
+      await this.loadTodayDeliveredOrders();
+  }
+
+  async loadTodayDeliveredOrders() {
+      const { data, error } = await this.deliveryDataService.getTodayDeliveredOrders();
+      if (!error && data) {
+          this.todayDelivered.set(data);
+      }
+  }
 
   drop(event: CdkDragDrop<OrderWithDriver[]>) {
     if (event.previousContainer === event.container) {
@@ -167,6 +177,9 @@ export class DeliveryComponent {
     const { success, error } = await this.deliveryDataService.finalizeDeliveryOrder(order);
     if (success) {
       this.notificationService.show('Entrega finalizada com sucesso!', 'success');
+      
+      this.todayDelivered.update(list => [{...order, status: 'COMPLETED', delivery_status: 'DELIVERED', completed_at: new Date().toISOString()}, ...list]);
+
       this.webhookService.triggerWebhook('delivery.status_updated', {
         orderId: order.id,
         status: 'DELIVERED',
