@@ -82,6 +82,7 @@ export class TopNavComponent {
       icon: 'bar_chart',
       children: [
         { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Gerente'] },
+        { name: 'Cardápios', path: '/menu-builder', icon: 'restaurant_menu', roles: ['Gerente'] },
         { name: 'Relatórios', path: '/reports', icon: 'analytics', roles: ['Gerente'] },
         { name: 'Desempenho', path: '/performance', icon: 'trending_up', roles: ['Gerente'] },
         { name: 'Configurações', path: '/settings', icon: 'settings', roles: ['Gerente'] },
@@ -103,7 +104,6 @@ export class TopNavComponent {
       icon: 'storefront',
       children: [
         { name: 'Cardápio Digital', path: '/menu', icon: 'qr_code_2', roles: ['Gerente', 'Caixa', 'Garçom'] },
-        { name: 'Gestor de Cardápio', path: '/ifood-menu', icon: 'sync_alt', roles: ['Gerente'] },
         { name: 'Gestor iFood', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
       ]
     },
@@ -136,7 +136,7 @@ export class TopNavComponent {
     
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Salão & PDV', 'Cozinha & KDS', 'Gestão', 'Estoque', 'Rotinas', 'Delivery/iFood'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/ifood-kds', '/delivery'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

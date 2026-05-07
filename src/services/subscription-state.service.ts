@@ -133,6 +133,13 @@ export class SubscriptionStateService {
                   if (planPerms && planPerms.length > 0) {
                       // Ensure types are handled correctly for Set
                       const permKeys = planPerms.map((p: any) => String(p.permission_key));
+                      
+                      // Fallback auto-granting for newer routes to avoid breaking access for old plans
+                      if (permKeys.includes('/dashboard') || permKeys.includes('/menu') || permKeys.includes('/ifood-kds')) {
+                        if (!permKeys.includes('/menu-builder')) permKeys.push('/menu-builder');
+                        if (!permKeys.includes('/ifood-store-manager')) permKeys.push('/ifood-store-manager');
+                      }
+
                       const permSet = new Set<string>(permKeys);
                       this.activeUserPermissions.set(permSet);
                       console.log(`[Subscription] Permissões carregadas: ${permSet.size}`);

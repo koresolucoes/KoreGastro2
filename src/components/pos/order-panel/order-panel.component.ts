@@ -607,6 +607,9 @@ export class OrderPanelComponent implements OnInit {
       const itemsToSend = cart.map(c => {
         let finalNotes = c.notes;
         let finalPriceOptions = 0;
+        let finalCostOptions = 0;
+        let optionRecipeIds: string[] = [];
+
         if (c.options && c.options.length > 0) {
             const groups = this.getRecipeOptionGroups(c.recipe.id);
             const groupedOptions = new Map<string, typeof c.options>();
@@ -614,6 +617,10 @@ export class OrderPanelComponent implements OnInit {
                 const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
                 arr.push(opt);
                 groupedOptions.set(opt.ifood_option_group_id, arr);
+                if (opt.ifood_product_id) {
+                    optionRecipeIds.push(opt.ifood_product_id);
+                    finalCostOptions += this.recipeState.recipeCosts().get(opt.ifood_product_id)?.totalCost ?? 0;
+                }
             });
 
             let hierarchyStr = '';
@@ -623,9 +630,12 @@ export class OrderPanelComponent implements OnInit {
             });
 
             finalNotes = finalNotes ? `${finalNotes}\n${hierarchyStr}` : hierarchyStr.trim();
+            if (optionRecipeIds.length > 0) {
+                 finalNotes += `\n[OPT_RECIPE_IDS:${optionRecipeIds.join(',')}]`;
+            }
             finalPriceOptions = c.options.reduce((sum, opt) => sum + opt.price, 0);
         }
-        return { recipe: c.recipe, quantity: c.quantity, notes: finalNotes, optionsPrice: finalPriceOptions };
+        return { recipe: c.recipe, quantity: c.quantity, notes: finalNotes, optionsPrice: finalPriceOptions, optionsCost: finalCostOptions };
       });
       const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend as any);
       if (result.success) this.shoppingCart.set([]);

@@ -485,6 +485,33 @@ export class InventoryDataService {
             addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
         }
       }
+      
+      // PARSE EXTRA OPTION RECIPE IDS from notes
+      if (item.notes) {
+        const optionMatch = item.notes.match(/\[OPT_RECIPE_IDS:([^\]]+)\]/);
+        if (optionMatch && optionMatch[1]) {
+           const extraRecipeIds = optionMatch[1].split(',');
+           for (const extraRecipeId of extraRecipeIds) {
+               const extraComp = recipeCompositions.get(extraRecipeId);
+               if (extraComp) {
+                   const targetStationId = item.station_id;
+                   if (!stationDeductions.has(targetStationId)) {
+                       stationDeductions.set(targetStationId, new Map());
+                   }
+                   const stationMap = stationDeductions.get(targetStationId)!;
+                   const addToMap = (ingId: string, qty: number) => {
+                       stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
+                   };
+                   for (const ing of extraComp.directIngredients) {
+                     addToMap(ing.ingredientId, ing.quantity * item.quantity);
+                   }
+                   for (const subIng of extraComp.subRecipeIngredients) {
+                       addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+                   }
+               }
+           }
+        }
+      }
     }
 
     if (stationDeductions.size === 0) {
@@ -545,6 +572,33 @@ export class InventoryDataService {
         }
         for (const subIng of composition.subRecipeIngredients) {
             addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+        }
+      }
+
+      // PARSE EXTRA OPTION RECIPE IDS from notes
+      if (item.notes) {
+        const optionMatch = item.notes.match(/\[OPT_RECIPE_IDS:([^\]]+)\]/);
+        if (optionMatch && optionMatch[1]) {
+           const extraRecipeIds = optionMatch[1].split(',');
+           for (const extraRecipeId of extraRecipeIds) {
+               const extraComp = recipeCompositions.get(extraRecipeId);
+               if (extraComp) {
+                   const targetStationId = item.station_id;
+                   if (!stationAdditions.has(targetStationId)) {
+                       stationAdditions.set(targetStationId, new Map());
+                   }
+                   const stationMap = stationAdditions.get(targetStationId)!;
+                   const addToMap = (ingId: string, qty: number) => {
+                       stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
+                   };
+                   for (const ing of extraComp.directIngredients) {
+                     addToMap(ing.ingredientId, ing.quantity * item.quantity);
+                   }
+                   for (const subIng of extraComp.subRecipeIngredients) {
+                       addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+                   }
+               }
+           }
         }
       }
     }

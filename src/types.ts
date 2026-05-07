@@ -189,34 +189,159 @@ export type Database = {
           }
         ]
       }
+      menus: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          is_active: boolean;
+          type: string;
+          availability_hours: any | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          description?: string | null;
+          is_active?: boolean;
+          type?: string;
+          availability_hours?: any | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          description?: string | null;
+          is_active?: boolean;
+          type?: string;
+          availability_hours?: any | null;
+          created_at?: string;
+        };
+        Relationships: []
+      }
       menu_categories: {
         Row: {
+          id: string;
+          user_id: string;
+          menu_id: string;
+          name: string;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          menu_id: string;
+          name: string;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          menu_id?: string;
+          name?: string;
+          display_order?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_menu_id_fkey",
+            columns: ["menu_id"],
+            isOneToOne: false,
+            referencedRelation: "menus",
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      menu_item_option_groups: {
+        Row: {
           id: string
-          bar_id: string
+          user_id: string
+          menu_item_id: string
           name: string
-          order: number
+          min_choices: number
+          max_choices: number
+          display_order: number
           created_at: string
         }
         Insert: {
           id?: string
-          bar_id: string
+          user_id: string
+          menu_item_id: string
           name: string
-          order: number
+          min_choices?: number
+          max_choices?: number
+          display_order?: number
           created_at?: string
         }
         Update: {
           id?: string
-          bar_id?: string
+          user_id?: string
+          menu_item_id?: string
           name?: string
-          order?: number
+          min_choices?: number
+          max_choices?: number
+          display_order?: number
           created_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "menu_categories_bar_id_fkey"
-            columns: ["bar_id"]
-            isOneToOne: false
-            referencedRelation: "bars"
+            foreignKeyName: "menu_item_option_groups_menu_item_id_fkey",
+            columns: ["menu_item_id"],
+            isOneToOne: false,
+            referencedRelation: "menu_items",
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      menu_item_option_choices: {
+        Row: {
+          id: string
+          user_id: string
+          menu_item_option_id: string
+          recipe_id: string
+          custom_name: string | null
+          additional_price: number
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          menu_item_option_id: string
+          recipe_id: string
+          custom_name?: string | null
+          additional_price?: number
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          menu_item_option_id?: string
+          recipe_id?: string
+          custom_name?: string | null
+          additional_price?: number
+          display_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_option_choices_menu_item_option_id_fkey",
+            columns: ["menu_item_option_id"],
+            isOneToOne: false,
+            referencedRelation: "menu_item_option_groups",
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_option_choices_recipe_id_fkey",
+            columns: ["recipe_id"],
+            isOneToOne: false,
+            referencedRelation: "recipes",
             referencedColumns: ["id"]
           }
         ]

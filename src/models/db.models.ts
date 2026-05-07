@@ -972,3 +972,62 @@ export interface SystemLog {
   created_at: string;
   employees?: { name: string };
 }
+
+export interface Menu {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  type: string; // 'pdv' | 'delivery' | 'online' | 'qrcode'
+  availability_hours?: any;
+  user_id: string;
+  created_at: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  menu_id: string;
+  name: string;
+  display_order: number;
+  user_id: string;
+  created_at: string;
+  items?: MenuItem[];
+}
+
+export interface MenuItem {
+  id: string;
+  menu_category_id: string;
+  recipe_id: string;
+  custom_name?: string;
+  custom_description?: string;
+  custom_price?: number;
+  custom_image_url?: string;
+  display_order: number;
+  is_active: boolean;
+  user_id: string;
+  created_at: string;
+  recipe?: Recipe; // Ficha Técnica Original
+  options?: MenuItemOption[];
+}
+
+export interface MenuItemOption {
+  id: string;
+  menu_item_id: string;
+  name: string;
+  min_choices: number;
+  max_choices: number;
+  display_order: number;
+  user_id: string;
+  choices?: MenuItemOptionChoice[];
+}
+
+export interface MenuItemOptionChoice {
+  id: string;
+  menu_item_option_id: string;
+  recipe_id: string;
+  custom_name?: string;
+  additional_price: number;
+  display_order: number;
+  user_id: string;
+  recipe?: Recipe;
+}

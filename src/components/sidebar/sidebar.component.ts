@@ -79,7 +79,6 @@ export class SidebarComponent {
       imageUrl: 'https://i.imgur.com/NzlCBGX.png',
       children: [
         { name: 'KDS Delivery', path: '/ifood-kds', icon: 'delivery_dining', roles: ['Gerente', 'Caixa'] },
-        { name: 'Opcionais & Config', path: '/ifood-menu', icon: 'room_service', roles: ['Gerente'] },
         { name: 'Gestor de Loja', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
       ]
     },
@@ -106,6 +105,7 @@ export class SidebarComponent {
       icon: 'bar_chart_4_bars',
       children: [
         { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Gerente'] },
+        { name: 'Cardápios', path: '/menu-builder', icon: 'restaurant_menu', roles: ['Gerente'] },
         { name: 'Estoque', path: '/inventory', icon: 'inventory_2', roles: ['Gerente'] },
         { name: 'Compras', path: '/purchasing', icon: 'shopping_cart', roles: ['Gerente'] },
         { name: 'Fornecedores', path: '/suppliers', icon: 'local_shipping', roles: ['Gerente'] },
@@ -135,8 +135,8 @@ export class SidebarComponent {
     if (!employee) return [];
     
     const isDemo = this.isDemoMode();
-    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão', 'Operacional'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures'];
+    const demoAllowedGroups = ['Vendas', 'Produção', 'Gestão', 'Operacional', 'Delivery'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/delivery', '/ifood-kds'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

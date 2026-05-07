@@ -100,9 +100,14 @@ export class IfoodMenuComponent implements OnInit {
   newGroupStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
   parentGroupForOption = signal<IfoodOptionGroup | null>(null);
   editingOption = signal<IfoodOption | null>(null);
-  optionForm = signal({ name: '', externalCode: '', price: 0 });
+  optionForm = signal<{name: string, externalCode: string, price: number, recipeId?: string | null}>({ name: '', externalCode: '', price: 0, recipeId: null });
   newOptionStatus = signal<'AVAILABLE' | 'UNAVAILABLE'>('AVAILABLE');
   isSavingOption = signal(false);
+
+  // Local recipes for linking
+  localRecipesForOptions = computed(() => {
+    return this.recipeState.recipes().filter(r => r.is_available);
+  });
   
   // Modal for editing recipe details
   isEditRecipeModalOpen = signal(false);
@@ -429,14 +434,14 @@ export class IfoodMenuComponent implements OnInit {
   openAddOptionModal(group: IfoodOptionGroup) {
     this.parentGroupForOption.set(group);
     this.editingOption.set(null);
-    this.optionForm.set({ name: '', externalCode: '', price: 0 });
+    this.optionForm.set({ name: '', externalCode: '', price: 0, recipeId: null });
     this.isOptionModalOpen.set(true);
   }
 
   openEditOptionModal(option: IfoodOption, group: IfoodOptionGroup) {
     this.parentGroupForOption.set(group);
     this.editingOption.set(option);
-    this.optionForm.set({ name: option.name, externalCode: option.externalCode, price: option.price.value });
+    this.optionForm.set({ name: option.name, externalCode: option.externalCode, price: option.price.value, recipeId: option.productId || null });
     this.newOptionStatus.set(option.status as 'AVAILABLE' | 'UNAVAILABLE');
     this.isOptionModalOpen.set(true);
   }
@@ -517,11 +522,12 @@ export class IfoodMenuComponent implements OnInit {
       if (editing) {
         // Update existing option
         let changed = false;
-        if (editing.price.value !== form.price || editing.name !== form.name || editing.externalCode !== form.externalCode) {
+        if (editing.price.value !== form.price || editing.name !== form.name || editing.externalCode !== form.externalCode || editing.productId !== form.recipeId) {
            await this.recipeDataService.updateLocalOption(editing.id, { 
               name: form.name, 
               externalCode: form.externalCode,
-              price: form.price 
+              price: form.price,
+              productId: form.recipeId
             });
             changed = true;
         }
@@ -536,6 +542,7 @@ export class IfoodMenuComponent implements OnInit {
         if (!parentGroup) throw new Error("Grupo de complemento não encontrado.");
         await this.recipeDataService.createLocalOption({
           ...form,
+          productId: form.recipeId,
           optionGroupId: parentGroup.id
         });
         this.notificationService.show("Complemento salvo com sucesso!", 'success');

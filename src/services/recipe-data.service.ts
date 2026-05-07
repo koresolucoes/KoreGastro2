@@ -574,7 +574,8 @@ export class RecipeDataService {
             name: option.name, 
             external_code: option.externalCode || null, 
             price: option.price, 
-            sequence: option.sequence 
+            sequence: option.sequence,
+            ifood_product_id: option.productId || null
          })
          .eq('id', id).eq('user_id', storeId);
        if (error) throw error;

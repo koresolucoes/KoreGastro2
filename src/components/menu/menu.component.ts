@@ -16,6 +16,7 @@ import { MenuCheckoutComponent } from './checkout/menu-checkout.component';
 import { MenuAuthComponent } from './auth/menu-auth.component';
 import { MenuProfileComponent } from './profile/menu-profile.component';
 import { CustomerAuthService } from '../../services/customer-auth.service';
+import { RecipeStateService } from '../../services/recipe-state.service';
 
 interface MenuGroup {
   category: Category;
@@ -46,6 +47,7 @@ export class MenuComponent implements OnInit {
   public cart = inject(CartService);
   private unitContext = inject(UnitContextService);
   public customerAuthService = inject(CustomerAuthService);
+  private recipeState = inject(RecipeStateService);
 
   // State
   userId = signal<string | null>(null);
@@ -253,19 +255,54 @@ export class MenuComponent implements OnInit {
 
       if (orderError) throw orderError;
 
-      const orderItems = this.cart.items().map(item => ({
-        order_id: orderId,
-        recipe_id: item.recipe.id,
-        name: item.recipe.name,
-        quantity: item.quantity,
-        price: item.effectivePrice,
-        original_price: item.recipe.price,
-        status: 'PENDENTE',
-        user_id: uid,
-        station_id: stationId,
-        notes: item.notes,
-        status_timestamps: { PENDENTE: new Date().toISOString() }
-      }));
+      const orderItems = this.cart.items().map(item => {
+         let finalNotes = item.notes || '';
+         let optionRecipeIds: string[] = [];
+         let finalCostOptions = 0;
+
+         if (item.options && item.options.length > 0) {
+             const groups = this.getRecipeOptionGroups(item.recipe.id);
+             const groupedOptions = new Map<string, typeof item.options>();
+             item.options.forEach(opt => {
+                 const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
+                 arr.push(opt);
+                 groupedOptions.set(opt.ifood_option_group_id, arr);
+                 if (opt.ifood_product_id) { // Recipe ID
+                     optionRecipeIds.push(opt.ifood_product_id);
+                     finalCostOptions += this.recipeState.recipeCosts().get(opt.ifood_product_id)?.totalCost ?? 0;
+                 }
+             });
+
+             let hierarchyStr = '';
+             groupedOptions.forEach((opts, groupId) => {
+                 const groupName = groups.find(g => g.id === groupId)?.name || 'Opções';
+                 hierarchyStr += `\n>> ${groupName}:\n` + opts.map(o => `   • ${o.name}`).join('\n');
+             });
+
+             finalNotes = finalNotes ? `${finalNotes}\n${hierarchyStr}` : hierarchyStr.trim();
+             // Add hidden tags
+             if (optionRecipeIds.length > 0) {
+                 finalNotes += `\n[OPT_RECIPE_IDS:${optionRecipeIds.join(',')}]`;
+             }
+         }
+
+          const baseCost = this.recipeState.recipeCosts().get(item.recipe.id)?.totalCost ?? 0;
+
+          return {
+             order_id: orderId,
+             recipe_id: item.recipe.id,
+             name: item.recipe.name,
+             quantity: item.quantity,
+             price: item.effectivePrice,
+             original_price: item.recipe.price,
+             status: 'PENDENTE',
+             user_id: uid,
+             station_id: stationId,
+             notes: finalNotes,
+             unit_cost: baseCost + finalCostOptions,
+             status_timestamps: { PENDENTE: new Date().toISOString() }
+          }
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')

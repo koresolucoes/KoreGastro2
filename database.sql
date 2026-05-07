@@ -8159,3 +8159,88 @@ CREATE POLICY "Enable all access for authenticated users" ON "public"."recipe_if
 CREATE POLICY "Permitir leitura publica" ON "public"."ifood_option_groups" FOR SELECT USING (true);
 CREATE POLICY "Permitir leitura publica" ON "public"."ifood_options" FOR SELECT USING (true);
 CREATE POLICY "Permitir leitura publica" ON "public"."recipe_ifood_option_groups" FOR SELECT USING (true);
+
+-- MENU BUILDER TABLES (MENUS, CATEGORIES, ITEMS, OPTIONS)
+CREATE TABLE IF NOT EXISTS public.menus (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    name text NOT NULL,
+    description text,
+    is_active boolean DEFAULT true NOT NULL,
+    type text DEFAULT 'online' NOT NULL,
+    availability_hours jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS menu_id uuid;
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.menu_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    menu_id uuid NOT NULL,
+    name text NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS menu_category_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_description text;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_price numeric;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_image_url text;
+
+CREATE TABLE IF NOT EXISTS public.menu_items (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    menu_category_id uuid NOT NULL,
+    recipe_id uuid NOT NULL,
+    custom_name text,
+    custom_description text,
+    custom_price numeric,
+    custom_image_url text,
+    display_order integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.menu_item_option_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    menu_item_id uuid NOT NULL,
+    name text NOT NULL,
+    min_choices integer DEFAULT 0 NOT NULL,
+    max_choices integer DEFAULT 1 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.menu_item_option_choices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    menu_item_option_id uuid NOT NULL,
+    recipe_id uuid NOT NULL,
+    custom_name text,
+    additional_price numeric DEFAULT 0 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS menu_item_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS min_choices integer DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS max_choices integer DEFAULT 1 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS menu_item_option_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS additional_price numeric DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
