@@ -103,7 +103,7 @@ export class TopNavComponent {
       icon: 'storefront',
       children: [
         { name: 'Cardápio Digital', path: '/menu', icon: 'qr_code_2', roles: ['Gerente', 'Caixa', 'Garçom'] },
-        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'sync_alt', roles: ['Gerente'] },
+        { name: 'Gestor de Cardápio', path: '/ifood-menu', icon: 'sync_alt', roles: ['Gerente'] },
         { name: 'Gestor iFood', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
       ]
     },

@@ -15,6 +15,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
+import { PublicDataService } from '../../services/public-data.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { PricingService } from '../../services/pricing.service';
 import { BaseChartDirective } from 'ng2-charts';
@@ -91,12 +92,30 @@ export class TechnicalSheetsComponent {
   isModalOpen = computed(() => this.viewMode() === 'edit');
   searchTerm = signal('');
   selectedRecipeId = signal<string | null>(null);
-  activeTab = signal<'basic' | 'ingredients' | 'advanced'>('basic');
+  activeTab = signal<'basic' | 'ingredients' | 'advanced' | 'options'>('basic');
+  
+  // Option Groups State
+  publicDataService = inject(PublicDataService);
+  availableOptionGroups = signal<any[]>([]);
+  linkedOptionGroups = signal<string[]>([]); // array of group IDs linked to the current recipe
+
+  async loadOptionGroups() {
+      const activeUnitId = this.recipeDataService['getActiveUnitId'] ? this.recipeDataService['getActiveUnitId']() : null; // private method access fallback:
+      if (!activeUnitId) return;
+      const groups = await this.publicDataService.getPublicOptionGroups(activeUnitId);
+      this.availableOptionGroups.set(groups);
+  }
+
+  async loadLinkedOptionGroups(recipeId: string) {
+      const linked = await this.recipeDataService.getRecipeOptionGroups(recipeId);
+      this.linkedOptionGroups.set(linked.map(g => g.ifood_option_group_id));
+  }
   
   // Form State
   recipeForm = signal<RecipeForm>(EMPTY_RECIPE_FORM);
   recipePendingDeletion = signal<Recipe | null>(null);
   recipeImagePreviewUrl = signal<string | null>(null);
+  isSaving = signal(false);
   
   // AI State
   isAiLoading = signal(false);
@@ -140,6 +159,33 @@ export class TechnicalSheetsComponent {
             setTimeout(() => this.searchInput?.nativeElement?.focus(), 50);
         }
     });
+
+    this.loadOptionGroups();
+  }
+
+  // --- Option Groups Logic ---
+  async toggleOptionGroup(group: any) {
+    const currentLinked = this.linkedOptionGroups();
+    const isLinked = currentLinked.includes(group.id);
+    const form = this.recipeForm();
+    if (!form.recipe.id) return; // Needs to be saved first
+
+    this.isSaving.set(true);
+    try {
+      if (isLinked) {
+        await this.recipeDataService.unlinkOptionGroupFromRecipe(form.recipe.id, group.id);
+        this.linkedOptionGroups.set(currentLinked.filter(id => id !== group.id));
+        this.notificationService.show('Grupo desvinculado.', 'success');
+      } else {
+        await this.recipeDataService.linkOptionGroupToRecipe(form.recipe.id, group.id);
+        this.linkedOptionGroups.set([...currentLinked, group.id]);
+        this.notificationService.show('Grupo vinculado!', 'success');
+      }
+    } catch(err) {
+      this.notificationService.show('Erro ao vincular grupo.', 'error');
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   filteredRecipes = computed(() => {
@@ -279,6 +325,7 @@ export class TechnicalSheetsComponent {
 
   openEditModal(recipe: Recipe) {
     this.selectedRecipeId.set(recipe.id);
+    this.loadLinkedOptionGroups(recipe.id);
     
     // Fetch data for form population
     const preparations = this.recipePreparations().filter(p => p.recipe_id === recipe.id).sort((a,b) => a.display_order - b.display_order);
@@ -324,6 +371,7 @@ export class TechnicalSheetsComponent {
 
   openAddModal() {
     this.selectedRecipeId.set(null);
+    this.linkedOptionGroups.set([]);
     // Auto-select first category if available
     const firstCategoryId = this.categories()[0]?.id;
     

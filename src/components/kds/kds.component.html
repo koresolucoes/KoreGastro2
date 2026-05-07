@@ -224,10 +224,10 @@
                                 </span>
                             </div>
                              @if (item.notes) { 
-                                <div class="mt-3 ml-11 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-black border backdrop-blur-sm" 
+                                <div class="mt-3 ml-11 inline-flex items-start gap-2 px-3 py-1.5 rounded-xl text-sm font-black border backdrop-blur-sm whitespace-pre-wrap" 
                                     [class.bg-warning/10]="!item.isCancelled" [class.text-warning]="!item.isCancelled" [class.border-warning/30]="!item.isCancelled"
                                     [class.bg-surface]="item.isCancelled" [class.text-muted]="item.isCancelled" [class.border-strong]="item.isCancelled">
-                                    <span class="material-symbols-outlined text-base">warning</span>
+                                    <span class="material-symbols-outlined text-base mt-1">warning</span>
                                     {{ item.notes }}
                                 </div> 
                              }
@@ -324,9 +324,9 @@
                     <div class="text-center border-t border-strong pt-4 mt-2">
                          <h3 class="text-xl font-black text-title leading-tight line-clamp-2 drop-shadow-sm group-hover:text-brand transition-colors">{{ agg.name }}</h3>
                          @if(agg.notes) {
-                             <div class="mt-2 inline-flex items-center gap-1.5 bg-warning/10 px-2 py-1 rounded-lg border border-warning/20">
-                                 <span class="material-symbols-outlined text-xs text-warning">warning</span>
-                                 <p class="text-[10px] text-warning font-black uppercase tracking-tight line-clamp-1">{{ agg.notes }}</p>
+                             <div class="mt-2 inline-flex items-start gap-1.5 bg-warning/10 px-2 py-1 rounded-lg border border-warning/20">
+                                 <span class="material-symbols-outlined text-xs text-warning mt-0.5">warning</span>
+                                 <p class="text-[10px] text-warning font-black uppercase tracking-tight whitespace-pre-wrap">{{ agg.notes }}</p>
                              </div>
                          }
                     </div>
@@ -695,7 +695,7 @@
                               </div>
                               
                               @if(item.notes) { 
-                                  <div class="p-3 bg-surface-elevated rounded-2xl border border-strong italic text-muted text-sm relative">
+                                  <div class="p-3 bg-surface-elevated rounded-2xl border border-strong italic text-muted text-sm relative whitespace-pre-wrap">
                                       <span class="text-xl text-brand absolute -top-2 -left-1 opacity-20">"</span>
                                       {{ item.notes }}
                                   </div> 

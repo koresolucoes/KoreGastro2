@@ -1,21 +1,21 @@
 <div class="px-6 py-6 pb-20 md:pb-6">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
     <div>
-      <h1 class="text-3xl font-black text-title tracking-tight">Gerenciamento de Cardápio <span class="text-brand">iFood</span></h1>
-      <p class="text-[11px] font-bold uppercase tracking-widest text-muted mt-1">Sincronize seu cardápio do ChefOS com a plataforma do iFood.</p>
+      <h1 class="text-3xl font-black text-title tracking-tight">Gestor de Cardápio <span class="text-brand">Opcionais e Integrações</span></h1>
+      <p class="text-[11px] font-bold uppercase tracking-widest text-muted mt-1">Crie opções (adicionais, combos) e sincronize horários do iFood.</p>
     </div>
   </div>
 
   <div class="mb-6 border-b border-subtle">
     <nav class="-mb-px flex space-x-6">
-      <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'live'" [class.text-title]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-muted]="view() !== 'live'" [class.hover:text-title]="view() !== 'live'">
-        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">menu_book</span> Cardápio no iFood</span>
-      </button>
       <button (click)="view.set('optionGroups')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'optionGroups'" [class.text-title]="view() === 'optionGroups'" [class.border-transparent]="view() !== 'optionGroups'" [class.text-muted]="view() !== 'optionGroups'" [class.hover:text-title]="view() !== 'optionGroups'">
-         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">category</span> Grupos de Complementos</span>
+         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">category</span> Configuração de Opcionais (Nativo)</span>
+      </button>
+      <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'live'" [class.text-title]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-muted]="view() !== 'live'" [class.hover:text-title]="view() !== 'live'">
+        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">outbound</span> Integração Externa (iFood)</span>
       </button>
       <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'unsellable'" [class.text-title]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-muted]="view() !== 'unsellable'" [class.hover:text-title]="view() !== 'unsellable'">
-         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">block</span> Itens Não Vendáveis</span>
+         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">block</span> Erros iFood</span>
       </button>
     </nav>
   </div>
@@ -29,8 +29,24 @@
     @switch (view()) {
       @case('live') {
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
-          <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
-            <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-success">active_indicators</span> Seu Cardápio Ativo no iFood</h2>
+          <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b border-subtle pb-5">
+            <div class="flex items-center gap-3">
+              <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-success">active_indicators</span> Cardápio iFood</h2>
+              @if(ifoodCatalogs().length > 1) {
+                  <div class="relative">
+                    <select class="appearance-none bg-surface border border-strong rounded-xl pl-4 pr-10 py-2 text-xs font-bold text-title focus:outline-none focus:border-brand cursor-pointer shadow-sm" [ngModel]="selectedCatalogId()" (ngModelChange)="switchCatalog($event)">
+                      @for(catalog of ifoodCatalogs(); track catalog.catalogId) {
+                        <option [value]="catalog.catalogId">
+                          {{ catalog.context.includes('DEFAULT') ? 'Principal (DEFAULT)' : catalog.context.join(', ') }}
+                        </option>
+                      }
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted text-[16px]">expand_more</span>
+                  </div>
+              } @else {
+                  <span class="bg-surface-elevated border border-strong px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-muted">Principal</span>
+              }
+            </div>
             <div class="flex flex-wrap gap-3">
               <button (click)="openCategoryModal()" class="bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">add</span> Nova Categoria</button>
               <button (click)="openSyncModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">sync</span> Sincronizar / Criar Itens</button>
@@ -117,8 +133,11 @@
       @case('optionGroups') {
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
-                <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">category</span> Grupos de Complementos</h2>
-                <p class="text-[11px] font-black uppercase tracking-widest text-muted">A criação de novos grupos é feita ao sincronizar um item com complementos.</p>
+                <div>
+                   <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">category</span> Opcionais e Combos</h2>
+                   <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1">Configure opções de personalização, adicionais e combos para o cardápio.</p>
+                </div>
+                <button (click)="openNewGroupModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"><span class="material-symbols-outlined text-[16px]">add</span> Novo Grupo</button>
             </div>
             <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
                 @for(group of ifoodOptionGroups(); track group.id) {
@@ -484,6 +503,40 @@
                   <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
               } @else {
                   <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+              }
+          </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- New Option Group Modal -->
+@if(isNewGroupModalOpen()) {
+  <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeNewGroupModal()">
+    <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">category</span> Novo Grupo</h3>
+        <button (click)="closeNewGroupModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+      <div class="p-6 space-y-5 bg-surface/30">
+        <div>
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome do Grupo <span class="text-danger">*</span></label>
+          <input type="text" [(ngModel)]="newGroupForm().name" name="newGroupName" placeholder="Ex: Ponto da Carne" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
+        </div>
+        <div>
+          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Código Externo</label>
+          <input type="text" [(ngModel)]="newGroupForm().externalCode" name="newGroupExtCode" placeholder="Opcional. Ex: PONTO-CARNE" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-mono font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
+        </div>
+      </div>
+      <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
+          <button (click)="closeNewGroupModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
+          <button (click)="saveNewGroup()" [disabled]="isSavingOption() || !newGroupForm().name" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              @if(isSavingOption()) {
+                  <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
+              } @else {
+                  <span class="material-symbols-outlined text-[16px]">add</span> Criar Grupo
               }
           </button>
       </div>

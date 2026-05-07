@@ -480,4 +480,179 @@ export class RecipeDataService {
       return { success: false, error };
     }
   }
+
+  // --- Opcionais e Combos ---
+
+  async createLocalOptionGroup(group: Partial<any>): Promise<{ success: boolean; data?: any; error?: any }> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+
+    try {
+      const { data, error } = await supabase
+        .from('ifood_option_groups')
+        .insert({
+          user_id: storeId,
+          name: group.name,
+          external_code: group.externalCode || null,
+          min_required: group.minRequired || 0,
+          max_options: group.maxOptions || 1,
+          sequence: group.sequence || 0
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error creating option group:', err);
+      return { success: false, error: err };
+    }
+  }
+
+  async updateLocalOptionGroup(id: string, group: Partial<any>): Promise<{ success: boolean; error?: any }> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+    try {
+      const { error } = await supabase
+        .from('ifood_option_groups')
+        .update({
+          name: group.name,
+          external_code: group.externalCode || null,
+          min_required: group.minRequired,
+          max_options: group.maxOptions,
+          sequence: group.sequence
+        })
+        .eq('id', id)
+        .eq('user_id', storeId);
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err };
+    }
+  }
+  
+  async deleteLocalOptionGroup(id: string): Promise<{ success: boolean; error?: any }> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+    try {
+      const { error } = await supabase.from('ifood_option_groups').delete().eq('id', id).eq('user_id', storeId);
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err };
+    }
+  }
+
+  async createLocalOption(option: Partial<any>): Promise<{ success: boolean; error?: any }> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+    try {
+      const { error } = await supabase
+        .from('ifood_options')
+        .insert({
+          user_id: storeId,
+          ifood_option_group_id: option.optionGroupId,
+          name: option.name,
+          external_code: option.externalCode || null,
+          price: option.price || 0,
+          sequence: option.sequence || 0,
+          ifood_product_id: option.productId || null
+        });
+      if (error) throw error;
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err };
+    }
+  }
+
+  async updateLocalOption(id: string, option: Partial<any>): Promise<{ success: boolean; error?: any }> {
+     const storeId = this.getActiveUnitId();
+     if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+     try {
+       const { error } = await supabase
+         .from('ifood_options')
+         .update({ 
+            name: option.name, 
+            external_code: option.externalCode || null, 
+            price: option.price, 
+            sequence: option.sequence 
+         })
+         .eq('id', id).eq('user_id', storeId);
+       if (error) throw error;
+       return { success: true };
+     } catch (err) {
+       return { success: false, error: err };
+     }
+  }
+
+  async deleteLocalOption(id: string): Promise<{ success: boolean; error?: any }> {
+     const storeId = this.getActiveUnitId();
+     if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+     try {
+       const { error } = await supabase.from('ifood_options').delete().eq('id', id).eq('user_id', storeId);
+       if (error) throw error;
+       return { success: true };
+     } catch (err) {
+       return { success: false, error: err };
+     }
+  }
+
+  async updateLocalOptionGroupStatus(groupId: string, status: string): Promise<any> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+    try {
+        const { error } = await supabase.from('ifood_option_groups').update({ ifood_id: status }).eq('id', groupId).eq('user_id', storeId);
+        if(error) throw error;
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err };
+    }
+  }
+
+  async updateLocalOptionStatus(optionId: string, status: string): Promise<any> {
+    const storeId = this.getActiveUnitId();
+    if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+    try {
+        const { error } = await supabase.from('ifood_options').update({ ifood_option_id: status }).eq('id', optionId).eq('user_id', storeId);
+        if(error) throw error;
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err };
+    }
+  }
+
+  async linkOptionGroupToRecipe(recipeId: string, groupId: string): Promise<{ success: boolean; error?: any }> {
+     const storeId = this.getActiveUnitId();
+     if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+     try {
+       const { error } = await supabase.from('recipe_ifood_option_groups').insert({ user_id: storeId, recipe_id: recipeId, ifood_option_group_id: groupId });
+       if (error) throw error;
+       return { success: true };
+     } catch (err) {
+       return { success: false, error: err };
+     }
+  }
+
+  async unlinkOptionGroupFromRecipe(recipeId: string, groupId: string): Promise<{ success: boolean; error?: any }> {
+     const storeId = this.getActiveUnitId();
+     if (!storeId) return { success: false, error: new Error('Sem unidade ativa.') };
+     try {
+       const { error } = await supabase.from('recipe_ifood_option_groups').delete().eq('recipe_id', recipeId).eq('ifood_option_group_id', groupId).eq('user_id', storeId);
+       if (error) throw error;
+       return { success: true };
+     } catch (err) {
+       return { success: false, error: err };
+     }
+  }
+
+  async getRecipeOptionGroups(recipeId: string): Promise<any[]> {
+      const storeId = this.getActiveUnitId();
+      if (!storeId) return [];
+      const { data, error } = await supabase
+        .from('recipe_ifood_option_groups')
+        .select('*')
+        .eq('recipe_id', recipeId)
+        .eq('user_id', storeId);
+      if (error) return [];
+      return data || [];
+  }
 }

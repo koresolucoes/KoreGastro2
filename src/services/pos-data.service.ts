@@ -90,7 +90,7 @@ export class PosDataService {
     return { success: true, error: null, data: { ...data, order_items: [] } };
   }
 
-  async addItemsToOrder(orderId: string, tableId: string | null, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string }[]): Promise<{ success: boolean; error: any }> {
+  async addItemsToOrder(orderId: string, tableId: string | null, employeeId: string, items: { recipe: Recipe; quantity: number; notes?: string; optionsPrice?: number }[]): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -107,7 +107,8 @@ export class PosDataService {
     
     const allItemsToInsert = items.flatMap(item => {
         const recipePreps = prepsByRecipeId.get(item.recipe.id);
-        const effectivePrice = this.pricingService.getEffectivePrice(item.recipe);
+        const baseEffectivePrice = this.pricingService.getEffectivePrice(item.recipe);
+        const effectivePrice = baseEffectivePrice + (item.optionsPrice || 0);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
         // Furo 8: Congelar o custo no momento da venda
         const currentCost = this.recipeState.recipeCosts().get(item.recipe.id)?.totalCost ?? 0;

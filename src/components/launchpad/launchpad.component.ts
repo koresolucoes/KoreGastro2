@@ -158,7 +158,7 @@ export class LaunchpadComponent {
       items: [
         { name: 'Entregas', path: '/delivery', icon: 'local_shipping', color: 'bg-rose-500 shadow-rose-500/20', description: 'Gerencie entregadores e status de delivery.' },
         { name: 'iFood Loja', path: '/ifood-store-manager', icon: 'storefront', color: 'bg-red-500 shadow-red-500/20', description: 'Gerencie o status da loja no iFood.' },
-        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'menu_book', color: 'bg-red-600 shadow-red-600/20', description: 'Sincronize e gerencie seu cardápio iFood.' },
+        { name: 'Gestor de Cardápio', path: '/ifood-menu', icon: 'menu_book', color: 'bg-red-600 shadow-red-600/20', description: 'Monte seu cardápio, combos e opcionais.' },
         { name: 'iFood KDS', path: '/ifood-kds', icon: 'fastfood', color: 'bg-red-400 shadow-red-400/20', description: 'Cozinha dedicada aos pedidos do iFood.' }
       ]
     },

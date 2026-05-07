@@ -1,21 +1,24 @@
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient } from '../../../models/db.models';
+import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup } from '../../../models/db.models';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '../../../services/pricing.service';
 import { RecipeStateService } from '../../../services/recipe-state.service';
 import { InventoryStateService } from '../../../services/inventory-state.service';
+import { PublicDataService } from '../../../services/public-data.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ManagerAuthModalComponent } from '../../shared/manager-auth-modal/manager-auth-modal.component';
 import { CancellationReasonModalComponent } from '../cancellation-reason-modal/cancellation-reason-modal.component';
+import { MenuCustomizationComponent } from '../../menu/customization/menu-customization.component';
 
 interface CartItem {
     id: string;
     recipe: Recipe;
     quantity: number;
     notes: string;
+    options?: IfoodOption[];
 }
 
 interface GroupedOrderItem {
@@ -42,16 +45,17 @@ type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
 @Component({
   selector: 'app-order-panel',
   standalone: true,
-  imports: [CommonModule, ManagerAuthModalComponent, CancellationReasonModalComponent],
+  imports: [CommonModule, ManagerAuthModalComponent, CancellationReasonModalComponent, MenuCustomizationComponent],
   templateUrl: './order-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrderPanelComponent {
+export class OrderPanelComponent implements OnInit {
   recipeState = inject(RecipeStateService);
   inventoryState = inject(InventoryStateService);
   posDataService = inject(PosDataService);
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
+  publicDataService = inject(PublicDataService);
 
   // Inputs & Outputs
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
@@ -95,6 +99,12 @@ export class OrderPanelComponent {
   discountType = signal<DiscountType>('percentage');
   discountValue = signal<number | null>(null);
 
+  // Customization Modal Signals
+  isCustomizationModalOpen = signal(false);
+  customizingRecipe = signal<Recipe | null>(null);
+  optionGroups = signal<IfoodOptionGroup[]>([]);
+  recipeOptionGroups = signal<RecipeIfoodOptionGroup[]>([]);
+
   // Global Discount Modal
   isGlobalDiscountModalOpen = signal(false);
   globalDiscountType = signal<DiscountType>('percentage');
@@ -110,6 +120,30 @@ export class OrderPanelComponent {
   cancellationAuthorizer = signal<Employee | null>(null);
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
+
+  ngOnInit() {
+  }
+
+  async loadOptionGroups(userId: string) {
+    try {
+      const [groups, recipeGroups] = await Promise.all([
+        this.publicDataService.getPublicOptionGroups(userId),
+        this.publicDataService.getPublicRecipeOptionGroups(userId)
+      ]);
+      this.optionGroups.set(groups);
+      this.recipeOptionGroups.set(recipeGroups);
+    } catch (err) {
+      console.error('Error loading option groups', err);
+    }
+  }
+
+  getRecipeOptionGroups(recipeId: string): IfoodOptionGroup[] {
+    const relations = this.recipeOptionGroups().filter(r => r.recipe_id === recipeId);
+    const groupIds = relations.map(r => r.ifood_option_group_id);
+    return this.optionGroups()
+      .filter(g => groupIds.includes(g.id))
+      .sort((a,b) => a.sequence - b.sequence);
+  }
 
   hasCustomer = computed(() => !!this.currentOrder()?.customers);
 
@@ -189,6 +223,13 @@ export class OrderPanelComponent {
 
   constructor() {
     effect(() => {
+        const employee = this.activeEmployee();
+        if (employee && employee.user_id) {
+            this.loadOptionGroups(employee.user_id);
+        }
+    });
+
+    effect(() => {
       this.selectedTable();
       untracked(() => this.shoppingCart.set([]));
     });
@@ -196,6 +237,12 @@ export class OrderPanelComponent {
 
   setMobileTab(tab: 'menu' | 'cart') {
     this.mobileTab.set(tab);
+  }
+
+  getCartItemPrice(item: CartItem): number {
+    const basePrice = this.recipePrices().get(item.recipe.id) || 0;
+    const optionsPrice = item.options?.reduce((sum, opt) => sum + opt.price, 0) || 0;
+    return basePrice + optionsPrice;
   }
 
   isItemCritical(item: OrderItem): boolean {
@@ -413,10 +460,39 @@ export class OrderPanelComponent {
         return;
     }
 
+    const groups = this.getRecipeOptionGroups(recipe.id);
+    if (groups && groups.length > 0) {
+      this.customizingRecipe.set(recipe);
+      this.isCustomizationModalOpen.set(true);
+      return;
+    }
+
     this.quickAddRecipe.set(recipe);
     this.quickAddQuantity.set(1);
     this.quickAddNotes.set('');
     this.isQuickAddModalOpen.set(true);
+  }
+
+  closeCustomizationModal() {
+    this.isCustomizationModalOpen.set(false);
+    this.customizingRecipe.set(null);
+  }
+
+  confirmCustomization(event: { options: IfoodOption[], notes: string }) {
+    const recipe = this.customizingRecipe();
+    if (!recipe) return;
+
+    if (!this.hasEnoughStockFor(recipe, 1)) {
+        return;
+    }
+
+    this.shoppingCart.update(cart => [
+        ...cart, 
+        { id: uuidv4(), recipe, quantity: 1, notes: event.notes, options: event.options }
+    ]);
+
+    this.closeCustomizationModal();
+    this.recipeSearchTerm.set('');
   }
 
   closeQuickAddModal() {
@@ -528,8 +604,30 @@ export class OrderPanelComponent {
   async sendOrder() {
     const order = this.currentOrder(), table = this.selectedTable(), employee = this.activeEmployee(), cart = this.shoppingCart();
     if (order && table && employee && cart.length > 0) {
-      const itemsToSend = cart.map(c => ({ recipe: c.recipe, quantity: c.quantity, notes: c.notes }));
-      const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend);
+      const itemsToSend = cart.map(c => {
+        let finalNotes = c.notes;
+        let finalPriceOptions = 0;
+        if (c.options && c.options.length > 0) {
+            const groups = this.getRecipeOptionGroups(c.recipe.id);
+            const groupedOptions = new Map<string, typeof c.options>();
+            c.options.forEach(opt => {
+                const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
+                arr.push(opt);
+                groupedOptions.set(opt.ifood_option_group_id, arr);
+            });
+
+            let hierarchyStr = '';
+            groupedOptions.forEach((opts, groupId) => {
+                const groupName = groups.find(g => g.id === groupId)?.name || 'Opções';
+                hierarchyStr += `\n>> ${groupName}:\n` + opts.map(o => `   • ${o.name}`).join('\n');
+            });
+
+            finalNotes = finalNotes ? `${finalNotes}\n${hierarchyStr}` : hierarchyStr.trim();
+            finalPriceOptions = c.options.reduce((sum, opt) => sum + opt.price, 0);
+        }
+        return { recipe: c.recipe, quantity: c.quantity, notes: finalNotes, optionsPrice: finalPriceOptions };
+      });
+      const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend as any);
       if (result.success) this.shoppingCart.set([]);
       else await this.notificationService.alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
     }

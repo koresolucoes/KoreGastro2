@@ -8,6 +8,9 @@ import { Recipe, Category, IfoodMenuSync } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
 import { RecipeDataService } from '../../services/recipe-data.service';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { UnitContextService } from '../../services/unit-context.service';
+import { PublicDataService } from '../../services/public-data.service';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
@@ -33,7 +36,7 @@ export class IfoodMenuComponent implements OnInit {
   private recipeDataService = inject(RecipeDataService);
 
   isLoading = signal(true);
-  view = signal<'live' | 'unsellable' | 'optionGroups'>('live');
+  view = signal<'live' | 'unsellable' | 'optionGroups'>('optionGroups');
 
   // iFood Data
   ifoodCatalogs = signal<IfoodCatalog[]>([]);
@@ -83,6 +86,11 @@ export class IfoodMenuComponent implements OnInit {
   isCategoryModalOpen = signal(false);
   newCategoryName = signal('');
   isCreatingCategory = signal(false);
+
+  switchCatalog(catalogId: string) {
+    this.selectedCatalogId.set(catalogId);
+    this.loadCatalogData(catalogId);
+  }
 
   // Modals for option groups & options
   isOptionModalOpen = signal(false);
@@ -179,17 +187,48 @@ export class IfoodMenuComponent implements OnInit {
     }
   }
 
+  private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
+  private publicDataService = inject(PublicDataService);
+
+  private getActiveUnitId(): string | null {
+      return this.unitContextService.activeUnitId();
+  }
+
   async loadCatalogData(catalogId: string) {
     this.isLoading.set(true);
     try {
-        const [categories, unsellable, optionGroups] = await Promise.all([
+        const userId = this.getActiveUnitId();
+        let localOptions: any[] = [];
+        if (userId) {
+          localOptions = await this.publicDataService.getPublicOptionGroups(userId);
+        }
+
+        const [categories, unsellable] = await Promise.all([
             this.ifoodMenuService.getCategories(catalogId),
-            this.ifoodMenuService.getUnsellableItems(catalogId),
-            this.ifoodMenuService.getOptionGroups(true)
+            this.ifoodMenuService.getUnsellableItems(catalogId)
         ]);
         this.ifoodCategories.set(categories);
         this.unsellableCategories.set(unsellable.categories);
-        this.ifoodOptionGroups.set(optionGroups);
+        
+        // Map local Option Groups to the UI format so we reuse the template
+        this.ifoodOptionGroups.set(localOptions.map(g => ({
+          ...g,
+          id: g.id,
+          name: g.name,
+          externalCode: g.external_code || '',
+          status: g.ifood_id || 'AVAILABLE', // We repurposed ifood_id for status in local logic above
+          options: (g.ifood_options || []).map((o: any) => ({
+             ...o,
+             id: o.id,
+             name: o.name,
+             externalCode: o.external_code || '',
+             price: { value: o.price, originalValue: o.price },
+             status: o.ifood_option_id || 'AVAILABLE',
+             productId: o.ifood_product_id
+          }))
+        })));
+        
     } catch (error: any) {
         this.notificationService.show(`Erro ao buscar dados do catálogo: ${error.message}`);
     } finally {
@@ -404,6 +443,10 @@ export class IfoodMenuComponent implements OnInit {
   
   closeOptionModal() { this.isOptionModalOpen.set(false); }
 
+  // Modal details
+  isNewGroupModalOpen = signal(false);
+  newGroupForm = signal({ name: '', externalCode: '' });
+
   openEditGroupModal(group: IfoodOptionGroup) {
     this.editingGroup.set(group);
     this.editingGroupName.set(group.name);
@@ -411,6 +454,31 @@ export class IfoodMenuComponent implements OnInit {
     this.isEditGroupModalOpen.set(true);
   }
   closeEditGroupModal() { this.isEditGroupModalOpen.set(false); }
+
+  openNewGroupModal() {
+    this.newGroupForm.set({ name: '', externalCode: '' });
+    this.isNewGroupModalOpen.set(true);
+  }
+  closeNewGroupModal() { this.isNewGroupModalOpen.set(false); }
+
+  async saveNewGroup() {
+    this.isSavingOption.set(true);
+    try {
+      const form = this.newGroupForm();
+      if (!form.name) throw new Error("Nome é obrigatório.");
+      
+      const { success, error } = await this.recipeDataService.createLocalOptionGroup(form);
+      if(!success) throw error;
+
+      this.notificationService.show("Grupo criado!", "success");
+      await this.refreshData();
+      this.closeNewGroupModal();
+    } catch(error: any) {
+      this.notificationService.show(`Erro: ${error.message}`, 'error');
+    } finally {
+      this.isSavingOption.set(false);
+    }
+  }
 
   async saveGroupChanges() {
     const group = this.editingGroup();
@@ -420,11 +488,11 @@ export class IfoodMenuComponent implements OnInit {
     try {
       let changed = false;
       if (group.name !== this.editingGroupName()) {
-        await this.ifoodMenuService.updateOptionGroup(group.id, this.editingGroupName());
+        await this.recipeDataService.updateLocalOptionGroup(group.id, { name: this.editingGroupName() });
         changed = true;
       }
       if (group.status !== this.newGroupStatus()) {
-        await this.ifoodMenuService.updateOptionGroupStatus(group.id, this.newGroupStatus());
+        await this.recipeDataService.updateLocalOptionGroupStatus(group.id, this.newGroupStatus());
         changed = true;
       }
       if (changed) {
@@ -449,20 +517,27 @@ export class IfoodMenuComponent implements OnInit {
       if (editing) {
         // Update existing option
         let changed = false;
-        if (editing.price.value !== form.price) {
-          await this.ifoodMenuService.updateOptionPrice(editing.id, form.price);
-          changed = true;
+        if (editing.price.value !== form.price || editing.name !== form.name || editing.externalCode !== form.externalCode) {
+           await this.recipeDataService.updateLocalOption(editing.id, { 
+              name: form.name, 
+              externalCode: form.externalCode,
+              price: form.price 
+            });
+            changed = true;
         }
         if (editing.status !== this.newOptionStatus()) {
-          await this.ifoodMenuService.updateOptionStatus(editing.id, this.newOptionStatus());
-          changed = true;
+           await this.recipeDataService.updateLocalOptionStatus(editing.id, this.newOptionStatus());
+           changed = true;
         }
         if (changed) this.notificationService.show("Complemento salvo com sucesso!", 'success');
       } else {
         // Create new option
         const parentGroup = this.parentGroupForOption();
         if (!parentGroup) throw new Error("Grupo de complemento não encontrado.");
-        await this.ifoodMenuService.createOption(parentGroup.id, form);
+        await this.recipeDataService.createLocalOption({
+          ...form,
+          optionGroupId: parentGroup.id
+        });
         this.notificationService.show("Complemento salvo com sucesso!", 'success');
       }
       await this.refreshData();
@@ -480,9 +555,7 @@ export class IfoodMenuComponent implements OnInit {
 
     this.isSavingOption.set(true);
     try {
-      const parentGroup = this.ifoodOptionGroups().find(g => g.options.some(o => o.id === option.id));
-      if (!parentGroup) throw new Error("Grupo pai não encontrado.");
-      await this.ifoodMenuService.deleteOption(parentGroup.id, option.productId);
+      await this.recipeDataService.deleteLocalOption(option.id);
       this.notificationService.show("Complemento removido.", 'success');
       await this.refreshData();
       this.closeOptionModal();
@@ -499,7 +572,7 @@ export class IfoodMenuComponent implements OnInit {
 
     this.isLoading.set(true);
     try {
-      await this.ifoodMenuService.deleteOptionGroup(group.id);
+      await this.recipeDataService.deleteLocalOptionGroup(group.id);
       this.notificationService.show("Grupo de complementos removido.", 'success');
       await this.refreshData();
     } catch(error: any) {

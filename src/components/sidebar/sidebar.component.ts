@@ -79,7 +79,7 @@ export class SidebarComponent {
       imageUrl: 'https://i.imgur.com/NzlCBGX.png',
       children: [
         { name: 'KDS Delivery', path: '/ifood-kds', icon: 'delivery_dining', roles: ['Gerente', 'Caixa'] },
-        { name: 'Gerenciar Cardápio', path: '/ifood-menu', icon: 'menu_book', roles: ['Gerente'] },
+        { name: 'Opcionais & Config', path: '/ifood-menu', icon: 'room_service', roles: ['Gerente'] },
         { name: 'Gestor de Loja', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
       ]
     },
