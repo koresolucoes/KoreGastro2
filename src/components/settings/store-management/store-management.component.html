@@ -5,7 +5,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
       <div class="flex items-center gap-4">
         <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
-          <span class="material-symbols-outlined text-3xl text-brand">domain</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">domain</span>
         </div>
         <div>
           <h2 class="text-2xl font-black text-title title-display tracking-tight">Minhas Lojas</h2>
@@ -17,12 +17,12 @@
             <div class="text-[11px] font-black tracking-widest uppercase bg-surface-elevated px-4 py-2 rounded-xl border border-strong hidden md:flex items-center gap-2 shadow-inner">
                 <span class="text-muted">Plano Ouro:</span>
                 <span class="text-brand flex items-center gap-1">
-                    {{ ownerStoreCount() }} <span class="text-muted/50">/</span> {{ maxStoresAllowed() }} <span class="material-symbols-outlined text-sm">storefront</span>
+                    {{ ownerStoreCount() }} <span class="text-muted/50">/</span> {{ maxStoresAllowed() }} <span translate="no" class="notranslate material-symbols-outlined text-sm">storefront</span>
                 </span>
             </div>
         }
         <button (click)="openCreateModal()" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider py-3 px-6 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-sm hover:shadow-brand/20 active:scale-95 border border-transparent">
-            <span class="material-symbols-outlined text-lg">add_business</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">add_business</span>
             Nova Loja
         </button>
       </div>
@@ -61,10 +61,10 @@
                     <div class="flex gap-2">
                         @if (store.role === 'owner') {
                             <button (click)="openEditModal(store)" class="p-2 text-muted hover:text-brand rounded-xl hover:bg-brand/10 transition-colors border border-transparent hover:border-brand/20 active:scale-95" title="Editar Nome">
-                                <span class="material-symbols-outlined text-lg">edit</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-lg">edit</span>
                             </button>
                             <button (click)="deleteStore(store)" class="p-2 text-muted hover:text-danger rounded-xl hover:bg-danger/10 transition-colors border border-transparent hover:border-danger/20 active:scale-95" title="Excluir Loja">
-                                <span class="material-symbols-outlined text-lg">delete</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-lg">delete</span>
                             </button>
                         }
                     </div>
@@ -72,7 +72,7 @@
 
                 <h3 class="text-xl font-black text-title mb-1 truncate" [title]="store.name">{{ store.name }}</h3>
                 <p class="text-[11px] uppercase tracking-widest text-muted mb-6 flex items-center gap-1.5 font-bold">
-                    <span class="material-symbols-outlined text-[14px]">shield_person</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">shield_person</span>
                     {{ store.role === 'owner' ? 'Proprietário' : 'Gestor Convidado' }}
                 </p>
 
@@ -80,11 +80,11 @@
                     @if (activeStoreId() !== store.id) {
                         <button (click)="switchToStore(store.id)" class="w-full py-3 bg-surface hover:bg-surface-elevated border border-strong text-title rounded-xl text-xs uppercase tracking-wider font-black transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 group-hover:border-brand/40">
                             Acessar Unidade
-                            <span class="material-symbols-outlined text-sm opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
                         </button>
                     } @else {
                         <button disabled class="w-full py-3 bg-brand/10 text-brand rounded-xl text-xs uppercase tracking-wider font-black border border-brand/20 flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">check_circle</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">check_circle</span>
                             Selecionada
                         </button>
                     }
@@ -95,12 +95,12 @@
   } @else {
       <div class="flex flex-col items-center justify-center py-20 bg-surface-elevated/50 rounded-3xl border border-strong border-dashed">
           <div class="p-5 bg-surface border border-subtle rounded-3xl mb-6 shadow-sm">
-               <span class="material-symbols-outlined text-5xl text-brand opacity-80">store_front</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-5xl text-brand opacity-80">store_front</span>
           </div>
           <h3 class="text-xl font-black text-title mb-2">Nenhuma loja encontrada</h3>
           <p class="text-muted text-sm max-w-md text-center mb-8 font-medium">Você ainda não tem lojas criadas ou não tem permissão para vê-las. Crie sua primeira loja para começar a usar o sistema.</p>
           <button (click)="openCreateModal()" class="bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider py-4 px-8 rounded-xl transition-all shadow-sm hover:shadow-brand/20 active:scale-95 flex items-center gap-2">
-            <span class="material-symbols-outlined">add_circle</span>
+            <span translate="no" class="notranslate material-symbols-outlined">add_circle</span>
             Criar Minha Primeira Loja
           </button>
       </div>
@@ -110,7 +110,7 @@
   <div class="mt-8 border-t border-subtle pt-8">
     <div class="flex items-center gap-4 mb-6">
         <div class="bg-warning/10 p-3 rounded-2xl border border-warning/20">
-            <span class="material-symbols-outlined text-3xl text-warning">content_copy</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-3xl text-warning">content_copy</span>
         </div>
         <div>
             <h2 class="text-xl font-black text-title title-display tracking-tight">Transferir Cardápio</h2>
@@ -144,14 +144,14 @@
                         <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                         Clonando...
                     } @else {
-                        <span class="material-symbols-outlined text-[18px]">file_copy</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">file_copy</span>
                         Transferir
                     }
                 </button>
             </div>
             
             <p class="text-xs text-muted flex gap-2 items-start bg-warning/5 p-3 rounded-lg border border-warning/10">
-                <span class="material-symbols-outlined text-[16px] text-warning shrink-0">info</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-warning shrink-0">info</span>
                 <span>As categorias e pratos da origem serão adicionados à unidade atualmente selecionada. Fichas técnicas serão copiadas, mas variações manuais de preço por loja não serão consideradas.</span>
             </p>
         </div>
@@ -165,11 +165,11 @@
   <div class="chef-surface rounded-3xl shadow-2xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
     <div class="p-6 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md">
       <h3 class="text-xl font-black text-title flex items-center gap-2">
-         <span class="material-symbols-outlined text-brand">{{ editingStore() ? 'edit' : 'add_business' }}</span>
+         <span translate="no" class="notranslate material-symbols-outlined text-brand">{{ editingStore() ? 'edit' : 'add_business' }}</span>
          {{ editingStore() ? 'Renomear Loja' : 'Nova Loja' }}
       </h3>
       <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-        <span class="material-symbols-outlined text-lg">close</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
       </button>
     </div>
     <div class="p-8">
@@ -180,7 +180,7 @@
 
         @if (!editingStore() && ownerStoreCount() >= maxStoresAllowed()) {
             <div class="p-4 bg-danger/10 border border-danger/20 rounded-2xl text-xs font-bold text-danger mb-6 flex items-start gap-3 shadow-sm">
-                <span class="material-symbols-outlined text-xl">error</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-xl">error</span>
                 <p>Você atingiu o limite de lojas do seu plano atual ({{ maxStoresAllowed() }}). Faça um upgrade para criar mais.</p>
             </div>
         }

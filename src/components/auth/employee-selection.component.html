@@ -53,7 +53,7 @@
                   <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-20 h-20 rounded-full object-cover mb-4 ring-4 ring-surface-elevated group-hover:ring-brand/30 transition-all shadow-inner">
                 } @else {
                   <div class="w-20 h-20 rounded-full bg-surface-elevated/50 flex items-center justify-center mb-4 ring-4 ring-surface-elevated group-hover:ring-brand/30 transition-all shadow-inner">
-                    <span class="material-symbols-outlined text-4xl text-muted group-hover:text-brand transition-colors">person</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted group-hover:text-brand transition-colors">person</span>
                   </div>
                 }
                 <span class="font-bold text-title text-center text-lg leading-tight mb-1">{{ employee.name }}</span>
@@ -69,11 +69,11 @@
                 <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-28 h-28 rounded-full object-cover ring-4 ring-brand/50 shadow-2xl">
               } @else {
                 <div class="w-28 h-28 rounded-full bg-surface/80 flex items-center justify-center ring-4 ring-brand/50 shadow-2xl">
-                  <span class="material-symbols-outlined text-5xl text-muted">person</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted">person</span>
                 </div>
               }
               <button (click)="cancelPinLogin()" class="absolute -bottom-2 -right-2 bg-surface hover:bg-surface-elevated text-title rounded-full p-2.5 shadow-lg border border-strong transition-colors" title="Trocar usuário">
-                <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">swap_horiz</span>
               </button>
             </div>
             
@@ -89,11 +89,11 @@
                 <button (click)="handlePinInput(digit)" class="w-20 h-20 mx-auto bg-surface-elevated/50 rounded-full text-3xl font-bold text-title hover:bg-brand hover:text-white hover:shadow-lg hover:shadow-brand/50 transition-all active:scale-95 border border-strong">{{ digit }}</button>
               }
               <button (click)="clearPin()" class="w-20 h-20 mx-auto bg-surface/50 rounded-full text-sm font-bold text-muted hover:bg-surface-elevated hover:text-title transition-all active:scale-95 border border-strong flex items-center justify-center">
-                <span class="material-symbols-outlined">backspace</span>
+                <span translate="no" class="notranslate material-symbols-outlined">backspace</span>
               </button>
               <button (click)="handlePinInput('0')" class="w-20 h-20 mx-auto bg-surface-elevated/50 rounded-full text-3xl font-bold text-title hover:bg-brand hover:text-white hover:shadow-lg hover:shadow-brand/50 transition-all active:scale-95 border border-strong">0</button>
               <button (click)="cancelPinLogin()" class="w-20 h-20 mx-auto bg-surface/50 rounded-full text-sm font-bold text-muted hover:bg-surface-elevated hover:text-title transition-all active:scale-95 border border-strong flex items-center justify-center">
-                <span class="material-symbols-outlined">close</span>
+                <span translate="no" class="notranslate material-symbols-outlined">close</span>
               </button>
             </div>
           </div>
@@ -105,7 +105,7 @@
                   <img [src]="employee.photo_url" [alt]="'Foto de ' + employee.name" class="w-32 h-32 rounded-full object-cover mx-auto ring-4 ring-success/50 shadow-2xl mb-6">
               } @else {
                   <div class="w-32 h-32 rounded-full bg-surface-elevated flex items-center justify-center mx-auto ring-4 ring-success/50 shadow-2xl mb-6">
-                      <span class="material-symbols-outlined text-6xl text-muted">person</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted">person</span>
                   </div>
               }
               <h2 class="text-3xl font-black text-title mb-2 tracking-tight">Olá, {{ employee.name.split(' ')[0] }}</h2>
@@ -114,7 +114,7 @@
               
               <div class="flex flex-col gap-4">
                   <button (click)="confirmClockIn()" class="w-full bg-success hover:brightness-110 text-white font-black py-4 px-6 rounded-2xl transition-all text-xl shadow-lg shadow-success/30 hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3">
-                      <span class="material-symbols-outlined">schedule</span> Iniciar Turno Agora
+                      <span translate="no" class="notranslate material-symbols-outlined">schedule</span> Iniciar Turno Agora
                   </button>
                   <button (click)="cancelClockInConfirmation()" class="w-full bg-surface-elevated text-title font-bold py-4 px-6 rounded-2xl hover:bg-surface border border-strong transition-all active:scale-95">
                       Cancelar e Voltar

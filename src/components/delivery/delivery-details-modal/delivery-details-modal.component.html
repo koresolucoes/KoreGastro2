@@ -4,11 +4,11 @@
       <!-- Header -->
       <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
         <h3 class="text-xl font-black text-title flex items-center gap-3">
-            <span class="material-symbols-outlined text-brand">receipt_long</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt_long</span>
             Detalhes da Entrega <span class="text-muted text-sm tracking-widest font-bold">#{{ o.id.slice(0, 8) }}</span>
         </h3>
         <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
       <!-- Body -->
@@ -17,7 +17,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section class="bg-surface-elevated border border-strong rounded-xl p-5 shadow-sm">
               <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4 flex items-center gap-2">
-                  <span class="material-symbols-outlined text-[16px]">person</span> Cliente e Endereço
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px]">person</span> Cliente e Endereço
               </h4>
               <div class="space-y-4">
                 @if (o.customers; as customer) {
@@ -42,7 +42,7 @@
              @if(o.customers) {
                  <div class="bg-surface-elevated border border-strong rounded-xl p-1 shadow-sm h-48 md:h-full relative overflow-hidden">
                      <div #mapContainer class="w-full h-full rounded-lg z-0 bg-surface flex items-center justify-center">
-                         <span class="material-symbols-outlined text-4xl text-muted">map</span>
+                         <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted">map</span>
                      </div>
                  </div>
              }
@@ -51,7 +51,7 @@
         <!-- Order Items -->
         <section>
           <h4 class="text-[11px] font-black tracking-[0.1em] text-muted uppercase mb-4 flex items-center gap-2 border-b border-subtle pb-2">
-              <span class="material-symbols-outlined text-[16px]">restaurant_menu</span> Itens do Pedido
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">restaurant_menu</span> Itens do Pedido
           </h4>
           <ul class="space-y-2 mt-4">
             @for (item of o.order_items; track item.id) {
@@ -93,7 +93,7 @@
       <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl shrink-0">
         <button (click)="closeModal.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Fechar</button>
         <button (click)="printGuide()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2">
-          <span class="material-symbols-outlined text-sm">print</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span>
           <span>Imprimir Guia</span>
         </button>
       </div>

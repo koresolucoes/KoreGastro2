@@ -33,7 +33,7 @@
                  [class.lg:bg-white/20]="activeTab() === item.id"
                  [class.lg:bg-surface/50]="activeTab() !== item.id"
                  [class.lg:group-hover:bg-brand/10]="activeTab() !== item.id">
-              <span class="material-symbols-outlined text-[20px] lg:text-[20px] block leading-none text-brand lg:text-inherit" [class.lg:text-brand]="activeTab() !== item.id">{{ item.icon }}</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px] lg:text-[20px] block leading-none text-brand lg:text-inherit" [class.lg:text-brand]="activeTab() !== item.id">{{ item.icon }}</span>
             </div>
             
             <div class="flex-1 min-w-0 flex flex-col justify-center">
@@ -41,7 +41,7 @@
               <span class="text-xs text-muted font-medium lg:hidden truncate mt-0.5">{{ item.desc }}</span>
             </div>
             
-            <span class="material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 group-hover:text-brand transition-all">chevron_right</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 group-hover:text-brand transition-all">chevron_right</span>
 
             @if(activeTab() === item.id) {
               <div class="hidden lg:block absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -translate-y-12 translate-x-12"></div>
@@ -67,7 +67,7 @@
       <!-- Mobile Specific "Back" Header -->
       <div class="lg:hidden bg-surface border-b border-subtle p-3 sticky top-0 z-30 flex items-center gap-3 shadow-sm pt-safe">
          <button (click)="goBackToMenu()" class="p-2 rounded-full text-muted hover:text-title hover:bg-surface-elevated transition-colors active:scale-95 flex items-center justify-center -ml-2">
-             <span class="material-symbols-outlined text-2xl">arrow_back</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-2xl">arrow_back</span>
          </button>
          <h2 class="text-lg font-bold text-title flex-1 truncate">{{ getActiveTabLabel() }}</h2>
       </div>

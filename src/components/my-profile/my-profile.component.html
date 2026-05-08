@@ -17,7 +17,7 @@
         } @else {
           <div class="w-28 h-28 rounded-full bg-surface flex items-center justify-center border-4 border-surface-elevated shadow-lg relative overflow-hidden">
              <div class="absolute inset-0 bg-gradient-to-tr from-brand/20 to-transparent"></div>
-             <span class="material-symbols-outlined text-4xl text-muted">person</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted">person</span>
           </div>
         }
       </div>
@@ -26,7 +26,7 @@
         <div class="flex flex-col sm:flex-row items-center gap-x-4 gap-y-2 justify-center sm:justify-start">
             <h1 class="text-3xl font-black text-title title-display tracking-tight">{{ employee.name }}</h1>
             <button (click)="isPlanModalOpen.set(true)" class="w-8 h-8 flex items-center justify-center rounded-full bg-brand/10 text-brand hover:bg-brand hover:text-white transition-all shadow-sm active:scale-95" title="Ver detalhes do plano">
-                <span class="material-symbols-outlined text-[18px]">workspace_premium</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">workspace_premium</span>
             </button>
         </div>
         <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1 bg-surface py-1.5 px-3 rounded-lg border border-strong inline-block shadow-sm">{{ employee.role }}</p>
@@ -40,7 +40,7 @@
       <div class="lg:col-span-1 space-y-8">
         <!-- Personal Details -->
         <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-sm">
-          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-brand">assignment_ind</span> Meus Dados</h2>
+          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">assignment_ind</span> Meus Dados</h2>
           <dl class="space-y-4 text-sm">
             <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong"><dt class="text-[10px] uppercase font-bold text-muted mb-1">Telefone</dt><dd class="text-title font-bold data-mono">{{ employee.phone || 'Não informado' }}</dd></div>
             <div class="flex flex-col bg-surface p-4 rounded-xl border border-strong"><dt class="text-[10px] uppercase font-bold text-muted mb-1">Data de Contratação</dt><dd class="text-title font-bold data-mono">{{ employee.hire_date ? (employee.hire_date | date:'dd/MM/yyyy') : 'Não informado' }}</dd></div>
@@ -53,7 +53,7 @@
       <div class="lg:col-span-1 space-y-8">
         <!-- Work Summary -->
         <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-sm">
-          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-brand">insights</span> Resumo do Mês</h2>
+          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">insights</span> Resumo do Mês</h2>
           <div class="space-y-4">
             <div class="bg-surface p-5 rounded-2xl border border-strong flex justify-between items-center shadow-sm">
                 <p class="text-[10px] uppercase font-bold text-muted">Horas Trabalhadas</p>
@@ -68,7 +68,7 @@
 
         <!-- Schedule -->
         <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-sm">
-          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-brand">calendar_month</span> Minha Escala (Esta Semana)</h2>
+          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">calendar_month</span> Minha Escala (Esta Semana)</h2>
           @if (scheduleThisWeek() && shiftsThisWeek().length > 0) {
             <ul class="space-y-3">
               @for (shift of shiftsThisWeek(); track shift.id) {
@@ -92,7 +92,7 @@
       <div class="lg:col-span-1 space-y-8">
         <!-- Leave Requests -->
         <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-sm flex flex-col h-full">
-          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-brand">event_busy</span> Minhas Ausências</h2>
+          <h2 class="text-[11px] font-black uppercase tracking-widest text-muted mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">event_busy</span> Minhas Ausências</h2>
           <div class="flex flex-col gap-4 flex-1">
              @if (myLeaveRequests().length > 0) {
               @for(request of myLeaveRequests(); track request.id) {
@@ -122,7 +122,7 @@
     </div>
   } @else {
     <div class="text-center py-24 flex flex-col items-center justify-center bg-surface-elevated rounded-3xl border border-strong shadow-sm mx-auto max-w-lg mt-10">
-      <span class="material-symbols-outlined text-6xl text-muted mb-4">person_off</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted mb-4">person_off</span>
       <h2 class="text-2xl font-black text-title title-display">Funcionário não encontrado</h2>
       <p class="text-muted mt-2 text-sm max-w-xs">Não foi possível carregar seus dados. Por favor, tente selecionar seu usuário novamente.</p>
       <a routerLink="/employee-selection" class="btn-primary mt-6 text-xs px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest shadow-sm active:scale-95 transition-all">Voltar para a seleção</a>
@@ -135,16 +135,16 @@
   <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="isPlanModalOpen.set(false)">
     <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
-        <h3 class="text-xl font-bold text-title title-display flex items-center gap-2"><span class="material-symbols-outlined text-brand">workspace_premium</span> Detalhes do Plano</h3>
+        <h3 class="text-xl font-bold text-title title-display flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">workspace_premium</span> Detalhes do Plano</h3>
         <button (click)="isPlanModalOpen.set(false)" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface border border-strong bg-surface transition-colors">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
       <div class="p-8 text-center space-y-6 bg-app">
         @if (currentPlan(); as plan) {
           <p class="text-[10px] font-black uppercase tracking-widest text-muted">Seu plano atual é:</p>
           <div class="inline-block bg-surface p-6 rounded-2xl border border-strong shadow-sm relative overflow-hidden">
-             <div class="absolute top-0 right-0 p-2"><span class="material-symbols-outlined text-brand/30 text-5xl rotate-12">star</span></div>
+             <div class="absolute top-0 right-0 p-2"><span translate="no" class="notranslate material-symbols-outlined text-brand/30 text-5xl rotate-12">star</span></div>
              <p class="text-3xl font-black text-brand title-display relative z-10">{{ plan.name }}</p>
           </div>
           @if (trialDaysRemaining() !== null && trialDaysRemaining()! > 0) {

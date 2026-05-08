@@ -10,14 +10,14 @@
         (click)="navigateToTutorial(tutorial.id)"
         class="bg-surface-elevated rounded-3xl p-8 flex flex-col items-start border border-subtle hover:border-brand shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group active:scale-[0.98]">
         <div class="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner border border-brand/20">
-          <span class="material-symbols-outlined text-3xl">{{ tutorial.icon }}</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl">{{ tutorial.icon }}</span>
         </div>
         <h2 class="text-xl font-black text-title title-display mb-3 leading-tight group-hover:text-brand transition-colors">{{ tutorial.title }}</h2>
         <p class="text-muted text-sm flex-grow leading-relaxed font-medium">{{ tutorial.description }}</p>
         <div class="mt-8 pt-4 border-t border-strong w-full flex items-center justify-between">
            <span class="text-[10px] font-black uppercase tracking-widest text-brand flex items-center gap-2 group-hover:gap-3 transition-all">Ver Guia</span>
            <span class="w-8 h-8 rounded-full bg-surface flex items-center justify-center border border-strong group-hover:bg-brand group-hover:border-brand group-hover:text-white transition-all text-muted">
-              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">arrow_forward</span>
            </span>
         </div>
       </div>

@@ -18,7 +18,7 @@ import autoTable from 'jspdf-autotable';
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-subtle pb-6">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center border border-success/20 shadow-inner">
-            <span class="material-symbols-outlined text-success text-2xl">checklist</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-success text-2xl">checklist</span>
           </div>
           <div>
             <h1 class="text-3xl font-black title-display tracking-tight text-title">Checklists</h1>
@@ -28,12 +28,12 @@ import autoTable from 'jspdf-autotable';
 
         <div class="flex flex-wrap gap-3">
           <button (click)="generatePDF()" class="flex-1 md:flex-none bg-surface-elevated hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-strong shadow-sm hover:translate-y-[-2px] active:scale-95 transition-all">
-            <span class="material-symbols-outlined text-info">picture_as_pdf</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-info">picture_as_pdf</span>
             Relatório
           </button>
           @if (isManager()) {
             <button (click)="showAddTemplateModal.set(true)" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:translate-y-[-2px] active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
-              <span class="material-symbols-outlined text-sm">add</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
               Nova Tarefa
             </button>
           }
@@ -43,7 +43,7 @@ import autoTable from 'jspdf-autotable';
       <!-- Filters -->
       <div class="flex flex-col sm:flex-row gap-4 p-4 chef-surface bg-surface-elevated/20 transition-all">
         <div class="flex-1 relative group">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">category</span>
+          <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">category</span>
           <select [ngModel]="selectedSection()" (ngModelChange)="selectedSection.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
             <option value="">Todas as Seções</option>
             <option value="Cozinha">Cozinha</option>
@@ -55,7 +55,7 @@ import autoTable from 'jspdf-autotable';
         </div>
         
         <div class="flex-1 relative group">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">schedule</span>
+          <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">schedule</span>
           <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
             <option value="">Todos os Tipos</option>
             <option value="opening">Abertura</option>
@@ -71,11 +71,11 @@ import autoTable from 'jspdf-autotable';
           <div class="chef-surface overflow-hidden">
             <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex justify-between items-center">
               <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span class="material-symbols-outlined text-brand opacity-60">task_alt</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-60">task_alt</span>
                 Tarefas Pendentes
               </h3>
               <button (click)="loadData()" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all" title="Atualizar">
-                <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
               </button>
             </div>
             
@@ -83,14 +83,14 @@ import autoTable from 'jspdf-autotable';
                <div class="p-16 text-center text-muted">
                 <div class="animate-pulse flex flex-col items-center">
                    <div class="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
-                      <span class="material-symbols-outlined text-brand text-4xl">sync</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">sync</span>
                    </div>
                    <p class="font-bold uppercase tracking-widest text-xs">Sincronizando tarefas...</p>
                 </div>
               </div>
             } @else if (filteredTemplates().length === 0) {
               <div class="p-16 text-center text-muted">
-                <span class="material-symbols-outlined text-6xl mb-4 opacity-20">inventory</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 opacity-20">inventory</span>
                 <p class="text-lg font-bold">Nenhuma tarefa encontrada.</p>
                 @if (isManager()) {
                    <button (click)="showAddTemplateModal.set(true)" class="mt-4 text-brand font-black text-sm uppercase tracking-widest hover:underline">Nova tarefa</button>
@@ -122,13 +122,13 @@ import autoTable from 'jspdf-autotable';
                         <button (click)="logTask(template, 'completed')" 
                                 [disabled]="isSubmitting()"
                                 class="flex-1 sm:flex-none bg-success/10 hover:bg-success text-success hover:text-white border border-success/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
-                          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-[18px]">check_circle</span>
                           OK
                         </button>
                         <button (click)="logTask(template, 'issue')" 
                                 [disabled]="isSubmitting()"
                                 class="flex-1 sm:flex-none bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
-                          <span class="material-symbols-outlined text-[18px]">report_problem</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-[18px]">report_problem</span>
                           Falha
                         </button>
                       </div>
@@ -145,14 +145,14 @@ import autoTable from 'jspdf-autotable';
           <div class="chef-surface overflow-hidden flex flex-col max-h-[800px]">
             <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex-shrink-0">
               <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span class="material-symbols-outlined text-purple opacity-60">history</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-purple opacity-60">history</span>
                 Execuções
               </h3>
             </div>
             <div class="flex-1 overflow-y-auto hide-scrollbar p-0">
               @if (recentLogs().length === 0) {
                 <div class="p-12 text-center text-muted italic text-sm">
-                   <span class="material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
+                   <span translate="no" class="notranslate material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
                    Nenhum registro.
                 </div>
               } @else {
@@ -163,7 +163,7 @@ import autoTable from 'jspdf-autotable';
                         <div class="min-w-0">
                           <p class="text-sm font-bold text-title line-clamp-2 leading-snug">{{ log.checklist_templates?.task_description }}</p>
                           <div class="flex items-center gap-1.5 mt-2">
-                             <span class="material-symbols-outlined text-[14px] text-muted">person</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-muted">person</span>
                              <p class="text-[10px] font-bold text-muted uppercase tracking-wider truncate">{{ log.employees?.name || 'Sistema' }}</p>
                           </div>
                           @if(log.notes) {
@@ -175,17 +175,17 @@ import autoTable from 'jspdf-autotable';
                         <div class="flex-shrink-0">
                           @if (log.status === 'completed') {
                             <div class="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center text-success border border-success/20">
-                               <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                               <span translate="no" class="notranslate material-symbols-outlined text-[20px]">check_circle</span>
                             </div>
                           } @else if (log.status === 'issue') {
                             <div class="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center text-danger border border-danger/20 animate-pulse">
-                               <span class="material-symbols-outlined text-[20px]">report_problem</span>
+                               <span translate="no" class="notranslate material-symbols-outlined text-[20px]">report_problem</span>
                             </div>
                           }
                         </div>
                       </div>
                       <div class="flex items-center gap-1.5 mt-3 opacity-50">
-                        <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[14px]">calendar_month</span>
                         <p class="text-[10px] font-bold uppercase tracking-widest">{{ log.completed_at | date:'dd MMM, HH:mm' }}</p>
                       </div>
                     </div>
@@ -204,11 +204,11 @@ import autoTable from 'jspdf-autotable';
         <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
           <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
             <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
-               <span class="material-symbols-outlined text-brand">add_task</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-brand">add_task</span>
                Nova Tarefa
             </h3>
             <button (click)="showAddTemplateModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
-              <span class="material-symbols-outlined">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined">close</span>
             </button>
           </div>
           <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">

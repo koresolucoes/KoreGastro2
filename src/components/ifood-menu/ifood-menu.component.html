@@ -9,20 +9,20 @@
   <div class="mb-6 border-b border-subtle">
     <nav class="-mb-px flex space-x-6">
       <button (click)="view.set('optionGroups')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'optionGroups'" [class.text-title]="view() === 'optionGroups'" [class.border-transparent]="view() !== 'optionGroups'" [class.text-muted]="view() !== 'optionGroups'" [class.hover:text-title]="view() !== 'optionGroups'">
-         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">category</span> Configuração de Opcionais (Nativo)</span>
+         <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">category</span> Configuração de Opcionais (Nativo)</span>
       </button>
       <button (click)="view.set('live')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'live'" [class.text-title]="view() === 'live'" [class.border-transparent]="view() !== 'live'" [class.text-muted]="view() !== 'live'" [class.hover:text-title]="view() !== 'live'">
-        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">outbound</span> Integração Externa (iFood)</span>
+        <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">outbound</span> Integração Externa (iFood)</span>
       </button>
       <button (click)="view.set('unsellable')" class="py-3 px-1 border-b-2 text-[11px] font-black uppercase tracking-widest transition-colors" [class.border-brand]="view() === 'unsellable'" [class.text-title]="view() === 'unsellable'" [class.border-transparent]="view() !== 'unsellable'" [class.text-muted]="view() !== 'unsellable'" [class.hover:text-title]="view() !== 'unsellable'">
-         <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">block</span> Erros iFood</span>
+         <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">block</span> Erros iFood</span>
       </button>
     </nav>
   </div>
 
   @if (isLoading()) {
     <div class="bg-surface-elevated border border-subtle rounded-2xl min-h-[400px] flex flex-col items-center justify-center text-center shadow-sm">
-      <span class="material-symbols-outlined text-brand animate-spin text-5xl mb-4">progress_activity</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-brand animate-spin text-5xl mb-4">progress_activity</span>
       <p class="text-[11px] font-black uppercase tracking-widest text-muted">Carregando dados do iFood...</p>
     </div>
   } @else {
@@ -31,7 +31,7 @@
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b border-subtle pb-5">
             <div class="flex items-center gap-3">
-              <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-success">active_indicators</span> Cardápio iFood</h2>
+              <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-success">active_indicators</span> Cardápio iFood</h2>
               @if(ifoodCatalogs().length > 1) {
                   <div class="relative">
                     <select class="appearance-none bg-surface border border-strong rounded-xl pl-4 pr-10 py-2 text-xs font-bold text-title focus:outline-none focus:border-brand cursor-pointer shadow-sm" [ngModel]="selectedCatalogId()" (ngModelChange)="switchCatalog($event)">
@@ -41,15 +41,15 @@
                         </option>
                       }
                     </select>
-                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted text-[16px]">expand_more</span>
+                    <span translate="no" class="notranslate material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted text-[16px]">expand_more</span>
                   </div>
               } @else {
                   <span class="bg-surface-elevated border border-strong px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-muted">Principal</span>
               }
             </div>
             <div class="flex flex-wrap gap-3">
-              <button (click)="openCategoryModal()" class="bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">add</span> Nova Categoria</button>
-              <button (click)="openSyncModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">sync</span> Sincronizar / Criar Itens</button>
+              <button (click)="openCategoryModal()" class="bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Nova Categoria</button>
+              <button (click)="openSyncModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">sync</span> Sincronizar / Criar Itens</button>
             </div>
           </div>
           
@@ -59,7 +59,7 @@
                 <div class="flex items-center justify-between border-b border-subtle pb-3 mb-4">
                   <h3 class="text-xs font-black uppercase tracking-widest text-title">{{ category.name }}</h3>
                    <button (click)="deleteCategory(category)" class="text-muted hover:text-danger hover:bg-surface p-1.5 rounded-full transition-colors" title="Deletar categoria">
-                      <span class="material-symbols-outlined text-[18px]">delete</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
                    </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -71,14 +71,14 @@
                             <input type="file" [id]="'image-input-' + item.id" (change)="onImageSelected($event, item)" accept="image/png, image/jpeg" class="hidden">
                             <button (click)="triggerImageUpload(item)" [disabled]="isUploadingImage() === item.id" class="w-20 h-20 rounded-xl bg-surface border border-strong flex items-center justify-center text-muted hover:bg-surface-elevated text-center p-1 disabled:opacity-50 overflow-hidden group transition-colors">
                               @if(isUploadingImage() === item.id) {
-                                  <span class="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                                  <span translate="no" class="notranslate material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
                               } @else if (item.image) {
                                   <img [src]="item.image" [alt]="item.name" class="w-full h-full object-cover">
                                   <div class="absolute inset-0 bg-overlay/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                       <span class="text-white text-[9px] font-black uppercase tracking-widest">Alterar</span>
                                   </div>
                               } @else {
-                                  <span class="material-symbols-outlined text-[24px]">add_photo_alternate</span>
+                                  <span translate="no" class="notranslate material-symbols-outlined text-[24px]">add_photo_alternate</span>
                               }
                             </button>
                           </div>
@@ -92,7 +92,7 @@
                               <div class="flex items-center justify-between gap-1 mb-1">
                                 <span class="text-[10px] font-black uppercase tracking-widest text-muted">A vender</span>
                                 <button (click)="openPriceModal(item)" class="text-brand hover:text-brand-hover p-1 rounded-full hover:bg-surface-elevated transition-colors" title="Editar Preço">
-                                  <span class="material-symbols-outlined text-[14px]">edit</span>
+                                  <span translate="no" class="notranslate material-symbols-outlined text-[14px]">edit</span>
                                 </button>
                               </div>
                               <p class="font-bold text-lg text-title">{{ item.price.value | currency:'BRL' }}</p>
@@ -111,7 +111,7 @@
                               <div class="h-2 w-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" [class.bg-success]="item.status === 'AVAILABLE'" [class.shadow-success]="item.status === 'AVAILABLE'" [class.bg-danger]="item.status !== 'AVAILABLE'" [class.shadow-danger]="item.status !== 'AVAILABLE'"></div>
                               <span class="font-black text-[11px] uppercase tracking-widest" [class.text-success]="item.status === 'AVAILABLE'" [class.text-danger]="item.status !== 'AVAILABLE'">{{ item.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
                             </div>
-                            <span class="material-symbols-outlined text-[16px] opacity-70" [class.text-success]="item.status === 'AVAILABLE'" [class.text-danger]="item.status !== 'AVAILABLE'">tune</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-[16px] opacity-70" [class.text-success]="item.status === 'AVAILABLE'" [class.text-danger]="item.status !== 'AVAILABLE'">tune</span>
                         </button>
                          <a [routerLink]="['/technical-sheets']" [queryParams]="{ recipeId: localItem.recipe.id }" class="w-full text-center py-2.5 px-3 bg-surface border border-strong hover:bg-surface-elevated text-title rounded-xl font-black text-[11px] uppercase tracking-widest transition-all shadow-sm">
                             Editar no ChefOS
@@ -120,7 +120,7 @@
                     }
                   } @empty {
                     <div class="col-span-full py-8 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
-                        <span class="material-symbols-outlined text-3xl text-muted mb-2">restaurant_menu</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-3xl text-muted mb-2">restaurant_menu</span>
                         <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum item nesta categoria.</p>
                     </div>
                   }
@@ -134,10 +134,10 @@
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
                 <div>
-                   <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">category</span> Opcionais e Combos</h2>
+                   <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">category</span> Opcionais e Combos</h2>
                    <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1">Configure opções de personalização, adicionais e combos para o cardápio.</p>
                 </div>
-                <button (click)="openNewGroupModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"><span class="material-symbols-outlined text-[16px]">add</span> Novo Grupo</button>
+                <button (click)="openNewGroupModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Novo Grupo</button>
             </div>
             <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
                 @for(group of ifoodOptionGroups(); track group.id) {
@@ -150,9 +150,9 @@
                             <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md" [class.bg-success/10]="group.status === 'AVAILABLE'" [class.text-success]="group.status === 'AVAILABLE'" [class.bg-danger/10]="group.status !== 'AVAILABLE'" [class.text-danger]="group.status !== 'AVAILABLE'">{{ group.status === 'AVAILABLE' ? 'Disponível' : 'Indisponível' }}</span>
                                 <div class="flex items-center gap-1">
-                                    <button (click)="$event.preventDefault(); openEditGroupModal(group)" class="p-2 text-muted hover:text-brand hover:bg-surface-elevated rounded-full transition-colors"><span class="material-symbols-outlined text-[18px]">edit</span></button>
-                                    <button (click)="$event.preventDefault(); deleteOptionGroup(group)" class="p-2 text-muted hover:text-danger hover:bg-surface-elevated rounded-full transition-colors"><span class="material-symbols-outlined text-[18px]">delete</span></button>
-                                    <span class="material-symbols-outlined text-muted group-open/details:rotate-180 transition-transform">expand_more</span>
+                                    <button (click)="$event.preventDefault(); openEditGroupModal(group)" class="p-2 text-muted hover:text-brand hover:bg-surface-elevated rounded-full transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">edit</span></button>
+                                    <button (click)="$event.preventDefault(); deleteOptionGroup(group)" class="p-2 text-muted hover:text-danger hover:bg-surface-elevated rounded-full transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span></button>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-muted group-open/details:rotate-180 transition-transform">expand_more</span>
                                 </div>
                             </div>
                         </summary>
@@ -168,13 +168,13 @@
                                             <p class="font-bold text-title whitespace-nowrap">{{ option.price.value | currency:'BRL' }}</p>
                                             <span class="text-[10px] font-black uppercase tracking-widest" [class.text-success]="option.status === 'AVAILABLE'" [class.text-danger]="option.status !== 'AVAILABLE'">{{ option.status === 'AVAILABLE' ? 'Disp.' : 'Indisp.' }}</span>
                                             <div class="flex gap-1">
-                                                <button (click)="openEditOptionModal(option, group)" class="p-1.5 text-muted hover:text-brand hover:bg-surface rounded-full transition-colors"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                                                <button (click)="openEditOptionModal(option, group)" class="p-1.5 text-muted hover:text-brand hover:bg-surface rounded-full transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">edit</span></button>
                                             </div>
                                         </div>
                                     </div>
                                 } @empty {
                                     <div class="py-6 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
-                                        <span class="material-symbols-outlined text-3xl text-muted mb-2">inventory_2</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-3xl text-muted mb-2">inventory_2</span>
                                         <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhuma opção neste grupo.</p>
                                     </div>
                                 }
@@ -188,7 +188,7 @@
                     </details>
                 } @empty {
                     <div class="py-10 text-center bg-surface border border-dashed border-strong rounded-xl opacity-60">
-                        <span class="material-symbols-outlined text-4xl text-muted mb-2">category</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">category</span>
                         <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum grupo de complemento encontrado.</p>
                     </div>
                 }
@@ -197,10 +197,10 @@
       }
       @case ('unsellable') {
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
-            <h2 class="font-black text-sm uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-muted">block</span> Itens Não Vendáveis no iFood</h2>
+            <h2 class="font-black text-sm uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">block</span> Itens Não Vendáveis no iFood</h2>
              @if (unsellableCategories().length === 0) {
                  <div class="p-8 text-center bg-success/5 border border-success/20 rounded-xl">
-                     <span class="material-symbols-outlined text-4xl text-success mb-3">check_circle</span>
+                     <span translate="no" class="notranslate material-symbols-outlined text-4xl text-success mb-3">check_circle</span>
                      <p class="text-success font-black uppercase tracking-widest mb-1">Parabéns!</p>
                      <p class="text-xs text-success/80">Todos os seus itens no iFood estão disponíveis para venda.</p>
                  </div>
@@ -227,21 +227,21 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeSyncModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">sync</span> Sincronizar Itens com iFood</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">sync</span> Sincronizar Itens com iFood</h3>
         <button (click)="closeSyncModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 flex-1 overflow-y-auto bg-surface/30 custom-scrollbar">
         @if (itemsToCreateOnIfood().length === 0) {
           <div class="py-16 text-center flex flex-col items-center opacity-60">
-            <span class="material-symbols-outlined text-4xl text-muted mb-3">cloud_done</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-3">cloud_done</span>
             <p class="font-black text-[11px] uppercase tracking-widest text-title mb-1">Nenhum item novo para sincronizar.</p>
             <p class="text-[10px] text-muted font-bold uppercase tracking-widest">Vá para as Fichas Técnicas para adicionar um "Código Externo" aos seus pratos.</p>
           </div>
         } @else {
           <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-            <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">list_alt</span> Itens para Criar/Atualizar no iFood</h2>
+            <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">list_alt</span> Itens para Criar/Atualizar no iFood</h2>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-black uppercase tracking-widest">
               <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] rounded-full bg-warning shadow-warning"></div><span class="text-warning">Modificado</span></div>
               <div class="flex items-center gap-1.5"><div class="h-2.5 w-2.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] rounded-full bg-brand shadow-brand"></div><span class="text-brand">Novo</span></div>
@@ -294,9 +294,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closePriceModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit</span> Alterar Preço</h3>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">edit</span> Alterar Preço</h3>
           <button (click)="closePriceModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-              <span class="material-symbols-outlined text-[20px]">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
           </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -310,9 +310,9 @@
         <button (click)="closePriceModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
         <button (click)="savePrice()" [disabled]="isChangingPrice()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
           @if(isChangingPrice()) {
-              <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
           } @else {
-              <span class="material-symbols-outlined text-[16px]">save</span> Salvar Preço
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar Preço
           }
         </button>
       </div>
@@ -325,9 +325,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeStatusModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">tune</span> Alterar Disponibilidade</h3>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">tune</span> Alterar Disponibilidade</h3>
           <button (click)="closeStatusModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-              <span class="material-symbols-outlined text-[20px]">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
           </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -341,9 +341,9 @@
         <button (click)="closeStatusModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
         <button (click)="saveStatus()" [disabled]="isChangingStatus()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
            @if(isChangingStatus()) {
-               <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
            } @else {
-               <span class="material-symbols-outlined text-[16px]">save</span> Salvar Status
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar Status
            }
         </button>
       </div>
@@ -356,9 +356,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeCategoryModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-sm border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">create_new_folder</span> Nova Categoria</h3>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">create_new_folder</span> Nova Categoria</h3>
           <button (click)="closeCategoryModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-              <span class="material-symbols-outlined text-[20px]">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
           </button>
       </div>
       <div class="p-6 space-y-4 bg-surface/30">
@@ -371,9 +371,9 @@
         <button (click)="closeCategoryModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
         <button (click)="saveNewCategory()" [disabled]="isCreatingCategory() || !newCategoryName.trim()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
            @if(isCreatingCategory()) {
-               <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
            } @else {
-               <span class="material-symbols-outlined text-[16px]">add</span> Criar
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Criar
            }
         </button>
       </div>
@@ -386,15 +386,15 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeRecipeEditModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">settings</span> Configurar Item iFood</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">settings</span> Configurar Item iFood</h3>
         <button (click)="closeRecipeEditModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
 
       <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto bg-surface/30 custom-scrollbar">
         <div class="bg-brand/10 border border-brand/20 p-4 rounded-xl flex gap-3 text-brand text-sm shadow-sm">
-            <span class="material-symbols-outlined shrink-0 text-[20px]">info</span>
+            <span translate="no" class="notranslate material-symbols-outlined shrink-0 text-[20px]">info</span>
             <p>Para sincronizar com o iFood, um item precisa de um <strong class="font-black">Código Externo (SKU)</strong> único. Você pode ajustá-lo aqui.</p>
         </div>
         <div>
@@ -406,7 +406,7 @@
       <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
          <button (click)="closeRecipeEditModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
          <button (click)="saveRecipeDetails()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95">
-             <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+             <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar
          </button>
       </div>
 
@@ -420,11 +420,11 @@
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-start">
         <div>
-          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit_square</span> {{ editingOption() ? 'Editar Complemento' : 'Novo Complemento' }}</h3>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">edit_square</span> {{ editingOption() ? 'Editar Complemento' : 'Novo Complemento' }}</h3>
           <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1 leading-relaxed">Grupo: <span class="font-bold text-title">{{ parentGroupForOption()?.name }}</span></p>
         </div>
         <button (click)="closeOptionModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -451,7 +451,7 @@
                  <option [ngValue]="recipe.id">{{ recipe.name }}</option>
                }
              </select>
-             <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted">expand_more</span>
+             <span translate="no" class="notranslate material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted">expand_more</span>
            </div>
            <p class="text-[10px] text-muted mt-1.5 font-medium">Custo e desconto de insumos serão baseados na receita/produto vinculado.</p>
         </div>
@@ -467,7 +467,7 @@
       </div>
       <div class="p-5 bg-surface border-t border-subtle flex justify-between items-center rounded-b-2xl">
         @if(editingOption(); as option) {
-            <button (click)="deleteOption(option)" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">delete</span> Excluir</button>
+            <button (click)="deleteOption(option)" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">delete</span> Excluir</button>
         } @else {
             <div></div>
         }
@@ -475,9 +475,9 @@
             <button (click)="closeOptionModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
             <button (click)="saveOption()" [disabled]="isSavingOption()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                 @if(isSavingOption()) {
-                    <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
                 } @else {
-                    <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar
                 }
             </button>
         </div>
@@ -491,9 +491,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeEditGroupModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">edit</span> Editar Grupo</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">edit</span> Editar Grupo</h3>
         <button (click)="closeEditGroupModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -513,9 +513,9 @@
           <button (click)="closeEditGroupModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
           <button (click)="saveGroupChanges()" [disabled]="isSavingOption()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
               @if(isSavingOption()) {
-                  <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
               } @else {
-                  <span class="material-symbols-outlined text-[16px]">save</span> Salvar
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar
               }
           </button>
       </div>
@@ -528,9 +528,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeNewGroupModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-md border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">category</span> Novo Grupo</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">category</span> Novo Grupo</h3>
         <button (click)="closeNewGroupModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -547,9 +547,9 @@
           <button (click)="closeNewGroupModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest text-title bg-surface border border-strong hover:bg-surface-elevated rounded-xl transition-all shadow-sm active:scale-95">Cancelar</button>
           <button (click)="saveNewGroup()" [disabled]="isSavingOption() || !newGroupForm().name" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest bg-brand hover:bg-brand-hover text-white rounded-xl flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
               @if(isSavingOption()) {
-                  <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Criando...
               } @else {
-                  <span class="material-symbols-outlined text-[16px]">add</span> Criar Grupo
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Criar Grupo
               }
           </button>
       </div>

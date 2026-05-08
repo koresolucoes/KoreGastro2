@@ -1,7 +1,7 @@
 @if (tutorial(); as t) {
   <div class="container mx-auto max-w-4xl p-4 md:p-8">
     <a routerLink="/tutorials" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-8 font-black text-[10px] uppercase tracking-widest transition-colors bg-brand/10 hover:bg-brand/20 px-4 py-2.5 rounded-xl border border-brand/10 active:scale-95 shadow-sm">
-      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[16px]">arrow_back</span>
       <span>Voltar para tutoriais</span>
     </a>
 
@@ -40,13 +40,13 @@
     <footer class="text-center mt-20 pt-16 border-t border-subtle relative">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-app px-4">
            <div class="w-20 h-20 bg-success/10 text-success rounded-[24px] flex items-center justify-center shadow-inner border border-success/20 rotate-12 mx-auto">
-              <span class="material-symbols-outlined text-4xl -rotate-12">verified</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl -rotate-12">verified</span>
           </div>
         </div>
         <h3 class="text-3xl font-black text-title title-display tracking-tight">Guia Concluído!</h3>
         <p class="text-muted mt-3 font-medium text-sm">Explore outras funcionalidades ou volte para a lista principal.</p>
         <a routerLink="/tutorials" class="mt-8 inline-flex items-center justify-center gap-2 btn-primary font-black py-4 px-8 rounded-2xl text-[11px] uppercase tracking-widest shadow-lg shadow-brand/20 active:scale-95 transition-all">
-            <span class="material-symbols-outlined text-[18px]">menu_book</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">menu_book</span>
             Ver outros Tutoriais
         </a>
     </footer>
@@ -55,12 +55,12 @@
 } @else {
   <div class="text-center py-32 flex flex-col items-center justify-center bg-surface-elevated rounded-[40px] border border-strong shadow-sm max-w-2xl mx-auto mt-10">
     <div class="w-24 h-24 bg-surface rounded-[24px] border border-strong shadow-inner flex items-center justify-center mb-8 rotate-12">
-        <span class="material-symbols-outlined text-5xl text-muted -rotate-12">explore_off</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted -rotate-12">explore_off</span>
     </div>
     <h2 class="text-2xl font-black text-title title-display tracking-tight">Tutorial não encontrado</h2>
     <p class="text-muted mt-3 text-sm font-medium">O guia que você está procurando não existe ou foi movido.</p>
     <a routerLink="/tutorials" class="bg-surface border border-strong hover:bg-surface-elevated text-title mt-8 text-[11px] px-8 py-3.5 rounded-xl font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all flex items-center gap-2">
-      <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[16px]">arrow_back</span>
       Voltar aos tutoriais
     </a>
   </div>

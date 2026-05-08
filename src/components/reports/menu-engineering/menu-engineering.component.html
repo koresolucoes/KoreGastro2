@@ -2,7 +2,7 @@
   <div class="chef-surface rounded-[40px] border border-subtle shadow-xl p-8">
     <div class="flex items-start gap-6">
       <div class="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center border border-brand/20 shadow-inner">
-        <span class="material-symbols-outlined text-brand text-4xl">grid_goldenratio</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">grid_goldenratio</span>
       </div>
       <div>
         <h2 class="text-3xl font-black text-title title-display tracking-tight">Engenharia de Cardápio (Matriz BCG)</h2>
@@ -25,28 +25,28 @@
     <!-- Legend -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
       <div class="chef-surface p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex items-start gap-3">
-        <span class="material-symbols-outlined text-emerald-500 text-3xl">star</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-3xl">star</span>
         <div>
           <h4 class="text-xs font-black uppercase text-emerald-500">Estrelas</h4>
           <p class="text-[10px] text-muted mt-1 leading-tight">Alta Popularidade / Alta Margem. Destaque-os no cardápio!</p>
         </div>
       </div>
       <div class="chef-surface p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex items-start gap-3">
-        <span class="material-symbols-outlined text-blue-500 text-3xl">payments</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-blue-500 text-3xl">payments</span>
         <div>
           <h4 class="text-xs font-black uppercase text-blue-500">Vacas Leiteiras</h4>
           <p class="text-[10px] text-muted mt-1 leading-tight">Alta Popularidade / Baixa Margem. Tente reduzir o custo levemente.</p>
         </div>
       </div>
       <div class="chef-surface p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
-        <span class="material-symbols-outlined text-amber-500 text-3xl">extension</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-amber-500 text-3xl">extension</span>
         <div>
           <h4 class="text-xs font-black uppercase text-amber-500">Quebra-Cabeças</h4>
           <p class="text-[10px] text-muted mt-1 leading-tight">Baixa Popularidade / Alta Margem. Crie promoções para vendê-los mais.</p>
         </div>
       </div>
       <div class="chef-surface p-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 flex items-start gap-3">
-        <span class="material-symbols-outlined text-rose-500 text-3xl">delete</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-rose-500 text-3xl">delete</span>
         <div>
           <h4 class="text-xs font-black uppercase text-rose-500">Cachorros</h4>
           <p class="text-[10px] text-muted mt-1 leading-tight">Baixa Popularidade / Baixa Margem. Considere removê-los.</p>
@@ -61,19 +61,19 @@
           <thead class="bg-surface-elevated/60 text-[10px] font-black text-muted uppercase tracking-widest border-b border-subtle">
             <tr>
               <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors" (click)="sortBy('name')">
-                <div class="flex items-center gap-2">Item <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'name'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+                <div class="flex items-center gap-2">Item <span translate="no" class="notranslate material-symbols-outlined text-sm" *ngIf="sortColumn() === 'name'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
               </th>
               <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors" (click)="sortBy('category')">
-                <div class="flex items-center gap-2">Classificação <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'category'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+                <div class="flex items-center gap-2">Classificação <span translate="no" class="notranslate material-symbols-outlined text-sm" *ngIf="sortColumn() === 'category'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
               </th>
               <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-center" (click)="sortBy('quantity')">
-                <div class="flex items-center justify-center gap-2">Vendas <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'quantity'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+                <div class="flex items-center justify-center gap-2">Vendas <span translate="no" class="notranslate material-symbols-outlined text-sm" *ngIf="sortColumn() === 'quantity'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
               </th>
               <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-right" (click)="sortBy('contributionMargin')">
-                <div class="flex items-center justify-end gap-2">Margem de Contribuição <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'contributionMargin'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+                <div class="flex items-center justify-end gap-2">Margem de Contribuição <span translate="no" class="notranslate material-symbols-outlined text-sm" *ngIf="sortColumn() === 'contributionMargin'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
               </th>
               <th class="px-6 py-4 cursor-pointer hover:bg-surface/50 transition-colors text-right" (click)="sortBy('totalRevenue')">
-                <div class="flex items-center justify-end gap-2">Faturamento <span class="material-symbols-outlined text-sm" *ngIf="sortColumn() === 'totalRevenue'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
+                <div class="flex items-center justify-end gap-2">Faturamento <span translate="no" class="notranslate material-symbols-outlined text-sm" *ngIf="sortColumn() === 'totalRevenue'">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span></div>
               </th>
             </tr>
           </thead>
@@ -89,7 +89,7 @@
                 </td>
                 <td class="px-6 py-4">
                   <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-strong shadow-sm text-xs font-black uppercase tracking-widest" [ngClass]="getCategoryColor(item.category)">
-                    <span class="material-symbols-outlined text-lg leading-none">{{ getCategoryIcon(item.category) }}</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-lg leading-none">{{ getCategoryIcon(item.category) }}</span>
                     {{ item.category }}
                   </div>
                 </td>
@@ -112,7 +112,7 @@
     </div>
   } @else {
     <div class="flex flex-col items-center justify-center py-32 chef-surface border border-dashed border-strong rounded-[40px]">
-      <span class="material-symbols-outlined text-muted/30 text-6xl mb-6">search_off</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-muted/30 text-6xl mb-6">search_off</span>
       <p class="text-muted font-black uppercase tracking-widest text-sm">Sem vendas suficientes para gerar a Matriz no período.</p>
     </div>
   }

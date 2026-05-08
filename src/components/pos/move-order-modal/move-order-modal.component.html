@@ -2,11 +2,11 @@
   <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg border border-subtle" (click)="$event.stopPropagation()">
     <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface-elevated rounded-t-2xl">
       <h3 class="text-xl font-bold text-title flex items-center gap-2">
-        <span class="material-symbols-outlined text-brand">move_up</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand">move_up</span>
         Mover Pedido - Mesa {{ sourceTable()?.number }}
       </h3>
       <button (click)="onClose()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
-        <span class="material-symbols-outlined">close</span>
+        <span translate="no" class="notranslate material-symbols-outlined">close</span>
       </button>
     </div>
     <div class="p-6">
@@ -22,7 +22,7 @@
           </div>
       } @else {
           <div class="text-center bg-surface-elevated rounded-xl p-8 border border-strong flex flex-col items-center justify-center gap-3">
-             <span class="material-symbols-outlined text-5xl text-muted opacity-50">block</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted opacity-50">block</span>
              <p class="text-muted font-bold">Nenhuma mesa livre disponível neste salão.</p>
           </div>
       }

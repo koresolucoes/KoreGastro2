@@ -2,13 +2,13 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
       <h1 class="text-3xl font-black text-title title-display flex items-center gap-3">
-        <span class="material-symbols-outlined text-brand text-4xl">group</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">group</span>
         Gestão de Clientes
       </h1>
       <p class="text-muted text-sm font-medium mt-1">Cadastre e gerencie os dados dos seus clientes.</p>
     </div>
     <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-brand/20 uppercase tracking-widest text-xs">
-      <span class="material-symbols-outlined text-sm">add_circle</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-sm">add_circle</span>
       Novo Cliente
     </button>
   </div>
@@ -16,14 +16,14 @@
   <div class="chef-surface border border-subtle flex flex-col flex-1 overflow-hidden">
     <div class="p-4 border-b border-subtle bg-surface/50">
       <div class="relative">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
+        <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
         <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar cliente por nome, telefone, email ou CPF..." class="w-full bg-surface-elevated border border-subtle rounded-xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-all font-medium text-sm">
       </div>
     </div>
 
     @if (filteredCustomers().length === 0) {
       <div class="text-center py-24 flex flex-col items-center justify-center opacity-50">
-        <span class="material-symbols-outlined text-6xl text-muted mb-4">person_off</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted mb-4">person_off</span>
         <p class="text-title font-bold text-lg">Nenhum cliente encontrado.</p>
       </div>
     } @else {
@@ -54,10 +54,10 @@
                   } @else {
                     <div (click)="$event.stopPropagation()" class="flex gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <button (click)="openEditModal(customer)" class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/20 text-brand flex items-center justify-center transition-all border border-brand/20" title="Editar">
-                        <span class="material-symbols-outlined text-sm">edit</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
                       </button>
                       <button (click)="requestDeleteCustomer(customer)" class="w-8 h-8 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-all border border-danger/20" title="Excluir">
-                        <span class="material-symbols-outlined text-sm">delete</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span>
                       </button>
                     </div>
                   }
@@ -81,11 +81,11 @@
             
             <div class="space-y-2 pt-3 border-t border-subtle dashed">
               <div class="flex items-center gap-3 text-muted text-sm">
-                <span class="material-symbols-outlined text-[16px] text-brand border border-brand/20 bg-brand/5 p-1 rounded-lg">call</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand border border-brand/20 bg-brand/5 p-1 rounded-lg">call</span>
                 <span class="font-medium data-mono">{{ customer.phone || 'Não informado' }}</span>
               </div>
                <div class="flex items-center gap-3 text-muted text-sm">
-                <span class="material-symbols-outlined text-[16px] text-info border border-info/20 bg-info/5 p-1 rounded-lg">mail</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-info border border-info/20 bg-info/5 p-1 rounded-lg">mail</span>
                 <span class="font-medium max-w-full truncate">{{ customer.email || 'Não informado' }}</span>
               </div>
             </div>
@@ -99,10 +99,10 @@
                 </div>
               } @else {
                 <button (click)="openEditModal(customer)" class="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-strong text-title text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all">
-                    <span class="material-symbols-outlined text-sm">edit</span> Editar
+                    <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span> Editar
                 </button>
                 <button (click)="requestDeleteCustomer(customer)" class="px-4 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all">
-                    <span class="material-symbols-outlined text-sm">delete</span> Excluir
+                    <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span> Excluir
                 </button>
               }
             </div>
@@ -119,11 +119,11 @@
     <div class="chef-surface border border-subtle shadow-2xl w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
         <h3 class="text-xl font-black text-title flex items-center gap-3">
-          <span class="material-symbols-outlined text-brand">person_add</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
           {{ editingCustomer() ? 'Editar Cliente' : 'Novo Cliente' }}
         </h3>
         <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
       <div class="p-5 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
@@ -151,7 +151,7 @@
         <div class="border-t border-subtle border-dashed pt-6">
           <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar Endereço Inteligente</label>
           <div class="relative">
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">location_searching</span>
+            <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">location_searching</span>
             <input 
               type="text" 
               [value]="addressSearchTerm()" 
@@ -166,7 +166,7 @@
             <ul class="bg-surface-elevated border border-subtle rounded-xl mt-2 max-h-48 overflow-y-auto z-10 shadow-xl overflow-hidden">
               @for (result of addressSearchResults(); track result.place_id) {
                 <li (click)="selectAddress(result)" class="px-4 py-3 border-b border-subtle last:border-0 text-sm text-title hover:bg-brand/10 hover:text-brand cursor-pointer transition-colors flex items-start gap-2">
-                  <span class="material-symbols-outlined text-[16px] mt-0.5 opacity-70">location_on</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px] mt-0.5 opacity-70">location_on</span>
                   {{ result.display_name }}
                 </li>
               }
@@ -176,7 +176,7 @@
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-surface p-4 rounded-xl border border-subtle">
            <div class="md:col-span-5 flex items-center gap-2 mb-1">
-               <span class="material-symbols-outlined text-sm text-muted">home_pin</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-sm text-muted">home_pin</span>
                <span class="text-[10px] font-black text-muted uppercase tracking-widest">Detalhes do Endereço</span>
            </div>
           <div class="md:col-span-3">
@@ -215,7 +215,7 @@
       <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl">
          <button (click)="closeModal()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95">Cancelar</button>
          <button (click)="saveCustomer()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2">
-            <span class="material-symbols-outlined text-sm">save</span> Salvar
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">save</span> Salvar
          </button>
       </div>
     </div>

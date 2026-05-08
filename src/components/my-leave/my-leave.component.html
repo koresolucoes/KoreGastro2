@@ -6,7 +6,7 @@
       <p class="text-muted mt-1 text-sm">Acompanhe e solicite suas folgas, férias e atestados.</p>
     </div>
     <button (click)="openRequestModal()" class="btn-primary font-bold py-3 px-6 rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-brand/20 active:scale-95">
-      <span class="material-symbols-outlined text-[20px]">edit_calendar</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">edit_calendar</span>
       <span>Solicitar Ausência</span>
     </button>
   </div>
@@ -15,7 +15,7 @@
   <div class="space-y-4">
     @if (myLeaveRequests().length === 0) {
       <div class="text-center py-20 w-full flex flex-col items-center justify-center opacity-80 bg-surface-elevated rounded-3xl border border-subtle border-dashed shadow-sm">
-        <span class="material-symbols-outlined text-5xl text-muted mb-4">event_available</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-4">event_available</span>
         <p class="text-xl font-bold text-title title-display">Você ainda não fez nenhuma solicitação.</p>
       </div>
     } @else {
@@ -29,22 +29,22 @@
                     {{ request.status }}
                 </span>
               </div>
-              <p class="text-xs text-muted font-bold data-mono mt-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">calendar_today</span> {{ formatDateRange(request.start_date, request.end_date) }}</p>
+              <p class="text-xs text-muted font-bold data-mono mt-1.5 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">calendar_today</span> {{ formatDateRange(request.start_date, request.end_date) }}</p>
             </div>
             <div class="text-[10px] uppercase tracking-widest text-muted mt-4 sm:mt-0 font-bold bg-surface px-3 py-1.5 rounded-xl border border-strong">
               Solicitado em: {{ request.created_at | date:'dd/MM/yyyy' }}
             </div>
           </div>
            @if (request.reason) {
-            <p class="text-sm border border-strong bg-surface p-3 mt-4 rounded-xl flex items-start gap-2 shadow-sm font-medium italic"><span class="material-symbols-outlined text-muted text-[18px]">chat</span> "{{ request.reason }}"</p>
+            <p class="text-sm border border-strong bg-surface p-3 mt-4 rounded-xl flex items-start gap-2 shadow-sm font-medium italic"><span translate="no" class="notranslate material-symbols-outlined text-muted text-[18px]">chat</span> "{{ request.reason }}"</p>
           }
            @if (request.manager_notes) {
-            <p class="text-sm bg-brand/10 border border-brand/20 p-3 mt-3 rounded-xl flex items-start gap-2 text-brand font-medium"><span class="material-symbols-outlined text-[18px]">edit_note</span> <strong>Resposta do Gestor:</strong> {{ request.manager_notes }}</p>
+            <p class="text-sm bg-brand/10 border border-brand/20 p-3 mt-3 rounded-xl flex items-start gap-2 text-brand font-medium"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">edit_note</span> <strong>Resposta do Gestor:</strong> {{ request.manager_notes }}</p>
           }
           @if (request.attachment_url) {
             <div class="flex justify-end mt-4 pt-4 border-t border-subtle">
                 <a [href]="request.attachment_url" target="_blank" rel="noopener noreferrer" class="btn-primary text-[10px] uppercase tracking-widest font-bold py-1.5 px-4 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 transition-all">
-                    <span class="material-symbols-outlined text-[16px]">attachment</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px]">attachment</span>
                     Ver Anexo
                 </a>
             </div>
@@ -62,7 +62,7 @@
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <h3 class="text-xl font-bold text-title title-display">Solicitar Ausência</h3>
         <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-8 space-y-6 bg-app">
@@ -93,14 +93,14 @@
             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Anexar Documento (Opcional)</label>
             <input type="file" (change)="handleFileChange($event)" class="w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-widest file:bg-surface-elevated file:text-title hover:file:bg-brand hover:file:text-white file:transition-colors file:cursor-pointer cursor-pointer border border-strong bg-surface rounded-xl p-1.5 shadow-sm outline-none">
             @if (selectedFileName()) {
-                <p class="text-[10px] text-brand font-bold uppercase tracking-widest mt-2 ml-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">check_circle</span> Arquivo selecionado: {{ selectedFileName() }}</p>
+                <p class="text-[10px] text-brand font-bold uppercase tracking-widest mt-2 ml-2 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">check_circle</span> Arquivo selecionado: {{ selectedFileName() }}</p>
             }
         </div>
       </div>
       <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-end gap-3 bg-surface-elevated/50 shadow-lg">
          <button (click)="closeModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Cancelar</button>
          <button (click)="submitRequest()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center justify-center gap-2">
-             <span class="material-symbols-outlined text-[18px]">send</span> Enviar
+             <span translate="no" class="notranslate material-symbols-outlined text-[18px]">send</span> Enviar
          </button>
       </div>
     </div>

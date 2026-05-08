@@ -12,7 +12,7 @@ import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service'
       <div class="chef-surface rounded-3xl border border-subtle shadow-xl p-6 bg-indigo-500/5 border-indigo-500/20 flex-shrink-0">
         <div class="flex items-start gap-6">
           <div class="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20 shadow-inner flex-shrink-0">
-            <span class="material-symbols-outlined text-indigo-500 text-4xl">psychology</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-4xl">psychology</span>
           </div>
           <div>
             <h2 class="text-2xl font-black text-title title-display tracking-tight">Comportamento de Clientes (RFM)</h2>
@@ -32,7 +32,7 @@ import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service'
         } @else if (error()) {
             <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
                 <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-                    <span class="material-symbols-outlined text-red-500 text-5xl">warning</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-red-500 text-5xl">warning</span>
                 </div>
                 <h3 class="text-lg font-black text-title tracking-tight mb-2">Erro</h3>
                 <p class="text-muted text-sm max-w-md mx-auto">{{ error() }}</p>
@@ -40,7 +40,7 @@ import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service'
         } @else if (customers().length === 0) {
              <div class="flex flex-col items-center justify-center flex-1 p-12 opacity-80">
                 <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center mb-6 border border-strong shadow-inner">
-                  <span class="material-symbols-outlined text-muted/40 text-5xl">group_off</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-muted/40 text-5xl">group_off</span>
                 </div>
                 <h3 class="text-lg font-black text-title tracking-tight mb-2">Nenhum Cliente com Pedidos</h3>
                 <p class="text-muted text-xs font-medium max-w-sm text-center">Os pedidos devem estar associados a clientes para que a análise RFM seja processada. Utilize o campo cliente no caixa ou processando pedidos do Delivery.</p>
@@ -80,7 +80,7 @@ import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service'
                                  {{ c.segment }}
                              </span>
                              <button class="w-8 h-8 rounded-lg bg-surface border border-subtle flex items-center justify-center text-muted hover:text-brand hover:border-brand transition-all hidden lg:flex" title="Ver Detalhes">
-                                 <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                                 <span translate="no" class="notranslate material-symbols-outlined text-[18px]">chevron_right</span>
                              </button>
                         </div>
                     </div>

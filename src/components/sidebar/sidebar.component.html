@@ -11,12 +11,12 @@
   <div class="h-20 flex items-center justify-between px-5 border-b border-subtle flex-shrink-0 relative z-10">
     @if(isSidebarOpen()) {
         <span class="text-2xl font-black tracking-tight text-title flex items-center gap-2">
-           <span class="material-symbols-outlined text-brand opacity-90 drop-shadow-sm text-3xl">restaurant_menu</span>
+           <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-90 drop-shadow-sm text-3xl">restaurant_menu</span>
            Chef<span class="text-brand">OS</span>
         </span>
     }
     <button (click)="toggleSidebar()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-subtle transition-all active:scale-95 shadow-sm" [class.mx-auto]="!isSidebarOpen()">
-      <span class="material-symbols-outlined text-xl">{{ isSidebarOpen() ? 'menu_open' : 'menu' }}</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-xl">{{ isSidebarOpen() ? 'menu_open' : 'menu' }}</span>
     </button>
   </div>
 
@@ -27,7 +27,7 @@
         
         <button (click)="toggleStoreDropdown()" class="w-full bg-surface hover:bg-surface-elevated text-title text-sm rounded-xl border border-strong py-2.5 px-4 flex justify-between items-center transition-all shadow-sm hover:border-brand/40 group">
             <span class="font-bold truncate">{{ unitContextService.activeUnitName() }}</span>
-            <span class="material-symbols-outlined text-sm text-muted group-hover:text-brand transition-transform duration-300" [class.rotate-180]="isStoreDropdownOpen()">unfold_more</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-sm text-muted group-hover:text-brand transition-transform duration-300" [class.rotate-180]="isStoreDropdownOpen()">unfold_more</span>
         </button>
 
         <!-- Dropdown Menu -->
@@ -39,7 +39,7 @@
                             <button (click)="switchStore(unit.id)" class="w-full text-left px-3 py-2.5 text-sm rounded-xl transition-all flex items-center justify-between group" [class.bg-brand/10]="unitContextService.activeUnitId() === unit.id" [class.text-brand]="unitContextService.activeUnitId() === unit.id" [class.hover:bg-surface]="unitContextService.activeUnitId() !== unit.id" [class.text-muted]="unitContextService.activeUnitId() !== unit.id" [class.hover:text-title]="unitContextService.activeUnitId() !== unit.id">
                                 <span class="font-bold truncate">{{ unit.name }}</span>
                                 @if(unitContextService.activeUnitId() === unit.id) {
-                                    <span class="material-symbols-outlined text-brand text-sm shadow-sm scale-110">check_circle</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-sm shadow-sm scale-110">check_circle</span>
                                 }
                             </button>
                         </li>
@@ -47,7 +47,7 @@
                 </ul>
                 <div class="border-t border-subtle p-2 bg-black/10">
                     <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-brand hover:text-white py-2 rounded-xl hover:bg-brand transition-all border border-transparent hover:border-brand/50 shadow-sm active:scale-95">
-                        <span class="material-symbols-outlined text-sm">add_business</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">add_business</span>
                         Nova Loja
                     </button>
                 </div>
@@ -65,7 +65,7 @@
        [class.justify-center]="!isSidebarOpen()" 
        [title]="!isSidebarOpen() ? 'Início' : ''">
        <!-- active indicator glow -->
-       <span class="material-symbols-outlined text-[22px] mr-3 relative z-10 transition-transform group-hover:scale-110">home</span>
+       <span translate="no" class="notranslate material-symbols-outlined text-[22px] mr-3 relative z-10 transition-transform group-hover:scale-110">home</span>
        @if(isSidebarOpen()) {
           <span class="relative z-10 tracking-wide">Início</span>
        }
@@ -89,7 +89,7 @@
                          @if(item.icon.startsWith('M')) {
                              <svg class="w-[22px] h-[22px] transition-transform group-hover:scale-110 group-hover:text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
                          } @else {
-                             <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-[22px] transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
                          }
                     }
                     @if(isSidebarOpen()) {
@@ -98,7 +98,7 @@
                 </div>
                 
                 @if(isSidebarOpen()) {
-                    <span class="material-symbols-outlined text-sm opacity-60 transition-transform duration-300 group-hover:text-brand group-hover:opacity-100" [class.rotate-90]="expandedGroups()[item.name]">chevron_right</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-sm opacity-60 transition-transform duration-300 group-hover:text-brand group-hover:opacity-100" [class.rotate-90]="expandedGroups()[item.name]">chevron_right</span>
                 }
             </button>
             
@@ -111,7 +111,7 @@
                             @if(child.icon && child.icon.startsWith('M')) {
                                 <svg class="w-4 h-4 mr-3 flex-shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="child.icon"></path></svg>
                             } @else if (child.icon) {
-                                <span class="material-symbols-outlined text-[18px] mr-3 transition-transform group-hover:scale-110">{{ child.icon }}</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-[18px] mr-3 transition-transform group-hover:scale-110">{{ child.icon }}</span>
                             }
                             {{ child.name }}
                         </a>
@@ -127,7 +127,7 @@
              } @else if (item.icon && item.icon.startsWith('M')) {
                 <svg class="w-[22px] h-[22px] mr-3 flex-shrink-0 transition-transform group-hover:scale-110 group-hover:text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path></svg>
              } @else if (item.icon) {
-                 <span class="material-symbols-outlined text-[22px] mr-3 transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
+                 <span translate="no" class="notranslate material-symbols-outlined text-[22px] mr-3 transition-transform group-hover:scale-110 group-hover:text-brand">{{ item.icon }}</span>
              }
              
              @if(isSidebarOpen()) {
@@ -145,7 +145,7 @@
           <img [src]="photoUrl" alt="Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-brand/50 shadow-sm">
        } @else {
           <div class="w-10 h-10 rounded-full bg-surface border border-strong flex items-center justify-center text-muted shadow-sm">
-            <span class="material-symbols-outlined text-lg">person</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">person</span>
           </div>
        }
        
@@ -164,10 +164,10 @@
             </button>
             <div class="grid grid-cols-2 gap-2">
                 <button (click)="switchEmployee()" class="py-2 px-2 bg-surface hover:bg-surface-elevated text-title border border-strong hover:border-brand/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm">
-                    <span class="material-symbols-outlined text-[14px]">swap_horiz</span> Trocar
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">swap_horiz</span> Trocar
                 </button>
                 <button (click)="signOut()" class="py-2 px-2 bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/20 hover:border-danger rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm">
-                    <span class="material-symbols-outlined text-[14px]">logout</span> Sair
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">logout</span> Sair
                 </button>
             </div>
         </div>

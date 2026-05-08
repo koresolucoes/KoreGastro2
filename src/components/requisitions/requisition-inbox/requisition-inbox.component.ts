@@ -22,14 +22,14 @@ import { RequisitionStatus } from '../../../models/db.models';
       <!-- State: Loading -->
       @if (loading()) {
         <div class="py-12 flex justify-center">
-            <span class="material-symbols-outlined animate-spin text-brand text-4xl">autorenew</span>
+            <span translate="no" class="notranslate material-symbols-outlined animate-spin text-brand text-4xl">autorenew</span>
         </div>
       } 
       <!-- State: Empty -->
       @else if (inboxItems().length === 0) {
         <div class="py-12 flex flex-col items-center text-center">
           <div class="w-16 h-16 rounded-2xl bg-surface-hover flex items-center justify-center mb-4">
-              <span class="material-symbols-outlined text-3xl text-muted">inbox</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-3xl text-muted">inbox</span>
           </div>
           <h3 class="text-sm font-bold text-title">Nenhum pedido externo recebido</h3>
           <p class="text-xs text-muted max-w-sm mt-1">Nenhuma filial enviou solicitações de transferência para a sua unidade neste período.</p>
@@ -82,7 +82,7 @@ import { RequisitionStatus } from '../../../models/db.models';
                                <span>{{ item.quantity_requested }} {{ item.unit }}</span>
                                @if (getIngredientStock(item.ingredients?.name) < item.quantity_requested) {
                                    <span class="text-[9px] text-danger font-black flex items-center gap-1 mt-0.5" title="Seu Estoque Atual: {{ getIngredientStock(item.ingredients?.name) }} {{ item.unit }}">
-                                       <span class="material-symbols-outlined text-[10px]">warning</span> estoque insf. ({{ getIngredientStock(item.ingredients?.name) }})
+                                       <span translate="no" class="notranslate material-symbols-outlined text-[10px]">warning</span> estoque insf. ({{ getIngredientStock(item.ingredients?.name) }})
                                    </span>
                                } @else {
                                    <span class="text-[9px] text-muted font-medium mt-0.5">
@@ -107,7 +107,7 @@ import { RequisitionStatus } from '../../../models/db.models';
                    </button>
                 } @else if (req.status === 'APPROVED') {
                    <span class="text-xs text-muted italic flex items-center gap-1">
-                     <span class="material-symbols-outlined text-[14px]">local_shipping</span>
+                     <span translate="no" class="notranslate material-symbols-outlined text-[14px]">local_shipping</span>
                      Aguardando filial confirmar recebimento
                    </span>
                 }

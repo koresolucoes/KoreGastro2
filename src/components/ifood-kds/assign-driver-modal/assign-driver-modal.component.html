@@ -1,9 +1,9 @@
 <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeModal.emit()">
   <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
     <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-muted">two_wheeler</span> Atribuir Entregador</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">two_wheeler</span> Atribuir Entregador</h3>
         <button (click)="closeModal.emit()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
     </div>
     <div class="p-6 space-y-5 bg-surface/30">
@@ -42,7 +42,7 @@
     <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
        <button (click)="closeModal.emit()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-surface border border-strong hover:bg-surface-elevated text-title transition-all active:scale-95 shadow-sm">Cancelar</button>
        <button (click)="onConfirm()" [disabled]="!driverForm().name.trim() || !driverForm().phone.trim()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-brand hover:bg-brand-hover text-white flex items-center gap-2 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-        <span class="material-symbols-outlined text-[16px]">check</span> Confirmar Atribuição
+        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">check</span> Confirmar Atribuição
        </button>
     </div>
   </div>

@@ -5,7 +5,7 @@
         <div class="flex justify-between items-start mb-6">
             <div class="flex items-center gap-4">
               <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                 <span class="material-symbols-outlined text-3xl">person</span>
+                 <span translate="no" class="notranslate material-symbols-outlined text-3xl">person</span>
               </div>
               <div>
                 <h3 class="text-2xl font-black text-title tracking-tight">{{ customer().name }}</h3>
@@ -18,21 +18,21 @@
               </div>
             </div>
             <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-              <span class="material-symbols-outlined">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined">close</span>
             </button>
         </div>
         <!-- Tabs -->
         <div class="flex border-b border-subtle gap-8">
             <button (click)="activeTab.set('details')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'details'" [class.text-muted]="activeTab() !== 'details'">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">info</span> Dados Pessoais</span>
+                <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">info</span> Dados Pessoais</span>
                 @if(activeTab() === 'details') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
             </button>
             <button (click)="activeTab.set('history')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'history'" [class.text-muted]="activeTab() !== 'history'">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">receipt_long</span> Histórico</span>
+                <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">receipt_long</span> Histórico</span>
                 @if(activeTab() === 'history') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
             </button>
              <button (click)="activeTab.set('loyalty')" class="pb-3 text-[11px] font-black uppercase tracking-widest relative transition-all" [class.text-brand]="activeTab() === 'loyalty'" [class.text-muted]="activeTab() !== 'loyalty'">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">stars</span> Fidelidade</span>
+                <span class="flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">stars</span> Fidelidade</span>
                 @if(activeTab() === 'loyalty') { <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div> }
             </button>
         </div>
@@ -45,7 +45,7 @@
             <div class="space-y-8">
                 <!-- Info Section -->
                 <div>
-                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">contact_mail</span> Contato & Detalhes</h4>
+                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">contact_mail</span> Contato & Detalhes</h4>
                   <div class="bg-surface-elevated/50 p-5 rounded-2xl border border-subtle space-y-4">
                       <div class="flex flex-col"><span class="text-[10px] uppercase font-bold text-muted mb-1">Telefone</span><span class="text-title font-medium data-mono">{{ customer().phone || 'Não informado' }}</span></div>
                       <div class="flex flex-col"><span class="text-[10px] uppercase font-bold text-muted mb-1">Email</span><span class="text-title font-medium">{{ customer().email || 'Não informado' }}</span></div>
@@ -55,7 +55,7 @@
 
                 <!-- Notes Section -->
                 <div>
-                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">description</span> Observações</h4>
+                  <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">description</span> Observações</h4>
                   <div class="bg-surface-elevated/50 p-5 rounded-2xl border border-subtle">
                     <p class="text-sm text-title font-medium whitespace-pre-wrap leading-relaxed">
                       {{ customer().notes || 'Nenhuma observação registrada.' }}
@@ -66,9 +66,9 @@
 
             <!-- Map Section -->
             <div>
-              <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">place</span> Endereço</h4>
+              <h4 class="text-[10px] font-black uppercase tracking-widest text-muted border-b border-subtle pb-3 mb-4 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">place</span> Endereço</h4>
               <div class="bg-surface-elevated/50 p-4 rounded-2xl border border-subtle flex items-start gap-3 mb-4">
-                  <span class="material-symbols-outlined text-brand bg-brand/10 p-2 rounded-xl border border-brand/20">location_on</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand bg-brand/10 p-2 rounded-xl border border-brand/20">location_on</span>
                   <div class="text-sm text-title font-medium whitespace-pre-wrap flex-1 mt-1">
                     {{ customer().address || 'Nenhum endereço informado.' }}
                   </div>
@@ -94,7 +94,7 @@
           </div>
         } @else if (consumptionHistory().length === 0) {
           <div class="text-center text-muted py-24 flex flex-col items-center opacity-60">
-              <span class="material-symbols-outlined text-6xl mb-4">receipt_long</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4">receipt_long</span>
               <p class="font-bold text-lg">Nenhum histórico de consumo</p>
           </div>
         } @else {
@@ -113,7 +113,7 @@
                 </div>
                 
                 <div class="border-t border-subtle border-dashed pt-4">
-                    <h5 class="text-[9px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">fastfood</span> Itens do Pedido</h5>
+                    <h5 class="text-[9px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">fastfood</span> Itens do Pedido</h5>
                     <ul class="space-y-2">
                     @for (item of order.order_items; track item.id) {
                         <li class="flex justify-between items-center text-sm">
@@ -133,7 +133,7 @@
       } @else if (activeTab() === 'loyalty') {
         <div class="max-w-3xl mx-auto space-y-6">
           <div class="bg-brand/10 border border-brand/20 p-8 rounded-3xl text-center relative overflow-hidden flex flex-col justify-center items-center shadow-lg">
-            <span class="material-symbols-outlined text-brand opacity-10 absolute -right-6 -bottom-6 text-9xl">stars</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-10 absolute -right-6 -bottom-6 text-9xl">stars</span>
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-brand mb-2 z-10">Saldo Consolidado de Pontos</p>
             <p class="text-6xl font-black text-brand tracking-tighter z-10">{{ customer().loyalty_points | number }}</p>
           </div>
@@ -143,14 +143,14 @@
             </div>
           } @else if (loyaltyMovements().length === 0) {
             <div class="text-center text-muted py-16 flex flex-col items-center opacity-60">
-                <span class="material-symbols-outlined text-6xl mb-4">stars</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4">stars</span>
                 <p class="font-bold text-lg">Nenhuma movimentação de pontos.</p>
             </div>
           } @else {
             <div class="chef-surface border border-subtle rounded-2xl overflow-hidden mt-8 shadow-sm">
               <div class="p-4 border-b border-subtle bg-surface/50">
                   <h4 class="text-[11px] font-black uppercase tracking-widest text-title flex items-center gap-2">
-                      <span class="material-symbols-outlined text-brand text-[18px]">history</span> Histórico de Transações de Pontos
+                      <span translate="no" class="notranslate material-symbols-outlined text-brand text-[18px]">history</span> Histórico de Transações de Pontos
                   </h4>
               </div>
               <div class="overflow-x-auto">

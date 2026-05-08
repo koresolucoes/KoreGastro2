@@ -12,18 +12,18 @@
         </div>
         <div class="flex-1 text-right">
              <button (click)="exportCsv()" [disabled]="reportData().length === 0" class="bg-surface hover:bg-surface-elevated text-[11px] font-black uppercase tracking-widest text-brand px-5 py-2.5 rounded-lg transition-all border border-subtle shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ml-auto active:scale-95">
-                 <span class="material-symbols-outlined text-[16px]">download</span> Exportar CSV
+                 <span translate="no" class="notranslate material-symbols-outlined text-[16px]">download</span> Exportar CSV
              </button>
         </div>
     </div>
 
     @if(isLoading()) {
         <div class="flex-1 flex items-center justify-center">
-            <span class="material-symbols-outlined animate-spin text-brand text-4xl">progress_activity</span>
+            <span translate="no" class="notranslate material-symbols-outlined animate-spin text-brand text-4xl">progress_activity</span>
         </div>
     } @else if(reportData().length === 0) {
         <div class="flex-1 flex flex-col items-center justify-center opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
-            <span class="material-symbols-outlined text-4xl text-muted mb-2">analytics</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">analytics</span>
             <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum dado encontrado para o período.</p>
         </div>
     } @else {
@@ -45,7 +45,7 @@
 
         <!-- Detailed Breakdown -->
         <div class="flex-1 bg-surface-elevated rounded-2xl p-5 border border-subtle shadow-sm overflow-hidden flex flex-col">
-            <h3 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-muted">bar_chart</span> Detalhamento por Setor</h3>
+            <h3 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">bar_chart</span> Detalhamento por Setor</h3>
             <div class="space-y-4 overflow-y-auto custom-scrollbar pr-2 flex-1">
                 @for(item of reportData(); track item.stationName) {
                     <div class="bg-surface p-4 rounded-xl border border-subtle hover:border-brand/30 transition-colors">

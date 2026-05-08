@@ -9,10 +9,12 @@ import { ToastService } from '../../services/toast.service';
 import { Menu, MenuCategory, MenuItem, MenuItemOption, MenuItemOptionChoice, Recipe } from '../../models/db.models';
 import { RecipeStateService } from '../../services/recipe-state.service';
 
+import { RouterModule } from '@angular/router';
+
 @Component({
   selector: 'app-menu-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, DragDropModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule, DragDropModule, RouterModule],
   templateUrl: './menu-builder.component.html',
 })
 export class MenuBuilderComponent implements OnInit {
@@ -135,7 +137,11 @@ export class MenuBuilderComponent implements OnInit {
 
   async saveItem() {
     const data = this.editingItemData();
-    if (!data || !data.recipe_id) return;
+    if (!data) return;
+    if (!data.recipe_id) {
+      this.toast.show('Selecione uma receita da ficha técnica!', 'error');
+      return;
+    }
     this.isEditingItem.set(false);
     const { success } = await this.menuData.saveItem(data);
     if (success) {
@@ -219,7 +225,11 @@ export class MenuBuilderComponent implements OnInit {
 
   async saveChoice() {
     const data = this.editingChoiceData();
-    if (!data || !data.recipe_id) return;
+    if (!data) return;
+    if (!data.recipe_id) {
+       this.toast.show('Selecione uma receita da ficha técnica!', 'error');
+       return;
+    }
     this.isEditingChoice.set(false);
     const { success } = await this.menuData.saveOptionChoice(data);
     if (success) {

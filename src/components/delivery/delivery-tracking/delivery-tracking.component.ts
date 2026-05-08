@@ -130,7 +130,7 @@ export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
     } else {
       const driverIcon = L.divIcon({
         className: 'delivery-driver-icon',
-        html: `<span class="material-symbols-outlined text-white p-1">two_wheeler</span>`,
+        html: `<span translate="no" class="notranslate material-symbols-outlined text-white p-1">two_wheeler</span>`,
         iconSize: [32, 32],
         iconAnchor: [16, 16]
       });

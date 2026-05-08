@@ -28,7 +28,7 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
         <div class="flex-1">
           <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Selecionar Estação</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
+            <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
             <select 
               [ngModel]="selectedStationId()" 
               (ngModelChange)="selectedStationId.set($event)" 
@@ -38,13 +38,13 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
                 <option [value]="station.id">{{ station.name }}</option>
               }
             </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+            <span translate="no" class="notranslate material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
           </div>
         </div>
         <div class="flex-1">
           <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Buscar</label>
           <div class="relative">
-             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
+             <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
             <input 
               type="text" 
               [value]="searchTerm()" 
@@ -61,7 +61,7 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
             <!-- CURRENT STOCK VIEW -->
             @if(filteredStock().length === 0) {
               <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
-                 <span class="material-symbols-outlined text-4xl text-muted mb-2">inventory_2</span>
+                 <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">inventory_2</span>
                 <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum estoque encontrado.</p>
               </div>
             } @else {
@@ -92,7 +92,7 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
             <!-- HISTORY VIEW -->
             @if(filteredHistory().length === 0) {
                  <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
-                    <span class="material-symbols-outlined text-4xl text-muted mb-2">history</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">history</span>
                     <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum histórico recente.</p>
                 </div>
             } @else {
@@ -105,7 +105,7 @@ import { OperationalAuthService } from '../../../services/operational-auth.servi
                                     <span class="text-sm font-black text-title ml-3 tracking-tight">{{ req.stations?.name }}</span>
                                 </div>
                                 <div class="text-left sm:text-right">
-                                    <p class="text-[11px] text-success font-black uppercase tracking-widest flex items-center gap-1 sm:justify-end"><span class="material-symbols-outlined text-[14px]">check_circle</span> Entregue em {{ req.processed_at | date:'dd/MM HH:mm' }}</p>
+                                    <p class="text-[11px] text-success font-black uppercase tracking-widest flex items-center gap-1 sm:justify-end"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">check_circle</span> Entregue em {{ req.processed_at | date:'dd/MM HH:mm' }}</p>
                                     <p class="text-[10px] font-bold text-muted mt-0.5">Por: {{ req.processor?.name || 'Sistema' }}</p>
                                 </div>
                             </div>

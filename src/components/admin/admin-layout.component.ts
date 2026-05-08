@@ -13,21 +13,21 @@ import { AuthService } from '../../services/auth.service';
       <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
         <div class="p-6 border-b border-gray-800">
           <h1 class="text-xl font-bold text-white flex items-center gap-2">
-            <span class="material-symbols-outlined text-purple-500">admin_panel_settings</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-purple-500">admin_panel_settings</span>
             ChefOS Admin
           </h1>
         </div>
         <nav class="flex-1 p-4 space-y-2">
           <a routerLink="/admin/dashboard" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
-            <span class="material-symbols-outlined">dashboard</span>
+            <span translate="no" class="notranslate material-symbols-outlined">dashboard</span>
             Visão Geral
           </a>
           <a routerLink="/admin/manage" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
-            <span class="material-symbols-outlined">manage_accounts</span>
+            <span translate="no" class="notranslate material-symbols-outlined">manage_accounts</span>
             Administradores
           </a>
           <a routerLink="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent mt-8">
-            <span class="material-symbols-outlined">exit_to_app</span>
+            <span translate="no" class="notranslate material-symbols-outlined">exit_to_app</span>
             Sair do Admin
           </a>
         </nav>

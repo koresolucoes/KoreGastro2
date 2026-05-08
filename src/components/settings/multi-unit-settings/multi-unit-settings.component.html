@@ -2,7 +2,7 @@
 <div class="chef-surface border border-subtle rounded-3xl p-8 mb-6 shadow-sm">
   <div class="flex items-center gap-4 mb-6 border-b border-subtle pb-4">
       <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
-          <span class="material-symbols-outlined text-3xl text-brand">group_add</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">group_add</span>
       </div>
       <div>
           <h2 class="text-2xl font-black text-title title-display tracking-tight">Gestão de Equipe (Gestores)</h2>
@@ -13,7 +13,7 @@
   <!-- Invite Form -->
   <div class="bg-surface-elevated p-6 rounded-2xl mb-8 border border-strong shadow-inner">
     <h3 class="font-black text-title mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
-        <span class="material-symbols-outlined text-brand">person_add</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
         Adicionar Novo Gestor
     </h3>
     <div class="flex flex-col sm:flex-row gap-4">
@@ -47,7 +47,7 @@
        </div>
     } @else if (managers().length === 0) {
         <div class="bg-surface-elevated/50 border border-dashed border-strong rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-            <span class="material-symbols-outlined text-4xl text-muted mb-2">group_off</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">group_off</span>
             <p class="text-muted font-bold">Nenhum gestor adicional encontrado. Apenas você tem acesso.</p>
         </div>
     } @else {
@@ -68,7 +68,7 @@
                             {{ manager.role === 'admin' ? 'Admin' : 'Gestor' }}
                         </span>
                         <button (click)="removeManager(manager)" class="p-2.5 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-all border border-transparent hover:border-danger/20 active:scale-95" title="Remover acesso">
-                            <span class="material-symbols-outlined text-lg">person_remove</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg">person_remove</span>
                         </button>
                     </div>
                 </div>

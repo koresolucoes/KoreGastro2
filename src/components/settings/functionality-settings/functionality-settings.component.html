@@ -28,7 +28,7 @@
     <div class="flex-grow">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 p-3 bg-purple-500/10 rounded-2xl shadow-sm border border-purple-500/20 flex items-center justify-center">
-          <span class="material-symbols-outlined text-3xl text-purple-500">api</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-purple-500">api</span>
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">API Externa</h2>
@@ -49,7 +49,7 @@
     <div class="flex-grow">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 p-3 bg-cyan-500/10 rounded-2xl shadow-sm border border-cyan-500/20 flex items-center justify-center">
-          <span class="material-symbols-outlined text-3xl text-cyan-500">webhook</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-cyan-500">webhook</span>
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">Webhooks</h2>
@@ -70,7 +70,7 @@
     <div class="flex-grow">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 p-3 bg-pink-500/10 rounded-2xl shadow-sm border border-pink-500/20 flex items-center justify-center">
-          <span class="material-symbols-outlined text-3xl text-pink-500">loyalty</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-pink-500">loyalty</span>
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">Fidelidade</h2>
@@ -96,7 +96,7 @@
     <div class="flex-grow">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 p-3 bg-teal-500/10 rounded-2xl shadow-sm border border-teal-500/20 flex items-center justify-center">
-          <span class="material-symbols-outlined text-3xl text-teal-500">calendar_month</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-teal-500">calendar_month</span>
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">Reservas Online</h2>
@@ -122,7 +122,7 @@
     <div class="flex-grow">
       <div class="flex items-start gap-5">
         <div class="w-14 h-14 p-3 bg-orange-500/10 rounded-2xl shadow-sm border border-orange-500/20 flex items-center justify-center">
-          <span class="material-symbols-outlined text-3xl text-orange-500">receipt_long</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-orange-500">receipt_long</span>
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">Emissão Fiscal</h2>
@@ -154,7 +154,7 @@
            Configuração iFood
         </h3>
         <button (click)="isIFoodModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span class="material-symbols-outlined text-xl">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
       <div class="p-10 space-y-8">
@@ -162,7 +162,7 @@
             <label for="ifood-merchant-id" class="block text-[11px] font-black tracking-widest text-muted uppercase mb-3">iFood Merchant ID</label>
             <input type="text" id="ifood-merchant-id" [value]="companyProfileForm().ifood_merchant_id || ''" (input)="updateCompanyProfileField('ifood_merchant_id', $any($event.target).value)" placeholder="Cole seu ID do iFood aqui" class="w-full bg-surface-elevated border border-strong rounded-2xl px-5 py-4 text-title placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all font-bold text-lg">
             <p class="text-[11px] text-muted mt-2 font-medium flex items-center gap-1.5 opacity-80 uppercase tracking-wider">
-               <span class="material-symbols-outlined text-sm">info</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-sm">info</span>
                ID necessário para sincronização do cardápio e estoque.
             </p>
         </div>
@@ -171,7 +171,7 @@
             <div class="flex gap-3">
                 <input id="ifood-webhook-url" type="text" readonly [value]="webhookUrl" class="w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-muted/80 font-mono text-xs truncate cursor-default">
                 <button (click)="copyToClipboard(webhookUrl)" class="p-4 bg-surface hover:bg-surface-elevated border border-strong rounded-2xl text-brand transition-all active:scale-95 shadow-sm hover:shadow-brand/5" title="Copiar URL">
-                    <span class="material-symbols-outlined text-xl">content_copy</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-xl">content_copy</span>
                 </button>
             </div>
             <p class="text-[11px] text-muted mt-2 font-medium italic">Configure esta URL no Portal do Parceiro iFood para receber pedidos em tempo real.</p>
@@ -192,19 +192,19 @@
         <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md flex-shrink-0">
           <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
              <div class="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
-               <span class="material-symbols-outlined text-purple-500">api</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-purple-500">api</span>
              </div>
              API Externa e Acessos
           </h3>
           <button (click)="isApiModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-            <span class="material-symbols-outlined text-xl">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
           </button>
         </div>
         
         <div class="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
             <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-inner space-y-6">
                 <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand text-lg">key</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">key</span>
                     Credenciais de Integração
                 </h4>
                 
@@ -214,7 +214,7 @@
                     <div class="flex gap-2">
                         <input type="text" readonly [value]="authService.currentUser()?.id || 'N/A'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
                         <button (click)="copyToClipboard(authService.currentUser()?.id)" [disabled]="!authService.currentUser()?.id" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar ID">
-                          <span class="material-symbols-outlined text-lg">content_copy</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-lg">content_copy</span>
                         </button>
                     </div>
                   </div>
@@ -224,7 +224,7 @@
                     <div class="flex gap-2">
                         <input type="text" readonly [value]="companyProfileForm().external_api_key ? '••••••••••••' + companyProfileForm().external_api_key!.slice(-4) : 'Nenhuma chave gerada'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
                         <button (click)="copyToClipboard(companyProfileForm().external_api_key)" [disabled]="!companyProfileForm().external_api_key" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar chave">
-                            <span class="material-symbols-outlined text-lg">content_copy</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg">content_copy</span>
                         </button>
                     </div>
                   </div>
@@ -237,7 +237,7 @@
 
             <div class="bg-surface-elevated p-8 rounded-3xl border border-strong shadow-inner space-y-6">
                 <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand text-lg">qr_code_2</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">qr_code_2</span>
                     Cardápio Público e QR Codes
                 </h4>
                 
@@ -246,7 +246,7 @@
                     <div class="flex gap-2">
                         <input type="text" readonly [value]="publicMenuUrl()" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
                         <button (click)="copyToClipboard(publicMenuUrl())" [disabled]="!publicMenuUrl()" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar URL">
-                            <span class="material-symbols-outlined text-lg">content_copy</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg">content_copy</span>
                         </button>
                     </div>
                     <p class="text-[10px] text-muted italic mt-2">Compartilhe este link em redes sociais ou integre em botões de WhatsApp.</p>
@@ -293,12 +293,12 @@
       <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex justify-between items-center backdrop-blur-md flex-shrink-0">
         <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
            <div class="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20">
-             <span class="material-symbols-outlined text-indigo-500">webhook</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-indigo-500">webhook</span>
            </div>
            {{ editingWebhook() ? 'Editar Webhook' : 'Gerenciar Webhooks' }}
         </h3>
         <button (click)="closeWebhookModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span class="material-symbols-outlined text-xl">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
       
@@ -307,7 +307,7 @@
             <div class="bg-emerald-500/10 border border-emerald-500/30 p-8 rounded-3xl animate-in zoom-in slide-in-from-top-4 duration-500">
                 <div class="flex items-center gap-3 mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                    <span class="material-symbols-outlined text-white">check_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-white">check_circle</span>
                   </div>
                   <h4 class="font-black text-xl text-emerald-500 tracking-tight">Webhook Criado com Sucesso!</h4>
                 </div>
@@ -315,7 +315,7 @@
                 <div class="flex gap-3 mt-6">
                     <input type="text" readonly [value]="newWebhookSecret()" class="w-full bg-surface-elevated border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-600 font-mono text-sm shadow-inner">
                     <button (click)="copyToClipboard(newWebhookSecret())" class="p-4 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 transition-all active:scale-95 shadow-md shadow-emerald-500/10" title="Copiar Segredo">
-                        <span class="material-symbols-outlined text-xl">content_copy</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-xl">content_copy</span>
                     </button>
                 </div>
             </div>
@@ -323,13 +323,13 @@
         
         <div>
           <h4 class="text-[12px] font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-            <span class="material-symbols-outlined text-brand text-lg">list_alt</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">list_alt</span>
             Endpoints Configurados
           </h4>
           @if (webhooks().length === 0) {
               <div class="text-center bg-surface-elevated border border-dashed border-strong rounded-3xl py-16 flex flex-col items-center gap-4 group">
                   <div class="w-16 h-16 bg-surface rounded-full flex items-center justify-center border border-subtle transition-transform group-hover:scale-110">
-                    <span class="material-symbols-outlined text-muted text-3xl">link_off</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-muted text-3xl">link_off</span>
                   </div>
                   <p class="text-muted font-medium uppercase tracking-widest text-[10px]">Nenhum webhook configurado ainda</p>
               </div>
@@ -340,7 +340,7 @@
                           <div class="flex items-center gap-4 flex-1 min-w-0">
                               <div class="relative">
                                 <div class="w-10 h-10 bg-surface rounded-xl flex items-center justify-center border border-subtle">
-                                  <span class="material-symbols-outlined text-muted group-hover:text-brand transition-colors text-xl">language</span>
+                                  <span translate="no" class="notranslate material-symbols-outlined text-muted group-hover:text-brand transition-colors text-xl">language</span>
                                 </div>
                                 <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-surface-elevated shadow-sm" [class.bg-emerald-500]="webhook.is_active" [class.bg-muted]="!webhook.is_active"></div>
                               </div>
@@ -361,8 +361,8 @@
                                       <button (click)="cancelDeleteWebhook()" class="px-3 py-1.5 text-[9px] font-black uppercase bg-surface text-title rounded-lg border border-strong hover:bg-surface-elevated transition-all">Não</button>
                                   </div>
                               } @else {
-                                  <button (click)="openEditWebhookModal(webhook)" class="p-2.5 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all active:scale-95" title="Editar"><span class="material-symbols-outlined text-lg">edit</span></button>
-                                  <button (click)="requestDeleteWebhook(webhook)" class="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-95" title="Excluir"><span class="material-symbols-outlined text-lg">delete</span></button>
+                                  <button (click)="openEditWebhookModal(webhook)" class="p-2.5 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all active:scale-95" title="Editar"><span translate="no" class="notranslate material-symbols-outlined text-lg">edit</span></button>
+                                  <button (click)="requestDeleteWebhook(webhook)" class="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-95" title="Excluir"><span translate="no" class="notranslate material-symbols-outlined text-lg">delete</span></button>
                               }
                           </div>
                       </div>
@@ -373,7 +373,7 @@
 
         <div class="pt-10 border-t border-subtle">
             <h4 class="text-[12px] font-black text-title uppercase tracking-widest mb-8 flex items-center gap-2">
-                <span class="material-symbols-outlined text-brand text-lg">{{ editingWebhook() ? 'edit_note' : 'add_circle' }}</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">{{ editingWebhook() ? 'edit_note' : 'add_circle' }}</span>
                 {{ editingWebhook() ? 'Editar Configuração' : 'Adicionar Novo Endpoint' }}
             </h4>
             <div class="space-y-6">
@@ -392,7 +392,7 @@
                             <label class="flex items-center p-4 bg-surface rounded-2xl border border-subtle hover:border-brand/40 group transition-all cursor-pointer select-none" [class.bg-brand/5]="webhookForm().events.includes(event.key)" [class.border-brand/30]="webhookForm().events.includes(event.key)">
                                 <div class="w-5 h-5 rounded-lg border-2 border-strong mr-4 flex items-center justify-center transition-all group-hover:border-brand/50" [class.bg-brand]="webhookForm().events.includes(event.key)" [class.border-brand]="webhookForm().events.includes(event.key)">
                                   @if(webhookForm().events.includes(event.key)) {
-                                    <span class="material-symbols-outlined text-white text-[14px] font-black">check</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-white text-[14px] font-black">check</span>
                                   }
                                 </div>
                                 <input type="checkbox" [checked]="webhookForm().events.includes(event.key)" (change)="toggleWebhookEvent(event.key)" class="hidden">
@@ -406,7 +406,7 @@
                   <div class="bg-surface p-4 rounded-2xl border border-subtle flex items-center justify-between">
                     <div class="flex items-center gap-3">
                        <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                          <span class="material-symbols-outlined text-emerald-500 text-lg">verified_user</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-lg">verified_user</span>
                        </div>
                        <div>
                           <p class="text-[11px] font-black text-title uppercase tracking-widest leading-none">Status de Operação</p>
@@ -438,12 +438,12 @@
       <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex justify-between items-center backdrop-blur-md flex-shrink-0">
           <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
              <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
-               <span class="material-symbols-outlined text-amber-500">card_membership</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-amber-500">card_membership</span>
              </div>
              Programa de Fidelidade
           </h3>
           <button (click)="isLoyaltyModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-            <span class="material-symbols-outlined text-xl">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
           </button>
       </div>
       <div class="p-8 flex-1 overflow-y-auto space-y-10 custom-scrollbar">
@@ -460,7 +460,7 @@
           <div class="space-y-6">
               <div class="flex justify-between items-center px-2">
                   <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand text-lg">featured_play_list</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">featured_play_list</span>
                     Catálogo de Recompensas
                   </h4>
                   <button (click)="openAddRewardModal()" class="px-5 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 border border-brand">+ Adicionar Prêmio</button>
@@ -471,7 +471,7 @@
                     <div class="bg-surface-elevated p-6 rounded-2xl border border-strong flex items-center justify-between group hover:border-brand/30 transition-all shadow-sm">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-surface rounded-xl flex items-center justify-center border border-subtle group-hover:bg-brand/5 transition-colors">
-                               <span class="material-symbols-outlined text-muted group-hover:text-brand transition-colors text-2xl">redeem</span>
+                               <span translate="no" class="notranslate material-symbols-outlined text-muted group-hover:text-brand transition-colors text-2xl">redeem</span>
                             </div>
                             <div>
                                 <p class="font-black text-title tracking-tight mb-0.5">{{reward.name}}</p>
@@ -482,8 +482,8 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button (click)="openEditRewardModal(reward)" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"><span class="material-symbols-outlined text-lg">edit</span></button>
-                            <button (click)="requestDeleteReward(reward)" class="p-2 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><span class="material-symbols-outlined text-lg">delete</span></button>
+                            <button (click)="openEditRewardModal(reward)" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all"><span translate="no" class="notranslate material-symbols-outlined text-lg">edit</span></button>
+                            <button (click)="requestDeleteReward(reward)" class="p-2 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><span translate="no" class="notranslate material-symbols-outlined text-lg">delete</span></button>
                         </div>
                     </div>
                   }
@@ -504,12 +504,12 @@
       <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md flex-shrink-0">
         <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
            <div class="w-10 h-10 bg-teal-500/10 rounded-xl flex items-center justify-center border border-teal-500/20">
-             <span class="material-symbols-outlined text-teal-500">event_seat</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-teal-500">event_seat</span>
            </div>
            Políticas de Reservas
         </h3>
         <button (click)="isReservationModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span class="material-symbols-outlined text-xl">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
       
@@ -536,7 +536,7 @@
           <div class="space-y-6">
               <div class="px-2">
                 <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                  <span class="material-symbols-outlined text-brand text-lg">schedule</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">schedule</span>
                   Disponibilidade de Agenda
                 </h4>
                 <p class="text-[10px] text-muted italic mt-1 pl-7">Defina os períodos em que o sistema aceita reservas automáticas</p>
@@ -548,7 +548,7 @@
                           <div class="col-span-1">
                             <label [for]="'closed-' + i" class="flex items-center gap-3 cursor-pointer select-none">
                               <div class="w-5 h-5 rounded-md border-2 border-strong flex items-center justify-center transition-all group-hover:border-brand/40" [class.bg-brand]="!day.is_closed" [class.border-brand]="!day.is_closed">
-                                @if(!day.is_closed) { <span class="material-symbols-outlined text-white text-[14px] font-black">check</span> }
+                                @if(!day.is_closed) { <span translate="no" class="notranslate material-symbols-outlined text-white text-[14px] font-black">check</span> }
                               </div>
                               <input type="checkbox" [id]="'closed-' + i" [checked]="!day.is_closed" (change)="updateWeeklyHours(i, 'is_closed', !$any($event.target).checked)" class="hidden">
                               <span class="text-[11px] font-black uppercase text-title tracking-widest">{{ daysOfWeek[i] }}</span>
@@ -586,12 +586,12 @@
       <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md">
         <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
            <div class="w-10 h-10 bg-sky-500/10 rounded-xl flex items-center justify-center border border-sky-500/20">
-             <span class="material-symbols-outlined text-sky-500">receipt_long</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-sky-500">receipt_long</span>
            </div>
            Emissão Fiscal
         </h3>
         <button (click)="isFocusNFeModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span class="material-symbols-outlined text-xl">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
       
@@ -600,7 +600,7 @@
             <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-3 pl-1">CNPJ do Emitente</label>
             <div class="relative group">
               <input type="text" readonly [value]="companyProfileForm().cnpj || 'Preencha em Dados da Empresa'" class="w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-muted/60 font-mono text-sm cursor-not-allowed group-hover:bg-surface-elevated transition-colors">
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted/30 text-lg">lock</span>
+              <span translate="no" class="notranslate absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted/30 text-lg">lock</span>
             </div>
             @if(!companyProfileForm().cnpj) {
               <p class="text-[10px] text-brand font-black uppercase tracking-tighter mt-2 pl-1 animate-pulse">Aviso: CNPJ não configurado no perfil da empresa</p>
@@ -615,13 +615,13 @@
         <div class="bg-surface p-6 rounded-3xl border border-subtle border-dashed hover:border-brand/40 transition-all group relative">
             <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-4">Certificado Digital A1 (.pfx)</label>
             <div class="flex flex-col items-center justify-center py-4 border-2 border-dashed border-strong rounded-2xl group-hover:bg-brand/5 transition-all cursor-pointer">
-              <span class="material-symbols-outlined text-muted text-4xl mb-2 group-hover:text-brand transition-colors">upload_file</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-4xl mb-2 group-hover:text-brand transition-colors">upload_file</span>
               <p class="text-[10px] font-black uppercase text-muted tracking-widest group-hover:text-brand transition-colors">Clique para selecionar arquivo</p>
               <input type="file" (change)="handleFocusNFeCertFileChange($event)" accept=".pfx,.p12" class="absolute inset-0 opacity-0 cursor-pointer">
             </div>
             @if (focusNFeCertFileName()) {
                 <div class="mt-4 flex items-center gap-2 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
-                  <span class="material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-sm">check_circle</span>
                   <p class="text-[11px] font-bold text-emerald-600 truncate">Arquivo: {{ focusNFeCertFileName() }}</p>
                 </div>
             }

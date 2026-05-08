@@ -31,7 +31,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.border-transparent]="activeTab() !== 'create'"
                     [class.text-muted]="activeTab() !== 'create'"
                     [class.hover:text-title]="activeTab() !== 'create'">
-                <span class="material-symbols-outlined text-[16px]">add_shopping_cart</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add_shopping_cart</span>
                 Nova Requisição
             </button>
             <button (click)="activeTab.set('inbox')" 
@@ -41,7 +41,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.border-transparent]="activeTab() !== 'inbox'"
                     [class.text-muted]="activeTab() !== 'inbox'"
                     [class.hover:text-title]="activeTab() !== 'inbox'">
-                <span class="material-symbols-outlined text-[16px]">move_to_inbox</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">move_to_inbox</span>
                 Pedidos Externos
             </button>
             <button (click)="activeTab.set('stock')" 
@@ -51,7 +51,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.border-transparent]="activeTab() !== 'stock'"
                     [class.text-muted]="activeTab() !== 'stock'"
                     [class.hover:text-title]="activeTab() !== 'stock'">
-                <span class="material-symbols-outlined text-[16px]">shelves</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">shelves</span>
                 Estoque da Praça
             </button>
             <button (click)="activeTab.set('manage')" 
@@ -61,7 +61,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.border-transparent]="activeTab() !== 'manage'"
                     [class.text-muted]="activeTab() !== 'manage'"
                     [class.hover:text-title]="activeTab() !== 'manage'">
-                <span class="material-symbols-outlined text-[16px]">manage_search</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">manage_search</span>
                 Gerenciar Pedidos
             </button>
             <button (click)="activeTab.set('reports')" 
@@ -71,7 +71,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
                     [class.border-transparent]="activeTab() !== 'reports'"
                     [class.text-muted]="activeTab() !== 'reports'"
                     [class.hover:text-title]="activeTab() !== 'reports'">
-                <span class="material-symbols-outlined text-[16px]">pie_chart</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">pie_chart</span>
                 Custos por Setor
             </button>
         </nav>

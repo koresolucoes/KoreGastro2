@@ -14,7 +14,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
         <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div class="flex items-center gap-4 mb-4">
             <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-              <span class="material-symbols-outlined">storefront</span>
+              <span translate="no" class="notranslate material-symbols-outlined">storefront</span>
             </div>
             <div>
               <p class="text-sm text-gray-400">Restaurantes Ativos</p>
@@ -31,7 +31,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
         <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div class="flex items-center gap-4 mb-4">
             <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400">
-              <span class="material-symbols-outlined">payments</span>
+              <span translate="no" class="notranslate material-symbols-outlined">payments</span>
             </div>
             <div>
               <p class="text-sm text-gray-400">MRR Estimado</p>
@@ -48,7 +48,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
         <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <div class="flex items-center gap-4 mb-4">
             <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400">
-              <span class="material-symbols-outlined">bug_report</span>
+              <span translate="no" class="notranslate material-symbols-outlined">bug_report</span>
             </div>
             <div>
               <p class="text-sm text-gray-400">Erros Recentes</p>
@@ -68,7 +68,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
         <div class="p-6 border-b border-gray-800 flex justify-between items-center">
           <h3 class="text-lg font-bold text-white">Restaurantes e Proprietários</h3>
           <button (click)="loadData()" class="text-gray-400 hover:text-white transition-colors">
-            <span class="material-symbols-outlined text-sm" [class.animate-spin]="isLoading()">sync</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-sm" [class.animate-spin]="isLoading()">sync</span>
           </button>
         </div>
         
@@ -130,15 +130,15 @@ import { SystemAdminService } from '../../services/system-admin.service';
                     <div class="flex items-center justify-end gap-2">
                       @if(profile.subscriptions && profile.subscriptions.length > 0 && profile.subscriptions[0].status === 'active') {
                         <button (click)="toggleSubscription(profile.id, 'canceled')" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Cancelar Assinatura">
-                          <span class="material-symbols-outlined text-sm">cancel</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">cancel</span>
                         </button>
                       } @else {
                         <button (click)="toggleSubscription(profile.id, 'active')" class="text-green-400 hover:text-green-300 p-2 rounded-lg hover:bg-green-400/10 transition-colors" title="Ativar Assinatura">
-                          <span class="material-symbols-outlined text-sm">check_circle</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">check_circle</span>
                         </button>
                       }
                       <button class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-400/10 transition-colors" title="Ver detalhes">
-                        <span class="material-symbols-outlined text-sm">visibility</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">visibility</span>
                       </button>
                     </div>
                   </td>
@@ -147,7 +147,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
               @if(restaurants().length === 0 && !isLoading()) {
                 <tr>
                   <td colspan="5" class="p-12 text-center">
-                    <span class="material-symbols-outlined text-4xl text-gray-700 mb-2">search_off</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-gray-700 mb-2">search_off</span>
                     <p class="text-gray-500">Nenhum restaurante encontrado.</p>
                   </td>
                 </tr>

@@ -16,7 +16,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
         <div class="px-8 py-6 border-b border-subtle flex items-center justify-between bg-surface-elevated shrink-0">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 bg-brand text-on-brand rounded-xl flex items-center justify-center shadow-lg shadow-brand/20">
-              <span class="material-symbols-outlined !text-xl">send</span>
+              <span translate="no" class="notranslate material-symbols-outlined !text-xl">send</span>
             </div>
             <div>
               <h2 class="text-xl font-bold text-title">Finalizar Pedido</h2>
@@ -24,7 +24,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
             </div>
           </div>
           <button (click)="close.emit()" class="p-2 hover:bg-surface hover:shadow-sm rounded-full transition-all text-muted hover:text-title border border-transparent hover:border-strong">
-            <span class="material-symbols-outlined">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined">close</span>
           </button>
         </div>
 
@@ -36,13 +36,13 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
             <button (click)="type.set('delivery')" 
                     [class]="type() === 'delivery' ? 'bg-brand text-on-brand shadow-xl shadow-brand/20' : 'bg-surface-elevated text-muted border-2 border-subtle hover:border-strong'"
                     class="p-4 rounded-2xl font-bold transition-all duration-300 flex flex-col items-center gap-2">
-              <span class="material-symbols-outlined" [class]="type() === 'delivery' ? 'text-on-brand' : 'text-muted'">delivery_dining</span>
+              <span translate="no" class="notranslate material-symbols-outlined" [class]="type() === 'delivery' ? 'text-on-brand' : 'text-muted'">delivery_dining</span>
               <span>Entrega</span>
             </button>
             <button (click)="type.set('pickup')" 
                     [class]="type() === 'pickup' ? 'bg-brand text-on-brand shadow-xl shadow-brand/20' : 'bg-surface-elevated text-muted border-2 border-subtle hover:border-strong'"
                     class="p-4 rounded-2xl font-bold transition-all duration-300 flex flex-col items-center gap-2">
-              <span class="material-symbols-outlined" [class]="type() === 'pickup' ? 'text-on-brand' : 'text-muted'">storefront</span>
+              <span translate="no" class="notranslate material-symbols-outlined" [class]="type() === 'pickup' ? 'text-on-brand' : 'text-muted'">storefront</span>
               <span>Retirada</span>
             </button>
           </div>
@@ -52,7 +52,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
             <div class="space-y-2">
               <label class="text-sm font-bold text-body ml-1">Seu Nome</label>
               <div class="relative">
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">person</span>
+                <span translate="no" class="notranslate material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">person</span>
                 <input type="text" [(ngModel)]="name" 
                        placeholder="Como devemos te chamar?"
                        class="w-full pl-12 pr-4 py-4 bg-surface-elevated border-2 border-transparent focus:border-strong focus:bg-surface rounded-2xl outline-none transition-all text-title font-medium tracking-tight">
@@ -62,7 +62,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
             <div class="space-y-2">
               <label class="text-sm font-bold text-body ml-1">WhatsApp</label>
               <div class="relative">
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">phone</span>
+                <span translate="no" class="notranslate material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">phone</span>
                 <input type="tel" [(ngModel)]="phone"
                        placeholder="(00) 00000-0000"
                        class="w-full pl-12 pr-4 py-4 bg-surface-elevated border-2 border-transparent focus:border-strong focus:bg-surface rounded-2xl outline-none transition-all text-title font-medium tracking-tight">
@@ -73,7 +73,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
               <div class="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                 <label class="text-sm font-bold text-body ml-1">Endereço de Entrega</label>
                 <div class="relative">
-                  <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">location_on</span>
+                  <span translate="no" class="notranslate material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 !text-xl text-muted">location_on</span>
                   <textarea [(ngModel)]="address"
                             placeholder="Rua, número, bairro, cidade..."
                             class="w-full pl-12 pr-4 py-4 bg-surface-elevated border-2 border-transparent focus:border-strong focus:bg-surface rounded-2xl outline-none transition-all text-title font-medium tracking-tight min-h-[100px] resize-none"></textarea>
@@ -107,7 +107,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
                   [disabled]="!isValid()"
                   class="w-full py-5 px-8 bg-brand disabled:opacity-50 text-on-brand rounded-2xl font-black text-lg flex items-center justify-center gap-4 transition-all duration-300 enabled:hover:opacity-90 enabled:active:scale-[0.98] shadow-2xl">
             {{ isValid() ? 'Confirmar Pedido' : 'Preencha todos os campos' }}
-            <span class="material-symbols-outlined !text-xl">arrow_forward</span>
+            <span translate="no" class="notranslate material-symbols-outlined !text-xl">arrow_forward</span>
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@
     <!-- Top Nav -->
     <div class="h-16 flex items-center justify-between px-6 chef-glass shadow-sm z-20 shrink-0">
         <button (click)="cancel()" class="w-10 h-10 rounded-full flex items-center justify-center text-muted hover:bg-surface-elevated hover:text-title transition-all">
-            <span class="material-symbols-outlined text-2xl">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-2xl">close</span>
         </button>
         <h1 class="text-lg font-bold text-title truncate max-w-[250px] font-sans tracking-tight">{{ taskName() }}</h1>
         <div class="w-10"></div> <!-- Spacer -->
@@ -22,7 +22,7 @@
                     } @else {
                         <div class="w-56 h-56 rounded-full bg-surface-elevated border-8 border-surface shadow-2xl relative z-10 flex items-center justify-center overflow-hidden hover:scale-105 transition-transform duration-500">
                              <div class="absolute inset-0 bg-gradient-to-tr from-brand/10 to-transparent"></div>
-                            <span class="material-symbols-outlined text-7xl text-brand opacity-60">skillet</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-7xl text-brand opacity-60">skillet</span>
                         </div>
                     }
                 </div>
@@ -34,13 +34,13 @@
                 
                 @if(task().sub_recipe_id) {
                     <div class="chef-surface px-6 py-3 rounded-xl text-brand hover:text-brand-hover hover:bg-surface-elevated font-semibold mb-10 flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm border border-subtle">
-                        <span class="material-symbols-outlined">menu_book</span>
+                        <span translate="no" class="notranslate material-symbols-outlined">menu_book</span>
                         Consultar Ficha Técnica
                     </div>
                 }
 
                 <button (click)="startProduction()" class="w-full btn-primary hover:bg-brand-hover text-white font-bold py-5 rounded-2xl shadow-xl shadow-brand/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                    <span class="material-symbols-outlined text-3xl">play_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-3xl">play_circle</span>
                     INICIAR PREPARO
                 </button>
             </div>
@@ -77,7 +77,7 @@
                 </div>
 
                 <button (click)="finishProduction()" class="w-full bg-success text-white hover:opacity-90 font-bold py-5 rounded-2xl shadow-xl shadow-success/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                    <span class="material-symbols-outlined text-3xl">check_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-3xl">check_circle</span>
                     FINALIZAR PREPARO
                 </button>
             </div>
@@ -126,7 +126,7 @@
                     <div class="flex items-center justify-between chef-surface p-5 rounded-2xl cursor-pointer hover:border-brand transition-colors group border border-subtle" (click)="printLabel.set(!printLabel())">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-surface-elevated flex items-center justify-center text-muted group-hover:text-brand transition-colors">
-                                <span class="material-symbols-outlined">print</span>
+                                <span translate="no" class="notranslate material-symbols-outlined">print</span>
                             </div>
                             <span class="text-title font-bold">Imprimir Etiqueta</span>
                         </div>
@@ -138,7 +138,7 @@
 
                 <div class="mt-10 pt-6 border-t border-subtle">
                     <button (click)="confirmCompletion()" class="w-full bg-success text-white hover:opacity-90 font-bold py-5 rounded-2xl shadow-xl shadow-success/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                        <span class="material-symbols-outlined text-3xl">check_circle</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-3xl">check_circle</span>
                         CONFIRMAR PRODUÇÃO
                     </button>
                     <button (click)="step.set('preview')" class="w-full mt-4 text-muted hover:text-title font-bold py-3 text-sm uppercase tracking-widest transition-colors">

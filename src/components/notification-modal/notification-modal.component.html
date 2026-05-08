@@ -9,15 +9,15 @@
            <!-- Icon container based on state -->
           @if (state().type === 'confirm' || state().type === 'prompt') {
             <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 sm:mx-0 shadow-inner border border-brand/20">
-              <span class="material-symbols-outlined text-brand drop-shadow-md text-3xl">help</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand drop-shadow-md text-3xl">help</span>
             </div>
           } @else if (state().type === 'alert') {
              <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-warning/10 sm:mx-0 shadow-inner border border-warning/20">
-              <span class="material-symbols-outlined text-warning drop-shadow-md text-3xl">warning</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-warning drop-shadow-md text-3xl">warning</span>
             </div>
           } @else {
              <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-success/10 sm:mx-0 shadow-inner border border-success/20">
-              <span class="material-symbols-outlined text-success drop-shadow-md text-3xl">check_circle</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-success drop-shadow-md text-3xl">check_circle</span>
             </div>
           }
 

@@ -4,7 +4,7 @@
   <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
     <div>
       <a routerLink="/inventory" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-4 group transition-all">
-        <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
         <span class="text-[11px] font-black uppercase tracking-widest">Voltar para o Estoque</span>
       </a>
       <div class="flex items-center gap-4">
@@ -38,7 +38,7 @@
         placeholder="Buscar ingrediente pelo nome..." 
         class="w-full bg-surface-elevated/60 backdrop-blur-sm border border-strong rounded-2xl pl-14 pr-6 py-4 text-title title-display font-black text-xl placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all shadow-inner group-hover:border-brand/20">
       <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-        <span class="material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">search</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">search</span>
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-3 bg-surface-elevated/40 backdrop-blur-sm p-3 rounded-2xl border border-subtle">
@@ -94,7 +94,7 @@
                         <td class="px-8 py-6">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-surface-elevated border border-strong flex items-center justify-center group-hover:border-brand/40 transition-colors shadow-inner">
-                                    <span class="material-symbols-outlined text-muted text-xl group-hover:text-brand transition-colors">restaurant</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-muted text-xl group-hover:text-brand transition-colors">restaurant</span>
                                 </div>
                                 <span class="font-black text-title title-display text-lg tracking-tight">{{ ingredient.name }}</span>
                             </div>
@@ -140,7 +140,7 @@
                       <td colspan="5" class="px-8 py-24">
                         <div class="flex flex-col items-center justify-center text-center">
                             <div class="w-20 h-20 bg-surface-elevated rounded-[30px] border border-dashed border-strong flex items-center justify-center mb-6">
-                              <span class="material-symbols-outlined text-muted text-4xl">inventory</span>
+                              <span translate="no" class="notranslate material-symbols-outlined text-muted text-4xl">inventory</span>
                             </div>
                             <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum ingrediente encontrado nesta visualização.</p>
                         </div>
@@ -162,7 +162,7 @@
             <div class="flex items-center justify-between">
               <p class="font-black text-title title-display text-xl tracking-tight">{{ ingredient.name }}</p>
               <div class="w-8 h-8 rounded-lg bg-surface-elevated border border-strong flex items-center justify-center text-muted">
-                <span class="material-symbols-outlined text-lg">restaurant</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">restaurant</span>
               </div>
             </div>
 
@@ -202,7 +202,7 @@
        }
         @if(filteredIngredients().length === 0) {
             <div class="py-24 text-center">
-              <span class="material-symbols-outlined text-muted text-5xl mb-4">search_off</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-5xl mb-4">search_off</span>
               <p class="text-muted font-black uppercase tracking-widest text-xs">Nada por aqui...</p>
             </div>
         }
@@ -218,7 +218,7 @@
         <div class="flex items-center gap-3 mb-1">
           <div class="flex -space-x-2">
             <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white border-2 border-surface shadow-sm">
-              <span class="material-symbols-outlined text-sm font-black">done_all</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-sm font-black">done_all</span>
             </div>
           </div>
           <span class="text-xl font-black text-title title-display tracking-tight">{{ summary().itemsCounted }} / {{ summary().totalItems }} materiais conferidos</span>
@@ -242,7 +242,7 @@
             <div class="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
             <span>Gravando Ajustes...</span>
           } @else {
-            <span class="material-symbols-outlined">inventory_2</span>
+            <span translate="no" class="notranslate material-symbols-outlined">inventory_2</span>
             <span>Finalizar Inventário & Aplicar Ajustes</span>
           }
       </button>

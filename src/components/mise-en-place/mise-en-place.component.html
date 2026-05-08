@@ -26,7 +26,7 @@
         
         @if (isManager() && viewMode() === 'manager') {
           <button (click)="openTaskModal()" class="btn-primary flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold hover:-translate-y-0.5 active:translate-y-0 shadow-sm">
-              <span class="material-symbols-outlined text-lg">add</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-lg">add</span>
               <span class="hidden sm:inline">Nova Tarefa</span>
           </button>
         }
@@ -54,14 +54,14 @@
                     
                     <div class="flex items-center gap-5 pl-2">
                         <div class="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shadow-sm opacity-50 group-hover:opacity-100 transition-opacity">
-                            <span class="material-symbols-outlined text-muted text-sm">drag_indicator</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-muted text-sm">drag_indicator</span>
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="bg-surface-elevated text-muted text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded">{{ task.stations?.name || 'Geral' }}</span>
                                 @if(task.employee_id) { 
                                     <span class="flex items-center gap-1 text-muted text-[10px] font-bold uppercase tracking-wider bg-surface-elevated px-2 py-0.5 rounded">
-                                        <span class="material-symbols-outlined text-[10px]">person</span> {{ task.employees?.name }}
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[10px]">person</span> {{ task.employees?.name }}
                                     </span> 
                                 }
                             </div>
@@ -72,7 +72,7 @@
                             @if(task.sub_recipe_id) {
                                 <div class="mt-1">
                                     <button (click)="$event.stopPropagation(); openRecipeModal(task)" class="text-brand hover:text-brand-hover text-xs font-semibold flex items-center gap-1 transition-colors">
-                                        <span class="material-symbols-outlined text-[14px]">menu_book</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[14px]">menu_book</span>
                                         Ver Ficha Técnica
                                     </button>
                                 </div>
@@ -93,20 +93,20 @@
                             }
                         </div>
                         <div class="flex gap-2">
-                            <button (click)="openTaskModal(task)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-brand transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
-                            <button (click)="deleteTask(task.id)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-danger transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
+                            <button (click)="openTaskModal(task)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-brand transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-lg">edit</span></button>
+                            <button (click)="deleteTask(task.id)" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-danger transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-lg">delete</span></button>
                         </div>
                     </div>
 
                     <!-- Drag Preview -->
                     <div *cdkDragPreview class="chef-surface p-4 shadow-2xl border-2 border-brand flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center"><span class="material-symbols-outlined">drag_indicator</span></div>
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center"><span translate="no" class="notranslate material-symbols-outlined">drag_indicator</span></div>
                         <span class="font-bold text-title">{{ task.recipes?.name || task.custom_task_name }}</span>
                     </div>
                 </div>
             } @empty {
                 <div class="text-center py-20 text-muted bg-surface-elevated rounded-2xl border border-dashed border-strong">
-                    <span class="material-symbols-outlined text-5xl mb-3 opacity-50">playlist_add</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-3 opacity-50">playlist_add</span>
                     <p class="font-medium text-lg">Nenhuma tarefa planejada para hoje.</p>
                 </div>
             }
@@ -154,14 +154,14 @@
                     <!-- Action Prompt Overlay -->
                     <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <button class="btn-primary rounded-full px-6 py-3 font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform shadow-xl">
-                            <span class="material-symbols-outlined">play_circle</span>
+                            <span translate="no" class="notranslate material-symbols-outlined">play_circle</span>
                             Iniciar Tarefa
                         </button>
                     </div>
                 </div>
             } @empty {
                  <div class="col-span-full text-center py-24 text-muted bg-surface-elevated rounded-3xl border border-dashed border-strong">
-                    <span class="material-symbols-outlined text-6xl mb-4 text-success opacity-80">check_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 text-success opacity-80">check_circle</span>
                     <p class="text-2xl font-bold text-title font-sans">Tudo pronto por aqui!</p>
                     <p class="mt-2 font-medium">Não há tarefas pendentes para você no momento.</p>
                 </div>
@@ -178,7 +178,7 @@
       <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50 rounded-t-2xl">
         <h3 class="title-display text-2xl">{{ editingTask() ? 'Editar Tarefa' : 'Nova Tarefa' }}</h3>
         <button (click)="closeModal()" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-title transition-colors">
-            <span class="material-symbols-outlined">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
       <div class="p-6 space-y-6">

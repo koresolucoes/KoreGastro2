@@ -6,7 +6,7 @@
       <p class="text-muted mt-1 text-sm">Gerencie os registros de entrada e saída dos funcionários.</p>
     </div>
     <button (click)="openAddModal()" class="btn-primary font-bold py-3 px-6 rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-brand/20 active:scale-95 text-xs uppercase tracking-widest">
-      <span class="material-symbols-outlined text-[20px]">add_task</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">add_task</span>
       <span>Adicionar Registro</span>
     </button>
   </div>
@@ -36,7 +36,7 @@
   <div class="bg-surface-elevated rounded-3xl p-8 mb-8 border border-subtle shadow-sm flex items-center justify-between border-l-4 border-l-brand relative overflow-hidden group">
     <div class="absolute left-0 top-0 bottom-0 w-32 bg-brand/5 blur-3xl rounded-full translate-x-[-50%]"></div>
     <div class="relative">
-      <h2 class="text-[10px] font-black uppercase tracking-widest text-muted mb-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-brand">pace</span> Resumo do Período</h2>
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-muted mb-1 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">pace</span> Resumo do Período</h2>
       <p class="text-4xl font-black text-title title-display mt-2 data-mono"><span class="text-brand">{{ totalHours() | number:'1.2-2' }}</span> <span class="text-sm font-bold text-muted tracking-tight font-sans uppercase">horas trabalhadas</span></p>
     </div>
   </div>
@@ -50,7 +50,7 @@
       </div>
     } @else if (filteredEntries().length === 0) {
       <div class="text-center py-24 flex flex-col items-center justify-center opacity-80 bg-surface">
-        <span class="material-symbols-outlined text-5xl text-muted mb-4">search_off</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-4">search_off</span>
         <p class="text-xl font-bold text-title title-display">Nenhum registro encontrado!</p>
         <p class="text-muted text-sm mt-1">Tente ajustar os filtros acima.</p>
       </div>
@@ -88,7 +88,7 @@
                 <td class="px-6 py-5 text-center">
                     @if(entry.latitude && entry.longitude) {
                         <button (click)="openMapModal(entry)" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-elevated hover:bg-brand/10 hover:text-brand border border-strong text-muted transition-colors shadow-sm mx-auto" title="Ver Localização">
-                            <span class="material-symbols-outlined text-[18px]">location_on</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">location_on</span>
                         </button>
                     }
                 </td>
@@ -121,7 +121,7 @@
                   <p class="font-black text-title title-display text-lg">{{ entry.employees?.name }}</p>
                   <span class="font-black data-mono text-sm px-3 py-1.5 rounded-xl bg-app border border-strong text-title">{{ getFormattedDuration(entry) }}</span>
               </div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mt-1"><span class="material-symbols-outlined text-[14px] align-text-bottom mr-1">calendar_month</span> {{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mt-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] align-text-bottom mr-1">calendar_month</span> {{ entry.clock_in_time | date:'dd/MM/yyyy' }}</p>
             </div>
             <div class="grid grid-cols-2 gap-3 text-sm mb-4">
               <div class="text-center bg-surface p-3 rounded-xl border border-strong flex flex-col items-center justify-center relative shadow-sm">
@@ -139,7 +139,7 @@
             <div class="flex justify-between items-center pt-4 border-t border-subtle">
                  @if(entry.latitude && entry.longitude) {
                     <button (click)="openMapModal(entry)" class="text-muted hover:text-brand bg-surface border border-strong px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm transition-colors">
-                        <span class="material-symbols-outlined text-[16px]">location_on</span> Mapa
+                        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">location_on</span> Mapa
                     </button>
                 } @else { <span></span> }
 
@@ -160,9 +160,9 @@
     <div class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeMapModal()">
         <div class="chef-surface rounded-3xl shadow-2xl w-full max-w-2xl h-[500px] flex flex-col border border-subtle overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
             <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
-                <h3 class="text-xl font-bold text-title title-display flex items-center gap-2"><span class="material-symbols-outlined text-brand">location_on</span> Localização</h3>
+                <h3 class="text-xl font-bold text-title title-display flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">location_on</span> Localização</h3>
                 <button (click)="closeMapModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface border border-strong bg-surface transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">close</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span>
                 </button>
             </div>
             <div #mapContainer class="flex-1 w-full bg-app z-0 relative"></div>
@@ -177,7 +177,7 @@
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <h3 class="text-xl font-bold text-title title-display">{{ editingEntry() ? 'Editar Registro' : 'Novo Registro Manual' }}</h3>
         <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface border border-strong bg-surface transition-colors">
-            <span class="material-symbols-outlined text-[18px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
       <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar bg-app">
@@ -201,14 +201,14 @@
           </div>
         </div>
         <div>
-           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">edit_note</span> Observações</label>
+           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">edit_note</span> Observações</label>
           <textarea [value]="entryForm().notes || ''" (input)="updateEntryFormField('notes', $any($event.target).value)" rows="3" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-sm placeholder-muted transition-all resize-y" placeholder="Adicione uma nota se necessário..."></textarea>
         </div>
       </div>
       <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-end gap-3 shadow-lg">
         <button (click)="closeModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest text-xs rounded-xl bg-surface border border-strong text-muted hover:text-title hover:border-brand transition-all shadow-sm">Cancelar</button>
         <button (click)="saveEntry()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg shadow-brand/20 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[18px]">save</span> Salvar Registro
+            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">save</span> Salvar Registro
         </button>
       </div>
     </div>

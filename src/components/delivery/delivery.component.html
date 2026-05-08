@@ -3,18 +3,18 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
       <h1 class="text-3xl font-black text-title title-display flex items-center gap-3">
-        <span class="material-symbols-outlined text-brand text-4xl">local_shipping</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">local_shipping</span>
         Painel de Delivery
       </h1>
       <p class="text-muted mt-1 text-sm font-medium">Gerencie os pedidos de delivery externo em tempo real.</p>
     </div>
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
       <button (click)="isDriversModalOpen.set(true)" class="bg-surface hover:bg-surface-elevated border border-strong text-title font-black py-2.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] active:scale-95 shadow-sm h-[40px]">
-        <span class="material-symbols-outlined text-sm">two_wheeler</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-sm">two_wheeler</span>
         <span>Gerenciar Entregadores</span>
       </button>
       <button (click)="orderModalState.set('new')" class="bg-brand hover:bg-brand-hover text-white font-black py-2.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-lg shadow-brand/20 active:scale-95 h-[40px]">
-        <span class="material-symbols-outlined text-sm">add</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
         <span>Novo Pedido</span>
       </button>
     </div>
@@ -26,7 +26,7 @@
           Painel Kanban
       </button>
       <button (click)="view.set('tracking')" class="flex-1 sm:flex-initial px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2" [class.bg-brand]="view() === 'tracking'" [class.text-white]="view() === 'tracking'" [class.shadow-md]="view() === 'tracking'" [class.text-muted]="view() !== 'tracking'">
-          <span class="material-symbols-outlined text-[14px]">my_location</span> Rastreio
+          <span translate="no" class="notranslate material-symbols-outlined text-[14px]">my_location</span> Rastreio
       </button>
   </div>
 
@@ -39,21 +39,21 @@
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-warning/10 pointer-events-none"></div>
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-warning relative z-10 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px]">pending_actions</span> Fila de Pedidos ({{ fila().length }})
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">pending_actions</span> Fila de Pedidos ({{ fila().length }})
             </h2>
           </div>
           <div cdkDropList id="AWAITING_PREP" [cdkDropListData]="fila()" (cdkDropListDropped)="drop($event)" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
             @for (order of fila(); track order.id) {
               <div cdkDrag [cdkDragData]="order" (click)="openDetailsModal(order)" class="bg-surface-elevated/40 p-4 rounded-xl cursor-pointer active:cursor-grabbing border border-subtle border-l-[3px] border-l-warning hover:border-warning/40 shadow-sm transition-all active:scale-[0.98] relative group">
                 <button (click)="$event.stopPropagation(); openEditModal(order)" class="absolute top-2 right-2 p-1.5 text-muted hover:text-brand bg-surface border border-strong rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                  <span class="material-symbols-outlined text-sm">edit</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
                 </button>
                 <div class="flex justify-between items-start mb-2">
                   <p class="font-black text-title text-sm">#{{ order.id.slice(0, 8) }}</p>
-                  <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
+                  <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
                 </div>
                 <p class="text-sm text-title font-bold truncate">{{ order.customers?.name || 'Cliente não identificado' }}</p>
-                <p class="text-[10px] text-muted font-bold tracking-wider mt-1 data-mono flex items-center gap-1.5"><span class="material-symbols-outlined text-[12px] opacity-70">call</span>{{ order.customers?.phone }}</p>
+                <p class="text-[10px] text-muted font-bold tracking-wider mt-1 data-mono flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[12px] opacity-70">call</span>{{ order.customers?.phone }}</p>
                 <div class="mt-3 pt-3 border-t border-subtle border-dashed flex justify-between items-center text-xs">
                     <span class="text-muted font-medium bg-surface px-2 py-1 rounded-md border border-subtle">{{ order.order_items.length }} {{ order.order_items.length === 1 ? 'item' : 'itens' }}</span>
                     <span class="font-black text-success">{{ getOrderTotal(order) | currency:'BRL' }}</span>
@@ -61,11 +61,11 @@
                  @if(order.delivery_cost && order.delivery_cost > 0) {
                     <div class="text-[10px] uppercase font-black tracking-widest text-brand mt-2 text-right">+ {{ order.delivery_cost | currency:'BRL' }} entrega</div>
                 }
-                <div class="text-[10px] font-bold text-title mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-warning">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
+                <div class="text-[10px] font-bold text-title mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center h-40 opacity-40">
-                <span class="material-symbols-outlined text-3xl mb-2 text-muted">inbox_customize</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">inbox_customize</span>
                 <p class="text-center text-muted font-bold text-xs uppercase tracking-widest">Fila Vazia</p>
               </div>
             }
@@ -77,18 +77,18 @@
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-info/10 pointer-events-none"></div>
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-info relative z-10 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px]">skillet</span> Em Preparo ({{ emPreparo().length }})
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">skillet</span> Em Preparo ({{ emPreparo().length }})
             </h2>
           </div>
           <div cdkDropList id="IN_PREPARATION" [cdkDropListData]="emPreparo()" (cdkDropListDropped)="drop($event)" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
             @for (order of emPreparo(); track order.id) {
               <div cdkDrag [cdkDragData]="order" (click)="openDetailsModal(order)" class="bg-surface-elevated/40 p-4 rounded-xl cursor-pointer active:cursor-grabbing border border-subtle border-l-[3px] border-l-info hover:border-info/40 shadow-sm transition-all active:scale-[0.98] relative group">
                 <button (click)="$event.stopPropagation(); openEditModal(order)" class="absolute top-2 right-2 p-1.5 text-muted hover:text-brand bg-surface border border-strong rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                  <span class="material-symbols-outlined text-sm">edit</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
                 </button>
                 <div class="flex justify-between items-start mb-2">
                   <p class="font-black text-title text-sm">#{{ order.id.slice(0, 8) }}</p>
-                  <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
+                  <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
                 </div>
                 <p class="text-sm text-title font-bold truncate">{{ order.customers?.name || 'Cliente não identificado' }}</p>
                 <div class="mt-3 pt-3 border-t border-subtle border-dashed flex justify-between items-center text-xs">
@@ -98,11 +98,11 @@
                 @if(order.delivery_cost && order.delivery_cost > 0) {
                     <div class="text-[10px] uppercase font-black tracking-widest text-brand mt-2 text-right">+ {{ order.delivery_cost | currency:'BRL' }} entrega</div>
                 }
-                <div class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-info">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
+                <div class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center h-40 opacity-40">
-                <span class="material-symbols-outlined text-3xl mb-2 text-muted">skillet</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">skillet</span>
                 <p class="text-center text-muted font-bold text-xs uppercase tracking-widest">Nenhum em preparo</p>
               </div>
             }
@@ -114,7 +114,7 @@
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-brand/10 pointer-events-none"></div>
              <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-brand relative z-10 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px]">takeout_dining</span> Pronto P/ Envio ({{ prontoParaEnvio().length }})
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">takeout_dining</span> Pronto P/ Envio ({{ prontoParaEnvio().length }})
             </h2>
           </div>
           <div cdkDropList id="READY_FOR_DISPATCH" [cdkDropListData]="prontoParaEnvio()" (cdkDropListDropped)="drop($event)" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
@@ -122,11 +122,11 @@
               <div cdkDrag [cdkDragData]="order" class="bg-surface-elevated/40 p-4 rounded-xl cursor-grab active:cursor-grabbing border border-subtle border-l-[3px] border-l-brand hover:border-brand/40 shadow-sm transition-all flex flex-col group">
                 <div (click)="openDetailsModal(order)" class="relative cursor-pointer transition-all active:scale-[0.98]">
                   <button (click)="$event.stopPropagation(); openEditModal(order)" class="absolute -top-1 -right-1 p-1.5 text-muted hover:text-brand bg-surface border border-strong rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                    <span class="material-symbols-outlined text-sm">edit</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
                   </button>
                   <div class="flex justify-between items-start mb-2">
                     <p class="font-black text-title text-sm">#{{ order.id.slice(0, 8) }}</p>
-                    <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
+                    <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
                   </div>
                   <p class="text-sm text-title font-bold truncate">{{ order.customers?.name || 'Cliente não identificado' }}</p>
                   <div class="mt-3 pt-3 border-t border-subtle border-dashed flex justify-between items-center text-xs">
@@ -136,7 +136,7 @@
                   @if(order.delivery_cost && order.delivery_cost > 0) {
                       <div class="text-[10px] uppercase font-black tracking-widest text-brand mt-2 text-right">+ {{ order.delivery_cost | currency:'BRL' }} entrega</div>
                   }
-                  <div class="text-[10px] font-bold text-title mt-3 p-2 bg-brand/10 border border-brand/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-brand">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
+                  <div class="text-[10px] font-bold text-title mt-3 p-2 bg-brand/10 border border-brand/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-brand">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
                 </div>
                 <button (click)="$event.stopPropagation(); openAssignDriverModal(order)" class="mt-4 w-full bg-surface border-2 border-brand text-brand hover:bg-brand hover:text-white font-black py-2.5 rounded-xl text-[10px] tracking-widest uppercase transition-all shadow-sm active:scale-95">
                     Atribuir Entregador
@@ -144,7 +144,7 @@
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center h-40 opacity-40">
-                <span class="material-symbols-outlined text-3xl mb-2 text-muted">package</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">package</span>
                 <p class="text-center text-muted font-bold text-xs uppercase tracking-widest">Nenhum pronto</p>
               </div>
             }
@@ -156,7 +156,7 @@
           <div class="p-4 border-b border-subtle flex justify-between items-center relative overflow-hidden">
             <div class="absolute inset-0 bg-success/10 pointer-events-none"></div>
              <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-success relative z-10 flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px]">local_shipping</span> Em Rota ({{ emRota().length }})
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">local_shipping</span> Em Rota ({{ emRota().length }})
             </h2>
           </div>
           <div cdkDropList id="OUT_FOR_DELIVERY" [cdkDropListData]="emRota()" (cdkDropListDropped)="drop($event)" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
@@ -165,11 +165,11 @@
                  <div (click)="openDetailsModal(order)" class="cursor-pointer transition-all active:scale-[0.98]">
                     <div class="flex justify-between items-start mb-2">
                       <p class="font-black text-title text-sm">#{{ order.id.slice(0, 8) }}</p>
-                      <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
+                      <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span>{{ order.timestamp | date:'HH:mm' }}</span>
                     </div>
                     <p class="text-sm text-title font-bold truncate">{{ order.customers?.name || 'Cliente não identificado' }}</p>
                     <div class="flex items-center gap-2 mt-3 p-2 bg-surface rounded-lg border border-subtle text-xs text-muted font-medium">
-                      <span class="material-symbols-outlined text-[16px] text-success">two_wheeler</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-success">two_wheeler</span>
                       <span>Enviado via: <strong class="text-title">{{ order.driverName }}</strong></span>
                     </div>
                     <div class="mt-3 pt-3 border-t border-subtle border-dashed flex justify-between items-center text-xs">
@@ -179,7 +179,7 @@
                     @if(order.delivery_cost && order.delivery_cost > 0) {
                         <div class="text-[10px] uppercase font-black tracking-widest text-brand mt-2 text-right">+ {{ order.delivery_cost | currency:'BRL' }} entrega</div>
                     }
-                    <div class="text-[10px] font-bold text-title mt-3 p-2 bg-success/10 border border-success/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-success">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
+                    <div class="text-[10px] font-bold text-title mt-3 p-2 bg-success/10 border border-success/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-success">info</span> {{ order.notes?.replace('Pagamento: ', '') }}</div>
                  </div>
                 <button (click)="finalizeDelivery(order)" class="mt-4 w-full bg-success hover:bg-success-hover text-white font-black py-2.5 rounded-xl text-[10px] tracking-widest uppercase transition-all shadow-md shadow-success/20 active:scale-95">
                     Finalizar Entrega
@@ -187,7 +187,7 @@
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center h-40 opacity-40">
-                <span class="material-symbols-outlined text-3xl mb-2 text-muted">route</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">route</span>
                 <p class="text-center text-muted font-bold text-xs uppercase tracking-widest">Nenhuma em rota</p>
               </div>
             }
@@ -198,7 +198,7 @@
         <div class="chef-surface border border-subtle rounded-2xl flex flex-col overflow-hidden shadow-sm min-w-[85vw] sm:min-w-[320px] lg:min-w-0 snap-center shrink-0 lg:shrink">
           <div class="p-4 border-b border-subtle flex justify-between items-center">
             <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-muted flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px]">done_all</span> Entregue ({{ entregues().length }})
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">done_all</span> Entregue ({{ entregues().length }})
             </h2>
           </div>
           <div cdkDropList id="DELIVERED" [cdkDropListData]="entregues()" (cdkDropListDropped)="drop($event)" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
@@ -206,11 +206,11 @@
                 <div cdkDrag [cdkDragData]="order" (click)="openDetailsModal(order)" class="bg-surface-elevated/40 p-4 rounded-xl cursor-pointer active:cursor-grabbing border border-subtle border-l-[3px] border-l-muted opacity-60 hover:opacity-100 shadow-sm transition-all active:scale-[0.98]">
                     <div class="flex justify-between items-start mb-2">
                       <p class="font-black text-title text-sm line-through">#{{ order.id.slice(0, 8) }}</p>
-                      <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">done</span>{{ order.completed_at | date:'HH:mm' }}</span>
+                      <span class="text-xs font-bold text-muted border border-subtle px-2 py-0.5 rounded-md bg-surface flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">done</span>{{ order.completed_at | date:'HH:mm' }}</span>
                     </div>
                     <p class="text-sm text-muted font-bold truncate line-through">{{ order.customers?.name || 'Cliente não identificado' }}</p>
                     <div class="flex items-center gap-2 mt-2 text-xs text-muted font-medium">
-                        <span class="material-symbols-outlined text-[14px]">two_wheeler</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[14px]">two_wheeler</span>
                         <span>{{ order.driverName }}</span>
                     </div>
                     <div class="mt-3 pt-3 border-t border-subtle border-dashed flex justify-between items-center text-xs">
@@ -223,7 +223,7 @@
                 </div>
             } @empty {
               <div class="flex flex-col items-center justify-center h-40 opacity-40">
-                <span class="material-symbols-outlined text-3xl mb-2 text-muted">history</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">history</span>
                 <p class="text-center text-muted font-bold text-xs uppercase tracking-widest">Histórico vazio</p>
               </div>
             }

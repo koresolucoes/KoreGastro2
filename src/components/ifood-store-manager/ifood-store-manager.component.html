@@ -9,7 +9,7 @@
 
   @if (isLoading()) {
     <div class="flex flex-col items-center justify-center min-h-[400px] bg-surface-elevated border border-subtle rounded-2xl shadow-sm">
-      <span class="material-symbols-outlined text-brand animate-spin text-5xl mb-4">progress_activity</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-brand animate-spin text-5xl mb-4">progress_activity</span>
       <p class="text-[11px] font-black uppercase tracking-widest text-muted">Carregando loja...</p>
     </div>
   } @else {
@@ -20,10 +20,10 @@
       <div class="lg:col-span-1 space-y-6">
         <!-- Status Card -->
         <div class="bg-surface-elevated rounded-2xl p-6 border border-subtle shadow-sm">
-          <h2 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-muted">storefront</span> Status da Loja</h2>
+          <h2 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">storefront</span> Status da Loja</h2>
           <div class="p-4 rounded-xl flex items-center gap-4" [class]="storeState().color">
             <div class="flex-shrink-0">
-              <span class="material-symbols-outlined text-3xl">
+              <span translate="no" class="notranslate material-symbols-outlined text-3xl">
                 @switch (storeState().state) {
                   @case ('ABERTA') { storefront }
                   @case ('FECHADA') { door_sliding }
@@ -41,12 +41,12 @@
         <!-- Interruptions Card -->
         <div class="bg-surface-elevated rounded-2xl p-6 border border-subtle shadow-sm">
           <div class="flex justify-between items-center mb-5">
-            <h2 class="font-black text-xs uppercase tracking-widest text-title flex items-center gap-2"><span class="material-symbols-outlined text-muted">pause_circle</span> Pausas Agendadas</h2>
+            <h2 class="font-black text-xs uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">pause_circle</span> Pausas Agendadas</h2>
             <button (click)="openInterruptionModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all active:scale-95 shadow-sm">Agendar</button>
           </div>
           @if (interruptions().length === 0) {
             <div class="flex flex-col items-center justify-center py-10 opacity-70">
-                <span class="material-symbols-outlined text-4xl text-muted mb-2">event_available</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">event_available</span>
                 <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhuma pausa agendada.</p>
             </div>
           } @else {
@@ -57,12 +57,12 @@
                     <div>
                       <p class="font-bold text-title text-sm">{{ interruption.description || 'Pausa na operação' }}</p>
                       <div class="flex items-center gap-1.5 mt-1 text-[11px] font-mono text-muted">
-                          <span class="material-symbols-outlined text-[13px] text-brand">schedule</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-[13px] text-brand">schedule</span>
                           <span>{{ interruption.start | date:'dd/MM HH:mm' }} - {{ interruption.end | date:'dd/MM HH:mm' }}</span>
                       </div>
                     </div>
                     <button (click)="deleteInterruption(interruption.id)" [disabled]="isSaving()" class="p-2 text-muted hover:text-danger hover:bg-surface-elevated rounded-full transition-colors disabled:opacity-50">
-                      <span class="material-symbols-outlined text-[18px]">delete</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </div>
                 </li>
@@ -74,7 +74,7 @@
 
       <!-- Right Column: Opening Hours -->
       <div class="lg:col-span-2 bg-surface-elevated rounded-2xl p-6 border border-subtle shadow-sm">
-        <h2 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-muted">schedule</span> Horário de Funcionamento</h2>
+        <h2 class="font-black text-xs uppercase tracking-widest text-title mb-5 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">schedule</span> Horário de Funcionamento</h2>
         <div class="space-y-4">
           @for (day of weeklyHoursForm(); track day.dayOfWeek; let i = $index) {
             <div class="bg-surface border border-subtle p-5 rounded-xl shadow-sm transition-colors" [class.opacity-60]="day.is_closed">
@@ -96,19 +96,19 @@
                       <div class="w-full sm:flex-1 relative">
                         <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Turno {{ shiftIndex + 1 }}: Abre às</label>
                         <div class="relative">
-                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">schedule</span>
+                            <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">schedule</span>
                             <input type="time" [value]="shift.openingTime" (input)="updateShiftTime(i, shift.id, 'openingTime', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
                         </div>
                       </div>
                       <div class="w-full sm:flex-1 relative">
                           <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Fecha às</label>
                           <div class="relative">
-                              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">schedule</span>
+                              <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">schedule</span>
                               <input type="time" [value]="shift.closingTime" (input)="updateShiftTime(i, shift.id, 'closingTime', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
                           </div>
                       </div>
                       <button (click)="removeShift(i, shift.id)" class="p-2.5 text-danger bg-danger/10 hover:bg-danger/20 rounded-lg flex items-center justify-center transition-colors" title="Remover turno">
-                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     </div>
                   }
@@ -123,9 +123,9 @@
         <div class="mt-6 flex justify-end">
           <button (click)="saveOpeningHours()" [disabled]="isSaving()" class="bg-success hover:bg-success-hover text-surface-elevated font-black text-[11px] uppercase tracking-widest px-6 py-3 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
             @if(isSaving()) { 
-                <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> <span>Salvando...</span> 
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> <span>Salvando...</span> 
             } @else { 
-                <span class="material-symbols-outlined text-[16px]">save</span> <span>Salvar Horários</span> 
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> <span>Salvar Horários</span> 
             }
           </button>
         </div>
@@ -139,9 +139,9 @@
   <div class="fixed inset-0 bg-overlay/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" (click)="closeInterruptionModal()">
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="p-5 border-b border-subtle bg-surface flex justify-between items-center">
-        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-brand">pause_circle</span> Agendar Pausa</h3>
+        <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-brand">pause_circle</span> Agendar Pausa</h3>
         <button (click)="closeInterruptionModal()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 space-y-5 bg-surface/30">
@@ -164,9 +164,9 @@
         <button (click)="closeInterruptionModal()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-surface border border-strong hover:bg-surface-elevated text-title transition-all active:scale-95 shadow-sm">Cancelar</button>
         <button (click)="saveInterruption()" [disabled]="isSaving()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-brand hover:bg-brand-hover text-white flex items-center gap-2 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
           @if(isSaving()) {
-             <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
+             <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Salvando...
           } @else {
-             <span class="material-symbols-outlined text-[16px]">save</span> Salvar Pausa
+             <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar Pausa
           }
         </button>
       </div>

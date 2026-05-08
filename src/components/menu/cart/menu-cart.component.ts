@@ -13,12 +13,12 @@ import { CartService } from '../../../services/cart.service';
         <!-- Header -->
         <div class="px-6 py-4 border-b border-subtle flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-muted">shopping_cart</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-muted">shopping_cart</span>
             <h2 class="text-xl font-bold text-title">Seu Carrinho</h2>
             <span class="px-2 py-0.5 bg-surface-elevated text-muted rounded-lg text-sm font-bold">{{ cart.totalItems() }}</span>
           </div>
           <button (click)="close.emit()" class="p-2 hover:bg-surface-elevated rounded-full transition-colors text-muted hover:text-title">
-            <span class="material-symbols-outlined">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined">close</span>
           </button>
         </div>
 
@@ -27,7 +27,7 @@ import { CartService } from '../../../services/cart.service';
           @if (cart.items().length === 0) {
             <div class="h-64 flex flex-col items-center justify-center text-center space-y-4">
               <div class="w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center text-muted">
-                <span class="material-symbols-outlined !text-4xl">shopping_cart</span>
+                <span translate="no" class="notranslate material-symbols-outlined !text-4xl">shopping_cart</span>
               </div>
               <div>
                 <p class="font-bold text-title">Carrinho vazio</p>
@@ -44,7 +44,7 @@ import { CartService } from '../../../services/cart.service';
                     <div class="flex justify-between items-start gap-2">
                       <h4 class="font-bold text-title truncate">{{ item.recipe.name }}</h4>
                       <button (click)="cart.removeFromCart(item.id)" class="text-muted hover:text-danger transition-colors">
-                        <span class="material-symbols-outlined !text-lg">delete_outline</span>
+                        <span translate="no" class="notranslate material-symbols-outlined !text-lg">delete_outline</span>
                       </button>
                     </div>
                     
@@ -68,12 +68,12 @@ import { CartService } from '../../../services/cart.service';
                       <div class="flex items-center gap-1 bg-surface border border-strong rounded-xl p-1 shadow-sm">
                         <button (click)="cart.updateQuantity(item.id, item.quantity - 1)" 
                                 class="w-8 h-8 flex items-center justify-center text-muted hover:text-title hover:bg-surface-elevated rounded-lg transition-all">
-                          <span class="material-symbols-outlined !text-sm font-bold">remove</span>
+                          <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">remove</span>
                         </button>
                         <span class="w-8 text-center font-bold text-title">{{ item.quantity }}</span>
                         <button (click)="cart.updateQuantity(item.id, item.quantity + 1)" 
                                 class="w-8 h-8 flex items-center justify-center text-muted hover:text-title hover:bg-surface-elevated rounded-lg transition-all">
-                          <span class="material-symbols-outlined !text-sm font-bold">add</span>
+                          <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">add</span>
                         </button>
                       </div>
                       <span class="font-bold text-title leading-none">
@@ -96,7 +96,7 @@ import { CartService } from '../../../services/cart.service';
             </div>
             <button (click)="checkout.emit()" 
                     class="w-full py-4 px-6 bg-brand hover:opacity-90 text-on-brand rounded-2xl font-bold flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] shadow-xl">
-              <span class="material-symbols-outlined">check_circle</span>
+              <span translate="no" class="notranslate material-symbols-outlined">check_circle</span>
               Finalizar Pedido
             </button>
           </div>

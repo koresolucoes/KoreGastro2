@@ -22,7 +22,7 @@
     } @else if (viewState() === 'success') {
          <div class="text-center animate-fade-in-up flex flex-col items-center justify-center h-full">
             <div class="w-24 h-24 bg-success/10 text-success rounded-full flex items-center justify-center mb-8 mx-auto shadow-inner border border-success/20">
-                <span class="material-symbols-outlined text-5xl">check_circle</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-5xl">check_circle</span>
             </div>
             <h2 class="text-3xl font-black text-title mb-2 title-display">Reserva Confirmada!</h2>
             <p class="text-muted mb-10 max-w-md mx-auto">Sua mesa está garantida. Enviamos um e-mail com os detalhes.</p>
@@ -48,13 +48,13 @@
             </div>
 
             <button (click)="startNewBooking()" class="mt-12 text-brand font-black text-sm uppercase tracking-wider hover:text-brand-hover transition-colors flex items-center gap-2">
-                <span class="material-symbols-outlined text-lg">arrow_back</span> Fazer outra reserva
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">arrow_back</span> Fazer outra reserva
             </button>
         </div>
     } @else if (viewState() === 'error') {
          <div class="text-center flex flex-col items-center justify-center h-full">
             <div class="w-20 h-20 bg-danger/10 text-danger rounded-[2rem] flex items-center justify-center mb-6 mx-auto border border-danger/20 rotate-12">
-                <span class="material-symbols-outlined text-4xl">error_outline</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-4xl">error_outline</span>
             </div>
             <h2 class="text-2xl font-black text-title title-display mb-2">Ops, algo deu errado</h2>
             <p class="text-muted mb-8 max-w-md mx-auto">{{ errorMessage() }}</p>
@@ -139,7 +139,7 @@
                         </div>
                     } @else {
                          <div class="bg-danger/10 text-danger p-6 rounded-3xl border border-danger/20 text-sm flex gap-4 items-start shadow-inner">
-                            <span class="material-symbols-outlined text-2xl">event_busy</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-2xl">event_busy</span>
                             <div class="pt-0.5">
                                 <h4 class="font-black tracking-tight mb-1">Nenhum Horário</h4>
                                 <p class="opacity-80">Não há horários disponíveis para a data selecionada. Tente outra data.</p>
@@ -177,7 +177,7 @@
                     <button type="submit" [disabled]="!customerName() || !customerPhone()" 
                         class="w-full bg-brand text-white font-black py-5 px-6 rounded-full hover:bg-brand-hover transition-all shadow-xl shadow-brand/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none mt-8 text-lg border border-brand border-t-white/30 uppercase tracking-wider relative overflow-hidden group flex items-center justify-center gap-3 active:scale-[0.98]">
                         <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                        Confirmar Reserva <span class="material-symbols-outlined font-normal text-[20px]">arrow_forward</span>
+                        Confirmar Reserva <span translate="no" class="notranslate material-symbols-outlined font-normal text-[20px]">arrow_forward</span>
                     </button>
                 }
 

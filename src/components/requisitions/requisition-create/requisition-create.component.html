@@ -1,6 +1,6 @@
 
     <div class="bg-surface-elevated rounded-2xl p-6 h-full flex flex-col border border-subtle shadow-sm">
-      <h2 class="font-black text-xs uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-muted">add_shopping_cart</span> Nova Requisição</h2>
+      <h2 class="font-black text-xs uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">add_shopping_cart</span> Nova Requisição</h2>
       
       <!-- Top Controls -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -14,7 +14,7 @@
           @if(isExternalRequest()) {
              <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Solicitar para qual unidade?</label>
              <div class="relative mb-3">
-               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">domain</span>
+               <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">domain</span>
                <select [ngModel]="selectedTargetUnitId()" (ngModelChange)="selectedTargetUnitId.set($event)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all cursor-pointer">
                  <option [value]="null">Selecione a Unidade...</option>
                  @for(unit of availableUnits(); track unit.id) {
@@ -23,13 +23,13 @@
                    }
                  }
                </select>
-               <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+               <span translate="no" class="notranslate material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
              </div>
           }
 
           <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Praça de Destino (Para onde vai?)</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
+            <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">storefront</span>
             <select [ngModel]="selectedStationId()" (ngModelChange)="selectedStationId.set($event)" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all cursor-pointer">
               <option [ngValue]="null">Selecione...</option>
               <option value="main">⭐ Estoque Principal (Geral)</option>
@@ -39,7 +39,7 @@
                 }
               </optgroup>
             </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+            <span translate="no" class="notranslate material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
           </div>
         </div>
         
@@ -48,21 +48,21 @@
             <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Carregar Kit / Template</label>
             <div class="flex gap-2">
                 <div class="relative flex-1">
-                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">inventory_2</span>
+                  <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">inventory_2</span>
                   <select [ngModel]="selectedTemplateId()" (ngModelChange)="selectedTemplateId.set($event)" [disabled]="!selectedStationId()" class="w-full bg-surface border border-strong rounded-lg pl-9 pr-3 py-2.5 text-sm font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer">
                       <option [value]="null">Selecione um Kit...</option>
                       @for(tmpl of availableTemplates(); track tmpl.id) {
                           <option [value]="tmpl.id">{{ tmpl.name }}</option>
                       }
                   </select>
-                  <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
+                  <span translate="no" class="notranslate material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">expand_more</span>
                 </div>
                 <button (click)="applyTemplate()" [disabled]="!selectedTemplateId()" class="px-3 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm active:scale-95" title="Carregar Itens">
-                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">download</span>
                 </button>
                 @if(selectedTemplateId()) {
                     <button (click)="deleteTemplate()" class="px-3 py-2.5 bg-danger hover:bg-danger-hover text-white rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center" title="Excluir Kit">
-                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
                     </button>
                 }
             </div>
@@ -73,7 +73,7 @@
       <div class="mb-6">
            <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Buscar Insumo</label>
            <div class="relative">
-             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
+             <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[16px]">search</span>
              <input 
                 type="text" 
                 [value]="searchTerm()" 
@@ -103,7 +103,7 @@
       <div class="flex-1 overflow-y-auto bg-surface/50 rounded-xl p-4 mb-6 border border-subtle custom-scrollbar">
          @if(cartItems().length === 0) {
             <div class="h-full flex flex-col items-center justify-center opacity-70">
-                <span class="material-symbols-outlined text-4xl text-muted mb-2">shopping_basket</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">shopping_basket</span>
                 <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhum item adicionado.</p>
             </div>
          } @else {
@@ -130,7 +130,7 @@
                         <td class="py-3 px-2 text-right font-black text-title">{{ (item.ingredient.cost * item.quantity) | currency:'BRL' }}</td>
                         <td class="py-3 px-2 text-right">
                            <button (click)="removeItem(i)" class="text-muted hover:text-danger hover:bg-danger/10 p-1.5 rounded-full transition-colors flex items-center justify-center">
-                              <span class="material-symbols-outlined text-[18px]">delete</span>
+                              <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
                            </button>
                         </td>
                      </tr>
@@ -154,14 +154,14 @@
 
           <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
              <button (click)="saveAsTemplate()" [disabled]="cartItems().length === 0 || !selectedStationId()" class="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest text-brand hover:text-brand-hover hover:bg-surface py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                 <span class="material-symbols-outlined text-[16px]">save</span> Salvar como Kit
+                 <span translate="no" class="notranslate material-symbols-outlined text-[16px]">save</span> Salvar como Kit
              </button>
           
              <button (click)="submitRequisition()" [disabled]="!canSubmit() || isSubmitting()" class="w-full sm:w-auto bg-brand hover:bg-brand-hover text-white text-[11px] font-black uppercase tracking-widest py-3 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95 flex items-center justify-center gap-2 disabled:bg-surface disabled:text-muted disabled:border-strong disabled:border">
                 @if(isSubmitting()) {
-                    <span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                    <span translate="no" class="notranslate material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
                 } @else {
-                     <span class="material-symbols-outlined text-[16px]">send</span>
+                     <span translate="no" class="notranslate material-symbols-outlined text-[16px]">send</span>
                 }
                 Solicitar Estoque
              </button>

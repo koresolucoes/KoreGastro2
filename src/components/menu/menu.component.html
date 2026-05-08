@@ -19,10 +19,10 @@
       <button (click)="customerAuthService.customer() ? view.set('profile') : view.set('auth')" 
               class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-white/10 shadow-lg">
         @if (customerAuthService.customer()) {
-          <span class="material-symbols-outlined !text-sm text-yellow-400">stars</span>
+          <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-400">stars</span>
           <span>{{ customerAuthService.customer()?.loyalty_points }} pts</span>
         } @else {
-          <span class="material-symbols-outlined !text-sm">person</span>
+          <span translate="no" class="notranslate material-symbols-outlined !text-sm">person</span>
           <span>Entrar</span>
         }
       </button>
@@ -45,7 +45,7 @@
             <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover" referrerpolicy="no-referrer">
           } @else {
             <div class="w-full h-full flex items-center justify-center text-muted">
-              <span class="material-symbols-outlined !text-5xl">store</span>
+              <span translate="no" class="notranslate material-symbols-outlined !text-5xl">store</span>
             </div>
           }
         </div>
@@ -78,7 +78,7 @@
   <!-- Search -->
   <div class="px-4 sm:px-0 mb-12">
     <div class="relative group max-w-2xl mx-auto">
-      <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-title transition-colors">search</span>
+      <span translate="no" class="notranslate material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-title transition-colors">search</span>
       <input type="text" 
              [ngModel]="searchTerm()"
              (ngModelChange)="searchTerm.set($event)"
@@ -107,7 +107,7 @@
                    <img [src]="recipe.image_url" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerpolicy="no-referrer">
                 } @else {
                   <div class="w-full h-full flex items-center justify-center text-muted group-hover:text-brand transition-colors">
-                    <span class="material-symbols-outlined !text-6xl">restaurant</span>
+                    <span translate="no" class="notranslate material-symbols-outlined !text-6xl">restaurant</span>
                   </div>
                 }
                 <!-- Price Tag on Image -->
@@ -127,11 +127,11 @@
               <!-- Button -->
               <div class="mt-4 flex items-center justify-between">
                 <div class="flex items-center gap-2 text-muted">
-                  <span class="material-symbols-outlined !text-xs font-bold">schedule</span>
+                  <span translate="no" class="notranslate material-symbols-outlined !text-xs font-bold">schedule</span>
                   <span class="text-[10px] font-bold uppercase tracking-wider">{{ recipe.prep_time_in_minutes || 15 }}-{{ (recipe.prep_time_in_minutes || 15) + 10 }} min</span>
                 </div>
                 <button class="w-12 h-12 bg-surface-elevated text-title rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl border border-strong hover:bg-brand hover:text-on-brand hover:border-brand">
-                  <span class="material-symbols-outlined">add</span>
+                  <span translate="no" class="notranslate material-symbols-outlined">add</span>
                 </button>
               </div>
             </div>
@@ -143,7 +143,7 @@
     @if (menuGroups().length === 0 && searchTerm()) {
       <div class="py-24 flex flex-col items-center justify-center text-center space-y-6">
         <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center text-muted">
-          <span class="material-symbols-outlined !text-5xl">search_off</span>
+          <span translate="no" class="notranslate material-symbols-outlined !text-5xl">search_off</span>
         </div>
         <div>
           <h3 class="text-xl font-bold text-title">Nenhum resultado para "{{ searchTerm() }}"</h3>
@@ -165,7 +165,7 @@
       <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center relative">
-          <span class="material-symbols-outlined">shopping_bag</span>
+          <span translate="no" class="notranslate material-symbols-outlined">shopping_bag</span>
           <span class="absolute -top-2 -right-2 w-6 h-6 bg-surface text-title text-[10px] font-black rounded-lg flex items-center justify-center shadow-lg border-2 border-brand">
             {{ cart.totalItems() }}
           </span>
@@ -175,7 +175,7 @@
           <p class="text-lg font-black leading-none">{{ cart.subtotal() | currency : 'BRL' }}</p>
         </div>
       </div>
-      <span class="material-symbols-outlined translate-x-0 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+      <span translate="no" class="notranslate material-symbols-outlined translate-x-0 group-hover:translate-x-1 transition-transform">arrow_forward</span>
     </button>
   </div>
 }
@@ -225,7 +225,7 @@
 @if (view() === 'success') {
   <div class="fixed inset-0 z-30 bg-surface flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
     <div class="w-24 h-24 bg-brand text-on-brand rounded-3xl flex items-center justify-center shadow-2xl mb-8 animate-bounce">
-      <span class="material-symbols-outlined !text-5xl">check</span>
+      <span translate="no" class="notranslate material-symbols-outlined !text-5xl">check</span>
     </div>
     <h2 class="text-3xl font-black text-title mb-4">Pedido Enviado!</h2>
     <p class="text-muted max-w-sm mb-12 leading-relaxed">Seu pedido foi recebido com sucesso. Em breve entraremos em contato via WhatsApp se necessário.</p>

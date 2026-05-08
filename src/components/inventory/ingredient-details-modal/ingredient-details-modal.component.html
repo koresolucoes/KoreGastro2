@@ -4,7 +4,7 @@
     <div class="p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md flex justify-between items-center group/header">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner group-hover/header:bg-brand/5 transition-colors">
-              <span class="material-symbols-outlined text-muted text-3xl group-hover/header:text-brand transition-colors">info</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-3xl group-hover/header:text-brand transition-colors">info</span>
             </div>
             <div>
               <h3 class="text-3xl font-black text-title title-display tracking-tight leading-none">{{ ingredient().name }}</h3>
@@ -12,7 +12,7 @@
             </div>
         </div>
         <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span class="material-symbols-outlined text-xl">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
     </div>
 
@@ -21,7 +21,7 @@
         <!-- Stock & Cost Info -->
         <section>
           <div class="flex items-center gap-3 mb-4 border-b border-subtle pb-3">
-             <span class="material-symbols-outlined text-brand text-lg">analytics</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">analytics</span>
              <h4 class="text-[11px] font-black text-title uppercase tracking-widest">Métricas de Estoque e Custos</h4>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -70,7 +70,7 @@
         @if(ingredient().is_sellable) {
             <section>
               <div class="flex items-center gap-3 mb-4 border-b border-subtle pb-3">
-                 <span class="material-symbols-outlined text-brand text-lg">point_of_sale</span>
+                 <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">point_of_sale</span>
                  <h4 class="text-[11px] font-black text-title uppercase tracking-widest">Informações de Venda (PDV)</h4>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -93,7 +93,7 @@
         <!-- Lots Table -->
         <section>
             <div class="flex items-center gap-3 mb-4 border-b border-strong pb-3">
-               <span class="material-symbols-outlined text-brand text-lg">inventory_2</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">inventory_2</span>
                <h4 class="text-[11px] font-black text-title uppercase tracking-widest">Detalhamento por Lotes</h4>
             </div>
             @if(lots().length > 0) {
@@ -124,7 +124,7 @@
                 </div>
             } @else {
                  <div class="flex flex-col items-center justify-center py-10 bg-surface-elevated/20 rounded-3xl border border-strong border-dashed">
-                    <span class="material-symbols-outlined text-muted/30 text-4xl mb-3">production_quantity_limits</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-muted/30 text-4xl mb-3">production_quantity_limits</span>
                     <p class="text-muted font-black uppercase tracking-widest text-[10px]">Nenhum lote específico registrado.</p>
                 </div>
             }

@@ -2,7 +2,7 @@
   <!-- Header -->
   <div class="flex-shrink-0 mb-10">
     <a routerLink="/inventory" class="inline-flex items-center gap-2 text-brand hover:text-brand-hover mb-4 group transition-all">
-      <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
       <span class="text-[11px] font-black uppercase tracking-widest">Voltar para o Estoque</span>
     </a>
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -11,7 +11,7 @@
             <p class="text-muted text-sm font-medium mt-2 max-w-xl">Registre o processo de porcionamento de insumos para controlar rendimento, subprodutos e perdas operacionais.</p>
         </div>
         <button (click)="openAddModal()" class="px-8 py-4 bg-brand hover:bg-brand-hover text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-3 border border-brand">
-            <span class="material-symbols-outlined">add</span>
+            <span translate="no" class="notranslate material-symbols-outlined">add</span>
             <span>Registrar Novo Processo</span>
         </button>
     </div>
@@ -22,7 +22,7 @@
     @if(portioningEvents().length === 0) {
         <div class="flex flex-col items-center justify-center py-32">
             <div class="w-24 h-24 bg-surface-elevated rounded-[40px] border border-dashed border-strong flex items-center justify-center mb-8">
-              <span class="material-symbols-outlined text-muted text-5xl">inventory_2</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-5xl">inventory_2</span>
             </div>
             <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum evento de porcionamento registrado ainda.</p>
         </div>
@@ -33,7 +33,7 @@
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex items-center gap-4">
                            <div class="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner group-hover:bg-brand/5 transition-colors">
-                             <span class="material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">kitchen</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-muted text-2xl group-hover:text-brand transition-colors">kitchen</span>
                            </div>
                            <div>
                                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Insumo Base</p>
@@ -65,7 +65,7 @@
 
                     <div class="space-y-4">
                         <p class="text-[11px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                          <span class="material-symbols-outlined text-lg text-emerald-500">output</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-lg text-emerald-500">output</span>
                           Saídas Geradas
                         </p>
                         <div class="space-y-2">
@@ -76,7 +76,7 @@
                                      [class.text-emerald-500]="output.output_type === 'YIELD'"
                                      [class.text-amber-500]="output.output_type === 'BYPRODUCT'"
                                      [class.text-red-500]="output.output_type === 'WASTE'">
-                                  <span class="material-symbols-outlined text-lg">
+                                  <span translate="no" class="notranslate material-symbols-outlined text-lg">
                                     {{ output.output_type === 'YIELD' ? 'check_circle' : (output.output_type === 'BYPRODUCT' ? 'recycling' : 'delete_sweep') }}
                                   </span>
                                 </div>
@@ -109,12 +109,12 @@
         <div class="p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md flex justify-between items-center flex-shrink-0">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
-              <span class="material-symbols-outlined text-2xl">science</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-2xl">science</span>
             </div>
             <h3 class="text-2xl font-black text-title title-display tracking-tight leading-none">Novo Porcionamento</h3>
           </div>
           <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-            <span class="material-symbols-outlined text-xl">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
           </button>
         </div>
         
@@ -122,7 +122,7 @@
           <!-- Input Section -->
           <section class="space-y-6">
             <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2 border-b border-subtle pb-3">
-              <span class="material-symbols-outlined text-lg text-brand">login</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">login</span>
               Materia-Prima de Entrada
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -133,7 +133,7 @@
                           <option [value]="undefined">Selecione o Insumo...</option>
                           @for(ing of portionableIngredients(); track ing.id) { <option [value]="ing.id">{{ ing.name }}</option> }
                       </select>
-                      <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+                      <span translate="no" class="notranslate absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
                     </div>
                 </div>
                 <div>
@@ -143,7 +143,7 @@
                           <option [value]="undefined">Selecione o Lote...</option>
                           @for(lot of availableLots(); track lot.id) { <option [value]="lot.id">Lote {{ lot.lot_number || lot.id.slice(0,4) }} (Disponível: {{lot.quantity}})</option> }
                       </select>
-                      <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+                      <span translate="no" class="notranslate absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
                     </div>
                 </div>
             </div>
@@ -157,7 +157,7 @@
           <section class="space-y-6">
             <div class="flex justify-between items-center border-b border-subtle pb-3">
               <h4 class="text-[12px] font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span class="material-symbols-outlined text-lg text-emerald-500">output</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-lg text-emerald-500">output</span>
                 Resultados Esperados
               </h4>
               <div class="flex items-center gap-2">
@@ -171,7 +171,7 @@
                 <div class="p-6 bg-surface-elevated/40 rounded-3xl border border-subtle space-y-5 relative group/item hover:border-brand/30 transition-all">
                   @if($index > 0) {
                     <button (click)="removeOutput($index)" class="absolute -top-3 -right-3 w-8 h-8 bg-surface border border-strong rounded-full text-muted hover:text-red-500 shadow-lg flex items-center justify-center active:scale-90 transition-all group/close">
-                      <span class="material-symbols-outlined text-sm font-black group-hover/close:rotate-90 transition-transform">close</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-sm font-black group-hover/close:rotate-90 transition-transform">close</span>
                     </button>
                   }
                   

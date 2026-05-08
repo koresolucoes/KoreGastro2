@@ -13,7 +13,7 @@ import { SystemLog } from '../../../models/db.models';
       <div class="chef-surface rounded-3xl border border-subtle shadow-xl p-6 bg-red-500/5 border-red-500/20 flex-shrink-0">
         <div class="flex items-start gap-6">
           <div class="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center border border-red-500/20 shadow-inner flex-shrink-0">
-             <span class="material-symbols-outlined text-red-500 text-4xl">admin_panel_settings</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-red-500 text-4xl">admin_panel_settings</span>
           </div>
           <div>
             <h2 class="text-2xl font-black text-red-500 title-display tracking-tight">Logs de Sistema & Auditoria Imutável</h2>
@@ -33,7 +33,7 @@ import { SystemLog } from '../../../models/db.models';
         } @else if (error()) {
             <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
                 <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-                    <span class="material-symbols-outlined text-red-500 text-5xl">error</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-red-500 text-5xl">error</span>
                 </div>
                 <h3 class="text-lg font-black text-title tracking-tight mb-2">Erro de Conexão</h3>
                 <p class="text-muted text-sm max-w-md mx-auto">{{ error() }}</p>
@@ -41,7 +41,7 @@ import { SystemLog } from '../../../models/db.models';
         } @else if (logs().length === 0) {
              <div class="flex flex-col items-center justify-center flex-1 p-12 opacity-80">
                 <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center mb-6 border border-strong shadow-inner">
-                  <span class="material-symbols-outlined text-muted/40 text-5xl">inventory_2</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-muted/40 text-5xl">inventory_2</span>
                 </div>
                 <h3 class="text-lg font-black text-title tracking-tight mb-2">Nenhum Registro no Período</h3>
                 <p class="text-muted text-xs font-medium max-w-sm text-center">Nenhum evento auditável aconteceu entre os dias selecionados.</p>

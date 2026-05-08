@@ -2,11 +2,11 @@
   <div class="chef-surface border border-subtle shadow-2xl w-full max-w-lg rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
     <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
       <h3 class="text-xl font-black text-title flex items-center gap-3">
-          <span class="material-symbols-outlined text-brand">book_online</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-brand">book_online</span>
           {{ isEditing() ? 'Editar Reserva' : 'Adicionar Nova Reserva' }}
       </h3>
       <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-        <span class="material-symbols-outlined">close</span>
+        <span translate="no" class="notranslate material-symbols-outlined">close</span>
       </button>
     </div>
 
@@ -48,7 +48,7 @@
       <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl">
         <button type="button" (click)="close.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Cancelar</button>
         <button type="submit" [disabled]="!isFormValid()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span class="material-symbols-outlined text-sm">save</span> {{ isEditing() ? 'Salvar' : 'Adicionar' }}
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">save</span> {{ isEditing() ? 'Salvar' : 'Adicionar' }}
         </button>
       </div>
     </form>

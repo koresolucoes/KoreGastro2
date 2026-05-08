@@ -52,7 +52,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                         {{ req.status === 'APPROVED' ? 'EM TRÂNSITO' : req.status }}
                       </span>
                       <button class="p-1.5 rounded-full hover:bg-surface transition-colors flex items-center justify-center">
-                        <span class="material-symbols-outlined text-muted transform transition-transform" [class.rotate-180]="expandedId() === req.id">expand_more</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-muted transform transition-transform" [class.rotate-180]="expandedId() === req.id">expand_more</span>
                       </button>
                    </div>
                 </div>
@@ -86,7 +86,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
                                           </span>
                                           @if (stock < item.quantity_requested) {
                                               <span class="text-[9px] text-danger font-black flex items-center gap-1 mt-0.5">
-                                                  <span class="material-symbols-outlined text-[10px]">warning</span> insf.
+                                                  <span translate="no" class="notranslate material-symbols-outlined text-[10px]">warning</span> insf.
                                               </span>
                                           }
                                       </div>
@@ -113,20 +113,20 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
 
                       <div class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-4">
                          <button (click)="printGuide(req)" class="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest text-brand hover:text-brand-hover hover:bg-surface p-2.5 rounded-lg flex items-center justify-center gap-2 transition-all">
-                            <span class="material-symbols-outlined text-[16px]">print</span> Imprimir Guia
+                            <span translate="no" class="notranslate material-symbols-outlined text-[16px]">print</span> Imprimir Guia
                          </button>
 
                          @if (req.status === 'PENDING' && !req.target_unit_id) {
                              <div class="flex gap-3 w-full sm:w-auto">
                                 <button (click)="rejectRequisition(req)" class="flex-1 sm:flex-none py-2.5 px-4 bg-surface hover:bg-danger/10 border border-danger/30 hover:border-danger text-danger rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 text-center">Rejeitar</button>
                                 <button (click)="approveDelivery(req)" class="flex-1 sm:flex-none py-2.5 px-5 bg-success hover:bg-success-hover text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2">
-                                   <span class="material-symbols-outlined text-[16px]">check_circle</span> Aprovar
+                                   <span translate="no" class="notranslate material-symbols-outlined text-[16px]">check_circle</span> Aprovar
                                 </button>
                              </div>
                          } @else if (req.status === 'APPROVED') {
                              <div class="flex gap-3 w-full sm:w-auto">
                                 <button (click)="receiveExternalDelivery(req)" class="flex-1 sm:flex-none py-2.5 px-5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2">
-                                   <span class="material-symbols-outlined text-[16px]">inventory</span> Confirmar Recebimento (Blind Check)
+                                   <span translate="no" class="notranslate material-symbols-outlined text-[16px]">inventory</span> Confirmar Recebimento (Blind Check)
                                 </button>
                              </div>
                          } @else if (req.status === 'DELIVERED') {
@@ -140,7 +140,7 @@ import { Requisition, RequisitionItem } from '../../../models/db.models';
              </div>
           } @empty {
              <div class="flex flex-col items-center justify-center py-20 opacity-70 border border-dashed border-subtle rounded-2xl bg-surface/30">
-                 <span class="material-symbols-outlined text-4xl text-muted mb-2">inbox</span>
+                 <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">inbox</span>
                 <p class="text-[11px] font-black uppercase tracking-widest text-muted">Nenhuma requisição encontrada com este status.</p>
              </div>
           }

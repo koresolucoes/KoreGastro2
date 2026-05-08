@@ -11,7 +11,7 @@ import { LoyaltySettings } from '../../../models/db.models';
       <div class="flex items-center justify-between mb-6 shrink-0">
         <h2 class="text-2xl font-black text-title">Meu Perfil</h2>
         <button (click)="close.emit()" class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-muted hover:text-title hover:shadow-sm transition-all border border-transparent hover:border-strong">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
 
@@ -25,7 +25,7 @@ import { LoyaltySettings } from '../../../models/db.models';
             <div class="mt-6 flex items-center justify-between bg-brand/10 p-4 rounded-2xl border border-brand/20">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-brand text-on-brand rounded-xl flex items-center justify-center shadow-md">
-                  <span class="material-symbols-outlined !text-xl">stars</span>
+                  <span translate="no" class="notranslate material-symbols-outlined !text-xl">stars</span>
                 </div>
                 <div>
                   <p class="text-xs font-bold text-brand uppercase tracking-wider">Meus Pontos</p>
@@ -37,17 +37,17 @@ import { LoyaltySettings } from '../../../models/db.models';
 
           <div>
             <h3 class="font-bold text-lg text-title mb-4 flex items-center gap-2">
-              <span class="material-symbols-outlined text-muted">history</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-muted">history</span>
               Histórico de Pedidos
             </h3>
 
             @if (isLoading()) {
               <div class="flex justify-center p-8">
-                <span class="material-symbols-outlined animate-spin text-brand !text-3xl">progress_activity</span>
+                <span translate="no" class="notranslate material-symbols-outlined animate-spin text-brand !text-3xl">progress_activity</span>
               </div>
             } @else if (orders().length === 0) {
               <div class="text-center py-10 bg-surface-elevated rounded-3xl border border-dashed border-strong">
-                <span class="material-symbols-outlined text-muted !text-4xl mb-3">receipt_long</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-muted !text-4xl mb-3">receipt_long</span>
                 <p class="text-title font-medium">Nenhum pedido ainda.</p>
                 <p class="text-muted text-sm mt-1">Faça seu primeiro pedido e ganhe pontos!</p>
               </div>
@@ -72,7 +72,7 @@ import { LoyaltySettings } from '../../../models/db.models';
 
         <div class="pt-6 border-t border-subtle mt-auto shrink-0">
           <button (click)="logout()" class="w-full py-4 bg-surface-elevated border-2 border-strong text-muted hover:text-title rounded-2xl font-bold flex items-center justify-center gap-2 transition-all">
-            <span class="material-symbols-outlined">logout</span>
+            <span translate="no" class="notranslate material-symbols-outlined">logout</span>
             <span>Sair da Conta</span>
           </button>
         </div>

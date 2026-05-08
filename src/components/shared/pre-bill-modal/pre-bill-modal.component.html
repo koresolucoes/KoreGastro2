@@ -4,11 +4,11 @@
       <!-- Header -->
       <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50 backdrop-blur-xl rounded-t-2xl">
         <h3 class="text-xl font-black text-title flex items-center gap-3 tracking-tight">
-          <span class="material-symbols-outlined text-brand text-2xl">receipt_long</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">receipt_long</span>
           Pré-conta - Mesa {{ table()?.number }}
         </h3>
         <button (click)="closeModal.emit()" class="p-2.5 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger transition-all active:scale-95">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
 
@@ -35,7 +35,7 @@
             <div class="flex justify-between text-sm font-bold uppercase tracking-widest"><span class="text-muted">Subtotal</span><span class="text-title font-mono">{{ orderSubtotalBeforeDiscount() | currency:'BRL' }}</span></div>
             @if (globalDiscountAmount() > 0) {
               <div class="flex justify-between text-sm font-bold uppercase tracking-widest">
-                <span class="text-danger flex items-center gap-2"><span class="material-symbols-outlined text-sm">sell</span> Desconto</span>
+                <span class="text-danger flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-sm">sell</span> Desconto</span>
                 <span class="text-danger font-mono">- {{ globalDiscountAmount() | currency:'BRL' }}</span>
               </div>
             }
@@ -63,11 +63,11 @@
                 <label for="split-count" class="text-[10px] font-black text-muted uppercase tracking-[0.2em]">Dividir por</label>
                 <div class="flex items-center gap-1 bg-surface-elevated p-1 rounded-xl border border-subtle shadow-inner">
                     <button (click)="splitCount.set(Math.max(1, splitCount() - 1))" class="w-8 h-8 rounded-lg text-title font-black flex items-center justify-center hover:bg-surface transition-colors">
-                        <span class="material-symbols-outlined text-sm">remove</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span>
                     </button>
                     <span class="text-title font-black text-sm w-10 text-center font-mono">{{ splitCount() }}</span>
                     <button (click)="splitCount.set(splitCount() + 1)" class="w-8 h-8 bg-brand rounded-lg text-white font-black flex items-center justify-center hover:bg-brand-hover transition-all shadow-md">
-                        <span class="material-symbols-outlined text-sm">add</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
                     </button>
                 </div>
             </div>
@@ -78,7 +78,7 @@
                     <span class="text-3xl font-black text-brand drop-shadow-sm font-mono tracking-tighter">{{ splitTotal() | currency:'BRL' }}</span>
                 </div>
                 <div class="bg-brand/10 p-3 rounded-xl border border-brand/20">
-                   <span class="material-symbols-outlined text-brand">groups</span>
+                   <span translate="no" class="notranslate material-symbols-outlined text-brand">groups</span>
                 </div>
             </div>
         </div>
@@ -88,7 +88,7 @@
       <div class="p-6 bg-surface/50 border-t border-subtle flex flex-col sm:flex-row justify-end gap-3 rounded-b-2xl">
         <button (click)="closeModal.emit()" class="px-8 py-4 font-black rounded-xl text-[10px] uppercase tracking-widest text-muted hover:text-title hover:bg-surface-elevated transition-all">Cancelar</button>
         <button (click)="printPreBill()" class="btn-primary px-10 py-4 font-black rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-brand/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
-           <span class="material-symbols-outlined text-sm">print</span>
+           <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span>
            Imprimir Pré-conta
         </button>
       </div>

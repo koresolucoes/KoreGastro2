@@ -4,13 +4,13 @@
     <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface/50">
       <div>
         <h3 class="text-xl font-black text-title flex items-center gap-2">
-          <span class="material-symbols-outlined text-brand">two_wheeler</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-brand">two_wheeler</span>
           Atribuir Entregador
         </h3>
         <p class="text-xs font-bold text-muted uppercase tracking-wider mt-1">Pedido #{{ order().id.slice(0, 8) }}</p>
       </div>
       <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-        <span class="material-symbols-outlined">close</span>
+        <span translate="no" class="notranslate material-symbols-outlined">close</span>
       </button>
     </div>
 
@@ -23,7 +23,7 @@
 
       @if (availableDrivers().length === 0) {
         <div class="flex flex-col items-center justify-center py-10 opacity-50 bg-surface-elevated border border-dashed border-strong rounded-xl">
-            <span class="material-symbols-outlined text-4xl text-muted mb-2">person_off</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">person_off</span>
             <p class="text-xs font-bold text-muted uppercase tracking-widest text-center">Nenhum entregador<br>ativo cadastrado</p>
         </div>
       } @else {
@@ -34,7 +34,7 @@
               class="flex items-center justify-between gap-4 p-4 bg-surface-elevated border border-strong rounded-xl hover:border-brand/50 hover:shadow-md hover:shadow-brand/10 transition-all cursor-pointer group">
               <div class="flex items-center gap-4">
                 <div class="w-10 h-10 rounded-full bg-surface border border-subtle flex items-center justify-center group-hover:bg-brand/10 group-hover:border-brand/30 transition-colors">
-                  <span class="material-symbols-outlined text-xl text-muted group-hover:text-brand transition-colors">two_wheeler</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-xl text-muted group-hover:text-brand transition-colors">two_wheeler</span>
                 </div>
                 <div>
                   <p class="font-bold text-title text-sm group-hover:text-brand transition-colors">{{ driver.name }}</p>

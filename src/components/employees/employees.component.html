@@ -5,7 +5,7 @@
       <p class="text-muted mt-2 font-medium">Cadastre e gerencie os dados da sua equipe com eficiência.</p>
     </div>
     <button (click)="openAddModal()" class="btn-primary font-bold py-3 px-6 rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-brand/20 hover:-translate-y-1 active:translate-y-0">
-      <span class="material-symbols-outlined">person_add</span>
+      <span translate="no" class="notranslate material-symbols-outlined">person_add</span>
       <span>Novo Funcionário</span>
     </button>
   </div>
@@ -20,7 +20,7 @@
                   <p class="text-4xl font-black text-title mt-2">{{ workingNowCount() }}</p>
               </div>
               <div class="p-3 bg-success/10 rounded-2xl border border-success/20">
-                  <span class="material-symbols-outlined text-success">group</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-success">group</span>
               </div>
           </div>
           @if(workingNowCount() > 0) {
@@ -39,13 +39,13 @@
                   <p class="text-4xl font-black text-title mt-2">{{ pendingLeavesCount() }}</p>
               </div>
               <div class="p-3 bg-warning/10 rounded-2xl border border-warning/20">
-                  <span class="material-symbols-outlined text-warning">pending_actions</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-warning">pending_actions</span>
               </div>
           </div>
           @if(pendingLeavesCount() > 0) {
               <div class="mt-4">
                   <a routerLink="/leave-management" class="text-xs text-brand hover:underline font-bold flex items-center gap-1">
-                    Ver solicitações <span class="material-symbols-outlined text-xs">arrow_forward</span>
+                    Ver solicitações <span translate="no" class="notranslate material-symbols-outlined text-xs">arrow_forward</span>
                   </a>
               </div>
           }
@@ -58,7 +58,7 @@
                   <p class="text-muted text-[10px] font-black uppercase tracking-widest">Alertas do Mês</p>
               </div>
               <div class="p-3 bg-danger/10 rounded-2xl border border-danger/20">
-                  <span class="material-symbols-outlined text-danger">notifications</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-danger">notifications</span>
               </div>
           </div>
           <div class="mt-2 max-h-24 overflow-y-auto pr-2 hide-scrollbar">
@@ -80,7 +80,7 @@
       <div class="relative group">
         <input type="text" [value]="employeeSearchTerm()" (input)="employeeSearchTerm.set($any($event.target).value)" placeholder="Buscar funcionário por nome ou cargo..." class="w-full bg-surface border border-strong rounded-2xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner">
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-          <span class="material-symbols-outlined">search</span>
+          <span translate="no" class="notranslate material-symbols-outlined">search</span>
         </div>
       </div>
     </div>
@@ -109,7 +109,7 @@
                     <img [src]="employee.photo_url" alt="Foto" class="w-10 h-10 rounded-full object-cover border-2 border-surface-elevated shadow-sm">
                   } @else {
                     <div class="w-10 h-10 rounded-full bg-surface-elevated flex items-center justify-center border border-subtle">
-                      <span class="material-symbols-outlined text-muted text-xl">person</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-muted text-xl">person</span>
                     </div>
                   }
                   <span class="group-hover:text-brand">{{ employee.name }}</span>
@@ -146,7 +146,7 @@
                     <img [src]="employee.photo_url" alt="Foto" class="w-14 h-14 rounded-full object-cover border-2 border-surface-elevated shadow-md">
                   } @else {
                     <div class="w-14 h-14 rounded-full bg-surface-elevated flex items-center justify-center flex-shrink-0 border border-subtle shadow-inner">
-                      <span class="material-symbols-outlined text-muted text-3xl">person</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-muted text-3xl">person</span>
                     </div>
                   }
                 <div>
@@ -158,11 +158,11 @@
             
             <div class="space-y-2 text-sm pt-4 border-t border-subtle">
               <div class="flex items-center gap-3 text-muted font-medium data-mono text-xs">
-                <span class="material-symbols-outlined text-[18px]">call</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">call</span>
                 <span>{{ employee.phone || 'Não informado' }}</span>
               </div>
                <div class="flex items-center gap-3 text-muted font-medium text-xs">
-                <span class="material-symbols-outlined text-[18px]">mail</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">mail</span>
                 <span class="truncate">{{ employee.email || 'Não informado' }}</span>
               </div>
             </div>
@@ -193,7 +193,7 @@
       <div class="flex justify-between items-center p-6 border-b border-subtle bg-surface-elevated/30">
         <h3 class="text-2xl font-black text-title title-display">{{ editingEmployee() ? 'Editar Funcionário' : 'Novo Funcionário' }}</h3>
         <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger transition-all">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
       <div class="p-8 space-y-8 max-h-[70vh] overflow-y-auto hide-scrollbar">
@@ -205,7 +205,7 @@
                 <img [src]="photoPreviewUrl()" alt="Pré-visualização da foto" class="w-36 h-36 rounded-full object-cover border-4 border-surface shadow-xl group-hover:brightness-75 transition-all">
               } @else {
                 <div class="w-36 h-36 rounded-full bg-surface-elevated flex items-center justify-center border-2 border-dashed border-strong group-hover:border-brand/50 transition-all shadow-inner group-hover:bg-brand/5">
-                  <span class="material-symbols-outlined text-5xl text-muted">person</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted">person</span>
                 </div>
               }
               <div class="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
@@ -244,7 +244,7 @@
         <!-- Contact Info -->
         <section class="chef-surface p-6 border-subtle">
             <h4 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-              <span class="material-symbols-outlined text-brand">contact_page</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">contact_page</span>
               Contato e Emergência
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,7 +270,7 @@
         <!-- Contract Info -->
         <section class="chef-surface p-6 border-subtle">
             <h4 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-              <span class="material-symbols-outlined text-brand">work</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">work</span>
               Dados Contratuais
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -284,7 +284,7 @@
                         }
                     </select>
                     <button type="button" (click)="createNewRole()" class="p-2.5 bg-brand/10 text-brand hover:bg-brand hover:text-white border border-brand/20 rounded-xl transition-all shadow-sm active:scale-95" title="Adicionar novo cargo">
-                      <span class="material-symbols-outlined">add</span>
+                      <span translate="no" class="notranslate material-symbols-outlined">add</span>
                     </button>
                 </div>
               </div>
@@ -302,7 +302,7 @@
         <!-- Payment Settings -->
         <section class="chef-surface p-6 border-subtle">
             <h4 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-              <span class="material-symbols-outlined text-brand">payments</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">payments</span>
               Configurações de Pagamento
             </h4>
              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -331,7 +331,7 @@
         <!-- Bank Details -->
         <section class="chef-surface p-6 border-subtle">
             <h4 class="text-sm font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-              <span class="material-symbols-outlined text-brand">account_balance</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">account_balance</span>
               Dados Bancários e PIX
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

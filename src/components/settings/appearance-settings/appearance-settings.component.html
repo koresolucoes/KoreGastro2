@@ -2,7 +2,7 @@
 <div class="chef-surface border border-subtle rounded-3xl p-8 mb-6 shadow-sm">
   <div class="flex items-center gap-4 border-b border-subtle pb-4">
     <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
-      <span class="material-symbols-outlined text-3xl text-brand">palette</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">palette</span>
     </div>
     <div>
       <h2 class="text-2xl font-black text-title title-display tracking-tight">Aparência e Temas</h2>
@@ -15,7 +15,7 @@
   <!-- Sessão 1: Modo de Exibição -->
   <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm">
     <h3 class="text-[11px] font-black tracking-widest text-brand uppercase mb-6 flex items-center gap-2">
-      <span class="material-symbols-outlined text-base">contrast</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-base">contrast</span>
       Modo de Exibição
     </h3>
     
@@ -31,11 +31,11 @@
           
           <div class="flex items-center justify-between mb-4 relative z-10 w-full">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-3xl" [class.text-brand]="themeService.currentTheme() === 'light'">light_mode</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-3xl" [class.text-brand]="themeService.currentTheme() === 'light'">light_mode</span>
               <span class="font-black text-lg">Modo Claro</span>
             </div>
             @if(themeService.currentTheme() === 'light') {
-              <span class="material-symbols-outlined text-brand">check_circle</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">check_circle</span>
             }
           </div>
           
@@ -61,11 +61,11 @@
           
           <div class="flex items-center justify-between mb-4 relative z-10 w-full">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-3xl text-gray-400" [class.text-brand]="themeService.currentTheme() === 'dark'">dark_mode</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-3xl text-gray-400" [class.text-brand]="themeService.currentTheme() === 'dark'">dark_mode</span>
               <span class="font-black text-lg">Modo Escuro</span>
             </div>
             @if(themeService.currentTheme() === 'dark') {
-              <span class="material-symbols-outlined text-brand">check_circle</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand">check_circle</span>
             }
           </div>
           
@@ -87,7 +87,7 @@
     <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand/5 blur-3xl rounded-full"></div>
     
     <h3 class="text-[11px] font-black tracking-widest text-brand uppercase mb-2 flex items-center gap-2 relative z-10">
-      <span class="material-symbols-outlined text-base">colors</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-base">colors</span>
       Paletas Gastronômicas
     </h3>
     <p class="text-muted text-sm font-medium mb-6 relative z-10">Inspiradas em capitais mundiais da gastronomia, personalize a cor primária do sistema inteiro.</p>
@@ -107,9 +107,9 @@
             <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shadow-lg"
                  [style.backgroundColor]="palette.color">
                 @if(themeService.currentPalette() === palette.id) {
-                    <span class="material-symbols-outlined text-white text-3xl font-bold animate-in zoom-in">check</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-white text-3xl font-bold animate-in zoom-in">check</span>
                 } @else {
-                    <span class="material-symbols-outlined text-white/50 text-2xl">restaurant</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-white/50 text-2xl">restaurant</span>
                 }
             </div>
             

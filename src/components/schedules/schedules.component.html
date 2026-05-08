@@ -7,7 +7,7 @@
     </div>
     <div class="flex items-center gap-4 bg-surface-elevated p-1.5 rounded-xl border border-strong shadow-sm">
       <button (click)="changeWeek(-1)" class="p-2 bg-surface hover:bg-brand/10 hover:text-brand text-muted rounded-lg transition-colors flex items-center justify-center border border-strong shadow-sm">
-        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">chevron_left</span>
       </button>
       <input 
         type="week"
@@ -15,7 +15,7 @@
         (change)="handleDateChange($event)"
         class="bg-transparent border-none px-2 py-1 text-title font-bold focus:outline-none focus:ring-0 uppercase tracking-widest text-xs cursor-pointer">
       <button (click)="changeWeek(1)" class="p-2 bg-surface hover:bg-brand/10 hover:text-brand text-muted rounded-lg transition-colors flex items-center justify-center border border-strong shadow-sm">
-        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">chevron_right</span>
       </button>
     </div>
   </div>
@@ -39,17 +39,17 @@
               </div>
               <div class="flex gap-3">
                   <button (click)="copyFromPreviousWeek()" class="bg-surface hover:bg-surface-elevated hover:text-title hover:border-brand text-muted border border-strong font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-2 uppercase tracking-widest transition-all shadow-sm">
-                      <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[18px]">content_copy</span>
                       Copiar Anterior
                   </button>
                   <button (click)="togglePublish()" class="btn-primary py-2.5 px-5 font-bold rounded-xl text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
-                       <span class="material-symbols-outlined text-[18px]">{{ schedule.is_published ? 'unpublished' : 'publish' }}</span>
+                       <span translate="no" class="notranslate material-symbols-outlined text-[18px]">{{ schedule.is_published ? 'unpublished' : 'publish' }}</span>
                       {{ schedule.is_published ? 'Cancelar Pub.' : 'Publicar Escala' }}
                   </button>
               </div>
           } @else {
               <div class="text-center text-muted font-medium py-3 w-full border border-dashed border-strong rounded-xl bg-surface">
-                <span class="material-symbols-outlined align-middle mr-2 text-[20px]">calendar_add_on</span>
+                <span translate="no" class="notranslate material-symbols-outlined align-middle mr-2 text-[20px]">calendar_add_on</span>
                 Nenhuma escala para esta semana. Clique na tabela para adicionar turnos e criar uma.
               </div>
           }
@@ -101,7 +101,7 @@
                       }
                     } @else if (approvedLeave) {
                       <div class="bg-purple/10 border border-purple/30 text-center text-purple p-2.5 rounded-xl text-xs font-bold shadow-sm flex flex-col items-center justify-center">
-                          <span class="material-symbols-outlined text-[16px] mb-1">event_busy</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-[16px] mb-1">event_busy</span>
                           <span class="uppercase tracking-widest text-[10px]">{{ approvedLeave.request_type }}</span>
                       </div>
                     }
@@ -117,7 +117,7 @@
         </table>
          @if (!activeSchedule() && !isManager()) {
             <div class="text-center py-20 w-full flex flex-col items-center justify-center opacity-80">
-              <span class="material-symbols-outlined text-5xl text-muted mb-4">calendar_month</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-4">calendar_month</span>
               <p class="text-xl font-bold text-title title-display">Escala não disponível</p>
               <p class="text-muted text-sm mt-1">A escala para esta semana ainda não foi publicada.</p>
             </div>
@@ -134,14 +134,14 @@
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <h3 class="text-xl font-bold text-title title-display">{{ editingShift() ? 'Editar Turno' : 'Novo Turno' }}</h3>
         <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-8 space-y-6 bg-app">
         
         @if (shiftConflictWarning()) {
             <div class="bg-danger/10 border border-danger/30 text-danger p-4 rounded-xl flex items-start gap-3 shadow-sm">
-                <span class="material-symbols-outlined mt-0.5">warning</span>
+                <span translate="no" class="notranslate material-symbols-outlined mt-0.5">warning</span>
                 <span class="text-sm font-medium">{{ shiftConflictWarning() }}</span>
             </div>
         }
@@ -189,12 +189,12 @@
       </div>
       <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-between items-center bg-surface-elevated/50 shadow-lg">
         @if (editingShift()) {
-          <button (click)="deleteShift()" class="px-5 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all text-xs flex items-center justify-center gap-2 border border-danger/20 shadow-sm"><span class="material-symbols-outlined text-[18px]">delete</span> Excluir</button>
+          <button (click)="deleteShift()" class="px-5 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all text-xs flex items-center justify-center gap-2 border border-danger/20 shadow-sm"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span> Excluir</button>
         } @else { <div></div> }
         <div class="flex gap-3">
           <button (click)="closeModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Cancelar</button>
           <button (click)="saveShift()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-[18px]">save</span> Salvar
+              <span translate="no" class="notranslate material-symbols-outlined text-[18px]">save</span> Salvar
           </button>
         </div>
       </div>

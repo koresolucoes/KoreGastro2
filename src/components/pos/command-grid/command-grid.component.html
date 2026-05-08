@@ -18,11 +18,11 @@
                 placeholder="Buscar comanda (Nº ou Nome)..." 
                 class="relative w-full bg-surface-elevated/80 backdrop-blur-md border border-subtle rounded-xl pl-12 pr-4 py-3.5 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand text-lg transition-all shadow-sm">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                <span class="material-symbols-outlined text-muted group-focus-within:text-brand transition-colors text-2xl">search</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-muted group-focus-within:text-brand transition-colors text-2xl">search</span>
             </div>
         </div>
         <button (click)="openNewTabModal()" class="px-6 py-3.5 rounded-xl text-white font-black flex items-center gap-2 bg-brand hover:bg-brand-hover shadow-lg hover:shadow-brand/20 transition-all border border-transparent active:scale-95 z-10">
-            <span class="material-symbols-outlined">add_card</span>
+            <span translate="no" class="notranslate material-symbols-outlined">add_card</span>
             <span class="hidden md:inline uppercase tracking-wider text-sm">Abrir Comanda</span>
         </button>
     </div>
@@ -42,7 +42,7 @@
     <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10">
         @if(filteredTabs().length === 0) {
             <div class="flex flex-col items-center justify-center h-64 text-muted bg-surface-elevated/50 backdrop-blur-sm border border-dashed border-strong rounded-3xl mt-4">
-                <span class="material-symbols-outlined text-6xl mb-3 opacity-40">layers_clear</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-3 opacity-40">layers_clear</span>
                 <p class="text-lg font-bold tracking-wide">Nenhuma comanda aberta encontrada.</p>
             </div>
         } @else {
@@ -68,7 +68,7 @@
                         <div class="pt-3 border-t border-strong/50 mt-auto flex justify-between items-end z-10 relative">
                             @if(getOrderTotal(tab) === 0) {
                                 <button (click)="$event.stopPropagation(); deleteTab(tab)" class="text-danger hover:text-white text-xs flex items-center gap-1 bg-danger/10 px-3 py-1.5 rounded-lg border border-danger/30 hover:bg-danger shadow-sm z-20 transition-all font-bold tracking-wide">
-                                    <span class="material-symbols-outlined text-sm">delete</span> Excluir
+                                    <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span> Excluir
                                 </button>
                                 <span></span> <!-- Spacer -->
                             } @else {
@@ -79,7 +79,7 @@
                         
                         <!-- Decorative BG Element -->
                         <div class="absolute inset-0 bg-gradient-to-tr from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                        <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-transform group-hover:scale-110 group-hover:text-brand/10">receipt_long</span>
+                        <span translate="no" class="notranslate material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-transform group-hover:scale-110 group-hover:text-brand/10">receipt_long</span>
                     </div>
                 }
             </div>
@@ -96,10 +96,10 @@
             
             <div class="p-5 border-b border-subtle bg-surface-elevated flex justify-between items-center">
                 <h3 class="text-xl font-black text-title flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand">add_card</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand">add_card</span>
                     Nova Comanda
                 </h3>
-                <button (click)="closeNewTabModal()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors"><span class="material-symbols-outlined">close</span></button>
+                <button (click)="closeNewTabModal()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors"><span translate="no" class="notranslate material-symbols-outlined">close</span></button>
             </div>
             
             <div class="p-6 space-y-5">
@@ -112,7 +112,7 @@
                     <label class="block text-[11px] font-black tracking-widest text-muted mb-2 uppercase">Nome do Cliente <span class="opacity-50">(Opcional)</span></label>
                     <div class="relative">
                         <input type="text" [ngModel]="newTabName()" (ngModelChange)="newTabName.set($event)" (keydown.enter)="createTab()" class="w-full bg-surface-elevated border border-strong rounded-xl pl-10 pr-4 py-3 text-title focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors" placeholder="Ex: Pedro">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted opacity-70">person</span>
+                        <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted opacity-70">person</span>
                     </div>
                 </div>
                 
@@ -121,7 +121,7 @@
                         <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     }
                     <span>Abrir Comanda</span>
-                    <span class="material-symbols-outlined">arrow_forward</span>
+                    <span translate="no" class="notranslate material-symbols-outlined">arrow_forward</span>
                 </button>
             </div>
         </div>

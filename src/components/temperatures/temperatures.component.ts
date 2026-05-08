@@ -18,7 +18,7 @@ import autoTable from 'jspdf-autotable';
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-subtle pb-6">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 bg-info/10 rounded-2xl flex items-center justify-center border border-info/20 shadow-inner">
-            <span class="material-symbols-outlined text-info text-2xl">thermostat</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-info text-2xl">thermostat</span>
           </div>
           <div>
             <h1 class="text-3xl font-black title-display tracking-tight text-title">Temperaturas</h1>
@@ -28,12 +28,12 @@ import autoTable from 'jspdf-autotable';
 
         <div class="flex flex-wrap gap-3">
           <button (click)="generatePDF()" class="flex-1 md:flex-none bg-surface-elevated hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-strong shadow-sm hover:translate-y-[-2px] active:scale-95 transition-all">
-            <span class="material-symbols-outlined text-info">picture_as_pdf</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-info">picture_as_pdf</span>
             Gerar Relatório
           </button>
           @if (isManager()) {
             <button (click)="showAddEquipmentModal.set(true)" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:translate-y-[-2px] active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
-              <span class="material-symbols-outlined text-sm">add</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
               Novo Equipamento
             </button>
           }
@@ -46,11 +46,11 @@ import autoTable from 'jspdf-autotable';
           <div class="chef-surface overflow-hidden">
             <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex justify-between items-center">
               <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span class="material-symbols-outlined text-brand opacity-60">kitchen</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-60">kitchen</span>
                 Monitoramento Ativo
               </h3>
               <button (click)="loadData()" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all" title="Atualizar">
-                <span class="material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
               </button>
             </div>
             
@@ -58,14 +58,14 @@ import autoTable from 'jspdf-autotable';
               <div class="p-16 text-center text-muted">
                 <div class="animate-pulse flex flex-col items-center">
                    <div class="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
-                      <span class="material-symbols-outlined text-brand text-4xl">sync</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">sync</span>
                    </div>
                    <p class="font-bold uppercase tracking-widest text-xs">Carregando dispositivos...</p>
                 </div>
               </div>
             } @else if (equipmentList().length === 0) {
               <div class="p-16 text-center text-muted">
-                <span class="material-symbols-outlined text-6xl mb-4 opacity-20">kitchen</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 opacity-20">kitchen</span>
                 <p class="text-lg font-bold">Nenhum equipamento cadastrado.</p>
                 @if (isManager()) {
                   <button (click)="showAddEquipmentModal.set(true)" class="mt-4 text-brand font-black text-sm uppercase tracking-widest hover:underline">Clique para adicionar</button>
@@ -78,7 +78,7 @@ import autoTable from 'jspdf-autotable';
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                       <div class="flex items-center gap-4">
                          <div class="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center border border-subtle shadow-sm">
-                            <span class="material-symbols-outlined text-muted group-hover:text-brand transition-colors">kitchen</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-muted group-hover:text-brand transition-colors">kitchen</span>
                          </div>
                          <div>
                             <h4 class="text-base font-black text-title">{{ eq.name }}</h4>
@@ -101,7 +101,7 @@ import autoTable from 'jspdf-autotable';
                         <button (click)="logTemperature(eq, tempInput.value); tempInput.value = ''" 
                                 [disabled]="isSubmitting() || !tempInput.value"
                                 class="ml-8 bg-success hover:bg-success-hover disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-md hover:translate-y-[-2px] active:scale-95 border border-success/30 uppercase tracking-widest">
-                          <span class="material-symbols-outlined text-sm">save</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">save</span>
                           Registrar
                         </button>
                       </div>
@@ -118,14 +118,14 @@ import autoTable from 'jspdf-autotable';
           <div class="chef-surface overflow-hidden flex flex-col max-h-[800px]">
             <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex-shrink-0">
               <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span class="material-symbols-outlined text-purple opacity-60">history</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-purple opacity-60">history</span>
                 Histórico
               </h3>
             </div>
             <div class="flex-1 overflow-y-auto hide-scrollbar p-0">
               @if (recentLogs().length === 0) {
                 <div class="p-12 text-center text-muted italic text-sm">
-                  <span class="material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
+                  <span translate="no" class="notranslate material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
                   Nenhum registro recente.
                 </div>
               } @else {
@@ -136,7 +136,7 @@ import autoTable from 'jspdf-autotable';
                         <div class="min-w-0">
                           <p class="text-sm font-black text-title truncate">{{ log.equipment?.name }}</p>
                           <div class="flex items-center gap-1.5 mt-1">
-                             <span class="material-symbols-outlined text-[14px] text-muted">person</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-muted">person</span>
                              <p class="text-[10px] font-bold text-muted uppercase tracking-wider truncate">{{ log.employees?.name || 'Sistema' }}</p>
                           </div>
                         </div>
@@ -148,7 +148,7 @@ import autoTable from 'jspdf-autotable';
                         </div>
                       </div>
                       <div class="flex items-center gap-1.5 opacity-50">
-                        <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[14px]">calendar_month</span>
                         <p class="text-[10px] font-bold uppercase tracking-widest">{{ log.recorded_at | date:'dd MMM, HH:mm' }}</p>
                       </div>
                     </div>
@@ -167,11 +167,11 @@ import autoTable from 'jspdf-autotable';
         <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
           <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
             <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
-               <span class="material-symbols-outlined text-brand">add_circle</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-brand">add_circle</span>
                Novo Equipamento
             </h3>
             <button (click)="showAddEquipmentModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
-              <span class="material-symbols-outlined">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined">close</span>
             </button>
           </div>
           <form [formGroup]="equipmentForm" (ngSubmit)="saveEquipment()">
@@ -179,7 +179,7 @@ import autoTable from 'jspdf-autotable';
               <div>
                 <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Nome do Equipamento</label>
                 <div class="relative group">
-                   <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted group-focus-within:text-brand transition-colors">kitchen</span>
+                   <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted group-focus-within:text-brand transition-colors">kitchen</span>
                    <input type="text" formControlName="name" class="w-full bg-surface-elevated border-2 border-strong rounded-xl pl-12 pr-4 py-3 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner" placeholder="Ex: Freezer de Carnes">
                 </div>
               </div>

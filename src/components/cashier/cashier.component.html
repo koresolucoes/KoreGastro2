@@ -7,7 +7,7 @@
   <div class="hidden md:flex justify-between items-center p-6 pb-2 no-print">
     <div>
       <h1 class="text-3xl font-black text-title tracking-tight flex items-center gap-3">
-        <span class="material-symbols-outlined text-brand text-4xl">account_balance_wallet</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">account_balance_wallet</span>
         Caixa
       </h1>
       <p class="text-muted text-sm font-medium">Gerenciamento financeiro e pagamentos</p>
@@ -82,7 +82,7 @@
             <!-- Section: Tables -->
             <div class="flex flex-col h-full">
               <h2 class="text-xl font-black text-title mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px]">
-                <span class="material-symbols-outlined text-warning drop-shadow-sm">table_restaurant</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-warning drop-shadow-sm">table_restaurant</span>
                 Mesas Aguardando Pagamento
               </h2>
               
@@ -126,7 +126,7 @@
               } @else {
                 <div class="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-subtle rounded-3xl bg-surface/30 backdrop-blur-sm">
                   <div class="w-20 h-20 bg-surface-elevated rounded-full flex items-center justify-center mb-6 text-muted border border-subtle shadow-inner">
-                    <span class="material-symbols-outlined text-4xl">check_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-4xl">check_circle</span>
                   </div>
                   <h3 class="text-xl font-black text-title">Sem Mesas Pendentes</h3>
                   <p class="text-sm text-muted mt-2 font-medium">Todas as mesas estão em operação normal ou livres.</p>
@@ -137,7 +137,7 @@
             <!-- Section: Paying Tabs (Comandas) -->
             <div class="flex flex-col h-full mt-8 lg:mt-0">
                <h2 class="text-xl font-black text-title mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px]">
-                <span class="material-symbols-outlined text-warning drop-shadow-sm">style</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-warning drop-shadow-sm">style</span>
                 Comandas Aguardando Pagamento
               </h2>
                @if(payingTabs().length > 0) {
@@ -152,7 +152,7 @@
                              <h4 class="font-black text-title text-xl tracking-tight">{{ order.tab_name || 'Individual' }}</h4>
                           </div>
                           <div class="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center text-warning border border-warning/20">
-                             <span class="material-symbols-outlined">payments</span>
+                             <span translate="no" class="notranslate material-symbols-outlined">payments</span>
                           </div>
                        </div>
 
@@ -175,7 +175,7 @@
             <!-- Section: Quick Sales -->
             <div class="flex flex-col h-full mt-8 lg:mt-0">
                <h2 class="text-xl font-black text-title mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px]">
-                <span class="material-symbols-outlined text-info drop-shadow-sm">point_of_sale</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-info drop-shadow-sm">point_of_sale</span>
                 Vendas Rápidas em Aberto
               </h2>
                @if(quickSalesForPayment().length > 0) {
@@ -192,11 +192,11 @@
                           </div>
                           @if(progress.isAllReady) {
                              <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center text-success border border-success/20 animate-bounce">
-                                <span class="material-symbols-outlined">check_circle</span>
+                                <span translate="no" class="notranslate material-symbols-outlined">check_circle</span>
                              </div>
                           } @else {
                              <div class="w-10 h-10 bg-brand/10 rounded-full flex items-center justify-center text-brand border border-brand/20">
-                                <span class="material-symbols-outlined">skillet</span>
+                                <span translate="no" class="notranslate material-symbols-outlined">skillet</span>
                              </div>
                           }
                        </div>
@@ -244,7 +244,7 @@
               <!-- Search & Filter -->
               <div class="p-6 border-b border-subtle bg-surface/40 backdrop-blur-xl sticky top-0 z-10">
                 <div class="relative mb-6">
-                   <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
+                   <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
                    <input type="text" [value]="recipeSearchTerm()" (input)="recipeSearchTerm.set($any($event.target).value)" 
                           placeholder="Buscar prato pelo nome ou código..." 
                           class="w-full bg-surface-elevated text-title placeholder:text-muted/60 pl-12 pr-6 py-4 rounded-2xl border-2 border-transparent focus:border-brand/40 outline-none text-lg font-bold shadow-inner transition-all">
@@ -292,17 +292,17 @@
             <div class="w-full lg:w-[400px] flex flex-col chef-surface overflow-hidden border-subtle">
                <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50 backdrop-blur-xl">
                   <h2 class="font-black text-title text-lg uppercase tracking-tight flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand">shopping_basket</span> 
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand">shopping_basket</span> 
                     Pedido Atual
                   </h2>
                   @if(quickSaleCustomer(); as customer) {
                      <div class="flex items-center gap-2 bg-brand/10 px-3 py-1.5 rounded-xl text-[10px] font-black text-brand border border-brand/20 uppercase tracking-widest animate-in zoom-in">
                         <span class="truncate max-w-[100px]">{{ customer.name }}</span>
-                        <button (click)="removeQuickSaleCustomer()" class="hover:text-danger flex items-center justify-center"><span class="material-symbols-outlined text-sm">close</span></button>
+                        <button (click)="removeQuickSaleCustomer()" class="hover:text-danger flex items-center justify-center"><span translate="no" class="notranslate material-symbols-outlined text-sm">close</span></button>
                      </div>
                   } @else {
                      <button (click)="isCustomerSelectModalOpen.set(true)" class="text-[10px] font-black text-brand uppercase tracking-widest hover:text-brand-hover transition-colors flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">person_add</span> Cliente
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">person_add</span> Cliente
                      </button>
                   }
                </div>
@@ -311,7 +311,7 @@
                   @if(quickSaleCart().length === 0) {
                      <div class="h-full flex flex-col items-center justify-center text-center p-8">
                         <div class="w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center text-muted mb-4 border border-subtle shadow-inner">
-                            <span class="material-symbols-outlined text-3xl opacity-30">shopping_cart</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-3xl opacity-30">shopping_cart</span>
                         </div>
                         <p class="text-[10px] font-black text-muted uppercase tracking-widest">Carrinho vazio</p>
                      </div>
@@ -342,10 +342,10 @@
                   </div>
                   <div class="grid grid-cols-2 gap-4">
                      <button (click)="sendQuickSaleToKitchen()" [disabled]="quickSaleCart().length === 0" class="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-surface border border-subtle hover:bg-surface-elevated text-title transition-all disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-sm">skillet</span> Cozinha
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">skillet</span> Cozinha
                      </button>
                      <button (click)="openQuickSalePaymentModal()" [disabled]="quickSaleCart().length === 0" class="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-success text-white shadow-xl shadow-success/20 transition-all hover:bg-success-hover hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-sm">payments</span> Receber
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">payments</span> Receber
                      </button>
                   </div>
                </div>
@@ -359,7 +359,7 @@
               <!-- Timeline (Left) -->
               <div class="lg:col-span-1 chef-surface p-6 flex flex-col overflow-hidden border-subtle">
                  <h2 class="text-xs font-black text-title mb-6 border-b border-subtle pb-3 uppercase tracking-widest flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand text-sm">timeline</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-sm">timeline</span>
                     Linha do Tempo
                  </h2>
                  <div class="flex-1 overflow-y-auto pr-2 relative hide-scrollbar">
@@ -368,7 +368,7 @@
 
                     @if(revenueTransactions().length === 0 && expenseTransactions().length === 0) {
                          <div class="flex flex-col items-center justify-center py-12 text-center">
-                             <span class="material-symbols-outlined text-muted opacity-20 text-4xl mb-2">history</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-20 text-4xl mb-2">history</span>
                              <p class="text-[10px] font-black text-muted uppercase tracking-widest">Nenhuma movimentação</p>
                          </div>
                     }
@@ -391,7 +391,7 @@
                                          [class.border-success]="t.type === 'Receita'" 
                                          [class.border-danger]="t.type === 'Despesa'"
                                          [class.border-warning]="t.type === 'Gorjeta'">
-                                        <span class="material-symbols-outlined text-[10px] font-black" [class.text-success]="t.type === 'Receita'" [class.text-danger]="t.type === 'Despesa'" [class.text-warning]="t.type === 'Gorjeta'">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[10px] font-black" [class.text-success]="t.type === 'Receita'" [class.text-danger]="t.type === 'Despesa'" [class.text-warning]="t.type === 'Gorjeta'">
                                             {{ t.type === 'Receita' ? 'arrow_upward' : (t.type === 'Despesa' ? 'arrow_downward' : 'star') }}
                                         </span>
                                     </div>
@@ -431,7 +431,7 @@
                  <!-- Expense/Sangria Form -->
                  <div class="chef-surface p-8 border-subtle">
                     <h3 class="text-xs font-black text-title uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-danger text-sm">money_off</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-danger text-sm">money_off</span>
                         Saídas & Retiradas (Sangria)
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -490,12 +490,12 @@
                 </div>
                 <div class="flex flex-row items-center gap-1 sm:gap-2 bg-surface-elevated p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-subtle shadow-inner w-full xl:w-auto overflow-hidden">
                     <div class="relative w-full sm:w-auto">
-                        <span class="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
+                        <span translate="no" class="notranslate absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
                         <input type="date" [value]="completedOrdersStartDate()" (change)="completedOrdersStartDate.set($any($event.target).value)" class="w-full bg-surface border border-subtle rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 pl-7 sm:pl-9 text-title text-[9px] sm:text-[10px] font-black uppercase outline-none focus:border-brand transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full">
                     </div>
                     <span class="flex items-center justify-center text-muted font-bold text-[10px] sm:text-xs">ate</span>
                     <div class="relative w-full sm:w-auto">
-                        <span class="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
+                        <span translate="no" class="notranslate absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted text-xs sm:text-sm">calendar_today</span>
                         <input type="date" [value]="completedOrdersEndDate()" (change)="completedOrdersEndDate.set($any($event.target).value)" class="w-full bg-surface border border-subtle rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 pl-7 sm:pl-9 text-title text-[9px] sm:text-[10px] font-black uppercase outline-none focus:border-brand transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full">
                     </div>
                 </div>
@@ -509,7 +509,7 @@
                      </div>
                 } @else if (completedOrders().length === 0) {
                      <div class="flex flex-col items-center justify-center h-64 text-center opacity-40">
-                        <span class="material-symbols-outlined text-6xl mb-4">receipt_long</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4">receipt_long</span>
                         <p class="text-sm font-bold text-muted">Nenhum registro encontrado para este período.</p>
                      </div>
                 } @else {
@@ -543,18 +543,18 @@
                                     </div>
                                     <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
                                          <button (click)="reprintReceipt(order)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95 px-4 sm:px-0" title="Reimprimir">
-                                            <span class="material-symbols-outlined text-lg hidden sm:block">print</span>
+                                            <span translate="no" class="notranslate material-symbols-outlined text-lg hidden sm:block">print</span>
                                             <span class="text-[10px] font-black uppercase sm:hidden">Reimprimir</span>
                                         </button>
                                         <button (click)="openDetailsModal(order)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-surface-elevated hover:bg-surface border border-subtle rounded-xl text-title transition-all active:scale-95 px-4 sm:px-0" title="Detalhes">
-                                            <span class="material-symbols-outlined text-lg hidden sm:block">visibility</span>
+                                            <span translate="no" class="notranslate material-symbols-outlined text-lg hidden sm:block">visibility</span>
                                             <span class="text-[10px] font-black uppercase sm:hidden">Detalhes</span>
                                         </button>
                                         @if(!order.nfce_status) {
                                             <button (click)="emitNfce(order)" [disabled]="processingNfceOrders().has(order.id)" class="flex-1 sm:flex-none w-auto sm:w-10 h-10 flex items-center justify-center bg-brand text-white rounded-xl shadow-lg shadow-brand/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 px-4 sm:px-0" title="Emitir NFC-e">
                                                 @if(processingNfceOrders().has(order.id)) { <div class="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full"></div> }
                                                 @else { 
-                                                    <span class="material-symbols-outlined text-lg hidden sm:block">description</span> 
+                                                    <span translate="no" class="notranslate material-symbols-outlined text-lg hidden sm:block">description</span> 
                                                     <span class="text-[10px] font-black uppercase sm:hidden">NFC-E</span>
                                                 }
                                             </button>
@@ -575,17 +575,17 @@
   <!-- Mobile Bottom Floating Navigation (Only on Mobile) -->
   <div class="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-surface/80 backdrop-blur-xl border border-subtle p-2 rounded-full flex shadow-2xl items-center gap-1">
       <button (click)="view.set('payingTables')" class="p-4 rounded-full transition-all relative" [class.bg-brand]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'" [class.text-muted]="view() !== 'payingTables'" [class.shadow-lg]="view() === 'payingTables'" [class.shadow-brand/40]="view() === 'payingTables'">
-         <span class="material-symbols-outlined text-xl">payments</span>
+         <span translate="no" class="notranslate material-symbols-outlined text-xl">payments</span>
          @if(tablesForPayment().length > 0) { <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-danger border-2 border-white rounded-full"></span> }
       </button>
       <button (click)="view.set('quickSale')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'" [class.text-muted]="view() !== 'quickSale'" [class.shadow-lg]="view() === 'quickSale'" [class.shadow-brand/40]="view() === 'quickSale'">
-         <span class="material-symbols-outlined text-xl">point_of_sale</span>
+         <span translate="no" class="notranslate material-symbols-outlined text-xl">point_of_sale</span>
       </button>
       <button (click)="view.set('cashDrawer')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'" [class.text-muted]="view() !== 'cashDrawer'" [class.shadow-lg]="view() === 'cashDrawer'" [class.shadow-brand/40]="view() === 'cashDrawer'">
-         <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+         <span translate="no" class="notranslate material-symbols-outlined text-xl">account_balance_wallet</span>
       </button>
        <button (click)="view.set('reprint')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'reprint'" [class.text-white]="view() === 'reprint'" [class.text-muted]="view() !== 'reprint'" [class.shadow-lg]="view() === 'reprint'" [class.shadow-brand/40]="view() === 'reprint'">
-         <span class="material-symbols-outlined text-xl">history</span>
+         <span translate="no" class="notranslate material-symbols-outlined text-xl">history</span>
       </button>
   </div>
 </div>
@@ -607,13 +607,13 @@
         <h3 class="text-2xl font-black text-title mb-8 text-center uppercase tracking-widest">Mesa {{ table.number }}</h3>
         <div class="space-y-4">
             <button (click)="openPaymentForTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-5 btn-primary rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-brand/20 flex items-center justify-center gap-3 transition-transform active:scale-95">
-                <span class="material-symbols-outlined">payments</span> Receber Conta
+                <span translate="no" class="notranslate material-symbols-outlined">payments</span> Receber Conta
             </button>
             <button (click)="openPreBillForTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-4 bg-surface hover-surface-elevated border border-subtle text-title rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
-                <span class="material-symbols-outlined text-sm">receipt</span> Imprimir Pré-conta
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">receipt</span> Imprimir Pré-conta
             </button>
              <button (click)="reopenTable(table); isTableOptionsModalOpen.set(false)" class="w-full py-4 bg-warning/5 hover:bg-warning/10 text-warning border border-warning/20 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
-                <span class="material-symbols-outlined text-sm">lock_open</span> Reabrir Mesa
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">lock_open</span> Reabrir Mesa
             </button>
         </div>
      </div>
@@ -643,10 +643,10 @@
       <div class="chef-surface border-subtle shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
           <div class="bg-surface/50 p-6 border-b border-subtle flex justify-between items-center">
               <h3 class="text-lg font-black text-title uppercase tracking-tight flex items-center gap-2">
-                <span class="material-symbols-outlined text-brand">fact_check</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand">fact_check</span>
                 Conferência de Caixa
               </h3>
-              <button (click)="closeClosingModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-elevated text-muted transition-colors"><span class="material-symbols-outlined">close</span></button>
+              <button (click)="closeClosingModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-elevated text-muted transition-colors"><span translate="no" class="notranslate material-symbols-outlined">close</span></button>
           </div>
           <div class="p-8 space-y-8 max-h-[70vh] overflow-y-auto hide-scrollbar">
               <p class="text-[10px] font-black text-muted uppercase tracking-[0.2em] bg-surface-elevated px-4 py-3 rounded-xl border border-subtle leading-loose">
@@ -714,10 +714,10 @@
      <div class="chef-surface border-subtle shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
         <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50">
             <h3 class="font-black text-title uppercase tracking-tight flex items-center gap-2">
-                <span class="material-symbols-outlined text-brand">receipt</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt</span>
                 Detalhes da Venda
             </h3>
-            <button (click)="closeDetailsModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-elevated text-muted transition-colors"><span class="material-symbols-outlined">close</span></button>
+            <button (click)="closeDetailsModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-elevated text-muted transition-colors"><span translate="no" class="notranslate material-symbols-outlined">close</span></button>
         </div>
         <div class="p-8 overflow-y-auto space-y-6 hide-scrollbar">
              <div class="p-6 bg-success/5 rounded-3xl border border-success/20 flex justify-between items-center">
@@ -749,7 +749,7 @@
         </div>
         <div class="p-6 bg-surface/50 border-t border-subtle flex justify-center">
              <button (click)="reprintReceipt(order)" class="btn-primary w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-sm">print</span> Reimprimir Recibo
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span> Reimprimir Recibo
              </button>
         </div>
      </div>

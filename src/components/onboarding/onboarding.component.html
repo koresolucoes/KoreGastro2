@@ -45,7 +45,7 @@
                             [class.text-white]="currentStep() >= i"
                             [class.text-muted]="currentStep() < i"
                             [class.shadow-[0_0_10px_rgba(var(--brand-primary),0.4)]]="currentStep() === i">
-                            @if(currentStep() > i) { <span class="material-symbols-outlined text-sm font-black">check</span> }
+                            @if(currentStep() > i) { <span translate="no" class="notranslate material-symbols-outlined text-sm font-black">check</span> }
                             @else { {{ i + 1 }} }
                         </div>
                         
@@ -75,13 +75,13 @@
                     @case (0) {
                         <div class="h-full flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div class="w-32 h-32 bg-brand/10 border border-brand/20 rounded-full flex items-center justify-center mx-auto mb-8 relative shadow-[0_0_40px_rgba(var(--brand-primary),0.2)]">
-                                <span class="material-symbols-outlined text-6xl text-brand drop-shadow-md animate-pulse">rocket_launch</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-6xl text-brand drop-shadow-md animate-pulse">rocket_launch</span>
                                 <div class="absolute inset-0 rounded-full border border-brand/30 animate-ping opacity-50"></div>
                             </div>
                             <h2 class="text-4xl md:text-5xl font-black mb-4 text-title tracking-tight">Bem-vindo a bordo!</h2>
                             <p class="text-muted mb-10 text-lg md:text-xl max-w-lg font-medium">Vamos configurar seu restaurante completo em poucos minutos. Você terá um sistema profissional pronto para vender.</p>
                             <button (click)="nextStep()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-10 rounded-full text-lg shadow-lg shadow-brand/30 transition-all active:scale-95 flex items-center gap-2 group">
-                                Começar Configuração <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                                Começar Configuração <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                             </button>
                         </div>
                     }
@@ -91,7 +91,7 @@
                         <div class="max-w-xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">storefront</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">storefront</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Sobre seu Negócio</h2>
                                 <p class="text-muted text-base md:text-lg font-medium">Como seus clientes conhecerão seu restaurante?</p>
@@ -115,7 +115,7 @@
                          <div class="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">groups</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">groups</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Sua Equipe</h2>
                                 <p class="text-muted font-medium">Selecione quais funções operam no seu restaurante (nós criaremos os cargos para você).</p>
@@ -125,49 +125,49 @@
                                 <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasWaiters" [class.border-strong]="!data.hasWaiters" [class.bg-brand/5]="data.hasWaiters">
                                     <input type="checkbox" [(ngModel)]="data.hasWaiters" class="hidden">
                                     <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasWaiters" [class.border-brand/30]="data.hasWaiters">
-                                        <span class="material-symbols-outlined text-2xl">person_apron</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">person_apron</span>
                                     </div>
                                     <div>
                                         <h3 class="font-bold text-lg text-title">Garçons</h3>
                                         <p class="text-xs text-muted font-medium">Atendimento nas mesas</p>
                                     </div>
-                                    @if(data.hasWaiters) { <span class="material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                    @if(data.hasWaiters) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
                                 </label>
 
                                 <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasKitchen" [class.border-strong]="!data.hasKitchen" [class.bg-brand/5]="data.hasKitchen">
                                     <input type="checkbox" [(ngModel)]="data.hasKitchen" class="hidden">
                                     <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasKitchen" [class.border-brand/30]="data.hasKitchen">
-                                        <span class="material-symbols-outlined text-2xl">skillet</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">skillet</span>
                                     </div>
                                     <div>
                                         <h3 class="font-bold text-lg text-title">Cozinheiros</h3>
                                         <p class="text-xs text-muted font-medium">Produção e KDS</p>
                                     </div>
-                                    @if(data.hasKitchen) { <span class="material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                    @if(data.hasKitchen) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
                                 </label>
 
                                 <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasDrivers" [class.border-strong]="!data.hasDrivers" [class.bg-brand/5]="data.hasDrivers">
                                     <input type="checkbox" [(ngModel)]="data.hasDrivers" class="hidden">
                                     <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasDrivers" [class.border-brand/30]="data.hasDrivers">
-                                        <span class="material-symbols-outlined text-2xl">two_wheeler</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">two_wheeler</span>
                                     </div>
                                     <div>
                                         <h3 class="font-bold text-lg text-title">Entregadores</h3>
                                         <p class="text-xs text-muted font-medium">Delivery próprio</p>
                                     </div>
-                                    @if(data.hasDrivers) { <span class="material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                    @if(data.hasDrivers) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
                                 </label>
 
                                 <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasCashiers" [class.border-strong]="!data.hasCashiers" [class.bg-brand/5]="data.hasCashiers">
                                     <input type="checkbox" [(ngModel)]="data.hasCashiers" class="hidden">
                                     <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasCashiers" [class.border-brand/30]="data.hasCashiers">
-                                        <span class="material-symbols-outlined text-2xl">point_of_sale</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">point_of_sale</span>
                                     </div>
                                     <div>
                                         <h3 class="font-bold text-lg text-title">Caixas</h3>
                                         <p class="text-xs text-muted font-medium">Pagamentos e fechamento</p>
                                     </div>
-                                    @if(data.hasCashiers) { <span class="material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                    @if(data.hasCashiers) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
                                 </label>
                             </div>
                         </div>
@@ -178,7 +178,7 @@
                          <div class="max-w-xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">table_restaurant</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">table_restaurant</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Ambiente Físico</h2>
                                 <p class="text-muted text-base md:text-lg font-medium">Configure seu primeiro salão de atendimento.</p>
@@ -206,7 +206,7 @@
                          <div class="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">soup_kitchen</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">soup_kitchen</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Estações de Produção</h2>
                                 <p class="text-muted font-medium">Defina onde os pedidos serão preparados. Isso cria as telas do KDS.</p>
@@ -217,18 +217,18 @@
                                     <div class="flex gap-3 group">
                                         <input type="text" [(ngModel)]="data.stations[$index]" class="flex-1 bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all shadow-inner group-hover:border-brand/50" placeholder="Nome da Estação">
                                         @if(data.stations.length > 1) {
-                                            <button (click)="removeStation($index)" class="p-4 bg-danger/10 text-danger rounded-2xl hover:bg-danger hover:text-white transition-colors border border-danger/20"><span class="material-symbols-outlined">delete</span></button>
+                                            <button (click)="removeStation($index)" class="p-4 bg-danger/10 text-danger rounded-2xl hover:bg-danger hover:text-white transition-colors border border-danger/20"><span translate="no" class="notranslate material-symbols-outlined">delete</span></button>
                                         }
                                     </div>
                                 }
                                 <br>
                                 <button (click)="addStation()" class="text-brand font-bold hover:text-brand-light flex items-center gap-2 mt-4 transition-colors">
-                                    <span class="material-symbols-outlined">add_circle</span> Adicionar outra estação
+                                    <span translate="no" class="notranslate material-symbols-outlined">add_circle</span> Adicionar outra estação
                                 </button>
                             </div>
                             
                             <div class="mt-10 p-5 bg-brand/5 border border-brand/20 rounded-2xl text-sm text-title font-medium flex gap-3 shadow-inner">
-                                <span class="material-symbols-outlined text-brand">lightbulb</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-brand">lightbulb</span>
                                 <p>Dica: Se você tem bar e cozinha separados, crie duas estações: "Cozinha" e "Bar".</p>
                             </div>
                         </div>
@@ -239,7 +239,7 @@
                          <div class="max-w-3xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">restaurant_menu</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">restaurant_menu</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Montar Cardápio Básico</h2>
                                 <p class="text-muted font-medium">Adicione alguns itens para começar. Você pode editar tudo depois.</p>
@@ -262,7 +262,7 @@
                                         </button>
                                     }
                                     <button (click)="addCategory()" class="px-4 py-2.5 bg-surface/50 rounded-full hover:bg-surface-elevated text-title border border-dashed border-strong font-bold text-sm flex items-center gap-1 transition-colors">
-                                        <span class="material-symbols-outlined text-[18px]">add</span> Categoria
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">add</span> Categoria
                                     </button>
                                 </div>
 
@@ -292,7 +292,7 @@
                                                             <input type="number" [(ngModel)]="item.price" placeholder="0.00" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all group-hover:border-brand/50 shadow-inner">
                                                         </div>
                                                         <div class="col-span-2 flex justify-end">
-                                                            <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-3 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"><span class="material-symbols-outlined">delete</span></button>
+                                                            <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-3 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"><span translate="no" class="notranslate material-symbols-outlined">delete</span></button>
                                                         </div>
                                                     </div>
                                                 }
@@ -303,7 +303,7 @@
                                                 @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
                                                     <div class="bg-surface p-5 rounded-2xl border border-strong relative shadow-sm">
                                                         <button (click)="removeItem(selectedCategoryIndex(), $index)" class="absolute top-3 right-3 text-muted hover:text-danger p-1 transition-colors">
-                                                            <span class="material-symbols-outlined text-sm">close</span>
+                                                            <span translate="no" class="notranslate material-symbols-outlined text-sm">close</span>
                                                         </button>
                                                         <div class="space-y-4 pt-1">
                                                             <div>
@@ -320,7 +320,7 @@
                                             </div>
 
                                             <button (click)="addItemToCategory(selectedCategoryIndex())" class="w-full py-4 bg-surface border-2 border-dashed border-strong rounded-xl text-title font-bold hover:border-brand hover:text-brand transition-colors text-sm mt-6 flex items-center justify-center gap-2 group">
-                                                <span class="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform">add</span> Adicionar Produto nesta Categoria
+                                                <span translate="no" class="notranslate material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform">add</span> Adicionar Produto nesta Categoria
                                             </button>
                                         </div>
                                     </div>
@@ -343,7 +343,7 @@
                                     <label class="block text-sm font-bold text-title mb-2 ml-1">Merchant ID (Opcional)</label>
                                     <input type="text" [(ngModel)]="data.ifoodMerchantId" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-lg placeholder-muted transition-all shadow-inner group-hover:border-red-500/50" placeholder="Ex: e7364b-...">
                                 </div>
-                                <p class="text-xs text-muted mt-3 ml-1 font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">info</span> Pode ser configurado depois via Portal do Parceiro.</p>
+                                <p class="text-xs text-muted mt-3 ml-1 font-medium flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">info</span> Pode ser configurado depois via Portal do Parceiro.</p>
                             </div>
                             
                             <button (click)="nextStep()" class="text-muted hover:text-title font-bold underline transition-colors">Pular esta etapa por enquanto</button>
@@ -355,7 +355,7 @@
                          <div class="max-w-lg mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
                             <div class="mb-8">
                                 <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span class="material-symbols-outlined text-4xl text-brand">admin_panel_settings</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">admin_panel_settings</span>
                                 </div>
                                 <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Acesso de Gerente</h2>
                                 <p class="text-muted text-base md:text-lg font-medium">Crie seu perfil operacional. Este PIN será usado para autorizar cancelamentos e abrir o caixa.</p>
@@ -382,7 +382,7 @@
                                 <div class="absolute inset-0 border-4 border-subtle rounded-full"></div>
                                 <div class="absolute inset-0 border-4 border-brand rounded-full border-t-transparent animate-spin"></div>
                                 <div class="absolute inset-0 flex items-center justify-center bg-brand/10 rounded-full m-2 shadow-[0_0_30px_rgba(var(--brand-primary),0.3)]">
-                                    <span class="material-symbols-outlined text-5xl text-brand animate-pulse">settings</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-5xl text-brand animate-pulse">settings</span>
                                 </div>
                             </div>
                             <h2 class="text-4xl font-black mb-4 text-title tracking-tight">Preparando a cozinha...</h2>
@@ -390,7 +390,7 @@
                             
                             <div class="mt-10 p-4 bg-surface rounded-2xl border border-strong shadow-inner min-w-[250px]">
                                 <p class="text-sm font-bold text-brand animate-pulse flex items-center justify-center gap-2">
-                                    <span class="material-symbols-outlined text-[18px]">sync</span> {{ loadingStatus() }}
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">sync</span> {{ loadingStatus() }}
                                 </p>
                             </div>
                         </div>
@@ -402,16 +402,16 @@
             @if(currentStep() > 0 && currentStep() < 8) {
                 <div class="flex justify-between items-center p-6 md:px-10 border-t border-subtle bg-surface-elevated/80 backdrop-blur-xl z-20">
                     <button (click)="prevStep()" class="text-muted hover:text-title font-bold flex items-center gap-2 px-5 py-3 rounded-2xl hover:bg-surface transition-all active:scale-95 group">
-                        <span class="material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
+                        <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
                     </button>
                     
                     @if(currentStep() === 7) {
                         <button (click)="finish()" [disabled]="!isStepValid()" class="bg-success hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
-                            Finalizar Setup <span class="material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
+                            Finalizar Setup <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
                         </button>
                     } @else {
                         <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
-                            Próximo <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                            Próximo <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                         </button>
                     }
                 </div>

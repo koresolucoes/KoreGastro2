@@ -3,18 +3,18 @@
     <!-- Header -->
     <div class="p-5 border-b border-subtle flex justify-between items-center bg-surface-elevated rounded-t-2xl">
       <h3 class="text-xl font-bold text-title flex items-center gap-2">
-        <span class="material-symbols-outlined text-brand">featured_play_list</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand">featured_play_list</span>
         Resgatar Prêmio de Fidelidade
       </h3>
       <button (click)="closeModal.emit()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
-        <span class="material-symbols-outlined">close</span>
+        <span translate="no" class="notranslate material-symbols-outlined">close</span>
       </button>
     </div>
 
     @if(customer(); as cust) {
         <div class="p-5 bg-surface-elevated border-b border-subtle flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-3xl text-brand/50">account_circle</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand/50">account_circle</span>
                 <div>
                   <p class="text-title font-bold text-lg">{{ cust.name }}</p>
                   <p class="text-sm font-medium text-muted tracking-wide uppercase">Cliente Associado</p>
@@ -49,9 +49,9 @@
                                 [class.bg-surface-elevated]="!reward.canRedeem"
                                 [class.text-muted]="!reward.canRedeem">
                                 @if(isRedeeming() === reward.id) {
-                                    <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined animate-spin text-lg">progress_activity</span>
                                 } @else {
-                                    <span class="material-symbols-outlined text-lg">redeem</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-lg">redeem</span>
                                     <span>Resgatar</span>
                                 }
                             </button>
@@ -60,14 +60,14 @@
                 </ul>
             } @else {
                 <div class="flex flex-col items-center justify-center text-center py-10 opacity-70">
-                    <span class="material-symbols-outlined text-5xl text-muted mb-3">card_membership</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-3">card_membership</span>
                     <p class="text-muted font-medium">Nenhum prêmio de fidelidade configurado ou ativo no momento.</p>
                 </div>
             }
         </div>
     } @else {
         <div class="flex-1 p-6 flex flex-col items-center justify-center bg-surface-elevated">
-             <span class="material-symbols-outlined text-5xl text-muted mb-3 opacity-50">person_off</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-3 opacity-50">person_off</span>
              <p class="text-center text-muted font-semibold tracking-wide">Nenhum cliente associado a este pedido.</p>
         </div>
     }

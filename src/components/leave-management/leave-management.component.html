@@ -6,7 +6,7 @@
       <p class="text-muted mt-1 text-sm">Gerencie férias, folgas e faltas da sua equipe.</p>
     </div>
     <button (click)="openAddModal()" class="btn-primary font-bold py-3 px-6 rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-brand/20 active:scale-95">
-      <span class="material-symbols-outlined text-[20px]">add_notes</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">add_notes</span>
       <span>Lançar Ausência</span>
     </button>
   </div>
@@ -28,7 +28,7 @@
   <div class="space-y-4">
     @if (currentList().length === 0) {
       <div class="text-center py-20 w-full flex flex-col items-center justify-center opacity-80 bg-surface-elevated rounded-3xl border border-subtle border-dashed shadow-sm">
-        <span class="material-symbols-outlined text-5xl text-muted mb-4">event_available</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted mb-4">event_available</span>
         <p class="text-xl font-bold text-title title-display">Tudo certo por aqui!</p>
         <p class="text-muted text-sm mt-1">Nenhuma solicitação nesta categoria.</p>
       </div>
@@ -41,7 +41,7 @@
               <div class="flex items-center gap-3 mt-1.5">
                   <span class="text-[10px] font-bold uppercase tracking-widest text-brand px-2 py-1 bg-brand/10 rounded-lg">{{ request.request_type }}</span>
                   <span class="text-xs text-muted font-medium data-mono flex items-center gap-1.5">
-                      <span class="material-symbols-outlined text-[16px]">calendar_month</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[16px]">calendar_month</span>
                       {{ formatDateRange(request.start_date, request.end_date) }}
                   </span>
               </div>
@@ -65,7 +65,7 @@
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <h3 class="text-xl font-bold text-title title-display">{{ editingRequest() ? 'Editar Ausência' : 'Lançar Ausência' }}</h3>
         <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-8 space-y-6 bg-app">
@@ -104,7 +104,7 @@
       <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-end gap-3 bg-surface-elevated/50 shadow-lg">
          <button (click)="closeModal()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Cancelar</button>
          <button (click)="saveRequest()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center justify-center gap-2">
-             <span class="material-symbols-outlined text-[18px]">save</span> Salvar
+             <span translate="no" class="notranslate material-symbols-outlined text-[18px]">save</span> Salvar
          </button>
       </div>
     </div>

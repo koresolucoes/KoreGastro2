@@ -13,7 +13,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div class="chef-surface p-8 rounded-[32px] border border-danger/30 shadow-[0_0_30px_rgba(var(--accent-danger-rgb),0.05)] group hover:border-danger/50 transition-all relative overflow-hidden">
         <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-           <span class="material-symbols-outlined text-danger text-6xl">money_off</span>
+           <span translate="no" class="notranslate material-symbols-outlined text-danger text-6xl">money_off</span>
         </div>
         <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3 relative z-10 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-danger animate-pulse"></span>
@@ -23,7 +23,7 @@
       </div>
       <div class="chef-surface p-8 rounded-[32px] border border-warning/30 shadow-[0_0_30px_rgba(var(--accent-warning-rgb),0.05)] group hover:border-warning/50 transition-all relative overflow-hidden">
          <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-           <span class="material-symbols-outlined text-warning text-6xl">remove_shopping_cart</span>
+           <span translate="no" class="notranslate material-symbols-outlined text-warning text-6xl">remove_shopping_cart</span>
         </div>
         <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3 relative z-10 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-warning"></span>
@@ -33,7 +33,7 @@
       </div>
       <div class="chef-surface p-8 rounded-[32px] border border-info/30 shadow-[0_0_30px_rgba(var(--accent-info-rgb),0.05)] group hover:border-info/50 transition-all relative overflow-hidden">
          <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-           <span class="material-symbols-outlined text-info text-6xl">receipt_long</span>
+           <span translate="no" class="notranslate material-symbols-outlined text-info text-6xl">receipt_long</span>
         </div>
         <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3 relative z-10 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-info"></span>
@@ -48,7 +48,7 @@
       <div class="p-8 border-b border-subtle bg-surface-elevated/40 backdrop-blur-md flex justify-between items-center">
         <div class="flex items-center gap-4">
              <div class="w-12 h-12 bg-danger/10 rounded-xl flex items-center justify-center text-danger border border-danger/20 shadow-inner">
-               <span class="material-symbols-outlined text-2xl">policy</span>
+               <span translate="no" class="notranslate material-symbols-outlined text-2xl">policy</span>
              </div>
              <div>
                 <h3 class="text-xl font-black text-title title-display tracking-tight leading-none">Log de Auditoria Crítica</h3>
@@ -60,7 +60,7 @@
       @if (reportData().length === 0) {
         <div class="flex flex-col items-center justify-center py-20 bg-surface-elevated/10">
           <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong shadow-inner">
-             <span class="material-symbols-outlined text-muted/30 text-4xl">verified_user</span>
+             <span translate="no" class="notranslate material-symbols-outlined text-muted/30 text-4xl">verified_user</span>
           </div>
           <p class="text-xs font-black text-title tracking-tight mb-1">Nenhum evento crítico registrado.</p>
           <p class="text-[10px] font-medium text-muted uppercase tracking-widest">A operação ocorreu sem cancelamentos na faixa selecionada.</p>
@@ -90,7 +90,7 @@
                   <td class="px-8 py-6">
                       <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg bg-surface border border-strong flex items-center justify-center text-muted">
-                          <span class="material-symbols-outlined text-base">badge</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-base">badge</span>
                         </div>
                         <span class="font-black text-title title-display tracking-tight">{{ row.cancelledBy }}</span>
                       </div>
@@ -106,7 +106,7 @@
                     <div class="flex flex-col space-y-1">
                         <p class="text-title font-black text-sm tracking-tight"><span class="text-muted mr-1">{{ row.quantity }}x</span> {{ row.itemName }}</p>
                         <div class="flex items-center gap-2 text-[10px] font-medium text-muted uppercase tracking-widest">
-                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">table_restaurant</span> {{ row.tableNumber || 'Balcão' }}</span>
+                            <span class="flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[12px]">table_restaurant</span> {{ row.tableNumber || 'Balcão' }}</span>
                             <span class="w-1 h-1 bg-strong rounded-full"></span>
                             <span class="font-mono tracking-tighter">ID: #{{ row.orderId.slice(0,6) }}</span>
                         </div>
@@ -114,7 +114,7 @@
                   </td>
                   <td class="px-8 py-6 max-w-[200px]">
                       <div class="flex items-start gap-2">
-                        <span class="material-symbols-outlined text-muted/40 text-sm mt-0.5">format_quote</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-muted/40 text-sm mt-0.5">format_quote</span>
                         <p class="text-xs text-muted/80 font-medium italic truncate group-hover:whitespace-normal group-hover:text-clip transition-all duration-300">{{ row.reason || 'Sem justificativa obrigatória' }}</p>
                       </div>
                   </td>

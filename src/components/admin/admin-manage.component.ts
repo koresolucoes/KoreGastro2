@@ -31,9 +31,9 @@ import { SystemAdminService } from '../../services/system-admin.service';
             class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             @if(isLoading()) {
-              <span class="material-symbols-outlined animate-spin text-sm">sync</span>
+              <span translate="no" class="notranslate material-symbols-outlined animate-spin text-sm">sync</span>
             } @else {
-              <span class="material-symbols-outlined text-sm">person_add</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-sm">person_add</span>
             }
             Adicionar
           </button>
@@ -69,7 +69,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
                 <td class="p-4 text-right">
                   @if(admin.email !== 'koresoluciones@outlook.com') {
                     <button (click)="removeAdmin(admin.email)" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Remover acesso">
-                      <span class="material-symbols-outlined text-sm">delete</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span>
                     </button>
                   }
                 </td>

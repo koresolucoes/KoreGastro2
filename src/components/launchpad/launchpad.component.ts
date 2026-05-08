@@ -42,13 +42,13 @@ interface LaunchpadCategory {
               Bem-vindo ao <span class="bg-gradient-to-r from-brand to-indigo-500 bg-clip-text text-transparent drop-shadow-sm">ChefOS</span>
             </h1>
             <p class="text-muted text-sm font-medium flex items-center gap-2">
-              <span class="material-symbols-outlined text-base">person</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-base">person</span>
               {{ activeEmployee()?.name }}
             </p>
           </div>
           
           <a routerLink="/admin" class="hidden sm:inline-flex items-center gap-2 text-xs font-black text-muted hover:text-white transition-all uppercase tracking-widest bg-surface px-5 py-3 rounded-full border border-strong shadow-sm hover:shadow-brand/20 hover:-translate-y-1 hover:bg-brand">
-            <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">admin_panel_settings</span>
             Painel Admin
           </a>
         </header>
@@ -65,7 +65,7 @@ interface LaunchpadCategory {
             [class.border-strong]="selectedCategory() !== 'all'"
             [class.hover:border-subtle]="selectedCategory() !== 'all'"
             (click)="selectedCategory.set('all')">
-            <span class="material-symbols-outlined text-[18px]">apps</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">apps</span>
             Todos os Apps
           </button>
           
@@ -80,7 +80,7 @@ interface LaunchpadCategory {
               [class.border-strong]="selectedCategory() !== category.id"
               [class.hover:border-subtle]="selectedCategory() !== category.id"
               (click)="selectedCategory.set(category.id)">
-              <span class="material-symbols-outlined text-[18px]">{{ category.icon }}</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-[18px]">{{ category.icon }}</span>
               {{ category.title }}
             </button>
           }
@@ -92,7 +92,7 @@ interface LaunchpadCategory {
           <div class="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
             @if (selectedCategory() === 'all') {
               <h2 class="text-sm font-black text-muted uppercase tracking-widest pl-2 mb-4 flex items-center gap-2">
-                 <span class="material-symbols-outlined">{{ category.icon }}</span> {{ category.title }}
+                 <span translate="no" class="notranslate material-symbols-outlined">{{ category.icon }}</span> {{ category.title }}
               </h2>
             }
             <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 md:gap-5">
@@ -101,7 +101,7 @@ interface LaunchpadCategory {
                    title="{{ item.description }}"
                    class="group relative bg-surface-elevated/60 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-strong hover:bg-surface-elevated hover:border-brand/40 shadow-sm transition-all duration-200 hover:-translate-y-1 flex flex-col items-center justify-start text-center overflow-hidden active:scale-95">
                   <div [class]="'w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110 shadow-inner relative z-10 shrink-0 ' + item.color">
-                    <span class="material-symbols-outlined text-2xl sm:text-[28px] text-white drop-shadow-md">{{ item.icon }}</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-2xl sm:text-[28px] text-white drop-shadow-md">{{ item.icon }}</span>
                   </div>
                   <h3 class="text-[10px] sm:text-[11px] md:text-xs font-bold text-title group-hover:text-brand transition-colors leading-tight line-clamp-2">{{ item.name }}</h3>
                 </a>
@@ -112,7 +112,7 @@ interface LaunchpadCategory {
 
         @if (activeCategories().length === 0) {
           <div class="text-center py-20 bg-surface-elevated/80 backdrop-blur-md border border-subtle rounded-[2rem] shadow-inner">
-            <span class="material-symbols-outlined text-6xl text-muted mb-4 opacity-50 drop-shadow-sm">lock</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted mb-4 opacity-50 drop-shadow-sm">lock</span>
             <p class="text-muted text-lg font-bold tracking-tight">Você não tem permissões para acessar nenhuma funcionalidade.</p>
           </div>
         }
@@ -121,7 +121,7 @@ interface LaunchpadCategory {
       <!-- Mobile Admin button -->
       <div class="sm:hidden absolute bottom-6 right-6 z-20">
          <a routerLink="/admin" class="flex items-center justify-center w-14 h-14 bg-surface border border-strong shadow-lg rounded-full text-muted hover:text-white hover:bg-brand transition-colors">
-            <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-2xl">admin_panel_settings</span>
          </a>
       </div>
     </div>

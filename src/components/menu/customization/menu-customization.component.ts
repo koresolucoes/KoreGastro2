@@ -17,11 +17,11 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
               <img [src]="recipe()?.image_url" [alt]="recipe()?.name" class="w-full h-full object-cover" referrerpolicy="no-referrer">
             } @else {
               <div class="w-full h-full flex items-center justify-center bg-surface-elevated text-muted">
-                <span class="material-symbols-outlined !text-6xl">restaurant</span>
+                <span translate="no" class="notranslate material-symbols-outlined !text-6xl">restaurant</span>
               </div>
             }
             <button (click)="close.emit()" class="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-white transition-colors">
-              <span class="material-symbols-outlined">close</span>
+              <span translate="no" class="notranslate material-symbols-outlined">close</span>
             </button>
           </div>
 
@@ -71,7 +71,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
                       </div>
                       <div class="ml-4 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200"
                            [class]="isOptionSelected(option.id) ? 'bg-brand text-on-brand shadow-lg shadow-brand/20' : 'bg-surface-elevated text-transparent'">
-                        <span class="material-symbols-outlined !text-sm font-bold">check</span>
+                        <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">check</span>
                       </div>
                     </button>
                   }
@@ -82,7 +82,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
             <!-- Notes -->
             <div class="space-y-3">
               <div class="flex items-center gap-2 text-title font-bold mb-1">
-                <span class="material-symbols-outlined text-muted">notes</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-muted">notes</span>
                 <h3>Observações</h3>
               </div>
               <textarea (input)="updateNotes($event)"
@@ -97,7 +97,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
                     [disabled]="!isValid()"
                     class="w-full py-4 px-6 bg-brand disabled:opacity-50 text-on-brand rounded-2xl font-bold flex items-center justify-between transition-all duration-300 enabled:hover:opacity-90 enabled:active:scale-[0.98] shadow-xl group">
               <span class="flex items-center gap-3">
-                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">shopping_bag</span>
+                <span translate="no" class="notranslate material-symbols-outlined group-hover:translate-x-1 transition-transform">shopping_bag</span>
                 {{ isValid() ? 'Adicionar ao carrinho' : 'Selecione os itens obrigatórios' }}
               </span>
               <span class="text-lg">{{ totalPrice() | currency : 'BRL' }}</span>

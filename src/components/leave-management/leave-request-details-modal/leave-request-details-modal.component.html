@@ -8,7 +8,7 @@
             <p class="text-sm font-bold uppercase tracking-widest text-muted mt-1">{{ req.employees?.name }}</p>
         </div>
         <button (click)="close.emit()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       
@@ -24,7 +24,7 @@
         
         @if(req.reason) {
             <div>
-                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">chat</span> Justificativa do Funcionário</h4>
+                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">chat</span> Justificativa do Funcionário</h4>
                 <p class="text-body bg-surface border border-strong p-4 rounded-xl italic shadow-sm relative overflow-hidden">
                     <span class="absolute left-0 top-0 bottom-0 w-1 bg-brand/50"></span>
                     "{{ req.reason }}"
@@ -35,15 +35,15 @@
         <!-- Attachment -->
         @if(req.attachment_url) {
             <div>
-                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">attachment</span> Anexo</h4>
+                <h4 class="text-[11px] font-black text-muted uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">attachment</span> Anexo</h4>
                 <div class="bg-surface border border-strong p-4 rounded-xl shadow-sm">
                     @if(isImage()) {
                         <img [src]="req.attachment_url" alt="Anexo da solicitação" class="max-h-80 w-auto rounded-lg mx-auto shadow-md border border-subtle">
                     } @else {
                         <div class="flex items-center justify-center gap-4 py-8">
-                            <span class="material-symbols-outlined text-5xl text-muted">description</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted">description</span>
                             <a [href]="req.attachment_url" target="_blank" rel="noopener noreferrer" class="btn-primary px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 shadow-sm active:scale-95 transition-all">
-                                <span class="material-symbols-outlined text-[18px]">download</span> Baixar Anexo
+                                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">download</span> Baixar Anexo
                             </a>
                         </div>
                     }
@@ -54,7 +54,7 @@
         <!-- Manager Section -->
         @if(req.status === 'Pendente') {
             <div>
-                <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">edit_note</span> Ação do Gestor</h4>
+                <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">edit_note</span> Ação do Gestor</h4>
                 <div>
                     <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Adicionar Observação (Opcional)</label>
                     <textarea 
@@ -68,7 +68,7 @@
             </div>
         } @else if (req.manager_notes) {
             <div>
-                 <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">edit_note</span> Sua Observação</h4>
+                 <h4 class="text-[11px] font-black text-brand uppercase tracking-widest mb-3 ml-1 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">edit_note</span> Sua Observação</h4>
                 <p class="text-body bg-surface border border-strong p-4 rounded-xl shadow-sm">{{ req.manager_notes }}</p>
             </div>
         }
@@ -78,9 +78,9 @@
       <div class="p-6 bg-surface-elevated border-t border-subtle flex justify-end gap-3 shadow-lg">
         <button (click)="close.emit()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-surface text-muted border border-strong hover:text-title hover:border-brand transition-all text-xs">Fechar</button>
         @if(req.status === 'Pendente') {
-            <button (click)="onReject()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white border border-danger/20 transition-all text-xs shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">thumb_down</span> Rejeitar</button>
+            <button (click)="onReject()" class="px-6 py-2.5 font-bold uppercase tracking-widest rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white border border-danger/20 transition-all text-xs shadow-sm flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">thumb_down</span> Rejeitar</button>
             <button (click)="onApprove()" class="btn-primary px-8 py-2.5 font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-brand/20 text-xs flex items-center gap-2">
-                <span class="material-symbols-outlined text-[18px]">thumb_up</span> Aprovar
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">thumb_up</span> Aprovar
             </button>
         }
       </div>

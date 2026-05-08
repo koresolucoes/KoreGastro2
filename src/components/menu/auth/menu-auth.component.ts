@@ -11,7 +11,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-2xl font-black text-title">{{ isLogin() ? 'Acessar Conta' : 'Criar Conta' }}</h2>
         <button (click)="close.emit()" class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-elevated text-muted hover:text-title hover:shadow-sm transition-all border border-transparent hover:border-strong">
-          <span class="material-symbols-outlined">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
         </button>
       </div>
 
@@ -48,7 +48,7 @@ import { CustomerAuthService } from '../../../services/customer-auth.service';
 
         <button (click)="submit()" [disabled]="isLoading()" class="w-full py-4 bg-brand text-on-brand rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-xl shadow-brand/20 disabled:opacity-50">
           @if (isLoading()) {
-            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            <span translate="no" class="notranslate material-symbols-outlined animate-spin">progress_activity</span>
           } @else {
             <span>{{ isLogin() ? 'Entrar' : 'Cadastrar' }}</span>
           }

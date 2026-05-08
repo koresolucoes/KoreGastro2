@@ -64,7 +64,7 @@
         <!-- Status Icons Overlay -->
         @if(table.status === 'PAGANDO') {
              <div class="absolute -top-3 -right-3 bg-info rounded-full p-1.5 shadow-md z-10 animate-bounce border-2 border-surface">
-                <span class="material-symbols-outlined text-white text-sm drop-shadow-sm">payments</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-white text-sm drop-shadow-sm">payments</span>
              </div>
         }
 
@@ -87,10 +87,10 @@
   <div class="space-y-4 md:hidden pb-24 mt-2">
     <div class="flex justify-between items-center bg-surface-elevated rounded-2xl p-4 sticky top-0 z-10 border border-subtle shadow-sm blur-backdrop">
       <h3 class="text-lg font-black text-title flex items-center gap-2">
-          <span class="material-symbols-outlined text-warning">edit</span> Editar layout
+          <span translate="no" class="notranslate material-symbols-outlined text-warning">edit</span> Editar layout
       </h3>
       <button (click)="addTable()" class="px-4 py-2 font-bold rounded-xl text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 transition-colors shadow-sm flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm">add</span> Add
+        <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span> Add
       </button>
     </div>
     @if (localTables().length > 0) {
@@ -98,7 +98,7 @@
         @for(table of localTables(); track table.id) {
           <li class="flex items-center justify-between bg-surface border border-subtle shadow-sm p-4 rounded-2xl">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-brand opacity-60 text-2xl">table_restaurant</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-60 text-2xl">table_restaurant</span>
               <div class="flex flex-col">
                   <label class="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Número</label>
                   <input 
@@ -110,10 +110,10 @@
             </div>
             <div class="flex gap-2">
               <button (click)="toggleTableShape(table.id, $event)" class="p-3 text-muted bg-surface-elevated hover:bg-surface border border-strong rounded-xl transition-all shadow-sm active:scale-95" title="Mudar Formato">
-                <span class="material-symbols-outlined">{{ table.shape === 'circle' ? 'circle' : 'square' }}</span>
+                <span translate="no" class="notranslate material-symbols-outlined">{{ table.shape === 'circle' ? 'circle' : 'square' }}</span>
               </button>
               <button (click)="deleteTable(table.id, $event)" class="p-3 text-danger bg-danger/5 hover:bg-danger/10 border border-transparent hover:border-danger/30 rounded-xl transition-all shadow-sm active:scale-95" title="Deletar Mesa">
-                <span class="material-symbols-outlined">delete</span>
+                <span translate="no" class="notranslate material-symbols-outlined">delete</span>
               </button>
             </div>
           </li>
@@ -121,7 +121,7 @@
       </ul>
     } @else {
       <div class="text-center flex flex-col items-center justify-center p-10 bg-surface border border-dashed border-strong rounded-3xl mt-4 opacity-70">
-          <span class="material-symbols-outlined text-4xl text-muted mb-2">table_restaurant</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">table_restaurant</span>
           <p class="text-muted font-bold text-sm tracking-wide">Nenhuma mesa neste salão.</p>
       </div>
     }
@@ -160,11 +160,11 @@
              [class.rounded-2xl]="table.shape !== 'circle'"></div>
 
         <button (click)="toggleTableShape(table.id, $event)" class="absolute -top-3 -left-3 w-8 h-8 bg-surface-elevated border border-muted text-muted rounded-full flex items-center justify-center hover:bg-warning hover:border-warning hover:text-white z-10 shadow-md transition-all opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100" title="Mudar Formato">
-          <span class="material-symbols-outlined text-sm">{{ table.shape === 'circle' ? 'circle' : 'square' }}</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ table.shape === 'circle' ? 'circle' : 'square' }}</span>
         </button>
 
         <button (click)="deleteTable(table.id, $event)" class="absolute -top-3 -right-3 w-8 h-8 bg-surface-elevated border border-danger text-danger rounded-full flex items-center justify-center hover:bg-danger hover:text-white z-10 shadow-md transition-all opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100">
-          <span class="material-symbols-outlined text-sm">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-sm">close</span>
         </button>
         <div 
             (mousedown)="onResizeStart($event, table)"
@@ -177,10 +177,10 @@
     
     <!-- Edit Mode Controls -->
     <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 p-3 bg-surface border border-subtle rounded-2xl shadow-2xl z-40 backdrop-blur-md">
-         <span class="text-sm font-bold text-title px-2 hidden sm:block uppercase tracking-widest"><span class="material-symbols-outlined text-warning text-sm mr-1 align-middle">edit</span> Modo Edição</span>
+         <span class="text-sm font-bold text-title px-2 hidden sm:block uppercase tracking-widest"><span translate="no" class="notranslate material-symbols-outlined text-warning text-sm mr-1 align-middle">edit</span> Modo Edição</span>
          <div class="h-6 w-px bg-strong hidden sm:block"></div>
          <button (click)="addTable()" class="px-5 py-2.5 font-black text-sm rounded-xl text-white bg-warning hover:bg-warning-hover border border-warning/50 shadow-md flex items-center gap-2 transition-transform active:scale-95">
-            <span class="material-symbols-outlined">add</span> Adicionar Mesa
+            <span translate="no" class="notranslate material-symbols-outlined">add</span> Adicionar Mesa
         </button>
     </div>
   </div>

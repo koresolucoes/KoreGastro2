@@ -10,7 +10,7 @@
         </a>
 
         <a routerLink="/home" routerLinkActive="text-brand" class="hidden md:flex items-center gap-1 text-muted hover:text-title mr-6 transition-colors font-medium">
-          <span class="material-symbols-outlined">home</span>
+          <span translate="no" class="notranslate material-symbols-outlined">home</span>
           <span class="text-sm">Início</span>
         </a>
 
@@ -18,9 +18,9 @@
         <div class="relative hidden md:block mr-6 border-l border-strong pl-4">
             <button (click)="toggleStoreDropdown(); $event.stopPropagation()" 
                     class="flex items-center gap-2 text-sm font-medium text-muted hover:text-title transition-colors focus:outline-none">
-                <span class="material-symbols-outlined text-lg">storefront</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">storefront</span>
                 <span class="max-w-[150px] truncate">{{ unitContextService.activeUnitName() }}</span>
-                <span class="material-symbols-outlined text-sm transition-transform" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-sm transition-transform" [class.rotate-180]="isStoreDropdownOpen()">expand_more</span>
             </button>
 
             <!-- Store Dropdown Panel -->
@@ -31,14 +31,14 @@
                             <button (click)="switchStore(unit.id)" class="w-full text-left px-4 py-2 text-sm hover-surface-elevated flex items-center justify-between group transition-colors text-title">
                                 <span [class.text-brand]="unitContextService.activeUnitId() === unit.id" [class.font-bold]="unitContextService.activeUnitId() === unit.id">{{ unit.name }}</span>
                                 @if(unitContextService.activeUnitId() === unit.id) {
-                                    <span class="material-symbols-outlined text-brand text-xs">check</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-xs">check</span>
                                 }
                             </button>
                         }
                     </div>
                     <div class="border-t border-subtle bg-surface-elevated p-2">
                         <button (click)="openAddStoreModal()" class="w-full flex items-center justify-center gap-2 text-xs font-semibold text-brand hover:opacity-80 py-1.5 rounded-lg transition-colors hover-surface-elevated">
-                            <span class="material-symbols-outlined text-sm">add_business</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">add_business</span>
                             Adicionar / Vincular Loja
                         </button>
                     </div>
@@ -62,10 +62,10 @@
                     @if (item.name === 'iFood' && item.imageUrl) {
                       <img [src]="item.imageUrl" [alt]="item.name" class="h-4 object-contain">
                     } @else {
-                      <span class="material-symbols-outlined text-[18px] opacity-80">{{ item.icon }}</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[18px] opacity-80">{{ item.icon }}</span>
                       <span>{{ item.name }}</span>
                     }
-                    <span class="material-symbols-outlined text-[16px] xl:text-[18px] transition-transform opacity-70" [class.rotate-180]="openDropdown() === item.name">expand_more</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px] xl:text-[18px] transition-transform opacity-70" [class.rotate-180]="openDropdown() === item.name">expand_more</span>
                   </button>
                   <!-- Dropdown Panel -->
                   @if (openDropdown() === item.name) {
@@ -74,7 +74,7 @@
                       @for (child of item.children; track child.path) {
                         <a [routerLink]="child.path" routerLinkActive="bg-brand/10 text-brand" (click)="handleLinkClick()"
                            class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium hover-surface-elevated hover:text-title transition-colors">
-                          <span class="material-symbols-outlined text-[20px]">{{ child.icon }}</span>
+                          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">{{ child.icon }}</span>
                           <span>{{ child.name }}</span>
                         </a>
                       }
@@ -84,7 +84,7 @@
                   <a [routerLink]="item.path" routerLinkActive="bg-brand/10 text-brand"
                      (click)="handleLinkClick()"
                      class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap text-muted hover-surface-elevated hover:text-title transition-all duration-200">
-                    <span class="material-symbols-outlined text-[18px] opacity-80">{{ item.icon || 'star' }}</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px] opacity-80">{{ item.icon || 'star' }}</span>
                      <span>{{ item.name }}</span>
                   </a>
                 }
@@ -98,7 +98,7 @@
       <div class="flex items-center">
         <!-- Theme Toggle -->
         <button (click)="themeService.toggleTheme()" class="hidden md:flex text-muted hover:text-title p-2 rounded-full hover-surface-elevated transition-colors focus:outline-none mr-2" [title]="themeService.currentTheme() === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'">
-            <span class="material-symbols-outlined text-[20px]">
+            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">
                 {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
             </span>
         </button>
@@ -110,7 +110,7 @@
              @if (activeEmployee()?.photo_url; as photoUrl) {
                 <img [src]="photoUrl" alt="Foto do funcionário" class="w-8 h-8 rounded-full object-cover">
              } @else {
-                <span class="material-symbols-outlined text-3xl text-muted">account_circle</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-3xl text-muted">account_circle</span>
              }
           </button>
           <!-- User Dropdown Panel -->
@@ -121,17 +121,17 @@
                 <p class="text-xs text-muted uppercase font-bold tracking-widest mt-0.5">{{ activeEmployee()?.role }}</p>
               </div>
               <a routerLink="/my-profile" (click)="handleLinkClick()" class="flex items-center gap-2 px-4 py-2.5 text-sm text-body font-semibold hover-surface-elevated transition-colors">
-                 <span class="material-symbols-outlined text-[18px]">person</span> Meu Perfil
+                 <span translate="no" class="notranslate material-symbols-outlined text-[18px]">person</span> Meu Perfil
               </a>
               <button (click)="handleShiftAction(); $event.stopPropagation()" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
-                <span class="material-symbols-outlined text-[18px]">schedule</span> {{ shiftButtonState().text }}
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">schedule</span> {{ shiftButtonState().text }}
               </button>
               <button (click)="switchEmployee()" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-body font-semibold hover-surface-elevated transition-colors">
-                <span class="material-symbols-outlined text-[18px]">swap_horiz</span> Trocar Operador
+                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">swap_horiz</span> Trocar Operador
               </button>
               <div class="border-t border-subtle pt-1 mt-1">
                   <button (click)="signOut()" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-danger font-semibold hover-surface-elevated hover:bg-danger/5 transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">logout</span> Sair do Sistema
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">logout</span> Sair do Sistema
                   </button>
               </div>
             </div>
@@ -141,7 +141,7 @@
         <div class="lg:hidden">
           <a routerLink="/home" class="bg-brand/10 inline-flex items-center justify-center p-2 rounded-xl text-brand hover:text-brand hover:bg-brand/20 focus:outline-none border border-brand/20 shadow-sm transition-all active:scale-95">
             <span class="sr-only">Menu Inicial</span>
-            <span class="material-symbols-outlined text-[24px]">apps</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[24px]">apps</span>
           </a>
         </div>
       </div>

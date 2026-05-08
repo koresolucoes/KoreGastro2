@@ -3,7 +3,7 @@
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
       <h1 class="text-3xl font-black text-title title-display flex items-center gap-3">
-        <span class="material-symbols-outlined text-brand text-4xl">book_online</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">book_online</span>
         Gestão de Reservas
       </h1>
       <p class="text-muted mt-1 text-sm font-medium">Veja e gerencie as reservas para o dia selecionado.</p>
@@ -28,7 +28,7 @@
       
       @if (canAddReservation()) {
         <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-2 px-6 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-lg shadow-brand/20 active:scale-95 h-[40px]">
-          <span class="material-symbols-outlined text-sm">add</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
           Nova Reserva
         </button>
       }
@@ -41,7 +41,7 @@
       <!-- Pending Column -->
       <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
         <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-warning mb-4 pb-2 border-b border-warning/30 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[16px]">pending_actions</span> Pendentes ({{ pendingReservations().length }})
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px]">pending_actions</span> Pendentes ({{ pendingReservations().length }})
         </h2>
         <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of pendingReservations(); track reservation.id) {
@@ -50,27 +50,27 @@
                 <div>
                   <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
                   <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-warning">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-warning">group</span>{{ reservation.party_size }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
               <div class="mt-3 pt-3 border-t border-subtle border-dashed text-xs space-y-2">
                 @if(reservation.customer_phone) {
                   <div class="flex items-center gap-2 text-muted">
-                    <span class="material-symbols-outlined text-[14px] opacity-70">call</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">call</span>
                     <span class="font-medium data-mono">{{ reservation.customer_phone }}</span>
                   </div>
                 }
                 @if(reservation.customer_email) {
                   <div class="flex items-center gap-2 text-muted">
-                     <span class="material-symbols-outlined text-[14px] opacity-70">mail</span>
+                     <span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">mail</span>
                     <span class="font-medium truncate">{{ reservation.customer_email }}</span>
                   </div>
                 }
               </div>
               @if(reservation.notes) {
-                <p class="text-[10px] font-bold text-title mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-warning">info</span> "{{ reservation.notes }}"</p>
+                <p class="text-[10px] font-bold text-title mt-3 p-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">info</span> "{{ reservation.notes }}"</p>
               }
               <div class="flex gap-2 mt-4">
                 <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CONFIRMED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-success text-white hover:bg-success-hover transition-all active:scale-95 shadow-md shadow-success/20">Confirmar</button>
@@ -79,7 +79,7 @@
             </div>
           } @empty {
             <div class="flex flex-col items-center justify-center h-48 opacity-40">
-              <span class="material-symbols-outlined text-4xl mb-2 text-muted">inbox</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 text-muted">inbox</span>
               <p class="text-center text-muted font-bold text-sm">Nenhuma pendente.</p>
             </div>
           }
@@ -89,7 +89,7 @@
       <!-- Confirmed Column -->
       <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
         <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-info mb-4 pb-2 border-b border-info/30 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[16px]">check_circle</span> Confirmadas ({{ confirmedReservations().length }})
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px]">check_circle</span> Confirmadas ({{ confirmedReservations().length }})
         </h2>
          <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of confirmedReservations(); track reservation.id) {
@@ -98,16 +98,16 @@
                 <div>
                   <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
                   <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-info">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-info">group</span>{{ reservation.party_size }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
               <div class="mt-3 pt-3 border-t border-subtle border-dashed text-xs space-y-2">
-                @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
-                @if(reservation.customer_email) { <div class="flex items-center gap-2 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
+                @if(reservation.customer_phone) { <div class="flex items-center gap-2 text-muted"><span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
+                @if(reservation.customer_email) { <div class="flex items-center gap-2 text-muted"><span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
               </div>
-              @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-info">info</span> "{{ reservation.notes }}"</p> }
+              @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">info</span> "{{ reservation.notes }}"</p> }
               <div class="flex gap-2 mt-4">
                 <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border-2 border-success text-success transition-all active:scale-95 text-center leading-none">Concluir</button>
                 <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95 text-center leading-none">Cancelar</button>
@@ -115,7 +115,7 @@
             </div>
           } @empty {
             <div class="flex flex-col items-center justify-center h-48 opacity-40">
-              <span class="material-symbols-outlined text-4xl mb-2 text-muted">event_available</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 text-muted">event_available</span>
               <p class="text-center text-muted font-bold text-sm">Nenhuma confirmada.</p>
             </div>
           }
@@ -125,7 +125,7 @@
       <!-- Completed/Cancelled Column -->
       <div class="chef-surface border border-subtle rounded-2xl p-5 flex flex-col hide-scrollbar shadow-sm">
         <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-muted mb-4 pb-2 border-b border-subtle flex items-center gap-2">
-          <span class="material-symbols-outlined text-[16px]">history</span> Finalizadas ({{ completedOrCancelledReservations().length }})
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px]">history</span> Finalizadas ({{ completedOrCancelledReservations().length }})
         </h2>
          <div class="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
           @for (reservation of completedOrCancelledReservations(); track reservation.id) {
@@ -134,15 +134,15 @@
                 <div>
                   <p class="font-black text-base line-through opacity-70" [class.text-title]="reservation.status === 'COMPLETED'" [class.text-danger]="reservation.status === 'CANCELLED'">{{ reservation.customer_name }}</p>
                   <div class="flex items-center gap-4 mt-1 text-xs font-bold text-muted">
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
-                    <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">group</span>{{ reservation.party_size }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
+                    <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">group</span>{{ reservation.party_size }}</span>
                   </div>
                 </div>
               </div>
             </div>
           } @empty {
              <div class="flex flex-col items-center justify-center h-48 opacity-40">
-              <span class="material-symbols-outlined text-4xl mb-2 text-muted">history</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 text-muted">history</span>
               <p class="text-center text-muted font-bold text-sm">Espaço vazio.</p>
             </div>
           }
@@ -156,7 +156,7 @@
         @for (group of groupedOverviewReservations(); track group.date) {
           <div class="chef-surface border border-subtle rounded-3xl p-6 shadow-sm mb-6">
             <h2 class="text-lg font-black uppercase tracking-widest text-title mb-6 border-b border-subtle pb-3 flex items-center gap-3">
-              <span class="material-symbols-outlined text-brand text-2xl">calendar_month</span>
+              <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">calendar_month</span>
               {{ group.date + 'T00:00:00' | date:'fullDate' }}
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -168,8 +168,8 @@
                     <div class="flex-1">
                       <p class="font-black text-title text-lg mb-1" [class.line-through]="reservation.status === 'CANCELLED'" [class.opacity-50]="reservation.status === 'CANCELLED'">{{ reservation.customer_name }}</p>
                       <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
-                        <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">schedule</span> <span class="data-mono">{{ reservation.reservation_time | date:'HH:mm' }}</span></span>
-                        <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">group</span> <span class="data-mono">{{ reservation.party_size }}</span></span>
+                        <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">schedule</span> <span class="data-mono">{{ reservation.reservation_time | date:'HH:mm' }}</span></span>
+                        <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">group</span> <span class="data-mono">{{ reservation.party_size }}</span></span>
                       </div>
                     </div>
                     
@@ -185,10 +185,10 @@
                   </div>
                   
                   <div class="mt-4 pt-4 border-t border-subtle border-dashed text-xs space-y-2 pl-2">
-                    @if(reservation.customer_phone) { <div class="flex items-center gap-3 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
-                    @if(reservation.customer_email) { <div class="flex items-center gap-3 text-muted"><span class="material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
+                    @if(reservation.customer_phone) { <div class="flex items-center gap-3 text-muted"><span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">call</span><span class="font-medium data-mono">{{ reservation.customer_phone }}</span></div> }
+                    @if(reservation.customer_email) { <div class="flex items-center gap-3 text-muted"><span translate="no" class="notranslate material-symbols-outlined text-[14px] opacity-70">mail</span><span class="font-medium truncate">{{ reservation.customer_email }}</span></div> }
                   </div>
-                  @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-3 bg-surface border border-subtle rounded-xl flex items-start gap-2 ml-2 shadow-inner"><span class="material-symbols-outlined text-[14px]">info</span> "{{ reservation.notes }}"</p> }
+                  @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-3 bg-surface border border-subtle rounded-xl flex items-start gap-2 ml-2 shadow-inner"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">info</span> "{{ reservation.notes }}"</p> }
                   
                   <div class="flex gap-2 mt-5 pl-2 relative z-10 transition-opacity">
                     @if (reservation.status === 'PENDING') {
@@ -206,7 +206,7 @@
         }
       } @else {
         <div class="text-center chef-surface border border-subtle flex flex-col justify-center items-center rounded-3xl py-24 opacity-60">
-          <span class="material-symbols-outlined text-6xl text-muted mb-4">search_off</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted mb-4">search_off</span>
           <p class="text-muted font-bold">Nenhuma reserva encontrada para os próximos 15 dias.</p>
         </div>
       }

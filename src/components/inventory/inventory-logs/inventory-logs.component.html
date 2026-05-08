@@ -19,7 +19,7 @@
                       <option [value]="ing.id">{{ ing.name }}</option>
                   }
                </select>
-               <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
+               <span translate="no" class="notranslate absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted pointer-events-none">expand_more</span>
              </div>
         </div>
     </div>
@@ -29,7 +29,7 @@
         <div class="p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md flex items-center justify-between">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center border border-strong shadow-inner">
-                <span class="material-symbols-outlined text-brand text-2xl">history_edu</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">history_edu</span>
               </div>
               <div>
                 <h3 class="font-black text-title title-display text-2xl tracking-tight leading-none">Rastreabilidade de Movimentações</h3>
@@ -55,7 +55,7 @@
             } @else if(logs().length === 0) {
                  <div class="flex flex-col items-center justify-center h-full py-20">
                     <div class="w-20 h-20 bg-surface-elevated rounded-[30px] border border-dashed border-strong flex items-center justify-center mb-6">
-                      <span class="material-symbols-outlined text-muted text-4xl">history_off</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-muted text-4xl">history_off</span>
                     </div>
                     <p class="text-muted font-black uppercase tracking-widest text-sm">Nenhum registro encontrado para estes parâmetros.</p>
                 </div>

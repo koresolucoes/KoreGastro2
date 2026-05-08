@@ -3,11 +3,11 @@
     <div class="bg-surface-elevated rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
       <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface">
         <div>
-          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-muted">receipt_long</span> Detalhes do Pedido</h3>
+          <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">receipt_long</span> Detalhes do Pedido</h3>
           <p class="text-[11px] text-muted font-black tracking-widest uppercase mt-1">#{{ o.ifood_display_id }}</p>
         </div>
         <button (click)="closeModal.emit()" class="p-2 rounded-full text-muted hover:bg-surface-elevated hover:text-title transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
       <div class="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6 bg-surface/30">
@@ -37,7 +37,7 @@
 
         <!-- Items -->
         <div>
-          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">shopping_bag</span> Itens</h4>
+          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted">shopping_bag</span> Itens</h4>
           <ul class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2">
             @for(item of o.order_items; track item.id) {
               <li class="p-3 bg-surface rounded-xl border border-subtle shadow-sm">
@@ -47,7 +47,7 @@
                 </div>
                 @if(item.notes) {
                   <div class="mt-2 pt-2 border-t border-subtle flex gap-2">
-                      <span class="material-symbols-outlined text-[14px] text-warning mt-0.5">edit_note</span>
+                      <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning mt-0.5">edit_note</span>
                       <p class="text-xs italic font-medium text-warning">"{{ item.notes }}"</p>
                   </div>
                 }
@@ -58,7 +58,7 @@
         
         <!-- Payment -->
         <div>
-          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">payments</span> Pagamento</h4>
+          <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted">payments</span> Pagamento</h4>
           <div class="space-y-3 text-sm bg-surface p-4 rounded-xl border border-subtle shadow-sm">
             <div class="flex justify-between items-baseline">
               <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Subtotal</span>
@@ -96,7 +96,7 @@
             </div>
              <div class="pt-3 border-t border-subtle flex justify-between items-center">
                  <div class="flex items-center gap-1.5">
-                     <span class="material-symbols-outlined text-muted text-[16px]">credit_card</span>
+                     <span translate="no" class="notranslate material-symbols-outlined text-muted text-[16px]">credit_card</span>
                      <span class="text-[11px] font-bold uppercase tracking-widest text-muted">{{ o.paymentDetails }}</span>
                  </div>
                 @if(o.changeDue && o.changeDue > 0) {
@@ -108,7 +108,7 @@
 
         @if(o.ifood_dispute_id) {
           <div>
-            <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-warning">warning</span> Disputa</h4>
+            <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-warning">warning</span> Disputa</h4>
             <div class="p-4 rounded-xl border" [class]="o.ifood_dispute_details?.handshakeType === 'AFTER_DELIVERY' ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-warning/10 border-warning/20 text-warning'">
               @if(getDisputeMessage(o); as message) {
                 <p class="text-xs font-bold leading-relaxed">"{{ message }}"</p>
@@ -121,14 +121,14 @@
         
         @if(o.ifood_dispute_id && evidenceImages().length > 0) {
             <div>
-                <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-muted">image</span> Evidências</h4>
+                <h4 class="font-black text-xs uppercase tracking-widest text-title mb-3 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted">image</span> Evidências</h4>
                 <div class="grid grid-cols-3 gap-3">
                     @for(image of evidenceImages(); track image.src) {
                         <div class="aspect-square bg-surface border border-subtle rounded-xl flex items-center justify-center overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                             @if(image.loading) {
-                                <span class="material-symbols-outlined text-muted animate-spin">progress_activity</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-muted animate-spin">progress_activity</span>
                             } @else if (image.error) {
-                                <span class="material-symbols-outlined text-danger text-2xl" title="Erro ao carregar">broken_image</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-danger text-2xl" title="Erro ao carregar">broken_image</span>
                             } @else {
                                 <img [src]="image.src" alt="Evidência" class="w-full h-full object-cover">
                             }
@@ -142,7 +142,7 @@
       <div class="p-5 bg-surface border-t border-subtle flex justify-end gap-3 rounded-b-2xl">
         <button (click)="closeModal.emit()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-surface border border-strong hover:bg-surface-elevated text-title transition-all active:scale-95 shadow-sm">Fechar</button>
         <button (click)="printIfoodOrder()" class="px-5 py-2.5 font-black text-[11px] uppercase tracking-widest rounded-xl bg-brand hover:bg-brand-hover text-white flex items-center gap-2 transition-all active:scale-95 shadow-sm">
-            <span class="material-symbols-outlined text-[16px]">print</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[16px]">print</span>
             Imprimir
         </button>
       </div>

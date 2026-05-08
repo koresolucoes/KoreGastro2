@@ -5,7 +5,7 @@
       <p class="text-muted text-sm mt-1">Crie e gerencie ordens de compra para seus fornecedores.</p>
     </div>
     <button (click)="openAddModal()" class="btn-primary py-3 px-5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
-      <span class="material-symbols-outlined text-[20px]">add</span>
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">add</span>
       <span>Nova Ordem de Compra</span>
     </button>
   </div>
@@ -13,7 +13,7 @@
   <div class="rounded-3xl">
     @if (purchaseOrdersWithDetails().length === 0) {
       <div class="text-center py-20 bg-surface-elevated border border-dashed border-strong rounded-3xl opacity-80 shadow-sm relative overflow-hidden group">
-        <span class="material-symbols-outlined text-muted text-5xl mb-4 group-hover:scale-110 transition-transform">shopping_cart</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-muted text-5xl mb-4 group-hover:scale-110 transition-transform">shopping_cart</span>
         <h3 class="mt-2 text-xl font-bold text-title title-display">Nenhuma ordem de compra encontrada</h3>
         <p class="mt-2 text-sm text-muted font-medium">Crie sua primeira ordem de compra para começar a gerenciar seus pedidos.</p>
       </div>
@@ -64,7 +64,7 @@
                     <button (click)="openEditModal(order)" class="text-xs font-bold uppercase tracking-widest text-brand border border-brand/30 hover:border-brand bg-brand/10 hover:bg-brand hover:text-white px-3 py-2 rounded-xl transition-all shadow-sm flex-1 text-center">Ver / Editar</button>
                     @if(order.status === 'Rascunho') {
                       <button (click)="requestDeleteOrder(order)" class="text-danger font-medium p-2 rounded-xl border border-transparent hover:border-danger hover:bg-danger/10 transition-colors tooltip flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[20px]">delete</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     }
                   </div>
@@ -82,7 +82,7 @@
     <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
         <h3 class="text-xl font-bold text-title title-display">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
-        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors"><span class="material-symbols-outlined text-[20px]">close</span></button>
+        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span></button>
       </div>
       <div class="p-8 flex-1 overflow-y-auto space-y-8 bg-app custom-scrollbar">
         <!-- Order Details -->
@@ -109,12 +109,12 @@
         <!-- Items -->
         <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
           <h4 class="text-lg font-bold text-title mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-brand">inventory_2</span> Itens do Pedido
+            <span translate="no" class="notranslate material-symbols-outlined text-brand">inventory_2</span> Itens do Pedido
           </h4>
           
           @if(orderForm().status === 'Enviada') {
             <div class="mb-5 p-4 bg-info/10 border border-info/30 rounded-xl text-sm text-info flex items-start gap-3">
-              <span class="material-symbols-outlined mt-0.5">info</span>
+              <span translate="no" class="notranslate material-symbols-outlined mt-0.5">info</span>
               <p><strong>Atenção:</strong> A ordem foi enviada. Preencha os custos unitários de cada item conforme a nota fiscal antes de marcar o pedido como "Recebido".</p>
             </div>
           }
@@ -136,7 +136,7 @@
                     <div class="col-span-12 sm:col-span-4 font-bold text-title flex justify-between items-center group-hover:text-brand transition-colors">
                         <span class="truncate">{{item.name}}</span>
                          <button (click)="removeItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors" title="Remover">
-                           <span class="material-symbols-outlined text-[18px]">close</span>
+                           <span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span>
                         </button>
                     </div>
                     
@@ -168,7 +168,7 @@
                           </div>
                         </div>
                         <button (click)="removeItem(item.id)" class="w-8 h-8 hidden sm:flex items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1" title="Remover do Pedido">
-                           <span class="material-symbols-outlined text-[18px]">delete</span>
+                           <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
                         </button>
                     </div>
                     
@@ -183,7 +183,7 @@
           @if(orderForm().status !== 'Recebida') {
             <div class="relative mt-6">
               <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                  <span class="material-symbols-outlined text-muted text-[20px]">search</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-muted text-[20px]">search</span>
               </div>
               <input type="text" [value]="itemSearchTerm()" (input)="itemSearchTerm.set($any($event.target).value)" placeholder="Buscar ingrediente para adicionar..." class="w-full bg-app border-2 border-dashed border-strong focus:border-brand focus:ring-0 outline-none rounded-xl p-3.5 pl-12 text-title placeholder-muted font-medium transition-all shadow-sm">
               
@@ -213,7 +213,7 @@
                       </ul>
                       <div class="border-t border-subtle p-3 text-center bg-surface">
                         <button (click)="openAddIngredientModal()" class="text-xs text-brand hover:text-brand-hover font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mx-auto">
-                           <span class="material-symbols-outlined text-[16px]">add</span> Criar novo ingrediente
+                           <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Criar novo ingrediente
                         </button>
                       </div>
                   </div>
@@ -230,7 +230,7 @@
         </div>
         
          <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
-          <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 ml-1 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">notes</span> Observações Internas</label>
+          <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 ml-1 flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">notes</span> Observações Internas</label>
           <textarea rows="3" (change)="updateOrderFormField('notes', $any($event.target).value)" [value]="orderForm().notes" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-xl p-4 text-body disabled:opacity-50 disabled:cursor-not-allowed resize-y transition-all" placeholder="Adicione instruções para o fornecedor ou para o recebedor na loja..."></textarea>
         </div>
       </div>
@@ -245,7 +245,7 @@
           <button (click)="closeModal()" class="flex-1 md:flex-none px-6 py-3 font-bold rounded-xl text-muted bg-surface hover:text-title hover:bg-surface-elevated uppercase tracking-widest text-xs transition-colors border border-strong">Cancelar</button>
           @if(orderForm().status !== 'Recebida') {
             <button (click)="saveOrder()" class="flex-1 md:flex-none px-8 py-3 font-bold rounded-xl bg-brand hover:bg-brand-hover text-white transition-colors shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-[20px]">save</span> Salvar Pedido
+                <span translate="no" class="notranslate material-symbols-outlined text-[20px]">save</span> Salvar Pedido
             </button>
           }
         </div>
@@ -282,7 +282,7 @@
       </div>
       <div class="p-6 bg-surface-elevated border-t border-subtle flex flex-col gap-3">
         <button (click)="saveNewIngredient()" class="w-full py-4 rounded-xl bg-success hover:bg-success-hover text-white font-bold shadow-md shadow-success/30 flex items-center justify-center gap-2 transition-all active:scale-95 text-xl">
-            <span class="material-symbols-outlined">check_circle</span> Salvar
+            <span translate="no" class="notranslate material-symbols-outlined">check_circle</span> Salvar
         </button>
         <button (click)="closeAddIngredientModal()" class="w-full py-3 text-xs font-bold rounded-xl text-muted hover:text-title hover:bg-surface uppercase tracking-widest transition-colors">Cancelar</button>
       </div>

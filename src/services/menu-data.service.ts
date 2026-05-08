@@ -93,13 +93,21 @@ export class MenuDataService {
   async saveCategory(category: Partial<MenuCategory>): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
-    category.user_id = userId;
+
+    const dbPayload = {
+      id: category.id || undefined,
+      user_id: userId,
+      menu_id: category.menu_id,
+      name: category.name,
+      display_order: category.display_order
+    };
+    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
 
     let result;
     if (category.id) {
-      result = await supabase.from('menu_categories').update(category).eq('id', category.id).eq('user_id', userId);
+      result = await supabase.from('menu_categories').update(dbPayload).eq('id', category.id).eq('user_id', userId);
     } else {
-      result = await supabase.from('menu_categories').insert(category);
+      result = await supabase.from('menu_categories').insert(dbPayload);
     }
     return { success: !result.error, error: result.error };
   }
@@ -132,11 +140,27 @@ export class MenuDataService {
     if (!userId) return { success: false, error: 'No active unit' };
     item.user_id = userId;
 
+    const dbPayload = {
+      id: item.id || undefined,
+      user_id: item.user_id,
+      menu_category_id: item.menu_category_id,
+      recipe_id: item.recipe_id,
+      custom_name: item.custom_name,
+      custom_description: item.custom_description,
+      custom_price: item.custom_price,
+      custom_image_url: item.custom_image_url,
+      display_order: item.display_order,
+      is_active: item.is_active
+    };
+
+    // Remove undefined properties
+    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
+
     let result;
     if (item.id) {
-       result = await supabase.from('menu_items').update(item).eq('id', item.id).eq('user_id', userId);
+       result = await supabase.from('menu_items').update(dbPayload).eq('id', item.id).eq('user_id', userId);
     } else {
-       result = await supabase.from('menu_items').insert(item);
+       result = await supabase.from('menu_items').insert(dbPayload);
     }
     return { success: !result.error, error: result.error };
   }
@@ -152,13 +176,23 @@ export class MenuDataService {
   async saveOption(option: Partial<MenuItemOption>): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
-    option.user_id = userId;
+
+    const dbPayload = {
+      id: option.id || undefined,
+      user_id: userId,
+      menu_item_id: option.menu_item_id,
+      name: option.name,
+      min_choices: option.min_choices,
+      max_choices: option.max_choices,
+      display_order: option.display_order
+    };
+    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
 
     let result;
     if (option.id) {
-       result = await supabase.from('menu_item_option_groups').update(option).eq('id', option.id).eq('user_id', userId);
+       result = await supabase.from('menu_item_option_groups').update(dbPayload).eq('id', option.id).eq('user_id', userId);
     } else {
-       result = await supabase.from('menu_item_option_groups').insert(option);
+       result = await supabase.from('menu_item_option_groups').insert(dbPayload);
     }
     return { success: !result.error, error: result.error };
   }
@@ -174,13 +208,23 @@ export class MenuDataService {
   async saveOptionChoice(choice: Partial<MenuItemOptionChoice>): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
-    choice.user_id = userId;
+
+    const dbPayload = {
+      id: choice.id || undefined,
+      user_id: userId,
+      menu_item_option_id: choice.menu_item_option_id,
+      recipe_id: choice.recipe_id,
+      custom_name: choice.custom_name,
+      additional_price: choice.additional_price,
+      display_order: choice.display_order
+    };
+    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
 
     let result;
     if (choice.id) {
-       result = await supabase.from('menu_item_option_choices').update(choice).eq('id', choice.id).eq('user_id', userId);
+       result = await supabase.from('menu_item_option_choices').update(dbPayload).eq('id', choice.id).eq('user_id', userId);
     } else {
-       result = await supabase.from('menu_item_option_choices').insert(choice);
+       result = await supabase.from('menu_item_option_choices').insert(dbPayload);
     }
     return { success: !result.error, error: result.error };
   }

@@ -40,7 +40,7 @@
           <div class="relative group">
             <label for="email-address" class="sr-only">Endereço de e-mail</label>
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span class="material-symbols-outlined">mail</span>
+              <span translate="no" class="notranslate material-symbols-outlined">mail</span>
             </div>
             <input id="email-address" name="email" type="email" autocomplete="email" required
               [value]="email()" (input)="email.set($any($event.target).value)"
@@ -50,7 +50,7 @@
           <div class="relative group">
             <label for="password" class="sr-only">Senha</label>
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span class="material-symbols-outlined">lock</span>
+              <span translate="no" class="notranslate material-symbols-outlined">lock</span>
             </div>
             <input id="password" name="password" type="password" autocomplete="current-password" required
               [value]="password()" (input)="password.set($any($event.target).value)"
@@ -80,7 +80,7 @@
             </svg>
             Entrando...
           } @else {
-             Entrar <span class="material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">arrow_forward</span>
+             Entrar <span translate="no" class="notranslate material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">arrow_forward</span>
           }
         </button>
       </form>
@@ -95,7 +95,7 @@
         
         <div class="pt-2">
           <a routerLink="/admin" class="inline-flex items-center gap-2 text-[10px] font-black text-muted hover:text-title transition-colors uppercase tracking-widest bg-surface px-4 py-2 rounded-full border border-strong shadow-sm hover:-translate-y-0.5">
-            <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">admin_panel_settings</span>
             Acesso Administrativo
           </a>
         </div>

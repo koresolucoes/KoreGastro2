@@ -40,7 +40,7 @@
           <div class="relative group">
             <label for="email-address" class="sr-only">Endereço de e-mail</label>
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span class="material-symbols-outlined">mail</span>
+              <span translate="no" class="notranslate material-symbols-outlined">mail</span>
             </div>
             <input id="email-address" name="email" type="email" autocomplete="email" required
               [value]="email()" (input)="email.set($any($event.target).value)"
@@ -50,7 +50,7 @@
           <div class="relative group">
             <label for="password" class="sr-only">Senha</label>
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span class="material-symbols-outlined">lock</span>
+              <span translate="no" class="notranslate material-symbols-outlined">lock</span>
             </div>
             <input id="password" name="password" type="password" autocomplete="new-password" required
               [value]="password()" (input)="password.set($any($event.target).value)"
@@ -60,7 +60,7 @@
           <div class="relative group">
             <label for="confirm-password" class="sr-only">Confirme a Senha</label>
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span class="material-symbols-outlined">lock_reset</span>
+              <span translate="no" class="notranslate material-symbols-outlined">lock_reset</span>
             </div>
             <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required
               [value]="confirmPassword()" (input)="confirmPassword.set($any($event.target).value)"
@@ -84,7 +84,7 @@
             </svg>
             Cadastrando...
           } @else {
-             Cadastrar <span class="material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">person_add</span>
+             Cadastrar <span translate="no" class="notranslate material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">person_add</span>
           }
         </button>
       </form>
