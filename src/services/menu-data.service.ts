@@ -94,14 +94,14 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
 
-    const dbPayload = {
+    const dbPayload: any = {
       id: category.id || undefined,
-      user_id: userId,
+      user_id: userId, 
       menu_id: category.menu_id,
       name: category.name,
       display_order: category.display_order
     };
-    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
+    Object.keys(dbPayload).forEach(key => dbPayload[key] === undefined && delete dbPayload[key]);
 
     let result;
     if (category.id) {
@@ -109,6 +109,7 @@ export class MenuDataService {
     } else {
       result = await supabase.from('menu_categories').insert(dbPayload);
     }
+    if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
     return { success: !result.error, error: result.error };
   }
 
@@ -140,9 +141,9 @@ export class MenuDataService {
     if (!userId) return { success: false, error: 'No active unit' };
     item.user_id = userId;
 
-    const dbPayload = {
+    const dbPayload: any = {
       id: item.id || undefined,
-      user_id: item.user_id,
+      user_id: item.user_id, 
       menu_category_id: item.menu_category_id,
       recipe_id: item.recipe_id,
       custom_name: item.custom_name,
@@ -154,7 +155,7 @@ export class MenuDataService {
     };
 
     // Remove undefined properties
-    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
+    Object.keys(dbPayload).forEach(key => dbPayload[key] === undefined && delete dbPayload[key]);
 
     let result;
     if (item.id) {
@@ -162,6 +163,7 @@ export class MenuDataService {
     } else {
        result = await supabase.from('menu_items').insert(dbPayload);
     }
+    if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
     return { success: !result.error, error: result.error };
   }
 
@@ -177,16 +179,18 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
 
-    const dbPayload = {
+    const dbPayload: any = {
       id: option.id || undefined,
-      user_id: userId,
+      user_id: userId, store_id: userId,
       menu_item_id: option.menu_item_id,
       name: option.name,
       min_choices: option.min_choices,
       max_choices: option.max_choices,
-      display_order: option.display_order
+      display_order: option.display_order,
+      
+
     };
-    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
+    Object.keys(dbPayload).forEach(key => dbPayload[key] === undefined && delete dbPayload[key]);
 
     let result;
     if (option.id) {
@@ -194,6 +198,7 @@ export class MenuDataService {
     } else {
        result = await supabase.from('menu_item_option_groups').insert(dbPayload);
     }
+    if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
     return { success: !result.error, error: result.error };
   }
 
@@ -209,16 +214,18 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
 
-    const dbPayload = {
+    const dbPayload: any = {
       id: choice.id || undefined,
-      user_id: userId,
+      user_id: userId, 
       menu_item_option_id: choice.menu_item_option_id,
       recipe_id: choice.recipe_id,
       custom_name: choice.custom_name,
       additional_price: choice.additional_price,
-      display_order: choice.display_order
+      display_order: choice.display_order,
+      
+
     };
-    Object.keys(dbPayload).forEach(key => (dbPayload as any)[key] === undefined && delete (dbPayload as any)[key]);
+    Object.keys(dbPayload).forEach(key => dbPayload[key] === undefined && delete dbPayload[key]);
 
     let result;
     if (choice.id) {
@@ -226,6 +233,7 @@ export class MenuDataService {
     } else {
        result = await supabase.from('menu_item_option_choices').insert(dbPayload);
     }
+    if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
     return { success: !result.error, error: result.error };
   }
 

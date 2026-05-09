@@ -23,9 +23,14 @@
             <div class="text-xs text-muted mt-0.5 capitalize">{{ menu.type }}</div>
           </div>
           
-          <button (click)="editMenu(menu); $event.stopPropagation()" class="text-muted hover:text-muted p-1">
-            <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">edit</mat-icon>
-          </button>
+          <div class="flex items-center">
+            <button (click)="editMenu(menu); $event.stopPropagation()" class="text-muted hover:text-brand p-1.5" title="Editar">
+              <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">edit</mat-icon>
+            </button>
+            <button (click)="deleteMenu(menu); $event.stopPropagation()" class="text-muted hover:text-red-500 p-1.5" title="Excluir">
+              <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">delete</mat-icon>
+            </button>
+          </div>
         </div>
       }
       
@@ -40,12 +45,12 @@
   <!-- Main Content: Active Menu -->
   <div class="flex-1 flex flex-col overflow-hidden">
     @if (activeMenu) {
-      <div class="bg-surface border-b border-subtle px-6 py-4 flex items-center justify-between shadow-sm z-10">
+      <div class="bg-surface border-b border-subtle px-8 py-6 flex items-center justify-between shadow-sm z-10">
         <div>
-          <h1 class="text-2xl font-bold text-title">{{ activeMenu.name }}</h1>
-          <p class="text-sm text-muted">{{ activeMenu.description || 'Sem descrição' }}</p>
+          <h1 class="text-3xl font-bold text-title tracking-tight">{{ activeMenu.name }}</h1>
+          <p class="text-sm text-muted mt-1">{{ activeMenu.description || 'Sem descrição' }}</p>
         </div>
-        <button class="bg-brand text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition flex items-center gap-2 shadow-sm" (click)="newCategory()">
+        <button class="bg-brand text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand/90 transition flex items-center gap-2 shadow-md hover:shadow-lg" (click)="newCategory()">
           <mat-icon class="notranslate" translate="no">add</mat-icon> Nova Categoria
         </button>
       </div>
@@ -60,12 +65,16 @@
                   <mat-icon translate="no" class="notranslate text-muted cursor-move">drag_indicator</mat-icon>
                   {{ category.name }}
                 </h3>
-                <div class="flex gap-2">
-                  <button (click)="editCategory(category)" class="text-muted hover:text-blue-600 p-1 rounded-md transition-colors" title="Editar Categoria">
+                <div class="flex gap-1 md:gap-2 items-center">
+                  <button (click)="editCategory(category)" class="text-muted hover:text-brand p-1.5 rounded-md transition-colors" title="Editar Categoria">
                     <mat-icon translate="no" class="notranslate text-[20px] w-[20px] h-[20px]">edit</mat-icon>
                   </button>
-                  <button (click)="newItem(category.id)" class="bg-surface text-brand hover:bg-brand/10 font-medium px-3 py-1 rounded border border-strong text-sm flex items-center gap-1 shadow-sm transition">
-                    <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">add</mat-icon> Produto
+                  <button (click)="deleteCategory(category)" class="text-muted hover:text-red-500 p-1.5 rounded-md transition-colors" title="Excluir Categoria">
+                    <mat-icon translate="no" class="notranslate text-[20px] w-[20px] h-[20px]">delete</mat-icon>
+                  </button>
+                  <div class="h-6 w-px bg-subtle mx-1"></div>
+                  <button (click)="newItem(category.id)" class="bg-brand text-white hover:bg-brand/90 font-medium px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 shadow-sm transition">
+                    <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">add</mat-icon> <span class="hidden sm:inline">Produto</span>
                   </button>
                 </div>
               </div>
@@ -92,12 +101,15 @@
                         <div class="font-semibold text-title tabular-nums">
                           {{ (item.custom_price ?? item.recipe?.price) | currency:'BRL' }}
                         </div>
-                        <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button (click)="newOption(item.id)" class="text-brand hover:bg-brand/10 px-2 py-1.5 rounded-md border border-transparent transition-all shadow-sm text-xs font-medium flex items-center gap-1">
+                        <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity bg-surface-elevated/50 p-1 rounded-lg">
+                          <button (click)="newOption(item.id)" class="text-brand hover:bg-brand/10 px-2 py-1.5 rounded-md border border-transparent transition-all text-xs font-medium flex items-center gap-1">
                              <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">add_circle_outline</mat-icon> Opção
                           </button>
-                          <button (click)="editItem(item)" class="text-muted hover:text-brand p-1.5 bg-surface-elevated hover:bg-surface rounded-md border border-subtle transition-all shadow-sm">
+                          <button (click)="editItem(item)" class="text-muted hover:text-brand p-1.5 hover:bg-surface-elevated rounded-md transition-all" title="Editar">
                             <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">edit</mat-icon>
+                          </button>
+                          <button (click)="deleteItem(item)" class="text-muted hover:text-red-500 p-1.5 hover:bg-red-50 rounded-md transition-all" title="Excluir">
+                            <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">delete</mat-icon>
                           </button>
                         </div>
                       </div>
@@ -119,11 +131,14 @@
                                    </div>
                                 </div>
                                 <div class="flex items-center gap-1 opacity-100 md:opacity-0 group-hover/option:opacity-100 transition-opacity">
-                                  <button (click)="newChoice(option.id)" title="Adicionar Escolha" class="text-emerald-600 p-1 hover:bg-emerald-100 rounded border border-transparent hover:border-emerald-200 transition">
-                                     <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">add</mat-icon>
+                                  <button (click)="newChoice(option.id)" title="Adicionar Escolha" class="text-emerald-600 p-1.5 hover:bg-emerald-50 rounded transition">
+                                     <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">add</mat-icon>
                                   </button>
-                                  <button (click)="editOption(option)" class="text-muted hover:text-blue-600 p-1 hover:bg-blue-50 rounded border border-transparent hover:border-blue-200 transition">
-                                     <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">edit</mat-icon>
+                                  <button (click)="editOption(option)" title="Editar Grupo" class="text-muted hover:text-brand p-1.5 hover:bg-brand/10 rounded transition">
+                                     <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">edit</mat-icon>
+                                  </button>
+                                  <button (click)="deleteOption(option)" title="Excluir Grupo" class="text-muted hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition">
+                                     <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">delete</mat-icon>
                                   </button>
                                 </div>
                              </div>
@@ -135,11 +150,16 @@
                                        <mat-icon translate="no" class="notranslate text-muted opacity-50 text-[14px] w-[14px] h-[14px]">subdirectory_arrow_right</mat-icon>
                                        {{ choice.custom_name || choice.recipe?.name }}
                                     </span>
-                                    <div class="flex items-center gap-3">
-                                      <span class="text-muted tabular-nums text-xs bg-surface-elevated px-2 py-0.5 rounded font-mono">+{{ choice.additional_price | currency:'BRL' }}</span>
-                                      <button (click)="editChoice(choice)" class="text-muted hover:text-brand p-1 rounded hover:bg-brand/10 opacity-100 md:opacity-0 group-hover/choice:opacity-100 transition">
-                                        <mat-icon translate="no" class="notranslate text-[14px] w-[14px] h-[14px]">edit</mat-icon>
-                                      </button>
+                                    <div class="flex items-center gap-2">
+                                      <span class="text-muted tabular-nums text-xs bg-surface-elevated border border-subtle px-2 py-0.5 rounded-md font-mono">+{{ choice.additional_price | currency:'BRL' }}</span>
+                                      <div class="flex items-center gap-0.5 opacity-100 md:opacity-0 group-hover/choice:opacity-100 transition-opacity">
+                                        <button (click)="editChoice(choice)" class="text-muted hover:text-brand p-1 rounded-md hover:bg-brand/10 transition" title="Editar">
+                                          <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">edit</mat-icon>
+                                        </button>
+                                        <button (click)="deleteChoice(choice)" class="text-muted hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition" title="Excluir">
+                                          <mat-icon translate="no" class="notranslate text-[16px] w-[16px] h-[16px]">delete</mat-icon>
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 }

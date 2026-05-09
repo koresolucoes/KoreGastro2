@@ -74,6 +74,18 @@ export class MenuBuilderComponent implements OnInit {
     this.isEditingMenu.set(true);
   }
 
+  async deleteMenu(menu: Menu) {
+    if (!confirm(`Tem certeza que deseja excluir o cardápio "${menu.name}"? Esta ação não pode ser desfeita e todas as categorias e produtos associados serão perdidos.`)) return;
+    const { success } = await this.menuData.deleteMenu(menu.id!);
+    if (success) {
+      this.toast.show('Cardápio excluído com sucesso!', 'success');
+      if (this.activeMenuId() === menu.id) this.activeMenuId.set(null);
+      await this.loadData();
+    } else {
+      this.toast.show('Erro ao excluir cardápio', 'error');
+    }
+  }
+
   async saveMenu() {
     const data = this.editingMenuData();
     if (!data) return;
@@ -105,6 +117,17 @@ export class MenuBuilderComponent implements OnInit {
     this.isEditingCategory.set(true);
   }
 
+  async deleteCategory(cat: MenuCategory) {
+    if (!confirm(`Tem certeza que deseja excluir a categoria "${cat.name}"? Todos os produtos nela também serão apagados.`)) return;
+    const { success } = await this.menuData.deleteCategory(cat.id!);
+    if (success) {
+      this.toast.show('Categoria excluída com sucesso!', 'success');
+      await this.loadData();
+    } else {
+      this.toast.show('Erro ao excluir categoria', 'error');
+    }
+  }
+
   async saveCategory() {
     const data = this.editingCategoryData();
     if (!data) return;
@@ -133,6 +156,17 @@ export class MenuBuilderComponent implements OnInit {
   editItem(item: MenuItem) {
     this.editingItemData.set({ ...item });
     this.isEditingItem.set(true);
+  }
+
+  async deleteItem(item: MenuItem) {
+    if (!confirm(`Tem certeza que deseja excluir este produto do cardápio?`)) return;
+    const { success } = await this.menuData.deleteItem(item.id!);
+    if (success) {
+      this.toast.show('Produto excluído com sucesso!', 'success');
+      await this.loadData();
+    } else {
+      this.toast.show('Erro ao excluir produto', 'error');
+    }
   }
 
   async saveItem() {
@@ -193,6 +227,17 @@ export class MenuBuilderComponent implements OnInit {
     this.isEditingOption.set(true);
   }
 
+  async deleteOption(option: MenuItemOption) {
+    if (!confirm(`Tem certeza que deseja excluir este grupo de opções?`)) return;
+    const { success } = await this.menuData.deleteOption(option.id!);
+    if (success) {
+      this.toast.show('Grupo de opções excluído com sucesso!', 'success');
+      await this.loadData();
+    } else {
+      this.toast.show('Erro ao excluir grupo de opções', 'error');
+    }
+  }
+
   async saveOption() {
     const data = this.editingOptionData();
     if (!data) return;
@@ -221,6 +266,17 @@ export class MenuBuilderComponent implements OnInit {
   editChoice(choice: MenuItemOptionChoice) {
     this.editingChoiceData.set({ ...choice });
     this.isEditingChoice.set(true);
+  }
+
+  async deleteChoice(choice: MenuItemOptionChoice) {
+    if (!confirm(`Tem certeza que deseja excluir este complemento?`)) return;
+    const { success } = await this.menuData.deleteOptionChoice(choice.id!);
+    if (success) {
+      this.toast.show('Complemento excluído com sucesso!', 'success');
+      await this.loadData();
+    } else {
+      this.toast.show('Erro ao excluir complemento', 'error');
+    }
   }
 
   async saveChoice() {
