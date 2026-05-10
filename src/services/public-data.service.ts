@@ -36,16 +36,16 @@ export class PublicDataService {
     let baseRecipeOptionGroups = recipeIfoodOptionGroups || [];
 
     // Filter "delivery" menus
-    const deliveryMenus = (menus || []).filter(m => {
+    const onlineMenus = (menus || []).filter(m => {
         if (!m.type) return false;
-        return m.type.split(',').map(t => t.trim()).includes('delivery');
+        return m.type.split(',').map((t: string) => t.trim()).includes('online');
     });
 
-    if (deliveryMenus.length === 0) {
+    if (onlineMenus.length === 0) {
         return { recipes: baseRecipes, categories: baseCategories, optionGroups: baseOptionGroups, recipeOptionGroups: baseRecipeOptionGroups };
     }
 
-    const validMenuIds = new Set(deliveryMenus.map(m => m.id));
+    const validMenuIds = new Set(onlineMenus.map(m => m.id));
     const activeMenuCategories = (menuCategories || []).filter(c => validMenuIds.has(c.menu_id));
     const validCatIds = new Set(activeMenuCategories.map(c => c.id));
     
@@ -107,8 +107,8 @@ export class PublicDataService {
                 user_id: virtualR.user_id,
                 name: opt.name,
                 external_code: opt.id,
-                min_required: opt.min_choices,
-                max_allowed: opt.max_choices,
+                min_required: opt.min_choices || 0,
+                max_options: opt.max_choices || 1,
                 sequence: opt.display_order,
                 status: 'AVAILABLE',
                 ifood_options: virtualChoices

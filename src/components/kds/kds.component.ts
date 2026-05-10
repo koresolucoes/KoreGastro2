@@ -249,8 +249,15 @@ export class KdsComponent implements OnInit, OnDestroy {
                 if (isItemCancelled) timerColor = 'text-gray-400';
                 
                 const note = item.notes?.toLowerCase() ?? '';
+                let cleanedNotes = item.notes;
+                if (cleanedNotes) {
+                    cleanedNotes = cleanedNotes.replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '').trim();
+                    if (!cleanedNotes) cleanedNotes = null;
+                }
+                
                 orderItems.push({
                     ...item,
+                    notes: cleanedNotes,
                     elapsedTimeSeconds,
                     timerColor,
                     isLate: !isItemCancelled && elapsedTimeSeconds > prepTimeSecs,

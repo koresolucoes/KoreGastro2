@@ -154,8 +154,8 @@ export class OrderPanelComponent implements OnInit {
             user_id: virtualRecipe.user_id,
             name: opt.name,
             external_code: opt.id,
-            min_required: opt.min_choices,
-            max_allowed: opt.max_choices,
+            min_required: opt.min_choices || 0,
+            max_options: opt.max_choices || 1,
             sequence: opt.display_order,
             status: 'AVAILABLE',
             ifood_options: this.getGroupOptions(opt.id)
@@ -595,6 +595,11 @@ export class OrderPanelComponent implements OnInit {
   closeCustomizationModal() {
     this.isCustomizationModalOpen.set(false);
     this.customizingRecipe.set(null);
+  }
+
+  cleanNotes(notes: string | null | undefined): string {
+      if (!notes) return '';
+      return notes.replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '').trim();
   }
 
   confirmCustomization(event: { options: IfoodOption[], notes: string }) {

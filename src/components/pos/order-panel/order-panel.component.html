@@ -207,9 +207,9 @@
                                                 <span class="text-brand font-black mr-1">{{ item.isGroup ? item.quantity : item.item.quantity }}x</span>
                                                 {{ item.isGroup ? item.recipeName : item.item.name }}
                                             </div>
-                                            @if (item.isGroup ? item.items[0].notes : item.item.notes) {
+                                            @if (cleanNotes(item.isGroup ? item.items[0].notes : item.item.notes)) {
                                                 <div class="text-[10px] text-warning bg-warning/10 px-2 py-1 rounded inline-block font-bold mt-1.5">
-                                                    OBS: {{ item.isGroup ? item.items[0].notes : item.item.notes }}
+                                                    OBS: {{ cleanNotes(item.isGroup ? item.items[0].notes : item.item.notes) }}
                                                 </div>
                                             }
                                             <div class="text-[9px] font-bold tracking-widest text-muted mt-2 uppercase">
@@ -255,10 +255,10 @@
                                 <div class="font-black text-brand text-sm data-mono drop-shadow-sm">{{ (getCartItemPrice(item) * item.quantity) | currency:'BRL' }}</div>
                             </div>
                             
-                            @if (item.notes) {
+                            @if (cleanNotes(item.notes)) {
                                 <div class="text-[10px] text-warning bg-warning/10 px-2 py-1 rounded font-bold mb-3 flex items-start gap-1 w-fit">
                                     <span translate="no" class="notranslate material-symbols-outlined text-[10px] mt-0.5">comment</span>
-                                    {{ item.notes }}
+                                    {{ cleanNotes(item.notes) }}
                                 </div>
                             }
 
