@@ -9,6 +9,8 @@ import { InventoryStateService } from '../../../services/inventory-state.service
 import { PublicDataService } from '../../../services/public-data.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { NotificationService } from '../../../services/notification.service';
+import { MenuDataService } from '../../../services/menu-data.service';
+import { MenuStateService } from '../../../services/menu-state.service';
 import { ManagerAuthModalComponent } from '../../shared/manager-auth-modal/manager-auth-modal.component';
 import { CancellationReasonModalComponent } from '../cancellation-reason-modal/cancellation-reason-modal.component';
 import { MenuCustomizationComponent } from '../../menu/customization/menu-customization.component';
@@ -56,6 +58,8 @@ export class OrderPanelComponent implements OnInit {
   pricingService = inject(PricingService);
   notificationService = inject(NotificationService);
   publicDataService = inject(PublicDataService);
+  menuDataService = inject(MenuDataService);
+  menuStateService = inject(MenuStateService);
 
   // Inputs & Outputs
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
@@ -122,6 +126,9 @@ export class OrderPanelComponent implements OnInit {
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
   ngOnInit() {
+    this.menuDataService.loadAllMenuData().catch(err => {
+      console.error('Failed to load menu data in order panel', err);
+    });
   }
 
   async loadOptionGroups(userId: string) {
@@ -138,11 +145,57 @@ export class OrderPanelComponent implements OnInit {
   }
 
   getRecipeOptionGroups(recipeId: string): IfoodOptionGroup[] {
+    // If it's a Virtual Recipe from Menu Builder, we'll map Menu Options to Ifood structures dynamically
+    const virtualRecipe = this.filteredRecipes().find(r => r.id === recipeId);
+    if (virtualRecipe && virtualRecipe.menu_item_id) {
+        const menuOptions = this.menuStateService.options().filter(o => o.menu_item_id === virtualRecipe.menu_item_id);
+        const mappedGroups: IfoodOptionGroup[] = menuOptions.map(opt => ({
+            id: opt.id,
+            user_id: virtualRecipe.user_id,
+            name: opt.name,
+            external_code: opt.id,
+            min_required: opt.min_choices,
+            max_allowed: opt.max_choices,
+            sequence: opt.display_order,
+            status: 'AVAILABLE',
+            ifood_options: this.getGroupOptions(opt.id)
+        }));
+        return mappedGroups.sort((a,b) => a.sequence - b.sequence);
+    }
+
+    // Fallback: Legacy ifood_option_group relationships
     const relations = this.recipeOptionGroups().filter(r => r.recipe_id === recipeId);
     const groupIds = relations.map(r => r.ifood_option_group_id);
     return this.optionGroups()
       .filter(g => groupIds.includes(g.id))
       .sort((a,b) => a.sequence - b.sequence);
+  }
+
+  // Helper method to also get mapped options for a group
+  getGroupOptions(groupId: string): IfoodOption[] {
+    // Check if groupId is a MenuItemOption
+    const menuOption = this.menuStateService.options().find(o => o.id === groupId);
+    if (menuOption) {
+        const choices = this.menuStateService.optionChoices().filter(c => c.menu_item_option_id === menuOption.id);
+        return choices.map(choice => {
+            const linkedRecipe = choice.recipe_id ? this.recipes().find(r => r.id === choice.recipe_id) : null;
+            return {
+                id: choice.id,
+                user_id: menuOption.user_id || '',
+                ifood_option_group_id: menuOption.id,
+                name: choice.custom_name || linkedRecipe?.name || 'Complemento',
+                external_code: choice.id,
+                price: choice.additional_price,
+                status: (linkedRecipe && linkedRecipe.is_available === false) ? 'UNAVAILABLE' as const : 'AVAILABLE' as const,
+                sequence: choice.display_order,
+                ifood_product_id: linkedRecipe ? linkedRecipe.id : null,
+                hasStock: linkedRecipe ? linkedRecipe.hasStock : true
+            };
+        }).sort((a,b) => a.sequence - b.sequence);
+    }
+    
+    // Fallback legacy global options
+    return []; // Handled inherently elsewhere if needed? Wait... Customization modal loads options how?
   }
 
   hasCustomer = computed(() => !!this.currentOrder()?.customers);
@@ -178,7 +231,29 @@ export class OrderPanelComponent implements OnInit {
       'combos': 'layers',
     };
 
-    return this.recipeState.categories().map(cat => ({
+    // Filter categories to only those that have recipes shown in the current view
+    const pdvMenus = this.menuStateService.menus().filter(menu => {
+      if (!menu.is_active || !menu.type) return false;
+      return menu.type.split(',').map(t => t.trim()).includes('pdv');
+    });
+
+    if (pdvMenus.length > 0) {
+        const validMenuIds = new Set(pdvMenus.map(m => m.id));
+        const menuCategories = this.menuStateService.categories()
+          .filter(c => validMenuIds.has(c.menu_id) && c.is_active)
+          .sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+        
+        return menuCategories.map(cat => ({
+          ...cat,
+          icon: iconMap[cat.name.toLowerCase()] || 'category'
+        }));
+    }
+
+    let allowedCategoryIds = new Set(this.recipeState.categories().map(c => c.id));
+
+    return this.recipeState.categories()
+      .filter(cat => allowedCategoryIds.has(cat.id))
+      .map(cat => ({
       ...cat,
       icon: cat.icon || iconMap[cat.name.toLowerCase()] || 'category'
     }));
@@ -186,8 +261,13 @@ export class OrderPanelComponent implements OnInit {
 
   recipePrices = computed(() => {
     const priceMap = new Map<string, number>();
+    // First map base recipes
     for (const recipe of this.recipes()) {
       priceMap.set(recipe.id, this.pricingService.getEffectivePrice(recipe));
+    }
+    // Then override with filtered / virtual recipes which have custom pricing
+    for (const recipe of this.filteredRecipes()) {
+      priceMap.set(recipe.id, recipe.price);
     }
     return priceMap;
   });
@@ -265,7 +345,46 @@ export class OrderPanelComponent implements OnInit {
   filteredRecipes = computed(() => {
       const category = this.selectedCategory();
       const term = this.recipeSearchTerm().toLowerCase();
-      let recipesToShow = this.recipes().filter(r => !r.is_sub_recipe);
+      
+      const pdvMenus = this.menuStateService.menus().filter(menu => {
+        if (!menu.is_active || !menu.type) return false;
+        return menu.type.split(',').map(t => t.trim()).includes('pdv');
+      });
+
+      let recipesToShow: (Recipe & { menu_item_id?: string })[] = [];
+
+      if (pdvMenus.length > 0) {
+         const validMenuIds = new Set(pdvMenus.map(m => m.id));
+         const menuCategories = this.menuStateService.categories().filter(c => validMenuIds.has(c.menu_id) && c.is_active);
+         const validCatIds = new Set(menuCategories.map(c => c.id));
+         
+         const menuItems = this.menuStateService.items()
+            .filter(i => validCatIds.has(i.menu_category_id) && i.is_active)
+            .sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+            
+         const recipesMap = new Map(this.recipes().map(r => [r.id, r]));
+         
+         recipesToShow = menuItems.map(item => {
+             const baseRecipe = recipesMap.get(item.recipe_id);
+             if (!baseRecipe) return null;
+             
+             const customPrice = (item.custom_price !== null && item.custom_price !== undefined) ? Number(item.custom_price) : this.pricingService.getEffectivePrice(baseRecipe);
+
+             return {
+                 ...baseRecipe,
+                 id: baseRecipe.id, 
+                 menu_item_id: item.id,
+                 category_id: item.menu_category_id,
+                 name: (item.custom_name && item.custom_name.trim() !== '') ? item.custom_name : baseRecipe.name,
+                 description: item.custom_description ?? baseRecipe.description,
+                 price: customPrice,
+                 image_url: item.custom_image_url ?? baseRecipe.image_url
+             } as (Recipe & { menu_item_id?: string });
+         }).filter((r): r is (Recipe & { menu_item_id?: string }) => r !== null);
+         
+      } else {
+         recipesToShow = this.recipes().filter(r => !r.is_sub_recipe);
+      }
       
       if (term) {
         // Spotlight Search: Search across all categories by name OR code

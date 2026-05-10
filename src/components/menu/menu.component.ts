@@ -111,40 +111,34 @@ export class MenuComponent implements OnInit {
   private async loadPublicData(id: string) {
     this.isLoading.set(true);
     try {
+      const virtualMenu = await this.publicData.getPublicVirtualMenu(id);
+      
       const [
         profile,
-        recipes,
-        categories,
         promotions,
         promoRecipes,
         loyalty,
         rewards,
         reservations,
-        groups,
-        recipeGroups,
         stations
       ] = await Promise.all([
         this.publicData.getPublicCompanyProfile(id),
-        this.publicData.getPublicRecipes(id),
-        this.publicData.getPublicCategories(id),
         this.publicData.getPublicPromotions(id),
         this.publicData.getPublicPromotionRecipes(id),
         this.publicData.getPublicLoyaltySettings(id),
         this.publicData.getPublicLoyaltyRewards(id),
         this.publicData.getPublicReservationSettings(id),
-        this.publicData.getPublicOptionGroups(id),
-        this.publicData.getPublicRecipeOptionGroups(id),
         this.publicData.getPublicStations(id)
       ]);
 
       this.companyProfile.set(profile);
-      this.recipes.set(recipes);
-      this.categories.set(categories.sort((a,b) => a.name.localeCompare(b.name)));
+      this.recipes.set(virtualMenu?.recipes || []);
+      this.categories.set(virtualMenu?.categories || []);
       this.loyaltySettings.set(loyalty);
       this.loyaltyRewards.set(rewards);
       this.reservationSettings.set(reservations);
-      this.optionGroups.set(groups);
-      this.recipeOptionGroups.set(recipeGroups);
+      this.optionGroups.set(virtualMenu?.optionGroups || []);
+      this.recipeOptionGroups.set(virtualMenu?.recipeOptionGroups || []);
       this.stations.set(stations);
 
       // Set pricing signals

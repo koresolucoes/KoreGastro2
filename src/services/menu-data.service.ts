@@ -218,7 +218,7 @@ export class MenuDataService {
       id: choice.id || undefined,
       user_id: userId, 
       menu_item_option_id: choice.menu_item_option_id,
-      recipe_id: choice.recipe_id,
+      recipe_id: choice.recipe_id || null,
       custom_name: choice.custom_name,
       additional_price: choice.additional_price,
       display_order: choice.display_order,

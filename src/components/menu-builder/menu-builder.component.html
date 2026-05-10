@@ -1,7 +1,10 @@
-<div class="h-full flex flex-col md:flex-row bg-surface-elevated overflow-hidden">
+<div class="h-full flex flex-row bg-surface-elevated overflow-hidden w-full relative">
   
   <!-- Left Sidebar: Menus List -->
-  <div class="w-full md:w-64 bg-surface border-r border-subtle flex flex-col overflow-y-auto">
+  <div class="w-full md:w-80 bg-surface border-r border-subtle flex-col overflow-y-auto h-full shrink-0"
+       [class.hidden]="activeMenuId() !== null"
+       [class.md:flex]="true"
+       [class.flex]="activeMenuId() === null">
     <div class="p-4 border-b border-subtle flex justify-between items-center bg-surface-elevated">
       <h2 class="font-semibold text-title">Cardápios</h2>
       <button (click)="newMenu()" class="p-1 rounded text-brand hover:bg-brand/10" title="Novo Cardápio">
@@ -19,11 +22,21 @@
           (click)="selectMenu(menu.id)">
           
           <div class="truncate pr-2">
-            <span class="font-medium text-title">{{ menu.name }}</span>
-            <div class="text-xs text-muted mt-0.5 capitalize">{{ menu.type }}</div>
+            <span class="font-medium text-title block">{{ menu.name }}</span>
+            <div class="flex gap-1 mt-1">
+              @if (isMenuActiveFor(menu, 'pdv')) {
+                <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded shadow-sm border border-blue-200">PDV</span>
+              }
+              @if (isMenuActiveFor(menu, 'online')) {
+                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded shadow-sm border border-emerald-200">ONLINE</span>
+              }
+              @if (!isMenuActiveFor(menu, 'pdv') && !isMenuActiveFor(menu, 'online')) {
+                <span class="text-[10px] text-muted px-1 py-0.5 border border-subtle rounded bg-surface">Inativo</span>
+              }
+            </div>
           </div>
           
-          <div class="flex items-center">
+          <div class="flex items-center shrink-0">
             <button (click)="editMenu(menu); $event.stopPropagation()" class="text-muted hover:text-brand p-1.5" title="Editar">
               <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">edit</mat-icon>
             </button>
@@ -43,16 +56,58 @@
   </div>
 
   <!-- Main Content: Active Menu -->
-  <div class="flex-1 flex flex-col overflow-hidden">
+  <div class="flex-1 flex flex-col overflow-hidden w-full h-full"
+       [class.hidden]="activeMenuId() === null"
+       [class.md:flex]="true"
+       [class.flex]="activeMenuId() !== null">
     @if (activeMenu) {
-      <div class="bg-surface border-b border-subtle px-8 py-6 flex items-center justify-between shadow-sm z-10">
-        <div>
-          <h1 class="text-3xl font-bold text-title tracking-tight">{{ activeMenu.name }}</h1>
-          <p class="text-sm text-muted mt-1">{{ activeMenu.description || 'Sem descrição' }}</p>
+      <div class="bg-surface border-b border-subtle px-4 md:px-8 py-4 md:py-6 flex flex-col shadow-sm z-10 w-full shrink-0">
+        
+        <div class="flex items-center gap-2 mb-4 md:hidden">
+          <button class="p-1 -ml-1 text-muted hover:bg-surface-elevated rounded text-sm font-medium flex items-center border border-subtle shadow-sm" (click)="activeMenuId.set(null)">
+            <mat-icon translate="no" class="notranslate text-[18px] w-[18px] h-[18px]">arrow_back</mat-icon> Voltar
+          </button>
         </div>
-        <button class="bg-brand text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand/90 transition flex items-center gap-2 shadow-md hover:shadow-lg" (click)="newCategory()">
-          <mat-icon class="notranslate" translate="no">add</mat-icon> Nova Categoria
-        </button>
+
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div class="flex-1">
+            <h1 class="text-2xl md:text-3xl font-bold text-title tracking-tight">{{ activeMenu.name }}</h1>
+            <p class="text-sm text-muted mt-1">{{ activeMenu.description || 'Sem descrição' }}</p>
+            <div class="flex items-center gap-4 mt-4">
+               <div class="flex items-center gap-2 cursor-pointer group" (click)="toggleMenuActivation(activeMenu, 'pdv')">
+                  <button type="button" 
+                          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                          [class.bg-blue-500]="isMenuActiveFor(activeMenu, 'pdv')"
+                          [class.bg-gray-300]="!isMenuActiveFor(activeMenu, 'pdv')">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          [class.translate-x-5]="isMenuActiveFor(activeMenu, 'pdv')"
+                          [class.translate-x-0]="!isMenuActiveFor(activeMenu, 'pdv')"></span>
+                  </button>
+                  <span class="text-sm font-medium text-title bg-surface-elevated px-2 py-0.5 rounded shadow-sm border border-subtle select-none group-hover:border-strong transition">
+                    Ativo no PDV
+                  </span>
+               </div>
+  
+               <div class="flex items-center gap-2 cursor-pointer group" (click)="toggleMenuActivation(activeMenu, 'online')">
+                  <button type="button" 
+                          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                          [class.bg-emerald-500]="isMenuActiveFor(activeMenu, 'online')"
+                          [class.bg-gray-300]="!isMenuActiveFor(activeMenu, 'online')">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          [class.translate-x-5]="isMenuActiveFor(activeMenu, 'online')"
+                          [class.translate-x-0]="!isMenuActiveFor(activeMenu, 'online')"></span>
+                  </button>
+                  <span class="text-sm font-medium text-title bg-surface-elevated px-2 py-0.5 rounded shadow-sm border border-subtle select-none group-hover:border-strong transition">
+                    Ativo Online
+                  </span>
+               </div>
+            </div>
+            <p class="text-xs text-muted mt-2 max-w-lg hidden md:block">💡 <strong>Dica:</strong> Você pode ativar este mesmo cardápio para as duas origens (PDV e Online) ou ter um cardápio exclusivo para cada uma.</p>
+          </div>
+          <button class="bg-brand text-white md:px-5 px-4 md:py-2.5 py-2 w-full md:w-auto justify-center rounded-xl font-medium hover:bg-brand/90 transition flex items-center gap-2 shadow-md hover:shadow-lg shrink-0" (click)="newCategory()">
+            <mat-icon class="notranslate" translate="no">add</mat-icon> Nova Categoria
+          </button>
+        </div>
       </div>
 
       <div class="flex-1 overflow-y-auto p-6 bg-surface-elevated">
@@ -206,11 +261,15 @@
 
 <!-- Modal: Edit Menu -->
 @if (isEditingMenu()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-surface rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-      <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-surface-elevated shrink-0">
-        <h3 class="text-lg font-bold text-title">{{ editingMenuData()?.id ? 'Editar Cardápio' : 'Novo Cardápio' }}</h3>
-        <button (click)="cancelMenuEdit()" class="text-muted hover:text-muted transition"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-surface md:rounded-2xl shadow-xl w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md overflow-hidden flex flex-col">
+      <div class="px-4 md:px-6 py-4 border-b border-subtle flex items-center bg-surface-elevated shrink-0 relative">
+        <button (click)="cancelMenuEdit()" class="md:hidden flex items-center text-brand hover:opacity-80 transition gap-1 absolute left-4">
+          <mat-icon class="notranslate text-[20px] w-[20px] h-[20px]" translate="no">arrow_back_ios_new</mat-icon>
+          <span class="text-sm font-medium">Voltar</span>
+        </button>
+        <h3 class="text-lg font-bold text-title mx-auto md:mx-0 w-full text-center md:text-left">{{ editingMenuData()?.id ? 'Editar Cardápio' : 'Novo Cardápio' }}</h3>
+        <button (click)="cancelMenuEdit()" class="hidden md:block text-muted hover:text-brand transition absolute right-6"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
       </div>
       
       <div class="p-6 overflow-y-auto max-h-[80vh]">
@@ -223,21 +282,6 @@
           <div>
             <label class="block text-sm font-medium text-title font-medium mb-1">Descrição (opcional)</label>
             <textarea [(ngModel)]="editingMenuData()!.description" class="w-full px-4 py-2 border border-strong rounded-lg focus:ring-2 focus:ring-brand focus:border-brand transition shadow-sm bg-surface" rows="2" placeholder="Ex: Servido no salão e delivery"></textarea>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-title font-medium mb-1">Tipo</label>
-            <select [(ngModel)]="editingMenuData()!.type" class="w-full px-4 py-2 border border-strong rounded-lg focus:ring-2 focus:ring-brand focus:border-brand transition shadow-sm bg-surface">
-              <option value="pdv">PDV (Salão/Balcão)</option>
-              <option value="delivery">Delivery Proprio</option>
-              <option value="online">Online / QR Code</option>
-              <option value="totem">Totem Autoatendimento</option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-3 bg-surface-elevated p-3 rounded-lg border border-subtle">
-            <input type="checkbox" [(ngModel)]="editingMenuData()!.is_active" id="menuActive" class="w-5 h-5 text-brand border-strong rounded focus:ring-brand">
-            <label for="menuActive" class="font-medium text-title font-medium select-none cursor-pointer">Cardápio Ativo</label>
           </div>
         </div>
       </div>
@@ -252,11 +296,15 @@
 
 <!-- Modal: Edit Category -->
 @if (isEditingCategory()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-surface rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-      <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-surface-elevated shrink-0">
-        <h3 class="text-lg font-bold text-title">{{ editingCategoryData()?.id ? 'Editar Categoria' : 'Nova Categoria' }}</h3>
-        <button (click)="cancelCategoryEdit()" class="text-muted hover:text-muted transition"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-surface md:rounded-2xl shadow-xl w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md overflow-hidden flex flex-col">
+      <div class="px-4 md:px-6 py-4 border-b border-subtle flex items-center bg-surface-elevated shrink-0 relative">
+        <button (click)="cancelCategoryEdit()" class="md:hidden flex items-center text-brand hover:opacity-80 transition gap-1 absolute left-4">
+          <mat-icon class="notranslate text-[20px] w-[20px] h-[20px]" translate="no">arrow_back_ios_new</mat-icon>
+          <span class="text-sm font-medium">Voltar</span>
+        </button>
+        <h3 class="text-lg font-bold text-title mx-auto md:mx-0 w-full text-center md:text-left">{{ editingCategoryData()?.id ? 'Editar Categoria' : 'Nova Categoria' }}</h3>
+        <button (click)="cancelCategoryEdit()" class="hidden md:block text-muted hover:text-brand transition absolute right-6"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
       </div>
       
       <div class="p-6 overflow-y-auto max-h-[80vh]">
@@ -282,11 +330,15 @@
 
 <!-- Modal: Edit Item -->
 @if (isEditingItem()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-surface rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-surface-elevated shrink-0">
-        <h3 class="text-lg font-bold text-title">{{ editingItemData()?.id ? 'Editar Produto' : 'Novo Produto' }}</h3>
-        <button (click)="cancelItemEdit()" class="text-muted hover:text-muted transition"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-surface md:rounded-2xl shadow-xl w-full h-full md:h-auto md:max-h-[90vh] md:max-w-lg overflow-hidden flex flex-col">
+      <div class="px-4 md:px-6 py-4 border-b border-subtle flex items-center bg-surface-elevated shrink-0 relative">
+        <button (click)="cancelItemEdit()" class="md:hidden flex items-center text-brand hover:opacity-80 transition gap-1 absolute left-4">
+          <mat-icon class="notranslate text-[20px] w-[20px] h-[20px]" translate="no">arrow_back_ios_new</mat-icon>
+          <span class="text-sm font-medium">Voltar</span>
+        </button>
+        <h3 class="text-lg font-bold text-title mx-auto md:mx-0 w-full text-center md:text-left">{{ editingItemData()?.id ? 'Editar Produto' : 'Novo Produto' }}</h3>
+        <button (click)="cancelItemEdit()" class="hidden md:block text-muted hover:text-brand transition absolute right-6"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
       </div>
       
       <div class="p-6 overflow-y-auto flex-1">
@@ -383,11 +435,15 @@
 
 <!-- Modal: Edit Option -->
 @if (isEditingOption()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-surface rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-      <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-surface-elevated shrink-0">
-        <h3 class="text-lg font-bold text-title">{{ editingOptionData()?.id ? 'Editar Grupo de Opções' : 'Nova Opção' }}</h3>
-        <button (click)="cancelOptionEdit()" class="text-muted hover:text-muted transition"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-surface md:rounded-2xl shadow-xl w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md overflow-hidden flex flex-col">
+      <div class="px-4 md:px-6 py-4 border-b border-subtle flex items-center bg-surface-elevated shrink-0 relative">
+        <button (click)="cancelOptionEdit()" class="md:hidden flex items-center text-brand hover:opacity-80 transition gap-1 absolute left-4">
+          <mat-icon class="notranslate text-[20px] w-[20px] h-[20px]" translate="no">arrow_back_ios_new</mat-icon>
+          <span class="text-sm font-medium">Voltar</span>
+        </button>
+        <h3 class="text-lg font-bold text-title mx-auto md:mx-0 w-full text-center md:text-left">{{ editingOptionData()?.id ? 'Editar Grupo de Opções' : 'Nova Opção' }}</h3>
+        <button (click)="cancelOptionEdit()" class="hidden md:block text-muted hover:text-brand transition absolute right-6"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
       </div>
       
       <div class="p-6 overflow-y-auto">
@@ -425,35 +481,35 @@
 
 <!-- Modal: Edit Choice -->
 @if (isEditingChoice()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-surface rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-      <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-surface-elevated shrink-0">
-        <h3 class="text-lg font-bold text-title">{{ editingChoiceData()?.id ? 'Editar Escolha' : 'Nova Escolha' }}</h3>
-        <button (click)="cancelChoiceEdit()" class="text-muted hover:text-muted transition"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-surface md:rounded-2xl shadow-xl w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md overflow-hidden flex flex-col">
+      <div class="px-4 md:px-6 py-4 border-b border-subtle flex items-center bg-surface-elevated shrink-0 relative">
+        <button (click)="cancelChoiceEdit()" class="md:hidden flex items-center text-brand hover:opacity-80 transition gap-1 absolute left-4">
+          <mat-icon class="notranslate text-[20px] w-[20px] h-[20px]" translate="no">arrow_back_ios_new</mat-icon>
+          <span class="text-sm font-medium">Voltar</span>
+        </button>
+        <h3 class="text-lg font-bold text-title mx-auto md:mx-0 w-full text-center md:text-left">{{ editingChoiceData()?.id ? 'Editar Escolha' : 'Nova Escolha' }}</h3>
+        <button (click)="cancelChoiceEdit()" class="hidden md:block text-muted hover:text-brand transition absolute right-6"><mat-icon class="notranslate" translate="no">close</mat-icon></button>
       </div>
       
       <div class="p-6 overflow-y-auto">
         <div class="space-y-4">
           
           <div>
-            <label class="block text-sm font-medium text-title font-medium mb-1">Receita da Ficha Técnica (Obrigatório)</label>
+            <label class="block text-sm font-medium text-title font-medium mb-1">Receita da Ficha Técnica (Opcional)</label>
             <select [(ngModel)]="editingChoiceData()!.recipe_id" class="w-full px-4 py-2 border border-strong rounded-lg focus:ring-2 focus:ring-brand focus:border-brand shadow-sm bg-surface disabled:bg-surface-elevated disabled:text-muted" [disabled]="!!editingChoiceData()?.id">
-              <option value="" disabled selected>Selecione a receita vinculada...</option>
+              <option [ngValue]="null" selected>Nenhuma (Apenas texto)</option>
               @for(r of availableRecipes; track r.id) {
                  <option [value]="r.id">{{r.name}}</option>
               }
             </select>
-            @if (availableRecipes.length === 0) {
-              <div class="mt-2 p-3 bg-surface-elevated border border-strong rounded-lg flex items-start gap-2">
-                <mat-icon translate="no" class="notranslate text-brand">warning</mat-icon>
-                <p class="text-sm text-title">Nenhuma ficha técnica disponível. Você precisa criar uma na tela de <a routerLink="/technical-sheets" class="text-brand underline hover:opacity-80">Fichas Técnicas</a> antes das opções ao cardápio.</p>
-              </div>
-            }
+            <p class="text-xs text-muted mt-1">Selecione uma receita apenas se este complemento necessita de controle de estoque.</p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-title font-medium mb-1">Nome Alternativo (Opcional)</label>
-            <input type="text" [(ngModel)]="editingChoiceData()!.custom_name" class="w-full px-4 py-2 border border-strong rounded-lg focus:ring-2 focus:ring-brand focus:border-brand shadow-sm bg-surface" placeholder="Usa nome da receita se vazio">
+            <label class="block text-sm font-medium text-title font-medium mb-1">Nome do Complemento</label>
+            <input type="text" [(ngModel)]="editingChoiceData()!.custom_name" class="w-full px-4 py-2 border border-strong rounded-lg focus:ring-2 focus:ring-brand focus:border-brand shadow-sm bg-surface" placeholder="Obrigatório se não selecionar receita">
+            <p class="text-xs text-muted mt-1">Deixe em branco para usar o nome da receita selecionada.</p>
           </div>
           
           <div>

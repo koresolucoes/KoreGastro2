@@ -6,6 +6,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { MenuDataService } from '../../services/menu-data.service';
 import { MenuStateService } from '../../services/menu-state.service';
 import { ToastService } from '../../services/toast.service';
+import { NotificationService } from '../../services/notification.service';
 import { Menu, MenuCategory, MenuItem, MenuItemOption, MenuItemOptionChoice, Recipe } from '../../models/db.models';
 import { RecipeStateService } from '../../services/recipe-state.service';
 
@@ -22,6 +23,7 @@ export class MenuBuilderComponent implements OnInit {
   public menuState = inject(MenuStateService);
   public recipeState = inject(RecipeStateService);
   private toast = inject(ToastService);
+  private notification = inject(NotificationService);
 
   activeMenuId = signal<string | null>(null);
   activeCategoryId = signal<string | null>(null);
@@ -63,9 +65,58 @@ export class MenuBuilderComponent implements OnInit {
     this.activeCategoryId.set(null);
   }
 
+  isMenuActiveFor(menu: Menu, platform: 'pdv' | 'online'): boolean {
+    if (!menu || !menu.type) return false;
+    return menu.type.split(',').map(t => t.trim()).includes(platform);
+  }
+
+  async toggleMenuActivation(menu: Menu, platform: 'pdv' | 'online') {
+    const isCurrentlyActive = this.isMenuActiveFor(menu, platform);
+
+    if (!isCurrentlyActive) {
+      const confirmMsg = `Tem certeza que deseja ativar o cardápio "${menu.name}" para ${platform.toUpperCase()}?\nQualquer outro cardápio ativado para ${platform.toUpperCase()} será desativado.`;
+      const confirmed = await this.notification.confirm(confirmMsg, 'Ativar Cardápio');
+      if (!confirmed) return;
+
+      const otherActiveMenu = this.menuState.menus().find(m => m.id !== menu.id && this.isMenuActiveFor(m, platform));
+      
+      if (otherActiveMenu) {
+        let newType = otherActiveMenu.type || '';
+        newType = newType.split(',').map(t => t.trim()).filter(t => t && t !== platform).join(',');
+        await this.menuData.saveMenu({ id: otherActiveMenu.id, type: newType });
+      }
+
+      let currentType = menu.type || '';
+      const types = currentType.split(',').map(t => t.trim()).filter(t => t);
+      if (!types.includes(platform)) types.push(platform);
+      
+      const { success } = await this.menuData.saveMenu({ id: menu.id, type: types.join(',') });
+      if (success) {
+        this.toast.show(`Cardápio ativado para ${platform.toUpperCase()}`, 'success');
+        await this.loadData();
+      } else {
+        this.toast.show(`Erro ao ativar cardápio`, 'error');
+      }
+    } else {
+      const confirmed = await this.notification.confirm(`Desativar o cardápio "${menu.name}" para ${platform.toUpperCase()}?`, 'Desativar');
+      if (!confirmed) return;
+
+      let currentType = menu.type || '';
+      const types = currentType.split(',').map(t => t.trim()).filter(t => t && t !== platform);
+      
+      const { success } = await this.menuData.saveMenu({ id: menu.id, type: types.join(',') });
+      if (success) {
+        this.toast.show(`Cardápio desativado para ${platform.toUpperCase()}`, 'success');
+        await this.loadData();
+      } else {
+        this.toast.show(`Erro ao desativar cardápio`, 'error');
+      }
+    }
+  }
+
   // --- Menu ---
   newMenu() {
-    this.editingMenuData.set({ name: '', type: 'online', is_active: true });
+    this.editingMenuData.set({ name: '', type: '', is_active: true });
     this.isEditingMenu.set(true);
   }
   
@@ -75,7 +126,8 @@ export class MenuBuilderComponent implements OnInit {
   }
 
   async deleteMenu(menu: Menu) {
-    if (!confirm(`Tem certeza que deseja excluir o cardápio "${menu.name}"? Esta ação não pode ser desfeita e todas as categorias e produtos associados serão perdidos.`)) return;
+    const confirmed = await this.notification.confirm(`Tem certeza que deseja excluir o cardápio "${menu.name}"? Esta ação não pode ser desfeita e todas as categorias e produtos associados serão perdidos.`, 'Excluir');
+    if (!confirmed) return;
     const { success } = await this.menuData.deleteMenu(menu.id!);
     if (success) {
       this.toast.show('Cardápio excluído com sucesso!', 'success');
@@ -118,7 +170,8 @@ export class MenuBuilderComponent implements OnInit {
   }
 
   async deleteCategory(cat: MenuCategory) {
-    if (!confirm(`Tem certeza que deseja excluir a categoria "${cat.name}"? Todos os produtos nela também serão apagados.`)) return;
+    const confirmed = await this.notification.confirm(`Tem certeza que deseja excluir a categoria "${cat.name}"? Todos os produtos nela também serão apagados.`, 'Excluir');
+    if (!confirmed) return;
     const { success } = await this.menuData.deleteCategory(cat.id!);
     if (success) {
       this.toast.show('Categoria excluída com sucesso!', 'success');
@@ -159,7 +212,8 @@ export class MenuBuilderComponent implements OnInit {
   }
 
   async deleteItem(item: MenuItem) {
-    if (!confirm(`Tem certeza que deseja excluir este produto do cardápio?`)) return;
+    const confirmed = await this.notification.confirm(`Tem certeza que deseja excluir este produto do cardápio?`, 'Excluir');
+    if (!confirmed) return;
     const { success } = await this.menuData.deleteItem(item.id!);
     if (success) {
       this.toast.show('Produto excluído com sucesso!', 'success');
@@ -228,7 +282,8 @@ export class MenuBuilderComponent implements OnInit {
   }
 
   async deleteOption(option: MenuItemOption) {
-    if (!confirm(`Tem certeza que deseja excluir este grupo de opções?`)) return;
+    const confirmed = await this.notification.confirm(`Tem certeza que deseja excluir este grupo de opções?`, 'Excluir');
+    if (!confirmed) return;
     const { success } = await this.menuData.deleteOption(option.id!);
     if (success) {
       this.toast.show('Grupo de opções excluído com sucesso!', 'success');
@@ -269,7 +324,8 @@ export class MenuBuilderComponent implements OnInit {
   }
 
   async deleteChoice(choice: MenuItemOptionChoice) {
-    if (!confirm(`Tem certeza que deseja excluir este complemento?`)) return;
+    const confirmed = await this.notification.confirm(`Tem certeza que deseja excluir este complemento?`, 'Excluir');
+    if (!confirmed) return;
     const { success } = await this.menuData.deleteOptionChoice(choice.id!);
     if (success) {
       this.toast.show('Complemento excluído com sucesso!', 'success');
@@ -282,8 +338,8 @@ export class MenuBuilderComponent implements OnInit {
   async saveChoice() {
     const data = this.editingChoiceData();
     if (!data) return;
-    if (!data.recipe_id) {
-       this.toast.show('Selecione uma receita da ficha técnica!', 'error');
+    if (!data.recipe_id && !data.custom_name) {
+       this.toast.show('Defina um nome ou selecione uma receita!', 'error');
        return;
     }
     this.isEditingChoice.set(false);

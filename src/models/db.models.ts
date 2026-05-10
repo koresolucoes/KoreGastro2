@@ -58,6 +58,7 @@ export interface Recipe {
   hasStock?: boolean;
   yield_quantity?: number; // Furo 4: Rendimento de Receitas
   labor_cost?: number; // Furo 7: Custo de Mão de Obra
+  menu_item_id?: string;
 }
 
 export interface ProductionTask {
@@ -1024,7 +1025,7 @@ export interface MenuItemOption {
 export interface MenuItemOptionChoice {
   id: string;
   menu_item_option_id: string;
-  recipe_id: string;
+  recipe_id?: string;
   custom_name?: string;
   additional_price: number;
   display_order: number;
