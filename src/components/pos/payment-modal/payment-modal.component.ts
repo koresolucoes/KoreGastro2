@@ -16,7 +16,7 @@ import { SettingsStateService } from '../../../services/settings-state.service';
 import { PaymentTerminalManagerService } from '../../../services/payment-terminal/payment-terminal-manager.service';
 import { TerminalConfig } from '../../../services/payment-terminal/payment-terminal.models';
 
-type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição' | 'Cielo Sandbox';
+type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição' | 'Cielo Cartão de Crédito' | 'Cielo LIO' | 'Cielo PIX';
 
 interface ItemGroup {
   id: string;
@@ -367,7 +367,9 @@ export class PaymentModalComponent {
     }
     
     // Terminal Flow
-    if (method === 'Cielo Sandbox') {
+    let cieloDetails: any = null;
+
+    if (method === 'Cielo Cartão de Crédito') {
        const order = this.lastKnownOrder();
        if (!order) return;
        
@@ -375,11 +377,64 @@ export class PaymentModalComponent {
        try {
            const result = await this.cieloService.createCreditCardPayment(paymentAmount, order.id);
            this.terminalStatus.set('APPROVED');
+           const feePercentage = 3.99;
+           cieloDetails = {
+             feePercentage,
+             feeAmount: parseFloat((paymentAmount * (feePercentage / 100)).toFixed(2)),
+             tid: result?.Payment?.Tid,
+             paymentId: result?.Payment?.PaymentId
+           };
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
-           this.notificationService.show('Pagamento autorizado pela Cielo Sandbox', 'success');
+           this.notificationService.show('Pagamento de Crédito autorizado (Cielo Sandbox)', 'success');
        } catch (err: any) {
            this.terminalStatus.set('ERROR');
-           alert('Erro na integração Cielo Sandbox: ' + err.message);
+           alert('Erro na integração Cielo: ' + err.message);
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           return;
+       }
+    } else if (method === 'Cielo PIX') {
+       const order = this.lastKnownOrder();
+       if (!order) return;
+       
+       this.terminalStatus.set('WAITING');
+       try {
+           const result = await this.cieloService.createPixPayment(paymentAmount, order.id);
+           this.terminalStatus.set('APPROVED');
+           const feePercentage = 0.99;
+           cieloDetails = {
+             feePercentage,
+             feeAmount: parseFloat((paymentAmount * (feePercentage / 100)).toFixed(2)),
+             paymentId: result?.Payment?.PaymentId
+           };
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           this.notificationService.show('Pagamento PIX gerado (Cielo Sandbox)', 'success');
+           // Here we could display the QR code returned in result.Payment.QrCodeString
+           alert('PIX Copia e Cola: ' + result.Payment.QrCodeString);
+       } catch (err: any) {
+           this.terminalStatus.set('ERROR');
+           alert('Erro na integração Cielo PIX: ' + err.message);
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           return;
+       }
+    } else if (method === 'Cielo LIO') {
+       const order = this.lastKnownOrder();
+       if (!order) return;
+       
+       this.terminalStatus.set('WAITING');
+       try {
+           await this.cieloService.simulateLioPayment(paymentAmount, order.id);
+           this.terminalStatus.set('APPROVED');
+           const feePercentage = 1.99;
+           cieloDetails = {
+             feePercentage,
+             feeAmount: parseFloat((paymentAmount * (feePercentage / 100)).toFixed(2)),
+             tid: 'LIO-' + Math.floor(Math.random() * 1000000)
+           };
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           this.notificationService.show('Pagamento na Maquininha aprovado (Cielo LIO)', 'success');
+       } catch (err: any) {
+           this.terminalStatus.set('ERROR');
+           alert('Erro na Maquininha Cielo: ' + err.message);
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
            return;
        }
@@ -413,6 +468,9 @@ export class PaymentModalComponent {
     }
 
     const newPayment: PaymentInfo = { method, amount: parseFloat(paymentAmount.toFixed(2)) };
+    if (cieloDetails) {
+        newPayment.cieloDetails = cieloDetails;
+    }
 
     if (this.splitMode() === 'item') {
       const groupId = this.selectedGroupId();

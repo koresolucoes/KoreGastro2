@@ -149,7 +149,7 @@ export class OrderPanelComponent implements OnInit {
     const virtualRecipe = this.filteredRecipes().find(r => r.id === recipeId);
     if (virtualRecipe && virtualRecipe.menu_item_id) {
         const menuOptions = this.menuStateService.options().filter(o => o.menu_item_id === virtualRecipe.menu_item_id);
-        const mappedGroups: IfoodOptionGroup[] = menuOptions.map(opt => ({
+        const mappedGroups = menuOptions.map(opt => ({
             id: opt.id,
             user_id: virtualRecipe.user_id,
             name: opt.name,
@@ -159,7 +159,7 @@ export class OrderPanelComponent implements OnInit {
             sequence: opt.display_order,
             status: 'AVAILABLE',
             ifood_options: this.getGroupOptions(opt.id)
-        }));
+        } as unknown as IfoodOptionGroup));
         return mappedGroups.sort((a,b) => a.sequence - b.sequence);
     }
 
@@ -190,7 +190,7 @@ export class OrderPanelComponent implements OnInit {
                 sequence: choice.display_order,
                 ifood_product_id: linkedRecipe ? linkedRecipe.id : null,
                 hasStock: linkedRecipe ? linkedRecipe.hasStock : true
-            };
+            } as unknown as IfoodOption;
         }).sort((a,b) => a.sequence - b.sequence);
     }
     
@@ -240,7 +240,7 @@ export class OrderPanelComponent implements OnInit {
     if (pdvMenus.length > 0) {
         const validMenuIds = new Set(pdvMenus.map(m => m.id));
         const menuCategories = this.menuStateService.categories()
-          .filter(c => validMenuIds.has(c.menu_id) && c.is_active)
+          .filter(c => validMenuIds.has(c.menu_id))
           .sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
         
         return menuCategories.map(cat => ({
@@ -355,7 +355,7 @@ export class OrderPanelComponent implements OnInit {
 
       if (pdvMenus.length > 0) {
          const validMenuIds = new Set(pdvMenus.map(m => m.id));
-         const menuCategories = this.menuStateService.categories().filter(c => validMenuIds.has(c.menu_id) && c.is_active);
+         const menuCategories = this.menuStateService.categories().filter(c => validMenuIds.has(c.menu_id));
          const validCatIds = new Set(menuCategories.map(c => c.id));
          
          const menuItems = this.menuStateService.items()

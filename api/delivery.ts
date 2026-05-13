@@ -43,6 +43,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.setHeader('X-Deprecated-Endpoint', 'true');
+  response.setHeader('Warning', '199 - "This endpoint is deprecated. Please use /api/v2/deliveries"');
 
   if (request.method === 'OPTIONS') {
     return response.status(204).end();

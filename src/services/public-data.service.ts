@@ -56,7 +56,7 @@ export class PublicDataService {
         name: cat.name,
         description: cat.description || '',
         created_at: new Date().toISOString()
-    } as Category));
+    } as unknown as Category));
 
     const activeMenuItems = (menuItems || []).filter(i => validCatIds.has(i.menu_category_id)).sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
     const recipesMap = new Map((baseRecipes).map(r => [r.id, r]));
@@ -112,7 +112,7 @@ export class PublicDataService {
                 sequence: opt.display_order,
                 status: 'AVAILABLE',
                 ifood_options: virtualChoices
-            } as IfoodOptionGroup);
+            } as unknown as IfoodOptionGroup);
             
             // Add relations so customizer can find it
             baseRecipeOptionGroups.push({

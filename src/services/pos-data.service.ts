@@ -15,7 +15,16 @@ import { UnitContextService } from './unit-context.service';
 import { RecipeStateService } from './recipe-state.service';
 import { AuditDataService } from './audit-data.service';
 
-export type PaymentInfo = { method: string; amount: number };
+export type PaymentInfo = { 
+  method: string; 
+  amount: number; 
+  cieloDetails?: { 
+    feePercentage: number; 
+    feeAmount: number; 
+    tid?: string; 
+    paymentId?: string; 
+  } 
+};
 
 @Injectable({
   providedIn: 'root',
@@ -326,7 +335,27 @@ export class PosDataService {
             throw new Error(rpcResult.message);
         }
 
-        // 2. Atualizar Estoque (Isso ainda fica fora da transação principal por complexidade, mas é menos crítico)
+        // 2. Registra taxas de cartão (ex: Cielo) se houver
+        const feeTransactions = payments
+           .filter(p => p.cieloDetails && p.cieloDetails.feeAmount > 0)
+           .map(p => ({
+              user_id: userId,
+              employee_id: closingEmployeeId,
+              type: 'Despesa',
+              amount: p.cieloDetails!.feeAmount,
+              description: `Taxa Cielo (${p.cieloDetails!.feePercentage}%) ${p.cieloDetails!.tid ? 'TID: ' + p.cieloDetails!.tid : ''} - Pedido #${orderId.substring(0, 8)}`,
+              date: new Date().toISOString(),
+              created_at: new Date().toISOString()
+           }));
+
+        if (feeTransactions.length > 0) {
+            const { error: feeError } = await supabase.from('transactions').insert(feeTransactions);
+            if (feeError) {
+                console.error("Falha ao registrar taxas da Cielo:", feeError);
+            }
+        }
+
+        // 3. Atualizar Estoque (Isso ainda fica fora da transação principal por complexidade, mas é menos crítico)
         // Se falhar aqui, o dinheiro já está no caixa, o que é o mais importante para "não perder venda".
         // A correção de estoque pode ser feita via auditoria depois.
         

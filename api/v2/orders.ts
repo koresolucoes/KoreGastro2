@@ -14,8 +14,15 @@ interface RequestItem {
 }
 
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    // Custom subresource routing for POST
+    // Custom subresource routing for GET
     const { orderId, subresource } = request.query;
+
+    if (request.method === 'GET' && orderId && typeof orderId === 'string' && subresource === 'summary') {
+        await handleGetSummary(request, response, restaurantId, orderId);
+        return;
+    }
+
+    // Custom subresource routing for POST
     if (request.method === 'POST' && orderId && typeof orderId === 'string' && subresource) {
         if (subresource === 'items') {
             await handleAddItems(request, response, restaurantId, orderId);
@@ -111,6 +118,55 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
     }
     await triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
     return res.status(200).json(data);
+}
+
+async function handleGetSummary(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
+    const { data: order, error } = await supabase
+        .from('orders')
+        .select(`
+            id,
+            table_number,
+            status,
+            customers ( name, phone ),
+            order_items ( name, quantity, price, notes )
+        `)
+        .eq('id', orderId)
+        .eq('user_id', restaurantId)
+        .single();
+    
+    if (error) {
+        if (error.code === 'PGRST116') {
+            return res.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
+        }
+        throw error;
+    }
+
+    const items = (order.order_items as any[])?.map((item: any) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.quantity * item.price,
+        notes: item.notes,
+    })) || [];
+
+    const subtotal = items.reduce((acc: number, item: any) => acc + item.total, 0);
+    const serviceFee = subtotal * 0.10; // Standard 10%
+    const total = subtotal + serviceFee;
+    
+    const responsePayload = {
+        orderId: order.id,
+        tableNumber: order.table_number,
+        status: order.status,
+        customer: order.customers,
+        items: items,
+        summary: {
+            subtotal: parseFloat(subtotal.toFixed(2)),
+            serviceFee: parseFloat(serviceFee.toFixed(2)),
+            total: parseFloat(total.toFixed(2)),
+        }
+    };
+    
+    return res.status(200).json(responsePayload);
 }
 
 // --- Subresource Handlers ---

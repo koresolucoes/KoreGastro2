@@ -1,0 +1,653 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ChefOS API V2",
+    "description": "API completa do ecossistema ChefOS para integrações omnichannel, PDVs terceiros e relatórios automatizados.",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://app.chefos.online/api/v2",
+      "description": "Servidor de Produção Principal"
+    },
+    {
+      "url": "https://sandbox.chefos.online/api/v2",
+      "description": "Servidor de Sandbox (Testes)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/halls": {
+      "get": {
+        "summary": "Listar Salões",
+        "description": "Lista todos os salões ou busca um específico.",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subresource",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["tables"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso"
+          }
+        }
+      },
+      "post": {
+        "summary": "Criar Salão",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Salão criado" }
+        }
+      },
+      "patch": {
+        "summary": "Atualizar Salão",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Salão atualizado" } }
+      },
+      "delete": {
+        "summary": "Excluir Salão",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Excluído com Sucesso" } }
+      }
+    },
+    "/tables": {
+      "get": {
+        "summary": "Listar Mesas",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "hallId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Mesa(s) Retornada(s)" } }
+      },
+      "post": {
+        "summary": "Criar Mesa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "number": { "type": "number" },
+                  "hall_id": { "type": "string" },
+                  "x": { "type": "number" },
+                  "y": { "type": "number" },
+                  "width": { "type": "number" },
+                  "height": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Criado" } }
+      },
+      "patch": {
+        "summary": "Atualiza Mesa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": {
+        "summary": "Excluir Mesa",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "Excluido" } }
+      }
+    },
+    "/menu-items": {
+      "get": {
+        "summary": "Listar Itens do Cardápio",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "isAvailable",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": { "200": { "description": "Itens retornados" } }
+      },
+      "patch": {
+        "summary": "Atualizar Item do Cardápio",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "price": { "type": "number" },
+                  "is_available": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Atualizado" } }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "Listar Pedidos",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Usa com subresource=summary para retornar detalhes financeiros"
+          },
+          {
+            "name": "subresource",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["summary"] }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "tableNumber",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Pedidos" } }
+      },
+      "post": {
+        "summary": "Criar Pedido",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "subresource",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["items", "request-payment"] }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "tableNumber": { "type": "number" },
+                  "customerId": { "type": "string" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "externalCode": { "type": "string" },
+                        "quantity": { "type": "number" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Modificado/Criado" } }
+      },
+      "delete": {
+        "summary": "Cancelar Pedido Aberto",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Cancelado" } }
+      }
+    },
+    "/customers": {
+      "get": {
+        "summary": "Lista / Busca Clientes",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Clientes" } }
+      },
+      "post": {
+        "summary": "Criar / Autenticar Cliente",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["login"] }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "restaurantId": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "patch": {
+        "summary": "Modificar Cliente",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "restaurantId": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "summary": "Exclusão do Cliente",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "OK" } }
+      }
+    },
+    "/reservations": {
+      "get": {
+        "summary": "Listar Reservas / Consultar Disponibilidade",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "party_size",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Criar Reserva",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": { "201": { "description": "OK" } }
+      },
+      "patch": {
+        "summary": "Atualizar Status de Reserva",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "summary": "Excluir Reserva",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "204": { "description": "OK" } }
+      }
+    },
+    "/payments": {
+      "post": {
+        "summary": "Finalizar Pagamento de Pedido",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "orderId": { "type": "string" },
+                  "payments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "method": { "type": "string" },
+                        "amount": { "type": "number" }
+                      }
+                    }
+                  },
+                  "tip": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Pagamento processado" } }
+      }
+    },
+    "/deliveries": {
+      "get": {
+        "summary": "Listar Delivery/Driver infos",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["drivers", "orders"] }
+          }
+        ],
+        "responses": { "200": { "description": "Success" } }
+      },
+      "patch": {
+        "summary": "Atualizar Status Delivery ou Atribuir Motorista",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": ["update_status", "assign_driver"]
+                  },
+                  "orderId": { "type": "string" },
+                  "newStatus": {
+                    "type": "string",
+                    "enum": [
+                      "OUT_FOR_DELIVERY",
+                      "ARRIVED_AT_DESTINATION",
+                      "DELIVERED"
+                    ]
+                  },
+                  "employeeId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      }
+    }
+  }
+}

@@ -22,7 +22,7 @@ import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { FormsModule } from '@angular/forms';
 
-type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint';
+type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint' | 'transactions';
 type CashDrawerView = 'movement' | 'closing';
 
 interface CartItem {
@@ -90,6 +90,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   revenueTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Receita'));
   expenseTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Despesa'));
   tipTransactions = computed(() => this.cashierState.transactions().filter(t => t.type === 'Gorjeta'));
+  allTransactions = computed(() => [...this.cashierState.transactions()].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
 
   openingBalance = computed(() => 
     this.cashierState.transactions()

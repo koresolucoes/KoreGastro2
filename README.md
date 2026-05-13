@@ -1,146 +1,111 @@
 # ChefOS - Sistema de Gestão para Restaurantes
 
-**ChefOS** é uma plataforma de gestão para restaurantes completa, moderna e integrada. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução completa para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque, gestão de RH, reservas e análise de desempenho, tudo sincronizado em tempo real.
+**ChefOS** é uma plataforma de gestão para restaurantes completa, moderna e integrada. Desenvolvido com as tecnologias mais recentes, ele oferece uma solução ponta a ponta para otimizar operações, desde o atendimento ao cliente no Ponto de Venda (PDV) até o controle de estoque, gestão de RH, reservas, conciliação financeira e análise de desempenho, tudo sincronizado em tempo real.
 
-O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando inteligência artificial para auxiliar em tarefas complexas como a criação de fichas técnicas e a previsão de compras.
+O sistema foi projetado para ser intuitivo, eficiente e poderoso, incorporando inteligência artificial e integrações multi-plataformas para auxiliar em tarefas complexas, garantindo fluidez e escalabilidade.
 
 ---
 
 ## 🚀 Acesso e Instalação
 
-ChefOS é uma plataforma de gestão completa, com versões disponíveis para **Web**, **Windows** e **Android**, garantindo que você possa gerenciar seu negócio de qualquer lugar.
+ChefOS é uma plataforma omnichannel de gestão completa, com interfaces e endpoints desenhados para rodar na **Web**, **Windows** e **Android**, garantindo que você possa gerenciar seu negócio de qualquer lugar.
 
-Para começar a usar, testar o sistema ou baixar os aplicativos, acesse nosso site oficial:
-
-**[https://app.chefos.online](https://app.chefos.online)**
+Para começar a usar, testar o sistema ou baixar os aplicativos, acesse nosso ambiente de prévias.
 
 ### Como Começar:
 
-- **Cadastro Gratuito:** O registro na plataforma é totalmente gratuito e permite que você explore as funcionalidades do sistema.
-- **Planos Disponíveis:** Para utilizar todos os recursos de forma contínua e gerenciar seu restaurante, é necessário assinar um dos nossos planos flexíveis. Confira os detalhes no site.
-- **Download dos Aplicativos:** Encontre os links para download das versões para desktop (Windows) e mobile (Android) diretamente na nossa página oficial.
+- **Cadastro Gratuito:** O registro inicial na plataforma é gratuito e permite que você explore as funcionalidades de infraestrutura básica do sistema.
+- **Planos Disponíveis:** Para gerenciar seu restaurante utilizando todos os recursos de forma contínua, você pode assinar planos dimensionados à sua operação.
+- **Ecossistema:** Encontre relatórios gerenciais e controle total do ciclo de vida dos seus produtos.
 
 ---
 
-## ✨ Funcionalidades Principais
+## ✨ Funcionalidades Principais e Módulos
 
-O ChefOS é modular e cobre todas as áreas críticas da gestão de um restaurante:
+O ChefOS adota uma arquitetura modular que cobre todas as esferas críticas da administração gastronômica. 
 
-### 🏢 **Multi-Loja e Painel de Administração (Novo!)**
-- **Gestão Centralizada:** Gerencie múltiplas unidades ou franquias com um único login de proprietário.
-- **Painel de Administração:** Acesse métricas globais (MRR, Total de Lojas) e gerencie assinaturas e planos de todos os clientes.
-- **Clonagem e Transferência de Unidade:** Configure novas filiais em segundos clonando categorias, receitas, ingredientes e fichas técnicas de uma unidade "Matriz".
-- **Troca Rápida:** Alterne seu ambiente de gestão local entre as lojas sem necessidade de logout.
-- **Total Segregação de Dados:** Cada loja atua com seu próprio cardápio, estoque local e escala de funcionários.
+### 🏢 **Multi-Loja e Painel de Administração**
+- **Gestão Centralizada:** Gerencie múltiplas unidades ou franquias com um único login de Master Admin.
+- **Painel de Administração Global:** Acesse métricas de faturamento agregado, MRR, Total de Lojas e gerencie faturamento SAAS geral.
+- **Clonagem e Transferência de Unidade:** Configure novas filiais rapidamente clonando categorias, receitas, ingredientes e fichas técnicas de uma unidade modelo ("Matriz").
+- **Troca Contextual Rápida:** Alterne seu ambiente de gestão entre lojas instantaneamente sem realizar logout.
+- **Segregação Rigorosa de Dados:** Cada loja atua com seu próprio cardápio, estoque físico local e escala individual de funcionários.
+
+### 💳 **Gestão Financeira e Integrações de Pagamento (Novo!)**
+- **Integração Omnichannel Cielo:** Pagamentos totalmente integrados ao PDV via API da Cielo nas modalidades **Transações Online (Cartões)**, **Pix Copia e Cola / QR Code** e **TEF via Maquininhas Cielo LIO**.
+- **Gestão Automática de Taxas (MDR):** Cálculo e o desconto direto das taxas e comissões da adquirente (Cielo) a cada nova venda finalizada, abatendo no lançamento final para precisão contábil.
+- **Conciliação e Fluxo de Caixa (Novo):** Visualização consolidada das Receitas (brutas), Despesas (taxas de cartão, sangrias) e Gorjetas, além do histórico das transações diárias geradas no Caixa.
+- **Histórico e Reimpressão de Vendas:** Acesso analítico a todos os cupons não-fiscais e recibos das últimas operações.
 
 ### 📊 **Dashboard Analítico**
-- **Visão Geral em Tempo Real:** Acompanhe os principais indicadores de desempenho (KPIs) do dia assim que você entra no sistema.
-- **Métricas Financeiras Chave:** Vendas totais, **Lucro Bruto**, **Ticket Médio**, mesas ocupadas, contagem de itens com estoque baixo e pedidos pendentes na cozinha.
-- **Gráfico de Vendas vs. CMV:** Análise visual do faturamento contra o custo dos produtos vendidos nos últimos 7 ou 30 dias.
-- **Análises Rápidas:** Rankings com os itens mais vendidos do dia, incluindo a **margem de lucro** individual de cada um.
+- **Visão Geral Dinâmica:** KPI reports na entrada do sistema, rastreando conversões no tempo real.
+- **Métricas Chave de Desempenho:** Venda total bruta x líquida, **Lucro Bruto**, **Ticket Médio**, fluxo das mesas ocupadas, itens com risco de quebra de estoque, e volume da cozinha.
+- **Cockpit DRE & CMV:** Análise gráfica do Faturamento Operacional versus o Custo Real das Mercadorias Vendidas (CMV) ao longo dos últimos dias, com cálculos de depreciação diária.
+- **Rentabilidade por Produto:** Ranking instantâneo com os itens mais vendidos e suas reais **margens de lucro** para ajustes do preço de venda estratégico.
 
-### 🍽️ **PDV (Ponto de Venda)**
-- **Gerenciamento Visual de Mesas:** Crie múltiplos salões e organize as mesas com uma interface de arrastar e soltar (drag-and-drop).
-- **Interface Otimizada e Limpa:** Design recriado focado na usabilidade de caixas de alta velocidade, cartões de produto transparentes, limpos e com alerta visual dinâmico de falta de estoque.
-- **Recibo Inteligente via WhatsApp:** Ao fechar contas, dispare automaticamente resumos de itens, impostos e cupons com uma saudação formal para o WhatsApp do cliente.
-- **Status em Tempo Real:** As cores das mesas mudam instantaneamente (`Livre`, `Ocupada`, `Pagando`), mantendo toda a equipe sincronizada.
-- **Divisão de Custos:** Funcionalidade avançada para parcelar ou ratear a conta na mesa conforme o consumo.
+### 🍽️ **PDV (Ponto de Venda) e Salão**
+- **Gestão Visual de Mesas & Grid:** Planeje setores e organize o salão com um editor Drag-and-Drop dinâmico. Status em tempo real colorizado (`Livre`, `Ocupada`, `Fechamento`).
+- **Comandas Eletrônicas Individuais:** Separação por conta e cliente; atrele clientes individualmente para gerenciar suas comandas e facilitar o rateamento na hora do pagamento.
+- **UX para Alta Velocidade:** PDV rápido focado no toque (touch-friendly), cardápio instantâneo e com alerta de `Falta de Insumos` baseado na requisição do estoque atrás da receita.
+- **Recibo Inteligente via WhatsApp:** Fluxo rápido de envio automático do cupom discriminado com a divisão das contas direto para o celular da mesa.
 
-### 🛵 **Integração Completa com iFood**
-#### KDS Delivery & Gestão de Pedidos
-- **Webhook Bidirecional:** Receba pedidos do iFood diretamente no KDS.
-- **Gestão de Disputas:** Visualize, aceite ou rejeite disputas de cancelamento e reembolso diretamente pelo ChefOS.
-- **Rastreio de Entregadores:** Acompanhe a localização de entregadores parceiros do iFood em tempo real no mapa.
-- **Validação de Código:** Valide códigos de entrega e retirada do iFood.
+### 🛵 **Integração Completa com iFood & Delivery Próprio**
+#### iFood Integrado Bidirecionalmente
+- **Sincronização Reversa e Catálogo Dinâmico:** Carga de produtos automática. Modifique os preços no Ponto de Venda e atualize no iFood ou vice-versa.
+- **KDS Omnichannel de Delivery:** Pedidos iFood (e de fontes externas) chegam unificados à Cozinha/Expedição. Aceite/rejeite disputas, visualize rotas e valide os códigos (entregadores).
+- **Controle de Loja Remotamente:** Pause, abra e gerencie horários de serviço das plataformas pela própria dashboard financeira.
 
-#### Gestor de Loja iFood (Novo!)
-- **Status da Loja:** Abra, feche ou pause sua loja no iFood remotamente.
-- **Pausas Programadas:** Agende interrupções temporárias na operação.
-- **Horário de Funcionamento:** Edite os horários de abertura e fechamento da sua loja no iFood.
+#### Gestor de Motoqueiros e Fluxo Proprietário
+- **Painel Kanban Tático:** Crie cartões drag-and-drop de cada Delivery (`Produção` -> `Em Rota` -> `Entregue`).
+- **Controle de Frota de Retaguarda:** Crie rotas de mapa para entregadores internos com acompanhamento e cobrança detalhada por zona de KM.
 
-#### Cardápio iFood
-- **Sincronização Inteligente:** Envie produtos do ChefOS para o iFood.
-- **Sincronização Automática Reversa (Novo!):** Ao receber um pedido do iFood, o sistema cria automaticamente receitas não mapeadas e sincroniza os preços em tempo real com os valores praticados no iFood.
-- **Gestão de Preços e Disponibilidade:** Altere preços e pause itens no iFood instantaneamente.
-- **Imagens:** Faça upload de fotos para os produtos do iFood diretamente pelo sistema.
+### 📦 **Estoque Inteligente e Fichas Técnicas**
+- **Custeio Rigoroso e CMV na Veia:** Construa composições que deduzem matéria-prima (gr/ml) a cada prato vendido.
+- **Porcionamento e Desossa:** Registre a entrada da caixaria bruta de mercado (Ex: Peça Inteira) e o transforme (Yielding) em porções utilitárias abatendo perdas ou re-aproveitando aparas.
+- **Gestão Híbrida de Ruptura (Requisições):** Subtração diária ou transferências seguras entre 'Almoxarifado Geral', 'Câmeras Frias' e o 'Estoque de Venda - Praça'.
+- **Gerador de Etiquetas PVPS da ANVISA:** Geração PDF de Etiquetas de Lote / Manipulação e Validade para produtos abertos, adequando 100% o restaurante com a vigilância.
+- **Sugestão de Reposição Generativa com AI:** Relatórios do Gemini LLM interpretando a tendência de consumo e gerando listas automáticas de Mercado.
 
-### 📦 **Estoque Avançado e Segurança Alimentar**
-- **Controle de Insumos:** Gerencie ingredientes, custos, unidades, fornecedores e categorias.
-- **Porcionamento (Açougue/Pré-preparo):** Registre a transformação de peças brutas em porções (ex: Peça de Filé -> Medalhões), controlando rendimento, subprodutos e perdas automaticamente.
-- **Requisições (Almoxarifado -> Cozinha):** Fluxo formal de transferência de estoque do Almoxarifado Central para as Estações (Cozinha, Bar), permitindo controle fino de custos por setor.
-- **Etiquetagem ANVISA (Novo!):** Gere e imprima etiquetas de validade (PVPS) para produtos abertos ou manipulados, com cálculo automático de datas e rastreabilidade de lote.
-- **Estoque de Praça:** Visualize o estoque disponível fisicamente em cada estação de trabalho.
-- **Previsão com IA:** Utilize o histórico de vendas para prever compras futuras.
+### 🍳 **Automação KDS (Kitchen Display System)**
+- Pedidos fluem em roteadores digitais (`Bar`, `Parrila`, `Cozinha Fria`) reduzindo o desperdício analógico com comandas de papel.
+- Módulos avançados com "Modo de Expedição (Expo)" separando entrega rápida do despacho real com rastreador de atrasos.
 
-### 🧾 **Emissão Fiscal (NFC-e)**
-- **Integração FocusNFe:** Emissão de Nota Fiscal de Consumidor Eletrônica integrada.
-- **Emissão Simplificada:** Emita a nota fiscal diretamente após o pagamento no PDV ou na tela de Vendas Finalizadas.
-- **Gestão de Documentos:** Visualize DANFE, cancele notas e monitore o status fiscal. Suporte a certificado digital A1.
+### 👥 **Módulo Completo de Recursos Humanos (RH)**
+- **Holerite e Cálculo Trabalhista:** Sistema gerador de folhas, acúmulos por Cargo (ACL), horas noturnas e de domingos/feriados.
+- **Ponto Anti-Fraude com GPS:** Feito para PWA Mobile. Validação geográfica e de Raio Wi-fi na assinatura do Relógio de Ponto diário (Entradas e Saídas).
+- **Escala Smart:** Distribuição de Turnos Visuais (Manhã, Almoço, Madrugada) e Gestão de Ausências Médicas/Féries de colabores centralizada no Gerente.
 
-### 🔌 **Arquitetura de API e Webhooks Ominichannel**
-A nova **API V2 e Webhooks** agora estão padronizados e trazem super-poderes de personalização e integração para sistemas externos:
-- [Consultar Documentação V1 e Webhooks](API.md)
-- [Consultar a Nova API V2](apiv2.md)
-- **Extensível via API V2 REST:** Total controle e CRUD sobre salões temporários (`/halls`), lançamento de comandas fora do site (`/orders`), atualização contínua do estoque e gestão e autenticação de usuários via rotas (`/customers` e `/menu-items`).
-- **Gatilhos em Tempo Real:** Subscrição em Webhooks (ex: `order.created`) para conectar ferramentas externas, ERPs contábeis e sistemas locais de Paging.
-- **Ponto e RH Inteligente:** Consumo e atualização interativa da rotina de folha, gestão de férias e "bater ponto" com restrição de GPS via Endpoints. Cargo ACL altamente granular.
+### 🧾 **Emissão Fiscal Simplificada**
+- Integração `Focus NFe`, enviando a parametrização do SAT e a geração dos comprovantes CFe/NFCe direto ao Governo ao final de todo PDV ou mesa. Suporte a certificado digital A1.
 
-### 🔌 **Arquitetura de API e Webhooks Ominichannel**
-A nova **API V2 e Webhooks** agora estão padronizados e trazem super-poderes de personalização e integração para sistemas externos:
-- [Consultar Documentação V1 e Webhooks](API.md)
-- [Consultar a Nova API V2](apiv2.md)
-- **Extensível via API V2 REST:** Total controle e CRUD sobre salões temporários (`/halls`), lançamento de comandas fora do site (`/orders`), atualização contínua do estoque e gestão e autenticação de usuários via rotas (`/customers` e `/menu-items`).
-- **Gatilhos em Tempo Real:** Subscrição em Webhooks (ex: `order.created`) para conectar ferramentas externas, ERPs contábeis e sistemas locais de Paging.
-- **Ponto e RH Inteligente:** Consumo e atualização interativa da rotina de folha, gestão de férias e "bater ponto" com restrição de GPS via Endpoints. Cargo ACL altamente granular.
-
-### 🍳 **KDS (Kitchen Display System)**
-- **Comandas Digitais:** Envie pedidos diretamente para as estações (Cozinha, Bar).
-- **Timers e Alertas:** Controle visual de atrasos e alertas sonoros para novos pedidos e itens críticos (alergias).
-- **Modo Expo:** Tela para o expedidor organizar a saída dos pratos.
-- **Fluxo de Retenção (Hold):** O sistema segura o preparo de itens rápidos para sincronizar a entrega da mesa.
-
-### 👥 **Recursos Humanos (RH)**
-- **Controle de Ponto:** Registro de entrada, saída e pausas com validação por **Geolocalização** e PIN.
-- **Escalas de Trabalho:** Planejamento visual de turnos semanais.
-- **Folha de Pagamento:** Cálculo automático de horas trabalhadas, horas extras e geração de **contracheques (holerites)** prontos para impressão.
-- **Gestão de Ausências:** Controle de férias, folgas e atestados com fluxo de aprovação.
-
-### 🔪 **Fichas Técnicas & Mise en Place**
-- **Custeio (CMV):** Cálculo automático do custo de cada prato baseado nos ingredientes e sub-receitas.
-- **Planejamento de Produção:** Crie listas de tarefas diárias para a cozinha (Mise en Place).
-- **IA Generativa:** Receba sugestões de organização de praça e otimização de preparo baseadas na ficha técnica do prato.
-
-### 🛵 **Delivery Próprio**
-- **Painel Kanban:** Organize pedidos de telefone/WhatsApp em colunas (`Fila`, `Preparo`, `Pronto`, `Em Rota`, `Entregue`).
-- **Gestão de Entregadores:** Cadastre sua frota, defina taxas por KM e atribua entregas.
-- **Rastreamento:** Acompanhe a localização dos seus entregadores em tempo real no mapa.
-
-### ⚙️ **Configurações e Fidelidade**
-- **Programa de Fidelidade:** Sistema de pontos e recompensas configurável. Clientes trocam pontos por descontos ou itens.
-- **Cardápio Digital:** Página pública com QR Code para clientes visualizarem o menu.
-- **Reservas Online:** Link público para clientes solicitarem reservas de mesa.
+### 🔌 **Arquitetura Aberta REST, Webhooks e APIs**
+O ecossistema é preparado para crescer de acordo com qualquer ERP do mercado. Consuma sua própria máquina:
+- [Documentação Core de Recursos Webhooks](API.md)
+- [Documentação da Nova Engine API V2 (GraphQL e REST Caching)](apiv2.md)
+- [Explorar Swagger UI (Interactive API Docs)](/docs/index.html)
+- **Engine V2 Caching:** Interoperabilidade profunda. CRUD aberto a PDVs de Terceiros e salões via `/orders`, atualização instantânea das prateleiras por robôs, entre outros gatilhos em Webhook Realtime (`transaction.created`, `order.paid`).
+- Total independência - use o Webhook para disparar Pagers de restaurante físico.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Stack Tecnológico e Engenharia
 
-Este projeto foi construído com uma stack moderna e performática:
+ChefOS foi pensado sobre a prateleira superior de frameworks de alto desempenho a prova de Serverless e Cold Starts:
 
-- **Frontend:** **Angular v20+**
-  - **Standalone Components:** Arquitetura limpa sem NgModules.
-  - **Signals:** Gerenciamento de estado reativo de última geração.
-  - **Zoneless:** Performance máxima.
-- **Backend & Database:** **Supabase**
-  - **PostgreSQL:** Banco de dados relacional robusto com RLS (Row Level Security) para segurança multi-loja.
-  - **Realtime:** Sincronização instantânea de pedidos e status.
-  - **Edge Functions:** Para integrações complexas e webhooks.
-- **Inteligência Artificial:** **Google Gemini API**
-  - Geração de fichas técnicas e previsão de estoque.
-- **UI / Styling:** **Tailwind CSS**
-- **Mapas:** **Leaflet** (OpenStreetMap).
+- **Frontend Application PWA:** Construído nativamente com **Angular 20+**.
+  - Padronização em Componentes Single File **Standalone** & **Zoneless** approach.
+  - Signal-Driven Reativity para máxima performance e uso baixo de RAM em Caixas e Maquininhas Android.
+- **Core de Gestão Banco de Dados & RLS Auth:** Powered by **Supabase**.
+  - Roteamento nativo e Queries pelo PostgreSQL.
+  - Row Level Security (RLS) avançado. Multi-tenant real; ninguem acessa matriz errada.
+  - Supabase Realtime Channels cuidando das inserções do KDS via Socket.
+- **Infraestrutura LLM (Generativa):** **Google Gemini API** (Modelos multi-modo atuando sobre fichas técnicas, imagens, e tendências de reposição logística de pratos).
+- **Estética & Layouts:** Tailwind CSS 4+ UI com micro-interações sem JavaScript pesado.
+- **Design de API Server e Gatilhos:** API Node.js V2 na ponta.
+- **Payments:** SDK Integração API Cielo E-Commerce 3.0 / LIO.
 
 ---
 
-## 📄 Licença
+## 📄 Termos de Uso e Licença
 
-Este projeto é distribuído sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este software é um modelo distribuído e disponibilizado sob os termos da licença aplicada ao projeto. Recomendamos que todo clone do Supabase aplique suas próprias restrições e políticas de ambiente ao subir a aplicação de forma particular. Consulte as instâncias correspondentes no módulo `LICENSE`.

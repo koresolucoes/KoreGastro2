@@ -44,8 +44,15 @@
           <button (click)="view.set('reprint')" 
                   class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
                   [class.bg-brand]="view() === 'reprint'" [class.text-white]="view() === 'reprint'" [class.shadow-md]="view() === 'reprint'" [class.text-muted]="view() !== 'reprint'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">receipt_long</span>
+            <span>Recibos</span>
+          </button>
+          
+          <button (click)="view.set('transactions')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'transactions'" [class.text-white]="view() === 'transactions'" [class.shadow-md]="view() === 'transactions'" [class.text-muted]="view() !== 'transactions'">
             <span translate="no" class="notranslate material-symbols-outlined text-lg">history</span>
-            <span>Histórico</span>
+            <span>Transações & Taxas</span>
           </button>
         </div>
       </div>
@@ -543,6 +550,52 @@
                                             </button>
                                         }
                                     </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+          </div>
+        }
+
+        <!-- VIEW: TRANSAÇÕES E TAXAS -->
+        @case ('transactions') {
+          <div class="chef-surface h-full flex flex-col border-subtle overflow-hidden">
+            <div class="p-6 border-b border-subtle flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-surface/40 backdrop-blur-xl">
+                <div>
+                    <h2 class="text-xl font-black text-title uppercase tracking-tight">Taxas & Transações</h2>
+                    <p class="text-xs text-muted font-medium">Controle de MDR e taxas de maquininhas / Cielo.</p>
+                </div>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                @if (allTransactions().length === 0) {
+                     <div class="flex flex-col items-center justify-center h-64 text-center opacity-40">
+                        <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4">account_balance</span>
+                        <p class="text-sm font-bold text-muted">Nenhuma transação financeira registrada.</p>
+                     </div>
+                } @else {
+                    <div class="space-y-4">
+                        @for (tx of allTransactions(); track tx.id) {
+                            <div class="bg-surface border border-subtle p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-md transition-all">
+                                <div class="flex items-center gap-4">
+                                  <div class="w-12 h-12 rounded-xl flex items-center justify-center" 
+                                       [class.bg-danger]="tx.type === 'Despesa'" 
+                                       [class.bg-success]="tx.type === 'Receita'"
+                                       [class.bg-brand]="tx.type === 'Gorjeta'"
+                                       [class.bg-info]="tx.type !== 'Despesa' && tx.type !== 'Receita' && tx.type !== 'Gorjeta'">
+                                       <span translate="no" class="notranslate material-symbols-outlined text-title text-white">
+                                          {{ tx.type === 'Despesa' ? 'money_off' : tx.type === 'Receita' ? 'attach_money' : 'receipt' }}
+                                       </span>
+                                  </div>
+                                  <div class="flex flex-col">
+                                      <span class="text-sm font-black text-title">{{ tx.type }}</span>
+                                      <span class="text-xs text-muted font-medium max-w-lg truncate">{{ tx.description }}</span>
+                                      <span class="text-[10px] text-muted">{{ tx.date | date:'short' }}</span>
+                                  </div>
+                                </div>
+                                <div class="text-xl font-black font-mono tracking-tight" [class.text-danger]="tx.type === 'Despesa'" [class.text-success]="tx.type === 'Receita'">
+                                    {{ (tx.type === 'Despesa' ? '-' : '') }}{{ tx.amount | currency:'BRL' }}
                                 </div>
                             </div>
                         }

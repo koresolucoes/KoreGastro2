@@ -66,4 +66,65 @@ export class CieloService {
       throw error;
     }
   }
+
+  async createPixPayment(amount: number, orderId: string): Promise<any> {
+    if (!CIELO_MERCHANT_ID || !CIELO_MERCHANT_KEY) {
+      console.warn('Cielo credentials are not configured.');
+      throw new Error('Cielo credentials are required');
+    }
+
+    const amountInCents = Math.round(amount * 100);
+
+    const payload = {
+      MerchantOrderId: orderId,
+      Customer: {
+        Name: "Comprador Teste",
+        Identity: "11111111111",
+        IdentityType: "CPF"
+      },
+      Payment: {
+        Type: "Pix",
+        Amount: amountInCents
+      }
+    };
+
+    try {
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'MerchantId': CIELO_MERCHANT_ID,
+          'MerchantKey': CIELO_MERCHANT_KEY,
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Cielo API error:', errorText);
+        throw new Error(`Cielo payment failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Network or Cielo error:', error);
+      throw error;
+    }
+  }
+
+  // Simulates Cielo LIO Maquininha Integration
+  // In a real scenario, this would call the Cielo LIO Order Manager API
+  async simulateLioPayment(amount: number, orderId: string): Promise<boolean> {
+    if (!CIELO_MERCHANT_ID || !CIELO_MERCHANT_KEY) {
+      throw new Error('Cielo credentials are required');
+    }
+    
+    return new Promise((resolve) => {
+      // Simulate terminal processing delay
+      setTimeout(() => {
+        resolve(true); 
+      }, 4000); // 4 seconds delay
+    });
+  }
 }

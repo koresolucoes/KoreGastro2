@@ -351,10 +351,11 @@
                         <div class="grid grid-cols-2 lg:flex lg:flex-col gap-3 lg:h-full w-full lg:w-auto" [class.lg:flex-1]="showKeypad()" [class.lg:w-full]="!showKeypad()">
                             @let methods = [
                                 { id: 'Dinheiro', icon: 'payments', label: 'Dinheiro', color: 'success' },
-                                { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Crédito', color: 'brand' },
-                                { id: 'Cartão de Débito', icon: 'credit_score', label: 'Débito', color: 'info' },
-                                { id: 'PIX', icon: 'qr_code_2', label: 'PIX', color: 'purple' },
-                                { id: 'Cielo Sandbox', icon: 'credit_card_heart', label: 'Cielo Teste', color: 'brand' }
+                                { id: 'Cielo Cartão de Crédito', icon: 'credit_card_heart', label: 'Cielo Crédito (Sitef)', color: 'brand' },
+                                { id: 'Cielo LIO', icon: 'point_of_sale', label: 'Cielo Maquininha (LIO)', color: 'info' },
+                                { id: 'Cielo PIX', icon: 'qr_code_2', label: 'Cielo PIX (QR)', color: 'purple' },
+                                { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Crédito Manual', color: 'brand' },
+                                { id: 'Cartão de Débito', icon: 'credit_score', label: 'Débito Manual', color: 'info' }
                             ];
                             @for(m of methods; track m.id) {
                                 <button (click)="selectedPaymentMethod.set(m.id)" 
