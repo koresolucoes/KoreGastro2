@@ -353,7 +353,8 @@
                                 { id: 'Dinheiro', icon: 'payments', label: 'Dinheiro', color: 'success' },
                                 { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Crédito', color: 'brand' },
                                 { id: 'Cartão de Débito', icon: 'credit_score', label: 'Débito', color: 'info' },
-                                { id: 'PIX', icon: 'qr_code_2', label: 'PIX', color: 'purple' }
+                                { id: 'PIX', icon: 'qr_code_2', label: 'PIX', color: 'purple' },
+                                { id: 'Cielo Sandbox', icon: 'credit_card_heart', label: 'Cielo Teste', color: 'brand' }
                             ];
                             @for(m of methods; track m.id) {
                                 <button (click)="selectedPaymentMethod.set(m.id)" 

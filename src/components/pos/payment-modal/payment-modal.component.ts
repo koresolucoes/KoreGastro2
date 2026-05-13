@@ -10,12 +10,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
 import { OperationalAuthService } from '../../../services/operational-auth.service';
 import { UnitContextService } from '../../../services/unit-context.service';
+import { CieloService } from '../../../services/cielo.service';
 
 import { SettingsStateService } from '../../../services/settings-state.service';
 import { PaymentTerminalManagerService } from '../../../services/payment-terminal/payment-terminal-manager.service';
 import { TerminalConfig } from '../../../services/payment-terminal/payment-terminal.models';
 
-type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
+type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição' | 'Cielo Sandbox';
 
 interface ItemGroup {
   id: string;
@@ -44,6 +45,7 @@ export class PaymentModalComponent {
   private unitContextService = inject(UnitContextService);
   private settingsState = inject(SettingsStateService);
   private terminalManager = inject(PaymentTerminalManagerService);
+  private cieloService = inject(CieloService);
   
   // Terminals lookup
   availableTerminals = computed(() => this.settingsState.paymentTerminals());
@@ -365,7 +367,23 @@ export class PaymentModalComponent {
     }
     
     // Terminal Flow
-    if ((method === 'Cartão de Crédito' || method === 'Cartão de Débito') && this.selectedTerminal()) {
+    if (method === 'Cielo Sandbox') {
+       const order = this.lastKnownOrder();
+       if (!order) return;
+       
+       this.terminalStatus.set('WAITING');
+       try {
+           const result = await this.cieloService.createCreditCardPayment(paymentAmount, order.id);
+           this.terminalStatus.set('APPROVED');
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           this.notificationService.show('Pagamento autorizado pela Cielo Sandbox', 'success');
+       } catch (err: any) {
+           this.terminalStatus.set('ERROR');
+           alert('Erro na integração Cielo Sandbox: ' + err.message);
+           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+           return;
+       }
+    } else if ((method === 'Cartão de Crédito' || method === 'Cartão de Débito') && this.selectedTerminal()) {
        const terminalInfo = this.selectedTerminal()!;
        const order = this.lastKnownOrder();
        if (!order) return;
