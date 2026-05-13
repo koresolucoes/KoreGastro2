@@ -3,73 +3,56 @@
 
 <div class="h-full flex flex-col relative">
   
-  <!-- Top Header / Navigation (Desktop) -->
-  <div class="hidden md:flex justify-between items-center p-6 pb-2 no-print">
-    <div>
-      <h1 class="text-3xl font-black text-title tracking-tight flex items-center gap-3">
-        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">account_balance_wallet</span>
-        Caixa
-      </h1>
-      <p class="text-muted text-sm font-medium">Gerenciamento financeiro e pagamentos</p>
+  <!-- Unified Header -->
+  <header class="flex-shrink-0 bg-surface/90 backdrop-blur-md shadow-sm z-20 sticky top-0 border-b border-subtle no-print">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center p-4 md:p-6 gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-black text-title tracking-tight flex items-center gap-3">
+          <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl md:text-4xl">account_balance_wallet</span>
+          Caixa
+        </h1>
+        <p class="hidden md:block text-muted text-sm font-medium">Gerenciamento financeiro e pagamentos</p>
+      </div>
+      
+      <!-- Scrollable Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+        <div class="bg-surface-elevated p-1 rounded-xl flex gap-1 border border-strong shadow-inner">
+          <button (click)="view.set('payingTables')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'" [class.shadow-md]="view() === 'payingTables'" [class.text-muted]="view() !== 'payingTables'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">payments</span>
+            <span>A Receber</span>
+            @if(tablesForPayment().length + payingTabs().length > 0) {
+              <span class="ml-1 text-[10px] font-black px-1.5 py-0.5 rounded-full" [class.bg-white/20]="view() === 'payingTables'" [class.bg-danger]="view() !== 'payingTables'" [class.text-white]="view() !== 'payingTables'">{{ tablesForPayment().length + payingTabs().length }}</span>
+            }
+          </button>
+          
+          <button (click)="view.set('quickSale')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'" [class.shadow-md]="view() === 'quickSale'" [class.text-muted]="view() !== 'quickSale'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">point_of_sale</span>
+            <span>Venda Rápida</span>
+          </button>
+          
+          <button (click)="view.set('cashDrawer')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'" [class.shadow-md]="view() === 'cashDrawer'" [class.text-muted]="view() !== 'cashDrawer'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">account_balance_wallet</span>
+            <span>Fechamento</span>
+          </button>
+          
+          <button (click)="view.set('reprint')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'reprint'" [class.text-white]="view() === 'reprint'" [class.shadow-md]="view() === 'reprint'" [class.text-muted]="view() !== 'reprint'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">history</span>
+            <span>Histórico</span>
+          </button>
+        </div>
+      </div>
     </div>
-    
-    <div class="flex gap-6 border-b border-subtle">
-      <button (click)="view.set('payingTables')" 
-              class="pb-3 text-sm font-bold transition-all relative"
-              [class.text-brand]="view() === 'payingTables'" 
-              [class.text-muted]="view() !== 'payingTables'"
-              [class.hover:text-title]="view() !== 'payingTables'">
-        A Receber
-        @if(tablesForPayment().length + payingTabs().length > 0) {
-          <span class="ml-1 bg-brand text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{{ tablesForPayment().length + payingTabs().length }}</span>
-        }
-        @if(view() === 'payingTables') {
-          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
-        }
-      </button>
-      <button (click)="view.set('quickSale')" 
-              class="pb-3 text-sm font-bold transition-all relative"
-              [class.text-brand]="view() === 'quickSale'" 
-              [class.text-muted]="view() !== 'quickSale'"
-              [class.hover:text-title]="view() !== 'quickSale'">
-        Venda Rápida
-        @if(view() === 'quickSale') {
-          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
-        }
-      </button>
-      <button (click)="view.set('cashDrawer')" 
-              class="pb-3 text-sm font-bold transition-all relative"
-              [class.text-brand]="view() === 'cashDrawer'" 
-              [class.text-muted]="view() !== 'cashDrawer'"
-              [class.hover:text-title]="view() !== 'cashDrawer'">
-        Fechamento
-        @if(view() === 'cashDrawer') {
-          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
-        }
-      </button>
-      <button (click)="view.set('reprint')" 
-              class="pb-3 text-sm font-bold transition-all relative"
-              [class.text-brand]="view() === 'reprint'" 
-              [class.text-muted]="view() !== 'reprint'"
-              [class.hover:text-title]="view() !== 'reprint'">
-        Histórico
-        @if(view() === 'reprint') {
-          <div class="absolute bottom-0 left-0 w-full h-1 bg-brand rounded-t-full"></div>
-        }
-      </button>
-    </div>
-  </div>
-
-  <!-- Mobile Header -->
-  <div class="md:hidden p-4 pb-2 flex justify-between items-center bg-surface/80 backdrop-blur-md border-b border-subtle sticky top-0 z-20">
-    <h1 class="text-xl font-black text-title">Caixa</h1>
-    <div class="bg-brand/10 text-brand px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand/20">
-      {{ view() === 'payingTables' ? 'A Receber' : (view() === 'quickSale' ? 'Venda Rápida' : (view() === 'cashDrawer' ? 'Fechamento' : 'Histórico')) }}
-    </div>
-  </div>
-
+  </header>
   <!-- Main Content Area -->
-  <div class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 scroll-smooth">
+  <div class="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
     @if (isLoading()) {
       <div class="flex items-center justify-center h-full">
         <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-brand"></div>
@@ -572,22 +555,6 @@
     }
   </div>
 
-  <!-- Mobile Bottom Floating Navigation (Only on Mobile) -->
-  <div class="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-surface/80 backdrop-blur-xl border border-subtle p-2 rounded-full flex shadow-2xl items-center gap-1">
-      <button (click)="view.set('payingTables')" class="p-4 rounded-full transition-all relative" [class.bg-brand]="view() === 'payingTables'" [class.text-white]="view() === 'payingTables'" [class.text-muted]="view() !== 'payingTables'" [class.shadow-lg]="view() === 'payingTables'" [class.shadow-brand/40]="view() === 'payingTables'">
-         <span translate="no" class="notranslate material-symbols-outlined text-xl">payments</span>
-         @if(tablesForPayment().length > 0) { <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-danger border-2 border-white rounded-full"></span> }
-      </button>
-      <button (click)="view.set('quickSale')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'quickSale'" [class.text-white]="view() === 'quickSale'" [class.text-muted]="view() !== 'quickSale'" [class.shadow-lg]="view() === 'quickSale'" [class.shadow-brand/40]="view() === 'quickSale'">
-         <span translate="no" class="notranslate material-symbols-outlined text-xl">point_of_sale</span>
-      </button>
-      <button (click)="view.set('cashDrawer')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'cashDrawer'" [class.text-white]="view() === 'cashDrawer'" [class.text-muted]="view() !== 'cashDrawer'" [class.shadow-lg]="view() === 'cashDrawer'" [class.shadow-brand/40]="view() === 'cashDrawer'">
-         <span translate="no" class="notranslate material-symbols-outlined text-xl">account_balance_wallet</span>
-      </button>
-       <button (click)="view.set('reprint')" class="p-4 rounded-full transition-all" [class.bg-brand]="view() === 'reprint'" [class.text-white]="view() === 'reprint'" [class.text-muted]="view() !== 'reprint'" [class.shadow-lg]="view() === 'reprint'" [class.shadow-brand/40]="view() === 'reprint'">
-         <span translate="no" class="notranslate material-symbols-outlined text-xl">history</span>
-      </button>
-  </div>
 </div>
 
 <!-- Quick Sale Payment Modal (Custom for Cashier) -->
