@@ -466,55 +466,55 @@
         </div>
         } @else {
         <!-- SUCCESS SCREEN -->
-        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-surface relative overflow-y-auto animate-in fade-in duration-500 custom-scrollbar">
+        <div class="w-full h-full flex flex-col items-center justify-start md:justify-center p-4 md:p-6 text-center bg-surface relative overflow-y-auto animate-in fade-in duration-500 custom-scrollbar pt-10 md:pt-6">
              <!-- Interactive Background -->
              <div class="absolute inset-0 -z-10 overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-success/10 to-transparent"></div>
-                <div class="absolute -top-40 -right-40 w-80 h-80 bg-success/20 rounded-full blur-[100px] animate-pulse"></div>
-                <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 1s"></div>
+                <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-success/5 to-transparent"></div>
+                <div class="absolute -top-40 -right-40 w-60 h-60 bg-success/10 rounded-full blur-[80px] animate-pulse"></div>
+                <div class="absolute -bottom-40 -left-40 w-60 h-60 bg-brand/5 rounded-full blur-[80px] animate-pulse" style="animation-delay: 1s"></div>
              </div>
              
              <!-- Animated Check Icon -->
-             <div class="mb-6 relative shrink-0 mt-4">
-                <div class="absolute inset-0 bg-success rounded-full blur-2xl opacity-20 animate-ping"></div>
-                <div class="bg-success text-white p-4 md:p-6 rounded-[24px] shadow-2xl shadow-success/40 border-4 border-white/20 relative animate-in zoom-in-50 duration-700 ease-elastic">
-                    <span translate="no" class="notranslate material-symbols-outlined text-4xl md:text-6xl leading-none">check_circle</span>
+             <div class="mb-4 md:mb-6 relative shrink-0">
+                <div class="absolute inset-0 bg-success rounded-full blur-xl opacity-20 animate-ping"></div>
+                <div class="bg-success text-white p-3 md:p-4 rounded-full shadow-xl shadow-success/30 border-2 border-white/20 relative animate-in zoom-in-50 duration-700 ease-elastic">
+                    <span translate="no" class="notranslate material-symbols-outlined text-3xl md:text-4xl leading-none">check_circle</span>
                 </div>
              </div>
              
-             <div class="max-w-xl w-full animate-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-both">
-                 <h2 class="text-3xl md:text-5xl font-black text-title mb-2 tracking-tighter drop-shadow-sm title-display">Venda Concluída!</h2>
-                 <p class="text-muted text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-6 md:mb-8 opacity-60">Pedido Processado com Sucesso</p>
+             <div class="max-w-md w-full animate-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
+                 <h2 class="text-2xl md:text-3xl font-black text-title mb-1 tracking-tight drop-shadow-sm">Venda Concluída!</h2>
+                 <p class="text-muted text-[10px] md:text-xs font-bold uppercase tracking-widest mb-4 opacity-70">Pedido Processado com Sucesso</p>
                  
-                 <div class="chef-surface border-success/30 bg-success/5 p-4 md:p-6 rounded-2xl shadow-lg flex flex-col items-center gap-2 md:gap-4 mb-8 md:mb-10 shadow-[0_15px_40px_rgba(34,197,94,0.1)]">
+                 <div class="chef-surface border border-success/20 bg-success/5 p-4 rounded-2xl shadow-sm flex flex-col items-center gap-2 mb-6 shadow-[0_5px_15px_rgba(34,197,94,0.05)]">
                     <span class="text-[10px] text-success font-black uppercase tracking-widest">Valor Total Recebido</span>
-                    <span class="text-3xl md:text-5xl font-black text-title data-mono tracking-tighter">{{ displayTotal() | currency:'BRL' }}</span>
+                    <span class="text-2xl md:text-3xl font-black text-title data-mono tracking-tighter">{{ displayTotal() | currency:'BRL' }}</span>
                  </div>
 
                  <!-- WhatsApp Input -->
-                 <div class="mb-6 w-full max-w-sm mx-auto animate-in slide-in-from-bottom-4 delay-300 fill-mode-both">
-                    <label class="block text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-2 text-left ml-2">WhatsApp para Recibo</label>
+                 <div class="mb-5 w-full max-w-sm mx-auto animate-in slide-in-from-bottom-2 delay-300 fill-mode-both">
+                    <label class="block text-[9px] font-black text-muted uppercase tracking-widest mb-1.5 text-left ml-2">WhatsApp para Recibo</label>
                     <div class="relative group">
-                        <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-success text-lg group-focus-within:scale-110 transition-transform">chat</span>
+                        <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-success text-base group-focus-within:scale-110 transition-transform">chat</span>
                         <input type="text" [value]="whatsappNumber()" (input)="whatsappNumber.set($any($event.target).value)" 
                                placeholder="Ex: 11999999999" 
-                               class="w-full bg-surface-elevated text-title placeholder:text-muted/30 pl-12 pr-6 py-3 rounded-xl border-2 border-transparent focus:border-success/40 outline-none text-lg font-bold shadow-inner transition-all">
+                               class="w-full bg-surface-elevated text-title placeholder:text-muted/40 pl-11 pr-4 py-2.5 rounded-xl border border-subtle focus:border-success/40 outline-none text-sm font-bold shadow-sm transition-all focus:ring-2 focus:ring-success/10">
                     </div>
                  </div>
                  
-                 <div class="flex flex-col sm:flex-row gap-3 w-full mb-4">
-                     <button (click)="printReceipt()" class="flex-1 flex justify-center items-center gap-2 py-3.5 bg-surface hover:bg-surface-elevated border border-strong rounded-xl transition-all hover:shadow-md active:scale-[0.98] text-sm font-bold text-title">
-                        <span translate="no" class="notranslate material-symbols-outlined text-lg">receipt</span>
-                        Imprimir
+                 <div class="flex flex-col sm:flex-row gap-2 w-full mb-3">
+                     <button (click)="printReceipt()" class="flex-1 flex justify-center items-center gap-2 py-2.5 bg-surface hover:bg-surface-elevated border border-strong rounded-xl transition-all hover:shadow-sm active:scale-[0.98] text-xs font-bold text-title">
+                        <span translate="no" class="notranslate material-symbols-outlined text-base">receipt</span>
+                        Imprimir Recibo
                      </button>
                      
-                     <button (click)="shareReceipt()" class="flex-1 flex justify-center items-center gap-2 py-3.5 bg-success/10 hover:bg-success/20 text-success border border-success/20 rounded-xl transition-all hover:shadow-md active:scale-[0.98] text-sm font-bold">
-                        <span translate="no" class="notranslate material-symbols-outlined text-lg">send</span>
-                        WhatsApp
+                     <button (click)="shareReceipt()" class="flex-1 flex justify-center items-center gap-2 py-2.5 bg-success/10 hover:bg-success/20 text-success border border-success/20 rounded-xl transition-all hover:shadow-sm active:scale-[0.98] text-xs font-bold">
+                        <span translate="no" class="notranslate material-symbols-outlined text-base">send</span>
+                        Enviar Digital
                      </button>
                  </div>
                  
-                 <button (click)="closeModal.emit(true)" class="w-full flex justify-center items-center gap-2 py-4 bg-title text-surface hover:bg-title/90 rounded-xl transition-all hover:shadow-lg active:scale-[0.98] text-sm font-bold uppercase tracking-widest">
+                 <button (click)="closeModal.emit(true)" class="w-full flex justify-center items-center gap-2 py-3 bg-title text-surface hover:bg-title/90 rounded-xl transition-all hover:shadow-md active:scale-[0.98] text-xs font-bold uppercase tracking-widest border border-transparent">
                     Nova Venda / Fechar
                  </button>
              </div>

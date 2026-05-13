@@ -82,7 +82,11 @@ export class PosComponent implements OnInit {
   // Logic to determine which order is active for modals
   activeOrder = computed(() => {
       // Priority: Tab Order > Table Order > Context Menu Order
-      if (this.selectedTabOrder()) return this.selectedTabOrder();
+      const tabOrder = this.selectedTabOrder();
+      if (tabOrder) {
+          // Dynamic lookup to get real-time updates from KDS and other sources
+          return this.posState.orders().find(o => o.id === tabOrder.id) ?? tabOrder;
+      }
       
       const table = this.selectedTable() ?? this.contextMenuTable();
       if (!table) return null;
