@@ -50,7 +50,7 @@ export class SystemAdminService {
         throw new Error('No active session');
       }
 
-      const response = await fetch('/api/admin/restaurants', {
+      const response = await fetch('/api/v2/admin/restaurants', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -78,7 +78,7 @@ export class SystemAdminService {
         throw new Error('No active session');
       }
 
-      const response = await fetch('/api/admin/subscriptions', {
+      const response = await fetch('/api/v2/admin/subscriptions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

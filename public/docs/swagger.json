@@ -746,6 +746,83 @@
         },
         "responses": { "200": { "description": "Success" } }
       }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "Listar Webhooks",
+        "parameters": [
+          { "name": "restaurantId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Success" } }
+      },
+      "post": {
+        "summary": "Registrar Webhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "example": "https://meu-sistema.com/webhook" },
+                  "events": { 
+                    "type": "array", 
+                    "items": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created", "delivery.created", "delivery.status_updated"] }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      },
+      "patch": {
+        "summary": "Atualizar Webhook",
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "events": { "type": "array", "items": { "type": "string" } },
+                  "is_active": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      },
+      "delete": {
+        "summary": "Excluir Webhook",
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "restaurantId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/trigger-webhook": {
+      "post": {
+        "summary": "Disparar Evento de Webhook Teste Local ou Manual",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created", "delivery.created", "delivery.status_updated"] },
+                  "payload": { "type": "object", "description": "Dados do evento" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "202": { "description": "Accepted" } }
+      }
     }
   }
 }
