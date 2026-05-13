@@ -1,6 +1,7 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked, input, output, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Order, Table, OrderItem, DiscountType, Customer } from '../../../models/db.models';
 import { PosDataService, PaymentInfo } from '../../../services/pos-data.service';
 import { PrintingService } from '../../../services/printing.service';
@@ -9,6 +10,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
 import { OperationalAuthService } from '../../../services/operational-auth.service';
 import { UnitContextService } from '../../../services/unit-context.service';
+
+import { SettingsStateService } from '../../../services/settings-state.service';
+import { PaymentTerminalManagerService } from '../../../services/payment-terminal/payment-terminal-manager.service';
+import { TerminalConfig } from '../../../services/payment-terminal/payment-terminal.models';
 
 type PaymentMethod = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Vale Refeição';
 
@@ -26,7 +31,7 @@ interface ItemGroup {
 @Component({
   selector: 'app-payment-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './payment-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -37,6 +42,13 @@ export class PaymentModalComponent {
   focusNFeService = inject(FocusNFeService);
   private operationalAuthService = inject(OperationalAuthService);
   private unitContextService = inject(UnitContextService);
+  private settingsState = inject(SettingsStateService);
+  private terminalManager = inject(PaymentTerminalManagerService);
+  
+  // Terminals lookup
+  availableTerminals = computed(() => this.settingsState.paymentTerminals());
+  selectedTerminal = signal<TerminalConfig | null>(null);
+  terminalStatus = signal<'IDLE'|'WAITING'|'APPROVED'|'ERROR'>('IDLE');
   
   order: InputSignal<Order | null> = input.required<Order | null>();
   table: InputSignal<Table | null> = input.required<Table | null>();
@@ -336,7 +348,7 @@ export class PaymentModalComponent {
     }
   }
 
-  addPayment() {
+  async addPayment() {
     const method = this.selectedPaymentMethod();
     const balance = this.balanceDue();
     let amount = parseFloat(this.paymentAmountInput());
@@ -350,6 +362,36 @@ export class PaymentModalComponent {
     if (method !== 'Dinheiro' && amount > balance + 0.01) {
         alert('Valor acima do saldo devedor.');
         return;
+    }
+    
+    // Terminal Flow
+    if ((method === 'Cartão de Crédito' || method === 'Cartão de Débito') && this.selectedTerminal()) {
+       const terminalInfo = this.selectedTerminal()!;
+       const order = this.lastKnownOrder();
+       if (!order) return;
+       
+       this.terminalStatus.set('WAITING');
+       
+       try {
+          const terminalResult = await this.terminalManager.sendPayment(terminalInfo, {
+             orderId: order.id,
+             amount: paymentAmount,
+             paymentType: method === 'Cartão de Crédito' ? 'CREDIT' : 'DEBIT'
+          });
+          
+          if (!terminalResult.success) {
+             this.terminalStatus.set('ERROR');
+             alert('Erro na maquininha: ' + (terminalResult.errorMessage || 'Desconhecido'));
+             return;
+          }
+          
+          this.terminalStatus.set('APPROVED');
+          setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+       } catch (err: any) {
+          this.terminalStatus.set('ERROR');
+          alert('Erro ao comunicar com a maquininha: ' + err.message);
+          return;
+       }
     }
 
     const newPayment: PaymentInfo = { method, amount: parseFloat(paymentAmount.toFixed(2)) };

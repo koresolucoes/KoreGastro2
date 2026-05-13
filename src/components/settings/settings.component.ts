@@ -12,8 +12,9 @@ import { SecuritySettingsComponent } from './security-settings/security-settings
 import { MultiUnitSettingsComponent } from './multi-unit-settings/multi-unit-settings.component';
 import { StoreManagementComponent } from './store-management/store-management.component';
 import { AppearanceSettingsComponent } from './appearance-settings/appearance-settings.component';
+import { PaymentTerminalsSettingsComponent } from './payment-terminals-settings.component';
 
-type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe';
+type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe' | 'maquininhas';
 
 @Component({
   selector: 'app-settings',
@@ -26,7 +27,8 @@ type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcional
     SecuritySettingsComponent,
     MultiUnitSettingsComponent,
     StoreManagementComponent,
-    AppearanceSettingsComponent
+    AppearanceSettingsComponent,
+    PaymentTerminalsSettingsComponent
   ],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -87,6 +89,7 @@ export class SettingsComponent {
        case 'aparencia': return 'Aparência e Temas';
        case 'equipe': return 'Gestão de Equipe';
        case 'cadastros': return 'Cadastros Base';
+       case 'maquininhas': return 'Maquininhas LIO';
        case 'funcionalidades': return 'Módulos & Integrações';
        case 'seguranca': return 'Cargos & Permissões';
        default: return 'Configurações';

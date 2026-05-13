@@ -2,6 +2,7 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withHashLocation } from '@angular/router';
 import { provideZonelessChangeDetection, LOCALE_ID, ErrorHandler } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 
@@ -62,6 +63,7 @@ function bootstrap() {
   try {
     bootstrapApplication(AppComponent, {
       providers: [
+        provideHttpClient(),
         provideZonelessChangeDetection(),
         provideRouter(APP_ROUTES, withHashLocation()),
         { provide: LOCALE_ID, useValue: 'pt-BR' },

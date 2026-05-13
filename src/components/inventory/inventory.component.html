@@ -629,68 +629,75 @@
 
 <!-- Adjustment Modal -->
 @if(isAdjustmentModalOpen() && adjustmentIngredient(); as ingredient) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closeAdjustmentModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-        <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeAdjustmentModal()">
+    <div class="bg-surface border border-subtle rounded-3xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden" (click)="$event.stopPropagation()">
+        <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface-elevated flex-shrink-0">
             <div>
-                <h3 class="text-xl font-bold text-white">Ajustar Estoque</h3>
-                <p class="text-gray-400">{{ ingredient.name }}</p>
+                <h3 class="text-xl font-black text-title tracking-tight flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand">edit_square</span>
+                    Ajustar Estoque
+                </h3>
+                <p class="text-xs font-bold uppercase tracking-widest text-muted mt-1">{{ ingredient.name }}</p>
             </div>
-            <button (click)="closeAdjustmentModal()" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button (click)="closeAdjustmentModal()" class="p-2 rounded-full text-muted hover-surface-elevated transition-colors border border-transparent hover:border-strong">
+                <span translate="no" class="notranslate material-symbols-outlined">close</span>
             </button>
         </div>
 
-        <div class="p-6 flex-1 overflow-y-auto">
+        <div class="p-6 flex-1 overflow-y-auto space-y-6">
             <!-- Action Type Toggle -->
-            <div class="grid grid-cols-2 gap-2 bg-gray-900 p-1 rounded-lg mb-6">
+            <div class="flex bg-surface-elevated p-1 rounded-xl border border-strong">
                 <button 
                     (click)="setAdjustmentType('entry')" 
-                    class="py-2 px-4 rounded-md text-sm font-semibold transition-colors"
-                    [class.bg-green-600]="adjustmentType() === 'entry'"
+                    class="flex-1 py-2.5 rounded-lg text-[11px] uppercase tracking-widest font-black transition-all flex items-center justify-center gap-2"
+                    [class.bg-brand]="adjustmentType() === 'entry'"
                     [class.text-white]="adjustmentType() === 'entry'"
-                    [class.text-gray-400]="adjustmentType() !== 'entry'"
-                    [class.hover:bg-gray-700]="adjustmentType() !== 'entry'">
-                    Registrar Entrada
+                    [class.shadow-md]="adjustmentType() === 'entry'"
+                    [class.text-muted]="adjustmentType() !== 'entry'"
+                    [class.hover:text-title]="adjustmentType() !== 'entry'">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add_circle</span>
+                    Entrada
                 </button>
                 <button 
                     (click)="setAdjustmentType('exit')"
-                    class="py-2 px-4 rounded-md text-sm font-semibold transition-colors"
-                    [class.bg-red-600]="adjustmentType() === 'exit'"
+                    class="flex-1 py-2.5 rounded-lg text-[11px] uppercase tracking-widest font-black transition-all flex items-center justify-center gap-2"
+                    [class.bg-danger]="adjustmentType() === 'exit'"
                     [class.text-white]="adjustmentType() === 'exit'"
-                    [class.text-gray-400]="adjustmentType() !== 'exit'"
-                    [class.hover:bg-gray-700]="adjustmentType() !== 'exit'">
-                    Registrar Saída
+                    [class.shadow-md]="adjustmentType() === 'exit'"
+                    [class.text-muted]="adjustmentType() !== 'exit'"
+                    [class.hover:text-title]="adjustmentType() !== 'exit'">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[16px]">do_not_disturb_on</span>
+                    Saída
                 </button>
             </div>
 
             <div class="space-y-4">
                 <!-- Quantity -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Quantidade</label>
-                    <div class="flex items-center">
-                        <input type="number" min="0" [value]="adjustmentQuantity()" (input)="adjustmentQuantity.set(+$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <span class="ml-3 text-gray-400 uppercase font-semibold">{{ ingredient.unit }}</span>
+                    <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Quantidade</label>
+                    <div class="flex items-center gap-3">
+                        <input type="number" min="0" [value]="adjustmentQuantity()" (input)="adjustmentQuantity.set(+$any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2.5 text-title font-mono text-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner appearance-none">
+                        <span class="px-4 py-2.5 bg-surface-elevated border border-strong rounded-xl text-muted font-black uppercase tracking-widest text-sm flex items-center justify-center min-w-[70px] shadow-sm">{{ ingredient.unit }}</span>
                     </div>
                 </div>
 
                  @if (adjustmentType() === 'entry') {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Nº do Lote</label>
-                            <input type="text" [value]="adjustmentLotNumber()" (input)="adjustmentLotNumber.set($any($event.target).value || null)" placeholder="(Opcional)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Nº do Lote</label>
+                            <input type="text" [value]="adjustmentLotNumber()" (input)="adjustmentLotNumber.set($any($event.target).value || null)" placeholder="(Opcional)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner font-mono text-sm uppercase">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Data de Validade</label>
-                            <input type="date" [value]="adjustmentExpirationDate() | date:'yyyy-MM-dd'" (input)="adjustmentExpirationDate.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Data de Validade</label>
+                            <input type="date" [value]="adjustmentExpirationDate() | date:'yyyy-MM-dd'" (input)="adjustmentExpirationDate.set($any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner uppercase text-sm font-mono tracking-wide">
                         </div>
                     </div>
                  }
 
                 <!-- Reason -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Motivo do Ajuste</label>
-                    <select (change)="adjustmentReason.set($any($event.target).value)" [value]="adjustmentReason()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Motivo do Ajuste</label>
+                    <select (change)="adjustmentReason.set($any($event.target).value)" [value]="adjustmentReason()" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none font-medium">
                         @if (adjustmentType() === 'entry') {
                             @for(reason of entryReasons; track reason) {
                                 <option [value]="reason">{{ reason }}</option>
@@ -706,8 +713,8 @@
                 <!-- Conditional Fields -->
                 @if(adjustmentReason() === 'Compra de Fornecedor') {
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor (Opcional)</label>
-                        <select (change)="adjustmentSupplierId.set($any($event.target).value || null)" [value]="adjustmentSupplierId()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Fornecedor (Opcional)</label>
+                        <select (change)="adjustmentSupplierId.set($any($event.target).value || null)" [value]="adjustmentSupplierId()" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner appearance-none font-medium">
                             <option value="">Selecione um fornecedor</option>
                             @for(supplier of suppliers(); track supplier.id) {
                                 <option [value]="supplier.id">{{ supplier.name }}</option>
@@ -718,37 +725,49 @@
 
                 @if(adjustmentReason() === 'Outro') {
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Especifique o Motivo</label>
-                        <input type="text" [value]="adjustmentCustomReason()" (input)="adjustmentCustomReason.set($any($event.target).value)" placeholder="Descreva o motivo..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Especifique o Motivo</label>
+                        <input type="text" [value]="adjustmentCustomReason()" (input)="adjustmentCustomReason.set($any($event.target).value)" placeholder="Descreva o motivo..." class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title focus:outline-none focus:border-brand shadow-inner placeholder:text-muted">
                     </div>
                 }
             </div>
 
             <!-- Stock Preview -->
-            <div class="flex justify-between text-xs text-gray-500 mt-4 px-1">
-                <span>Estoque Atual: <span class="font-bold text-gray-400">{{ ingredient.stock }}</span></span>
-                <span>Após Ajuste: <span class="font-bold text-lg" [class.text-green-400]="stockAfterAdjustment() > ingredient.stock" [class.text-red-400]="stockAfterAdjustment() < ingredient.stock">{{ stockAfterAdjustment() }}</span></span>
+            <div class="flex justify-between items-center p-4 bg-background border border-subtle rounded-xl mt-6 shadow-inner">
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase font-bold text-muted tracking-widest mb-1">Stock Atual</span>
+                    <span class="font-mono text-lg font-black text-title">{{ ingredient.stock }}</span>
+                </div>
+                
+                <span translate="no" class="notranslate material-symbols-outlined text-muted text-[18px]">arrow_forward</span>
+
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] uppercase font-bold text-muted tracking-widest mb-1">Após Ajuste</span>
+                    <span class="font-mono text-xl font-black text-title" [class.text-success]="stockAfterAdjustment() > ingredient.stock" [class.text-danger]="stockAfterAdjustment() < ingredient.stock">{{ stockAfterAdjustment() }}</span>
+                </div>
             </div>
 
              <!-- Lot Listing -->
             @if (lotsForAdjustmentModal().length > 0) {
-              <div class="mt-6 pt-4 border-t border-gray-700">
-                <h4 class="text-md font-semibold text-white mb-2">Lotes em Estoque</h4>
-                <div class="max-h-40 overflow-y-auto pr-2 bg-gray-900/50 rounded-lg">
+              <div class="mt-6 pt-5 border-t border-subtle">
+                <h4 class="text-xs font-black uppercase tracking-widest text-title mb-3 flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-[14px]">inventory_2</span>
+                    Lotes em Estoque
+                </h4>
+                <div class="max-h-40 overflow-y-auto pr-2 bg-surface rounded-xl border border-strong shadow-inner">
                   <table class="w-full text-left text-sm">
-                    <thead class="sticky top-0 bg-gray-700/80 backdrop-blur-sm">
+                    <thead class="sticky top-0 bg-surface-elevated backdrop-blur-sm border-b border-strong">
                       <tr>
-                        <th class="p-2">Lote</th>
-                        <th class="p-2">Validade</th>
-                        <th class="p-2 text-right">Quantidade</th>
+                        <th class="px-4 py-2 text-[10px] uppercase font-black tracking-widest text-muted">Lote</th>
+                        <th class="px-4 py-2 text-[10px] uppercase font-black tracking-widest text-muted">Validade</th>
+                        <th class="px-4 py-2 text-[10px] uppercase font-black tracking-widest text-muted text-right">Qtd</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-subtle">
                       @for(lot of lotsForAdjustmentModal(); track lot.id) {
-                        <tr class="border-b border-gray-700/50">
-                          <td class="p-2">{{ lot.lot_number || 'N/A' }}</td>
-                          <td class="p-2">{{ lot.expiration_date | date:'dd/MM/yy' }}</td>
-                          <td class="p-2 text-right font-mono">{{ lot.quantity | number }}</td>
+                        <tr class="hover:bg-surface-elevated/50 transition-colors">
+                          <td class="px-4 py-2 font-mono text-xs text-title">{{ lot.lot_number || 'N/A' }}</td>
+                          <td class="px-4 py-2 font-mono text-xs text-muted">{{ lot.expiration_date | date:'dd/MM/yy' }}</td>
+                          <td class="px-4 py-2 text-right font-mono font-bold text-title">{{ lot.quantity | number }}</td>
                         </tr>
                       }
                     </tbody>
@@ -759,16 +778,22 @@
 
         </div>
 
-        <div class="p-4 bg-gray-900/50 flex justify-end gap-3 flex-shrink-0 border-t border-gray-700">
-            <button (click)="closeAdjustmentModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
+        <div class="p-6 bg-surface-elevated flex justify-end gap-3 flex-shrink-0 border-t border-subtle rounded-b-3xl">
+            <button (click)="closeAdjustmentModal()" class="px-5 py-2.5 font-bold rounded-xl text-muted hover-surface transition-colors border border-transparent hover:border-strong focus:outline-none">Cancelar</button>
             <button 
                 (click)="handleAdjustStock()"
-                class="px-6 py-2 font-bold rounded-lg text-white transition-colors"
-                [class.bg-green-600]="adjustmentType() === 'entry'"
-                [class.hover:bg-green-500]="adjustmentType() === 'entry'"
-                [class.bg-red-600]="adjustmentType() === 'exit'"
-                [class.hover:bg-red-500]="adjustmentType() === 'exit'">
-                {{ adjustmentType() === 'entry' ? 'Confirmar Entrada' : 'Confirmar Saída' }}
+                class="px-6 py-2.5 font-black rounded-xl text-white transition-all shadow-md focus:outline-none flex items-center gap-2 justify-center"
+                [class.bg-brand]="adjustmentType() === 'entry'"
+                [class.hover:bg-brand/90]="adjustmentType() === 'entry'"
+                [class.bg-danger]="adjustmentType() === 'exit'"
+                [class.hover:bg-danger/90]="adjustmentType() === 'exit'">
+                @if (adjustmentType() === 'entry') {
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">add_box</span>
+                    Confirmar Entrada
+                } @else {
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">indeterminate_check_box</span>
+                    Confirmar Saída
+                }
             </button>
         </div>
     </div>

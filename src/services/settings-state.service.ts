@@ -8,6 +8,7 @@ export class SettingsStateService {
   reservationSettings = signal<ReservationSettings | null>(null);
   loyaltySettings = signal<LoyaltySettings | null>(null);
   loyaltyRewards = signal<LoyaltyReward[]>([]);
+  paymentTerminals = signal<any[]>([]); // TerminalConfig from payment-terminal.models
   // FIX: Add webhooks signal to hold webhook configurations
   webhooks = signal<Webhook[]>([]);
 
@@ -17,6 +18,7 @@ export class SettingsStateService {
     this.reservationSettings.set(null);
     this.loyaltySettings.set(null);
     this.loyaltyRewards.set([]);
+    this.paymentTerminals.set([]);
     // FIX: Clear webhooks data on logout/data clear
     this.webhooks.set([]);
   }

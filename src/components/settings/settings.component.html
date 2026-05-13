@@ -1,5 +1,5 @@
 
-<div class="container mx-auto h-full animate-in fade-in duration-500 max-w-7xl">
+<div class="container mx-auto h-full max-w-7xl">
   <!-- Modern Header (Hidden on mobile when in detail mode) -->
   <div class="mb-4 lg:mb-10 relative mt-4 lg:mt-0 px-4 lg:px-0" [ngClass]="{'hidden lg:block': mobileViewMode() === 'detail'}">
     <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-brand rounded-full blur-[2px] opacity-80 hidden md:block"></div>
@@ -17,6 +17,7 @@
           { id: 'aparencia', label: 'Aparência e Temas', desc: 'Cores e modo escuro', icon: 'palette' },
           { id: 'equipe', label: 'Gestão de Equipe', desc: 'Convites e vinculações', icon: 'group_add' },
           { id: 'cadastros', label: 'Cadastros Base', desc: 'Taxas, pagamentos e PDV', icon: 'database' },
+          { id: 'maquininhas', label: 'Maquininhas LIO', desc: 'Integração de equipamentos', icon: 'point_of_sale' },
           { id: 'funcionalidades', label: 'Módulos & Integrações', desc: 'iFood, KDS e recursos adicionais', icon: 'extension' },
           { id: 'seguranca', label: 'Cargos & Permissões', desc: 'Acessos e restrições', icon: 'security' }
         ];
@@ -62,7 +63,7 @@
     </div>
 
     <!-- Scrollable Tab Content Area -->
-    <div class="lg:col-span-9 animate-in slide-in-from-right-4 lg:slide-in-from-bottom-4 duration-300 fill-mode-both min-h-[100dvh] lg:min-h-0 bg-app" [ngClass]="{'hidden lg:block': mobileViewMode() === 'menu', 'block': mobileViewMode() === 'detail'}">
+    <div class="lg:col-span-9 min-h-[100dvh] lg:min-h-0 bg-app" [ngClass]="{'hidden lg:block': mobileViewMode() === 'menu', 'block': mobileViewMode() === 'detail'}">
       
       <!-- Mobile Specific "Back" Header -->
       <div class="lg:hidden bg-surface border-b border-subtle p-3 sticky top-0 z-30 flex items-center gap-3 shadow-sm pt-safe">
@@ -72,7 +73,7 @@
          <h2 class="text-lg font-bold text-title flex-1 truncate">{{ getActiveTabLabel() }}</h2>
       </div>
 
-      <div class="bg-transparent lg:bg-surface-elevated/40 lg:border lg:border-subtle lg:rounded-[40px] p-4 py-6 md:p-12 lg:backdrop-blur-xl lg:shadow-2xl relative overflow-hidden min-h-[calc(100vh-100px)] lg:min-h-[600px] mb-20 lg:mb-0">
+      <div class="bg-transparent lg:bg-surface-elevated/40 lg:border lg:border-subtle lg:rounded-[40px] p-4 py-6 md:p-12 lg:shadow-2xl relative min-h-[calc(100vh-100px)] lg:min-h-[600px] mb-20 lg:mb-0">
         <div class="hidden lg:block absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand via-transparent to-transparent opacity-40"></div>
         
         @switch (activeTab()) {
@@ -90,6 +91,9 @@
           }
           @case ('cadastros') {
             <app-operation-settings></app-operation-settings>
+          }
+          @case ('maquininhas') {
+            <app-payment-terminals-settings></app-payment-terminals-settings>
           }
           @case ('funcionalidades') {
             <app-functionality-settings></app-functionality-settings>

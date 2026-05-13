@@ -300,15 +300,15 @@
                     <span class="text-3xl font-black text-title data-mono drop-shadow-sm">{{ orderTotal() | currency:'BRL' }}</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2 sm:gap-3">
                     <button (click)="sendOrder()" [disabled]="shoppingCart().length === 0" 
-                        class="bg-brand hover:bg-brand-hover text-white font-black py-3.5 rounded-xl shadow-lg shadow-brand/20 transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-brand disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed group">
-                        <span translate="no" class="notranslate material-symbols-outlined group-disabled:opacity-50">send</span>
-                        <span class="tracking-wide uppercase text-sm">Enviar</span>
+                        class="bg-brand hover:bg-brand-hover text-white font-black py-2.5 sm:py-3 rounded-xl shadow-lg shadow-brand/20 transform active:scale-95 transition-all flex flex-col items-center justify-center gap-1 border border-brand disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed group px-1">
+                        <span translate="no" class="notranslate material-symbols-outlined group-disabled:opacity-50 text-xl md:text-2xl mb-0.5">send</span>
+                        <span class="tracking-widest uppercase text-[9px] sm:text-[10px] text-center leading-tight">Enviar</span>
                     </button>
-                    <button (click)="startCheckout()" [disabled]="orderTotal() === 0" class="bg-success hover:bg-success-hover text-white font-black py-3.5 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-success disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed">
-                        <span translate="no" class="notranslate material-symbols-outlined">payments</span>
-                        <span class="tracking-wide uppercase text-sm">Pagar</span>
+                    <button (click)="startCheckout()" [disabled]="orderTotal() === 0" class="bg-success hover:bg-success-hover text-white font-black py-2.5 sm:py-3 rounded-xl shadow-lg shadow-success/20 transform active:scale-95 transition-all flex flex-col items-center justify-center gap-1 border border-success disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed px-1">
+                        <span translate="no" class="notranslate material-symbols-outlined text-xl md:text-2xl mb-0.5">payments</span>
+                        <span class="tracking-widest uppercase text-[9px] sm:text-[10px] text-center leading-tight">Fechar Conta</span>
                     </button>
                 </div>
                 
@@ -336,7 +336,7 @@
                         </span>
                     }
                 </div>
-                <span class="text-[10px] font-black uppercase tracking-widest leading-none mt-1">Pedido / Pagar</span>
+                <span class="text-[10px] font-black uppercase tracking-widest leading-none mt-1">Pedido / Fechar</span>
                 @if (mobileTab() === 'cart') { <div class="absolute top-0 left-0 right-0 h-0.5 bg-brand shadow-[0_0_8px_rgba(var(--brand-primary),0.8)]"></div> }
             </button>
         </div>
@@ -348,7 +348,7 @@
 <!-- QUICK ADD MODAL -->
 @if (isQuickAddModalOpen() && quickAddRecipe(); as recipe) {
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeQuickAddModal()">
-        <div class="chef-surface border border-subtle rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100" (click)="$event.stopPropagation()">
+        <div class="chef-surface border border-subtle rounded-3xl shadow-2xl w-full max-w-sm flex flex-col max-h-[90dvh] overflow-hidden transform transition-all scale-100" (click)="$event.stopPropagation()">
             <!-- Header Image -->
             <div class="h-40 sm:h-48 bg-surface-elevated relative flex-shrink-0">
                  @if (recipe.image_url) {
@@ -364,7 +364,7 @@
                 </button>
             </div>
             
-            <div class="p-5 sm:p-6 space-y-6">
+            <div class="p-5 sm:p-6 space-y-6 flex-1 overflow-y-auto min-h-0">
                 <!-- Recipe Info (Moved out of image) -->
                 <div>
                     <h3 class="text-xl sm:text-2xl font-black text-title leading-tight mb-1">{{ recipe.name }}</h3>

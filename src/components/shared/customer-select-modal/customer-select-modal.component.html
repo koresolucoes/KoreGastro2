@@ -1,5 +1,5 @@
 <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
-  <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
+  <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
     <div class="flex justify-between items-center p-5 border-b border-subtle">
       <h3 class="text-xl font-bold text-title flex items-center gap-2">
         <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
@@ -56,8 +56,8 @@
       </div>
     } @else {
       <!-- Create New View -->
-      <form (ngSubmit)="createAndSelectCustomer()">
-        <div class="p-6 space-y-4">
+      <form (ngSubmit)="createAndSelectCustomer()" class="flex flex-col flex-1 min-h-0">
+        <div class="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
             <div>
                 <label class="block text-sm font-semibold text-body mb-1.5 ml-1">Nome *</label>
                 <input type="text" [(ngModel)]="newCustomerForm().name" name="name" required class="w-full bg-surface-elevated border border-strong rounded-xl px-3 py-2 text-title focus:outline-none focus:border-brand">

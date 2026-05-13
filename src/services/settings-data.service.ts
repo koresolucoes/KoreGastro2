@@ -392,4 +392,21 @@ export class SettingsDataService {
     const { error } = await supabase.from('webhooks').delete().eq('id', id);
     return { success: !error, error };
   }
+
+  // --- Payment Terminals ---
+  async addPaymentTerminal(userId: string, terminalData: any): Promise<{ success: boolean; data?: any; error: any }> {
+    const { data, error } = await supabase.from('payment_terminals').insert({ ...terminalData, user_id: userId }).select().single();
+    return { success: !error, data, error };
+  }
+
+  async updatePaymentTerminal(id: string, updates: any): Promise<{ success: boolean; error: any }> {
+    const { id: terminalId, user_id, created_at, updated_at, ...updateData } = updates;
+    const { error } = await supabase.from('payment_terminals').update(updateData).eq('id', id);
+    return { success: !error, error };
+  }
+
+  async deletePaymentTerminal(id: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('payment_terminals').delete().eq('id', id);
+    return { success: !error, error };
+  }
 }

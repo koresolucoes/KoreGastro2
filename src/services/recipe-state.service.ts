@@ -34,6 +34,15 @@ export class RecipeStateService {
         let totalCost = 0;
         const rawIngredients = new Map<string, number>();
         
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (recipe?.source_ingredient_id) {
+            const ingredient = ingredientsMap.get(recipe.source_ingredient_id);
+            if (ingredient) {
+                totalCost += (ingredient.cost || 0);
+                rawIngredients.set(recipe.source_ingredient_id, (rawIngredients.get(recipe.source_ingredient_id) || 0) + 1);
+            }
+        }
+
         const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
         for (const ri of directIngredients) {
             // FIX: Add a guard to ensure ingredient exists before accessing its properties.
@@ -57,7 +66,6 @@ export class RecipeStateService {
             }
         }
         
-        const recipe = recipes.find(r => r.id === recipeId);
         if (recipe) {
             // Furo 7: Custo de Mão de Obra
             if (recipe.labor_cost) {
@@ -109,6 +117,13 @@ export class RecipeStateService {
                 return { ingredientId: ri.ingredient_id, quantity: (ri.quantity * factor) / yieldQty };
             });
 
+        if (recipe.source_ingredient_id) {
+            const exists = directIngredients.find(di => di.ingredientId === recipe.source_ingredient_id);
+            if (!exists) {
+                directIngredients.push({ ingredientId: recipe.source_ingredient_id, quantity: 1 / yieldQty });
+            }
+        }
+
         const subRecipeIngredients = recipeSubRecipes
             .filter(rsr => rsr.parent_recipe_id === recipe.id)
             .map(rsr => {
@@ -134,11 +149,16 @@ export class RecipeStateService {
     const allRecipes = this.recipes();
 
     const memoCanProduce = new Map<string, boolean>();
+    const processing = new Set<string>();
 
     const canProduce = (recipeId: string): boolean => {
       if (memoCanProduce.has(recipeId)) {
         return memoCanProduce.get(recipeId)!;
       }
+      if (processing.has(recipeId)) {
+        return false; // Cycle detected, assume false to prevent infinite loop
+      }
+      processing.add(recipeId);
 
       const composition = directCompositions.get(recipeId);
       if (!composition) {

@@ -1,6 +1,6 @@
 @if (order(); as currentOrder) {
   <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
-    <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
+    <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col border border-subtle" (click)="$event.stopPropagation()">
       <!-- Header -->
       <div class="p-6 border-b border-subtle flex justify-between items-center bg-surface/50 backdrop-blur-xl rounded-t-2xl">
         <h3 class="text-xl font-black text-title flex items-center gap-3 tracking-tight">
@@ -13,7 +13,7 @@
       </div>
 
       <!-- Body -->
-      <div class="p-8 flex-1 overflow-y-auto space-y-8 hide-scrollbar">
+      <div class="p-8 flex-1 overflow-y-auto space-y-8 hide-scrollbar min-h-0">
         <div class="bg-surface/30 border border-subtle rounded-2xl p-6 shadow-sm">
             <h4 class="font-black text-muted mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                Itens Consumidos

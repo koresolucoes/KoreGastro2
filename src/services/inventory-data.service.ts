@@ -190,6 +190,10 @@ export class InventoryDataService {
         await this.recipeDataService.deleteRecipe(ingredient.proxy_recipe_id);
     }
     
+    // Explicitly delete related records that might not have ON DELETE CASCADE
+    await supabase.from('inventory_logs').delete().eq('ingredient_id', id);
+    await supabase.from('inventory_adjustments').delete().eq('ingredient_id', id);
+    
     const { error } = await supabase.from('ingredients').delete().eq('id', id);
     return { success: !error, error };
   }
@@ -452,7 +456,7 @@ export class InventoryDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    const recipeCompositions = this.recipeState.recipeDirectComposition();
+    const recipeCompositions = this.recipeState.recipeCosts();
     const processedGroupIds = new Set<string>();
     
     // Map: StationID -> { IngredientID -> TotalQty }
@@ -478,11 +482,8 @@ export class InventoryDataService {
             stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
         };
 
-        for (const ing of composition.directIngredients) {
-          addToMap(ing.ingredientId, ing.quantity * item.quantity);
-        }
-        for (const subIng of composition.subRecipeIngredients) {
-            addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+        for (const [ingId, qty] of composition.rawIngredients.entries()) {
+          addToMap(ingId, qty * item.quantity);
         }
       }
       
@@ -502,11 +503,8 @@ export class InventoryDataService {
                    const addToMap = (ingId: string, qty: number) => {
                        stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
                    };
-                   for (const ing of extraComp.directIngredients) {
-                     addToMap(ing.ingredientId, ing.quantity * item.quantity);
-                   }
-                   for (const subIng of extraComp.subRecipeIngredients) {
-                       addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+                   for (const [ingId, qty] of extraComp.rawIngredients.entries()) {
+                     addToMap(ingId, qty * item.quantity);
                    }
                }
            }
@@ -541,7 +539,7 @@ export class InventoryDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    const recipeCompositions = this.recipeState.recipeDirectComposition();
+    const recipeCompositions = this.recipeState.recipeCosts();
     const processedGroupIds = new Set<string>();
     
     // Map: StationID -> { IngredientID -> TotalQty }
@@ -567,11 +565,8 @@ export class InventoryDataService {
             stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
         };
 
-        for (const ing of composition.directIngredients) {
-          addToMap(ing.ingredientId, ing.quantity * item.quantity);
-        }
-        for (const subIng of composition.subRecipeIngredients) {
-            addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+        for (const [ingId, qty] of composition.rawIngredients.entries()) {
+          addToMap(ingId, qty * item.quantity);
         }
       }
 
@@ -591,11 +586,8 @@ export class InventoryDataService {
                    const addToMap = (ingId: string, qty: number) => {
                        stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
                    };
-                   for (const ing of extraComp.directIngredients) {
-                     addToMap(ing.ingredientId, ing.quantity * item.quantity);
-                   }
-                   for (const subIng of extraComp.subRecipeIngredients) {
-                       addToMap(subIng.ingredientId, subIng.quantity * item.quantity);
+                   for (const [ingId, qty] of extraComp.rawIngredients.entries()) {
+                     addToMap(ingId, qty * item.quantity);
                    }
                }
            }

@@ -250,12 +250,12 @@ export class MenuDataService {
     const fileName = `menu-items/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('images')
+      .from('restaurant_assets')
       .upload(fileName, file);
 
     if (uploadError) return { success: false, error: uploadError };
 
-    const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+    const { data } = supabase.storage.from('restaurant_assets').getPublicUrl(fileName);
     return { success: true, url: data.publicUrl };
   }
 }

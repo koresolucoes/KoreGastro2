@@ -156,8 +156,8 @@ export class SupabaseStateService {
         ingredients, ingredientCategories, suppliers, stationStocks,
         // Active Operations
         customers, orders, deliveryDrivers,
-        // Loyalty & Reservations
-        loyaltySettings, loyaltyRewards, reservationSettings
+        // Loyalty & Reservations & Payment Terminals
+        loyaltySettings, loyaltyRewards, reservationSettings, paymentTerminals
     ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('tables').select('*').eq('user_id', userId),
@@ -189,7 +189,8 @@ export class SupabaseStateService {
         // Settings
         supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
         supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true }),
-        supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle()
+        supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('payment_terminals').select('*').eq('user_id', userId).eq('is_active', true)
     ]);
 
     // Populate State
@@ -218,6 +219,7 @@ export class SupabaseStateService {
     this.settingsState.loyaltySettings.set(loyaltySettings.data || null);
     this.settingsState.loyaltyRewards.set(loyaltyRewards.data || []);
     this.settingsState.reservationSettings.set(reservationSettings.data || null);
+    this.settingsState.paymentTerminals.set(paymentTerminals.data || []);
   }
 
   // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
