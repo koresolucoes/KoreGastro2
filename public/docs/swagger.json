@@ -648,6 +648,104 @@
         },
         "responses": { "200": { "description": "Success" } }
       }
+    },
+    "/reports": {
+      "get": {
+        "summary": "Obter Relatórios Gerenciais",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["sales", "item_performance"] }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/loyalty": {
+      "get": {
+        "summary": "Listar Programas de Recompensas",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Success" } }
+      },
+      "post": {
+        "summary": "Criar Recompensa de Lealdade",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "points_cost": { "type": "number" },
+                  "reward_type": { "type": "string", "enum": ["discount_percentage", "discount_fixed", "free_item"] },
+                  "reward_value": { "type": "string" },
+                  "is_active": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      },
+      "patch": {
+        "summary": "Atualizar Recompensa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "restaurantId": { "type": "string" },
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "points_cost": { "type": "number" },
+                  "reward_type": { "type": "string", "enum": ["discount_percentage", "discount_fixed", "free_item"] },
+                  "reward_value": { "type": "string" },
+                  "is_active": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      }
     }
   }
 }

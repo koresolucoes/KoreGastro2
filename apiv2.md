@@ -19,8 +19,8 @@ A API V1 está em processo de depreciação (sunset) planejado. O objetivo é un
 ### Fases da Migração
 - **✅ Fase 0:** Criação da infraestrutura Base, Utils, e *endpoints* primários (Mesas, Salões, Clientes, Pedidos V2). Setup do Swagger.
 - **✅ Fase 1:** Migração de Delivery (`/api/delivery` -> `/api/v2/deliveries`) e Fluxo de Pagamentos/Conta (`/api/account` e `/api/payments` -> combinados dentro de `v2/orders` e `v2/payments`). Arquivos antigos marcados como depreciados.
-- **🔄 Fase 2:** Migração de Relatórios (`/api/relatorios` -> `/api/v2/reports`) e Programas de Fidelidade (`/api/recompensas` -> `/api/v2/loyalty`).
-- **⏳ Fase 3:** Ajuste de Webhooks Internos e Proxies Administrativos e posterior remoção definitiva dos arquivos de V1.
+- **✅ Fase 2:** Migração de Relatórios (`/api/relatorios` -> `/api/v2/reports`) e Programas de Fidelidade (`/api/recompensas` -> `/api/v2/loyalty`). Arquivos antigos marcados como depreciados e atualizados no `swagger.json`.
+- **🔄 Fase 3:** Ajuste de Webhooks Internos e Proxies Administrativos e posterior remoção definitiva dos arquivos de V1.
 
 ---
 
