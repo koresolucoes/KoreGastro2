@@ -75,7 +75,7 @@ export class AppComponent implements OnInit {
     });
 
     // Initial check
-    if (this.router.url === '/' || this.router.url === '/#/' || this.router.url === '') {
+    if (window.location.pathname === '/' || window.location.pathname === '') {
       this.handleRootRedirection();
     }
   }

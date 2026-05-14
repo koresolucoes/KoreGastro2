@@ -80,6 +80,7 @@ export class DashboardComponent implements OnInit {
   // UI State
   editMode = signal(false);
   period = signal<ReportPeriod>('day');
+  selectedOrderPreview = signal<Order | null>(null);
   
   // Chart state
   isLoading = signal(true);
@@ -400,7 +401,8 @@ export class DashboardComponent implements OnInit {
          id: o.id.slice(0, 6),
          time: o.completed_at,
          total: o.order_items.reduce((s, i) => s + (i.price * i.quantity), 0),
-         type: o.order_type
+         type: o.order_type,
+         fullOrder: o
       }));
   });
 
