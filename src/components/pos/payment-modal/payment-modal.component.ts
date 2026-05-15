@@ -362,7 +362,7 @@ export class PaymentModalComponent {
     const paymentAmount = (method === 'Dinheiro' && amount > balance) ? balance : amount;
     
     if (method !== 'Dinheiro' && amount > balance + 0.01) {
-        alert('Valor acima do saldo devedor.');
+        this.notificationService.alert('Valor acima do saldo devedor.');
         return;
     }
     
@@ -388,7 +388,7 @@ export class PaymentModalComponent {
            this.notificationService.show('Pagamento de Crédito autorizado (Cielo Sandbox)', 'success');
        } catch (err: any) {
            this.terminalStatus.set('ERROR');
-           alert('Erro na integração Cielo: ' + err.message);
+           this.notificationService.alert('Erro na integração Cielo: ' + err.message);
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
            return;
        }
@@ -409,10 +409,10 @@ export class PaymentModalComponent {
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
            this.notificationService.show('Pagamento PIX gerado (Cielo Sandbox)', 'success');
            // Here we could display the QR code returned in result.Payment.QrCodeString
-           alert('PIX Copia e Cola: ' + result.Payment.QrCodeString);
+           this.notificationService.alert('PIX Copia e Cola: ' + result.Payment.QrCodeString);
        } catch (err: any) {
            this.terminalStatus.set('ERROR');
-           alert('Erro na integração Cielo PIX: ' + err.message);
+           this.notificationService.alert('Erro na integração Cielo PIX: ' + err.message);
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
            return;
        }
@@ -434,7 +434,7 @@ export class PaymentModalComponent {
            this.notificationService.show('Pagamento na Maquininha aprovado (Cielo LIO)', 'success');
        } catch (err: any) {
            this.terminalStatus.set('ERROR');
-           alert('Erro na Maquininha Cielo: ' + err.message);
+           this.notificationService.alert('Erro na Maquininha Cielo: ' + err.message);
            setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
            return;
        }
@@ -454,7 +454,7 @@ export class PaymentModalComponent {
           
           if (!terminalResult.success) {
              this.terminalStatus.set('ERROR');
-             alert('Erro na maquininha: ' + (terminalResult.errorMessage || 'Desconhecido'));
+             this.notificationService.alert('Erro na maquininha: ' + (terminalResult.errorMessage || 'Desconhecido'));
              return;
           }
           
@@ -462,7 +462,7 @@ export class PaymentModalComponent {
           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
        } catch (err: any) {
           this.terminalStatus.set('ERROR');
-          alert('Erro ao comunicar com a maquininha: ' + err.message);
+          this.notificationService.alert('Erro ao comunicar com a maquininha: ' + err.message);
           return;
        }
     }
@@ -539,7 +539,7 @@ export class PaymentModalComponent {
     if (result.success) {
       this.paymentSuccess.set(true);
     } else {
-      alert(`Falha ao registrar pagamento. Erro: ${result.error?.message}`);
+      this.notificationService.alert(`Falha ao registrar pagamento. Erro: ${result.error?.message}`);
     }
   }
 

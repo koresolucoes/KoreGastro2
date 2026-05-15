@@ -1,7 +1,7 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ReservationDataService } from '../../services/reservation-data.service';
 import { CompanyProfile, Reservation, ReservationSettings } from '../../models/db.models';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +17,7 @@ interface TimeSlot {
 @Component({
   selector: 'app-public-booking',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './public-booking.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

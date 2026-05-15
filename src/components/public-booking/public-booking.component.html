@@ -14,6 +14,13 @@
 
   <!-- Right Side: Booking Form -->
   <div class="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-24 bg-surface relative">
+    
+    <!-- Voltar ao Cardápio -->
+    <a [routerLink]="['/menu', userId()]" class="absolute top-6 left-6 flex items-center gap-2 text-brand hover:text-brand-hover mb-4 group transition-all z-20">
+      <span translate="no" class="notranslate material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+      <span class="text-[11px] font-black uppercase tracking-widest">Voltar ao Cardápio</span>
+    </a>
+
     @if(viewState() === 'loading') {
          <div class="flex flex-col items-center justify-center h-full">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand mb-6"></div>

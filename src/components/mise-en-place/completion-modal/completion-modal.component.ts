@@ -1,8 +1,9 @@
 
-import { Component, ChangeDetectionStrategy, input, output, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductionTask, Recipe } from '../../../models/db.models';
+import { NotificationService } from '../../../services/notification.service';
 
 export interface CompletionData {
   quantityProduced: number;
@@ -23,6 +24,8 @@ export interface CompletionData {
 export class MiseEnPlaceCompletionModalComponent implements OnInit {
   task = input.required<ProductionTask>();
   recipe = input<Recipe | null>(null); // Optional, for shelf life calculation
+
+  private notificationService = inject(NotificationService);
 
   close = output<void>();
   save = output<CompletionData>();
@@ -61,13 +64,13 @@ export class MiseEnPlaceCompletionModalComponent implements OnInit {
     this.expirationDate.set(expDate.toISOString().split('T')[0]); // YYYY-MM-DD for input
   }
 
-  confirm() {
+  async confirm() {
     if (this.producedQuantity() <= 0) {
-        alert('A quantidade produzida deve ser maior que zero.');
+        await this.notificationService.alert('A quantidade produzida deve ser maior que zero.');
         return;
     }
     if (!this.expirationDate()) {
-        alert('A data de validade é obrigatória.');
+        await this.notificationService.alert('A data de validade é obrigatória.');
         return;
     }
 

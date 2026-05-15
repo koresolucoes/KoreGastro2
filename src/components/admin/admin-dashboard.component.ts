@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SystemAdminService } from '../../services/system-admin.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -161,6 +162,7 @@ import { SystemAdminService } from '../../services/system-admin.service';
 })
 export class AdminDashboardComponent implements OnInit {
   adminService = inject(SystemAdminService);
+  notificationService = inject(NotificationService);
   stats = signal<any>(null);
   restaurants = signal<any[]>([]);
   isLoading = signal(true);
@@ -198,7 +200,7 @@ export class AdminDashboardComponent implements OnInit {
     const { error } = await this.adminService.updateSubscriptionStatus(userId, newStatus, defaultPlanId);
     
     if (error) {
-      alert('Erro ao atualizar assinatura: ' + error.message);
+      this.notificationService.alert('Erro ao atualizar assinatura: ' + error.message);
     } else {
       await this.loadData(); // Reload to show updated status
     }

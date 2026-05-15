@@ -6,7 +6,7 @@
 
 
 
-<div class="h-full flex flex-col no-print bg-app relative p-4 md:p-6 overflow-hidden">
+<div class="h-full flex flex-col no-print bg-app relative p-2 md:p-6 overflow-hidden">
   
   <!-- Liquid Glassmorphism Background Orbs -->
   <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
@@ -29,47 +29,47 @@
       </div>
     </div>
   } @else {
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 relative z-10">
-      <div class="flex-1">
-        <div class="flex items-center gap-4">
-             <div class="bg-brand/10 p-2 rounded-xl border border-brand/20 shadow-sm">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 md:mb-8 gap-2 md:gap-4 relative z-10 w-full overflow-hidden shrink-0">
+      <div class="flex-1 flex flex-row items-center justify-between md:justify-start w-full md:w-auto gap-2">
+        <div class="flex items-center gap-2 md:gap-4">
+             <div class="bg-brand/10 p-1.5 md:p-2 rounded-lg md:rounded-xl border border-brand/20 shadow-sm hidden md:block">
                 <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">soup_kitchen</span>
              </div>
-             <h1 class="text-3xl font-black text-title tracking-tight drop-shadow-sm">KDS</h1>
+             <h1 class="text-xl md:text-3xl font-black text-title tracking-tight drop-shadow-sm bg-brand/10 md:bg-transparent px-2 md:px-0 py-1 md:py-0 rounded-lg md:rounded-none">KDS</h1>
              
              <!-- Recall Button -->
              @if(viewMode() === 'station') {
-                 <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-2 px-5 py-2 bg-surface hover:bg-surface-elevated rounded-xl text-sm text-title font-bold transition-all border border-strong hover:border-brand/40 shadow-sm active:scale-95 group">
-                    <span translate="no" class="notranslate material-symbols-outlined text-lg text-muted group-hover:text-brand transition-colors">history</span>
-                    <span>Desfazer</span>
+                 <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-1 md:gap-2 px-2 md:px-5 py-1 md:py-2 bg-surface hover:bg-surface-elevated rounded-lg md:rounded-xl text-[10px] md:text-sm text-title font-bold transition-all border border-strong hover:border-brand/40 shadow-sm active:scale-95 group">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-lg text-muted group-hover:text-brand transition-colors">history</span>
+                    <span class="hidden md:inline">Desfazer</span>
                  </button>
              }
         </div>
         
         @if(viewMode() === 'station' || viewMode() === 'production') {
-          <div class="flex items-center gap-3 mt-4 text-sm animate-in slide-in-from-left-4">
-            <span class="text-muted font-bold uppercase tracking-widest text-[10px]">Responsável</span>
-            <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 md:gap-3 md:mt-4 text-xs md:text-sm animate-in slide-in-from-left-4 shrink-0">
+            <span class="hidden md:inline text-muted font-bold uppercase tracking-widest text-[10px]">Responsável</span>
+            <div class="flex items-center gap-1 md:gap-2">
                 @if (selectedStation()?.employees; as employee) {
-                  <div class="flex items-center gap-2 bg-brand/10 border border-brand/20 px-3 py-1.5 rounded-xl shadow-sm">
-                      <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
-                      <span class="font-black text-brand">{{ employee.name }}</span>
+                  <div class="flex items-center gap-1.5 md:gap-2 bg-brand/10 border border-brand/20 px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl shadow-sm">
+                      <div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-brand animate-pulse"></div>
+                      <span class="font-black text-[10px] md:text-sm text-brand truncate max-w-[80px] md:max-w-none">{{ employee.name }}</span>
                   </div>
                 } @else {
-                  <span class="text-muted italic bg-surface/50 border border-subtle px-3 py-1.5 rounded-xl">Ninguém atribuído</span>
+                  <span class="text-muted italic text-[10px] md:text-sm bg-surface/50 border border-subtle px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl hidden md:inline-block">Ninguém atribuído</span>
                 }
-                <button (click)="isAssignEmployeeModalOpen.set(true)" class="p-2 rounded-xl text-muted hover:bg-brand hover:text-white border border-transparent hover:border-brand transition-all shadow-sm group" title="Atribuir responsável">
-                  <span translate="no" class="notranslate material-symbols-outlined text-xl transition-transform group-hover:rotate-12">person_add</span>
+                <button (click)="isAssignEmployeeModalOpen.set(true)" class="p-1 md:p-2 rounded-lg md:rounded-xl text-muted hover:bg-brand hover:text-white border border-transparent hover:border-brand transition-all shadow-sm group" title="Atribuir responsável">
+                  <span translate="no" class="notranslate material-symbols-outlined text-base md:text-xl transition-transform group-hover:rotate-12">person_add</span>
                 </button>
             </div>
           </div>
         }
       </div>
       
-      <div class="flex items-center flex-wrap gap-4">
+      <div class="flex flex-row items-center flex-nowrap md:flex-wrap gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0 shrink-0">
         <!-- Sound Toggle -->
         <button (click)="soundNotificationService.toggleMute()" 
-                class="p-3 rounded-2xl transition-all border shadow-lg active:scale-90" 
+                class="shrink-0 p-1.5 md:p-3 rounded-lg md:rounded-2xl transition-all border shadow-md md:shadow-lg active:scale-90" 
                 [class.bg-danger/20]="soundNotificationService.isMuted()" 
                 [class.text-danger]="soundNotificationService.isMuted()"
                 [class.border-danger/30]="soundNotificationService.isMuted()"
@@ -78,43 +78,43 @@
                 [class.border-strong]="!soundNotificationService.isMuted()"
                 [title]="soundNotificationService.isMuted() ? 'Ativar Som' : 'Silenciar'">
           @if (soundNotificationService.isMuted()) {
-            <span translate="no" class="notranslate material-symbols-outlined text-2xl">volume_off</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[16px] md:text-2xl">volume_off</span>
           } @else {
-            <span translate="no" class="notranslate material-symbols-outlined text-2xl animate-pulse">volume_up</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-[16px] md:text-2xl animate-pulse">volume_up</span>
           }
         </button>
 
         <!-- View Mode Toggle -->
-        <div class="flex gap-1 bg-surface-elevated/80 backdrop-blur-md p-1.5 rounded-2xl border border-strong shadow-inner">
+        <div class="shrink-0 flex gap-0.5 md:gap-1 bg-surface-elevated/80 backdrop-blur-md p-1 md:p-1.5 rounded-lg md:rounded-2xl border border-strong shadow-inner">
           <button (click)="setViewMode('station')" 
-                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  class="px-2.5 md:px-6 py-1 md:py-2.5 text-[9px] md:text-sm font-black rounded-md md:rounded-xl transition-all uppercase tracking-wider" 
                   [class.bg-brand]="viewMode() === 'station'" 
                   [class.text-white]="viewMode() === 'station'"
-                  [class.shadow-lg]="viewMode() === 'station'"
+                  [class.shadow-sm]="viewMode() === 'station'"
                   [class.text-muted]="viewMode() !== 'station'"
                   [class.hover:text-title]="viewMode() !== 'station'">TICKETS</button>
           <button (click)="setViewMode('production')" 
-                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  class="px-2.5 md:px-6 py-1 md:py-2.5 text-[9px] md:text-sm font-black rounded-md md:rounded-xl transition-all uppercase tracking-wider" 
                   [class.bg-brand]="viewMode() === 'production'" 
                   [class.text-white]="viewMode() === 'production'"
-                  [class.shadow-lg]="viewMode() === 'production'"
+                  [class.shadow-sm]="viewMode() === 'production'"
                   [class.text-muted]="viewMode() !== 'production'"
                   [class.hover:text-title]="viewMode() !== 'production'">PRODUÇÃO</button>
           <button (click)="setViewMode('expo')" 
-                  class="px-6 py-2.5 text-sm font-black rounded-xl transition-all uppercase tracking-wider" 
+                  class="px-2.5 md:px-6 py-1 md:py-2.5 text-[9px] md:text-sm font-black rounded-md md:rounded-xl transition-all uppercase tracking-wider" 
                   [class.bg-brand]="viewMode() === 'expo'" 
                   [class.text-white]="viewMode() === 'expo'"
-                  [class.shadow-lg]="viewMode() === 'expo'"
+                  [class.shadow-sm]="viewMode() === 'expo'"
                   [class.text-muted]="viewMode() !== 'expo'"
                   [class.hover:text-title]="viewMode() !== 'expo'">EXPO</button>
         </div>
 
         <!-- Station Selector -->
         @if(viewMode() === 'station' || viewMode() === 'production') {
-          <div class="flex flex-wrap gap-1 bg-surface/80 backdrop-blur-md p-1.5 rounded-2xl border border-strong shadow-inner">
+          <div class="shrink-0 flex flex-nowrap gap-0.5 md:gap-1 bg-surface/80 backdrop-blur-md p-1 md:p-1.5 rounded-lg md:rounded-2xl border border-strong shadow-inner">
             @for (station of stations(); track station.id) {
               <button (click)="selectStation(station)" 
-                      class="px-5 py-2.5 text-sm font-black rounded-xl transition-all border" 
+                      class="px-2.5 md:px-5 py-1 md:py-2.5 text-[9px] md:text-sm whitespace-nowrap font-black rounded-md md:rounded-xl transition-all border" 
                       [class.bg-brand/10]="selectedStation()?.id === station.id" 
                       [class.text-brand]="selectedStation()?.id === station.id" 
                       [class.border-brand/30]="selectedStation()?.id === station.id"

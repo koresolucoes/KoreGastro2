@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { supabase } from '../../services/supabase-client';
 import { PublicDataService } from '../../services/public-data.service';
@@ -17,6 +17,7 @@ import { MenuAuthComponent } from './auth/menu-auth.component';
 import { MenuProfileComponent } from './profile/menu-profile.component';
 import { CustomerAuthService } from '../../services/customer-auth.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface MenuGroup {
   category: Category;
@@ -28,6 +29,7 @@ interface MenuGroup {
   standalone: true,
   imports: [
     CommonModule, 
+    RouterModule,
     FormsModule,
     MenuCustomizationComponent,
     MenuCartComponent,
@@ -48,6 +50,7 @@ export class MenuComponent implements OnInit {
   private unitContext = inject(UnitContextService);
   public customerAuthService = inject(CustomerAuthService);
   private recipeState = inject(RecipeStateService);
+  private notificationService = inject(NotificationService);
 
   // State
   userId = signal<string | null>(null);
@@ -307,8 +310,7 @@ export class MenuComponent implements OnInit {
       this.cart.clearCart();
       this.view.set('success');
     } catch (error) {
-      console.error('Error submitting order:', error);
-      alert('Erro ao enviar pedido. Tente novamente.');
+      this.notificationService.alert('Erro ao enviar pedido. Tente novamente.');
     } finally {
       this.isLoading.set(false);
     }

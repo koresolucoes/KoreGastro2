@@ -4,6 +4,7 @@ import { Hall } from '../../../models/db.models';
 import { PosStateService } from '../../../services/pos-state.service';
 import { PosDataService } from '../../../services/pos-data.service';
 import { output, OutputEmitterRef } from '@angular/core';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-hall-manager-modal',
@@ -15,6 +16,7 @@ import { output, OutputEmitterRef } from '@angular/core';
 export class HallManagerModalComponent {
   posState = inject(PosStateService);
   posDataService = inject(PosDataService);
+  notificationService = inject(NotificationService);
 
   closeModal: OutputEmitterRef<void> = output<void>();
 
@@ -28,7 +30,7 @@ export class HallManagerModalComponent {
     if (!name) return;
     const { success, error } = await this.posDataService.addHall(name);
     if (success) this.newHallName.set('');
-    else alert(`Falha ao adicionar salão. Erro: ${error?.message}`);
+    else await this.notificationService.alert(`Falha ao adicionar salão. Erro: ${error?.message}`);
   }
 
   startEditing(hall: Hall) {
@@ -49,7 +51,7 @@ export class HallManagerModalComponent {
     if (!hall || !hall.name.trim()) return;
     const { success, error } = await this.posDataService.updateHall(hall.id, hall.name.trim());
     if (success) this.cancelEditing();
-    else alert(`Falha ao salvar. Erro: ${error?.message}`);
+    else await this.notificationService.alert(`Falha ao salvar. Erro: ${error?.message}`);
   }
 
   requestDelete(hall: Hall) {

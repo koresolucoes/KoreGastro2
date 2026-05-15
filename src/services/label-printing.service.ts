@@ -1,6 +1,7 @@
 import { Injectable, inject, LOCALE_ID } from '@angular/core';
 import { LabelType } from '../models/db.models';
 import { DatePipe } from '@angular/common';
+import { NotificationService } from './notification.service';
 
 export interface LabelData {
   itemName: string;
@@ -20,6 +21,7 @@ export interface LabelData {
 export class LabelPrintingService {
   private locale = inject(LOCALE_ID);
   private datePipe = new DatePipe(this.locale);
+  private notificationService = inject(NotificationService);
 
   // PVPS Color Standard (Segunda -> Domingo)
   private readonly DAY_COLORS: Record<number, string> = {
@@ -55,7 +57,7 @@ export class LabelPrintingService {
   printLabel(data: LabelData, format: 'standard' | 'compact' = 'standard') {
     const printWindow = window.open('', '_blank', 'width=400,height=300');
     if (!printWindow) {
-      alert('Por favor, habilite pop-ups para imprimir.');
+      this.notificationService.alert('Por favor, habilite pop-ups para imprimir.');
       return;
     }
 
