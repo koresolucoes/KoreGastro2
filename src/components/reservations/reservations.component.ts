@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
@@ -6,6 +6,7 @@ import { Reservation, ReservationStatus } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { ReservationModalComponent } from './reservation-modal.component';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 @Component({
   selector: 'app-reservations',
@@ -14,11 +15,12 @@ import { ReservationModalComponent } from './reservation-modal.component';
   templateUrl: './reservations.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReservationsComponent {
+export class ReservationsComponent implements OnInit {
   settingsState = inject(SettingsStateService);
   reservationDataService = inject(ReservationDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
+  supabaseStateService = inject(SupabaseStateService);
 
   activeView = signal<'daily' | 'overview'>('daily');
   selectedDate = signal(new Date().toISOString().split('T')[0]);
@@ -26,6 +28,10 @@ export class ReservationsComponent {
   // Modal State
   isModalOpen = signal(false);
   reservationForModal = signal<Partial<Reservation> | null>(null);
+
+  ngOnInit() {
+    this.supabaseStateService.loadBackOfficeData();
+  }
 
   canAddReservation = computed(() => {
     const role = this.operationalAuthService.activeEmployee()?.role;

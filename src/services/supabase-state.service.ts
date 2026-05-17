@@ -229,8 +229,9 @@ export class SupabaseStateService {
      if (!userId) return;
      console.log('[SupabaseState] Loading BackOffice Data (Lazy)...');
 
-     const today = new Date();
-     today.setHours(0, 0, 0, 0);
+     const yesterday = new Date();
+     yesterday.setDate(yesterday.getDate() - 1);
+     yesterday.setHours(0, 0, 0, 0);
 
      const [
         purchaseOrders, inventoryLots, productionPlans, 
@@ -244,7 +245,7 @@ export class SupabaseStateService {
         supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
         supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }).limit(50),
         // Load only future or today's reservations to save bandwidth
-        supabase.from('reservations').select('*').eq('user_id', userId).gte('reservation_time', today.toISOString()).order('reservation_time', { ascending: true })
+        supabase.from('reservations').select('*').eq('user_id', userId).gte('reservation_time', yesterday.toISOString()).order('reservation_time', { ascending: true })
      ]);
 
      this.inventoryState.purchaseOrders.set(purchaseOrders.data || []);
