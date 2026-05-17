@@ -75,7 +75,8 @@ export class AppComponent implements OnInit {
     });
 
     // Initial check
-    if (window.location.pathname === '/' || window.location.pathname === '') {
+    const isRootHash = !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';
+    if ((window.location.pathname === '/' || window.location.pathname === '') && isRootHash) {
       this.handleRootRedirection();
     }
   }
