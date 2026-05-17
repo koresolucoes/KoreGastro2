@@ -42,7 +42,7 @@
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4 border-b border-subtle pb-5">
             <div class="flex items-center gap-3">
-              <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-success">active_indicators</span> Cardápio iFood</h2>
+              <h2 class="font-black text-sm uppercase tracking-widest text-title">Cardápio iFood</h2>
               @if(ifoodCatalogs().length > 1) {
                   <div class="relative">
                     <select class="appearance-none bg-surface border border-strong rounded-xl pl-4 pr-10 py-2 text-xs font-bold text-title focus:outline-none focus:border-brand cursor-pointer shadow-sm" [ngModel]="selectedCatalogId()" (ngModelChange)="switchCatalog($event)">
@@ -159,7 +159,7 @@
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
             <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-subtle pb-5">
                 <div>
-                   <h2 class="font-black text-sm uppercase tracking-widest text-title flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">category</span> Opcionais e Combos</h2>
+                   <h2 class="font-black text-sm uppercase tracking-widest text-title">Opcionais e Combos</h2>
                    <p class="text-[11px] font-black uppercase tracking-widest text-muted mt-1">Configure opções de personalização, adicionais e combos para o cardápio.</p>
                 </div>
                 <button (click)="openNewGroupModal()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Novo Grupo</button>
@@ -222,7 +222,7 @@
       }
       @case ('unsellable') {
         <div class="bg-surface-elevated border border-subtle rounded-2xl p-6 shadow-sm">
-            <h2 class="font-black text-sm uppercase tracking-widest text-title mb-6 flex items-center gap-2"><span translate="no" class="notranslate material-symbols-outlined text-muted">block</span> Itens Não Vendáveis no iFood</h2>
+            <h2 class="font-black text-sm uppercase tracking-widest text-title mb-6">Itens Não Vendáveis no iFood</h2>
              @if (unsellableCategories().length === 0) {
                  <div class="p-8 text-center bg-success/5 border border-success/20 rounded-xl">
                      <span translate="no" class="notranslate material-symbols-outlined text-4xl text-success mb-3">check_circle</span>
