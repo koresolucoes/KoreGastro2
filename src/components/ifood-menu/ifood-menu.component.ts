@@ -7,6 +7,7 @@ import { NotificationService } from '../../services/notification.service';
 import { Recipe, Category, IfoodMenuSync } from '../../models/db.models';
 import { RouterLink } from '@angular/router';
 import { RecipeDataService } from '../../services/recipe-data.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UnitContextService } from '../../services/unit-context.service';
@@ -34,6 +35,9 @@ export class IfoodMenuComponent implements OnInit {
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
   private recipeDataService = inject(RecipeDataService);
+  private settingsState = inject(SettingsStateService);
+
+  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.ifood_merchant_id);
 
   isLoading = signal(true);
   view = signal<'live' | 'unsellable' | 'optionGroups'>('optionGroups');
@@ -115,6 +119,111 @@ export class IfoodMenuComponent implements OnInit {
 
   isUploadingImage = signal<string | null>(null); // Use item.id to track
 
+
+  isImporting = signal(false);
+  isSyncingAll = signal(false);
+
+  async importAllFromIfood() {
+    const confirmed = await this.notificationService.confirm('Deseja importar todos os itens do iFood que ainda não estão no ChefOS?');
+    if (!confirmed) return;
+
+    this.isImporting.set(true);
+    let importedCount = 0;
+    try {
+      const activeUnitId = this.getActiveUnitId();
+      if (!activeUnitId) throw new Error('Unidade não identificada.');
+
+      for (const category of this.ifoodCategories()) {
+        if (!category.items || category.items.length === 0) continue;
+
+        // Try to find the local category
+        let localCat = this.localCategories().find(c => c.name.toLowerCase() === category.name.toLowerCase());
+        if (!localCat) {
+          const res = await this.recipeDataService.addRecipeCategory(category.name);
+          if (res.success && res.data) {
+            localCat = res.data;
+          } else {
+             console.error('Falha ao criar categoria:', category.name);
+             continue;
+          }
+        }
+
+        for (const item of category.items) {
+          // If we mapped it to a local equivalent by external code, skip
+          if (item.externalCode && this.ifoodItemsWithLocalEquivalent().has(item.externalCode)) {
+             continue;
+          }
+
+          const externalCode = item.externalCode || `IFOOD-${item.id.substring(0,8).toUpperCase()}`;
+
+          // Create recipe
+          const recipePayload = {
+             store_id: activeUnitId,
+             user_id: activeUnitId,
+             name: item.name,
+             description: item.description,
+             price: item.price.value,
+             category_id: localCat!.id,
+             external_code: externalCode,
+             is_available: item.status === 'AVAILABLE',
+             is_sub_recipe: false
+          };
+
+          const resRecipe = await this.recipeDataService.addRecipe(recipePayload);
+          if (resRecipe.success && resRecipe.data) {
+             // Create sync mapping
+             const syncHash = this.createSyncHash(resRecipe.data as Recipe);
+             const syncRecord = {
+                recipe_id: resRecipe.data.id,
+                user_id: activeUnitId,
+                ifood_item_id: item.id,
+                ifood_product_id: item.productId,
+                ifood_category_id: category.id,
+                last_sync_hash: syncHash,
+                last_synced_at: new Date().toISOString()
+             };
+             await supabase.from('ifood_menu_sync').upsert(syncRecord, { onConflict: 'recipe_id' });
+             importedCount++;
+          }
+        }
+      }
+
+      this.notificationService.show(`${importedCount} itens importados com sucesso!`, 'success');
+      // Because we modified local recipes, we should reload local data (Supabase real-time might catch it too, but to be sure)
+      await this.refreshData(); // Refresh ifood data
+    } catch (e: any) {
+      this.notificationService.show(`Erro na importação: ${e.message}`, 'error');
+    } finally {
+      this.isImporting.set(false);
+    }
+  }
+
+  async syncAllToIfood() {
+    const items = this.itemsToCreateOnIfood();
+    if (items.length === 0) {
+       this.notificationService.show('Não há itens novos ou modificados para sincronizar.', 'warning');
+       return;
+    }
+
+    const confirmed = await this.notificationService.confirm(`Deseja sincronizar ${items.length} itens do ChefOS para o iFood?`);
+    if (!confirmed) return;
+
+    this.isSyncingAll.set(true);
+    let successCount = 0;
+    try {
+      for (const item of items) {
+        if (item.status === 'syncing' || item.status === 'synced') continue;
+
+        await this.syncItem(item); // Uses existing syncItem logic, await ensures we don't bombard iFood
+        successCount++;
+      }
+      this.notificationService.show(`Sincronização concluída! ${successCount} itens sincronizados.`, 'success');
+    } catch (e: any) {
+      this.notificationService.show(`Erro na sincronização em massa: ${e.message}`, 'error');
+    } finally {
+      this.isSyncingAll.set(false);
+    }
+  }
 
   private createSyncHash(recipe: Recipe): string {
     return `${recipe.name}|${recipe.description || ''}|${recipe.price.toFixed(2)}`;

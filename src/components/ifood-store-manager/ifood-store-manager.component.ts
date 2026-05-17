@@ -1,8 +1,10 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IfoodMenuService, IfoodMerchantStatus, IfoodInterruption, IfoodOpeningHours } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 
 interface ShiftForm {
   id: string; // A temporary ID for Angular's trackBy
@@ -20,7 +22,7 @@ interface WeeklyHoursForm {
 @Component({
   selector: 'app-ifood-store-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, RouterLink],
   templateUrl: './ifood-store-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -28,6 +30,8 @@ export class IfoodStoreManagerComponent implements OnInit {
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
 
+  private settingsState = inject(SettingsStateService);
+  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.ifood_merchant_id);
   isLoadingStatus = signal(true);
   isLoadingInterruptions = signal(true);
   isLoadingHours = signal(true);

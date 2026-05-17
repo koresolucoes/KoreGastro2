@@ -8,7 +8,7 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { ThemeService } from '../../services/theme.service';
-import { AddStoreModalComponent } from '../sidebar/add-store-modal/add-store-modal.component';
+import { AddStoreModalComponent } from '../shared/add-store-modal/add-store-modal.component';
 
 export interface NavLink {
   name: string;
@@ -104,6 +104,7 @@ export class TopNavComponent {
       icon: 'storefront',
       children: [
         { name: 'Cardápio Digital', path: '/menu', icon: 'qr_code_2', roles: ['Gerente', 'Caixa', 'Garçom'] },
+        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'menu_book', roles: ['Gerente'] },
         { name: 'Gestor iFood', path: '/ifood-store-manager', icon: 'storefront', roles: ['Gerente'] }
       ]
     },
@@ -136,7 +137,7 @@ export class TopNavComponent {
     
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Salão & PDV', 'Cozinha & KDS', 'Gestão', 'Estoque', 'Rotinas', 'Delivery/iFood'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery', '/ifood-menu', '/ifood-store-manager'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {
