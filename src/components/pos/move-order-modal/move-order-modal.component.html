@@ -10,20 +10,34 @@
       </button>
     </div>
     <div class="p-6">
-      <p class="text-muted font-bold tracking-wider uppercase text-xs mb-4">Selecione a mesa de destino livre:</p>
+      <p class="text-muted font-bold tracking-wider uppercase text-xs mb-4">Selecione a mesa de destino:</p>
       @if(availableTables().length > 0) {
           <div class="grid grid-cols-4 sm:grid-cols-5 gap-3">
               @for(table of availableTables(); track table.id) {
-                  <button (click)="onMoveOrder(table)" class="bg-success/10 text-success font-black text-xl p-3 rounded-2xl border-2 border-success/30 hover:bg-success hover:border-success hover:text-white transition-colors shadow-sm relative overflow-hidden group">
+                  <button (click)="onMoveOrder(table)" 
+                          [class.bg-success/10]="table.status === 'LIVRE'" 
+                          [class.border-success/30]="table.status === 'LIVRE'" 
+                          [class.text-success]="table.status === 'LIVRE'" 
+                          [class.hover:bg-success]="table.status === 'LIVRE'" 
+                          [class.hover:border-success]="table.status === 'LIVRE'" 
+                          [class.bg-warning/10]="table.status === 'OCUPADA'" 
+                          [class.border-warning/30]="table.status === 'OCUPADA'" 
+                          [class.text-warning]="table.status === 'OCUPADA'" 
+                          [class.hover:bg-warning]="table.status === 'OCUPADA'" 
+                          [class.hover:border-warning]="table.status === 'OCUPADA'" 
+                          class="font-black text-xl p-3 pb-4 rounded-2xl border-2 hover:text-white transition-colors shadow-sm relative overflow-hidden group">
                       <span class="relative z-10">{{ table.number }}</span>
                       <div class="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform rounded-xl rounded-2xl"></div>
+                      @if(table.status === 'OCUPADA') {
+                        <div class="text-[8px] uppercase tracking-tighter mt-1 absolute bottom-0.5 w-full text-center left-0 opacity-80">Mesclar</div>
+                      }
                   </button>
               }
           </div>
       } @else {
           <div class="text-center bg-surface-elevated rounded-xl p-8 border border-strong flex flex-col items-center justify-center gap-3">
              <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted opacity-50">block</span>
-             <p class="text-muted font-bold">Nenhuma mesa livre disponível neste salão.</p>
+             <p class="text-muted font-bold">Nenhuma mesa disponível neste salão.</p>
           </div>
       }
     </div>

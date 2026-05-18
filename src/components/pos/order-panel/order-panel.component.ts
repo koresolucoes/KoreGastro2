@@ -70,6 +70,7 @@ export class OrderPanelComponent implements OnInit {
   closePanel: OutputEmitterRef<void> = output<void>();
   checkoutStarted: OutputEmitterRef<void> = output<void>();
   moveOrderClicked: OutputEmitterRef<void> = output<void>();
+  splitOrderClicked: OutputEmitterRef<void> = output<void>();
   releaseTable: OutputEmitterRef<void> = output<void>();
   customerCountChanged: OutputEmitterRef<number> = output<number>();
   associateCustomerClicked: OutputEmitterRef<void> = output<void>();

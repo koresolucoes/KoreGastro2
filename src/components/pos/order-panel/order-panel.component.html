@@ -312,10 +312,11 @@
                     </button>
                 </div>
                 
-                 <div class="grid grid-cols-3 gap-2 mt-2">
-                    <button (click)="moveOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover-surface-elevated text-title rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Mover</button>
-                    <button (click)="openGlobalDiscountModal()" class="py-2.5 bg-surface border border-subtle hover-surface-elevated text-title rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Desconto</button>
-                    <button (click)="initiateOrderCancellation()" class="py-2.5 bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Cancelar</button>
+                 <div class="grid grid-cols-4 gap-2 mt-2">
+                    <button (click)="moveOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Mover</button>
+                    <button (click)="splitOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Dividir</button>
+                    <button (click)="openGlobalDiscountModal()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Descont.</button>
+                    <button (click)="initiateOrderCancellation()" class="py-2.5 bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Canc.</button>
                  </div>
             </div>
         </div>

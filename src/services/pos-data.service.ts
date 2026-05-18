@@ -238,15 +238,138 @@ export class PosDataService {
   }
 
   async moveOrderToTable(order: Order, sourceTable: Table, destinationTable: Table): Promise<{ success: boolean; error: any }> {
-    const { error: orderUpdateError } = await supabase.from('orders').update({ table_number: destinationTable.number }).eq('id', order.id);
-    if (orderUpdateError) return { success: false, error: orderUpdateError };
-    const { error: tablesUpdateError } = await supabase.from('tables').upsert([
-        { ...sourceTable, status: 'LIVRE', employee_id: null, customer_count: 0 },
-        { ...destinationTable, status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count }
-      ]);
-    return { success: !tablesUpdateError, error: tablesUpdateError };
+    // Check if destination table already has an active order
+    const { data: destOrder } = await supabase.from('orders')
+        .select('id')
+        .eq('table_number', destinationTable.number)
+        .eq('status', 'OPEN')
+        .maybeSingle();
+
+    if (destOrder) {
+        // MERGE: Move all items to destination order
+        const { error: itemsUpdateError } = await supabase.from('order_items')
+            .update({ order_id: destOrder.id })
+            .eq('order_id', order.id);
+            
+        if (itemsUpdateError) return { success: false, error: itemsUpdateError };
+        
+        // Delete the old source order
+        const { error: deleteOrderError } = await supabase.from('orders').delete().eq('id', order.id);
+        if (deleteOrderError) return { success: false, error: deleteOrderError };
+        
+        // Update table customer counts (summing them)
+        const nextCustomerCount = (destinationTable.customer_count || 0) + (sourceTable.customer_count || 0);
+
+        // Update tables
+        const { error: tablesUpdateError } = await supabase.from('tables').upsert([
+            { ...sourceTable, status: 'LIVRE', employee_id: null, customer_count: 0 },
+            { ...destinationTable, status: 'OCUPADA', customer_count: nextCustomerCount }
+        ]);
+
+        return { success: !tablesUpdateError, error: tablesUpdateError };
+    } else {
+      const { error: orderUpdateError } = await supabase.from('orders').update({ table_number: destinationTable.number }).eq('id', order.id);
+      if (orderUpdateError) return { success: false, error: orderUpdateError };
+      const { error: tablesUpdateError } = await supabase.from('tables').upsert([
+          { ...sourceTable, status: 'LIVRE', employee_id: null, customer_count: 0 },
+          { ...destinationTable, status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count }
+        ]);
+      return { success: !tablesUpdateError, error: tablesUpdateError };
+    }
   }
   
+  async splitOrderToTable(order: Order, sourceTable: Table, destinationTable: Table, itemsToSplit: { itemId: string, quantity: number }[]): Promise<{ success: boolean; error: any }> {
+    try {
+        let destOrderId = '';
+        
+        // Check if destination table already has an active order
+        const { data: destOrder } = await supabase.from('orders')
+            .select('id')
+            .eq('table_number', destinationTable.number)
+            .eq('status', 'OPEN')
+            .maybeSingle();
+
+        if (destOrder) {
+            destOrderId = destOrder.id;
+            
+            // Update table customer counts
+            await supabase.from('tables').upsert([
+                { ...destinationTable, status: 'OCUPADA', customer_count: (destinationTable.customer_count || 0) + (sourceTable.customer_count || 0) }
+            ]);
+        } else {
+            // Create a new order for destination table
+            const newOrderPayload = {
+                user_id: order.user_id,
+                table_number: destinationTable.number,
+                customer_id: order.customer_id,
+                status: 'OPEN',
+                order_type: 'Dine-in'
+            };
+            const { data: newOrderData, error: newOrderError } = await supabase.from('orders').insert(newOrderPayload).select('id').single();
+            if (newOrderError) throw newOrderError;
+            destOrderId = newOrderData.id;
+            
+            // Update destination table status
+            await supabase.from('tables').upsert([
+                { ...destinationTable, status: 'OCUPADA', employee_id: sourceTable.employee_id, customer_count: sourceTable.customer_count || 1 }
+            ]);
+        }
+
+        const itemsToInsert: any[] = [];
+        const itemsToUpdate: any[] = [];
+        
+        const originalOrderItems = order.order_items || [];
+
+        for (const splitItem of itemsToSplit) {
+            const originalItem = originalOrderItems.find((i: any) => i.id === splitItem.itemId);
+            if (!originalItem) continue;
+
+            if (originalItem.quantity === splitItem.quantity) {
+                // Move entire item
+                itemsToUpdate.push({
+                    id: originalItem.id,
+                    order_id: destOrderId
+                });
+            } else {
+                // Split item: reduce original quantity and create new item for destination
+                itemsToUpdate.push({
+                    id: originalItem.id,
+                    quantity: originalItem.quantity - splitItem.quantity
+                });
+                
+                // Clone the item without the ID to insert as new
+                const { id, created_at, updated_at, ...itemWithoutIds } = originalItem as any;
+                itemsToInsert.push({
+                    ...itemWithoutIds,
+                    order_id: destOrderId,
+                    quantity: splitItem.quantity
+                });
+            }
+        }
+
+        if (itemsToUpdate.length > 0) {
+            const { error: updateError } = await supabase.from('order_items').upsert(itemsToUpdate);
+            if (updateError) throw updateError;
+        }
+
+        if (itemsToInsert.length > 0) {
+            const { error: insertError } = await supabase.from('order_items').insert(itemsToInsert);
+            if (insertError) throw insertError;
+        }
+        
+        // Clean up empty source order if all items were moved
+        const remainingItemsCount = originalOrderItems.reduce((acc, curr) => acc + curr.quantity, 0) - itemsToSplit.reduce((acc, curr) => acc + curr.quantity, 0);
+        if (remainingItemsCount <= 0) {
+            await supabase.from('orders').delete().eq('id', order.id);
+            await supabase.from('tables').update({ status: 'LIVRE', employee_id: null, customer_count: 0 }).eq('id', sourceTable.id);
+        }
+
+        return { success: true, error: null };
+    } catch (e: any) {
+        return { success: false, error: e };
+    }
+  }
+
   async deleteEmptyOrder(orderId: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('orders').delete().eq('id', orderId);
     return { success: !error, error };

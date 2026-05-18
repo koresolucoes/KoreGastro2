@@ -9,6 +9,7 @@ import { TableLayoutComponent } from './table-layout/table-layout.component';
 import { CommandGridComponent } from './command-grid/command-grid.component'; // New
 import { PreBillModalComponent } from '../shared/pre-bill-modal/pre-bill-modal.component';
 import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.component';
+import { SplitOrderModalComponent } from './split-order-modal/split-order-modal.component';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 import { RedeemRewardModalComponent } from '../shared/redeem-reward-modal/redeem-reward-modal.component';
 
@@ -32,6 +33,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
     CommandGridComponent, // Added
     PreBillModalComponent,
     MoveOrderModalComponent,
+    SplitOrderModalComponent,
     CustomerSelectModalComponent,
     RedeemRewardModalComponent,
   ],
@@ -69,6 +71,7 @@ export class PosComponent implements OnInit {
   isOrderPanelOpen = signal(false);
   isEditMode = signal(false);
   isMoveModalOpen = signal(false);
+  isSplitModalOpen = signal(false);
   isHallManagerOpen = signal(false);
   isPreBillModalOpen = signal(false);
   isCustomerSelectModalOpen = signal(false);
@@ -108,7 +111,7 @@ export class PosComponent implements OnInit {
     if (!sourceTable) return []; // Cannot move Tab orders to Tables yet in this simple logic
     
     const hallId = sourceTable.hall_id;
-    return this.tables().filter(t => t.hall_id === hallId && t.status === 'LIVRE' && t.id !== sourceTable.id);
+    return this.tables().filter(t => t.hall_id === hallId && (t.status === 'LIVRE' || t.status === 'OCUPADA') && t.id !== sourceTable.id);
   });
 
   selectedHallIndex = computed(() => {
@@ -284,6 +287,24 @@ export class PosComponent implements OnInit {
     this.isContextMenuOpen.set(false); 
   }
   closeMoveModal() { this.isMoveModalOpen.set(false); }
+
+  openSplitModal() {
+    this.isSplitModalOpen.set(true);
+    this.isContextMenuOpen.set(false);
+  }
+  closeSplitModal() { this.isSplitModalOpen.set(false); }
+
+  async splitOrder(event: { destinationTable: Table, itemsToMove: { itemId: string, quantity: number }[] }) {
+    const order = this.activeOrder();
+    const sourceTable = this.sourceTableForModals();
+    if (order && sourceTable && event.destinationTable && order.order_type === 'Dine-in') {
+      await this.posDataService.splitOrderToTable(order, sourceTable, event.destinationTable, event.itemsToMove);
+      this.closeSplitModal();
+      this.closeOrderPanel();
+      this.closeContextMenu();
+    }
+  }
+
   closeContextMenu() { this.isContextMenuOpen.set(false); this.contextMenuTable.set(null); }
 
   handlePrintPreBill() {

@@ -118,6 +118,7 @@
           (closePanel)="closeOrderPanel()"
           (checkoutStarted)="handleCheckoutStarted()"
           (moveOrderClicked)="openMoveModal()"
+          (splitOrderClicked)="openSplitModal()"
           (releaseTable)="handleReleaseTable()"
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
@@ -136,6 +137,7 @@
           (closePanel)="closeOrderPanel()"
           (checkoutStarted)="handleCheckoutStarted()"
           (moveOrderClicked)="openMoveModal()"
+          (splitOrderClicked)="openSplitModal()"
           (releaseTable)="handleReleaseTable()"
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
@@ -167,6 +169,16 @@
     (closeModal)="closeMoveModal()"
     (moveOrder)="moveOrder($event)">
   </app-move-order-modal>
+}
+
+@if (isSplitModalOpen()) {
+  <app-split-order-modal
+    [sourceOrder]="activeOrder()"
+    [sourceTable]="sourceTableForModals()"
+    [availableTables]="availableTablesForMove()"
+    (closeModal)="closeSplitModal()"
+    (splitOrder)="splitOrder($event)">
+  </app-split-order-modal>
 }
 
 @if (isCustomerSelectModalOpen()) {
