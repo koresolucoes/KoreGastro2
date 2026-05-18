@@ -8,7 +8,6 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { ThemeService } from '../../services/theme.service';
-import { AddStoreModalComponent } from '../shared/add-store-modal/add-store-modal.component';
 
 export interface NavLink {
   name: string;
@@ -30,7 +29,7 @@ export type CombinedNavItem = NavLink | NavGroup;
 @Component({
   selector: 'app-top-nav',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, AddStoreModalComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './top-nav.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -213,7 +212,8 @@ export class TopNavComponent {
   }
 
   openAddStoreModal() {
-      this.isAddStoreModalOpen.set(true);
+      // Modal removed. Future integration can handle this directly or redirect to settings
+      alert('Funcionalidade indisponível momentaneamente. Gerencie lojas pelas Configurações.');
       this.isStoreDropdownOpen.set(false);
   }
   
