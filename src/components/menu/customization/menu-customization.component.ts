@@ -9,7 +9,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
   template: `
     @if (recipe()) {
       <div class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-surface w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transform transition-all duration-300 translate-y-0">
+        <div class="bg-surface w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transform transition-all duration-300 translate-y-0 demo-quick-add-modal">
           
           <!-- Header -->
           <div class="relative h-48 sm:h-56 bg-surface-elevated shrink-0">
@@ -95,7 +95,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
           <div class="p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-surface border-t border-subtle shrink-0">
             <button (click)="onConfirm()"
                     [disabled]="!isValid()"
-                    class="w-full py-4 px-6 bg-brand disabled:opacity-50 text-on-brand rounded-2xl font-bold flex items-center justify-between transition-all duration-300 enabled:hover:opacity-90 enabled:active:scale-[0.98] shadow-xl group">
+                    class="w-full py-4 px-6 bg-brand disabled:opacity-50 text-on-brand rounded-2xl font-bold flex items-center justify-between transition-all duration-300 enabled:hover:opacity-90 enabled:active:scale-[0.98] shadow-xl group demo-quick-add-btn">
               <span class="flex items-center gap-3">
                 <span translate="no" class="notranslate material-symbols-outlined group-hover:translate-x-1 transition-transform">shopping_bag</span>
                 {{ isValid() ? 'Adicionar ao carrinho' : 'Selecione os itens obrigatórios' }}

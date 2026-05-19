@@ -82,12 +82,32 @@ import { TourStep } from '../../../services/guided-tour.service';
 export class GuidedTourOverlayComponent {
   step: InputSignal<TourStep | null> = input<TourStep | null>(null);
   targetElement: InputSignal<HTMLElement | null> = input<HTMLElement | null>(null);
+  highlightElement: InputSignal<HTMLElement | null> = input<HTMLElement | null>(null);
   
   onNext: () => void = () => {};
   onSkip: () => void = () => {};
 
+  private _rafId: number | null = null;
+
+  ngOnInit() {
+      // Ensure we continuously check targetRect position while overlay is active
+      const loop = () => {
+          if (this.step() && this.targetElement()) {
+              this.cdr.markForCheck();
+          }
+          this._rafId = requestAnimationFrame(loop);
+      };
+      this._rafId = requestAnimationFrame(loop);
+  }
+
+  ngOnDestroy() {
+      if (this._rafId) {
+          cancelAnimationFrame(this._rafId);
+      }
+  }
+
   targetRect = () => {
-    const el = this.targetElement();
+    const el = this.highlightElement() || this.targetElement();
     if (!el) return null;
     const rect = el.getBoundingClientRect();
     // Add some padding around the element

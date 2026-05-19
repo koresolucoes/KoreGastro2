@@ -38,6 +38,7 @@ export class DemoModeService {
                 },
                 {
                    targetSelector: '.demo-quick-add-btn',
+                   highlightSelector: '.demo-quick-add-modal',
                    title: 'Confirmando o Item',
                    content: 'Aqui você pode adicionar observações ou mudar a quantidade. Clique em "Adicionar Item" para colocar no carrinho.',
                    actionRequired: 'click',

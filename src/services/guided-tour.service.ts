@@ -2,10 +2,11 @@ import { Injectable, signal, ApplicationRef, EnvironmentInjector, createComponen
 import { GuidedTourOverlayComponent } from '../components/shared/guided-tour-overlay/guided-tour-overlay.component';
 
 export interface TourStep {
-  targetSelector: string; // CSS selector of the element to highlight
+  targetSelector: string; // CSS selector of the element to click/focus
+  highlightSelector?: string; // Optional: CSS selector for the visual cutout hole
   title: string;
   content: string;
-  actionRequired?: 'click' | 'input' | 'none'; // 'click' means user must click the element to continue
+  actionRequired?: 'click' | 'input' | 'none'; // 'click' means user must click the targetSelector to continue
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   onNext?: () => void; // Optional callback to execute when moving to next step
 }
@@ -72,6 +73,19 @@ export class GuidedTourService {
           return rect.width > 0 && rect.height > 0;
       }) as HTMLElement;
       
+      let highlightElement = element;
+      if (step.highlightSelector) {
+          const hElements = document.querySelectorAll(step.highlightSelector);
+          const foundHElement = Array.from(hElements).find(e => {
+              const htmlEl = e as HTMLElement;
+              const rect = htmlEl.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+          }) as HTMLElement;
+          if (foundHElement) {
+              highlightElement = foundHElement;
+          }
+      }
+      
       if (!element && retryCount < 20) { // Retry up to 4 seconds (20 * 200ms)
         setTimeout(() => this.updateOverlay(retryCount + 1), 200);
         return;
@@ -79,6 +93,7 @@ export class GuidedTourService {
       
       this.overlayRef.setInput('step', step);
       this.overlayRef.setInput('targetElement', element);
+      this.overlayRef.setInput('highlightElement', highlightElement);
       this.overlayRef.instance.onNext = () => this.nextStep();
       this.overlayRef.instance.onSkip = () => this.endTour();
     }
