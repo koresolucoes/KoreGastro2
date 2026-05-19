@@ -92,6 +92,7 @@ export class OnboardingComponent {
     { id: 'menu', title: 'Cardápio' },
     { id: 'ifood', title: 'iFood' },
     { id: 'manager', title: 'Acesso' },
+    { id: 'trial', title: 'Presente' },
     { id: 'finish', title: 'Conclusão' }
   ];
 
@@ -115,6 +116,7 @@ export class OnboardingComponent {
       case 5: return this.data.menuCategories.length > 0; // Basic check
       case 6: return true; // Optional
       case 7: return !!this.data.managerName && this.data.managerPin.length === 4;
+      case 8: return true; // Trial Step
       default: return false;
     }
   }
@@ -149,7 +151,7 @@ export class OnboardingComponent {
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(8); // Show loading screen
+    this.currentStep.set(9); // Show loading screen
     this.isProcessing.set(true);
 
     try {
@@ -315,12 +317,14 @@ export class OnboardingComponent {
             .from('employees')
             .select('*')
             .eq('pin', this.data.managerPin)
-            .eq('unit_id', unitId)
+            .eq('unit_id', this.unitContext.activeUnitId())
             .single();
 
         if (managerData) {
             this.opAuth.login(managerData);
         }
+        
+        this.notification.show('Setup concluído! Seus 30 dias de ChefOS Premium foram ativados.', 'success');
         
         // Start the Guided Tour Demo Mode!
         this.demoMode.startSalesDemoTour();
@@ -328,7 +332,7 @@ export class OnboardingComponent {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(7); // Go back to last editable step
+        this.currentStep.set(8); // Go back to last editable step
     } finally {
         this.isProcessing.set(false);
     }

@@ -375,8 +375,41 @@
                         </div>
                     }
 
-                    <!-- 8. FINALIZING -->
+                    <!-- 8. PRESENTE (TRIAL) -->
                     @case (8) {
+                        <div class="h-full flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 text-center px-4">
+                            <div class="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-amber-500/30 transform rotate-12 hover:rotate-0 transition-transform duration-500">
+                                <span translate="no" class="notranslate material-symbols-outlined text-5xl text-white drop-shadow-md">redeem</span>
+                            </div>
+                            <h2 class="text-4xl md:text-5xl font-black mb-4 text-title tracking-tight">Presente de Boas-Vindas!</h2>
+                            <p class="text-title text-lg md:text-xl max-w-lg font-medium mb-6">
+                                Você acabou de ganhar <strong class="text-amber-500 font-black">30 dias gratuitos</strong> do ChefOS Premium.
+                            </p>
+                            <div class="bg-surface/80 backdrop-blur border border-strong rounded-2xl p-6 text-left w-full max-w-md shadow-sm">
+                                <h3 class="font-black text-title mb-4 flex items-center gap-2">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-amber-500">star</span>
+                                    Vantagens Premium Liberadas:
+                                </h3>
+                                <ul class="space-y-3">
+                                    <li class="flex items-center gap-3 text-sm font-bold text-muted">
+                                        <div class="w-6 h-6 rounded-full bg-success/20 text-success flex items-center justify-center"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">check</span></div>
+                                        KDS (Telas de Produção) Ilimitado
+                                    </li>
+                                    <li class="flex items-center gap-3 text-sm font-bold text-muted">
+                                        <div class="w-6 h-6 rounded-full bg-success/20 text-success flex items-center justify-center"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">check</span></div>
+                                        Integração iFood Completa
+                                    </li>
+                                    <li class="flex items-center gap-3 text-sm font-bold text-muted">
+                                        <div class="w-6 h-6 rounded-full bg-success/20 text-success flex items-center justify-center"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">check</span></div>
+                                        Relatórios Financeiros Avançados
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 9. FINALIZING -->
+                    @case (9) {
                          <div class="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700 text-center">
                             <div class="relative w-32 h-32 mb-10">
                                 <div class="absolute inset-0 border-4 border-subtle rounded-full"></div>
@@ -399,13 +432,13 @@
             </div>
 
             <!-- Footer Navigation -->
-            @if(currentStep() > 0 && currentStep() < 8) {
+            @if(currentStep() > 0 && currentStep() < 9) {
                 <div class="flex justify-between items-center p-6 md:px-10 border-t border-subtle bg-surface-elevated/80 backdrop-blur-xl z-20">
                     <button (click)="prevStep()" class="text-muted hover:text-title font-bold flex items-center gap-2 px-5 py-3 rounded-2xl hover:bg-surface transition-all active:scale-95 group">
                         <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
                     </button>
                     
-                    @if(currentStep() === 7) {
+                    @if(currentStep() === 8) {
                         <button (click)="finish()" [disabled]="!isStepValid()" class="bg-success hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
                             Finalizar Setup <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
                         </button>
