@@ -135,7 +135,7 @@
         <!-- Station View Grid (Ticket based) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
-            <div class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-strong flex flex-col shadow-2xl transition-all duration-300 hover:shadow-brand/10 hover:-translate-y-1 relative" 
+            <div class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-strong flex flex-col shadow-2xl transition-all duration-300 hover:shadow-brand/10 hover:-translate-y-1 relative demo-kds-ticket" 
                 [class.ring-2]="ticket.isOrderCancelled" 
                 [class.ring-danger]="ticket.isOrderCancelled"
                 [class.ring-info]="ticket.orderType.includes('iFood') && !ticket.isOrderCancelled">
@@ -274,10 +274,10 @@
               <!-- Batch Actions Footer -->
               @if(!ticket.isOrderCancelled) {
                   <div class="p-3 bg-surface border-t border-strong grid grid-cols-2 gap-3 relative z-10">
-                      <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2.5 bg-brand/10 hover:bg-brand text-brand hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-brand/20 hover:border-brand transition-all active:scale-95 shadow-sm">
+                      <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2.5 bg-brand/10 hover:bg-brand text-brand hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-brand/20 hover:border-brand transition-all active:scale-95 shadow-sm demo-kds-start-btn">
                           INICIAR TUDO
                       </button>
-                       <button (click)="batchUpdateTicketStatus(ticket, 'FINISH_ALL')" class="py-2.5 bg-success/10 hover:bg-success text-success hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-success/20 hover:border-success transition-all active:scale-95 shadow-sm">
+                       <button (click)="batchUpdateTicketStatus(ticket, 'FINISH_ALL')" class="py-2.5 bg-success/10 hover:bg-success text-success hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-success/20 hover:border-success transition-all active:scale-95 shadow-sm demo-kds-finish-btn">
                           PRONTO TUDO
                       </button>
                   </div>

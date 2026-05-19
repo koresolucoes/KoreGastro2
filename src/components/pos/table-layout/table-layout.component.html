@@ -9,7 +9,7 @@
       <div
         (click)="tableClicked.emit(table)"
         (contextmenu)="onRightClick($event, table)"
-        class="flex flex-col items-center justify-between p-3 aspect-square cursor-pointer transition-all border border-subtle relative overflow-hidden shadow-sm hover:shadow-md active:scale-95"
+        class="flex flex-col items-center justify-between p-3 aspect-square cursor-pointer transition-all border border-subtle relative overflow-hidden shadow-sm hover:shadow-md active:scale-95 demo-start-sales-btn"
         [class]="getStatusClass(table.status)"
         [class.rounded-full]="table.shape === 'circle'"
         [class.rounded-2xl]="table.shape !== 'circle'"
@@ -43,7 +43,7 @@
       <div
         (click)="tableClicked.emit(table)"
         (contextmenu)="onRightClick($event, table)"
-        class="absolute flex flex-col items-center justify-center p-2 transition-all duration-300 ease-out border border-subtle cursor-pointer shadow-lg hover:-translate-y-1 hover:shadow-xl group backdrop-blur-md"
+        class="absolute flex flex-col items-center justify-center p-2 transition-all duration-300 ease-out border border-subtle cursor-pointer shadow-lg hover:-translate-y-1 hover:shadow-xl group backdrop-blur-md demo-start-sales-btn"
         [class]="getStatusClass(table.status)"
         [class.rounded-full]="table.shape === 'circle'"
         [class.rounded-2xl]="table.shape !== 'circle'"

@@ -28,17 +28,17 @@ mat-icon, .material-icons, .material-symbols-outlined {
 /* LIGHT THEME - Professional Culinary Day */
 html, html[data-theme="light"] {
   /* Soft, warm off-white background to reduce glare (Zinc 50 to Zinc 100) */
-  --bg-app: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%); 
+  --bg-app: #f4f4f5; 
   
   /* Crisp white surfaces for high contrast with content */
-  --surface-base: rgba(255, 255, 255, 0.95); 
-  --surface-elevated: rgba(255, 255, 255, 1);
-  --surface-glass-bg: rgba(255, 255, 255, 0.85);
+  --surface-base: #ffffff; 
+  --surface-elevated: #ffffff;
+  --surface-glass-bg: #ffffff;
   
   /* Subtle monochromatic borders */
-  --border-subtle: rgba(24, 24, 27, 0.1); 
-  --border-strong: rgba(24, 24, 27, 0.2);
-  --border-focus: rgba(234, 88, 12, 0.4); /* Brand focus ring */
+  --border-subtle: #e4e4e7; /* Zinc 200 */
+  --border-strong: #d4d4d8; /* Zinc 300 */
+  --border-focus: #ea580c; /* Brand focus ring */
   
   /* Typography - Zinc/Charcoal palette for readability */
   --text-title: #09090b; /* Zinc 950 */
@@ -62,17 +62,17 @@ html, html[data-theme="light"] {
 /* DARK THEME - Professional Culinary Night */
 html[data-theme="dark"] {
   /* Deep matte zinc background - avoids pure black smear on OLEDs */
-  --bg-app: linear-gradient(135deg, #18181b 0%, #09090b 100%); /* Zinc 900 to 950 */
+  --bg-app: #09090b; /* Zinc 950 */
   
   /* Slightly lighter zinc for surfaces */
-  --surface-base: rgba(39, 39, 42, 0.6); /* Zinc 800 */
-  --surface-elevated: rgba(63, 63, 70, 0.6); /* Zinc 700 */
-  --surface-glass-bg: rgba(24, 24, 27, 0.7);
+  --surface-base: #18181b; /* Zinc 900 */
+  --surface-elevated: #27272a; /* Zinc 800 */
+  --surface-glass-bg: #18181b;
   
   /* Delicate light borders */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-focus: rgba(249, 115, 22, 0.5); /* Bright orange focus */
+  --border-subtle: #27272a; /* Zinc 800 */
+  --border-strong: #3f3f46; /* Zinc 700 */
+  --border-focus: #ea580c; /* Bright orange focus */
   
   /* Typography - High contrast light greys */
   --text-title: #ffffff; /* Pure white for titles */
@@ -175,11 +175,15 @@ body {
    UI KIT UTILITY CLASSES 
    ========================================= */
 
+/* Global override to eliminate glassmorphism */
+* {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Use this for all standard Panels/Cards */
 .chef-surface {
   background-color: var(--surface-base);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   box-shadow: var(--glass-shadow);
@@ -196,8 +200,6 @@ body {
 /* Use this for top nav, floating actions, or specific modals */
 .chef-glass {
   background-color: var(--surface-glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-strong);
   transition: all 0.3s ease;
 }

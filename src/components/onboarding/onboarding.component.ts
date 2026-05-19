@@ -10,6 +10,8 @@ import { NotificationService } from '../../services/notification.service';
 import { InventoryDataService } from '../../services/inventory-data.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { DemoModeService } from '../../services/demo-mode.service';
+import { HrStateService } from '../../services/hr-state.service';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../services/supabase-client';
 
@@ -32,12 +34,15 @@ interface MenuCategory {
 })
 export class OnboardingComponent {
   private router = inject(Router);
+  private hrState = inject(HrStateService);
   private settingsData = inject(SettingsDataService);
   private recipeData = inject(RecipeDataService);
   private posData = inject(PosDataService);
   private inventoryData = inject(InventoryDataService);
   private unitContext = inject(UnitContextService);
   private notification = inject(NotificationService);
+  private opAuth = inject(OperationalAuthService);
+  private demoMode = inject(DemoModeService);
 
   currentStep = signal(0);
   isProcessing = signal(false);
@@ -305,7 +310,20 @@ export class OnboardingComponent {
         this.loadingStatus.set('Tudo pronto!');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
         
-        this.router.navigate(['/employee-selection']);
+        // Auto-login the manager so they don't have to type the PIN manually
+        const { data: managerData } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('pin', this.data.managerPin)
+            .eq('unit_id', unitId)
+            .single();
+
+        if (managerData) {
+            this.opAuth.login(managerData);
+        }
+        
+        // Start the Guided Tour Demo Mode!
+        this.demoMode.startSalesDemoTour();
 
     } catch (e: any) {
         console.error('Onboarding Error:', e);

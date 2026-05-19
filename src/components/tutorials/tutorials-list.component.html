@@ -5,6 +5,25 @@
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Interactive Demo Mode Card -->
+    <div 
+        (click)="startSalesDemo()"
+        class="bg-brand/10 rounded-3xl p-8 flex flex-col items-start border border-brand/50 hover:border-brand shadow-lg hover:shadow-brand/20 transition-all duration-300 cursor-pointer group active:scale-[0.98] outline outline-2 outline-offset-2 outline-transparent hover:outline-brand/40 overflow-hidden relative">
+        <div class="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent pointer-events-none"></div>
+        <div class="w-16 h-16 bg-brand text-white rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-xl relative z-10">
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl animate-pulse">rocket_launch</span>
+        </div>
+        <h2 class="text-xl font-black text-brand title-display mb-3 leading-tight transition-colors relative z-10">Simulação: Atendimento Completo</h2>
+        <p class="text-brand/80 text-sm flex-grow leading-relaxed font-bold relative z-10">Experimente na prática! Um tour guiado interativo que simula desde a abertura da mesa até o prepado na cozinha.</p>
+        <div class="mt-8 pt-4 border-t border-brand/20 w-full flex items-center justify-between relative z-10">
+           <span class="text-[10px] font-black uppercase tracking-widest text-brand flex items-center gap-2 group-hover:gap-3 transition-all">Iniciar Simulação</span>
+           <span class="w-8 h-8 rounded-full bg-brand flex items-center justify-center border border-brand text-white shadow-md group-hover:scale-110 transition-all">
+              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">play_arrow</span>
+           </span>
+        </div>
+    </div>
+
+    <!-- Standard Text Tutorials -->
     @for (tutorial of tutorials(); track tutorial.id) {
       <div 
         (click)="navigateToTutorial(tutorial.id)"
