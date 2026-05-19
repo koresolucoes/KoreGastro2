@@ -195,6 +195,24 @@
                 </div>
               </div>
 
+              <!-- Receipt Meta-Info Block (Hybrid) -->
+              <div class="bg-surface/80 border-b border-strong p-3 text-[10px] font-mono leading-tight tracking-tight text-muted grid grid-cols-2 gap-1 relative z-10 backdrop-blur-md">
+                <div class="flex flex-col gap-0.5">
+                    <span>Mov: {{ ticket.orderTimestamp | date:'dd/MM/yy' }}</span>
+                    <span>Term: CAIXA-01</span>
+                    <span>Cxa: {{ ticket.createdByName | uppercase }}</span>
+                </div>
+                <div class="flex flex-col gap-0.5 text-right">
+                    <span>{{ ticket.orderTimestamp | date:'dd/MM/yy HH:mm' }}h</span>
+                    <span>Modo: {{ ticket.orderType === 'Tab' ? 'Ficha' : (ticket.orderType === 'QuickSale' ? 'Balcão' : 'Mesa') }}</span>
+                    <span>Atend: {{ (ticket.waiterName || ticket.createdByName) | uppercase }}</span>
+                </div>
+              </div>
+              <div class="px-4 py-2 border-b border-strong bg-surface/50 border-dashed flex justify-between items-center font-bold text-sm text-title">
+                  <span>{{ ticket.orderType === 'Tab' ? 'Ficha' : 'Pedido' }} {{ ticket.commandNumber || ticket.tableNumber || '-' }}</span>
+                  <span class="font-mono text-xs">{{ ticket.items.length }} {{ ticket.items.length === 1 ? 'item' : 'itens' }}</span>
+              </div>
+
               <!-- Items List -->
               <div class="p-3 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
                 @for (item of ticket.items; track item.id) {
@@ -227,8 +245,8 @@
                                 <div class="mt-3 ml-11 inline-flex items-start gap-2 px-3 py-1.5 rounded-xl text-sm font-black border backdrop-blur-sm whitespace-pre-wrap" 
                                     [class.bg-warning/10]="!item.isCancelled" [class.text-warning]="!item.isCancelled" [class.border-warning/30]="!item.isCancelled"
                                     [class.bg-surface]="item.isCancelled" [class.text-muted]="item.isCancelled" [class.border-strong]="item.isCancelled">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-base mt-1">warning</span>
-                                    {{ item.notes }}
+                                    <span translate="no" class="notranslate font-mono text-base font-black">»</span>
+                                    <span class="font-mono uppercase tracking-tight">{{ item.notes }}</span>
                                 </div> 
                              }
                         </div>

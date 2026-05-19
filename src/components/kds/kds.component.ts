@@ -30,6 +30,8 @@ interface BaseTicket {
   isOrderCancelled?: boolean; 
   customerName?: string;
   waiterName?: string;
+  orderTimestamp?: string;
+  createdByName?: string;
 }
 
 // New Interface for Grouped Items within a Ticket
@@ -461,6 +463,8 @@ export class KdsComponent implements OnInit, OnDestroy {
                 ticketTimerColor,
                 isTicketLate: !isOrderCancelled && ticketElapsedTime > avgPrepTime,
                 oldestTimestamp: new Date(oldestTimestamp).toISOString(),
+                orderTimestamp: order.timestamp,
+                createdByName: order.waiter?.name || 'Sistema',
                 orderType: order.order_type,
                 ifoodDisplayId: order.ifood_display_id,
                 isOrderCancelled,
