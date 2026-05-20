@@ -11,6 +11,7 @@ import { InventoryDataService } from '../../services/inventory-data.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoModeService } from '../../services/demo-mode.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../services/supabase-client';
@@ -43,6 +44,7 @@ export class OnboardingComponent {
   private notification = inject(NotificationService);
   private opAuth = inject(OperationalAuthService);
   private demoMode = inject(DemoModeService);
+  private subscriptionState = inject(SubscriptionStateService);
 
   currentStep = signal(0);
   isProcessing = signal(false);
@@ -92,6 +94,7 @@ export class OnboardingComponent {
     { id: 'menu', title: 'Cardápio' },
     { id: 'ifood', title: 'iFood' },
     { id: 'manager', title: 'Acesso' },
+    { id: 'trial', title: 'Presente' },
     { id: 'finish', title: 'Conclusão' }
   ];
 
@@ -115,6 +118,7 @@ export class OnboardingComponent {
       case 5: return this.data.menuCategories.length > 0; // Basic check
       case 6: return true; // Optional
       case 7: return !!this.data.managerName && this.data.managerPin.length === 4;
+      case 8: return true; // Trial Step
       default: return false;
     }
   }
@@ -149,7 +153,7 @@ export class OnboardingComponent {
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(8); // Show loading screen
+    this.currentStep.set(9); // Show loading screen
     this.isProcessing.set(true);
 
     try {
@@ -306,6 +310,12 @@ export class OnboardingComponent {
             console.warn('No plans found in the database. Subscription not created.');
         }
 
+        // Force reload of subscription state across the app so guards and layouts unlock immediately
+        const currentActiveUnit = this.unitContext.activeUnitId();
+        if (currentActiveUnit) {
+            await this.subscriptionState.loadSubscriptionForUnit(currentActiveUnit);
+        }
+
         // Success!
         this.loadingStatus.set('Tudo pronto!');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
@@ -315,20 +325,23 @@ export class OnboardingComponent {
             .from('employees')
             .select('*')
             .eq('pin', this.data.managerPin)
-            .eq('unit_id', unitId)
+            .eq('unit_id', this.unitContext.activeUnitId())
             .single();
 
         if (managerData) {
             this.opAuth.login(managerData);
         }
         
+        // Success Notification
+        this.notification.show('Configuração concluída! Seu mês premium gratuito foi ativado.', 'success');
+
         // Start the Guided Tour Demo Mode!
         this.demoMode.startSalesDemoTour();
 
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(7); // Go back to last editable step
+        this.currentStep.set(8); // Go back to last editable step
     } finally {
         this.isProcessing.set(false);
     }
