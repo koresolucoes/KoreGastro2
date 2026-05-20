@@ -375,46 +375,8 @@
                         </div>
                     }
 
-                    <!-- 8. TRIAL GIFT -->
+                    <!-- 8. FINALIZING -->
                     @case (8) {
-                        <div class="max-w-lg mx-auto animate-in slide-in-from-bottom-8 duration-700 pt-4 md:pt-10 text-center">
-                            <div class="mb-8 relative inline-block">
-                                <div class="w-24 h-24 bg-brand/10 border border-brand/20 rounded-full flex items-center justify-center mx-auto shadow-inner relative z-10">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-5xl text-brand drop-shadow-[0_0_15px_rgba(var(--brand-primary),0.5)]">featured_seasonal_and_gifts</span>
-                                </div>
-                                <div class="absolute inset-0 bg-brand/20 rounded-full blur-[30px] animate-pulse"></div>
-                            </div>
-                            
-                            <h2 class="text-4xl font-black mb-4 text-title tracking-tight bg-gradient-to-r from-brand to-title bg-clip-text text-transparent">Você ganhou um Presente!</h2>
-                            <p class="text-muted text-lg font-medium mb-10 leading-relaxed">
-                                Como boas-vindas, liberamos <strong class="text-brand">30 dias gratuitos</strong> do <strong class="text-title">ChefOS Premium</strong>. Use todas as funcionalidades avançadas sem compromisso.
-                            </p>
-                            
-                            <div class="bg-surface/50 border border-strong rounded-3xl p-6 text-left shadow-inner mb-6 space-y-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success flex-shrink-0">
-                                        <span translate="no" class="notranslate material-symbols-outlined text-sm">check</span>
-                                    </div>
-                                    <p class="font-medium text-title text-sm">Controle de Estoque Inteligente</p>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success flex-shrink-0">
-                                        <span translate="no" class="notranslate material-symbols-outlined text-sm">check</span>
-                                    </div>
-                                    <p class="font-medium text-title text-sm">Telas de Produção (KDS) em Tempo Real</p>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success flex-shrink-0">
-                                        <span translate="no" class="notranslate material-symbols-outlined text-sm">check</span>
-                                    </div>
-                                    <p class="font-medium text-title text-sm">Relatórios e Dashboard Completos</p>
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <!-- 9. FINALIZING -->
-                    @case (9) {
                          <div class="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700 text-center">
                             <div class="relative w-32 h-32 mb-10">
                                 <div class="absolute inset-0 border-4 border-subtle rounded-full"></div>
@@ -437,13 +399,13 @@
             </div>
 
             <!-- Footer Navigation -->
-            @if(currentStep() > 0 && currentStep() < 9) {
+            @if(currentStep() > 0 && currentStep() < 8) {
                 <div class="flex justify-between items-center p-6 md:px-10 border-t border-subtle bg-surface-elevated/80 backdrop-blur-xl z-20">
                     <button (click)="prevStep()" class="text-muted hover:text-title font-bold flex items-center gap-2 px-5 py-3 rounded-2xl hover:bg-surface transition-all active:scale-95 group">
                         <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
                     </button>
                     
-                    @if(currentStep() === 8) {
+                    @if(currentStep() === 7) {
                         <button (click)="finish()" [disabled]="!isStepValid()" class="bg-success hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
                             Finalizar Setup <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
                         </button>

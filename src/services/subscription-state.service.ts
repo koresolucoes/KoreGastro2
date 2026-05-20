@@ -17,7 +17,6 @@ export class SubscriptionStateService {
   subscriptions = signal<Subscription[]>([]);
   activeUserPermissions = signal<Set<string>>(new Set());
   ownerStoreCount = signal<number>(0);
-  storeCreatedAt = signal<string | null>(null);
   
   // Novo sinal para indicar que a verificação de assinatura está em andamento
   isLoading = signal<boolean>(true);
@@ -49,22 +48,12 @@ export class SubscriptionStateService {
       // Reset state clean
       this.subscriptions.set([]); 
       this.activeUserPermissions.set(new Set()); // Reset permissions to prevent stale access
-      this.storeCreatedAt.set(null);
       
       let ownerId: string | null = null;
       let subscriptionFound = false;
       const currentUser = this.authService.currentUser();
 
       try {
-          // --- FETCH STORE METADATA ---
-          const { data: storeInfo } = await supabase.from('stores').select('created_at, owner_id').eq('id', storeId).maybeSingle();
-          if (storeInfo?.created_at) {
-              this.storeCreatedAt.set(storeInfo.created_at);
-          }
-          if (storeInfo?.owner_id) {
-              ownerId = storeInfo.owner_id;
-          }
-
           // --- ESTRATÉGIA 0: Verificar Contexto Local (Mais rápido e ignora RLS) ---
           const activeUnitContext = this.unitContextService.availableUnits().find(u => u.id === storeId);
           
@@ -132,17 +121,6 @@ export class SubscriptionStateService {
           if (!subscriptionFound) {
               console.warn('[Subscription] Nenhuma assinatura ativa encontrada para esta loja.');
               this.subscriptions.set([]);
-              
-              // Implicit Trial Permissions Fallback
-              if (storeInfo?.created_at) {
-                  const createdAt = new Date(storeInfo.created_at);
-                  const trialEnd = new Date(createdAt);
-                  trialEnd.setDate(trialEnd.getDate() + 30);
-                  if (new Date() < trialEnd) {
-                      console.log('[Subscription] Iniciando Implicit Trial permissions.');
-                      this.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
-                  }
-              }
           } else {
               // --- CRITICAL FIX: Load Permissions for the Found Plan ---
               const activeSub = this.subscriptions()[0];
@@ -194,18 +172,6 @@ export class SubscriptionStateService {
       }
   }
 
-  implicitTrialDaysRemaining = computed(() => {
-    const createdAt = this.storeCreatedAt();
-    if (!createdAt) return 0;
-    const storeDate = new Date(createdAt);
-    const trialEndDate = new Date(storeDate);
-    trialEndDate.setDate(trialEndDate.getDate() + 30);
-    const now = new Date();
-    const diffTime = trialEndDate.getTime() - now.getTime();
-    if (diffTime < 0) return 0;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  });
-
   hasActiveSubscription = computed(() => {
     if (this.demoService.isDemoMode()) return true;
     
@@ -214,15 +180,12 @@ export class SubscriptionStateService {
     if (this.isLoading()) return true;
 
     const subs = this.subscriptions();
-    if (subs.length > 0) {
-        const activeSub = subs.find(s => s.status === 'active' || s.status === 'trialing');
-        if (activeSub) return true;
-    }
+    if (subs.length === 0) return false;
     
-    // Implicit Trial Fallback: if no valid subscription rows exist but the store is within 30 days
-    if (this.implicitTrialDaysRemaining() > 0) return true;
+    const activeSub = subs.find(s => s.status === 'active' || s.status === 'trialing');
+    if (!activeSub) return false;
 
-    return false;
+    return true;
   });
 
   subscription = computed(() => this.subscriptions()[0] ?? null);
@@ -238,32 +201,24 @@ export class SubscriptionStateService {
     if (this.demoService.isDemoMode()) return false;
     
     const sub = this.subscription();
-    if (sub && sub.status === 'trialing') return true;
+    if (!sub) return false;
+
+    if (sub.status === 'trialing') return true;
     
-    if (sub) {
-        const plan = this.currentPlan();
-        if (plan && plan.trial_period_days && plan.trial_period_days > 0 && sub.recurrent === false) {
-          const createdAt = new Date(sub.created_at);
-          const trialEndDate = new Date(createdAt);
-          trialEndDate.setDate(trialEndDate.getDate() + plan.trial_period_days);
-          return new Date() < trialEndDate;
-        }
-        return false;
+    const plan = this.currentPlan();
+    if (plan && plan.trial_period_days && plan.trial_period_days > 0 && sub.recurrent === false) {
+      const createdAt = new Date(sub.created_at);
+      const trialEndDate = new Date(createdAt);
+      trialEndDate.setDate(trialEndDate.getDate() + plan.trial_period_days);
+      return new Date() < trialEndDate;
     }
     
-    // Implicit Trial Fallback
-    return this.implicitTrialDaysRemaining() > 0;
+    return false;
   });
 
   trialDaysRemaining = computed(() => {
     const sub = this.subscription();
-    
-    if (!sub) {
-        // Implicit Trial Fallback
-        return this.implicitTrialDaysRemaining() > 0 ? this.implicitTrialDaysRemaining() : null;
-    }
-    
-    if (!this.isTrialing()) return null;
+    if (!this.isTrialing() || !sub) return null;
 
     let endDate: Date;
 
