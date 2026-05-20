@@ -273,7 +273,24 @@ export class OnboardingComponent {
             console.error('Error fetching plans:', planError);
         }
 
-        const planId = plans && plans.length > 0 ? plans[0].id : null;
+        let planId = plans && plans.length > 0 ? plans[0].id : null;
+
+        if (!planId) {
+            console.log('No plans found. Creating a default starter plan...');
+            const { data: newPlan, error: createPlanError } = await supabase.from('plans').insert({
+                name: 'Plano Pro (Automático)',
+                description: 'Plano completo gerado automaticamente.',
+                price: 149.90,
+                interval: 'month',
+                trial_period_days: 30
+            }).select('id').single();
+
+            if (createPlanError) {
+                 console.error('Error creating fallback plan:', createPlanError);
+            } else {
+                 planId = newPlan.id;
+            }
+        }
 
         if (planId) {
             // In onboarding, the activeUnitId is usually the user's own ID (the store owner)
@@ -311,9 +328,11 @@ export class OnboardingComponent {
         }
 
         // Force reload of subscription state across the app so guards and layouts unlock immediately
-        const currentActiveUnit = this.unitContext.activeUnitId();
-        if (currentActiveUnit) {
-            await this.subscriptionState.loadSubscriptionForUnit(currentActiveUnit);
+        const { data: { user } } = await supabase.auth.getUser();
+        const fallbackId = user?.id || this.unitContext.activeUnitId();
+        
+        if (fallbackId) {
+            await this.subscriptionState.loadSubscriptionForUnit(fallbackId);
         }
 
         // Success!
