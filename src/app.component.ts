@@ -74,10 +74,12 @@ export class AppComponent implements OnInit {
       this.handleRootRedirection();
     });
 
-    // Initial check
-    const isRootHash = !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';
-    if ((window.location.pathname === '/' || window.location.pathname === '') && isRootHash) {
-      this.handleRootRedirection();
+    // Initial check (Guard against window not defined in SSR)
+    if (typeof window !== 'undefined') {
+        const isRootHash = !window.location.hash || window.location.hash === '#/' || window.location.hash === '#';
+        if ((window.location.pathname === '/' || window.location.pathname === '') && isRootHash) {
+          this.handleRootRedirection();
+        }
     }
   }
 

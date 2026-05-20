@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
       SUPABASE_ANON_KEY: JSON.stringify(supabaseAnonKey),
       GEMINI_API_KEY: JSON.stringify(geminiApiKey),
       CIELO_MERCHANT_ID: JSON.stringify(cieloMerchantId),
-      CIELO_MERCHANT_KEY: JSON.stringify(cieloMerchantKey),
+      CIELO_MERCHANT_KEY: JSON.stringify(cieloMerchantKey)
     },
     server: {
       port: 3000,
