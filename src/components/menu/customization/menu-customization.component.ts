@@ -8,7 +8,7 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
   imports: [CommonModule],
   template: `
     @if (recipe()) {
-      <div class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+      <div class="flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300" style="position: fixed; inset: 0; z-index: 1000;">
         <div class="bg-surface w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transform transition-all duration-300 translate-y-0 demo-quick-add-modal">
           
           <!-- Header -->

@@ -1,4 +1,4 @@
-export type TerminalProviderType = 'cielo_lio' | 'stone' | 'pagseguro' | 'mercado_pago';
+export type TerminalProviderType = 'cielo_lio' | 'stone' | 'rede' | 'pagseguro' | 'mercado_pago';
 
 export interface TerminalConfig {
   id: string;
