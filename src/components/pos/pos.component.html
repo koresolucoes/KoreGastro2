@@ -1,7 +1,7 @@
 
 <div class="h-full flex flex-col" (click)="closeContextMenu()">
   <!-- Header -->
-  <header class="flex-shrink-0 bg-surface shadow-sm z-10 no-print relative">
+  <header class="flex-shrink-0 bg-surface shadow-sm z-30 no-print">
     <div class="flex flex-col">
         <!-- Top Bar: Logo & Main Toggle & Actions -->
         <div class="flex justify-between items-center p-3">
@@ -128,7 +128,7 @@
       </div>
 
       <!-- Desktop: Side panel -->
-      <div class="hidden md:block w-full md:w-[60%] lg:w-[55%] xl:w-[750px] border-l border-subtle shadow-2xl relative bg-surface" style="z-index: 200;">
+      <div class="hidden md:block w-full md:w-[60%] lg:w-[55%] xl:w-[750px] border-l border-subtle shadow-2xl relative z-[100] bg-surface">
         <app-order-panel
           [selectedTable]="selectedTable()"
           [currentOrder]="activeOrder()"

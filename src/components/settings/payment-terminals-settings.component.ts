@@ -88,7 +88,6 @@ import { CommonModule } from '@angular/common';
                       <select formControlName="provider" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2.5 text-title focus:outline-none focus:border-brand shadow-inner appearance-none">
                          <option value="cielo_lio">Cielo LIO V3/V4</option>
                          <option value="stone">Stone Smart</option>
-                         <option value="rede">Rede (AppTef/Smart)</option>
                          <option value="pagseguro">PagBank</option>
                          <option value="mercado_pago">Mercado Pago Point Smart</option>
                       </select>
@@ -167,7 +166,6 @@ export class PaymentTerminalsSettingsComponent {
      const labels:Record<string,string> = {
         'cielo_lio': 'Cielo LIO',
         'stone': 'Stone',
-        'rede': 'Rede',
         'pagseguro': 'PagBank',
         'mercado_pago': 'Mercado Pago'
      };

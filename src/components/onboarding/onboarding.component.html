@@ -375,45 +375,8 @@
                         </div>
                     }
 
-                    <!-- 8. TRIAL PREMIUM -->
+                    <!-- 8. FINALIZING -->
                     @case (8) {
-                         <div class="max-w-lg mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
-                            <div class="mb-8">
-                                <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-amber-500">workspace_premium</span>
-                                </div>
-                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">30 Dias Premium Grátis!</h2>
-                                <p class="text-muted text-base md:text-lg font-medium">Criamos um teste completo em sua nova conta, e você acessará todas as ferramentas premium durante os próximos 30 dias de forma automática e gratuita.</p>
-                            </div>
-                            
-                            <div class="space-y-4 bg-surface/50 p-6 md:p-8 rounded-[2rem] border border-strong shadow-inner">
-                                <div class="flex items-start gap-4">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
-                                    <div>
-                                        <p class="font-bold text-title">Gestão iFood Integrada</p>
-                                        <p class="text-sm text-muted">Controle total dos seus pedidos sem precisar do painel web.</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-4">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
-                                    <div>
-                                        <p class="font-bold text-title">KDS & Controle de Caixas</p>
-                                        <p class="text-sm text-muted">Organize sua cozinha com telas de produção.</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-4">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
-                                    <div>
-                                        <p class="font-bold text-title">Métricas Detalhadas</p>
-                                        <p class="text-sm text-muted">Entenda suas vendas com gráficos ricos e relatórios gerenciais.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <!-- 9. FINALIZING -->
-                    @case (9) {
                          <div class="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700 text-center">
                             <div class="relative w-32 h-32 mb-10">
                                 <div class="absolute inset-0 border-4 border-subtle rounded-full"></div>
@@ -436,19 +399,15 @@
             </div>
 
             <!-- Footer Navigation -->
-            @if(currentStep() > 0 && currentStep() < 9) {
+            @if(currentStep() > 0 && currentStep() < 8) {
                 <div class="flex justify-between items-center p-6 md:px-10 border-t border-subtle bg-surface-elevated/80 backdrop-blur-xl z-20">
                     <button (click)="prevStep()" class="text-muted hover:text-title font-bold flex items-center gap-2 px-5 py-3 rounded-2xl hover:bg-surface transition-all active:scale-95 group">
                         <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
                     </button>
                     
-                    @if(currentStep() === 8) {
+                    @if(currentStep() === 7) {
                         <button (click)="finish()" [disabled]="!isStepValid()" class="bg-success hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
                             Finalizar Setup <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
-                        </button>
-                    } @else if(currentStep() === 7) {
-                        <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
-                            Próximo <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                         </button>
                     } @else {
                         <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">

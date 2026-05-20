@@ -92,7 +92,6 @@ export class OnboardingComponent {
     { id: 'menu', title: 'Cardápio' },
     { id: 'ifood', title: 'iFood' },
     { id: 'manager', title: 'Acesso' },
-    { id: 'trial', title: 'Plano Premium' },
     { id: 'finish', title: 'Conclusão' }
   ];
 
@@ -116,7 +115,6 @@ export class OnboardingComponent {
       case 5: return this.data.menuCategories.length > 0; // Basic check
       case 6: return true; // Optional
       case 7: return !!this.data.managerName && this.data.managerPin.length === 4;
-      case 8: return true; // Trial Premium info screen is always valid
       default: return false;
     }
   }
@@ -151,7 +149,7 @@ export class OnboardingComponent {
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(9); // Show loading screen
+    this.currentStep.set(8); // Show loading screen
     this.isProcessing.set(true);
 
     try {
@@ -259,8 +257,54 @@ export class OnboardingComponent {
             });
         }
 
-        // 7. Configurações concluídas
-        this.loadingStatus.set('Registrando configurações do sistema...');
+        // 7. Create 30-day free trial subscription
+        this.loadingStatus.set('Ativando período de teste de 30 dias...');
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
+        
+        // Fetch the first available plan (usually the basic one)
+        const { data: plans, error: planError } = await supabase.from('plans').select('id').limit(1);
+        
+        if (planError) {
+            console.error('Error fetching plans:', planError);
+        }
+
+        const planId = plans && plans.length > 0 ? plans[0].id : null;
+
+        if (planId) {
+            // In onboarding, the activeUnitId is usually the user's own ID (the store owner)
+            // We need to get the actual authenticated user ID just to be safe
+            const { data: { user } } = await supabase.auth.getUser();
+            const userId = user?.id || this.unitContext.activeUnitId();
+            
+            if (userId) {
+                // Check if a subscription already exists to avoid duplicates
+                const { data: existingSub } = await supabase
+                    .from('subscriptions')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (!existingSub) {
+                    const { error: subError } = await supabase.from('subscriptions').insert({
+                        user_id: userId,
+                        store_id: userId, // Assuming store_id is the same as user_id for the owner
+                        plan_id: planId,
+                        status: 'trialing',
+                        recurrent: false,
+                        current_period_end: trialEndDate.toISOString()
+                    });
+
+                    if (subError) {
+                        console.error('Error creating subscription:', subError);
+                    }
+                }
+            } else {
+                console.error('Could not determine user ID for subscription');
+            }
+        } else {
+            console.warn('No plans found in the database. Subscription not created.');
+        }
 
         // Success!
         this.loadingStatus.set('Tudo pronto!');
@@ -271,7 +315,7 @@ export class OnboardingComponent {
             .from('employees')
             .select('*')
             .eq('pin', this.data.managerPin)
-            .eq('unit_id', this.unitContext.activeUnitId())
+            .eq('unit_id', unitId)
             .single();
 
         if (managerData) {
@@ -284,7 +328,7 @@ export class OnboardingComponent {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(8); // Go back to last editable step
+        this.currentStep.set(7); // Go back to last editable step
     } finally {
         this.isProcessing.set(false);
     }

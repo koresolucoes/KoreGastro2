@@ -12,7 +12,6 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { PublicDataService } from '../../services/public-data.service';
-import { supabase } from '../../services/supabase-client';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 

@@ -464,8 +464,7 @@
 
 @if (isCustomizationModalOpen() && customizingRecipe()) {
   <app-menu-customization 
-    class="block"
-    style="position: relative; z-index: 1000;"
+    class="z-[200] relative block"
     [recipe]="customizingRecipe()"
     [groups]="getRecipeOptionGroups(customizingRecipe()!.id)"
     [basePrice]="pricingService.getEffectivePrice(customizingRecipe()!)"

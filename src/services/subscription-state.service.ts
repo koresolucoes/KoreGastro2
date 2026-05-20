@@ -118,41 +118,13 @@ export class SubscriptionStateService {
               }
           }
 
-          // --- ESTRATÉGIA 4: Teste Premium Automático (30 dias baseados na data de cadastro) ---
-          if (!subscriptionFound && currentUser && currentUser.created_at) {
-              const createdAt = new Date(currentUser.created_at);
-              const trialEndDate = new Date(createdAt);
-              trialEndDate.setDate(trialEndDate.getDate() + 30);
-              const now = new Date();
-              
-              if (now < trialEndDate) {
-                  console.log('[Subscription] Teste Premium Gratuito de 30 dias ativado para novo usuário.');
-                  this.subscriptions.set([{
-                      id: 'mock-trial',
-                      user_id: currentUser.id,
-                      store_id: storeId,
-                      plan_id: 'mock-premium',
-                      status: 'trialing',
-                      recurrent: false,
-                      current_period_end: trialEndDate.toISOString(),
-                      created_at: createdAt.toISOString(),
-                      setup_intent_id: null,
-                      stripe_subscription_id: null,
-                      stripe_customer_id: null,
-                      cancel_at_period_end: true
-                  } as any]);
-                  subscriptionFound = true;
-                  this.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
-              }
-          }
-
           if (!subscriptionFound) {
               console.warn('[Subscription] Nenhuma assinatura ativa encontrada para esta loja.');
               this.subscriptions.set([]);
           } else {
               // --- CRITICAL FIX: Load Permissions for the Found Plan ---
               const activeSub = this.subscriptions()[0];
-              if (activeSub && activeSub.plan_id && activeSub.plan_id !== 'mock-premium') {
+              if (activeSub && activeSub.plan_id) {
                   const { data: planPerms } = await supabase
                       .from('plan_permissions')
                       .select('permission_key')
