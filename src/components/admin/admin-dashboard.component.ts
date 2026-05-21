@@ -93,7 +93,10 @@ import { NotificationService } from '../../services/notification.service';
                            class="w-8 h-8 rounded-full border border-gray-700" referrerpolicy="no-referrer">
                       <div>
                         <p class="text-sm font-medium text-white">{{ profile.full_name || 'Sem nome' }}</p>
-                        <p class="text-xs text-gray-500">{{ profile.role }}</p>
+                        <p class="text-xs text-gray-500">{{ profile.email || 'Sem email' }}</p>
+                        @if (profile.phone) {
+                          <p class="text-xs text-gray-500">{{ profile.phone }}</p>
+                        }
                       </div>
                     </div>
                   </td>
@@ -101,7 +104,12 @@ import { NotificationService } from '../../services/notification.service';
                     @if(profile.bars && profile.bars.length > 0) {
                       <div class="flex flex-col gap-1">
                         @for(bar of profile.bars; track bar.id) {
-                          <span class="text-sm text-gray-300">{{ bar.name }}</span>
+                          <div class="flex flex-col">
+                            <span class="text-sm font-medium text-white">{{ bar.name }}</span>
+                            @if(bar.cnpj) {
+                              <span class="text-xs text-gray-500">{{ bar.cnpj }}</span>
+                            }
+                          </div>
                         }
                       </div>
                     } @else {
@@ -111,7 +119,8 @@ import { NotificationService } from '../../services/notification.service';
                   <td class="p-4">
                     @if(profile.subscriptions && profile.subscriptions.length > 0) {
                       <div class="flex flex-col gap-1">
-                        <span class="text-sm font-medium" 
+                        <span class="text-sm font-bold text-white">{{ profile.subscriptions[0].plans?.name || profile.role || 'Sem plano' }}</span>
+                        <span class="text-xs font-medium" 
                               [class.text-green-400]="profile.subscriptions[0].status === 'active' || profile.subscriptions[0].status === 'trialing'"
                               [class.text-red-400]="profile.subscriptions[0].status === 'canceled' || profile.subscriptions[0].status === 'past_due'">
                           {{ profile.subscriptions[0].status | uppercase }}
