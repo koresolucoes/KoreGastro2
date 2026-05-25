@@ -71,7 +71,20 @@ export class SystemAdminService {
     }
   }
 
-  async updateSubscriptionStatus(userId: string, status: string, planId?: string) {
+  async getPlans() {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .order('price', { ascending: true });
+      return { data, error };
+    } catch (error: any) {
+      console.error('Error fetching plans:', error);
+      return { data: null, error };
+    }
+  }
+
+  async updateSubscriptionStatus(userId: string, status: string, planId?: string, currentPeriodEnd?: string) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -84,7 +97,7 @@ export class SystemAdminService {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userId, status, planId })
+        body: JSON.stringify({ userId, status, planId, currentPeriodEnd })
       });
 
       if (!response.ok) {

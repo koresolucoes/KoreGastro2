@@ -1,4 +1,4 @@
-import { VercelRequest } from '@vercel/node';
+import type { VercelRequest } from '@vercel/node';
 import { createHmac } from 'crypto';
 import { Buffer } from 'buffer';
 

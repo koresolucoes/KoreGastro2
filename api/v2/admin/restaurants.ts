@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Forbidden: User is not a system admin' });
     }
 
-    // 3. Fetch all profiles and their associated bars (restaurants) and subscriptions
+    // 3. Fetch all profiles and their associated stores and subscriptions
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select(`
@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         avatar_url,
         role,
         updated_at,
-        bars (
+        stores (
           id,
           name,
           created_at
@@ -79,7 +79,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw profilesError;
     }
 
-    return res.status(200).json({ data: profiles });
+    // Map stores to bars to match frontend expectations
+    const mappedProfiles = (profiles || []).map((p: any) => ({
+      ...p,
+      bars: p.stores || []
+    }));
+
+    return res.status(200).json({ data: mappedProfiles });
   } catch (error: any) {
     console.error('Error fetching restaurants:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });

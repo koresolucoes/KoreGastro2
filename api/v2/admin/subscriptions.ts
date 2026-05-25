@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Forbidden: User is not a system admin' });
     }
 
-    const { userId, status, planId } = req.body;
+    const { userId, status, planId, currentPeriodEnd } = req.body;
 
     if (!userId || !status) {
       return res.status(400).json({ error: 'Missing required fields: userId, status' });
@@ -67,8 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const updateData: any = { status, updated_at: new Date().toISOString() };
       if (planId) updateData.plan_id = planId;
       
-      // If activating, extend period end by 30 days
-      if (status === 'active') {
+      if (currentPeriodEnd) {
+        updateData.current_period_end = currentPeriodEnd;
+      } else if (status === 'active') {
+        // If activating, extend period end by 30 days
         const nextMonth = new Date();
         nextMonth.setDate(nextMonth.getDate() + 30);
         updateData.current_period_end = nextMonth.toISOString();
@@ -98,6 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const nextMonth = new Date();
       nextMonth.setDate(nextMonth.getDate() + 30);
+      const finalPeriodEnd = currentPeriodEnd || nextMonth.toISOString();
 
       result = await supabaseAdmin
         .from('subscriptions')
@@ -105,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           user_id: userId,
           plan_id: finalPlanId,
           status,
-          current_period_end: nextMonth.toISOString()
+          current_period_end: finalPeriodEnd
         });
     }
 
