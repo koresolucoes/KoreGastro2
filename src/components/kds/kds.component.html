@@ -195,6 +195,66 @@
                 </div>
               </div>
 
+              <!-- Ticket Subheader: Comanda Impressa de Restaurante standard -->
+              <div class="px-4 py-3 bg-surface/40 border-b border-strong text-[11px] font-mono leading-normal select-none text-muted space-y-1.5 shrink-0">
+                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title">
+                  <span class="flex items-center gap-1 text-brand">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[12px] leading-none">tag</span>
+                    @if (ticket.orderType.startsWith('iFood')) {
+                      <span>iFood</span>
+                    } @else if (ticket.orderType === 'QuickSale') {
+                      <span>Balcão</span>
+                    } @else if (ticket.orderType === 'Tab') {
+                      <span>Comanda</span>
+                    } @else if (ticket.orderType.includes('Delivery')) {
+                      <span>Delivery</span>
+                    } @else if (ticket.orderType.includes('Takeout')) {
+                      <span>Retirada</span>
+                    } @else {
+                      <span>Mesa / Salão</span>
+                    }
+                  </span>
+                  <span class="px-1.5 py-0.5 bg-brand/10 text-brand rounded font-sans text-[8px] tracking-wider uppercase font-extrabold">
+                    {{ selectedStation()?.name || 'COZINHA' }}
+                  </span>
+                </div>
+                
+                <div class="border-t border-dashed border-strong/40 my-1"></div>
+                
+                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-title/90">
+                  <div class="flex items-center gap-1 overflow-hidden">
+                    <span class="text-muted text-[10px] font-medium">PEDIDO:</span>
+                    <strong class="font-bold truncate">#{{ ticket.orderId.slice(-6) | uppercase }}</strong>
+                  </div>
+                  <div class="flex items-center gap-1 justify-end">
+                    <span class="text-muted text-[10px] font-medium">ENTRADA:</span>
+                    <strong class="font-bold">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</strong>
+                  </div>
+                  <div class="flex items-center gap-1 overflow-hidden">
+                    <span class="text-muted text-[10px] font-medium">CLIENTE:</span>
+                    <strong class="font-bold truncate" [title]="ticket.customerName || 'NÃO INFORMADO'">
+                      {{ ticket.customerName || 'N/A' | uppercase }}
+                    </strong>
+                  </div>
+                  <div class="flex items-center gap-1 justify-end">
+                    <span class="text-muted text-[10px] font-medium">TOTAL ITENS:</span>
+                    <strong class="font-bold">{{ getTicketTotalQty(ticket.items) }} UN</strong>
+                  </div>
+                </div>
+
+                <div class="border-t border-dashed border-strong/40 my-1"></div>
+
+                <div class="flex justify-between items-center text-[10px] text-muted">
+                  <span class="flex items-center gap-1 truncate max-w-[120px]" [title]="ticket.waiterName || 'CANAL ONLINE'">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[11px] text-muted/60 leading-none">support_agent</span>
+                    OP: {{ ticket.waiterName || 'ONLINE' | uppercase }}
+                  </span>
+                  <span class="font-mono text-[9px] text-muted/70">
+                    {{ ticket.oldestTimestamp | date:'dd/MM/yyyy' }}
+                  </span>
+                </div>
+              </div>
+
               <!-- Items List -->
               <div class="p-3 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
                 @for (item of ticket.items; track item.id) {
@@ -395,6 +455,66 @@
               <!-- Progress Bar -->
               <div class="h-2 w-full bg-surface border-b border-strong relative overflow-hidden">
                   <div class="h-full bg-gradient-to-r from-success/50 to-success transition-all duration-700 ease-out shadow-[0_0_10px_rgba(34,197,94,0.3)]" [style.width.%]="ticket.progress"></div>
+              </div>
+              
+              <!-- Ticket Subheader: Comanda Impressa de Restaurante standard (Expo Mode) -->
+              <div class="px-4 py-3 bg-surface/40 border-b border-strong text-[11px] font-mono leading-normal select-none text-muted space-y-1.5 shrink-0">
+                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title">
+                  <span class="flex items-center gap-1 text-success">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[12px] leading-none">local_shipping</span>
+                    @if (ticket.orderType.startsWith('iFood')) {
+                      <span>iFood</span>
+                    } @else if (ticket.orderType === 'QuickSale') {
+                      <span>Balcão</span>
+                    } @else if (ticket.orderType === 'Tab') {
+                      <span>Comanda</span>
+                    } @else if (ticket.orderType.includes('Delivery')) {
+                      <span>Delivery</span>
+                    } @else if (ticket.orderType.includes('Takeout')) {
+                      <span>Retirada</span>
+                    } @else {
+                      <span>Mesa / Salão</span>
+                    }
+                  </span>
+                  <span class="px-1.5 py-0.5 bg-success/10 text-success rounded font-sans text-[8px] tracking-wider uppercase font-extrabold">
+                    EXPEDIÇÃO (EXPO)
+                  </span>
+                </div>
+                
+                <div class="border-t border-dashed border-strong/40 my-1"></div>
+                
+                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-title/90">
+                  <div class="flex items-center gap-1 overflow-hidden">
+                    <span class="text-muted text-[10px] font-medium">PEDIDO:</span>
+                    <strong class="font-bold truncate">#{{ ticket.orderId.slice(-6) | uppercase }}</strong>
+                  </div>
+                  <div class="flex items-center gap-1 justify-end">
+                    <span class="text-muted text-[10px] font-medium">ENTRADA:</span>
+                    <strong class="font-bold">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</strong>
+                  </div>
+                  <div class="flex items-center gap-1 overflow-hidden">
+                    <span class="text-muted text-[10px] font-medium">CLIENTE:</span>
+                    <strong class="font-bold truncate" [title]="ticket.customerName || 'NÃO INFORMADO'">
+                      {{ ticket.customerName || 'N/A' | uppercase }}
+                    </strong>
+                  </div>
+                  <div class="flex items-center gap-1 justify-end">
+                    <span class="text-muted text-[10px] font-medium">TOTAL ITENS:</span>
+                    <strong class="font-bold">{{ getTicketTotalQty(ticket.items) }} UN</strong>
+                  </div>
+                </div>
+
+                <div class="border-t border-dashed border-strong/40 my-1"></div>
+
+                <div class="flex justify-between items-center text-[10px] text-muted">
+                  <span class="flex items-center gap-1 truncate max-w-[120px]" [title]="ticket.waiterName || 'CANAL ONLINE'">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[11px] text-muted/60 leading-none">support_agent</span>
+                    OP: {{ ticket.waiterName || 'ONLINE' | uppercase }}
+                  </span>
+                  <span class="font-mono text-[9px] text-muted/70">
+                    {{ ticket.oldestTimestamp | date:'dd/MM/yyyy' }}
+                  </span>
+                </div>
               </div>
               
               <div class="p-4 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">

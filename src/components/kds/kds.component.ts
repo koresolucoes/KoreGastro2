@@ -474,6 +474,11 @@ export class KdsComponent implements OnInit, OnDestroy {
     selectStation(station: Station) { this.selectedStation.set(station); }
     setViewMode(mode: 'station' | 'expo' | 'production') { this.viewMode.set(mode); }
 
+    getTicketTotalQty(items: KdsDisplayItem[]): number {
+        if (!items) return 0;
+        return items.reduce((acc, item) => acc + item.quantity, 0);
+    }
+
     async assignEmployeeToStation(employeeId: string | null) {
         const station = this.selectedStation();
         if (!station) return;

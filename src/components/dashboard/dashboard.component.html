@@ -73,29 +73,34 @@
             @case ('kpi') {
                @let kpi = $any(widget);
                <a [routerLink]="!editMode() ? kpi.route : null" 
-                  class="block h-full chef-surface p-8 shadow-xl relative overflow-hidden group hover:scale-[1.02] active:scale-95 transition-all bg-surface-elevated/30 border-subtle backdrop-blur-xl">
+                  class="block h-full chef-surface p-6 shadow-xl relative overflow-hidden group hover:scale-[1.02] active:scale-95 transition-all bg-surface-elevated/30 border-subtle backdrop-blur-xl flex flex-col justify-between min-h-[160px]">
                   
                   <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand/5 rounded-full blur-3xl transition-all group-hover:scale-150"></div>
                   
-                  <div class="flex justify-between items-start mb-6 relative z-10">
-                      <div class="flex-1">
-                          <p class="text-muted text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-70">{{ kpi.label }}</p>
-                          <h3 class="text-4xl font-black text-title data-mono tracking-tighter drop-shadow-sm">{{ kpi.value }}</h3>
-                      </div>
-                      <div class="p-3 bg-surface rounded-2xl shadow-inner border border-strong flex items-center justify-center transition-transform group-hover:-translate-y-1 group-hover:rotate-6">
-                          <span translate="no" class="notranslate material-symbols-outlined text-3xl drop-shadow-sm" [class]="kpi.colorClass">{{ kpi.icon }}</span>
+                  <div class="flex justify-between items-center mb-3 relative z-10">
+                      <p class="text-muted text-[10px] font-black uppercase tracking-[0.2em] opacity-70 truncate pr-2">{{ kpi.label }}</p>
+                      <div class="w-8 h-8 bg-surface rounded-xl shadow-inner border border-strong flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6">
+                          <span translate="no" class="notranslate material-symbols-outlined text-[18px] drop-shadow-sm" [class]="kpi.colorClass">{{ kpi.icon }}</span>
                       </div>
                   </div>
                   
-                  @if(kpi.subValue) {
-                      <div class="relative z-10 flex items-center gap-2">
-                          <div class="flex items-center gap-1 px-2.5 py-1 bg-success/10 text-success rounded-full border border-success/20">
-                             <span translate="no" class="notranslate material-symbols-outlined text-[14px] font-black">trending_up</span>
-                             <span class="text-[10px] font-black data-mono">{{ kpi.subValue }}</span>
+                  <div class="relative z-10 min-w-0 mb-4 flex-1 flex flex-col justify-center">
+                      <h3 class="text-3xl xl:text-4xl font-black text-title data-mono tracking-tighter drop-shadow-sm truncate w-full" [title]="kpi.value">{{ kpi.value }}</h3>
+                  </div>
+                  
+                  <div class="relative z-10 mt-auto">
+                      @if(kpi.subValue) {
+                          <div class="flex items-center gap-2">
+                              <div class="flex items-center gap-1 px-2 py-0.5 bg-success/10 text-success rounded border border-success/20">
+                                 <span translate="no" class="notranslate material-symbols-outlined text-[12px] font-black">trending_up</span>
+                                 <span class="text-[10px] font-black data-mono">{{ kpi.subValue }}</span>
+                              </div>
+                              <span class="text-[9px] text-muted font-bold uppercase tracking-widest truncate">vs anterior</span>
                           </div>
-                          <span class="text-[9px] text-muted font-bold uppercase tracking-widest">vs anterior</span>
-                      </div>
-                  }
+                      } @else {
+                          <div class="h-5"></div>
+                      }
+                  </div>
                </a>
             }
 
@@ -128,19 +133,19 @@
                         {{ dre.title }}
                     </h3>
                     <div class="flex-1 flex flex-col gap-4">
-                        <div class="flex justify-between items-center py-4 border-b border-strong/50 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[11px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Receita Bruta</span>
-                            <span class="text-sm font-black text-title data-mono">{{ totalSales() | currency:'BRL' }}</span>
+                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
+                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Receita Bruta</span>
+                            <span class="text-base font-black text-title data-mono">{{ totalSales() | currency:'BRL' }}</span>
                         </div>
-                        <div class="flex justify-between items-center py-4 border-b border-strong/50 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[11px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">CMV Alimentar</span>
-                            <span class="text-sm font-black text-danger data-mono">({{ (cogs() / totalSales() || 0) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
+                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
+                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">CMV Alimentar</span>
+                            <span class="text-base font-black text-danger data-mono">({{ (cogs() / totalSales() || 0) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
                         </div>
-                        <div class="flex justify-between items-center py-4 border-b border-strong/50 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[11px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Custos Operacionais</span>
-                            <span class="text-sm font-black text-warning data-mono">-{{ opex() | currency:'BRL' }}</span>
+                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
+                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Custos Operacionais</span>
+                            <span class="text-base font-black text-warning data-mono">-{{ opex() | currency:'BRL' }}</span>
                         </div>
-                        <div class="mt-auto pt-8 border-t-2 border-brand border-dashed">
+                        <div class="mt-auto pt-8">
                              <div class="flex justify-between items-end">
                                 <div class="flex flex-col">
                                   <span class="text-[9px] font-black text-muted uppercase tracking-[0.3em] mb-2">EBITDA Estimado</span>
@@ -187,29 +192,26 @@
                         <div class="w-2 h-2 rounded-full bg-warning"></div>
                         {{ list.title }}
                     </h3>
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-2 max-h-[300px] hide-scrollbar">
+                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
                         @for(item of topSellingItems(); track item.name; let i = $index) {
-                            <div class="flex items-center justify-between p-3 bg-surface/30 border border-strong rounded-2xl hover:bg-surface transition-all group shadow-sm active:scale-[0.98]">
+                            <div class="flex items-center justify-between py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
                                 <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                    <div class="w-8 h-8 rounded-xl bg-surface flex items-center justify-center text-xs font-black text-muted group-hover:bg-brand group-hover:text-white transition-colors border border-strong shrink-0">
-                                        {{ i + 1 }}
-                                    </div>
-                                    <div class="min-w-0 flex-1 pr-2">
-                                        <p class="text-[13px] font-black text-title truncate tracking-tight">{{ item.name }}</p>
+                                    <span class="text-[10px] font-mono text-muted group-hover:text-brand transition-colors w-4">{{ i + 1 | number:'2.0-0' }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[12px] font-medium text-title truncate tracking-tight">{{ item.name }}</p>
                                         <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[9px] text-muted font-bold uppercase tracking-widest truncate">{{ item.quantity }} vendidos</span>
-                                            <div class="w-1 h-1 rounded-full bg-muted opacity-30 shrink-0"></div>
-                                            <span class="text-[9px] text-brand font-black uppercase tracking-widest truncate">{{ (item.revenue / totalSales() || 0) | percent:'1.0-0' }} do total</span>
+                                            <span class="text-[9px] text-muted tracking-widest uppercase">{{ item.quantity }} un</span>
+                                            <span class="text-[9px] text-brand/70 tracking-widest uppercase">{{ (item.revenue / totalSales() || 0) | percent:'1.0-0' }} do total</span>
                                         </div>
                                     </div>
                                 </div>
-                                <span class="shrink-0 text-[14px] font-black text-title data-mono tracking-tight ml-2">{{ item.revenue | currency:'BRL' }}</span>
+                                <span class="text-[12px] font-mono text-title">{{ item.revenue | currency:'BRL' }}</span>
                             </div>
                         }
                         @if(topSellingItems().length === 0) {
                             <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2">empty_dashboard</span>
-                                <p class="text-[10px] font-black uppercase tracking-widest">Sem vendas no período</p>
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">empty_dashboard</span>
+                                <p class="text-[10px] uppercase tracking-widest">Sem vendas no período</p>
                             </div>
                         }
                     </div>
@@ -224,30 +226,26 @@
                         <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
                         {{ list.title }}
                     </h3>
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-2 max-h-[300px] hide-scrollbar">
+                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
                         @for(waiter of waiterRanking(); track waiter.name; let i = $index) {
-                            <div class="flex items-center justify-between p-3 bg-surface/30 border border-strong rounded-2xl hover:bg-surface transition-all group shadow-sm active:scale-[0.98]">
+                            <div class="flex items-center justify-between py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
                                 <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                    <div class="w-8 h-8 rounded-xl bg-surface flex items-center justify-center text-xs font-black text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors border border-strong shadow-inner shrink-0">
-                                        {{ i + 1 }}
-                                    </div>
-                                    <div class="min-w-0 flex-1 pr-2">
-                                        <p class="text-[13px] font-black text-title truncate tracking-tight">{{ waiter.name }}</p>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[9px] text-muted font-bold uppercase tracking-widest truncate">{{ waiter.orders }} pedidos</span>
-                                        </div>
+                                    <span class="text-[10px] font-mono text-muted group-hover:text-indigo-500 transition-colors w-4">{{ i + 1 | number:'2.0-0' }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[12px] font-medium text-title truncate tracking-tight">{{ waiter.name }}</p>
+                                        <span class="text-[9px] text-muted uppercase tracking-widest">{{ waiter.orders }} pedidos</span>
                                     </div>
                                 </div>
-                                <div class="text-right flex flex-col items-end shrink-0 ml-2">
-                                    <span class="text-[14px] font-black text-title data-mono tracking-tight">{{ waiter.avgTicket | currency:'BRL' }}</span>
-                                    <span class="text-[10px] text-muted font-bold tracking-tight">TM</span>
+                                <div class="text-right flex flex-col items-end">
+                                    <span class="text-[12px] font-mono text-title">{{ waiter.avgTicket | currency:'BRL' }}</span>
+                                    <span class="text-[9px] text-muted/60 uppercase font-medium tracking-widest mt-0.5">Ticket Médio</span>
                                 </div>
                             </div>
                         }
                         @if(waiterRanking().length === 0) {
                             <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2">person_off</span>
-                                <p class="text-[10px] font-black uppercase tracking-widest">Sem vendas de salão</p>
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">person_off</span>
+                                <p class="text-[10px] uppercase tracking-widest">Sem vendas de salão</p>
                             </div>
                         }
                     </div>
@@ -262,31 +260,25 @@
                         <div class="w-2 h-2 rounded-full bg-brand"></div>
                         {{ list.title }}
                     </h3>
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-2 max-h-[300px] hide-scrollbar">
+                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
                          @for(order of recentCompletedOrders(); track order.id) {
-                            <div (click)="selectedOrderPreview.set(order.fullOrder)" class="flex justify-between items-center p-3 cursor-pointer bg-surface/30 border border-strong rounded-2xl hover:bg-surface hover:border-brand/30 transition-all group shadow-sm active:scale-[0.98]">
-                                <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                     <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center border border-brand/20 shrink-0">
-                                         <span translate="no" class="notranslate material-symbols-outlined text-lg">receipt</span>
-                                     </div>
-                                     <div class="min-w-0 flex-1 pr-2">
-                                        <div class="flex items-center gap-2 mb-0.5">
-                                            <span class="text-[10px] font-black text-title uppercase tracking-widest truncate">#{{ order.id.slice(-6) }}</span>
-                                            <div class="w-1 h-1 rounded-full bg-muted opacity-30 shrink-0"></div>
-                                            <span class="text-[10px] text-muted font-bold data-mono shrink-0">{{ order.time | date:'HH:mm' }}</span>
+                            <div (click)="selectedOrderPreview.set(order.fullOrder)" class="flex justify-between items-center py-3 cursor-pointer hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
+                                <div class="flex items-center gap-4 overflow-hidden flex-1">
+                                     <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[11px] font-mono text-title group-hover:text-brand transition-colors">#{{ order.id.slice(-6) | uppercase }}</span>
+                                            <span class="text-[9px] text-muted/80 uppercase tracking-widest">— {{ order.type }}</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5 px-2 py-0.5 bg-surface rounded-lg border border-strong w-fit max-w-full">
-                                            <span class="text-[8px] text-muted font-black uppercase tracking-widest truncate">{{ order.type }}</span>
-                                        </div>
+                                        <div class="text-[10px] text-muted font-mono mt-1">{{ order.time | date:'HH:mm' }}</div>
                                      </div>
                                 </div>
-                                <span class="shrink-0 text-[14px] font-black text-title data-mono tracking-tight ml-2">{{ order.total | currency:'BRL' }}</span>
+                                <span class="text-[12px] font-mono text-title">{{ order.total | currency:'BRL' }}</span>
                             </div>
                          }
                          @if(recentCompletedOrders().length === 0) {
                             <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2">history_toggle_off</span>
-                                <p class="text-[10px] font-black uppercase tracking-widest">Nenhum pedido recente</p>
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">history_toggle_off</span>
+                                <p class="text-[10px] uppercase tracking-widest">Nenhum pedido recente</p>
                             </div>
                          }
                     </div>
@@ -301,30 +293,28 @@
                         <div class="w-2 h-2 rounded-full bg-success"></div>
                         {{ list.title }}
                     </h3>
-                    <div class="flex-1 space-y-6">
+                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
                          @for(method of paymentMethodsDistribution(); track method.method) {
-                             <div class="group/bar">
-                                 <div class="flex justify-between items-end text-[10px] uppercase font-black tracking-widest text-muted mb-3 group-hover/bar:text-title transition-colors">
-                                     <div class="flex items-center gap-2">
-                                         <span translate="no" class="notranslate material-symbols-outlined text-xs leading-none">{{ method.method === 'Dinheiro' ? 'payments' : method.method === 'PIX' ? 'qr_code_2' : 'credit_card' }}</span>
-                                         <span>{{ method.method }}</span>
-                                     </div>
-                                     <span class="font-black text-title data-mono text-sm leading-none">{{ method.value | currency:'BRL' }}</span>
+                             <div class="group/bar py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all">
+                                 <div class="flex justify-between items-center content-center mb-2">
+                                     <span class="text-[11px] font-medium text-title flex items-center gap-2">
+                                         <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-muted">{{ method.method === 'Dinheiro' ? 'payments' : method.method === 'PIX' ? 'qr_code_2' : 'credit_card' }}</span>
+                                         {{ method.method }}
+                                     </span>
+                                     <span class="font-mono text-[12px] text-title">{{ method.value | currency:'BRL' }}</span>
                                  </div>
-                                 <div class="w-full bg-surface rounded-full h-2 shadow-inner border border-strong p-0.5">
-                                     <div class="bg-brand h-full rounded-full relative shadow-[0_0_10px_rgba(79,70,229,0.3)] transition-all duration-1000 ease-out" [style.width.%]="method.percentage">
-                                         <div class="absolute top-0 right-0 w-1 h-full bg-white/40 blur-[1px]"></div>
+                                 <div class="flex items-center gap-3">
+                                     <div class="flex-1 bg-surface h-1 rounded-full overflow-hidden">
+                                         <div class="bg-muted/40 h-full rounded-full" [style.width.%]="method.percentage"></div>
                                      </div>
-                                 </div>
-                                 <div class="flex justify-end mt-1.5 opacity-0 group-hover/bar:opacity-100 transition-opacity">
-                                     <span class="text-[9px] font-black text-brand uppercase tracking-widest">{{ method.percentage | number:'1.0-0' }}% do faturamento</span>
+                                     <span class="text-[9px] font-mono text-muted w-6 text-right">{{ method.percentage | number:'1.0-0' }}%</span>
                                  </div>
                              </div>
                          }
                          @if(paymentMethodsDistribution().length === 0) {
                             <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2">account_balance_wallet</span>
-                                <p class="text-[10px] font-black uppercase tracking-widest">Aguardando Recebimentos</p>
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">account_balance_wallet</span>
+                                <p class="text-[10px] uppercase tracking-widest">Aguardando Recebimentos</p>
                             </div>
                          }
                     </div>
@@ -342,28 +332,23 @@
                         <div class="w-2 h-2 rounded-full bg-danger animate-ping"></div>
                         {{ list.title }}
                     </h3>
-                    <div class="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] hide-scrollbar relative z-10">
+                    <div class="flex-1 overflow-y-auto space-y-0 pr-1 max-h-[300px] hide-scrollbar relative z-10">
                         @for(item of lowStockItems(); track item.name) {
-                            <div class="flex justify-between items-center p-4 bg-danger/5 border border-danger/20 rounded-2xl hover:bg-danger/10 hover:border-danger/40 transition-all shadow-sm active:scale-[0.98] group/item">
-                                <div class="flex flex-col min-w-0 flex-1 pr-2">
-                                    <span class="text-[13px] font-black text-title truncate tracking-tight mb-1">{{ item.name }}</span>
-                                    <div class="flex items-center gap-2">
-                                        <div class="px-2 py-0.5 bg-surface text-[8px] font-black text-muted uppercase border border-strong rounded shadow-inner truncate w-fit max-w-full">Insumo Crítico</div>
-                                    </div>
+                            <div class="flex justify-between items-center py-3 hover:bg-danger/5 px-2 -mx-2 rounded-lg transition-all group/item">
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <span class="text-[12px] font-medium text-title truncate tracking-tight group-hover/item:text-danger hover:transition-colors">{{ item.name }}</span>
+                                    <span class="text-[9px] text-danger/80 uppercase tracking-widest mt-0.5">Mínimo: {{ item.min }}{{ item.unit }}</span>
                                 </div>
-                                <div class="text-right flex flex-col items-end shrink-0 ml-2">
-                                    <span class="text-lg font-black text-danger data-mono leading-none mb-1">{{ item.stock }} <span class="text-[10px] opacity-60 uppercase">{{ item.unit }}</span></span>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="text-[9px] text-muted font-bold uppercase tracking-widest">Mín: {{ item.min }}</span>
-                                        <span translate="no" class="notranslate material-symbols-outlined text-[10px] text-danger animate-pulse">keyboard_double_arrow_down</span>
-                                    </div>
+                                <div class="text-right flex items-center gap-2">
+                                    <span class="text-[12px] font-mono text-danger">{{ item.stock }}{{ item.unit }}</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-danger/60 group-hover/item:animate-pulse">warning</span>
                                 </div>
                             </div>
                         }
                         @if(lowStockItems().length === 0) {
-                             <div class="flex flex-col items-center justify-center p-12 text-success opacity-80">
-                                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 animate-[bounce_2s_infinite]">check_circle</span>
-                                <p class="text-[10px] font-black uppercase tracking-[0.2em]">Abastecimento em Dia</p>
+                             <div class="flex flex-col items-center justify-center py-12 text-success/70">
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-4">check_circle</span>
+                                <p class="text-[10px] uppercase tracking-widest">Abastecimento em Dia</p>
                             </div>
                         }
                     </div>
