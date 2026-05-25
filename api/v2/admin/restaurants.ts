@@ -52,38 +52,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Forbidden: User is not a system admin' });
     }
 
-    // 3. Fetch all profiles and their associated stores and subscriptions
+    // 3. Fetch all profiles
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select(`
-        id,
-        full_name,
-        avatar_url,
-        role,
-        updated_at,
-        stores (
-          id,
-          name,
-          created_at
-        ),
-        subscriptions (
-          id,
-          plan_id,
-          status,
-          current_period_end
-        )
-      `)
+      .select('id, full_name, avatar_url, updated_at')
       .order('updated_at', { ascending: false });
 
     if (profilesError) {
       throw profilesError;
     }
 
-    // Map stores to bars to match frontend expectations
-    const mappedProfiles = (profiles || []).map((p: any) => ({
-      ...p,
-      bars: p.stores || []
-    }));
+    const profileIds = (profiles || []).map(p => p.id);
+
+    // Fetch stores in parallel
+    const [storesResult, subscriptionsResult] = await Promise.all([
+      profileIds.length > 0
+        ? supabaseAdmin.from('stores').select('id, name, owner_id, created_at').in('owner_id', profileIds)
+        : Promise.resolve({ data: [], error: null }),
+      profileIds.length > 0
+        ? supabaseAdmin.from('subscriptions').select('id, user_id, plan_id, status, current_period_end').in('user_id', profileIds)
+        : Promise.resolve({ data: [], error: null })
+    ]);
+
+    if (storesResult.error) throw storesResult.error;
+    if (subscriptionsResult.error) throw subscriptionsResult.error;
+
+    const stores = storesResult.data || [];
+    const subscriptions = subscriptionsResult.data || [];
+
+    // Map profiles, stores and subscriptions in-memory
+    const mappedProfiles = (profiles || []).map((p: any) => {
+      const pStores = stores.filter((s: any) => s.owner_id === p.id);
+      
+      // Keep subscriptions lookup robust by checking user_id = profile ID OR any store ID owned by them
+      const storeIds = pStores.map((s: any) => s.id);
+      const pSubscriptions = subscriptions.filter((sub: any) => sub.user_id === p.id || storeIds.includes(sub.user_id));
+
+      // De-duplicate subscriptions if necessary
+      const uniqueSubs: any[] = [];
+      const seenSubs = new Set<string>();
+      for (const sub of pSubscriptions) {
+        if (!seenSubs.has(sub.id)) {
+          seenSubs.add(sub.id);
+          uniqueSubs.push(sub);
+        }
+      }
+
+      const mappedStores = pStores.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        created_at: s.created_at
+      }));
+
+      return {
+        id: p.id,
+        full_name: p.full_name,
+        avatar_url: p.avatar_url,
+        role: null, // role column doesn't exist in profiles table
+        updated_at: p.updated_at,
+        stores: mappedStores,
+        bars: mappedStores, // map stores to bars for frontend
+        subscriptions: uniqueSubs.map((sub: any) => ({
+          id: sub.id,
+          plan_id: sub.plan_id,
+          status: sub.status,
+          current_period_end: sub.current_period_end
+        }))
+      };
+    });
 
     return res.status(200).json({ data: mappedProfiles });
   } catch (error: any) {
