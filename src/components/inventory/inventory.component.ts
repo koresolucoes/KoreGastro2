@@ -37,8 +37,10 @@ interface StockPrediction {
   ingredientName: string;
   currentStock: number;
   unit: string;
-  predictedUsage: number;
+  predictedUsage: number; // For 7 days
   suggestedPurchase: number;
+  dailyBurnRate?: number;
+  daysUntilOutage?: number | null;
 }
 
 type FormItem = {
@@ -496,7 +498,7 @@ export class InventoryComponent implements OnInit {
             
             if (usageData.size === 0) {
                 await this.notificationService.alert(
-                    "Não há dados de vendas recentes para fazer uma previsão com IA. A sugestão de compra será baseada no seu estoque mínimo.",
+                    "Não há dados de vendas recentes para fazer uma previsão avançada. A sugestão de compra será baseada no seu estoque mínimo.",
                     "Análise de Estoque"
                 );
                 
@@ -505,33 +507,36 @@ export class InventoryComponent implements OnInit {
                     if (ingredient) {
                       const suggestedPurchase = Math.max(0, ingredient.min_stock - ingredient.stock);
                       prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                      prediction.daysUntilOutage = null; // Cannot compute without historical burn
                     }
                 });
 
             } else {
-                const historicalDataString = Array.from(usageData.entries())
-                  .map(([id, quantity]) => {
-                    const ingredient = ingredientsById.get(id);
-                    if (ingredient) {
-                        return `[ID: ${ingredient.id}] ${ingredient.name}: ${quantity.toFixed(2)} ${ingredient.unit} por mês`;
-                    }
-                    return '';
-                  })
-                  .filter(Boolean)
-                  .join(', ');
-                
-                const prompt = `Com base no consumo histórico de ingredientes de um restaurante (${historicalDataString}), preveja a necessidade de cada ingrediente para a PRÓXIMA SEMANA. Retorne um JSON array com "ingredientId", "predictedUsage".`;
-
-                const aiResult = await this.aiService.callGeminiForPrediction(prompt);
-
-                aiResult.forEach((p: { ingredientId: string; predictedUsage: number; }) => {
-                    const prediction = predictionsMap.get(p.ingredientId);
-                    if (prediction) {
-                        const suggestedPurchase = Math.max(0, p.predictedUsage - prediction.currentStock);
-                        prediction.predictedUsage = p.predictedUsage;
+                // Calculate Burn Rate Localy (Usage over 28 days)
+                predictionsMap.forEach((prediction, ingredientId) => {
+                    const monthlyUsage = usageData.get(ingredientId) || 0;
+                    const dailyBurnRate = monthlyUsage / 28;
+                    prediction.dailyBurnRate = dailyBurnRate;
+                    
+                    if (dailyBurnRate > 0) {
+                        prediction.daysUntilOutage = prediction.currentStock / dailyBurnRate;
+                        // Linear prediction: 7 days requirement based on exact burn
+                        prediction.predictedUsage = dailyBurnRate * 7;
+                        
+                        // Suggestion logic: Need to cover 7 days + maintain minimum stock
+                        const minStock = ingredientsById.get(ingredientId)?.min_stock || 0;
+                        const targetStock = prediction.predictedUsage + minStock;
+                        const suggestedPurchase = Math.max(0, targetStock - prediction.currentStock);
                         prediction.suggestedPurchase = Math.ceil(suggestedPurchase);
+                    } else {
+                        prediction.daysUntilOutage = null; // Infinite
+                        prediction.predictedUsage = 0;
+                        prediction.suggestedPurchase = 0;
                     }
                 });
+
+                // Instead of relying on Gemini, we use our exact internal data for Burn Rate!
+                // But we can still simulate an AI refinement prompt if we want, or just stick to this rock-solid local calculation.
             }
 
             const finalPredictions = Array.from(predictionsMap.values())

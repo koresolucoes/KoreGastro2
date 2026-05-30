@@ -291,6 +291,31 @@
                         <p class="text-xs font-bold uppercase tracking-widest text-center">Nenhum item<br>adicionado ainda</p>
                     </div>
                 }
+
+                <!-- AI Recommendations -->
+                @if (aiSuggestions().length > 0) {
+                    <div class="mt-4 px-2 py-2 text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-1.5 opacity-90 border-t border-subtle pt-4">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[13px] animate-pulse">model_training</span> Sugestões Complementares (IA)
+                    </div>
+                    <div class="space-y-2 mt-2">
+                        @for (rec of aiSuggestions(); track rec.id) {
+                            <button (click)="openQuickAddModal(rec)" class="w-full relative overflow-hidden group bg-surface hover:bg-surface-elevated rounded-xl p-3 border border-brand/20 hover:border-brand/50 transition-all text-left shadow-sm flex items-center justify-between">
+                                <div class="absolute inset-0 bg-gradient-to-r from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div class="flex flex-col relative z-10 w-2/3 pr-2">
+                                    <span class="text-xs font-bold text-title truncate group-hover:text-brand transition-colors">{{ rec.name }}</span>
+                                    <span class="text-[10px] text-muted line-clamp-1 mt-0.5">Combinação ideal para o seu pedido</span>
+                                </div>
+                                <div class="flex items-center gap-2 relative z-10">
+                                    <span class="text-[12px] font-black text-title">{{ rec.price | currency:'BRL' }}</span>
+                                    <div class="bg-brand/10 text-brand p-1 rounded-full group-hover:bg-brand group-hover:text-white transition-colors">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[12px]">add</span>
+                                    </div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                }
+
             </div>
 
             <!-- Footer Actions -->

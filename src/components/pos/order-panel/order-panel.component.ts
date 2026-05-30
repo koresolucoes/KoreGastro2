@@ -126,6 +126,31 @@ export class OrderPanelComponent implements OnInit {
 
   criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
 
+  // AI Suggestions
+  aiSuggestions = computed(() => {
+    const cart = this.shoppingCart();
+    const orderItems = this.currentOrder()?.order_items || [];
+    const allItemIds = new Set([...cart.map(i => i.recipe.id), ...orderItems.map(i => i.recipe_id)]);
+    
+    if (allItemIds.size === 0) return [];
+    
+    // Determine categories already in cart
+    const cartCategories = new Set<string>();
+    cart.forEach(i => cartCategories.add(i.recipe.category_id!));
+    orderItems.forEach(i => {
+        const recipe = this.recipes().find(r => r.id === i.recipe_id);
+        if (recipe?.category_id) cartCategories.add(recipe.category_id);
+    });
+
+    // Find available recipes not in cart and ideally not in the same category
+    const available = this.filteredRecipes().filter(r => !allItemIds.has(r.id) && r.hasStock !== false);
+    const crossSell = available.filter(r => !cartCategories.has(r.category_id!));
+    
+    // Sort by price desc (Upsell bias) and return top 2
+    crossSell.sort((a,b) => (b.price || 0) - (a.price || 0));
+    return crossSell.slice(0, 2);
+  });
+
   ngOnInit() {
     this.menuDataService.loadAllMenuData().catch(err => {
       console.error('Failed to load menu data in order panel', err);

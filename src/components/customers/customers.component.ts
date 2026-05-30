@@ -7,6 +7,8 @@ import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { CustomerDetailsModalComponent } from './customer-details-modal/customer-details-modal.component';
 import { SettingsStateService } from '../../services/settings-state.service';
+import { supabase } from '../../services/supabase-client';
+import { UnitContextService } from '../../services/unit-context.service';
 
 declare var L: any;
 
@@ -22,6 +24,7 @@ export class CustomersComponent {
   private settingsDataService = inject(SettingsDataService);
   private notificationService = inject(NotificationService);
   private settingsState = inject(SettingsStateService);
+  private unitContextService = inject(UnitContextService);
 
   customers = this.posState.customers;
   searchTerm = signal('');
@@ -62,6 +65,20 @@ export class CustomersComponent {
     });
   }
 
+  activeTab = signal<'list' | 'rfm'>('list');
+
+  // RFM Signals
+  rfmSegments = signal<any[]>([]);
+  isRfmLoading = signal(false);
+  rfmSummaryOptions = [
+    { id: 'campeoes', label: 'Campeões', icon: 'workspace_premium', color: 'text-success', bg: 'bg-success/10', border: 'border-success' },
+    { id: 'fieis', label: 'Clientes Fiéis', icon: 'favorite', color: 'text-brand', bg: 'bg-brand/10', border: 'border-brand' },
+    { id: 'potenciais', label: 'Potenciais Fiéis', icon: 'trending_up', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500' },
+    { id: 'novos', label: 'Novos e Promissores', icon: 'fiber_new', color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500' },
+    { id: 'risco', label: 'Em Risco', icon: 'error_outline', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' },
+    { id: 'perdidos', label: 'Hibernando / Perdidos', icon: 'cloud_off', color: 'text-danger', bg: 'bg-danger/10', border: 'border-danger' },
+  ];
+
   filteredCustomers = computed(() => {
     const term = this.searchTerm().toLowerCase();
     const allCustomers = this.customers();
@@ -74,6 +91,118 @@ export class CustomersComponent {
     );
   });
   
+  setActiveTab(tab: 'list' | 'rfm') {
+    this.activeTab.set(tab);
+    if (tab === 'rfm' && this.rfmSegments().length === 0) {
+        this.loadRfmAnalysis();
+    }
+  }
+
+  getSegmentMembers(categoryId: string) {
+    return this.rfmSegments().filter(s => s.segmentId === categoryId);
+  }
+
+  getSegmentStyle(segmentId: string) {
+    return this.rfmSummaryOptions.find(o => o.id === segmentId) || this.rfmSummaryOptions[this.rfmSummaryOptions.length - 1];
+  }
+
+  async loadRfmAnalysis() {
+    this.isRfmLoading.set(true);
+    const unitId = this.unitContextService.activeUnitId();
+    if (!unitId) {
+       this.isRfmLoading.set(false);
+       return;
+    }
+
+    try {
+        const { data: customerOrders, error } = await supabase
+            .from('orders')
+            .select('customer_id, completed_at, order_items(quantity, price)')
+            .eq('user_id', unitId)
+            .eq('status', 'COMPLETED')
+            .not('customer_id', 'is', null);
+
+        if (error) throw error;
+
+        // Group by customer
+        const customerMaps = new Map<string, { lastOrderDate: Date, totalOrders: number, totalSpent: number }>();
+        
+        customerOrders?.forEach((order: any) => {
+            const sum = order.order_items.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+            const date = new Date(order.completed_at);
+            
+            const existing = customerMaps.get(order.customer_id) || { lastOrderDate: new Date(0), totalOrders: 0, totalSpent: 0 };
+            
+            customerMaps.set(order.customer_id, {
+                lastOrderDate: date > existing.lastOrderDate ? date : existing.lastOrderDate,
+                totalOrders: existing.totalOrders + 1,
+                totalSpent: existing.totalSpent + sum
+            });
+        });
+
+        const today = new Date();
+        const segments: any[] = [];
+        const allCust = this.customers();
+
+        customerMaps.forEach((metrics, customerId) => {
+            const customer = allCust.find(c => c.id === customerId);
+            if (!customer) return;
+
+            const recency = Math.floor((today.getTime() - metrics.lastOrderDate.getTime()) / (1000 * 3600 * 24));
+            const frequency = metrics.totalOrders;
+            const monetary = metrics.totalSpent;
+
+            // Simple Scoring logic or static boundaries
+            let segmentId = 'perdidos';
+            
+            if (recency <= 30 && frequency >= 4 && monetary >= 200) {
+                segmentId = 'campeoes';
+            } else if (recency <= 60 && frequency >= 3) {
+                segmentId = 'fieis';
+            } else if (recency <= 60 && frequency >= 2) {
+                segmentId = 'potenciais';
+            } else if (recency <= 30 && frequency === 1) {
+                segmentId = 'novos';
+            } else if (recency > 60 && recency <= 120 && frequency >= 2) {
+                segmentId = 'risco';
+            } else {
+                segmentId = 'perdidos';
+            }
+
+            segments.push({
+                customer,
+                recency,
+                frequency,
+                monetary,
+                segmentId
+            });
+        });
+
+        // Add customers with no orders as "novos" or "perdidos" ? Let's just say "perdidos"
+        allCust.forEach(c => {
+           if (!customerMaps.has(c.id)) {
+               segments.push({
+                   customer: c,
+                   recency: 999,
+                   frequency: 0,
+                   monetary: 0,
+                   segmentId: 'perdidos'
+               });
+           }
+        });
+
+        // Sort by Monetary mostly
+        segments.sort((a,b) => b.monetary - a.monetary);
+        this.rfmSegments.set(segments);
+        
+    } catch (e: any) {
+        console.error('RFM Analysis Error:', e);
+        this.notificationService.show('Erro ao carregar análise RFM.', 'error');
+    } finally {
+        this.isRfmLoading.set(false);
+    }
+  }
+
   openDetailsModal(customer: Customer) {
     this.selectedCustomerForDetails.set(customer);
     this.isDetailsModalOpen.set(true);

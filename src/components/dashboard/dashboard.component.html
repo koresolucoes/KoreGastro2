@@ -183,6 +183,137 @@
                     </div>
                 </div>
             }
+
+            <!-- MENU ENGINEERING WIDGET (Matriz BCG) -->
+            @case ('menu_engineering') {
+                @let eng = $any(widget);
+                @let matrix = bcgMatrix();
+                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl overflow-hidden relative">
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 relative z-10">
+                        <div>
+                            <h3 class="text-[10px] font-black text-muted flex items-center gap-3 uppercase tracking-[0.2em]">
+                                <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
+                                {{ eng.title }}
+                            </h3>
+                            <p class="text-[9px] text-muted tracking-wide mt-1 uppercase font-semibold">Análise de Performance e Margem do Cardápio</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 bg-brand/10 text-brand text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-brand/20">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[10px]">insights</span>
+                            <span>IA Advisor Alinhado</span>
+                        </div>
+                    </div>
+
+                    <!-- Quadrants Tab Selector -->
+                    <div class="grid grid-cols-4 gap-2 mb-6 relative z-10">
+                        <button (click)="selectedBcgTab.set('stars')" 
+                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
+                                [class]="selectedBcgTab() === 'stars' 
+                                    ? 'bg-success/15 border-success text-success shadow-lg shadow-success/10' 
+                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">star</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider">Estrelas</span>
+                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.stars.length }}</span>
+                        </button>
+                        
+                        <button (click)="selectedBcgTab.set('plowhorses')" 
+                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
+                                [class]="selectedBcgTab() === 'plowhorses' 
+                                    ? 'bg-warning/15 border-warning text-warning shadow-lg shadow-warning/10' 
+                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">directions_run</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider">Cavalos</span>
+                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.plowhorses.length }}</span>
+                        </button>
+
+                        <button (click)="selectedBcgTab.set('puzzles')" 
+                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
+                                [class]="selectedBcgTab() === 'puzzles' 
+                                    ? 'bg-blue-400/15 border-blue-400 text-blue-400 shadow-lg shadow-blue-400/10' 
+                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">help_outline</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider">Desafios</span>
+                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.puzzles.length }}</span>
+                        </button>
+
+                        <button (click)="selectedBcgTab.set('dogs')" 
+                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
+                                [class]="selectedBcgTab() === 'dogs' 
+                                    ? 'bg-danger/15 border-danger text-danger shadow-lg shadow-danger/10' 
+                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">delete_outline</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider">Alerta</span>
+                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.dogs.length }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Items inside calculated tab -->
+                    <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[220px] hide-scrollbar mb-6 relative z-10">
+                        @let activeList = selectedBcgTab() === 'stars' ? matrix.stars 
+                                        : selectedBcgTab() === 'plowhorses' ? matrix.plowhorses
+                                        : selectedBcgTab() === 'puzzles' ? matrix.puzzles
+                                        : matrix.dogs;
+
+                        @for(item of activeList; track item.id) {
+                            <div class="flex items-center justify-between p-3.5 bg-surface/40 hover:bg-surface/60 rounded-xl border border-strong transition-all group/item">
+                                <div class="min-w-0 flex-1 pr-3">
+                                    <p class="text-[12px] font-bold text-title truncate tracking-tight group-hover/item:text-brand transition-colors">{{ item.name }}</p>
+                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                        <span class="text-[9px] text-muted/80 tracking-widest uppercase font-mono">{{ item.quantitySold }} vendidos</span>
+                                        <span class="text-[9px] tracking-widest uppercase font-mono font-black"
+                                              [class]="item.marginPercent >= 60 ? 'text-success' : item.marginPercent >= 40 ? 'text-warning' : 'text-danger'">
+                                            Margem: {{ item.marginPercent | number:'1.0-0' }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0 flex flex-col items-end">
+                                    <span class="text-[12px] font-mono font-black text-title">{{ item.price | currency:'BRL' }}</span>
+                                    <span class="text-[9px] text-muted uppercase tracking-widest font-medium mt-0.5">Custo: {{ item.cost | currency:'BRL' }}</span>
+                                </div>
+                            </div>
+                        }
+
+                        @if(activeList.length === 0) {
+                            <div class="flex flex-col items-center justify-center py-10 text-muted/30">
+                                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-1.5 opacity-60">layers_clear</span>
+                                <p class="text-[9px] uppercase tracking-widest font-black">Nenhum item neste quadrante</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- AI Coach Insights & Suggestions Panel -->
+                    <div class="mt-auto p-4 bg-surface-elevated/40 border border-strong rounded-2xl relative z-10">
+                        <h4 class="text-[9px] font-black text-title flex items-center gap-2 uppercase tracking-[0.2em] mb-3">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[13px] text-brand">assistant</span>
+                            IA Insights e Recomendações Táticas
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            @for(rec of bcgAdvisorRecommendations(); track rec.title) {
+                                <div class="flex items-start gap-3 p-3 bg-surface/50 border border-strong rounded-xl animate-in slide-in-from-bottom duration-300">
+                                    <div class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                                         [class]="rec.type === 'success' ? 'bg-success' : rec.type === 'warning' ? 'bg-warning' : rec.type === 'danger' ? 'bg-danger' : 'bg-blue-400'"></div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex justify-between items-center gap-2 mb-1">
+                                            <p class="text-[11px] font-bold text-title truncate tracking-tight">{{ rec.title }}</p>
+                                            <span class="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shrink-0 border"
+                                                  [class]="rec.type === 'success' ? 'bg-success/10 text-success border-success/20' 
+                                                         : rec.type === 'warning' ? 'bg-warning/10 text-warning border-warning/20'
+                                                         : rec.type === 'danger' ? 'bg-danger/10 text-danger border-danger/20'
+                                                         : 'bg-blue-400/10 text-blue-400 border-blue-400/20'">
+                                                {{ rec.badge }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-muted leading-relaxed">{{ rec.action }}</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
             
             <!-- TOP ITEMS LIST -->
             @case ('list_top_items') {

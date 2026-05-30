@@ -135,7 +135,8 @@
                   <tr>
                     <th class="px-4 py-3 font-bold">Ingrediente</th>
                     <th class="px-4 py-3 text-center font-bold">Estoque Atual</th>
-                    <th class="px-4 py-3 text-center font-bold">Uso Previsto</th>
+                    <th class="px-4 py-3 text-center font-bold">Consumo/Semana</th>
+                    <th class="px-4 py-3 text-center font-bold">Risco de Falta (Dias)</th>
                     <th class="px-4 py-3 text-center font-bold">Sugestão de Compra</th>
                   </tr>
                 </thead>
@@ -143,8 +144,16 @@
                 @for(p of predictions; track p.ingredientId) {
                 <tr class="hover:bg-surface-elevated/40 transition-colors">
                     <td class="px-4 py-3 font-bold text-title">{{p.ingredientName}}</td>
-                    <td class="px-4 py-3 text-center text-muted data-mono">{{p.currentStock}} {{p.unit}}</td>
-                    <td class="px-4 py-3 text-center text-warning font-black data-mono">{{p.predictedUsage}} {{p.unit}}</td>
+                    <td class="px-4 py-3 text-center text-muted data-mono">{{p.currentStock | number:'1.0-2'}} {{p.unit}}</td>
+                    <td class="px-4 py-3 text-center text-muted data-mono">{{p.predictedUsage | number:'1.0-2'}} {{p.unit}}</td>
+                    <td class="px-4 py-3 text-center data-mono font-bold"
+                        [class]="p.daysUntilOutage === null ? 'text-muted' : (p.daysUntilOutage <= 7 ? 'text-danger' : (p.daysUntilOutage <= 15 ? 'text-warning' : 'text-success'))">
+                        @if (p.daysUntilOutage === null) {
+                            -
+                        } @else {
+                            {{ p.daysUntilOutage | number:'1.0-0' }} dias
+                        }
+                    </td>
                     <td class="px-4 py-3 text-center text-brand font-black bg-brand/5 data-mono">{{p.suggestedPurchase}} {{p.unit}}</td>
                 </tr>
                 }</tbody>
