@@ -7,35 +7,15 @@
       </h1>
       <p class="text-muted text-sm font-medium mt-1">Cadastre e gerencie os dados dos seus clientes.</p>
     </div>
-    
-    <div class="flex items-center gap-4 bg-surface-elevated p-1 rounded-xl border border-subtle relative overflow-hidden self-start">
-        <div class="absolute inset-y-1 w-1/2 bg-surface border border-subtle shadow-sm rounded-lg transition-transform duration-300 pointer-events-none"
-             [ngClass]="activeTab() === 'list' ? 'translate-x-[2%]' : 'translate-x-[98%]'"></div>
-        
-        <button (click)="setActiveTab('list')" class="px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase relative z-10 transition-colors w-full sm:w-auto flex items-center gap-2"
-                [class]="activeTab() === 'list' ? 'text-title' : 'text-muted hover:text-title'">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">list_alt</span>
-            Lista
-        </button>
-        <button (click)="setActiveTab('rfm')" class="px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase relative z-10 transition-colors w-full sm:w-auto flex items-center gap-2"
-                [class]="activeTab() === 'rfm' ? 'text-title' : 'text-muted hover:text-title'">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">donut_large</span>
-            RFM Analytics
-        </button>
-    </div>
-
-    @if (activeTab() === 'list') {
-      <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-brand/20 uppercase tracking-widest text-xs">
-        <span translate="no" class="notranslate material-symbols-outlined text-sm">add_circle</span>
-        Novo Cliente
-      </button>
-    }
+    <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-brand/20 uppercase tracking-widest text-xs">
+      <span translate="no" class="notranslate material-symbols-outlined text-sm">add_circle</span>
+      Novo Cliente
+    </button>
   </div>
 
-  <div class="chef-surface border border-subtle flex flex-col flex-1 overflow-hidden relative">
-    @if (activeTab() === 'list') {
-      <div class="p-4 border-b border-subtle bg-surface/50">
-        <div class="relative">
+  <div class="chef-surface border border-subtle flex flex-col flex-1 overflow-hidden">
+    <div class="p-4 border-b border-subtle bg-surface/50">
+      <div class="relative">
         <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
         <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar cliente por nome, telefone, email ou CPF..." class="w-full bg-surface-elevated border border-subtle rounded-xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-all font-medium text-sm">
       </div>
@@ -130,125 +110,6 @@
         }
       </div>
     }
-    
-    <!-- RFM Analytics Tab -->
-    @if (activeTab() === 'rfm') {
-      <div class="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 space-y-8 animate-in fade-in">
-          @if (isRfmLoading()) {
-              <div class="flex-1 flex flex-col items-center justify-center text-muted gap-4">
-                  <div class="animate-spin w-12 h-12 border-4 border-brand/20 border-t-brand rounded-full"></div>
-                  <p class="text-xs uppercase tracking-widest font-black">Processando Compras e Histórico (IA/RFM)...</p>
-              </div>
-          } @else if (rfmSegments().length === 0) {
-             <div class="flex-1 flex flex-col items-center justify-center">
-                 <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted/30 mb-4">analytics</span>
-                 <p class="font-bold text-title">Sem dados suficientes</p>
-                 <p class="text-[10px] uppercase font-black text-muted tracking-widest mt-2 max-w-sm text-center">Finalize vendas na frente de caixa associando clientes aos pedidos para gerar a matriz RFM.</p>
-             </div>
-          } @else {
-             <!-- CRM Header Overview -->
-             <div class="flex items-center gap-4 bg-brand/5 border border-brand/20 rounded-2xl p-6 relative overflow-hidden group">
-                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-brand/10 blur-3xl rounded-full pointer-events-none group-hover:bg-brand/20 transition-all"></div>
-                 <div class="flex-1">
-                     <h3 class="text-sm uppercase tracking-widest font-black text-brand mb-1 flex items-center gap-2">
-                        <span translate="no" class="notranslate material-symbols-outlined text-base">radar</span> Matriz RFM Integrada
-                     </h3>
-                     <p class="text-[11px] text-title font-medium leading-relaxed max-w-xl">
-                         Recência (Dias da Última Compra), Frequência (Quantidade Gasta) e Valor Monetário. 
-                         Segmentamos automaticamente seus clientes para você saber com precisão quem recompensar, quem reengajar e quem precisa de uma promoção de resgate.
-                     </p>
-                 </div>
-                 <div class="text-right shrink-0 pr-4">
-                     <p class="text-4xl font-black text-title title-display">{{ rfmSegments().length }}</p>
-                     <p class="text-[9px] uppercase tracking-widest font-black text-muted mt-1">Clientes Analisados</p>
-                 </div>
-             </div>
-
-             <!-- RFM Category Grid -->
-             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 @for (cat of rfmSummaryOptions; track cat.id) {
-                     <div class="bg-surface-elevated/40 border border-subtle rounded-2xl p-5 hover:border-[var(--brand)] transition-all relative overflow-hidden group">
-                        
-                        <div class="flex items-start justify-between mb-4 relative z-10">
-                            <div class="flex items-center gap-3">
-                                <span translate="no" class="notranslate material-symbols-outlined text-xl p-2 rounded-xl border {{ cat.color }} {{ cat.bg }} {{ cat.border }} shadow-sm">
-                                    {{ cat.icon }}
-                                </span>
-                                <div>
-                                    <h4 class="text-xs uppercase font-black tracking-widest text-title">{{ cat.label }}</h4>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Segment Members -->
-                        @let members = getSegmentMembers(cat.id);
-                        <div class="flex items-end justify-between mt-auto pt-2 border-t border-subtle dashed relative z-10">
-                            <div>
-                                <span class="text-3xl font-black {{ cat.color }}">{{ members.length }}</span>
-                                <span class="text-[10px] text-muted font-black uppercase tracking-widest ml-2">Clientes</span>
-                            </div>
-                            
-                            @if (members.length > 0) {
-                                <div class="bg-surface border border-subtle rounded-lg px-2 py-1 flex -space-x-2">
-                                    @for (m of members | slice:0:3; track m.customer.id) {
-                                        <div class="w-6 h-6 rounded-full bg-surface-elevated border border-strong flex items-center justify-center text-[8px] font-black uppercase" title="{{ m.customer.name }}">
-                                            {{ (m.customer.name | slice:0:1) }}
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                     </div>
-                 }
-             </div>
-
-             <!-- Detailed List -->
-             <div>
-                 <h4 class="text-xs uppercase tracking-widest font-black text-muted mb-4 border-b border-subtle pb-2">Segmentação Detalhada</h4>
-                 <div class="bg-surface-elevated/20 rounded-2xl border border-subtle overflow-hidden">
-                     <table class="w-full text-left">
-                       <thead class="bg-surface-elevated/50 text-[9px] text-muted uppercase tracking-widest font-black border-b border-subtle">
-                         <tr>
-                           <th class="px-6 py-4">Cliente</th>
-                           <th class="px-6 py-4">Segmento</th>
-                           <th class="px-6 py-4 text-center">Frequência</th>
-                           <th class="px-6 py-4 text-center border-x border-subtle/50">Recência</th>
-                           <th class="px-6 py-4 text-right">Valor Vitalício (LTV)</th>
-                         </tr>
-                       </thead>
-                       <tbody class="divide-y divide-subtle/50">
-                          @for (m of rfmSegments(); track m.customer.id) {
-                              <tr class="hover:bg-surface-elevated/40 transition-colors group">
-                                <td class="px-6 py-4">
-                                   <div class="font-bold text-title flex items-center gap-2 cursor-pointer group-hover:text-brand" (click)="openDetailsModal(m.customer)">
-                                       {{ m.customer.name }} <span translate="no" class="notranslate material-symbols-outlined text-[12px] opacity-0 group-hover:opacity-100 transition-all">open_in_new</span>
-                                   </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                   @let style = getSegmentStyle(m.segmentId);
-                                   <span class="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border {{ style.color }} {{ style.bg }} {{ style.border }}">
-                                       {{ style.label }}
-                                   </span>
-                                </td>
-                                <td class="px-6 py-4 text-center data-mono font-black text-muted">{{ m.frequency }} <span class="text-[9px] font-sans">pedidos</span></td>
-                                <td class="px-6 py-4 text-center data-mono border-x border-subtle/50" [class]="m.recency > 90 ? 'text-danger font-black' : 'text-muted font-medium'">
-                                   @if (m.frequency === 0) {
-                                       -
-                                   } @else {
-                                       {{ m.recency }} <span class="text-[9px] font-sans">dias atrás</span>
-                                   }
-                                </td>
-                                <td class="px-6 py-4 text-right data-mono font-black text-title">{{ m.monetary | currency:'BRL' }}</td>
-                              </tr>
-                          }
-                       </tbody>
-                     </table>
-                 </div>
-             </div>
-          }
-      </div>
-    }
-
   </div>
 </div>
 
