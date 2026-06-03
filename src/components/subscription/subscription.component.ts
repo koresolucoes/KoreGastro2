@@ -32,6 +32,14 @@ export class SubscriptionComponent implements OnInit {
   plans = signal<Plan[]>([]);
   isProcessing = signal(false);
   isLoading = signal(true);
+  expandedPlans = signal<Record<string, boolean>>({});
+
+  toggleExpand(planId: string) {
+    this.expandedPlans.update(curr => ({
+      ...curr,
+      [planId]: !curr[planId]
+    }));
+  }
 
   // Map of known permissions to readable labels
   permissionMap: Record<string, string> = {

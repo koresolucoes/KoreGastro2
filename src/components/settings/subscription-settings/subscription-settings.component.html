@@ -94,11 +94,25 @@
       </div>
 
       <!-- Modal Body - Pricing Cards -->
-      <div class="p-6 sm:p-8 bg-app min-h-full">
-        <div class="flex flex-nowrap gap-6 lg:gap-8 overflow-x-auto pb-12 pt-4 snap-x snap-mandatory px-4 md:px-8 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div class="p-6 sm:p-8 bg-app min-h-full relative group/carousel">
+        
+        <!-- Navigation Arrows -->
+        <button (click)="scrollLeft()" class="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 bg-surface border border-subtle rounded-full items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.15)] text-title opacity-0 group-hover/carousel:opacity-100 transition-all hover:bg-surface-elevated hover:scale-110 active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">chevron_left</span>
+        </button>
+        <button (click)="scrollRight()" class="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 bg-surface border border-subtle rounded-full items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.15)] text-title opacity-0 group-hover/carousel:opacity-100 transition-all hover:bg-surface-elevated hover:scale-110 active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">chevron_right</span>
+        </button>
+
+        <div #carouselContainer
+             class="flex flex-nowrap gap-6 lg:gap-8 overflow-x-auto pb-12 pt-4 snap-x snap-mandatory px-4 md:px-12 scroll-smooth cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+             (mousedown)="startDrag($event)" 
+             (mouseleave)="stopDrag()" 
+             (mouseup)="stopDrag()" 
+             (mousemove)="onDrag($event)">
           
           @for (plan of plans(); track plan.id; let idx = $index) {
-            <div class="shrink-0 w-[85vw] md:w-[350px] lg:w-[380px] bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-8 fill-mode-both"
+            <div class="shrink-0 w-[85vw] md:w-[400px] lg:w-[380px] bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-8 fill-mode-both"
                  [style.animation-delay]="idx * 150 + 'ms'"
                  [ngClass]="{'border-brand ring-2 ring-brand/20 shadow-lg shadow-brand/10': plan.popular}">
               
@@ -108,26 +122,37 @@
                 </div>
               }
 
-              <div class="mb-6">
-                <h4 class="text-xl font-black text-title mb-2">{{plan.name}}</h4>
-                <p class="text-sm text-muted mb-4 h-10">{{plan.description}}</p>
+              <div class="mb-4">
+                <h4 class="text-xl font-black text-title mb-1">{{plan.name}}</h4>
+                <p class="text-sm text-muted mb-4 h-10 line-clamp-2 md:line-clamp-none">{{plan.description}}</p>
                 <div class="flex items-end gap-1">
                   <span class="text-4xl font-black tracking-tight text-title">{{plan.price}}</span>
                   <span class="text-sm font-medium text-muted mb-1">{{plan.period}}</span>
                 </div>
               </div>
 
-              <div class="space-y-4 mb-8 flex-1">
-                @for(feature of plan.features; track feature.name) {
-                  <div class="flex items-start gap-3">
-                    <span translate="no" class="notranslate material-symbols-outlined text-[20px]"
-                          [ngClass]="feature.included ? 'text-success' : 'text-muted opacity-30'">
-                      {{feature.included ? 'check_circle' : 'remove_circle_outline'}}
-                    </span>
-                    <span class="text-sm" [ngClass]="feature.included ? 'text-title font-medium' : 'text-muted line-through opacity-70'">
-                      {{feature.name}}
-                    </span>
-                  </div>
+              <div class="space-y-4 mb-6 flex-1">
+                @for(feature of plan.features; track feature.name; let fIdx = $index) {
+                  @if(fIdx < 4 || expandedPlans()[plan.id]) {
+                    <div class="flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <span translate="no" class="notranslate material-symbols-outlined text-[20px]"
+                            [ngClass]="feature.included ? 'text-success' : 'text-muted opacity-30'">
+                        {{feature.included ? 'check_circle' : 'remove_circle_outline'}}
+                      </span>
+                      <span class="text-sm" [ngClass]="feature.included ? 'text-title font-medium' : 'text-muted line-through opacity-70'">
+                        {{feature.name}}
+                      </span>
+                    </div>
+                  }
+                }
+                
+                @if(plan.features.length > 4) {
+                   <div class="pt-2">
+                     <button class="text-xs font-bold uppercase tracking-widest text-brand flex items-center gap-1 hover:text-brand-hover transition-colors" (click)="toggleExpand(plan.id)">
+                       {{ expandedPlans()[plan.id] ? 'Ver menos' : 'Ver todos os recursos' }}
+                       <span translate="no" class="notranslate material-symbols-outlined text-[16px] transition-transform duration-300" [class.rotate-180]="expandedPlans()[plan.id]">expand_more</span>
+                     </button>
+                   </div>
                 }
               </div>
 

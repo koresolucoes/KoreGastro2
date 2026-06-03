@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, OnInit, inject, ElementRef, ViewChild, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { supabase } from '../../../services/supabase-client';
+import { SubscriptionStateService } from '../../../services/subscription-state.service';
 
 interface PlanFeature {
   name: string;
@@ -26,13 +28,24 @@ interface Plan {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SubscriptionSettingsComponent implements OnInit {
-  trialDaysRemaining = signal(2); // In a real app calculate from profile created_at + 30 days
-  currentPlanStr = signal<'trial' | 'basic' | 'pro' | string>('trial');
-  currentPlanName = signal('Kore Teste de 30 Dias');
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private subscriptionState = inject(SubscriptionStateService);
+
+  @ViewChild('carouselContainer', { static: false }) carouselContainer!: ElementRef<HTMLDivElement>;
+
+  trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
+  currentPlanStr = computed(() => this.subscriptionState.currentPlan()?.name ? this.subscriptionState.currentPlan()?.id : 'trial');
+  currentPlanName = computed(() => this.subscriptionState.currentPlan()?.name || 'Kore Teste de 30 Dias');
+  isTrialing = this.subscriptionState.isTrialing;
   
   plans = signal<Plan[]>([]);
   isLoading = signal(true);
   isProcessing = signal(false);
+
+  // Drag logic
+  private isDragging = false;
+  private startX = 0;
+  private scrollLeftPos = 0;
 
   // Map of known permissions to readable labels
   permissionMap: Record<string, string> = {
@@ -77,30 +90,13 @@ export class SubscriptionSettingsComponent implements OnInit {
   isModalOpen = signal(false);
 
   async ngOnInit() {
-    await this.loadCurrentSubscription();
     await this.loadPlans();
-  }
 
-  async loadCurrentSubscription() {
-     try {
-       const { data: { user } } = await supabase.auth.getUser();
-       if (!user) return;
-       
-       const { data, error } = await supabase
-         .from('subscriptions')
-         .select('*, plans(name)')
-         .eq('user_id', user.id)
-         .eq('status', 'active')
-         .maybeSingle();
-
-       if (data && !error) {
-          this.currentPlanStr.set(data.plan_id);
-          this.currentPlanName.set(data.plans?.name || 'Plano Atual');
-          this.trialDaysRemaining.set(0);
-       }
-     } catch(e) {
-       console.error('Error fetching subscription in settings:', e);
-     }
+    this.route.queryParams.subscribe(params => {
+      if (params['upgrade'] === 'true') {
+        this.openUpgradeModal();
+      }
+    });
   }
 
   async loadPlans() {
@@ -209,5 +205,51 @@ export class SubscriptionSettingsComponent implements OnInit {
       alert('Houve um erro ao processar a assinatura.');
       this.isProcessing.set(false);
     }
+  }
+
+  // --- Expanded Features ---
+  expandedPlans = signal<Record<string, boolean>>({});
+
+  toggleExpand(planId: string) {
+    this.expandedPlans.update(curr => ({
+      ...curr,
+      [planId]: !curr[planId]
+    }));
+  }
+
+  // --- Carousel Methods ---
+  scrollLeft() {
+    if (this.carouselContainer) {
+      this.carouselContainer.nativeElement.scrollBy({ left: -380, behavior: 'smooth' });
+    }
+  }
+
+  scrollRight() {
+    if (this.carouselContainer) {
+      this.carouselContainer.nativeElement.scrollBy({ left: 380, behavior: 'smooth' });
+    }
+  }
+
+  startDrag(e: MouseEvent) {
+    if (!this.carouselContainer) return;
+    this.isDragging = true;
+    this.carouselContainer.nativeElement.classList.remove('snap-mandatory', 'scroll-smooth');
+    this.startX = e.pageX - this.carouselContainer.nativeElement.offsetLeft;
+    this.scrollLeftPos = this.carouselContainer.nativeElement.scrollLeft;
+  }
+
+  stopDrag() {
+    this.isDragging = false;
+    if (this.carouselContainer) {
+       this.carouselContainer.nativeElement.classList.add('snap-mandatory', 'scroll-smooth');
+    }
+  }
+
+  onDrag(e: MouseEvent) {
+    if (!this.isDragging || !this.carouselContainer) return;
+    e.preventDefault();
+    const x = e.pageX - this.carouselContainer.nativeElement.offsetLeft;
+    const walk = (x - this.startX) * 2; // scroll-fast
+    this.carouselContainer.nativeElement.scrollLeft = this.scrollLeftPos - walk;
   }
 }

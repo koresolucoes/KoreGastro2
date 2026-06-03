@@ -16,51 +16,62 @@
       <div class="flex flex-nowrap gap-6 lg:gap-8 max-w-[1400px] mx-auto overflow-x-auto pb-12 pt-4 snap-x snap-mandatory px-4 md:px-8 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <!-- Plans Loop -->
         @for (plan of plans(); track plan.id; let idx = $index) {
-          <div class="shrink-0 w-[85vw] md:w-[360px] lg:w-[400px] bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-12 fill-mode-both"
+          <div class="shrink-0 w-[85vw] md:w-[360px] lg:w-[380px] bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-12 fill-mode-both"
                [style.animation-delay]="idx * 150 + 'ms'"
-               [ngClass]="{'border-brand ring-4 ring-brand/10 shadow-xl shadow-brand/10': plan.popular}">
+               [ngClass]="{'border-brand ring-2 ring-brand/20 shadow-lg shadow-brand/10': plan.popular}">
             
             @if(plan.popular) {
-              <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-xs font-black uppercase tracking-wider px-6 py-2 rounded-full shadow-lg">
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg">
                 Recomendado
               </div>
             }
 
-            <div class="mb-8 border-b border-subtle pb-8 text-center">
-              <h4 class="text-2xl font-black text-title mb-2">{{plan.name}}</h4>
-              <p class="text-sm text-muted mb-6">{{plan.description}}</p>
+            <div class="mb-6 border-b border-subtle pb-6 text-center">
+              <h4 class="text-xl font-black text-title mb-1">{{plan.name}}</h4>
+              <p class="text-sm text-muted mb-4 line-clamp-2">{{plan.description}}</p>
               <div class="flex items-center justify-center gap-1">
-                <span class="text-5xl font-black tracking-tight text-title data-mono">{{plan.price}}</span>
+                <span class="text-4xl font-black tracking-tight text-title data-mono">{{plan.price}}</span>
                 <span class="text-sm font-medium text-muted mt-2">{{plan.period}}</span>
               </div>
             </div>
 
-            <div class="space-y-4 mb-10 flex-1">
-              @for(feature of plan.features; track feature.name) {
-                <div class="flex items-start gap-4">
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5 shrink-0"
-                       [ngClass]="feature.included ? 'bg-success/10 text-success' : 'bg-surface-elevated text-muted opacity-40'">
-                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">
-                      {{feature.included ? 'check' : 'close'}}
+            <div class="space-y-4 mb-8 flex-1">
+              @for(feature of plan.features; track feature.name; let fIdx = $index) {
+                @if(fIdx < 4 || expandedPlans()[plan.id]) {
+                  <div class="flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div class="w-5 h-5 rounded-full flex items-center justify-center mt-0.5 shrink-0"
+                         [ngClass]="feature.included ? 'bg-success/10 text-success' : 'bg-surface-elevated text-muted opacity-40'">
+                      <span translate="no" class="notranslate material-symbols-outlined text-[14px]">
+                        {{feature.included ? 'check' : 'close'}}
+                      </span>
+                    </div>
+                    <span class="text-sm" [ngClass]="feature.included ? 'text-title font-medium' : 'text-muted line-through opacity-70'">
+                      {{feature.name}}
                     </span>
                   </div>
-                  <span class="text-[15px]" [ngClass]="feature.included ? 'text-title font-medium' : 'text-muted line-through opacity-70'">
-                    {{feature.name}}
-                  </span>
-                </div>
+                }
+              }
+              
+              @if(plan.features.length > 4) {
+                 <div class="pt-2">
+                   <button class="w-full text-xs font-bold uppercase tracking-widest text-brand flex items-center justify-center gap-1 hover:text-brand-hover transition-colors" (click)="toggleExpand(plan.id)">
+                     {{ expandedPlans()[plan.id] ? 'Ver menos' : 'Ver todos os recursos' }}
+                     <span translate="no" class="notranslate material-symbols-outlined text-[16px] transition-transform duration-300" [class.rotate-180]="expandedPlans()[plan.id]">expand_more</span>
+                   </button>
+                 </div>
               }
             </div>
 
             <button (click)="subscribe(plan)" 
                     [disabled]="isProcessing()"
-                    class="w-full py-5 rounded-2xl font-black text-lg transition-all outline-none flex items-center justify-center gap-2 relative overflow-hidden"
-                    [ngClass]="plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-xl shadow-brand/20 hover:-translate-y-1' : 'bg-surface-elevated text-title hover:bg-subtle border border-subtle'">
+                    class="w-full py-4 rounded-xl font-bold text-base transition-all outline-none flex items-center justify-center gap-2 relative overflow-hidden"
+                    [ngClass]="plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-brand/20 hover:-translate-y-0.5' : 'bg-surface-elevated text-title hover:bg-subtle border border-subtle'">
               
               @if(isProcessing()) {
                 <span class="animate-spin material-symbols-outlined">sync</span> Processando...
               } @else {
                 Continuar com {{plan.name}}
-                <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1 text-lg">arrow_forward</span>
               }
             </button>
           </div>

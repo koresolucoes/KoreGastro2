@@ -275,13 +275,15 @@ export class OnboardingComponent {
             managerRole = data;
         }
         
+        let managerDataResult = null;
         if (managerRole) {
             await this.settingsData.grantAllPermissionsToRole(managerRole.id); // Ensure full access
-            await this.settingsData.addEmployee({
+            const { data } = await this.settingsData.addEmployee({
                 name: this.data.managerName,
                 pin: this.data.managerPin,
                 role_id: managerRole.id
             });
+            managerDataResult = data;
         }
 
         // 7. Configurações concluídas
@@ -291,22 +293,27 @@ export class OnboardingComponent {
         this.loadingStatus.set('Tudo pronto!');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
         
-        // Auto-login the manager so they don't have to type the PIN manually
-        const { data: managerData } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('pin', this.data.managerPin)
-            .eq('user_id', this.unitContext.activeUnitId())
-            .single();
-
-        if (managerData) {
-            this.opAuth.login(managerData);
-        }
-        
         const unitId = this.unitContext.activeUnitId();
         if (unitId) {
              await this.supabaseState.loadCoreData(unitId);
              await this.supabaseState.loadEssentialData(unitId);
+        }
+
+        // Auto-login the manager so they don't have to type the PIN manually
+        if (managerDataResult) {
+            this.opAuth.login(managerDataResult as any);
+        } else {
+             // Fallback just in case
+             const { data: managerData } = await supabase
+                 .from('employees')
+                 .select('*')
+                 .eq('pin', this.data.managerPin)
+                 .eq('user_id', unitId)
+                 .single();
+     
+             if (managerData) {
+                 this.opAuth.login(managerData);
+             }
         }
         
         // Start the Guided Tour Demo Mode!
