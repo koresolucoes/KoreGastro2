@@ -95,11 +95,12 @@
 
       <!-- Modal Body - Pricing Cards -->
       <div class="p-6 sm:p-8 bg-app min-h-full">
-        <div class="flex flex-nowrap md:grid md:grid-cols-2 gap-6 lg:gap-8 overflow-x-auto pb-4 snap-x snap-mandatory px-2 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div class="flex flex-nowrap gap-6 lg:gap-8 overflow-x-auto pb-12 pt-4 snap-x snap-mandatory px-4 md:px-8 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
-          @for (plan of plans(); track plan.id) {
-            <div class="shrink-0 w-[85vw] md:w-auto lg:flex-1 bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group snap-center"
-                 [ngClass]="{'border-brand ring-2 ring-brand/20 shadow-lg shadow-brand/5': plan.popular}">
+          @for (plan of plans(); track plan.id; let idx = $index) {
+            <div class="shrink-0 w-[85vw] md:w-[350px] lg:w-[380px] bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-8 fill-mode-both"
+                 [style.animation-delay]="idx * 150 + 'ms'"
+                 [ngClass]="{'border-brand ring-2 ring-brand/20 shadow-lg shadow-brand/10': plan.popular}">
               
               @if(plan.popular) {
                 <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg">

@@ -35,6 +35,32 @@ export class SubscriptionComponent implements OnInit {
 
   // Map of known permissions to readable labels
   permissionMap: Record<string, string> = {
+    '/Whatsapp': 'Automação e Atendimento via WhatsApp',
+    '/Cashier': 'Controle de Caixa Intuitivo',
+    '/Customers': 'CRM e Fidelidade de Clientes',
+    '/Dashboard': 'Painel Gerencial e Métricas em Tempo Real',
+    '/Employees': 'Gestão Completa da Equipe',
+    '/Ifood-Kds': 'Integração de Pedidos iFood Direto na Cozinha (KDS)',
+    '/Ifood-Menu': 'Gestão Unificada de Cardápio iFood',
+    '/Ifood-Store-Manager': 'Gerenciamento de Loja iFood',
+    '/Inventory': 'Controle de Estoque e Matéria-Prima',
+    '/Kds': 'Monitores de Produção (KDS) Interativos',
+    '/Leave-Management': 'Controle de Licenças e Faltas',
+    '/Menu': 'Engenharia e Gestão de Cardápio',
+    '/Mise-En-Place': 'Gestão de Produção e Mise-En-Place',
+    '/My-Leave': 'Portal de Licenças da Equipe',
+    '/Payroll': 'Fechamento de Folha de Pagamento (RH)',
+    '/Performance': 'Avaliação de Desempenho e Metas',
+    '/Pos': 'PDV Frente de Caixa Ultrarrápido',
+    '/Purchasing': 'Central Inteligente de Compras',
+    '/Reports': 'Relatórios Gerenciais Aprofundados',
+    '/Reservations': 'Controle Dinâmico de Reservas de Mesas',
+    '/Schedules': 'Módulo de Escalas e Jornada de Trabalho',
+    '/Settings': 'Painel de Configurações do Sistema',
+    '/Suppliers': 'Catálogo Integrado de Fornecedores',
+    '/Technical-Sheets': 'Fichas Técnicas de Receitas',
+    '/Time-Clock': 'Relógio de Ponto Eletrônico Integrado',
+    '/Tutorials': 'Academia VIP e Tutoriais Interativos',
     'pdv': 'Ponto de Venda (PDV) ultrarrápido',
     'pdv_unlimited': 'Múltiplos PDVs ilimitados',
     'kds': 'Telas de Produção na Cozinha (KDS)',
@@ -71,29 +97,17 @@ export class SubscriptionComponent implements OnInit {
       if (permError) throw permError;
 
       const formattedPlans: Plan[] = (plansData || []).map(p => {
-        // Find permissions for this plan
         const planPerms = (permissionsData || [])
           .filter(perm => perm.plan_id === p.id)
           .map(perm => perm.permission_key);
 
-        // Build feature list. For simplicity, we check a base list of features.
-        const allKnownFeatures = Object.keys(this.permissionMap);
-        
-        // If the plan has permissions that we don't know about, we add them too
-        const additionalPerms = planPerms.filter(k => !allKnownFeatures.includes(k));
-        
-        // Combine features to show
-        const featuresToShow = [...allKnownFeatures, ...additionalPerms].map(key => {
+        const featuresToShow = planPerms.map(key => {
+          const found = Object.keys(this.permissionMap).find(k => k.toLowerCase() === key.toLowerCase());
           return {
-            name: this.permissionMap[key] || this.formatPermissionKey(key),
-            included: planPerms.includes(key)
+            name: found ? this.permissionMap[found] : this.formatPermissionKey(key),
+            included: true
           };
         });
-
-        // Some logical fallbacks if a plan has no permissions mapped
-        if (planPerms.length === 0 && featuresToShow.length === Object.keys(this.permissionMap).length) {
-            // Assume basic includes only pdv if nothing is returned, just as fallback
-        }
 
         return {
           id: p.id,
@@ -133,7 +147,7 @@ export class SubscriptionComponent implements OnInit {
   }
 
   formatPermissionKey(key: string): string {
-    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return key.replace(/[\/-]/g, ' ').trim().replace(/\b\w/g, l => l.toUpperCase());
   }
 
   async subscribe(plan: Plan) {
@@ -148,24 +162,13 @@ export class SubscriptionComponent implements OnInit {
         return;
       }
 
-      // If there's no preapproval_plan_id, it might just be a manual plan or mock.
-      if (!plan.preapproval_plan_id) {
-         // Fake integration if no MP plan
-         setTimeout(() => {
-            this.isProcessing.set(false);
-            alert('Assinatura ativada (Modo Simulação)!');
-            this.router.navigate(['/home']);
-         }, 1000);
-         return;
-      }
-
       const response = await fetch('/api/mercadopago-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planId: plan.preapproval_plan_id, // Send the preapproval_plan_id to MP
+          planId: plan.id, // Envia o ID interno do plano para o nosso webhook processar
           planName: plan.name,
-          price: plan.price.replace('R$ ', '').replace(',', '.'), // Normalize price
+          price: plan.price.replace('R$ ', '').replace('.', '').replace(',', '.'), // Normalize price (remove dots, replace comma)
           userEmail: user.email,
           userId: user.id
         })

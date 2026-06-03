@@ -13,11 +13,12 @@
         </p>
       </div>
 
-      <div class="flex flex-nowrap md:grid md:grid-cols-2 lg:flex lg:flex-wrap lg:justify-center gap-6 lg:gap-8 max-w-6xl mx-auto overflow-x-auto pb-8 snap-x snap-mandatory px-4 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div class="flex flex-nowrap gap-6 lg:gap-8 max-w-[1400px] mx-auto overflow-x-auto pb-12 pt-4 snap-x snap-mandatory px-4 md:px-8 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <!-- Plans Loop -->
-        @for (plan of plans(); track plan.id) {
-          <div class="shrink-0 w-[85vw] md:w-auto lg:flex-1 lg:min-w-[320px] lg:max-w-[400px] bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl group snap-center"
-               [ngClass]="{'border-brand ring-4 ring-brand/10 shadow-xl shadow-brand/5': plan.popular}">
+        @for (plan of plans(); track plan.id; let idx = $index) {
+          <div class="shrink-0 w-[85vw] md:w-[360px] lg:w-[400px] bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-brand/20 group snap-center animate-in fade-in zoom-in-95 slide-in-from-bottom-12 fill-mode-both"
+               [style.animation-delay]="idx * 150 + 'ms'"
+               [ngClass]="{'border-brand ring-4 ring-brand/10 shadow-xl shadow-brand/10': plan.popular}">
             
             @if(plan.popular) {
               <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-xs font-black uppercase tracking-wider px-6 py-2 rounded-full shadow-lg">
