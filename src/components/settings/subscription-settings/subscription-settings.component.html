@@ -50,7 +50,7 @@
             Visualizar Planos e Upgrade
           </button>
         } @else {
-           <button class="w-full md:w-auto px-6 py-4 lg:py-3 bg-surface-elevated text-title font-bold rounded-2xl hover:bg-subtle transition-all outline-none flex items-center justify-center gap-2">
+           <button (click)="manageSubscription()" class="w-full md:w-auto px-6 py-4 lg:py-3 bg-surface-elevated text-title font-bold rounded-2xl hover:bg-subtle transition-all outline-none flex items-center justify-center gap-2">
             Gerenciar Assinatura
           </button>
         }
@@ -95,11 +95,11 @@
 
       <!-- Modal Body - Pricing Cards -->
       <div class="p-6 sm:p-8 bg-app min-h-full">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <div class="flex flex-nowrap md:grid md:grid-cols-2 gap-6 lg:gap-8 overflow-x-auto pb-4 snap-x snap-mandatory px-2 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
           @for (plan of plans(); track plan.id) {
-            <div class="bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-transform hover:-translate-y-1 hover:shadow-xl group"
-                 [ngClass]="{'border-brand ring-2 ring-brand/20': plan.popular}">
+            <div class="shrink-0 w-[85vw] md:w-auto lg:flex-1 bg-surface rounded-[24px] border border-subtle p-6 lg:p-8 flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group snap-center"
+                 [ngClass]="{'border-brand ring-2 ring-brand/20 shadow-lg shadow-brand/5': plan.popular}">
               
               @if(plan.popular) {
                 <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg">
@@ -131,11 +131,13 @@
               </div>
 
               <button (click)="upgradePlan(plan)" 
-                      [disabled]="isProcessing()"
+                      [disabled]="isProcessing() || currentPlanStr() === plan.id"
                       class="w-full py-4 rounded-xl font-bold transition-all outline-none flex items-center justify-center gap-2"
-                      [ngClass]="plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-brand/20 hover:-translate-y-0.5' : 'bg-surface-elevated text-title hover:bg-subtle'">
-                @if(isProcessing()) {
+                      [ngClass]="currentPlanStr() === plan.id ? 'bg-surface text-muted border border-strong cursor-not-allowed' : (plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-brand/20 hover:-translate-y-0.5' : 'bg-surface-elevated text-title hover:bg-subtle')">
+                @if(isProcessing() && currentPlanStr() !== plan.id) {
                   <span class="animate-spin material-symbols-outlined">sync</span> Processando...
+                } @else if(currentPlanStr() === plan.id) {
+                  O seu plano atual
                 } @else {
                   Assinar {{plan.name}}
                 }

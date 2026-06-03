@@ -35,14 +35,16 @@ export class SubscriptionComponent implements OnInit {
 
   // Map of known permissions to readable labels
   permissionMap: Record<string, string> = {
-    'pdv': 'PDV Base',
-    'pdv_unlimited': 'PDVs Ilimitados',
-    'kds': 'KDS (Monitor de Cozinha)',
-    'ifood': 'Integração iFood',
-    'reports': 'Relatórios Avançados',
-    'inventory': 'Controle de Estoque Avançado',
-    'multi_store': 'Múltiplas Lojas',
-    'support_priority': 'Suporte Prioritário'
+    'pdv': 'Ponto de Venda (PDV) ultrarrápido',
+    'pdv_unlimited': 'Múltiplos PDVs ilimitados',
+    'kds': 'Telas de Produção na Cozinha (KDS)',
+    'ifood': 'Integração inteligente com iFood',
+    'reports': 'Relatórios e dashboard gerencial',
+    'inventory': 'Controle completo de compras e estoque',
+    'multi_store': 'Gerenciamento de múltiplas filiais',
+    'support_priority': 'Suporte técnico VIP 24h',
+    'menu_builder': 'Cardápio digital e via QR Code',
+    'kitchen_kds': 'Organização e sincronia com a cozinha'
   };
 
   async ngOnInit() {

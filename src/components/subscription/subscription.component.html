@@ -4,8 +4,8 @@
     <div class="max-w-5xl w-full mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
       
       <div class="text-center mb-12">
-        <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand/10">
-           <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">schedule</span>
+        <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand/10 animate-bounce">
+           <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">workspace_premium</span>
         </div>
         <h1 class="text-4xl md:text-5xl font-black text-title tracking-tight mb-4 title-display">Seu período de teste <span class="text-brand">expirou.</span></h1>
         <p class="text-lg text-muted font-medium max-w-2xl mx-auto">
@@ -13,11 +13,11 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+      <div class="flex flex-nowrap md:grid md:grid-cols-2 lg:flex lg:flex-wrap lg:justify-center gap-6 lg:gap-8 max-w-6xl mx-auto overflow-x-auto pb-8 snap-x snap-mandatory px-4 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <!-- Plans Loop -->
         @for (plan of plans(); track plan.id) {
-          <div class="bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-transform hover:-translate-y-2 hover:shadow-2xl group"
-               [ngClass]="{'border-brand ring-4 ring-brand/10': plan.popular}">
+          <div class="shrink-0 w-[85vw] md:w-auto lg:flex-1 lg:min-w-[320px] lg:max-w-[400px] bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl group snap-center"
+               [ngClass]="{'border-brand ring-4 ring-brand/10 shadow-xl shadow-brand/5': plan.popular}">
             
             @if(plan.popular) {
               <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-xs font-black uppercase tracking-wider px-6 py-2 rounded-full shadow-lg">
