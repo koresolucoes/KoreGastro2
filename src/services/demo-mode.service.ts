@@ -90,4 +90,53 @@ export class DemoModeService {
         }, 1000); // give time for POS to load
     });
   }
+
+  startTechnicalSheetTour() {
+      // Assuming they are already on /technical-sheets
+      const steps: TourStep[] = [
+          {
+              targetSelector: '.demo-new-recipe-btn',
+              title: 'Nova Ficha Técnica',
+              content: 'Vamos criar uma nova ficha técnica. Clique neste botão para abrir o editor.',
+              actionRequired: 'click',
+              position: 'bottom'
+          },
+          {
+              targetSelector: '.demo-basic-info-tab',
+              title: 'Dados Básicos',
+              content: 'Começamos informando os dados básicos: Nome, Categoria, Preço Base e Tempo de preparo.',
+              actionRequired: 'none',
+              position: 'bottom'
+          },
+          {
+              targetSelector: '.demo-ingredients-tab',
+              title: 'Custos e Componentes',
+              content: 'Clique nesta aba para configurar a logística dos ingredientes.',
+              actionRequired: 'click',
+              position: 'bottom'
+          },
+          {
+              targetSelector: '.demo-add-ingredient-btn',
+              title: 'Adicionar Ingrediente',
+              content: 'Aqui você adiciona insumos e sub-receitas (como molhos). Isso calculará o custo total do prato (CMV).',
+              actionRequired: 'none',
+              position: 'top'
+          },
+          {
+              targetSelector: '.demo-financial-card',
+              title: 'Análise Financeira',
+              content: 'O sistema calcula o Custo (CMV) em tempo real, mostra margens de lucro e preço de venda sugerido.',
+              actionRequired: 'none',
+              position: 'left'
+          },
+          {
+              targetSelector: '.demo-ai-btn',
+              title: 'Inteligência Artificial',
+              content: 'O botão de dicas com IA ajuda na instrução do modo de preparo e rendimento após adicionar ingredientes!',
+              actionRequired: 'none',
+              position: 'left'
+          }
+      ];
+      this.tour.startTour(steps);
+  }
 }

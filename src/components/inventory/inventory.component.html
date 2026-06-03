@@ -820,18 +820,25 @@
 
 <!-- Purchase Order Modal -->
 @if(isPurchaseOrderModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" (click)="closePurchaseOrderModal()">
-    <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
-      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-white">Nova Ordem de Compra</h3>
-        <button (click)="closePurchaseOrderModal()" class="p-1 rounded-full text-gray-400 hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closePurchaseOrderModal()">
+    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md shrink-0">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
+            <span translate="no" class="notranslate material-symbols-outlined text-2xl">shopping_cart</span>
+          </div>
+          <h3 class="text-2xl font-black text-title title-display tracking-tight leading-none">Nova Ordem de Compra</h3>
+        </div>
+        <button (click)="closePurchaseOrderModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+        </button>
       </div>
-      <div class="p-6 flex-1 overflow-y-auto space-y-6">
+      <div class="p-8 flex-1 overflow-y-auto space-y-8 bg-app custom-scrollbar">
         <!-- Order Details -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-elevated rounded-[32px] border border-strong shadow-sm">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Fornecedor</label>
-            <select (change)="updatePOFormField('supplier_id', $any($event.target).value)" [value]="poForm().supplier_id" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Fornecedor *</label>
+            <select (change)="updatePOFormField('supplier_id', $any($event.target).value)" [value]="poForm().supplier_id" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none cursor-pointer">
               <option value="null">Nenhum/Diverso</option>
               @for(s of suppliers(); track s.id) {
                 <option [value]="s.id">{{s.name}}</option>
@@ -839,23 +846,26 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
-            <select (change)="updatePOFormField('status', $any($event.target).value)" [value]="poForm().status" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Status</label>
+            <select (change)="updatePOFormField('status', $any($event.target).value)" [value]="poForm().status" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner uppercase tracking-widest appearance-none cursor-pointer">
               <option>Rascunho</option>
               <option>Enviada</option>
             </select>
           </div>
         </div>
         <!-- Items -->
-        <div>
-          <h4 class="text-lg font-semibold text-white mb-3">Itens do Pedido</h4>
+        <div class="bg-surface-elevated rounded-[32px] border border-strong p-6 shadow-sm">
+          <h4 class="text-lg font-black text-title mb-4 flex items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined text-brand">inventory_2</span> Itens do Pedido
+          </h4>
           @if(poForm().status === 'Enviada') {
-            <div class="mb-3 p-3 bg-blue-900/50 border border-blue-700 rounded-lg text-sm text-blue-300">
+            <div class="mb-5 p-4 bg-info/10 border border-info/30 rounded-xl text-sm text-info flex items-start gap-3">
+              <span translate="no" class="notranslate material-symbols-outlined mt-0.5">info</span>
               <p><strong>Atenção:</strong> A ordem foi enviada. Preencha os custos unitários de cada item conforme a nota fiscal antes de marcar o pedido como "Recebido".</p>
             </div>
           }
           <!-- Table Header -->
-          <div class="hidden sm:grid grid-cols-12 gap-x-3 px-3 mb-2 text-xs text-gray-400 font-medium">
+          <div class="hidden sm:grid grid-cols-12 gap-x-4 px-4 mb-2 text-[10px] text-muted font-bold uppercase tracking-widest">
             <span class="col-span-4">Ingrediente</span>
             <span class="col-span-2 text-center">Custo Unit.</span>
             <span class="col-span-2 text-center">Lote</span>
@@ -863,92 +873,101 @@
             <span class="col-span-2 text-center">Quantidade</span>
           </div>
 
-          <div class="space-y-2 mb-3">
+          <div class="space-y-3 mb-4">
             @for(item of poItems(); track item.id) {
-              <div class="p-3 rounded-lg bg-gray-900/50">
-                <div class="grid grid-cols-12 gap-x-3 gap-y-2 items-center">
-                    <div class="col-span-12 sm:col-span-4 font-medium text-white flex justify-between items-center">
-                        <span>{{item.name}}</span>
-                         <button (click)="removePOItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Remover">
-                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" /></svg>
+              <div class="p-4 rounded-xl bg-surface border border-strong hover:border-brand transition-colors group">
+                <div class="grid grid-cols-12 gap-x-4 gap-y-3 items-center">
+                    <div class="col-span-12 sm:col-span-4 font-bold text-title flex justify-between items-center group-hover:text-brand transition-colors">
+                        <span class="truncate">{{item.name}}</span>
+                         <button (click)="removePOItem(item.id)" class="w-8 h-8 flex sm:hidden items-center justify-center rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors" title="Remover">
+                           <span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span>
                         </button>
                     </div>
                     
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Custo Unit.</label>
-                        <input type="number" step="0.01" [value]="item.cost || 0" (change)="updatePOItemField(item.id, 'cost', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Custo Unit.</label>
+                        <input type="number" step="0.01" [value]="item.cost || 0" (change)="updatePOItemField(item.id, 'cost', +$any($event.target).value)" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-3 py-2 text-title data-mono font-bold text-center">
                     </div>
 
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Lote</label>
-                        <input type="text" [value]="item.lot_number || ''" (change)="updatePOItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="(Opcional)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Lote</label>
+                        <input type="text" [value]="item.lot_number || ''" (change)="updatePOItemField(item.id, 'lot_number', $any($event.target).value)" placeholder="Opcional" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-3 py-2 text-title font-medium text-center placeholder-muted text-sm">
                     </div>
 
                     <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Validade</label>
-                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updatePOItemField(item.id, 'expiration_date', $any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
+                        <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Validade</label>
+                        <input type="date" [value]="item.expiration_date | date:'yyyy-MM-dd'" (change)="updatePOItemField(item.id, 'expiration_date', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-2 py-2 text-title font-medium text-center text-sm">
                     </div>
                     
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 sm:hidden">Quantidade</label>
-                        <div class="flex items-center">
-                            <input type="number" [value]="item.quantity" (change)="updatePOItemField(item.id, 'quantity', +$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white text-center">
-                            <span class="text-xs text-gray-400 ml-2 hidden sm:inline">{{item.unit}}</span>
+                    <div class="col-span-6 sm:col-span-2 flex items-center gap-2 justify-between">
+                        <div class="w-full">
+                          <label class="block text-[10px] uppercase font-bold text-muted mb-1 sm:hidden">Quantidade</label>
+                          <div class="flex items-center gap-2">
+                              <input type="number" [value]="item.quantity" (change)="updatePOItemField(item.id, 'quantity', +$any($event.target).value)" class="w-full bg-surface-elevated border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-lg px-2 py-2 text-title data-mono font-bold text-center">
+                              <span class="text-[10px] uppercase tracking-widest font-bold text-muted hidden sm:inline w-6 text-center">{{item.unit}}</span>
+                          </div>
                         </div>
+                        <button (click)="removePOItem(item.id)" class="w-8 h-8 hidden sm:flex items-center justify-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1" title="Remover do Pedido">
+                           <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span>
+                        </button>
                     </div>
                     
-                     <div class="col-span-12 sm:hidden text-right text-xs text-gray-400">
+                     <div class="col-span-12 sm:hidden text-right text-[10px] uppercase font-bold text-muted tracking-widest">
                         Unidade: {{item.unit}}
                     </div>
                 </div>
               </div>
             }
           </div>
-          <div class="relative mt-2">
-            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+          <div class="relative mt-6">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                <span translate="no" class="notranslate material-symbols-outlined text-muted text-[20px]">search</span>
             </div>
-            <input type="text" [value]="poItemSearchTerm()" (input)="poItemSearchTerm.set($any($event.target).value)" placeholder="Adicionar ingrediente..." class="w-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg p-2 pl-10 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+            <input type="text" [value]="poItemSearchTerm()" (input)="poItemSearchTerm.set($any($event.target).value)" placeholder="Adicionar ingrediente..." class="w-full bg-app border-2 border-dashed border-strong focus:border-brand focus:ring-0 outline-none rounded-xl p-3.5 pl-12 text-title placeholder-muted font-medium transition-all shadow-sm">
             @if(poItemSearchTerm()) {
-                <div class="absolute bottom-full left-0 right-0 bg-gray-600 border border-gray-500 rounded-lg mb-1 z-10 max-h-48 overflow-y-auto shadow-lg">
-                    <ul>
+                <div class="absolute bottom-full left-0 right-0 bg-surface-elevated border border-strong rounded-xl mb-2 z-10 max-h-64 overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <ul class="p-1">
                       @for(ing of poFilteredIngredients(); track ing.id) {
                         <li (mousedown)="!poCurrentItemIds().has(ing.id) ? addPOItemToOrder(ing) : null" 
-                            class="p-3 text-sm rounded-md"
-                            [class.hover:bg-gray-700]="!poCurrentItemIds().has(ing.id)"
+                            class="p-3 my-0.5 text-sm rounded-lg flex justify-between items-center transition-colors"
+                            [class.hover:bg-brand]="!poCurrentItemIds().has(ing.id)"
+                            [class.hover:text-white]="!poCurrentItemIds().has(ing.id)"
                             [class.cursor-pointer]="!poCurrentItemIds().has(ing.id)"
+                            [class.bg-surface]="!poCurrentItemIds().has(ing.id)"
                             [class.opacity-50]="poCurrentItemIds().has(ing.id)"
-                            [class.text-gray-500]="poCurrentItemIds().has(ing.id)">
-                            {{ing.name}}
+                            [class.text-muted]="poCurrentItemIds().has(ing.id)">
+                            <span class="font-bold">{{ing.name}}</span>
                             @if(poCurrentItemIds().has(ing.id)) {
-                                <span class="text-xs italic"> (Já adicionado)</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-muted border border-strong px-2 py-0.5 rounded-md">Na Lista</span>
+                            } @else {
+                                <span class="text-[10px] font-bold uppercase tracking-widest opacity-80 border border-current px-2 py-0.5 rounded-md">{{ing.unit}}</span>
                             }
                         </li>
                       }
                     </ul>
-                    <div class="border-t border-gray-700 p-2 text-center">
-                      <button (click)="openAddIngredientModal()" class="text-sm text-blue-400 hover:underline">
-                        Não encontrou? Cadastre um novo ingrediente.
+                    <div class="border-t border-subtle p-3 text-center bg-surface">
+                      <button (click)="openAddIngredientModal()" class="text-xs text-brand hover:text-brand-hover font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1 mx-auto">
+                         <span translate="no" class="notranslate material-symbols-outlined text-[16px]">add</span> Cadastre um novo ingrediente
                       </button>
                     </div>
                 </div>
               }
           </div>
         </div>
-         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Observações</label>
-          <textarea rows="2" (change)="updatePOFormField('notes', $any($event.target).value)" [value]="poForm().notes" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+         <div class="bg-surface-elevated rounded-[32px] border border-strong p-6 shadow-sm">
+          <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1 flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">notes</span> Observações</label>
+          <textarea rows="3" (change)="updatePOFormField('notes', $any($event.target).value)" [value]="poForm().notes" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner resize-y"></textarea>
         </div>
       </div>
-      <div class="p-4 bg-gray-900/50 flex justify-between items-center border-t border-gray-700">
-        <div>
-          <span class="text-lg font-bold text-gray-300">Total do Pedido:</span>
-          <span class="text-lg font-bold text-white ml-2">{{ poTotal() | currency:'BRL' }}</span>
+      <div class="p-6 md:p-8 bg-surface-elevated flex flex-col md:flex-row justify-between items-center border-t border-subtle gap-4 shrink-0">
+        <div class="flex items-center gap-3 w-full md:w-auto p-4 bg-surface rounded-2xl border border-strong shadow-inner justify-center md:justify-start">
+          <span class="text-[11px] font-black text-muted uppercase tracking-widest">Total do Pedido:</span>
+          <span class="text-2xl font-black text-title data-mono">{{ poTotal() | currency:'BRL' }}</span>
         </div>
-        <div class="flex gap-3">
-          <button (click)="closePurchaseOrderModal()" class="px-6 py-2 font-medium rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition-colors">Cancelar</button>
-          <button (click)="savePurchaseOrder()" [disabled]="isSavingPO()" class="px-6 py-2 font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:bg-gray-500">
-            @if(isSavingPO()) { <span>Salvando...</span> } @else { <span>Salvar Pedido</span> }
+        <div class="flex gap-3 w-full md:w-auto">
+          <button (click)="closePurchaseOrderModal()" class="flex-1 md:flex-none px-6 py-3 font-bold rounded-2xl text-muted bg-surface hover:text-title hover:bg-surface-elevated flex items-center justify-center transition-colors border border-strong shadow-sm">Cancelar</button>
+          <button (click)="savePurchaseOrder()" [disabled]="isSavingPO()" class="flex-1 md:flex-none px-8 py-3 font-bold rounded-2xl bg-brand hover:bg-brand-hover text-white transition-all shadow-md shadow-brand/20 flex items-center justify-center gap-2 active:scale-95 disabled:bg-opacity-50">
+            @if(isSavingPO()) { <span class="animate-spin material-symbols-outlined">sync</span> } @else { <span translate="no" class="notranslate material-symbols-outlined text-[20px]">save</span> <span>Salvar Pedido</span> }
           </button>
         </div>
       </div>

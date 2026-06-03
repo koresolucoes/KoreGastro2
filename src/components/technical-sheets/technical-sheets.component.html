@@ -6,10 +6,16 @@
       <h1 class="title-display text-4xl text-title">Fichas Técnicas</h1>
       <p class="text-muted mt-2 font-medium">Gerencie custos, preparo e logística de produção.</p>
     </div>
-    <button (click)="openAddModal()" class="btn-primary font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-brand/20 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
-      <span translate="no" class="notranslate material-symbols-outlined">add_circle</span>
-      <span>Nova Ficha Técnica</span>
-    </button>
+    <div class="flex items-center gap-3">
+        <button (click)="startTour()" class="demo-technical-sheet-btn bg-brand/10 text-brand border border-brand/20 font-bold py-3 px-6 rounded-xl transition-all shadow-sm flex items-center gap-2 hover:bg-brand hover:text-white">
+          <span translate="no" class="notranslate material-symbols-outlined">play_circle</span>
+          <span>Tour Interativo</span>
+        </button>
+        <button (click)="openAddModal()" class="demo-new-recipe-btn btn-primary font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-brand/20 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0">
+          <span translate="no" class="notranslate material-symbols-outlined">add_circle</span>
+          <span>Nova Ficha Técnica</span>
+        </button>
+    </div>
   </div>
 
   <!-- Search Bar -->
@@ -145,10 +151,10 @@
           
           <!-- Tabs Navigation -->
           <div class="flex border-b border-subtle mb-8 gap-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
-            <button (click)="activeTab.set('basic')" [class.border-brand]="activeTab() === 'basic'" [class.text-brand]="activeTab() === 'basic'" class="px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">info</span> Dados Básicos</button>
-            <button (click)="activeTab.set('ingredients')" [class.border-brand]="activeTab() === 'ingredients'" [class.text-brand]="activeTab() === 'ingredients'" class="px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">kitchen</span> Ingredientes & Custos</button>
-            <button (click)="activeTab.set('advanced')" [class.border-brand]="activeTab() === 'advanced'" [class.text-brand]="activeTab() === 'advanced'" class="px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">settings</span> Processo & MOD</button>
-            <button (click)="activeTab.set('options')" [class.border-brand]="activeTab() === 'options'" [class.text-brand]="activeTab() === 'options'" class="px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">category</span> Opcionais & Combos</button>
+            <button (click)="activeTab.set('basic')" [class.border-brand]="activeTab() === 'basic'" [class.text-brand]="activeTab() === 'basic'" class="demo-basic-info-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">info</span> Dados Básicos</button>
+            <button (click)="activeTab.set('ingredients')" [class.border-brand]="activeTab() === 'ingredients'" [class.text-brand]="activeTab() === 'ingredients'" class="demo-ingredients-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">kitchen</span> Ingredientes & Custos</button>
+            <button (click)="activeTab.set('advanced')" [class.border-brand]="activeTab() === 'advanced'" [class.text-brand]="activeTab() === 'advanced'" class="demo-advanced-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">settings</span> Processo & MOD</button>
+            <button (click)="activeTab.set('options')" [class.border-brand]="activeTab() === 'options'" [class.text-brand]="activeTab() === 'options'" class="demo-options-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">category</span> Opcionais & Combos</button>
           </div>
 
           <!-- 1. Basic Info -->
@@ -375,7 +381,7 @@
                                         </div>
                                      }
                                      
-                                     <button (click)="startAddingItem(prep.id)" class="w-full py-4 border-2 border-dashed border-strong rounded-xl text-muted hover:text-brand hover:border-brand/40 hover:bg-brand/5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 mt-2">
+                                     <button (click)="startAddingItem(prep.id)" class="demo-add-ingredient-btn w-full py-4 border-2 border-dashed border-strong rounded-xl text-muted hover:text-brand hover:border-brand/40 hover:bg-brand/5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 mt-2">
                                         <span translate="no" class="notranslate material-symbols-outlined text-[20px]">add_circle</span> Adicionar Ingrediente nesta etapa
                                      </button>
                                 </div>
@@ -486,7 +492,7 @@
                  </h4>
                  
                  <!-- Total Cost Card -->
-                 <div class="bg-surface rounded-2xl p-6 border border-strong shadow-sm group">
+                 <div class="demo-financial-card bg-surface rounded-2xl p-6 border border-strong shadow-sm group">
                      <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-1">Custo Total (CMV)</p>
                      <div class="flex items-baseline gap-2">
                          <p class="text-5xl font-black text-title tracking-tight data-mono drop-shadow-sm group-hover:text-brand transition-colors">{{ formTotalOverallCost() | currency:'BRL' }}</p>
@@ -536,7 +542,7 @@
                  
                  <!-- AI Section -->
                  <div class="pt-2 border-t border-subtle">
-                     <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="w-full py-4 bg-gradient-to-r from-brand to-brand-hover hover:from-brand-hover hover:to-brand text-white rounded-2xl font-bold shadow-lg shadow-brand/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait group relative overflow-hidden">
+                     <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="demo-ai-btn w-full py-4 bg-gradient-to-r from-brand to-brand-hover hover:from-brand-hover hover:to-brand text-white rounded-2xl font-bold shadow-lg shadow-brand/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait group relative overflow-hidden">
                         <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-md"></div>
                         @if(isAiLoading()) {
                             <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent relative z-10"></div>

@@ -18,6 +18,7 @@ import { InventoryStateService } from '../../services/inventory-state.service';
 import { PublicDataService } from '../../services/public-data.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { PricingService } from '../../services/pricing.service';
+import { DemoModeService } from '../../services/demo-mode.service';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType, Chart, registerables } from 'chart.js';
 
@@ -72,6 +73,7 @@ export class TechnicalSheetsComponent {
   private inventoryState: InventoryStateService = inject(InventoryStateService);
   private posState: PosStateService = inject(PosStateService);
   private pricingService = inject(PricingService);
+  private demoService = inject(DemoModeService);
 
   @ViewChild('searchInput') searchInput!: ElementRef;
 
@@ -161,6 +163,10 @@ export class TechnicalSheetsComponent {
     });
 
     this.loadOptionGroups();
+  }
+
+  startTour() {
+    this.demoService.startTechnicalSheetTour();
   }
 
   // --- Option Groups Logic ---

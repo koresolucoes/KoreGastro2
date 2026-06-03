@@ -78,18 +78,25 @@
 
 <!-- Add/Edit Modal -->
 @if(isModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeModal()">
-    <div class="chef-surface border-none rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
-      <div class="p-6 border-b border-subtle bg-surface-elevated flex justify-between items-center">
-        <h3 class="text-xl font-bold text-title title-display">{{ editingOrder() ? 'Editar Ordem de Compra' : 'Nova Ordem de Compra' }}</h3>
-        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-title hover:bg-surface transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span></button>
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal()">
+    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md shrink-0">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
+            <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ editingOrder() ? 'edit_square' : 'shopping_cart' }}</span>
+          </div>
+          <h3 class="text-2xl font-black text-title title-display tracking-tight leading-none">{{ editingOrder() ? 'Editar Ordem' : 'Nova Ordem' }}</h3>
+        </div>
+        <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+        </button>
       </div>
       <div class="p-8 flex-1 overflow-y-auto space-y-8 bg-app custom-scrollbar">
         <!-- Order Details -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-elevated rounded-2xl border border-strong shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-surface-elevated rounded-[32px] border border-strong shadow-sm">
           <div>
-            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Fornecedor</label>
-            <select (change)="updateOrderFormField('supplier_id', $any($event.target).value)" [value]="orderForm().supplier_id" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold appearance-none cursor-pointer">
+            <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Fornecedor *</label>
+            <select (change)="updateOrderFormField('supplier_id', $any($event.target).value)" [value]="orderForm().supplier_id" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner appearance-none cursor-pointer">
               <option value="null">Nenhum/Diverso</option>
               @for(s of suppliers(); track s.id) {
                 <option [value]="s.id">{{s.name}}</option>
@@ -97,8 +104,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Status</label>
-            <select (change)="updateOrderFormField('status', $any($event.target).value)" [value]="orderForm().status" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm appearance-none cursor-pointer">
+            <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Status</label>
+            <select (change)="updateOrderFormField('status', $any($event.target).value)" [value]="orderForm().status" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner uppercase tracking-widest appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <option>Rascunho</option>
               <option>Enviada</option>
               <option>Recebida</option>
@@ -107,8 +114,8 @@
         </div>
 
         <!-- Items -->
-        <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
-          <h4 class="text-lg font-bold text-title mb-4 flex items-center gap-2">
+        <div class="bg-surface-elevated rounded-[32px] border border-strong p-6 shadow-sm">
+          <h4 class="text-lg font-black text-title mb-4 flex items-center gap-2">
             <span translate="no" class="notranslate material-symbols-outlined text-brand">inventory_2</span> Itens do Pedido
           </h4>
           
@@ -229,22 +236,22 @@
           }
         </div>
         
-         <div class="bg-surface-elevated rounded-2xl border border-strong p-6 shadow-sm">
-          <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-2 ml-1 flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">notes</span> Observações Internas</label>
-          <textarea rows="3" (change)="updateOrderFormField('notes', $any($event.target).value)" [value]="orderForm().notes" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong focus:border-brand focus:ring-1 focus:ring-brand outline-none rounded-xl p-4 text-body disabled:opacity-50 disabled:cursor-not-allowed resize-y transition-all" placeholder="Adicione instruções para o fornecedor ou para o recebedor na loja..."></textarea>
+         <div class="bg-surface-elevated rounded-[32px] border border-strong p-6 shadow-sm">
+          <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1 flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">notes</span> Observações Internas</label>
+          <textarea rows="3" (change)="updateOrderFormField('notes', $any($event.target).value)" [value]="orderForm().notes" [disabled]="orderForm().status === 'Recebida'" class="w-full bg-surface border border-strong rounded-2xl px-5 py-3.5 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed resize-y" placeholder="Adicione instruções para o fornecedor ou para o recebedor na loja..."></textarea>
         </div>
       </div>
       
       <!-- Footer -->
-      <div class="p-6 bg-surface-elevated flex flex-col md:flex-row justify-between items-center border-t border-subtle gap-4 shrink-0">
-        <div class="flex items-center gap-3 w-full md:w-auto p-4 bg-app rounded-xl border border-strong shadow-sm justify-center md:justify-start">
-          <span class="text-[10px] font-bold text-muted uppercase tracking-widest">Total:</span>
+      <div class="p-6 md:p-8 bg-surface-elevated flex flex-col md:flex-row justify-between items-center border-t border-subtle gap-4 shrink-0">
+        <div class="flex items-center gap-3 w-full md:w-auto p-4 bg-surface rounded-2xl border border-strong shadow-inner justify-center md:justify-start">
+          <span class="text-[11px] font-black text-muted uppercase tracking-widest">Total:</span>
           <span class="text-2xl font-black text-title data-mono">{{ orderTotal() | currency:'BRL' }}</span>
         </div>
         <div class="flex gap-3 w-full md:w-auto">
-          <button (click)="closeModal()" class="flex-1 md:flex-none px-6 py-3 font-bold rounded-xl text-muted bg-surface hover:text-title hover:bg-surface-elevated uppercase tracking-widest text-xs transition-colors border border-strong">Cancelar</button>
+          <button (click)="closeModal()" class="flex-1 md:flex-none px-6 py-3 font-bold rounded-2xl text-muted bg-surface hover:text-title hover:bg-surface-elevated flex items-center justify-center transition-colors border border-strong shadow-sm">Cancelar</button>
           @if(orderForm().status !== 'Recebida') {
-            <button (click)="saveOrder()" class="flex-1 md:flex-none px-8 py-3 font-bold rounded-xl bg-brand hover:bg-brand-hover text-white transition-colors shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
+            <button (click)="saveOrder()" class="flex-1 md:flex-none px-8 py-3 font-bold rounded-2xl bg-brand hover:bg-brand-hover text-white transition-all shadow-md shadow-brand/20 flex items-center justify-center gap-2 active:scale-95">
                 <span translate="no" class="notranslate material-symbols-outlined text-[20px]">save</span> Salvar Pedido
             </button>
           }
@@ -256,35 +263,45 @@
 
 <!-- Add Ingredient "On-the-fly" Modal -->
 @if (isAddingIngredient()) {
-  <div class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeAddIngredientModal()">
-    <div class="chef-surface rounded-3xl w-full max-w-md border-none shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
-      <div class="p-6 border-b border-subtle bg-surface-elevated text-center">
-        <h4 class="title-display text-2xl text-title">Novo Ingrediente</h4>
-        <p class="text-xs text-muted font-bold tracking-widest uppercase mt-2">Cadastro Rápido</p>
-      </div>
-      <div class="p-8 space-y-5 bg-app">
+  <div class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200" (click)="closeAddIngredientModal()">
+    <div class="chef-surface rounded-[40px] w-full max-w-md border border-subtle shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center p-8 border-b border-subtle bg-surface-elevated/80 backdrop-blur-md">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand shrink-0">
+            <span translate="no" class="notranslate material-symbols-outlined text-2xl">add_box</span>
+          </div>
           <div>
-            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Nome</label>
-            <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="ex: Óleo de Soja" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none font-bold">
+            <h4 class="text-2xl font-black text-title title-display tracking-tight leading-none leading-none">Novo Ingrediente</h4>
+            <p class="text-[10px] text-muted font-bold tracking-widest uppercase mt-1">Cadastro Rápido</p>
+          </div>
+        </div>
+        <button (click)="closeAddIngredientModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+      <div class="p-8 space-y-6">
+          <div>
+            <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Nome *</label>
+            <input type="text" [value]="newIngredientForm().name || ''" (input)="updateNewIngredientField('name', $any($event.target).value)" placeholder="ex: Óleo de Soja" class="w-full bg-surface border border-strong rounded-2xl p-4 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner">
           </div>
           <div class="grid grid-cols-2 gap-5">
             <div>
-              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Custo (R$)</label>
-              <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="0.00" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none data-mono font-bold">
+              <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Custo (R$)</label>
+              <input type="number" [value]="newIngredientForm().cost ?? 0" (input)="updateNewIngredientField('cost', +$any($event.target).value)" placeholder="0.00" class="w-full bg-surface border border-strong rounded-2xl p-4 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner data-mono">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 ml-1">Unid. Medida</label>
-              <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-xl p-3.5 text-title focus:ring-2 focus:ring-brand outline-none font-bold uppercase tracking-widest appearance-none cursor-pointer">
+              <label class="block text-[11px] font-black text-muted uppercase tracking-widest mb-2 pl-1">Unid. Medida</label>
+              <select [value]="newIngredientForm().unit || 'un'" (change)="updateNewIngredientField('unit', $any($event.target).value)" class="w-full bg-surface border border-strong rounded-2xl p-4 text-title font-bold text-sm focus:ring-2 focus:ring-brand outline-none transition-all shadow-inner uppercase tracking-widest appearance-none cursor-pointer">
                   @for(unit of availableUnits; track unit) { <option [value]="unit">{{unit}}</option> }
               </select>
             </div>
           </div>
       </div>
-      <div class="p-6 bg-surface-elevated border-t border-subtle flex flex-col gap-3">
-        <button (click)="saveNewIngredient()" class="w-full py-4 rounded-xl bg-success hover:bg-success-hover text-white font-bold shadow-md shadow-success/30 flex items-center justify-center gap-2 transition-all active:scale-95 text-xl">
-            <span translate="no" class="notranslate material-symbols-outlined">check_circle</span> Salvar
+      <div class="p-6 md:p-8 bg-surface-elevated flex flex-col gap-3 border-t border-subtle">
+        <button (click)="saveNewIngredient()" class="w-full py-4 rounded-2xl bg-success hover:bg-success-hover text-white font-bold shadow-md shadow-success/30 flex items-center justify-center gap-2 transition-all active:scale-95 text-lg">
+            <span translate="no" class="notranslate material-symbols-outlined">check_circle</span> Salvar Ingrediente
         </button>
-        <button (click)="closeAddIngredientModal()" class="w-full py-3 text-xs font-bold rounded-xl text-muted hover:text-title hover:bg-surface uppercase tracking-widest transition-colors">Cancelar</button>
+        <button (click)="closeAddIngredientModal()" class="w-full py-3.5 text-xs font-bold rounded-2xl text-muted hover:text-title hover:bg-surface uppercase tracking-widest transition-colors border border-transparent hover:border-strong">Cancelar</button>
       </div>
     </div>
   </div>
