@@ -238,23 +238,13 @@ export class TutorialService {
       ]
     },
     {
-      id: 'nfce-fidelidade',
-      title: 'NFC-e e Fidelidade',
-      description: 'Como configurar a emissão fiscal e criar programas de recompensa para clientes.',
-      icon: 'receipt_long',
+      id: 'fidelidade',
+      title: 'Fidelidade de Clientes',
+      description: 'Como criar programas de recompensa para clientes e reter público.',
+      icon: 'loyalty',
       steps: [
         {
-          title: '1. Configuração Fiscal (FocusNFe)',
-          content: 'Em `Configurações > Módulos`, clique em "Emissão Fiscal". Insira seu token de produção da FocusNFe e faça upload do certificado digital A1. O sistema validará automaticamente.',
-          imageUrl: 'https://picsum.photos/800/400?random=27'
-        },
-        {
-          title: '2. Emitindo Nota no Caixa',
-          content: 'Na tela de pagamento ou no histórico de vendas, clique no botão "NFC-e". O sistema enviará os dados para a SEFAZ e retornará o status em segundos.',
-          imageUrl: 'https://picsum.photos/800/400?random=28'
-        },
-        {
-          title: '3. Programa de Fidelidade',
+          title: 'Programa de Fidelidade',
           content: 'Ative a fidelidade em Configurações. Defina quantos pontos o cliente ganha por real gasto. Crie prêmios (ex: "Sobremesa Grátis = 100 pontos"). No PDV, associe o cliente à venda para pontuar.',
           imageUrl: 'https://picsum.photos/800/400?random=29'
         }

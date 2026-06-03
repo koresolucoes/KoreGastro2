@@ -116,7 +116,7 @@ export class CustomersComponent {
     this.addressCity.set("");
 
     const numMatch = address.match(
-      /Nº (.*?)(?:, Compl:|, Bairro:|, Cidade:|$)/,
+      /(?:Nº|N|n|Número)\s?(.*?)(?:, Compl:|, Bairro:|, Cidade:|$)/,
     );
     const compMatch = address.match(/Compl: (.*?)(?:, Bairro:|, Cidade:|$)/);
     const bairroMatch = address.match(/Bairro: (.*?)(?:, Cidade:|$)/);

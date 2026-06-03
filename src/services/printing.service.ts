@@ -541,22 +541,13 @@ export class PrintingService {
     /* ... */
   }
   async printDeliveryGuide(order: Order) {
-    const printWindow = window.open("", "_blank", "width=350,height=600");
-    if (!printWindow) {
-      this.notificationService.show(
-        "Por favor, habilite pop-ups para imprimir.",
-        "warning",
-      );
-      return;
-    }
-
     const date = this.datePipe.transform(
       order.created_at || order.timestamp,
       "dd/MM/yyyy HH:mm",
     );
     const orderId = order.id.substring(0, 8).toUpperCase();
     const customer = order.customers;
-    const items = order.order_items;
+    const items = order.order_items || [];
 
     const subtotal = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -649,27 +640,16 @@ export class PrintingService {
           
           <script>
             window.onload = () => {
-              window.print();
-              setTimeout(() => window.close(), 500);
+              // iframe will handle it
             };
           </script>
         </body>
       </html>
     `;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
+    this.printToIframe(html);
   }
   async printRequisition(requisition: Requisition) {
-    const printWindow = window.open("", "_blank", "width=800,height=600");
-    if (!printWindow) {
-      this.notificationService.show(
-        "Por favor, habilite pop-ups para imprimir.",
-        "warning",
-      );
-      return;
-    }
-
     const date = this.datePipe.transform(
       requisition.created_at,
       "dd/MM/yyyy HH:mm",
@@ -796,13 +776,46 @@ export class PrintingService {
       </html>
     `;
 
-    printWindow.document.write(receiptHtml);
-    printWindow.document.close();
-    printWindow.focus();
+    this.printToIframe(receiptHtml);
+  }
 
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+  private printToIframe(html: string) {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+    
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      // Inject script to auto-print when loaded
+      const htmlWithPrint = html.replace('</body>', `
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+                window.focus();
+                window.print();
+            }, 100);
+          };
+        </script>
+        </body>
+      `);
+      
+      doc.open();
+      doc.write(htmlWithPrint);
+      doc.close();
+      
+      // Cleanup after typical print dialog duration
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 10000);
+    } else {
+        this.notificationService.show("Não foi possível iniciar a impressão.", "error");
+    }
   }
 }

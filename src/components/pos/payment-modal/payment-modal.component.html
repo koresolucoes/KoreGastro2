@@ -351,11 +351,9 @@
                         <div class="grid grid-cols-2 lg:flex lg:flex-col gap-3 lg:h-full w-full lg:w-auto" [class.lg:flex-1]="showKeypad()" [class.lg:w-full]="!showKeypad()">
                             @let methods = [
                                 { id: 'Dinheiro', icon: 'payments', label: 'Dinheiro', color: 'success' },
-                                { id: 'Cielo Cartão de Crédito', icon: 'credit_card_heart', label: 'Cielo Crédito (Sitef)', color: 'brand' },
-                                { id: 'Cielo LIO', icon: 'point_of_sale', label: 'Cielo Maquininha (LIO)', color: 'info' },
-                                { id: 'Cielo PIX', icon: 'qr_code_2', label: 'Cielo PIX (QR)', color: 'purple' },
-                                { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Crédito Manual', color: 'brand' },
-                                { id: 'Cartão de Débito', icon: 'credit_score', label: 'Débito Manual', color: 'info' }
+                                { id: 'Cartão de Crédito', icon: 'credit_card', label: 'Cartão de Crédito', color: 'brand' },
+                                { id: 'Cartão de Débito', icon: 'credit_score', label: 'Cartão de Débito', color: 'info' },
+                                { id: 'PIX', icon: 'qr_code_2', label: 'PIX', color: 'purple' }
                             ];
                             @for(m of methods; track m.id) {
                                 <button (click)="selectedPaymentMethod.set(m.id)" 
@@ -380,7 +378,7 @@
                             }
                             
                             <!-- Terminal Selector if Card -->
-                            @if ((selectedPaymentMethod() === 'Cartão de Crédito' || selectedPaymentMethod() === 'Cartão de Débito') && availableTerminals().length > 0) {
+                            @if (false) {
                                 <div class="col-span-2 lg:col-span-1 border border-strong rounded-2xl p-4 bg-surface flex flex-col gap-2 mt-2">
                                      <span class="text-[10px] uppercase font-black tracking-widest text-muted">Enviar p/ Maquininha</span>
                                      <select [ngModel]="selectedTerminal()" (ngModelChange)="selectedTerminal.set($event)" class="w-full bg-surface-elevated border border-subtle rounded-xl p-2 text-sm text-title outline-none focus:border-brand shadow-inner">
@@ -400,14 +398,9 @@
             <div class="mt-8 flex flex-col gap-4 relative z-10 bg-app/50 backdrop-blur-sm p-4 -mx-4 lg:-mx-10 border-t border-subtle">
                 <!-- Add Payment Button -->
                 <button (click)="addPayment()" class="w-full py-5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-brand/20 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed group"
-                        [disabled]="!paymentAmountInput() || terminalStatus() === 'WAITING'">
-                    @if(terminalStatus() === 'WAITING') {
-                       <span translate="no" class="notranslate material-symbols-outlined text-sm animate-spin">refresh</span>
-                       Aguardando Maquininha...
-                    } @else {
+                        [disabled]="!paymentAmountInput()">
                        <span translate="no" class="notranslate material-symbols-outlined text-sm group-hover:rotate-90 transition-transform">add_circle</span>
                        Confirmar Pagamento
-                    }
                 </button>
 
                 <!-- Payments List Container -->
