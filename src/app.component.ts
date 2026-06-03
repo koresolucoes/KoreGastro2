@@ -11,13 +11,14 @@ import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
 import { DemoService } from './services/demo.service';
 import { TopNavComponent } from './components/top-nav/top-nav.component';
+import { SubscriptionComponent } from './components/subscription/subscription.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent]
+  imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent]
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);

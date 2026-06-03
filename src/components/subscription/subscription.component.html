@@ -15,7 +15,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
         <!-- Plans Loop -->
-        @for (plan of plans; track plan.id) {
+        @for (plan of plans(); track plan.id) {
           <div class="bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-transform hover:-translate-y-2 hover:shadow-2xl group"
                [ngClass]="{'border-brand ring-4 ring-brand/10': plan.popular}">
             
@@ -50,7 +50,7 @@
               }
             </div>
 
-            <button (click)="subscribe(plan.id)" 
+            <button (click)="subscribe(plan)" 
                     [disabled]="isProcessing()"
                     class="w-full py-5 rounded-2xl font-black text-lg transition-all outline-none flex items-center justify-center gap-2 relative overflow-hidden"
                     [ngClass]="plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-xl shadow-brand/20 hover:-translate-y-1' : 'bg-surface-elevated text-title hover:bg-subtle border border-subtle'">

@@ -37,20 +37,8 @@
               <router-outlet></router-outlet>
             } @else {
               <!-- Inactive Subscription View -->
-              <div class="h-full flex items-center justify-center p-8 text-center">
-                <div class="bg-gray-800 p-10 rounded-lg shadow-2xl border border-red-500/50 max-w-lg">
-                  <h1 class="text-3xl font-bold text-red-400 mb-4">Plano Inativo</h1>
-                  <p class="text-gray-300 mb-6">
-                    Sua assinatura não está ativa. Para continuar usando o ChefOS, por favor, regularize sua situação.
-                  </p>
-                  <p class="text-gray-400 mb-2">
-                    Você ainda pode acessar os <a routerLink="/tutorials" class="font-semibold text-blue-400 hover:underline">tutoriais</a> para aprender mais sobre o sistema.
-                  </p>
-                  <p class="text-gray-400">
-                    Entre em contato com nosso suporte através do e-mail:
-                    <a href="mailto:suporte@koresolucoes.com.br" class="font-semibold text-blue-400 hover:underline">suporte@koresolucoes.com.br</a>
-                  </p>
-                </div>
+              <div class="h-full w-full fixed inset-0 z-[100] bg-app overflow-y-auto">
+                <app-subscription></app-subscription>
               </div>
             }
           }
