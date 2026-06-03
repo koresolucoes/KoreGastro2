@@ -233,6 +233,10 @@ export const APP_ROUTES: Routes = [
     ]
   },
   { 
+    path: 'subscription', 
+    loadComponent: () => import('./components/subscription/subscription.component').then(m => m.SubscriptionComponent) 
+  },
+  { 
     path: '**', 
     redirectTo: 'dashboard' 
   }

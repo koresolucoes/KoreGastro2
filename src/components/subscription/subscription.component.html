@@ -1,0 +1,71 @@
+<div class="fixed inset-0 z-50 bg-app flex flex-col overflow-y-auto">
+  <div class="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 min-h-full">
+    
+    <div class="max-w-5xl w-full mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
+      
+      <div class="text-center mb-12">
+        <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand/10">
+           <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">schedule</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black text-title tracking-tight mb-4 title-display">Seu período de teste <span class="text-brand">expirou.</span></h1>
+        <p class="text-lg text-muted font-medium max-w-2xl mx-auto">
+          Esperamos que você tenha aproveitado os 30 dias de teste do Kore! Para continuar gerenciando seu restaurante com eficiência, escolha um dos nossos planos abaixo.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+        <!-- Plans Loop -->
+        @for (plan of plans; track plan.id) {
+          <div class="bg-surface rounded-[32px] border border-subtle p-8 lg:p-10 flex flex-col relative transition-transform hover:-translate-y-2 hover:shadow-2xl group"
+               [ngClass]="{'border-brand ring-4 ring-brand/10': plan.popular}">
+            
+            @if(plan.popular) {
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand text-white text-xs font-black uppercase tracking-wider px-6 py-2 rounded-full shadow-lg">
+                Recomendado
+              </div>
+            }
+
+            <div class="mb-8 border-b border-subtle pb-8 text-center">
+              <h4 class="text-2xl font-black text-title mb-2">{{plan.name}}</h4>
+              <p class="text-sm text-muted mb-6">{{plan.description}}</p>
+              <div class="flex items-center justify-center gap-1">
+                <span class="text-5xl font-black tracking-tight text-title data-mono">{{plan.price}}</span>
+                <span class="text-sm font-medium text-muted mt-2">{{plan.period}}</span>
+              </div>
+            </div>
+
+            <div class="space-y-4 mb-10 flex-1">
+              @for(feature of plan.features; track feature.name) {
+                <div class="flex items-start gap-4">
+                  <div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5 shrink-0"
+                       [ngClass]="feature.included ? 'bg-success/10 text-success' : 'bg-surface-elevated text-muted opacity-40'">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">
+                      {{feature.included ? 'check' : 'close'}}
+                    </span>
+                  </div>
+                  <span class="text-[15px]" [ngClass]="feature.included ? 'text-title font-medium' : 'text-muted line-through opacity-70'">
+                    {{feature.name}}
+                  </span>
+                </div>
+              }
+            </div>
+
+            <button (click)="subscribe(plan.id)" 
+                    [disabled]="isProcessing()"
+                    class="w-full py-5 rounded-2xl font-black text-lg transition-all outline-none flex items-center justify-center gap-2 relative overflow-hidden"
+                    [ngClass]="plan.popular ? 'bg-brand text-white hover:bg-brand-hover shadow-xl shadow-brand/20 hover:-translate-y-1' : 'bg-surface-elevated text-title hover:bg-subtle border border-subtle'">
+              
+              @if(isProcessing()) {
+                <span class="animate-spin material-symbols-outlined">sync</span> Processando...
+              } @else {
+                Continuar com {{plan.name}}
+                <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+              }
+            </button>
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+</div>

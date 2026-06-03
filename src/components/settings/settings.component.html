@@ -19,7 +19,8 @@
           { id: 'cadastros', label: 'Cadastros Base', desc: 'Taxas, pagamentos e PDV', icon: 'database' },
           { id: 'maquininhas', label: 'Maquininhas LIO', desc: 'Integração de equipamentos', icon: 'point_of_sale' },
           { id: 'funcionalidades', label: 'Módulos & Integrações', desc: 'iFood, KDS e recursos adicionais', icon: 'extension' },
-          { id: 'seguranca', label: 'Cargos & Permissões', desc: 'Acessos e restrições', icon: 'security' }
+          { id: 'seguranca', label: 'Cargos & Permissões', desc: 'Acessos e restrições', icon: 'security' },
+          { id: 'assinatura', label: 'Planos e Assinatura', desc: 'Gerenciar plano e fatura', icon: 'workspace_premium' }
         ];
 
         @for(item of navItems; track item.id) {
@@ -100,6 +101,9 @@
           }
           @case ('seguranca') {
             <app-security-settings></app-security-settings>
+          }
+          @case ('assinatura') {
+            <app-subscription-settings></app-subscription-settings>
           }
         }
       </div>

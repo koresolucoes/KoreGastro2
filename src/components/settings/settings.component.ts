@@ -13,8 +13,9 @@ import { MultiUnitSettingsComponent } from './multi-unit-settings/multi-unit-set
 import { StoreManagementComponent } from './store-management/store-management.component';
 import { AppearanceSettingsComponent } from './appearance-settings/appearance-settings.component';
 import { PaymentTerminalsSettingsComponent } from './payment-terminals-settings.component';
+import { SubscriptionSettingsComponent } from './subscription-settings/subscription-settings.component';
 
-type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe' | 'maquininhas';
+type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcionalidades' | 'seguranca' | 'equipe' | 'maquininhas' | 'assinatura';
 
 @Component({
   selector: 'app-settings',
@@ -28,7 +29,8 @@ type SettingsTab = 'empresa' | 'stores' | 'aparencia' | 'cadastros' | 'funcional
     MultiUnitSettingsComponent,
     StoreManagementComponent,
     AppearanceSettingsComponent,
-    PaymentTerminalsSettingsComponent
+    PaymentTerminalsSettingsComponent,
+    SubscriptionSettingsComponent
   ],
   templateUrl: './settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,7 +48,7 @@ export class SettingsComponent {
     effect(() => {
         const params = this.queryParams();
         const tabFromUrl = params?.['tab'] as SettingsTab;
-        if (tabFromUrl && ['empresa', 'stores', 'aparencia', 'cadastros', 'funcionalidades', 'seguranca', 'equipe'].includes(tabFromUrl)) {
+        if (tabFromUrl && ['empresa', 'stores', 'aparencia', 'cadastros', 'funcionalidades', 'seguranca', 'equipe', 'maquininhas', 'assinatura'].includes(tabFromUrl)) {
             // Only update if different to avoid cycles
             if (this.activeTab() !== tabFromUrl) {
                 this.activeTab.set(tabFromUrl);
@@ -92,6 +94,7 @@ export class SettingsComponent {
        case 'maquininhas': return 'Maquininhas LIO';
        case 'funcionalidades': return 'Módulos & Integrações';
        case 'seguranca': return 'Cargos & Permissões';
+       case 'assinatura': return 'Planos e Assinatura';
        default: return 'Configurações';
     }
   }
