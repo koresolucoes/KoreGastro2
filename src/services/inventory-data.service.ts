@@ -55,7 +55,7 @@ export class InventoryDataService {
 
   // ... existing methods ...
 
-  async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient }> {
+  async addIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean, error: any, data?: Ingredient, proxyRecipeId?: string }> {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
@@ -81,18 +81,20 @@ export class InventoryDataService {
             if (!success) throw error;
         }
 
+        let createdProxyId: string | undefined;
         if (newIngredient.is_sellable) {
             const { data: updatedIngredient, error: refetchError } = await supabase.from('ingredients').select('*').eq('id', newIngredient.id).single();
             if (refetchError) throw refetchError;
             
-            const { success, error } = await this.createOrUpdateProxyRecipe(updatedIngredient);
+            const { success, error, proxyRecipeId } = await this.createOrUpdateProxyRecipe(updatedIngredient);
             if (!success) throw error;
+            createdProxyId = proxyRecipeId;
         }
         
         const { data: finalIngredient, error: finalError } = await supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('id', newIngredient.id).single();
         if (finalError) throw finalError;
 
-        return { success: true, error: null, data: finalIngredient as Ingredient };
+        return { success: true, error: null, data: finalIngredient as Ingredient, proxyRecipeId: createdProxyId };
 
     } catch (error) {
         await supabase.from('ingredients').delete().eq('id', newIngredient.id);

@@ -12,6 +12,7 @@ import { UnitContextService } from '../../services/unit-context.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoModeService } from '../../services/demo-mode.service';
 import { HrStateService } from '../../services/hr-state.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../services/supabase-client';
 
@@ -43,6 +44,7 @@ export class OnboardingComponent {
   private notification = inject(NotificationService);
   private opAuth = inject(OperationalAuthService);
   private demoMode = inject(DemoModeService);
+  private supabaseState = inject(SupabaseStateService);
 
   currentStep = signal(0);
   isProcessing = signal(false);
@@ -207,23 +209,35 @@ export class OnboardingComponent {
         // 5. Menu (Categories, Recipes, Ingredients)
         this.loadingStatus.set('Cadastrando cardápio e estoque...');
         const defaultStationId = stationMap.values().next().value || null; // Fallback
+        const userId = this.unitContext.activeUnitId();
 
+        // Cria o Cardápio Híbrido (PDV + Digital)
+        const { data: virtualMenu } = await supabase.from('menus').insert({
+             name: 'Cardápio Principal',
+             type: 'pdv,tablet,delivery,qr',
+             is_active: true,
+             user_id: userId
+        }).select().single();
+
+        let displayOrderCat = 0;
         for (const cat of this.data.menuCategories) {
             if (!cat.name) continue;
             const { data: categoryData } = await this.recipeData.addRecipeCategory(cat.name) as any;
             
             if (categoryData) {
+                // Cria a categoria no Menu Digital
+                const { data: virtualCat } = await supabase.from('menu_categories').insert({
+                     menu_id: virtualMenu?.id,
+                     name: cat.name,
+                     display_order: displayOrderCat++,
+                     user_id: userId
+                }).select().single();
+
+                let displayOrderItem = 0;
                 for (const item of cat.items) {
                     if (!item.name || !item.price) continue;
                     
-                    // Create Ingredient (implicitly creates Recipe via backend logic/proxy if we wanted, but let's do explicit for control)
-                    // Actually, simpler flow: Create Ingredient with is_sellable=true
-                    
-                    // Try to match station by name (simple heuristic) or use default
-                    // Ex: if category is "Bebidas" and there is a "Bar" station, use it. 
-                    // For now, use defaultStationId for simplicity.
-                    
-                    await this.inventoryData.addIngredient({
+                    const { success, proxyRecipeId } = await this.inventoryData.addIngredient({
                         name: item.name,
                         unit: 'un',
                         stock: 100, // Stock Gift
@@ -233,7 +247,18 @@ export class OnboardingComponent {
                         price: item.price,
                         pos_category_id: categoryData.id,
                         station_id: defaultStationId
-                    });
+                    }) as any;
+                    
+                    if (success && proxyRecipeId && virtualCat) {
+                         await supabase.from('menu_items').insert({
+                              menu_category_id: virtualCat.id,
+                              recipe_id: proxyRecipeId,
+                              custom_name: item.name,
+                              is_active: true,
+                              display_order: displayOrderItem++,
+                              user_id: userId
+                         });
+                    }
                 }
             }
         }
@@ -271,11 +296,17 @@ export class OnboardingComponent {
             .from('employees')
             .select('*')
             .eq('pin', this.data.managerPin)
-            .eq('unit_id', this.unitContext.activeUnitId())
+            .eq('user_id', this.unitContext.activeUnitId())
             .single();
 
         if (managerData) {
             this.opAuth.login(managerData);
+        }
+        
+        const unitId = this.unitContext.activeUnitId();
+        if (unitId) {
+             await this.supabaseState.loadCoreData(unitId);
+             await this.supabaseState.loadEssentialData(unitId);
         }
         
         // Start the Guided Tour Demo Mode!

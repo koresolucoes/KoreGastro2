@@ -124,7 +124,7 @@ export class SupabaseStateService {
   }
 
   // --- 1. CORE DATA (Required for basic app structure) ---
-  private async loadCoreData(userId: string) {
+  public async loadCoreData(userId: string) {
     const [
         companyProfile, roles, rolePermissions,
         employees, webhooks
@@ -144,7 +144,7 @@ export class SupabaseStateService {
   }
 
   // --- 2. ESSENTIAL DATA (Required for POS/KDS/Inventory to function) ---
-  private async loadEssentialData(userId: string) {
+  public async loadEssentialData(userId: string) {
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
     const [

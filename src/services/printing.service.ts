@@ -542,7 +542,7 @@ export class PrintingService {
   }
   async printDeliveryGuide(order: Order) {
     const date = this.datePipe.transform(
-      order.created_at || order.timestamp,
+      order.timestamp,
       "dd/MM/yyyy HH:mm",
     );
     const orderId = order.id.substring(0, 8).toUpperCase();
@@ -658,8 +658,6 @@ export class PrintingService {
       ? this.datePipe.transform(requisition.processed_at, "dd/MM/yyyy HH:mm")
       : "N/A";
     const identifier = `Requisição #${requisition.id.substring(0, 8).toUpperCase()}`;
-
-    printWindow.document.title = identifier;
 
     const itemsHtml = (requisition.requisition_items || [])
       .map(
