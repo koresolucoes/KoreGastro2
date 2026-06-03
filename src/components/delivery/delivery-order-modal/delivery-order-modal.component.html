@@ -133,11 +133,20 @@
               </button>
             }
 
-            <label
-              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2 border-b border-subtle pb-2"
-              >Endereço de Entrega</label
-            >
-            <div class="space-y-3 mt-3">
+            <div class="flex justify-between items-end border-b border-subtle pb-2 mb-3 mt-4">
+              <label class="block text-[10px] font-black text-muted uppercase tracking-widest">
+                Endereço de Entrega
+              </label>
+              <button
+                (click)="calculateFreightFromFields()"
+                class="text-[10px] bg-brand/10 text-brand hover:bg-brand/20 border border-brand/20 px-2 py-1 rounded-md font-black uppercase tracking-widest transition-colors flex items-center gap-1"
+              >
+                <span translate="no" class="notranslate material-symbols-outlined text-[14px]">my_location</span>
+                Calcular Frete
+              </button>
+            </div>
+            
+            <div class="space-y-3">
               <div class="flex gap-3 items-end">
                 <div class="flex-1 relative">
                   <span translate="no" class="notranslate absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-muted">map</span>

@@ -1,36 +1,73 @@
-<div class="h-full flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto hide-scrollbar space-y-6">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div
+  class="h-full flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto hide-scrollbar space-y-6"
+>
+  <div
+    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+  >
     <div>
-      <h1 class="text-3xl font-black text-title title-display flex items-center gap-3">
-        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">group</span>
+      <h1
+        class="text-3xl font-black text-title title-display flex items-center gap-3"
+      >
+        <span
+          translate="no"
+          class="notranslate material-symbols-outlined text-brand text-4xl"
+          >group</span
+        >
         Gestão de Clientes
       </h1>
-      <p class="text-muted text-sm font-medium mt-1">Cadastre e gerencie os dados dos seus clientes.</p>
+      <p class="text-muted text-sm font-medium mt-1">
+        Cadastre e gerencie os dados dos seus clientes.
+      </p>
     </div>
-    <button (click)="openAddModal()" class="bg-brand hover:bg-brand-hover text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-brand/20 uppercase tracking-widest text-xs">
-      <span translate="no" class="notranslate material-symbols-outlined text-sm">add_circle</span>
+    <button
+      (click)="openAddModal()"
+      class="bg-brand hover:bg-brand-hover text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-brand/20 uppercase tracking-widest text-xs"
+    >
+      <span translate="no" class="notranslate material-symbols-outlined text-sm"
+        >add_circle</span
+      >
       Novo Cliente
     </button>
   </div>
 
-  <div class="chef-surface border border-subtle flex flex-col flex-1 overflow-hidden">
+  <div
+    class="chef-surface border border-subtle flex flex-col flex-1 overflow-hidden"
+  >
     <div class="p-4 border-b border-subtle bg-surface/50">
       <div class="relative">
-        <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted">search</span>
-        <input type="text" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Buscar cliente por nome, telefone, email ou CPF..." class="w-full bg-surface-elevated border border-subtle rounded-xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-all font-medium text-sm">
+        <span
+          translate="no"
+          class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-muted"
+          >search</span
+        >
+        <input
+          type="text"
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Buscar cliente por nome, telefone, email ou CPF..."
+          class="w-full bg-surface-elevated border border-subtle rounded-xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner transition-all font-medium text-sm"
+        />
       </div>
     </div>
 
     @if (filteredCustomers().length === 0) {
-      <div class="text-center py-24 flex flex-col items-center justify-center opacity-50">
-        <span translate="no" class="notranslate material-symbols-outlined text-6xl text-muted mb-4">person_off</span>
+      <div
+        class="text-center py-24 flex flex-col items-center justify-center opacity-50"
+      >
+        <span
+          translate="no"
+          class="notranslate material-symbols-outlined text-6xl text-muted mb-4"
+          >person_off</span
+        >
         <p class="text-title font-bold text-lg">Nenhum cliente encontrado.</p>
       </div>
     } @else {
       <!-- Desktop Table View -->
       <div class="hidden md:block overflow-x-auto flex-1">
         <table class="w-full text-left">
-          <thead class="bg-surface-elevated/50 text-[10px] text-muted uppercase tracking-widest font-black border-b border-subtle">
+          <thead
+            class="bg-surface-elevated/50 text-[10px] text-muted uppercase tracking-widest font-black border-b border-subtle"
+          >
             <tr>
               <th class="px-6 py-4">Nome</th>
               <th class="px-6 py-4">Telefone</th>
@@ -40,24 +77,68 @@
           </thead>
           <tbody>
             @for (customer of filteredCustomers(); track customer.id) {
-              <tr (click)="openDetailsModal(customer)" class="border-b border-subtle hover:bg-surface-elevated/40 cursor-pointer transition-colors group">
-                <td class="px-6 py-4 font-bold text-title">{{ customer.name }}</td>
-                <td class="px-6 py-4 text-muted data-mono !text-sm">{{ customer.phone || 'Não informado' }}</td>
-                <td class="px-6 py-4 text-muted font-medium">{{ customer.email || 'Não informado' }}</td>
+              <tr
+                (click)="openDetailsModal(customer)"
+                class="border-b border-subtle hover:bg-surface-elevated/40 cursor-pointer transition-colors group"
+              >
+                <td class="px-6 py-4 font-bold text-title">
+                  {{ customer.name }}
+                </td>
+                <td class="px-6 py-4 text-muted data-mono !text-sm">
+                  {{ customer.phone || "Não informado" }}
+                </td>
+                <td class="px-6 py-4 text-muted font-medium">
+                  {{ customer.email || "Não informado" }}
+                </td>
                 <td class="px-6 py-4">
-                   @if (customerPendingDeletion()?.id === customer.id) {
-                    <div (click)="$event.stopPropagation()" class="flex gap-2 justify-center items-center">
-                        <span class="text-[10px] text-danger font-black uppercase tracking-widest">Certeza?</span>
-                        <button (click)="confirmDeleteCustomer()" class="px-3 py-1.5 font-black uppercase tracking-widest rounded-lg bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 text-[10px] transition-all">Sim</button>
-                        <button (click)="cancelDeleteCustomer()" class="px-3 py-1.5 font-black uppercase tracking-widest rounded-lg bg-surface hover:bg-surface-elevated text-muted border border-subtle text-[10px] transition-all">Não</button>
+                  @if (customerPendingDeletion()?.id === customer.id) {
+                    <div
+                      (click)="$event.stopPropagation()"
+                      class="flex gap-2 justify-center items-center"
+                    >
+                      <span
+                        class="text-[10px] text-danger font-black uppercase tracking-widest"
+                        >Certeza?</span
+                      >
+                      <button
+                        (click)="confirmDeleteCustomer()"
+                        class="px-3 py-1.5 font-black uppercase tracking-widest rounded-lg bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 text-[10px] transition-all"
+                      >
+                        Sim
+                      </button>
+                      <button
+                        (click)="cancelDeleteCustomer()"
+                        class="px-3 py-1.5 font-black uppercase tracking-widest rounded-lg bg-surface hover:bg-surface-elevated text-muted border border-subtle text-[10px] transition-all"
+                      >
+                        Não
+                      </button>
                     </div>
                   } @else {
-                    <div (click)="$event.stopPropagation()" class="flex gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button (click)="openEditModal(customer)" class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/20 text-brand flex items-center justify-center transition-all border border-brand/20" title="Editar">
-                        <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
+                    <div
+                      (click)="$event.stopPropagation()"
+                      class="flex gap-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <button
+                        (click)="openEditModal(customer)"
+                        class="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/20 text-brand flex items-center justify-center transition-all border border-brand/20"
+                        title="Editar"
+                      >
+                        <span
+                          translate="no"
+                          class="notranslate material-symbols-outlined text-sm"
+                          >edit</span
+                        >
                       </button>
-                      <button (click)="requestDeleteCustomer(customer)" class="w-8 h-8 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-all border border-danger/20" title="Excluir">
-                        <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span>
+                      <button
+                        (click)="requestDeleteCustomer(customer)"
+                        class="w-8 h-8 rounded-lg bg-danger/10 hover:bg-danger/20 text-danger flex items-center justify-center transition-all border border-danger/20"
+                        title="Excluir"
+                      >
+                        <span
+                          translate="no"
+                          class="notranslate material-symbols-outlined text-sm"
+                          >delete</span
+                        >
                       </button>
                     </div>
                   }
@@ -68,41 +149,96 @@
         </table>
       </div>
 
-       <!-- Mobile Card View -->
+      <!-- Mobile Card View -->
       <div class="block md:hidden p-4 space-y-4 overflow-y-auto flex-1">
         @for (customer of filteredCustomers(); track customer.id) {
-          <div (click)="openDetailsModal(customer)" class="bg-surface-elevated/40 p-5 rounded-2xl space-y-4 cursor-pointer hover:border-brand/40 border border-subtle transition-all active:scale-[0.98]">
+          <div
+            (click)="openDetailsModal(customer)"
+            class="bg-surface-elevated/40 p-5 rounded-2xl space-y-4 cursor-pointer hover:border-brand/40 border border-subtle transition-all active:scale-[0.98]"
+          >
             <div class="flex justify-between items-start">
               <div>
-                <p class="font-black text-title text-base sm:text-lg mb-1">{{ customer.name }}</p>
-                @if(customer.cpf) { <p class="text-[10px] font-black uppercase tracking-widest text-muted font-mono">{{ customer.cpf }}</p> }
-              </div>
-            </div>
-            
-            <div class="space-y-2 pt-3 border-t border-subtle dashed">
-              <div class="flex items-center gap-3 text-muted text-sm">
-                <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand border border-brand/20 bg-brand/5 p-1 rounded-lg">call</span>
-                <span class="font-medium data-mono">{{ customer.phone || 'Não informado' }}</span>
-              </div>
-               <div class="flex items-center gap-3 text-muted text-sm">
-                <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-info border border-info/20 bg-info/5 p-1 rounded-lg">mail</span>
-                <span class="font-medium max-w-full truncate">{{ customer.email || 'Não informado' }}</span>
+                <p class="font-black text-title text-base sm:text-lg mb-1">
+                  {{ customer.name }}
+                </p>
+                @if (customer.cpf) {
+                  <p
+                    class="text-[10px] font-black uppercase tracking-widest text-muted font-mono"
+                  >
+                    {{ customer.cpf }}
+                  </p>
+                }
               </div>
             </div>
 
-            <div (click)="$event.stopPropagation()" class="flex justify-end gap-3 pt-3 border-t border-subtle dashed">
+            <div class="space-y-2 pt-3 border-t border-subtle dashed">
+              <div class="flex items-center gap-3 text-muted text-sm">
+                <span
+                  translate="no"
+                  class="notranslate material-symbols-outlined text-[16px] text-brand border border-brand/20 bg-brand/5 p-1 rounded-lg"
+                  >call</span
+                >
+                <span class="font-medium data-mono">{{
+                  customer.phone || "Não informado"
+                }}</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted text-sm">
+                <span
+                  translate="no"
+                  class="notranslate material-symbols-outlined text-[16px] text-info border border-info/20 bg-info/5 p-1 rounded-lg"
+                  >mail</span
+                >
+                <span class="font-medium max-w-full truncate">{{
+                  customer.email || "Não informado"
+                }}</span>
+              </div>
+            </div>
+
+            <div
+              (click)="$event.stopPropagation()"
+              class="flex justify-end gap-3 pt-3 border-t border-subtle dashed"
+            >
               @if (customerPendingDeletion()?.id === customer.id) {
                 <div class="flex gap-2 items-center w-full justify-end">
-                  <span class="text-[10px] text-danger font-black uppercase tracking-widest">Certeza?</span>
-                  <button (click)="confirmDeleteCustomer()" class="px-4 py-2 font-black uppercase tracking-widest rounded-xl bg-danger text-white hover:bg-danger/90 text-[10px] shadow-lg shadow-danger/20 transition-all">Sim</button>
-                  <button (click)="cancelDeleteCustomer()" class="px-4 py-2 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-title font-black text-[10px] uppercase tracking-widest transition-all">Não</button>
+                  <span
+                    class="text-[10px] text-danger font-black uppercase tracking-widest"
+                    >Certeza?</span
+                  >
+                  <button
+                    (click)="confirmDeleteCustomer()"
+                    class="px-4 py-2 font-black uppercase tracking-widest rounded-xl bg-danger text-white hover:bg-danger/90 text-[10px] shadow-lg shadow-danger/20 transition-all"
+                  >
+                    Sim
+                  </button>
+                  <button
+                    (click)="cancelDeleteCustomer()"
+                    class="px-4 py-2 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-title font-black text-[10px] uppercase tracking-widest transition-all"
+                  >
+                    Não
+                  </button>
                 </div>
               } @else {
-                <button (click)="openEditModal(customer)" class="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-strong text-title text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all">
-                    <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span> Editar
+                <button
+                  (click)="openEditModal(customer)"
+                  class="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated border border-strong text-title text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all"
+                >
+                  <span
+                    translate="no"
+                    class="notranslate material-symbols-outlined text-sm"
+                    >edit</span
+                  >
+                  Editar
                 </button>
-                <button (click)="requestDeleteCustomer(customer)" class="px-4 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all">
-                    <span translate="no" class="notranslate material-symbols-outlined text-sm">delete</span> Excluir
+                <button
+                  (click)="requestDeleteCustomer(customer)"
+                  class="px-4 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all"
+                >
+                  <span
+                    translate="no"
+                    class="notranslate material-symbols-outlined text-sm"
+                    >delete</span
+                  >
+                  Excluir
                 </button>
               }
             </div>
@@ -114,129 +250,330 @@
 </div>
 
 <!-- Add/Edit Customer Modal -->
-@if(isModalOpen()) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal()">
-    <div class="chef-surface border border-subtle shadow-2xl w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
-      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
+@if (isModalOpen()) {
+  <div
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in"
+    (click)="closeModal()"
+  >
+    <div
+      class="chef-surface border border-subtle shadow-2xl w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+      (click)="$event.stopPropagation()"
+    >
+      <div
+        class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50"
+      >
         <h3 class="text-xl font-black text-title flex items-center gap-3">
-          <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
-          {{ editingCustomer() ? 'Editar Cliente' : 'Novo Cliente' }}
+          <span
+            translate="no"
+            class="notranslate material-symbols-outlined text-brand"
+            >person_add</span
+          >
+          {{ editingCustomer() ? "Editar Cliente" : "Novo Cliente" }}
         </h3>
-        <button (click)="closeModal()" class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent">
-          <span translate="no" class="notranslate material-symbols-outlined">close</span>
+        <button
+          (click)="closeModal()"
+          class="p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-danger hover:border-danger/30 transition-all active:scale-95 border border-transparent"
+        >
+          <span translate="no" class="notranslate material-symbols-outlined"
+            >close</span
+          >
         </button>
       </div>
-      <div class="p-5 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+      <div
+        class="p-5 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nome Completo *</label>
-                <input type="text" [value]="customerForm().name || ''" (input)="updateCustomerFormField('name', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="Ex: João da Silva">
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Telefone</label>
-                <input type="tel" [value]="customerForm().phone || ''" (input)="updateCustomerFormField('phone', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="(11) 99999-9999">
-            </div>
+          <div>
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+              >Nome Completo *</label
+            >
+            <input
+              type="text"
+              [value]="customerForm().name || ''"
+              (input)="
+                updateCustomerFormField('name', $any($event.target).value)
+              "
+              class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+              placeholder="Ex: João da Silva"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+              >Telefone</label
+            >
+            <input
+              type="tel"
+              [value]="customerForm().phone || ''"
+              (input)="
+                updateCustomerFormField('phone', $any($event.target).value)
+              "
+              class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+              placeholder="(11) 99999-9999"
+            />
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Email</label>
-                <input type="email" [value]="customerForm().email || ''" (input)="updateCustomerFormField('email', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="joao@email.com">
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">CPF</label>
-                <input type="text" [value]="customerForm().cpf || ''" (input)="updateCustomerFormField('cpf', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="000.000.000-00">
-            </div>
+          <div>
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+              >Email</label
+            >
+            <input
+              type="email"
+              [value]="customerForm().email || ''"
+              (input)="
+                updateCustomerFormField('email', $any($event.target).value)
+              "
+              class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+              placeholder="joao@email.com"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+              >CPF</label
+            >
+            <input
+              type="text"
+              [value]="customerForm().cpf || ''"
+              (input)="
+                updateCustomerFormField('cpf', $any($event.target).value)
+              "
+              class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+              placeholder="000.000.000-00"
+            />
+          </div>
         </div>
 
         <div class="border-t border-subtle border-dashed pt-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <div>
-                 <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar por CEP</label>
-                 <div class="relative">
-                   <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">map</span>
-                   <input type="text" (input)="searchCep($event)" placeholder="Digite o CEP (8 dígitos)" maxlength="9" class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
-                 </div>
+              <label
+                class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+                >Buscar por CEP</label
+              >
+              <div class="relative">
+                <span
+                  translate="no"
+                  class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand"
+                  >map</span
+                >
+                <input
+                  type="text"
+                  (input)="searchCep($event)"
+                  placeholder="Digite o CEP (8 dígitos)"
+                  maxlength="9"
+                  class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+                />
+              </div>
             </div>
             <div>
-                 <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar Endereço Inteligente</label>
-                  <div class="relative">
-                    <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">location_searching</span>
-                    <input 
-                      type="text" 
-                      [value]="addressSearchTerm()" 
-                      (input)="onAddressSearchChange($event)"
-                      placeholder="rua, bairro, cidade..." 
-                      class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
-                    @if (isSearchingAddress()) {
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 animate-spin h-5 w-5 border-2 border-brand/40 border-t-brand rounded-full"></div>
-                    }
-                  </div>
-                  @if (addressSearchResults().length > 0) {
-                    <ul class="absolute bg-surface-elevated border border-subtle rounded-xl mt-2 max-h-48 overflow-y-auto w-full z-20 shadow-xl overflow-hidden">
-                      @for (result of addressSearchResults(); track result.place_id) {
-                        <li (click)="selectAddress(result)" class="px-4 py-3 border-b border-subtle last:border-0 text-sm text-title hover:bg-brand/10 hover:text-brand cursor-pointer transition-colors flex items-start gap-2">
-                          <span translate="no" class="notranslate material-symbols-outlined text-[16px] mt-0.5 opacity-70">location_on</span>
-                          {{ result.display_name }}
-                        </li>
-                      }
-                    </ul>
+              <label
+                class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+                >Buscar Endereço Inteligente</label
+              >
+              <div class="relative">
+                <span
+                  translate="no"
+                  class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand"
+                  >location_searching</span
+                >
+                <input
+                  type="text"
+                  [value]="addressSearchTerm()"
+                  (input)="onAddressSearchChange($event)"
+                  placeholder="rua, bairro, cidade..."
+                  class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50"
+                />
+                @if (isSearchingAddress()) {
+                  <div
+                    class="absolute right-4 top-1/2 -translate-y-1/2 animate-spin h-5 w-5 border-2 border-brand/40 border-t-brand rounded-full"
+                  ></div>
+                }
+              </div>
+              @if (addressSearchResults().length > 0) {
+                <ul
+                  class="absolute bg-surface-elevated border border-subtle rounded-xl mt-2 max-h-48 overflow-y-auto w-full z-20 shadow-xl overflow-hidden"
+                >
+                  @for (
+                    result of addressSearchResults();
+                    track result.place_id
+                  ) {
+                    <li
+                      (click)="selectAddress(result)"
+                      class="px-4 py-3 border-b border-subtle last:border-0 text-sm text-title hover:bg-brand/10 hover:text-brand cursor-pointer transition-colors flex items-start gap-2"
+                    >
+                      <span
+                        translate="no"
+                        class="notranslate material-symbols-outlined text-[16px] mt-0.5 opacity-70"
+                        >location_on</span
+                      >
+                      {{ result.display_name }}
+                    </li>
                   }
+                </ul>
+              }
             </div>
           </div>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-surface p-4 rounded-xl border border-subtle">
-           <div class="md:col-span-5 flex items-center gap-2 mb-1">
-               <span translate="no" class="notranslate material-symbols-outlined text-sm text-muted">home_pin</span>
-               <span class="text-[10px] font-black text-muted uppercase tracking-widest">Detalhes do Endereço</span>
-           </div>
+
+        <div
+          class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-surface p-4 rounded-xl border border-subtle"
+        >
+          <div class="md:col-span-5 flex items-center gap-2 mb-1">
+            <span
+              translate="no"
+              class="notranslate material-symbols-outlined text-sm text-muted"
+              >home_pin</span
+            >
+            <span
+              class="text-[10px] font-black text-muted uppercase tracking-widest"
+              >Detalhes do Endereço</span
+            >
+          </div>
           <div class="md:col-span-3">
-            <label class="block text-xs font-bold text-muted mb-1">Logradouro</label>
-            <input type="text" [value]="addressStreet()" (input)="addressStreet.set($any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all">
+            <label class="block text-xs font-bold text-muted mb-1"
+              >Logradouro</label
+            >
+            <input
+              type="text"
+              [value]="addressStreet()"
+              (input)="addressStreet.set($any($event.target).value)"
+              class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all"
+            />
           </div>
           <div>
-            <label class="block text-xs font-bold text-muted mb-1">Número</label>
-            <input type="text" [value]="addressNumber()" (input)="addressNumber.set($any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all" placeholder="S/N">
+            <label class="block text-xs font-bold text-muted mb-1"
+              >Número</label
+            >
+            <input
+              type="text"
+              [value]="addressNumber()"
+              (input)="addressNumber.set($any($event.target).value)"
+              class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all"
+              placeholder="S/N"
+            />
           </div>
           <div>
-            <label class="block text-xs font-bold text-muted mb-1">Compl.</label>
-            <input type="text" [value]="addressComplement()" (input)="addressComplement.set($any($event.target).value)" placeholder="Apt, Sala" class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all">
+            <label class="block text-xs font-bold text-muted mb-1"
+              >Compl.</label
+            >
+            <input
+              type="text"
+              [value]="addressComplement()"
+              (input)="addressComplement.set($any($event.target).value)"
+              placeholder="Apt, Sala"
+              class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-muted mb-1"
+              >Bairro</label
+            >
+            <input
+              type="text"
+              [value]="addressNeighborhood()"
+              (input)="addressNeighborhood.set($any($event.target).value)"
+              class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all"
+            />
+          </div>
+          <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-muted mb-1"
+              >Cidade - UF</label
+            >
+            <input
+              type="text"
+              [value]="addressCity()"
+              (input)="addressCity.set($any($event.target).value)"
+              class="w-full bg-surface-elevated border border-strong rounded-lg px-3 py-2 text-sm text-title focus:border-brand outline-none transition-all"
+            />
           </div>
         </div>
-        
+
         <!-- Map and Notes area -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1">Localização no Mapa</label>
-                <p class="text-[10px] text-muted mb-3 font-medium">Toque no mapa para um pino exato de entrega.</p>
-                <div #addEditMapContainer class="w-full h-40 sm:h-48 rounded-xl border border-subtle shadow-inner z-0 relative overflow-hidden bg-surface-elevated/50"></div>
-                <!-- Hidden inputs for validation / forms -->
-                <div class="hidden">
-                    <input type="number" [value]="customerForm().latitude || ''" (input)="updateCustomerFormField('latitude', $any($event.target).value)">
-                    <input type="number" [value]="customerForm().longitude || ''" (input)="updateCustomerFormField('longitude', $any($event.target).value)">
-                </div>
+          <div>
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-1"
+              >Localização no Mapa</label
+            >
+            <p class="text-[10px] text-muted mb-3 font-medium">
+              Toque no mapa para um pino exato de entrega.
+            </p>
+            <div
+              #addEditMapContainer
+              class="w-full h-40 sm:h-48 rounded-xl border border-subtle shadow-inner z-0 relative overflow-hidden bg-surface-elevated/50"
+            ></div>
+            <!-- Hidden inputs for validation / forms -->
+            <div class="hidden">
+              <input
+                type="number"
+                [value]="customerForm().latitude || ''"
+                (input)="
+                  updateCustomerFormField('latitude', $any($event.target).value)
+                "
+              />
+              <input
+                type="number"
+                [value]="customerForm().longitude || ''"
+                (input)="
+                  updateCustomerFormField(
+                    'longitude',
+                    $any($event.target).value
+                  )
+                "
+              />
             </div>
-            <div class="flex flex-col">
-                <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Observações / Restrições</label>
-                <textarea [value]="customerForm().notes || ''" (input)="updateCustomerFormField('notes', $any($event.target).value)" placeholder="Alergias, preferências, instruções ao motoboy..." class="w-full flex-1 min-h-[120px] bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-medium focus:border-brand outline-none transition-all placeholder:text-muted/50 resize-none custom-scrollbar"></textarea>
-            </div>
+          </div>
+          <div class="flex flex-col">
+            <label
+              class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2"
+              >Observações / Restrições</label
+            >
+            <textarea
+              [value]="customerForm().notes || ''"
+              (input)="
+                updateCustomerFormField('notes', $any($event.target).value)
+              "
+              placeholder="Alergias, preferências, instruções ao motoboy..."
+              class="w-full flex-1 min-h-[120px] bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-medium focus:border-brand outline-none transition-all placeholder:text-muted/50 resize-none custom-scrollbar"
+            ></textarea>
+          </div>
         </div>
       </div>
-      
-      <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl">
-         <button (click)="closeModal()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95">Cancelar</button>
-         <button (click)="saveCustomer()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">save</span> Salvar
-         </button>
+
+      <div
+        class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl"
+      >
+        <button
+          (click)="closeModal()"
+          class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="saveCustomer()"
+          class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2"
+        >
+          <span
+            translate="no"
+            class="notranslate material-symbols-outlined text-sm"
+            >save</span
+          >
+          Salvar
+        </button>
       </div>
     </div>
   </div>
 }
 
 <!-- Customer Details Modal -->
-@if(isDetailsModalOpen() && selectedCustomerForDetails(); as customer) {
-    <app-customer-details-modal 
-        [customer]="customer"
-        (close)="isDetailsModalOpen.set(false)">
-    </app-customer-details-modal>
+@if (isDetailsModalOpen() && selectedCustomerForDetails(); as customer) {
+  <app-customer-details-modal
+    [customer]="customer"
+    (close)="isDetailsModalOpen.set(false)"
+  >
+  </app-customer-details-modal>
 }

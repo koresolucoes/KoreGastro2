@@ -1,11 +1,16 @@
-
-import { Injectable, inject, LOCALE_ID } from '@angular/core';
-import { Order, OrderItem, Station, Requisition, RequisitionItem } from '../models/db.models';
-import { DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
-import { CashierClosing } from '../models/db.models';
-import { NotificationService } from './notification.service';
-import { ProcessedIfoodOrder } from '../models/app.models';
-import { SettingsStateService } from './settings-state.service';
+import { Injectable, inject, LOCALE_ID } from "@angular/core";
+import {
+  Order,
+  OrderItem,
+  Station,
+  Requisition,
+  RequisitionItem,
+} from "../models/db.models";
+import { DatePipe, CurrencyPipe, DecimalPipe } from "@angular/common";
+import { CashierClosing } from "../models/db.models";
+import { NotificationService } from "./notification.service";
+import { ProcessedIfoodOrder } from "../models/app.models";
+import { SettingsStateService } from "./settings-state.service";
 
 interface PreBillOptions {
   includeServiceFee: boolean;
@@ -14,7 +19,7 @@ interface PreBillOptions {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root",
 })
 export class PrintingService {
   private datePipe: DatePipe;
@@ -32,19 +37,19 @@ export class PrintingService {
 
   // Helper to format table/command name
   private getOrderIdentifier(order: Order): string {
-      if (order.command_number) {
-          return `Comanda ${order.command_number}`;
-      }
-      if (order.table_number && order.table_number > 0) {
-          return `Mesa ${order.table_number}`;
-      }
-      if (order.order_type === 'QuickSale') {
-          return 'Venda Rápida';
-      }
-      if (order.tab_name) {
-          return `Conta: ${order.tab_name}`;
-      }
-      return `Pedido #${order.id.slice(0,4)}`;
+    if (order.command_number) {
+      return `Comanda ${order.command_number}`;
+    }
+    if (order.table_number && order.table_number > 0) {
+      return `Mesa ${order.table_number}`;
+    }
+    if (order.order_type === "QuickSale") {
+      return "Venda Rápida";
+    }
+    if (order.tab_name) {
+      return `Conta: ${order.tab_name}`;
+    }
+    return `Pedido #${order.id.slice(0, 4)}`;
   }
 
   /**
@@ -57,12 +62,15 @@ export class PrintingService {
   async printOrder(order: Order, items: OrderItem[], station: Station) {
     if (!order || items.length === 0) return;
 
-    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    const printWindow = window.open("", "_blank", "width=300,height=500");
     if (!printWindow) {
-      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
       return;
     }
-    
+
     const title = `Comanda - Estação: ${station.name}`;
     printWindow.document.title = title;
 
@@ -70,7 +78,7 @@ export class PrintingService {
     printWindow.document.write(ticketHtml);
     printWindow.document.close();
     printWindow.focus();
-    
+
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
@@ -78,9 +86,12 @@ export class PrintingService {
   }
 
   async printPreBill(order: Order, options: PreBillOptions) {
-    const printWindow = window.open('', '_blank', 'width=300,height=500');
+    const printWindow = window.open("", "_blank", "width=300,height=500");
     if (!printWindow) {
-      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
       return;
     }
     const identifier = this.getOrderIdentifier(order);
@@ -95,11 +106,17 @@ export class PrintingService {
     }, 250);
   }
 
-  async printCustomerReceipt(order: Order, payments: {method: string, amount: number}[]) {
-    const printWindow = window.open('', '_blank', 'width=300,height=500');
+  async printCustomerReceipt(
+    order: Order,
+    payments: { method: string; amount: number }[],
+  ) {
+    const printWindow = window.open("", "_blank", "width=300,height=500");
     if (!printWindow) {
-        this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
-        return;
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
+      return;
     }
     printWindow.document.title = `Recibo - Pedido #${order.id.slice(0, 8)}`;
     const receiptHtml = this.generateReceiptHtml(order, payments);
@@ -107,22 +124,36 @@ export class PrintingService {
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
+      printWindow.print();
+      printWindow.close();
     }, 250);
   }
 
-  private generateTicketHtml(order: Order, items: OrderItem[], station: Station): string {
-    const formattedTimestamp = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+  private generateTicketHtml(
+    order: Order,
+    items: OrderItem[],
+    station: Station,
+  ): string {
+    const formattedTimestamp = this.datePipe.transform(
+      new Date(),
+      "dd/MM/yyyy HH:mm:ss",
+    );
     const orderId = order.id.substring(0, 8).toUpperCase();
     const headerText = this.getOrderIdentifier(order);
-    const customerName = order.customers?.name || order.tab_name || '';
-    const waiterName = order.waiter?.name || '';
-    
-    let itemsHtml = items.map(item => {
-        const notesHtml = item.notes ? `<p style="font-style: italic; margin-left: 15px; margin-top: 2px;"> -> ${item.notes}</p>` : '';
-        const itemName = item.name.includes('(') ? item.name.split('(')[0].trim() : item.name;
-        const prepName = item.name.includes('(') ? `<div style="font-size: 10px; margin-left: 15px;">(${item.name.split('(')[1].replace(')','')})</div>` : '';
+    const customerName = order.customers?.name || order.tab_name || "";
+    const waiterName = order.waiter?.name || "";
+
+    let itemsHtml = items
+      .map((item) => {
+        const notesHtml = item.notes
+          ? `<p style="font-style: italic; margin-left: 15px; margin-top: 2px;"> -> ${item.notes}</p>`
+          : "";
+        const itemName = item.name.includes("(")
+          ? item.name.split("(")[0].trim()
+          : item.name;
+        const prepName = item.name.includes("(")
+          ? `<div style="font-size: 10px; margin-left: 15px;">(${item.name.split("(")[1].replace(")", "")})</div>`
+          : "";
 
         return `
             <div style="margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
@@ -134,7 +165,8 @@ export class PrintingService {
                 ${notesHtml}
             </div>
         `;
-    }).join('');
+      })
+      .join("");
 
     return `
       <html>
@@ -186,8 +218,8 @@ export class PrintingService {
           <div class="info">
             <div><strong>Pedido:</strong> #${orderId}</div>
             <div><strong>Data:</strong> ${formattedTimestamp}</div>
-            ${customerName ? `<div><strong>Cliente:</strong> ${customerName}</div>` : ''}
-            ${waiterName ? `<div><strong>Garçom:</strong> ${waiterName}</div>` : ''}
+            ${customerName ? `<div><strong>Cliente:</strong> ${customerName}</div>` : ""}
+            ${waiterName ? `<div><strong>Garçom:</strong> ${waiterName}</div>` : ""}
           </div>
           <div class="items">${itemsHtml}</div>
         </body>
@@ -196,51 +228,59 @@ export class PrintingService {
   }
 
   private generatePreBillHtml(order: Order, options: PreBillOptions): string {
-    const date = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm');
-    const subtotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
+    const date = this.datePipe.transform(new Date(), "dd/MM/yyyy HH:mm");
+    const subtotal = order.order_items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
     let discountAmount = 0;
-    if (order.discount_type === 'percentage') {
+    if (order.discount_type === "percentage") {
       discountAmount = subtotal * ((order.discount_value || 0) / 100);
-    } else if (order.discount_type === 'fixed_value') {
+    } else if (order.discount_type === "fixed_value") {
       discountAmount = order.discount_value || 0;
     }
-    
+
     const subtotalAfterDiscount = subtotal - discountAmount;
-    const serviceFee = options.includeServiceFee ? subtotalAfterDiscount * 0.1 : 0;
+    const serviceFee = options.includeServiceFee
+      ? subtotalAfterDiscount * 0.1
+      : 0;
     const total = options.total;
     const identifier = this.getOrderIdentifier(order);
 
     const itemsHtml = order.order_items
-        .filter(item => item.price > 0)
-        .map(item => `
+      .filter((item) => item.price > 0)
+      .map(
+        (item) => `
         <tr>
             <td style="vertical-align: top;">${item.quantity}x</td>
             <td>${item.name}</td>
-            <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, '1.2-2')}</td>
+            <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, "1.2-2")}</td>
         </tr>
-    `).join('');
+    `,
+      )
+      .join("");
 
-    let splitHtml = '';
+    let splitHtml = "";
     if (options.splitBy > 1) {
-        splitHtml = `
+      splitHtml = `
             <div class="divider"></div>
             <div style="text-align: center; font-weight: bold; margin: 5px 0;">
                 Valor por Pessoa (${options.splitBy})
             </div>
             <div class="total-row" style="display: flex; justify-content: space-between;">
                 <span>TOTAL POR PESSOA</span>
-                <span>${this.currencyPipe.transform(total / options.splitBy, 'BRL', 'R$')}</span>
+                <span>${this.currencyPipe.transform(total / options.splitBy, "BRL", "R$")}</span>
             </div>
         `;
     }
 
-    let discountHtml = '';
+    let discountHtml = "";
     if (discountAmount > 0) {
-        discountHtml = `
+      discountHtml = `
             <tr>
               <td colspan="2">Desconto</td>
-              <td style="text-align: right;">-${this.currencyPipe.transform(discountAmount, 'BRL', 'R$', '1.2-2')}</td>
+              <td style="text-align: right;">-${this.currencyPipe.transform(discountAmount, "BRL", "R$", "1.2-2")}</td>
             </tr>
         `;
     }
@@ -270,7 +310,7 @@ export class PrintingService {
           <div class="divider"></div>
           <div>Data: ${date}</div>
           <div>${identifier}</div>
-          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ''}
+          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ""}
           <div class="divider"></div>
           <table>
               <thead>
@@ -286,16 +326,16 @@ export class PrintingService {
           <table>
             <tr>
               <td colspan="2">Subtotal</td>
-              <td style="text-align: right;">${this.currencyPipe.transform(subtotal, 'BRL', 'R$', '1.2-2')}</td>
+              <td style="text-align: right;">${this.currencyPipe.transform(subtotal, "BRL", "R$", "1.2-2")}</td>
             </tr>
             ${discountHtml}
              <tr>
               <td colspan="2">Serviço (10%)</td>
-              <td style="text-align: right;">${options.includeServiceFee ? this.currencyPipe.transform(serviceFee, 'BRL', 'R$', '1.2-2') : 'Opcional'}</td>
+              <td style="text-align: right;">${options.includeServiceFee ? this.currencyPipe.transform(serviceFee, "BRL", "R$", "1.2-2") : "Opcional"}</td>
             </tr>
             <tr class="total-row">
               <td colspan="2">TOTAL</td>
-              <td style="text-align: right;">${this.currencyPipe.transform(total, 'BRL', 'R$', '1.2-2')}</td>
+              <td style="text-align: right;">${this.currencyPipe.transform(total, "BRL", "R$", "1.2-2")}</td>
             </tr>
           </table>
           ${splitHtml}
@@ -306,27 +346,37 @@ export class PrintingService {
     `;
   }
 
-  private generateReceiptHtml(order: Order, payments: {method: string, amount: number}[]): string {
-    const date = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm');
+  private generateReceiptHtml(
+    order: Order,
+    payments: { method: string; amount: number }[],
+  ): string {
+    const date = this.datePipe.transform(new Date(), "dd/MM/yyyy HH:mm");
     const identifier = this.getOrderIdentifier(order);
     const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
 
     const itemsHtml = order.order_items
-        .filter(item => item.price > 0 || item.quantity > 0)
-        .map(item => `
+      .filter((item) => item.price > 0 || item.quantity > 0)
+      .map(
+        (item) => `
         <tr>
             <td style="vertical-align: top;">${item.quantity}x</td>
             <td>${item.name}</td>
-            <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, '1.2-2')}</td>
+            <td style="text-align: right; vertical-align: top;">${this.decimalPipe.transform(item.price * item.quantity, "1.2-2")}</td>
         </tr>
-    `).join('');
+    `,
+      )
+      .join("");
 
-    const paymentsHtml = payments.map(p => `
+    const paymentsHtml = payments
+      .map(
+        (p) => `
         <div style="display: flex; justify-content: space-between;">
             <span>${p.method}</span>
-            <span>${this.currencyPipe.transform(p.amount, 'BRL', 'R$', '1.2-2')}</span>
+            <span>${this.currencyPipe.transform(p.amount, "BRL", "R$", "1.2-2")}</span>
         </div>
-    `).join('');
+    `,
+      )
+      .join("");
 
     return `
       <html>
@@ -353,7 +403,7 @@ export class PrintingService {
           <div class="divider"></div>
           <div>Data: ${date}</div>
           <div>${identifier}</div>
-          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ''}
+          ${order.waiter?.name ? `<div>Garçom: ${order.waiter.name}</div>` : ""}
           <div class="divider"></div>
           <table>
               <thead>
@@ -371,41 +421,54 @@ export class PrintingService {
           <div class="divider"></div>
           <div class="total-row" style="display: flex; justify-content: space-between;">
               <span>TOTAL PAGO</span>
-              <span>${this.currencyPipe.transform(totalPaid, 'BRL', 'R$', '1.2-2')}</span>
+              <span>${this.currencyPipe.transform(totalPaid, "BRL", "R$", "1.2-2")}</span>
           </div>
           <div class="info-text">Obrigado pela preferência!</div>
         </body>
       </html>
     `;
   }
-  
+
   // Placeholder methods for other types to satisfy compilation, actual implementation remains same
-  async printCashierClosingReport(closingData: CashierClosing, expenseTransactions: any[]) {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+  async printCashierClosingReport(
+    closingData: CashierClosing,
+    expenseTransactions: any[],
+  ) {
+    const printWindow = window.open("", "_blank", "width=800,height=600");
     if (!printWindow) {
-      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
       return;
     }
 
-    const date = this.datePipe.transform(closingData.closed_at || new Date(), 'dd/MM/yyyy HH:mm:ss');
-    const identifier = `Fechamento de Caixa #${closingData.id ? closingData.id.substring(0, 8).toUpperCase() : 'N/A'}`;
-    
+    const date = this.datePipe.transform(
+      closingData.closed_at || new Date(),
+      "dd/MM/yyyy HH:mm:ss",
+    );
+    const identifier = `Fechamento de Caixa #${closingData.id ? closingData.id.substring(0, 8).toUpperCase() : "N/A"}`;
+
     printWindow.document.title = identifier;
 
-    let paymentHtml = '';
+    let paymentHtml = "";
     if (closingData.payment_summary && closingData.payment_summary.length > 0) {
-        paymentHtml = closingData.payment_summary.map((method: any) => `
+      paymentHtml = closingData.payment_summary
+        .map(
+          (method: any) => `
             <div style="display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 13px;">
-                <span>${method.method || method.name || 'Outro'}</span>
+                <span>${method.method || method.name || "Outro"}</span>
                 <span>
-                   Esp: ${this.currencyPipe.transform(method.expected || method.total || 0, 'BRL', 'R$', '1.2-2')} | 
-                   Cont: ${this.currencyPipe.transform(method.counted || 0, 'BRL', 'R$', '1.2-2')} | 
-                   Dif: <span style="color: ${(method.difference || 0) < 0 ? '#dc2626' : 'inherit'}">${this.currencyPipe.transform(method.difference || 0, 'BRL', 'R$', '1.2-2')}</span>
+                   Esp: ${this.currencyPipe.transform(method.expected || method.total || 0, "BRL", "R$", "1.2-2")} | 
+                   Cont: ${this.currencyPipe.transform(method.counted || 0, "BRL", "R$", "1.2-2")} | 
+                   Dif: <span style="color: ${(method.difference || 0) < 0 ? "#dc2626" : "inherit"}">${this.currencyPipe.transform(method.difference || 0, "BRL", "R$", "1.2-2")}</span>
                 </span>
             </div>
-        `).join('');
+        `,
+        )
+        .join("");
     } else {
-        paymentHtml = `<div style="font-size: 13px; color: #666;">Nenhum detalhe de pagamento registrado.</div>`;
+      paymentHtml = `<div style="font-size: 13px; color: #666;">Nenhum detalhe de pagamento registrado.</div>`;
     }
 
     const html = `
@@ -429,28 +492,32 @@ export class PrintingService {
           <div style="font-size: 12px;">ID: ${identifier}</div>
           <div class="divider"></div>
           
-          <div class="row"><span class="bold">Saldo Inicial</span><span>${this.currencyPipe.transform(closingData.opening_balance, 'BRL', 'R$', '1.2-2')}</span></div>
-          <div class="row"><span class="bold">Receitas</span><span>${this.currencyPipe.transform(closingData.total_revenue, 'BRL', 'R$', '1.2-2')}</span></div>
-          <div class="row"><span class="bold">Despesas</span><span>${this.currencyPipe.transform(closingData.total_expenses, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span class="bold">Saldo Inicial</span><span>${this.currencyPipe.transform(closingData.opening_balance, "BRL", "R$", "1.2-2")}</span></div>
+          <div class="row"><span class="bold">Receitas</span><span>${this.currencyPipe.transform(closingData.total_revenue, "BRL", "R$", "1.2-2")}</span></div>
+          <div class="row"><span class="bold">Despesas</span><span>${this.currencyPipe.transform(closingData.total_expenses, "BRL", "R$", "1.2-2")}</span></div>
           
           <div class="divider"></div>
           <div class="center bold" style="margin-bottom: 5px;">CONFERÊNCIA (Dinheiro)</div>
-          <div class="row"><span>Esperado na Gaveta:</span><span>${this.currencyPipe.transform(closingData.expected_cash_in_drawer, 'BRL', 'R$', '1.2-2')}</span></div>
-          <div class="row"><span>Dinheiro Informado:</span><span>${this.currencyPipe.transform(closingData.counted_cash, 'BRL', 'R$', '1.2-2')}</span></div>
-          <div class="row"><span class="bold">Diferença Total:</span><span class="bold" style="color: ${closingData.difference < 0 ? '#dc2626' : 'inherit'}">${this.currencyPipe.transform(closingData.difference, 'BRL', 'R$', '1.2-2')}</span></div>
+          <div class="row"><span>Esperado na Gaveta:</span><span>${this.currencyPipe.transform(closingData.expected_cash_in_drawer, "BRL", "R$", "1.2-2")}</span></div>
+          <div class="row"><span>Dinheiro Informado:</span><span>${this.currencyPipe.transform(closingData.counted_cash, "BRL", "R$", "1.2-2")}</span></div>
+          <div class="row"><span class="bold">Diferença Total:</span><span class="bold" style="color: ${closingData.difference < 0 ? "#dc2626" : "inherit"}">${this.currencyPipe.transform(closingData.difference, "BRL", "R$", "1.2-2")}</span></div>
           
           <div class="divider"></div>
           <div class="center bold" style="margin-bottom: 5px;">FORMAS DE PAGAMENTO</div>
           ${paymentHtml}
           
           <div class="divider"></div>
-          ${closingData.notes ? `
+          ${
+            closingData.notes
+              ? `
               <div style="font-size: 12px; margin-bottom: 10px;">
                 <span class="bold">Observações:</span>
                 <div>${closingData.notes}</div>
               </div>
               <div class="divider"></div>
-          ` : ''}
+          `
+              : ""
+          }
           <div class="center" style="font-size: 12px; margin-top: 20px;">Assinatura do Responsável</div>
           <div style="border-bottom: 1px solid #000; width: 80%; margin: 30px auto 10px auto;"></div>
           
@@ -467,36 +534,171 @@ export class PrintingService {
     printWindow.document.write(html);
     printWindow.document.close();
   }
-  async printPayslip(payslipHtml: string, employeeName: string) { /* ... */ }
-  async printIfoodReceipt(order: ProcessedIfoodOrder) { /* ... */ }
-  async printDeliveryGuide(order: Order) { /* ... */ }
-  async printRequisition(requisition: Requisition) {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+  async printPayslip(payslipHtml: string, employeeName: string) {
+    /* ... */
+  }
+  async printIfoodReceipt(order: ProcessedIfoodOrder) {
+    /* ... */
+  }
+  async printDeliveryGuide(order: Order) {
+    const printWindow = window.open("", "_blank", "width=350,height=600");
     if (!printWindow) {
-      this.notificationService.show('Por favor, habilite pop-ups para imprimir.', 'warning');
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
       return;
     }
 
-    const date = this.datePipe.transform(requisition.created_at, 'dd/MM/yyyy HH:mm');
-    const processedDate = requisition.processed_at ? this.datePipe.transform(requisition.processed_at, 'dd/MM/yyyy HH:mm') : 'N/A';
+    const date = this.datePipe.transform(
+      order.created_at || order.timestamp,
+      "dd/MM/yyyy HH:mm",
+    );
+    const orderId = order.id.substring(0, 8).toUpperCase();
+    const customer = order.customers;
+    const items = order.order_items;
+
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const deliveryCost = order.delivery_cost ?? 0;
+    const total = subtotal + deliveryCost;
+
+    let itemsHtml = items
+      .map(
+        (item) => `
+        <div style="margin-bottom: 4px;">
+            <div style="font-weight: bold;">${item.quantity}x ${item.name}</div>
+            <div style="text-align: right;">${this.currencyPipe.transform(item.price * item.quantity, "BRL")}</div>
+            ${item.notes ? `<div style="font-size: 11px; font-style: italic;">Obs: ${item.notes}</div>` : ""}
+        </div>
+    `,
+      )
+      .join("");
+
+    const html = `
+      <html>
+        <head>
+          <title>Guia de Entrega - #${orderId}</title>
+          <style>
+            body { 
+              font-family: 'Courier New', Courier, monospace;
+              width: 280px; 
+              font-size: 13px;
+              line-height: 1.4;
+              color: #000;
+              margin: 0;
+              padding: 10px;
+            }
+            .center { text-align: center; }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 10px 0;
+            }
+            .bold { font-weight: bold; }
+            .text-lg { font-size: 18px; }
+            .text-sm { font-size: 11px; }
+            .flex-between { display: flex; justify-content: space-between; }
+          </style>
+        </head>
+        <body>
+          <div class="center text-lg bold">GUIA DE ENTREGA</div>
+          <div class="center text-sm">Pedido #${orderId}</div>
+          <div class="center text-sm">${date}</div>
+          
+          <div class="divider"></div>
+          
+          <div class="text-lg bold">CLIENTE</div>
+          <div class="bold" style="font-size: 16px; margin-top: 5px;">${customer?.name || "Cliente Avulso"}</div>
+          ${customer?.phone ? `<div>TEL: ${customer.phone}</div>` : ""}
+          
+          <div class="divider"></div>
+          
+          <div class="text-lg bold" style="margin-bottom: 5px;">ENDEREÇO</div>
+          <div style="font-size: 14px; font-weight: bold; line-height: 1.5;">
+            ${customer?.address || (order.notes?.match(/Endereço: (.+)/) ? order.notes?.match(/Endereço: (.+)/)?.[1] : "Não informado")}
+          </div>
+          
+          <div class="divider"></div>
+          
+          <div class="bold" style="margin-bottom: 5px;">ITENS:</div>
+          ${itemsHtml}
+          
+          <div class="divider"></div>
+          
+          <div class="flex-between text-sm">
+            <span>Subtotal:</span>
+            <span>${this.currencyPipe.transform(subtotal, "BRL")}</span>
+          </div>
+          <div class="flex-between text-sm">
+            <span>Taxa de Entrega:</span>
+            <span>${this.currencyPipe.transform(deliveryCost, "BRL")}</span>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <div class="flex-between bold text-lg" style="margin-top: 5px;">
+            <span>TOTAL:</span>
+            <span>${this.currencyPipe.transform(total, "BRL")}</span>
+          </div>
+          
+          <div class="divider" style="margin-top: 20px;"></div>
+          <div class="bold center" style="margin-bottom: 30px;">ASSINATURA CLIENTE</div>
+          <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; margin-top: 30px;"></div>
+          
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+  async printRequisition(requisition: Requisition) {
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    if (!printWindow) {
+      this.notificationService.show(
+        "Por favor, habilite pop-ups para imprimir.",
+        "warning",
+      );
+      return;
+    }
+
+    const date = this.datePipe.transform(
+      requisition.created_at,
+      "dd/MM/yyyy HH:mm",
+    );
+    const processedDate = requisition.processed_at
+      ? this.datePipe.transform(requisition.processed_at, "dd/MM/yyyy HH:mm")
+      : "N/A";
     const identifier = `Requisição #${requisition.id.substring(0, 8).toUpperCase()}`;
-    
+
     printWindow.document.title = identifier;
 
-    const itemsHtml = (requisition.requisition_items || []).map(item => `
+    const itemsHtml = (requisition.requisition_items || [])
+      .map(
+        (item) => `
         <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.ingredients?.name || 'Item Desconhecido'}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${this.decimalPipe.transform(item.quantity_requested, '1.0-3')} ${item.unit}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${item.quantity_delivered !== null ? this.decimalPipe.transform(item.quantity_delivered, '1.0-3') + ' ' + item.unit : '-'}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.ingredients?.name || "Item Desconhecido"}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${this.decimalPipe.transform(item.quantity_requested, "1.0-3")} ${item.unit}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${item.quantity_delivered !== null ? this.decimalPipe.transform(item.quantity_delivered, "1.0-3") + " " + item.unit : "-"}</td>
         </tr>
-    `).join('');
+    `,
+      )
+      .join("");
 
     const statusMap: Record<string, string> = {
-      'PENDING': 'Pendente',
-      'APPROVED': 'Aprovada',
-      'REJECTED': 'Rejeitada',
-      'DELIVERED': 'Entregue',
-      'PARTIAL': 'Parcial'
+      PENDING: "Pendente",
+      APPROVED: "Aprovada",
+      REJECTED: "Rejeitada",
+      DELIVERED: "Entregue",
+      PARTIAL: "Parcial",
     };
 
     const statusText = statusMap[requisition.status] || requisition.status;
@@ -540,15 +742,15 @@ export class PrintingService {
             </div>
             <div class="info-item">
               <div class="info-label">Solicitante</div>
-              <div class="info-value">${requisition.requester?.name || 'N/A'}</div>
+              <div class="info-value">${requisition.requester?.name || "N/A"}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Estação Destino</div>
-              <div class="info-value">${requisition.stations?.name || 'N/A'}</div>
+              <div class="info-value">${requisition.stations?.name || "N/A"}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Processado Por</div>
-              <div class="info-value">${requisition.processor?.name || 'N/A'}</div>
+              <div class="info-value">${requisition.processor?.name || "N/A"}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Data de Processamento</div>
@@ -569,12 +771,16 @@ export class PrintingService {
             </tbody>
           </table>
 
-          ${requisition.notes ? `
+          ${
+            requisition.notes
+              ? `
           <div class="notes">
             <div class="notes-title">Observações:</div>
             <div>${requisition.notes}</div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
           <div style="margin-top: 50px; display: flex; justify-content: space-around;">
             <div style="text-align: center; width: 200px;">
@@ -593,7 +799,7 @@ export class PrintingService {
     printWindow.document.write(receiptHtml);
     printWindow.document.close();
     printWindow.focus();
-    
+
     setTimeout(() => {
       printWindow.print();
       printWindow.close();

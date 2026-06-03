@@ -275,7 +275,7 @@
 }
 @if (isAssignDriverModalOpen()) {
   <app-assign-driver-modal
-    [order]="orderToAssignDriver()!"
+    [orders]="ordersToAssignDriver()"
     (closeModal)="isAssignDriverModalOpen.set(false)"
     (driverAssigned)="handleDriverAssigned($event)">
   </app-assign-driver-modal>
