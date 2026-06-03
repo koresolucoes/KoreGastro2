@@ -149,29 +149,40 @@
         </div>
 
         <div class="border-t border-subtle border-dashed pt-6">
-          <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar Endereço Inteligente</label>
-          <div class="relative">
-            <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">location_searching</span>
-            <input 
-              type="text" 
-              [value]="addressSearchTerm()" 
-              (input)="onAddressSearchChange($event)"
-              placeholder="Digite rua, cep ou ponto de referência..." 
-              class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
-            @if (isSearchingAddress()) {
-              <div class="absolute right-4 top-1/2 -translate-y-1/2 animate-spin h-5 w-5 border-2 border-brand/40 border-t-brand rounded-full"></div>
-            }
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <div>
+                 <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar por CEP</label>
+                 <div class="relative">
+                   <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">map</span>
+                   <input type="text" (input)="searchCep($event)" placeholder="Digite o CEP (8 dígitos)" maxlength="9" class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                 </div>
+            </div>
+            <div>
+                 <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Buscar Endereço Inteligente</label>
+                  <div class="relative">
+                    <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-brand">location_searching</span>
+                    <input 
+                      type="text" 
+                      [value]="addressSearchTerm()" 
+                      (input)="onAddressSearchChange($event)"
+                      placeholder="rua, bairro, cidade..." 
+                      class="w-full bg-surface-elevated border border-brand/30 rounded-xl pl-12 pr-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+                    @if (isSearchingAddress()) {
+                      <div class="absolute right-4 top-1/2 -translate-y-1/2 animate-spin h-5 w-5 border-2 border-brand/40 border-t-brand rounded-full"></div>
+                    }
+                  </div>
+                  @if (addressSearchResults().length > 0) {
+                    <ul class="absolute bg-surface-elevated border border-subtle rounded-xl mt-2 max-h-48 overflow-y-auto w-full z-20 shadow-xl overflow-hidden">
+                      @for (result of addressSearchResults(); track result.place_id) {
+                        <li (click)="selectAddress(result)" class="px-4 py-3 border-b border-subtle last:border-0 text-sm text-title hover:bg-brand/10 hover:text-brand cursor-pointer transition-colors flex items-start gap-2">
+                          <span translate="no" class="notranslate material-symbols-outlined text-[16px] mt-0.5 opacity-70">location_on</span>
+                          {{ result.display_name }}
+                        </li>
+                      }
+                    </ul>
+                  }
+            </div>
           </div>
-          @if (addressSearchResults().length > 0) {
-            <ul class="bg-surface-elevated border border-subtle rounded-xl mt-2 max-h-48 overflow-y-auto z-10 shadow-xl overflow-hidden">
-              @for (result of addressSearchResults(); track result.place_id) {
-                <li (click)="selectAddress(result)" class="px-4 py-3 border-b border-subtle last:border-0 text-sm text-title hover:bg-brand/10 hover:text-brand cursor-pointer transition-colors flex items-start gap-2">
-                  <span translate="no" class="notranslate material-symbols-outlined text-[16px] mt-0.5 opacity-70">location_on</span>
-                  {{ result.display_name }}
-                </li>
-              }
-            </ul>
-          }
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-surface p-4 rounded-xl border border-subtle">

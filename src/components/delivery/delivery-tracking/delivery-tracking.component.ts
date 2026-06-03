@@ -4,6 +4,9 @@ import { DeliveryStateService } from '../../../services/delivery-state.service';
 import { SettingsStateService } from '../../../services/settings-state.service';
 import { DeliveryDriver } from '../../../models/db.models';
 import { supabase } from '../../../services/supabase-client';
+import { PosStateService } from '../../../services/pos-state.service';
+
+import 'leaflet.heat';
 
 declare var L: any; // Declare Leaflet
 
@@ -20,6 +23,7 @@ type DriverWithLocation = DeliveryDriver & { last_latitude: number; last_longitu
 export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
   private deliveryState = inject(DeliveryStateService);
   private settingsState = inject(SettingsStateService);
+  private posState = inject(PosStateService);
 
   @ViewChild('mapContainer') mapContainer!: ElementRef;
   private map: any;
@@ -29,6 +33,9 @@ export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
   
   isLoadingMap = signal(true);
   selectedDriverId = signal<string | null>(null);
+
+  showHeatmap = signal(false);
+  private heatLayer: any = null;
 
   drivers = computed(() => 
     this.deliveryState.deliveryDrivers()
@@ -173,5 +180,33 @@ export class DeliveryTrackingComponent implements AfterViewInit, OnDestroy {
     if (hours < 24) return `${hours}h atrás`;
     
     return date.toLocaleDateString('pt-BR');
+  }
+
+  toggleHeatmap(): void {
+    this.showHeatmap.update(v => !v);
+    
+    if (this.showHeatmap() && this.map) {
+      if (this.heatLayer) {
+        this.map.removeLayer(this.heatLayer);
+      }
+      
+      const orders = this.posState.openOrders().filter(o => o.order_type === 'External-Delivery');
+      // For a real app we would fetch the completed orders from deliveryDataService as well, 
+      // but for demonstration we'll just use customers data to show hotspots.
+      const customers = this.posState.customers();
+      
+      const heatPoints = customers
+        .filter(c => c.latitude && c.longitude)
+        .map(c => [c.latitude, c.longitude, 0.5]); // intensity 0.5
+        
+      if(heatPoints.length > 0) {
+        this.heatLayer = L.heatLayer(heatPoints, {radius: 25, blur: 15, maxZoom: 17}).addTo(this.map);
+      }
+    } else {
+      if (this.heatLayer && this.map) {
+        this.map.removeLayer(this.heatLayer);
+        this.heatLayer = null;
+      }
+    }
   }
 }

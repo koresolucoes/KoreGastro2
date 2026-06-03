@@ -1,9 +1,14 @@
 <div class="h-full flex flex-col md:flex-row gap-4 sm:gap-6 overflow-y-auto md:overflow-y-hidden pb-4 md:pb-0">
   <!-- Sidebar with Driver List -->
-  <div class="flex-none h-[40vh] md:h-full w-full md:w-64 chef-surface border border-subtle shadow-sm rounded-2xl p-5 flex flex-col">
-    <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-title mb-4 border-b border-subtle pb-3 flex items-center gap-2">
-      <span translate="no" class="notranslate material-symbols-outlined text-brand">group</span> Entregadores Ativos
-    </h2>
+  <div class="flex-none h-[40vh] md:h-full w-full md:w-64 chef-surface border border-subtle shadow-sm rounded-2xl p-5 flex flex-col relative">
+    <div class="flex justify-between items-center mb-4 border-b border-subtle pb-3">
+        <h2 class="text-[11px] font-black uppercase tracking-[0.1em] text-title flex items-center gap-2">
+        <span translate="no" class="notranslate material-symbols-outlined text-brand">group</span> Entregadores Ativos
+        </h2>
+        <button (click)="toggleHeatmap()" class="p-1.5 rounded-lg border border-subtle hover:bg-surface transition-all flex items-center justify-center group" [class.bg-brand]="showHeatmap()" [class.border-brand]="showHeatmap()">
+            <span translate="no" class="notranslate material-symbols-outlined text-[16px] group-hover:text-brand" [class.text-white]="showHeatmap()" [class.text-muted]="!showHeatmap()">local_fire_department</span>
+        </button>
+    </div>
     <div class="overflow-y-auto flex-1 custom-scrollbar pr-1">
       @if (drivers().length === 0) {
         <div class="flex flex-col items-center justify-center h-full opacity-40">

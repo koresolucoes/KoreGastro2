@@ -41,11 +41,14 @@ export class DeliveryComponent implements OnInit {
   orderModalState = signal<'new' | Order | null>(null);
   
   isAssignDriverModalOpen = signal(false);
-  orderToAssignDriver = signal<OrderWithDriver | null>(null);
+  ordersToAssignDriver = signal<OrderWithDriver[]>([]);
   
   isDetailsModalOpen = signal(false);
   selectedOrderForDetails = signal<OrderWithDriver | null>(null);
   
+  isBatchMode = signal(false);
+  selectedOrdersForBatch = signal<Set<string>>(new Set());
+
   todayDelivered = signal<OrderWithDriver[]>([]);
   
   deliveryOrders = computed<OrderWithDriver[]>(() => 
@@ -133,14 +136,38 @@ export class DeliveryComponent implements OnInit {
   }
 
   openAssignDriverModal(order: OrderWithDriver) {
-    this.orderToAssignDriver.set(order);
+    this.ordersToAssignDriver.set([order]);
     this.isAssignDriverModalOpen.set(true);
+  }
+
+  toggleBatchMode() {
+      this.isBatchMode.update(v => !v);
+      if(!this.isBatchMode()) {
+          this.selectedOrdersForBatch.set(new Set());
+      }
+  }
+
+  toggleOrderSelection(orderId: string) {
+      this.selectedOrdersForBatch.update(set => {
+          const newSet = new Set(set);
+          if(newSet.has(orderId)) newSet.delete(orderId);
+          else newSet.add(orderId);
+          return newSet;
+      });
+  }
+
+  openBatchAssignModal() {
+      if(this.selectedOrdersForBatch().size === 0) return;
+      
+      const ordersToAssign = this.prontoParaEnvio().filter(o => this.selectedOrdersForBatch().has(o.id));
+      this.ordersToAssignDriver.set(ordersToAssign);
+      this.isAssignDriverModalOpen.set(true);
   }
 
   async handleDriverAssigned(event: { driverId: string }) {
     this.isAssignDriverModalOpen.set(false);
-    const order = this.orderToAssignDriver();
-    if (!order) return;
+    const orders = this.ordersToAssignDriver();
+    if (!orders || orders.length === 0) return;
 
     const driver = this.deliveryState.deliveryDrivers().find(d => d.id === event.driverId);
     if (!driver) {
@@ -148,22 +175,33 @@ export class DeliveryComponent implements OnInit {
         return;
     }
 
-    const distance = order.delivery_distance_km ?? 0;
-    const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
+    // Process all orders in parallel or sequentially
+    let successCount = 0;
     
-    const { success, error } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
-
-    if (success) {
-      this.notificationService.show('Entregador atribuído e pedido movido para "Em Rota"!', 'success');
-      this.webhookService.triggerWebhook('delivery.status_updated', {
-        orderId: order.id,
-        status: 'OUT_FOR_DELIVERY',
-        driverId: event.driverId,
-        timestamp: new Date().toISOString(),
-        fullOrder: order
-      });
+    for(const order of orders) {
+        const distance = order.delivery_distance_km ?? 0;
+        const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
+        
+        const { success } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
+    
+        if (success) {
+          successCount++;
+          this.webhookService.triggerWebhook('delivery.status_updated', {
+            orderId: order.id,
+            status: 'OUT_FOR_DELIVERY',
+            driverId: event.driverId,
+            timestamp: new Date().toISOString(),
+            fullOrder: order
+          });
+        }
+    }
+    
+    if(successCount > 0) {
+        this.notificationService.show(`Atribuído(s) com sucesso e movido(s) para "Em Rota"!`, 'success');
+        this.selectedOrdersForBatch.set(new Set()); // clear batch selection
+        this.isBatchMode.set(false);
     } else {
-      this.notificationService.show(`Erro ao atribuir entregador: ${error?.message}`, 'error');
+        this.notificationService.show(`Erro ao atribuir entregador(es).`, 'error');
     }
   }
 

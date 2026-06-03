@@ -242,6 +242,41 @@ export class CustomersComponent {
     }, 500);
   }
 
+  async searchCep(event: Event) {
+    let cep = (event.target as HTMLInputElement).value;
+    cep = cep.replace(/\D/g, '');
+    
+    if (cep.length !== 8) return;
+
+    this.isSearchingAddress.set(true);
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+            const street = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
+            this.addressStreet.set(street);
+            // Search this constructed address in nominatim to plot on map
+            this.searchAddressForMap(street);
+        } else {
+            this.notificationService.show('CEP não encontrado.', 'error');
+        }
+    } catch(err) {
+        this.notificationService.show('Erro ao buscar CEP.', 'error');
+    } finally {
+        this.isSearchingAddress.set(false);
+    }
+  }
+
+  async searchAddressForMap(term: string) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&countrycodes=br&limit=1`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            this.selectAddress(data[0], false); 
+        }
+      } catch (e) {}
+  }
+
   async searchAddress(term: string) {
     try {
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&countrycodes=br&limit=5`);
@@ -256,16 +291,18 @@ export class CustomersComponent {
     }
   }
 
-  selectAddress(result: any) {
+  selectAddress(result: any, overrideStreet = true) {
     this.addressSearchTerm.set('');
     this.addressSearchResults.set([]);
     
     const lat = parseFloat(result.lat);
     const lon = parseFloat(result.lon);
 
-    this.addressStreet.set(result.display_name);
-    this.addressNumber.set('');
-    this.addressComplement.set('');
+    if(overrideStreet) {
+      this.addressStreet.set(result.display_name);
+      this.addressNumber.set('');
+      this.addressComplement.set('');
+    }
 
     this.customerForm.update(form => ({
         ...form,

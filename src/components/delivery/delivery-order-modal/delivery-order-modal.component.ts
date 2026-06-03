@@ -156,6 +156,33 @@ export class DeliveryOrderModalComponent {
     return distanceInMeters / 1000; // convert to KM
   }
 
+  isSearchingAddress = signal(false);
+
+  async searchCep(event: Event) {
+    let cep = (event.target as HTMLInputElement).value;
+    cep = cep.replace(/\D/g, '');
+    
+    if (cep.length !== 8) return;
+
+    this.isSearchingAddress.set(true);
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+            this.street.set(data.logradouro || '');
+            this.neighborhood.set(data.bairro || '');
+            this.city.set(`${data.localidade || ''} - ${data.uf || ''}`);
+            this.notificationService.show('Endereço encontrado!', 'success');
+        } else {
+            this.notificationService.show('CEP não encontrado.', 'error');
+        }
+    } catch(err) {
+        this.notificationService.show('Erro ao buscar CEP.', 'error');
+    } finally {
+        this.isSearchingAddress.set(false);
+    }
+  }
+
   handleCustomerSelected(customer: Customer) {
     this.selectedCustomer.set(customer);
     this.isCustomerSelectModalOpen.set(false);
