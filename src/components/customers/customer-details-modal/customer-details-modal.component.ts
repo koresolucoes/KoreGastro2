@@ -48,6 +48,10 @@ export class CustomerDetailsModalComponent {
           } else if (cust.address) {
               setTimeout(() => this.geocodeAddressAndInitMap(cust.address!), 0);
           }
+      } else if (tab === 'history') {
+          this.loadConsumptionHistory(cust.id);
+      } else if (tab === 'loyalty') {
+          this.loadLoyaltyHistory(cust.id);
       }
     }, { allowSignalWrites: true });
   }

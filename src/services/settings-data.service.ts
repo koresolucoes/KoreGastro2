@@ -311,7 +311,7 @@ export class SettingsDataService {
       .select('*, order_items(*)')
       .eq('user_id', userId)
       .eq('customer_id', customerId)
-      .eq('status', 'COMPLETED')
+      .in('status', ['COMPLETED', 'DELIVERED'])
       .order('completed_at', { ascending: false });
   }
 
