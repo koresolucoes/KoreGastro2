@@ -1,100 +1,192 @@
-<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="onClose()">
-  <div class="chef-surface rounded-2xl shadow-2xl w-full max-w-4xl border border-subtle flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
-    <div class="flex justify-between items-center p-5 border-b border-subtle bg-surface-elevated rounded-t-2xl">
+<div
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in"
+  (click)="onClose()"
+>
+  <div
+    class="chef-surface rounded-2xl shadow-2xl w-full max-w-4xl border border-subtle flex flex-col max-h-[90vh]"
+    (click)="$event.stopPropagation()"
+  >
+    <div
+      class="flex justify-between items-center p-5 border-b border-subtle bg-surface-elevated rounded-t-2xl"
+    >
       <h3 class="text-xl font-bold text-title flex items-center gap-2">
-        <span translate="no" class="notranslate material-symbols-outlined text-brand">call_split</span>
+        <span
+          translate="no"
+          class="notranslate material-symbols-outlined text-brand"
+          >call_split</span
+        >
         Dividir Pedido - Mesa {{ sourceTable()?.number }}
       </h3>
-      <button (click)="onClose()" class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors">
-        <span translate="no" class="notranslate material-symbols-outlined">close</span>
+      <button
+        (click)="onClose()"
+        class="p-2 rounded-xl text-muted hover-surface-elevated hover:text-title transition-colors"
+      >
+        <span translate="no" class="notranslate material-symbols-outlined"
+          >close</span
+        >
       </button>
     </div>
-    
+
     <div class="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
-        <!-- Esquerda: Itens -->
-        <div class="w-full md:w-1/2 p-4 md:p-6 overflow-y-auto border-b md:border-b-0 md:border-r border-subtle">
-            <h4 class="text-xs font-black uppercase tracking-wider text-muted mb-4">Quais itens deseja separar?</h4>
-            
-            <div class="space-y-2">
-                @for (item of orderItems(); track item.id) {
-                    <div class="flex items-center justify-between bg-surface-elevated border border-strong rounded-xl p-3 shadow-sm">
-                        <div class="flex flex-col flex-1 pr-2">
-                            <span class="font-bold text-sm text-title">
-                                <span class="text-brand mr-1">{{ item.quantity }}x</span> {{ item.name }}
-                            </span>
-                            @if(item.notes) {
-                                <span class="text-[10px] text-muted italic mt-1">{{ item.notes }}</span>
-                            }
-                        </div>
-                        
-                        <!-- Contador para transferir -->
-                        <div class="flex items-center gap-2 bg-surface border border-strong rounded-lg p-1">
-                            <button (click)="decrement(item)" [disabled]="!canDecrement(item)" class="w-8 h-8 flex items-center justify-center rounded bg-surface hover:bg-danger/10 text-danger disabled:opacity-30 disabled:hover:bg-surface transition-colors">
-                                <span translate="no" class="notranslate material-symbols-outlined text-sm font-bold">remove</span>
-                            </button>
-                            <span class="w-6 text-center font-black text-sm text-title">{{ getSplitQuantity(item.id) }}</span>
-                            <button (click)="increment(item)" [disabled]="!canIncrement(item)" class="w-8 h-8 flex items-center justify-center rounded bg-surface hover:bg-success/10 text-success disabled:opacity-30 disabled:hover:bg-surface transition-colors">
-                                <span translate="no" class="notranslate material-symbols-outlined text-sm font-bold">add</span>
-                            </button>
-                        </div>
-                    </div>
+      <!-- Esquerda: Itens -->
+      <div
+        class="w-full md:w-1/2 p-4 md:p-6 overflow-y-auto border-b md:border-b-0 md:border-r border-subtle"
+      >
+        <h4 class="text-xs font-black uppercase tracking-wider text-muted mb-4">
+          Quais itens deseja separar?
+        </h4>
+
+        <div class="space-y-2">
+          @for (item of orderItems(); track item.id) {
+            <div
+              class="flex items-center justify-between bg-surface-elevated border border-strong rounded-xl p-3 shadow-sm"
+            >
+              <div class="flex flex-col flex-1 pr-2">
+                <span class="font-bold text-sm text-title">
+                  <span class="text-brand mr-1">{{ item.quantity }}x</span>
+                  {{ item.name }}
+                </span>
+                @if (item.notes) {
+                  <span class="text-[10px] text-muted italic mt-1">{{
+                    item.notes
+                  }}</span>
                 }
-                
-                @if (orderItems().length === 0) {
-                    <div class="text-center p-6 text-muted font-bold">Nenhum item válido para divisão.</div>
-                }
+              </div>
+
+              <!-- Contador para transferir -->
+              <div
+                class="flex items-center gap-2 bg-surface border border-strong rounded-lg p-1"
+              >
+                <button
+                  (click)="decrement(item)"
+                  [disabled]="!canDecrement(item)"
+                  class="w-8 h-8 flex items-center justify-center rounded bg-surface hover:bg-danger/10 text-danger disabled:opacity-30 disabled:hover:bg-surface transition-colors"
+                >
+                  <span
+                    translate="no"
+                    class="notranslate material-symbols-outlined text-sm font-bold"
+                    >remove</span
+                  >
+                </button>
+                <span class="w-6 text-center font-black text-sm text-title">{{
+                  getSplitQuantity(item.id)
+                }}</span>
+                <button
+                  (click)="increment(item)"
+                  [disabled]="!canIncrement(item)"
+                  class="w-8 h-8 flex items-center justify-center rounded bg-surface hover:bg-success/10 text-success disabled:opacity-30 disabled:hover:bg-surface transition-colors"
+                >
+                  <span
+                    translate="no"
+                    class="notranslate material-symbols-outlined text-sm font-bold"
+                    >add</span
+                  >
+                </button>
+              </div>
             </div>
+          }
+
+          @if (orderItems().length === 0) {
+            <div class="text-center p-6 text-muted font-bold">
+              Nenhum item válido para divisão.
+            </div>
+          }
         </div>
-        
-        <!-- Direita: Destino -->
-        <div class="w-full md:w-1/2 p-4 md:p-6 overflow-y-auto bg-surface-elevated/30">
-            <h4 class="text-xs font-black uppercase tracking-wider text-muted mb-4">Para qual mesa?</h4>
-            
-            @if(availableTables().length > 0) {
-              <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-3">
-                  @for(table of availableTables(); track table.id) {
-                      <button (click)="selectDestination(table)" 
-                              [class.ring-2]="selectedDestination()?.id === table.id"
-                              [class.ring-brand]="selectedDestination()?.id === table.id"
-                              [class.bg-brand/10]="selectedDestination()?.id === table.id"
-                              
-                              [class.bg-success/10]="table.status === 'LIVRE' && selectedDestination()?.id !== table.id" 
-                              [class.border-success/30]="table.status === 'LIVRE'" 
-                              [class.text-success]="table.status === 'LIVRE' && selectedDestination()?.id !== table.id" 
-                              [class.hover:bg-success]="table.status === 'LIVRE' && selectedDestination()?.id !== table.id" 
-                              [class.hover:border-success]="table.status === 'LIVRE'" 
-                              
-                              [class.bg-warning/10]="table.status === 'OCUPADA' && selectedDestination()?.id !== table.id" 
-                              [class.border-warning/30]="table.status === 'OCUPADA'" 
-                              [class.text-warning]="table.status === 'OCUPADA' && selectedDestination()?.id !== table.id" 
-                              [class.hover:bg-warning]="table.status === 'OCUPADA' && selectedDestination()?.id !== table.id" 
-                              [class.hover:border-warning]="table.status === 'OCUPADA'" 
-                              
-                              class="font-black text-lg p-2 pb-3 rounded-xl border-2 hover:text-white transition-all shadow-sm relative overflow-hidden group">
-                          <span class="relative z-10">{{ table.number }}</span>
-                          <div class="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform rounded-xl rounded-2xl"></div>
-                          @if(table.status === 'OCUPADA') {
-                            <div class="text-[8px] uppercase tracking-tighter mt-1 absolute bottom-0.5 w-full text-center left-0 opacity-80">Mesclar</div>
-                          }
-                      </button>
-                  }
-              </div>
-            } @else {
-              <div class="text-center bg-surface-elevated rounded-xl p-8 border border-strong flex flex-col items-center justify-center gap-3">
-                 <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted opacity-50">block</span>
-                 <p class="text-muted font-bold">Nenhuma mesa disponível para transferência.</p>
-              </div>
+      </div>
+
+      <!-- Direita: Destino -->
+      <div
+        class="w-full md:w-1/2 p-4 md:p-6 overflow-y-auto bg-surface-elevated/30"
+      >
+        <h4 class="text-xs font-black uppercase tracking-wider text-muted mb-4">
+          Para qual mesa?
+        </h4>
+
+        @if (availableTables().length > 0) {
+          <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-3">
+            @for (table of availableTables(); track table.id) {
+              <button
+                (click)="selectDestination(table)"
+                [class.ring-2]="selectedDestination()?.id === table.id"
+                [class.ring-brand]="selectedDestination()?.id === table.id"
+                [class.bg-brand/10]="selectedDestination()?.id === table.id"
+                [class.bg-success/10]="
+                  table.status === 'LIVRE' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.border-success/30]="table.status === 'LIVRE'"
+                [class.text-success]="
+                  table.status === 'LIVRE' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.hover:bg-success]="
+                  table.status === 'LIVRE' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.hover:border-success]="table.status === 'LIVRE'"
+                [class.bg-warning/10]="
+                  table.status === 'OCUPADA' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.border-warning/30]="table.status === 'OCUPADA'"
+                [class.text-warning]="
+                  table.status === 'OCUPADA' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.hover:bg-warning]="
+                  table.status === 'OCUPADA' &&
+                  selectedDestination()?.id !== table.id
+                "
+                [class.hover:border-warning]="table.status === 'OCUPADA'"
+                class="font-black text-lg p-2 pb-3 rounded-xl border-2 hover:text-white transition-all shadow-sm relative overflow-hidden group"
+              >
+                <span class="relative z-10">{{ table.number }}</span>
+                <div
+                  class="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform rounded-xl rounded-2xl"
+                ></div>
+                @if (table.status === "OCUPADA") {
+                  <div
+                    class="text-[8px] uppercase tracking-tighter mt-1 absolute bottom-0.5 w-full text-center left-0 opacity-80"
+                  >
+                    Mesclar
+                  </div>
+                }
+              </button>
             }
-        </div>
+          </div>
+        } @else {
+          <div
+            class="text-center bg-surface-elevated rounded-xl p-8 border border-strong flex flex-col items-center justify-center gap-3"
+          >
+            <span
+              translate="no"
+              class="notranslate material-symbols-outlined text-5xl text-muted opacity-50"
+              >block</span
+            >
+            <p class="text-muted font-bold">
+              Nenhuma mesa disponível para transferência.
+            </p>
+          </div>
+        }
+      </div>
     </div>
-    
-    <div class="p-4 border-t border-subtle bg-surface-elevated rounded-b-2xl flex justify-end gap-3">
-        <button (click)="onClose()" class="px-6 py-2.5 rounded-xl font-bold text-title bg-surface border border-subtle hover:bg-surface-elevated transition-colors shadow-sm focus:outline-none">
-            Cancelar
-        </button>
-        <button (click)="onConfirm()" [disabled]="!canConfirm()" class="px-6 py-2.5 rounded-xl font-black uppercase tracking-wider text-sm text-white bg-brand border border-brand hover:bg-brand-hover transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed focus:outline-none flex items-center gap-2">
-            Confirmar Divisão
-        </button>
+
+    <div
+      class="p-4 border-t border-subtle bg-surface-elevated rounded-b-2xl flex justify-end gap-3"
+    >
+      <button
+        (click)="onClose()"
+        class="px-6 py-2.5 rounded-xl font-bold text-title bg-surface border border-subtle hover:bg-surface-elevated transition-colors shadow-sm focus:outline-none"
+      >
+        Cancelar
+      </button>
+      <button
+        (click)="onConfirm()"
+        [disabled]="!canConfirm()"
+        class="px-6 py-2.5 rounded-xl font-black uppercase tracking-wider text-sm text-white bg-brand border border-brand hover:bg-brand-hover transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed focus:outline-none flex items-center gap-2"
+      >
+        Confirmar Divisão
+      </button>
     </div>
   </div>
 </div>
