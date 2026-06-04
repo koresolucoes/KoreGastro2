@@ -111,21 +111,80 @@
                   [class.hover:text-title]="viewMode() !== 'delivery'">📦 DELIVERY & IFOOD</button>
         </div>
 
-        <!-- Station Selector -->
+        <!-- Station Selector Dropdown -->
         @if(viewMode() === 'station' || viewMode() === 'production') {
-          <div class="shrink-0 flex flex-nowrap gap-0.5 md:gap-1 bg-surface/80 backdrop-blur-md p-1 md:p-1.5 rounded-lg md:rounded-2xl border border-strong shadow-inner">
-            @for (station of stations(); track station.id) {
-              <button (click)="selectStation(station)" 
-                      class="px-2.5 md:px-5 py-1 md:py-2.5 text-[9px] md:text-sm whitespace-nowrap font-black rounded-md md:rounded-xl transition-all border" 
-                      [class.bg-brand/10]="selectedStation()?.id === station.id" 
-                      [class.text-brand]="selectedStation()?.id === station.id" 
-                      [class.border-brand/30]="selectedStation()?.id === station.id"
-                      [class.bg-transparent]="selectedStation()?.id !== station.id"
-                      [class.text-muted]="selectedStation()?.id !== station.id"
-                      [class.border-transparent]="selectedStation()?.id !== station.id"
-                      [class.hover:text-title]="selectedStation()?.id !== station.id">
-                {{ station.name }}
+          <div class="relative shrink-0 font-sans" (click)="$event.stopPropagation()">
+            <!-- Current Station Switcher Trigger -->
+            <div class="flex items-center gap-1.5 bg-surface/80 backdrop-blur-md p-1 rounded-lg md:rounded-2xl border border-strong shadow-inner select-none">
+              <button (click)="isStationDropdownOpen.set(!isStationDropdownOpen())" 
+                      class="flex items-center gap-2 px-3 md:px-5 py-1.5 md:py-2 bg-brand text-white hover:brightness-110 rounded-md md:rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm">
+                <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-lg">soup_kitchen</span>
+                <span>{{ selectedStation()?.name || 'Selecione Estação' }}</span>
+                @if ((stationActiveCounts().get(selectedStation()?.id || '') || 0) > 0) {
+                  <span class="ml-1 bg-white text-brand rounded-full px-1.5 py-0.5 text-[8px] md:text-[10px] font-black min-w-[16px] md:min-w-[20px] text-center shadow-sm">
+                    {{ stationActiveCounts().get(selectedStation()?.id || '') }}
+                  </span>
+                }
+                <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-lg transition-transform duration-200 animate-pulse" [class.rotate-180]="isStationDropdownOpen()">expand_more</span>
               </button>
+              
+              <button (click)="isStationSelectionModalOpen.set(true)" 
+                      class="p-1 px-2 md:p-2 text-muted hover:text-brand bg-transparent hover:bg-brand/10 rounded-md md:rounded-xl transition-all" 
+                      title="Ver painel de todas as estações">
+                <span translate="no" class="notranslate material-symbols-outlined text-[16px] md:text-xl">grid_view</span>
+              </button>
+            </div>
+            
+            <!-- Dropdown Options -->
+            @if (isStationDropdownOpen()) {
+              <div class="absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-surface border border-subtle py-1.5 z-50 animate-in fade-in slide-in-from-top-2 overflow-hidden">
+                <div class="px-4 py-2 border-b border-subtle bg-surface-elevated/40 flex justify-between items-center shrink-0">
+                  <span class="text-[10px] font-black text-muted uppercase tracking-widest">Estações de Preparo</span>
+                  <button (click)="isStationSelectionModalOpen.set(true); isStationDropdownOpen.set(false)" class="text-[9px] font-black text-brand uppercase hover:underline flex items-center gap-1">
+                    <span translate="no" class="notranslate material-symbols-outlined text-xs">grid_view</span> Ver Todas
+                  </button>
+                </div>
+                <div class="max-h-[300px] overflow-y-auto custom-scrollbar">
+                  @for (station of stations(); track station.id) {
+                    <button (click)="selectStation(station); isStationDropdownOpen.set(false)" 
+                            class="w-full flex items-center justify-between px-4 py-3 text-sm text-left hover:bg-surface-elevated transition-all group border-b border-subtle/30 last:border-0"
+                            [class.text-brand]="selectedStation()?.id === station.id"
+                            [class.font-black]="selectedStation()?.id === station.id"
+                            [class.bg-brand/5]="selectedStation()?.id === station.id">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black transition-colors"
+                             [class.bg-brand/10]="selectedStation()?.id === station.id"
+                             [class.text-brand]="selectedStation()?.id === station.id"
+                             [class.bg-surface-elevated]="selectedStation()?.id !== station.id"
+                             [class.text-muted]="selectedStation()?.id !== station.id"
+                             [class.group-hover:bg-brand/20]="selectedStation()?.id !== station.id"
+                             [class.group-hover:text-brand]="selectedStation()?.id !== station.id">
+                          {{ station.name.substring(0, 2).toUpperCase() }}
+                        </div>
+                        <div class="flex flex-col">
+                          <span class="font-bold text-title group-hover:text-brand transition-colors text-sm" [class.text-brand]="selectedStation()?.id === station.id">{{ station.name }}</span>
+                          @if (station.employees?.name) {
+                            <span class="text-[10px] text-muted flex items-center gap-1 mt-0.5">
+                              <span translate="no" class="notranslate material-symbols-outlined text-[12px]">person</span> {{ station.employees?.name }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center gap-2">
+                        @if ((stationActiveCounts().get(station.id) || 0) > 0) {
+                          <span class="bg-brand/10 text-brand text-[10px] font-extrabold rounded-full px-2 py-0.5 shadow-sm">
+                            {{ stationActiveCounts().get(station.id) }} items
+                          </span>
+                        }
+                        @if (selectedStation()?.id === station.id) {
+                          <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg font-bold">check_circle</span>
+                        }
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
             }
           </div>
         }
@@ -1558,4 +1617,94 @@
     [isLoading]="isLoadingTracking()"
     (closeModal)="closeIfoodTrackingModal()">
   </app-ifood-tracking-modal>
+}
+
+<!-- Large Stations Selection Modal -->
+@if(isStationSelectionModalOpen()) {
+  <div class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300 animate-out fade-out" (click)="isStationSelectionModalOpen.set(false)">
+    <div class="bg-surface-elevated rounded-[2.5rem] border border-strong shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 font-sans" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="p-6 md:p-8 border-b border-subtle bg-surface/50 flex justify-between items-center shrink-0">
+         <div class="flex items-center gap-4">
+             <div class="w-12 h-12 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center">
+                 <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl animate-spin" style="animation-duration: 3s">apps</span>
+             </div>
+             <div>
+                 <h3 class="text-2xl font-black text-title uppercase tracking-wider">Painel de Estações</h3>
+                 <p class="text-sm text-muted font-bold uppercase tracking-widest mt-0.5">Selecione uma estação ativa para monitoramento</p>
+             </div>
+         </div>
+         <button (click)="isStationSelectionModalOpen.set(false)" class="w-10 h-10 rounded-xl bg-surface hover:bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title transition-all shadow-sm active:scale-95">
+             <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+         </button>
+      </div>
+
+      <!-- Main Body - Grid of Station Cards -->
+      <div class="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar bg-surface/20">
+         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            @for (station of stations(); track station.id) {
+               <div (click)="selectStation(station); isStationSelectionModalOpen.set(false)"
+                    class="chef-surface cursor-pointer rounded-3xl p-6 border-2 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between h-48 select-none"
+                    [class.border-brand]="selectedStation()?.id === station.id"
+                    [class.bg-brand/5]="selectedStation()?.id === station.id"
+                    [class.border-strong]="selectedStation()?.id !== station.id"
+                    [class.hover:border-brand/40]="selectedStation()?.id !== station.id">
+                  
+                  <!-- Top Row -->
+                  <div class="flex justify-between items-start">
+                     <div class="w-12 h-12 rounded-2xl bg-surface-elevated border border-strong flex items-center justify-center font-black text-title group-hover:text-brand group-hover:bg-brand/10 group-hover:border-brand/20 transition-all text-lg">
+                        {{ station.name.substring(0, 2).toUpperCase() }}
+                     </div>
+                     
+                     <div class="flex items-center gap-2">
+                        @if ((stationActiveCounts().get(station.id) || 0) > 0) {
+                          <span class="bg-brand/10 border border-brand/20 text-brand text-xs font-black rounded-xl px-3 py-1 animate-pulse">
+                            {{ stationActiveCounts().get(station.id) }} pendentes
+                          </span>
+                        } @else {
+                          <span class="bg-surface border border-subtle text-muted text-[10px] font-black uppercase tracking-wider rounded-xl px-2.5 py-1">
+                            Vazia
+                          </span>
+                        }
+                        
+                        @if (selectedStation()?.id === station.id) {
+                          <span translate="no" class="notranslate material-symbols-outlined text-brand font-bold text-2xl">check_circle</span>
+                        }
+                     </div>
+                  </div>
+
+                  <!-- Details -->
+                  <div class="mt-4">
+                     <h4 class="text-xl font-black text-title group-hover:text-brand transition-colors tracking-tight">{{ station.name }}</h4>
+                     <div class="flex items-center gap-2 mt-2">
+                        <!-- Employee Info -->
+                        @if (station.employees; as employee) {
+                          <div class="flex items-center gap-1.5 bg-brand/5 border border-brand/10 px-2.5 py-1 rounded-xl">
+                            <span translate="no" class="notranslate material-symbols-outlined text-brand text-xs">person</span>
+                            <span class="text-xs font-bold text-brand leading-none">{{ employee.name }}</span>
+                          </div>
+                        } @else {
+                          <div class="flex items-center gap-1.5 bg-surface-elevated border border-subtle px-2.5 py-1 rounded-xl">
+                            <span translate="no" class="notranslate material-symbols-outlined text-muted text-xs">person_off</span>
+                            <span class="text-xs font-bold text-muted leading-none">Sem responsável</span>
+                          </div>
+                        }
+                     </div>
+                  </div>
+                  
+                  <!-- Accent overlay -->
+                  <div class="absolute bottom-0 right-0 w-24 h-24 bg-brand/5 rounded-full blur-2xl group-hover:bg-brand/10 transition-all"></div>
+               </div>
+            }
+         </div>
+         
+         <div class="text-center mt-12 mb-4 p-6 border border-subtle bg-surface-elevated/40 rounded-3xl max-w-xl mx-auto">
+            <p class="text-sm text-muted font-bold flex items-center justify-center gap-2">
+                <span translate="no" class="notranslate material-symbols-outlined text-brand">info</span>
+                Cada tela de iPad/KDS na cozinha pode focar numa única estação ou usar este painel para alternar entre elas em momentos de alto volume.
+            </p>
+         </div>
+      </div>
+    </div>
+  </div>
 }

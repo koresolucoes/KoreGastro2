@@ -186,6 +186,21 @@ export class KdsComponent implements OnInit, OnDestroy {
     // Views can be Kitchen-stations, Production aggregate, Expo, or Unified Delivery & iFood!
     viewMode = signal<'station' | 'expo' | 'production' | 'delivery'>('station');
     selectedStation = signal<Station | null>(null);
+    isStationDropdownOpen = signal(false);
+    isStationSelectionModalOpen = signal(false);
+
+    stationActiveCounts = computed(() => {
+        const counts = new Map<string, number>();
+        const activeItems = this.allKdsItemsProcessed().filter(item => 
+          item.status === 'PENDENTE' || item.status === 'EM_PREPARO'
+        );
+        for (const item of activeItems) {
+            if (item.station_id) {
+                counts.set(item.station_id, (counts.get(item.station_id) || 0) + 1);
+            }
+        }
+        return counts;
+    });
 
     private timerInterval: ReturnType<typeof setInterval> | undefined;
     currentTime = signal(Date.now());
