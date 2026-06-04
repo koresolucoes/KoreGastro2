@@ -568,6 +568,8 @@ export class PaymentModalComponent {
 
     const itemsText = order.order_items.map(item => `${item.quantity}x ${item.name} - ${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('\n');
     
+    const subtotalValue = this.displaySubtotal();
+    const tipValue = this.displayTipAmount();
     const totalValue = this.displayTotal();
     const storeName = this.unitContextService.activeUnitName() || 'ChefOS';
 
@@ -586,12 +588,19 @@ export class PaymentModalComponent {
       paymentText = `\n*PAGAMENTO:*\n${formattedMethods}\n`;
     }
 
+    let summaryText = ``;
+    if (tipValue > 0) {
+        summaryText += `Subtotal: ${subtotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+        summaryText += `Taxa de Serviço: ${tipValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+    }
+    summaryText += `*TOTAL: ${totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
+
     const rawMessage = `*RESUMO DO PEDIDO - ${storeName}*\n\n` +
                     `Pedido: #${order.id.slice(-6).toUpperCase()}\n` +
                     (order.command_number ? `Comanda: #${order.command_number}\n` : '') +
                     `Data: ${new Date(order.timestamp).toLocaleString('pt-BR')}\n\n` +
                     `*ITENS:*\n${itemsText}\n\n` +
-                    `*TOTAL: ${totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n` +
+                    `${summaryText}` +
                     `${paymentText}\n` +
                     `Obrigado pela preferência!`;
 
