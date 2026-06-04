@@ -872,16 +872,19 @@ export class CashierDataService {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
+    // Helper to format date in YYYY-MM-DD using local time
+    const localDateString = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    
     for (let i = 0; i <= diffDays; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        if (date > endDate) break; 
-        const dateString = date.toISOString().split('T')[0];
+        if (date > endDate && i > 0) break; 
+        const dateString = localDateString(date);
         dailyData.set(dateString, { sales: 0, cogs: 0 });
     }
 
     for (const t of transactionsRes.data || []) {
-        const dateString = new Date(t.date).toISOString().split('T')[0];
+        const dateString = localDateString(new Date(t.date));
         if (dailyData.has(dateString)) {
             dailyData.get(dateString)!.sales += t.amount;
         }
@@ -889,7 +892,7 @@ export class CashierDataService {
     
     for (const o of ordersRes.data || []) {
         if (!o.completed_at) continue;
-        const dateString = new Date(o.completed_at).toISOString().split('T')[0];
+        const dateString = localDateString(new Date(o.completed_at));
         if (dailyData.has(dateString)) {
              const orderCogs = o.order_items.reduce((sum: number, item: any) => {
                 if (item.status === 'CANCELADO') return sum;

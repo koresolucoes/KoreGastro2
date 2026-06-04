@@ -8244,3 +8244,588 @@ ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS r
 ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS custom_name text;
 ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS additional_price numeric DEFAULT 0 NOT NULL;
 ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+
+-- --- APPENDED SCHEMAS ---
+
+
+
+-- FILE: create_menu_tables.sql
+
+-- Execute the following in the Supabase SQL Editor
+
+CREATE TABLE IF NOT EXISTS public.menus (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    name text NOT NULL,
+    description text,
+    is_active boolean DEFAULT true NOT NULL,
+    type text DEFAULT 'online' NOT NULL,
+    availability_hours jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- Ensure menu_categories has proper fields
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS menu_id uuid;
+ALTER TABLE IF EXISTS public.menu_categories ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.menu_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_id uuid,
+    name text NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.menu_items (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_category_id uuid,
+    recipe_id uuid,
+    custom_name text,
+    custom_description text,
+    custom_price numeric,
+    custom_image_url text,
+    display_order integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.menu_item_option_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_item_id uuid,
+    name text NOT NULL,
+    min_choices integer DEFAULT 0 NOT NULL,
+    max_choices integer DEFAULT 1 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.menu_item_option_choices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_item_option_id uuid,
+    recipe_id uuid,
+    custom_name text,
+    additional_price numeric DEFAULT 0 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- ADD FOREIGN KEYS
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_categories_menu_id_fkey') THEN
+        ALTER TABLE public.menu_categories ADD CONSTRAINT menu_categories_menu_id_fkey FOREIGN KEY (menu_id) REFERENCES public.menus(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_items_menu_category_id_fkey') THEN
+        ALTER TABLE public.menu_items ADD CONSTRAINT menu_items_menu_category_id_fkey FOREIGN KEY (menu_category_id) REFERENCES public.menu_categories(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_items_recipe_id_fkey') THEN
+        ALTER TABLE public.menu_items ADD CONSTRAINT menu_items_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES public.recipes(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_item_option_groups_menu_item_id_fkey') THEN
+        ALTER TABLE public.menu_item_option_groups ADD CONSTRAINT menu_item_option_groups_menu_item_id_fkey FOREIGN KEY (menu_item_id) REFERENCES public.menu_items(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_item_option_choices_menu_item_option_id_fkey') THEN
+        ALTER TABLE public.menu_item_option_choices ADD CONSTRAINT menu_item_option_choices_menu_item_option_id_fkey FOREIGN KEY (menu_item_option_id) REFERENCES public.menu_item_option_groups(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'menu_item_option_choices_recipe_id_fkey') THEN
+        ALTER TABLE public.menu_item_option_choices ADD CONSTRAINT menu_item_option_choices_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES public.recipes(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+-- ENABLE RLS (Row Level Security) and Policies
+ALTER TABLE public.menus ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menus;
+CREATE POLICY "Enable all based on user_id" ON public.menus FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_categories;
+CREATE POLICY "Enable all based on user_id" ON public.menu_categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_items;
+CREATE POLICY "Enable all based on user_id" ON public.menu_items FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_item_option_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_item_option_groups;
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_groups FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_item_option_choices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_item_option_choices;
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_choices FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Also allow reads for unauthenticated users if it's meant to be a public facing menu:
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menus;
+CREATE POLICY "Enable read access for all users" ON public.menus FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_categories;
+CREATE POLICY "Enable read access for all users" ON public.menu_categories FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_items;
+CREATE POLICY "Enable read access for all users" ON public.menu_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_item_option_groups;
+CREATE POLICY "Enable read access for all users" ON public.menu_item_option_groups FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_item_option_choices;
+CREATE POLICY "Enable read access for all users" ON public.menu_item_option_choices FOR SELECT USING (true);
+
+
+-- FILE: payment_terminals_schema.sql
+
+-- SQL para criar a tabela de terminais de pagamento (Maquininhas) no Supabase
+
+CREATE TABLE IF NOT EXISTS public.payment_terminals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    provider TEXT NOT NULL CHECK (provider IN ('cielo_lio', 'stone', 'pagseguro', 'mercado_pago')),
+    identifier TEXT NOT NULL,
+    credentials JSONB DEFAULT '{}'::jsonb,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Habilitar RLS (Row Level Security)
+ALTER TABLE public.payment_terminals ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de Segurança (Exemplo: permitir que usuários autenticados leiam e modifiquem)
+CREATE POLICY "Permitir leitura de terminais para usuários autenticados" 
+    ON public.payment_terminals 
+    FOR SELECT 
+    TO authenticated 
+    USING (true);
+
+CREATE POLICY "Permitir inserção de terminais para administradores" 
+    ON public.payment_terminals 
+    FOR INSERT 
+    TO authenticated 
+    WITH CHECK (true); -- Adicione sua lógica de admin aqui se necessário
+
+CREATE POLICY "Permitir atualização de terminais para administradores" 
+    ON public.payment_terminals 
+    FOR UPDATE
+    TO authenticated 
+    USING (true);
+
+CREATE POLICY "Permitir deleção de terminais para administradores" 
+    ON public.payment_terminals 
+    FOR DELETE
+    TO authenticated 
+    USING (true);
+
+-- Trigger para atualizar o updated_at automaticamente
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_updated_at ON public.payment_terminals;
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.payment_terminals
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+-- Comentários da tabela e colunas (opcional mas recomendado)
+COMMENT ON TABLE public.payment_terminals IS 'Armazena a configuração das maquininhas de cartão físicas integradas (ex: Cielo LIO).';
+COMMENT ON COLUMN public.payment_terminals.name IS 'Nome amigável da máquina (ex: Caixa Principal).';
+COMMENT ON COLUMN public.payment_terminals.provider IS 'Fornecedor da máquina (ex: cielo_lio).';
+COMMENT ON COLUMN public.payment_terminals.identifier IS 'Identificador único na plataforma do fornecedor (ex: Número Lógico ou Device ID).';
+COMMENT ON COLUMN public.payment_terminals.credentials IS 'Credenciais de API necessárias para comunicar com este terminal (ex: Client-Id, Access-Token).';
+
+
+-- FILE: payment_terminals_schema_fix.sql
+
+-- Adicionar user_id à tabela payment_terminals
+ALTER TABLE public.payment_terminals
+ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+
+-- Limpar dados se necessário ou atualizar para o user_id atual se quiser no banco (manualmente)
+-- Para desenvolvimento podemos apenas dropar e recriar.
+-- Mas adicionar a coluna já deve servir:
+
+-- Atualizar RLS para filtar pelo user_id corretamente (SEGURANÇA RECOMENDADA)
+DROP POLICY IF EXISTS "Permitir leitura de terminais para usuários autenticados" ON public.payment_terminals;
+CREATE POLICY "Permitir leitura de terminais para usuários do tenant" 
+    ON public.payment_terminals 
+    FOR SELECT 
+    TO authenticated 
+    USING (user_id = auth.uid() OR user_id IN (SELECT user_id FROM employees WHERE id::text = auth.uid()::text));
+    
+DROP POLICY IF EXISTS "Permitir inserção de terminais para administradores" ON public.payment_terminals;
+CREATE POLICY "Permitir inserção de terminais para dono" 
+    ON public.payment_terminals 
+    FOR INSERT 
+    TO authenticated 
+    WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Permitir atualização de terminais para administradores" ON public.payment_terminals;
+CREATE POLICY "Permitir atualização de terminais para dono" 
+    ON public.payment_terminals 
+    FOR UPDATE
+    TO authenticated 
+    USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Permitir deleção de terminais para administradores" ON public.payment_terminals;
+CREATE POLICY "Permitir deleção de terminais para dono" 
+    ON public.payment_terminals 
+    FOR DELETE
+    TO authenticated 
+    USING (user_id = auth.uid());
+
+
+-- FILE: supabase_rpc_customers.sql
+
+CREATE OR REPLACE FUNCTION public.register_menu_customer(p_store_id uuid, p_name text, p_phone text, p_cpf text, p_password text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_customer_id UUID;
+    v_existing_cpf UUID;
+BEGIN
+    SELECT id INTO v_existing_cpf FROM public.customers 
+    WHERE user_id = p_store_id AND (cpf = p_cpf OR phone = p_phone) LIMIT 1;
+    
+    IF FOUND THEN
+        RETURN json_build_object('success', false, 'message', 'CPF ou Telefone já cadastrado nesta loja.');
+    END IF;
+
+    INSERT INTO public.customers (user_id, name, phone, cpf, password_hash)
+    VALUES (p_store_id, p_name, p_phone, p_cpf, crypt(p_password, gen_salt('bf')))
+    RETURNING id INTO v_customer_id;
+
+    RETURN json_build_object('success', true, 'customer', json_build_object(
+        'id', v_customer_id,
+        'name', p_name,
+        'phone', p_phone,
+        'cpf', p_cpf,
+        'loyalty_points', 0
+    ));
+EXCEPTION WHEN OTHERS THEN
+    RETURN json_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.authenticate_menu_customer(p_store_id uuid, p_cpf text, p_password text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_customer RECORD;
+BEGIN
+    SELECT * INTO v_customer 
+    FROM public.customers 
+    WHERE user_id = p_store_id AND cpf = p_cpf
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RETURN json_build_object('success', false, 'message', 'Cliente não cadastrado.');
+    END IF;
+
+    IF v_customer.password_hash IS NULL OR v_customer.password_hash = crypt(p_password, v_customer.password_hash) THEN
+        RETURN json_build_object('success', true, 'customer', json_build_object(
+            'id', v_customer.id,
+            'name', v_customer.name,
+            'phone', v_customer.phone,
+            'cpf', v_customer.cpf,
+            'loyalty_points', v_customer.loyalty_points
+        ));
+    END IF;
+
+    RETURN json_build_object('success', false, 'message', 'Senha incorreta.');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_menu_customer_history(p_store_id uuid, p_customer_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_result JSON;
+BEGIN
+    SELECT json_agg(
+        json_build_object(
+            'id', id,
+            'created_at', timestamp,
+            'status', status,
+            'total', COALESCE((SELECT SUM(price * quantity) FROM public.order_items WHERE order_id = orders.id), 0)
+        ) ORDER BY timestamp DESC
+    ) INTO v_result
+    FROM public.orders
+    WHERE user_id = p_store_id AND customer_id = p_customer_id;
+    
+    RETURN json_build_object('success', true, 'orders', COALESCE(v_result, '[]'::json));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_menu_customer_profile(p_store_id uuid, p_customer_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_customer RECORD;
+BEGIN
+    SELECT * INTO v_customer 
+    FROM public.customers 
+    WHERE user_id = p_store_id AND id = p_customer_id
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RETURN json_build_object('success', false, 'message', 'Cliente não encontrado.');
+    END IF;
+
+    RETURN json_build_object('success', true, 'customer', json_build_object(
+        'id', v_customer.id,
+        'name', v_customer.name,
+        'phone', v_customer.phone,
+        'cpf', v_customer.cpf,
+        'loyalty_points', v_customer.loyalty_points
+    ));
+END;
+$$;
+EOF
+
+
+-- FILE: system_logs.sql
+
+-- Execute este script no SQL Editor do Supabase para criar a tabela de logs imutáveis e configurar a segurança.
+
+-- 1. Criar a tabela system_logs
+CREATE TABLE public.system_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
+    employee_id UUID REFERENCES public.employees(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    details TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 2. Habilitar RLS (Row Level Security)
+ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
+
+-- 3. Política para Inserir (Insert): Apenas usuários autenticados da loja podem inserir logs
+CREATE POLICY "Users can insert their own system logs"
+    ON public.system_logs
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- 4. Política para Ler (Select): Apenas usuários autenticados da loja podem ler
+CREATE POLICY "Users can view their own system logs"
+    ON public.system_logs
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+-- IMPORTANTE: Não há políticas para UPDATE ou DELETE. 
+-- Isso torna a tabela imutável para usuários e aplicações comuns via API do Supabase!
+
+
+-- FILE: update_menu_tables.sql
+
+
+-- Ensure all columns exist in menus
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS type text DEFAULT 'online' NOT NULL;
+ALTER TABLE IF EXISTS public.menus ADD COLUMN IF NOT EXISTS availability_hours jsonb;
+
+-- Ensure all columns exist in menu_items
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS menu_category_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_description text;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_price numeric;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS custom_image_url text;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+
+-- Reload schema cache
+NOTIFY pgrst, reload_schema;
+
+-- Ensure all columns exist in menu_item_option_groups
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS menu_item_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS min_choices integer DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS max_choices integer DEFAULT 1 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_groups ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+-- Ensure all columns exist in menu_item_option_choices
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS menu_item_option_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS additional_price numeric DEFAULT 0 NOT NULL;
+ALTER TABLE IF EXISTS public.menu_item_option_choices ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+-- Force schema reload for PostgREST cache
+NOTIFY pgrst, reload_schema;
+
+
+-- FILE: app/applet/fix_menu_tables.sql
+
+-- Fix script for Menu tables
+
+-- 1. Create or update menus
+CREATE TABLE IF NOT EXISTS public.menus (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    name text NOT NULL,
+    description text,
+    is_active boolean DEFAULT true NOT NULL,
+    type text DEFAULT 'online' NOT NULL,
+    availability_hours jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- Ensure required columns on menus
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS type text DEFAULT 'online' NOT NULL;
+ALTER TABLE public.menus ADD COLUMN IF NOT EXISTS availability_hours jsonb;
+
+-- 2. Create or update menu_categories
+CREATE TABLE IF NOT EXISTS public.menu_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_id uuid,
+    name text NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- Ensure required columns on menu_categories
+ALTER TABLE public.menu_categories ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.menu_categories ADD COLUMN IF NOT EXISTS menu_id uuid;
+ALTER TABLE public.menu_categories ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+-- 3. Create or update menu_items
+CREATE TABLE IF NOT EXISTS public.menu_items (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_category_id uuid,
+    recipe_id uuid,
+    custom_name text,
+    custom_description text,
+    custom_price numeric,
+    custom_image_url text,
+    display_order integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- Ensure required columns on menu_items exist
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS menu_category_id uuid;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS custom_description text;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS custom_price numeric;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS custom_image_url text;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+ALTER TABLE public.menu_items ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+
+-- Relax old constraints (if they exist from a legacy version)
+DO $$
+BEGIN
+    BEGIN ALTER TABLE public.menu_items ALTER COLUMN category_id DROP NOT NULL; EXCEPTION WHEN OTHERS THEN END;
+    BEGIN ALTER TABLE public.menu_items ALTER COLUMN name DROP NOT NULL; EXCEPTION WHEN OTHERS THEN END;
+    BEGIN ALTER TABLE public.menu_items ALTER COLUMN price DROP NOT NULL; EXCEPTION WHEN OTHERS THEN END;
+    BEGIN ALTER TABLE public.menu_items ALTER COLUMN "order" DROP NOT NULL; EXCEPTION WHEN OTHERS THEN END;
+END $$;
+
+
+-- 4. Create or update menu_item_option_groups
+CREATE TABLE IF NOT EXISTS public.menu_item_option_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_item_id uuid,
+    name text NOT NULL,
+    min_choices integer DEFAULT 0 NOT NULL,
+    max_choices integer DEFAULT 1 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS menu_item_id uuid;
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS min_choices integer DEFAULT 0 NOT NULL;
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS max_choices integer DEFAULT 1 NOT NULL;
+ALTER TABLE public.menu_item_option_groups ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+-- 5. Create or update menu_item_option_choices
+CREATE TABLE IF NOT EXISTS public.menu_item_option_choices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid,
+    menu_item_option_id uuid,
+    recipe_id uuid,
+    custom_name text,
+    additional_price numeric DEFAULT 0 NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS menu_item_option_id uuid;
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS recipe_id uuid;
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS custom_name text;
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS additional_price numeric DEFAULT 0 NOT NULL;
+ALTER TABLE public.menu_item_option_choices ADD COLUMN IF NOT EXISTS display_order integer DEFAULT 0 NOT NULL;
+
+-- 6. Setup RLS
+ALTER TABLE public.menus ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menus;
+CREATE POLICY "Enable all based on user_id" ON public.menus FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_categories;
+CREATE POLICY "Enable all based on user_id" ON public.menu_categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_items;
+CREATE POLICY "Enable all based on user_id" ON public.menu_items FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_item_option_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_item_option_groups;
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_groups FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE public.menu_item_option_choices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable all based on user_id" ON public.menu_item_option_choices;
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_choices FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Also allow reads for unauthenticated users if it's meant to be a public facing menu:
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menus;
+CREATE POLICY "Enable read access for all users" ON public.menus FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_categories;
+CREATE POLICY "Enable read access for all users" ON public.menu_categories FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_items;
+CREATE POLICY "Enable read access for all users" ON public.menu_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_item_option_groups;
+CREATE POLICY "Enable read access for all users" ON public.menu_item_option_groups FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.menu_item_option_choices;
+CREATE POLICY "Enable read access for all users" ON public.menu_item_option_choices FOR SELECT USING (true);
+
+-- Reload schema cache
+NOTIFY pgrst, reload_schema;

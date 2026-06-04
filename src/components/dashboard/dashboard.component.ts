@@ -6,6 +6,7 @@ import { Router, RouterLink } from '@angular/router';
 
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService, DailySalesCogs, PeakHoursData } from '../../services/cashier-data.service';
+import { UnitContextService } from '../../services/unit-context.service';
 import { SalesCogsChartComponent } from './sales-cogs-chart/sales-cogs-chart.component';
 import { HourlySalesChartComponent } from './hourly-sales-chart/hourly-sales-chart.component';
 import { DashboardStateService } from '../../services/dashboard-state.service';
@@ -80,6 +81,7 @@ export class DashboardComponent implements OnInit {
   private settingsState = inject(SettingsStateService);
   private hrState = inject(HrStateService);
   private inventoryState = inject(InventoryStateService);
+  private unitContextService = inject(UnitContextService);
   private router = inject(Router);
   
   // UI State
@@ -111,7 +113,10 @@ export class DashboardComponent implements OnInit {
   
   constructor() {
     effect(() => {
-      this.loadData();
+      const activeUnitId = this.unitContextService.activeUnitId(); // Track activeUnitId
+      if (activeUnitId) {
+          this.loadData();
+      }
     });
   }
 
@@ -263,7 +268,8 @@ export class DashboardComponent implements OnInit {
   async loadHourlySalesData(startDate: Date, endDate: Date) {
     this.isHourlyChartLoading.set(true);
     try {
-      const data = await this.cashierDataService.getSalesByHourForPeriod(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
+      const formatLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const data = await this.cashierDataService.getSalesByHourForPeriod(formatLocal(startDate), formatLocal(endDate));
       this.hourlySalesData.set(data);
     } catch (error) {
       console.error('Error loading hourly sales data:', error);
@@ -426,7 +432,26 @@ export class DashboardComponent implements OnInit {
 
     for (const t of transactions) {
         const match = t.description.match(methodRegex);
-        const method = match ? match[1] : 'Outros';
+        let method = match ? match[1] : 'Outros';
+
+        // Normalize
+        method = method.split('|')[0].trim();
+        const methodUpper = method.toUpperCase();
+        
+        if (methodUpper.includes('CREDIT') || methodUpper.includes('CRÉDITO')) {
+            method = 'Crédito';
+        } else if (methodUpper.includes('DEBIT') || methodUpper.includes('DÉBITO')) {
+            method = 'Débito';
+        } else if (methodUpper.includes('PIX')) {
+            method = 'PIX';
+        } else if (methodUpper.includes('DINHEIRO') || methodUpper.includes('CASH')) {
+            method = 'Dinheiro';
+        } else if (methodUpper.includes('CONTATO:')) {
+            method = 'Delivery/App';
+        } else if (method.length > 20) {
+            method = method.substring(0, 20) + '...';
+        }
+
         methodCounts.set(method, (methodCounts.get(method) || 0) + t.amount);
         totalValue += t.amount;
     }
