@@ -566,18 +566,36 @@ export class PaymentModalComponent {
       phone = '55' + phone;
     }
 
-    const itemsText = order.order_items.map(item => `${item.quantity}x ${item.name} - ${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('%0A');
+    const itemsText = order.order_items.map(item => `${item.quantity}x ${item.name} - ${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('\n');
     
     const totalValue = this.displayTotal();
     const storeName = this.unitContextService.activeUnitName() || 'ChefOS';
 
-    const message = `*RESUMO DO PEDIDO - ${storeName}*%0A%0A` +
-                    `Pedido: #${order.id.slice(-6).toUpperCase()}%0A` +
-                    (order.command_number ? `Comanda: #${order.command_number}%0A` : '') +
-                    `Data: ${new Date(order.timestamp).toLocaleString('pt-BR')}%0A%0A` +
-                    `*ITENS:*%0A${itemsText}%0A%0A` +
-                    `*TOTAL: ${totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*%0A%0A` +
+    const allPayments = this.splitMode() === 'item' ? this.itemGroups().flatMap(g => g.payments) : this.payments();
+    
+    const paymentMethods: { [method: string]: number } = {};
+    for (const p of allPayments) {
+      paymentMethods[p.method] = (paymentMethods[p.method] || 0) + p.amount;
+    }
+    
+    let paymentText = '';
+    if (Object.keys(paymentMethods).length > 0) {
+      const formattedMethods = Object.entries(paymentMethods)
+        .map(([method, amount]) => `${method}: ${amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+        .join('\n');
+      paymentText = `\n*PAGAMENTO:*\n${formattedMethods}\n`;
+    }
+
+    const rawMessage = `*RESUMO DO PEDIDO - ${storeName}*\n\n` +
+                    `Pedido: #${order.id.slice(-6).toUpperCase()}\n` +
+                    (order.command_number ? `Comanda: #${order.command_number}\n` : '') +
+                    `Data: ${new Date(order.timestamp).toLocaleString('pt-BR')}\n\n` +
+                    `*ITENS:*\n${itemsText}\n\n` +
+                    `*TOTAL: ${totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n` +
+                    `${paymentText}\n` +
                     `Obrigado pela preferência!`;
+
+    const message = encodeURIComponent(rawMessage);
 
     const url = `https://api.whatsapp.com/send?phone=${phone}&text=${message}`;
     window.open(url, '_blank');
