@@ -59,7 +59,7 @@ export class AssignDriverModalComponent implements AfterViewInit, OnDestroy {
   }
 
   private initMap() {
-      if (!this.mapContainer || !L) return;
+      if (!this.mapContainer || typeof L === 'undefined' || !L) return;
       
       const profile = this.settingsState.companyProfile();
       const centerLat = profile?.latitude || -23.55052;

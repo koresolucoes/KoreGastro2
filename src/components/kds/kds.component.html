@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 <div class="h-full flex flex-col no-print bg-app relative p-2 md:p-6 overflow-hidden">
   
   <!-- Liquid Glassmorphism Background Orbs -->
@@ -14,7 +6,7 @@
     <div class="absolute bottom-[-10%] left-[-5%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-indigo-500/5 rounded-full blur-[60px] md:blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
   </div>
 
-  @if (stations().length === 0) {
+  @if (stations().length === 0 && viewMode() !== 'delivery') {
     <div class="m-auto text-center bg-surface-elevated/80 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] border border-strong shadow-2xl relative z-10 max-w-xl">
       <div class="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-in zoom-in duration-500">
          <span translate="no" class="notranslate material-symbols-outlined text-5xl text-brand drop-shadow-sm">deck</span>
@@ -29,15 +21,18 @@
       </div>
     </div>
   } @else {
+    <!-- Main Header -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 md:mb-8 gap-2 md:gap-4 relative z-10 w-full overflow-hidden shrink-0">
       <div class="flex-1 flex flex-row items-center justify-between md:justify-start w-full md:w-auto gap-2">
-        <div class="flex items-center gap-2 md:gap-4">
+        <div class="flex items-center gap-2 md:gap-4 font-sans">
              <div class="bg-brand/10 p-1.5 md:p-2 rounded-lg md:rounded-xl border border-brand/20 shadow-sm hidden md:block">
                 <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">soup_kitchen</span>
              </div>
-             <h1 class="text-xl md:text-3xl font-black text-title tracking-tight drop-shadow-sm bg-brand/10 md:bg-transparent px-2 md:px-0 py-1 md:py-0 rounded-lg md:rounded-none">KDS</h1>
+             <h1 class="text-xl md:text-3xl font-black text-title tracking-tight drop-shadow-sm bg-brand/10 md:bg-transparent px-2 md:px-0 py-1 md:py-0 rounded-lg md:rounded-none">
+               KDS {{ viewMode() === 'delivery' ? 'Unificado' : '' }}
+             </h1>
              
-             <!-- Recall Button -->
+             <!-- Recall / Desfazer Button -->
              @if(viewMode() === 'station') {
                  <button (click)="isRecallModalOpen.set(true)" class="flex items-center gap-1 md:gap-2 px-2 md:px-5 py-1 md:py-2 bg-surface hover:bg-surface-elevated rounded-lg md:rounded-xl text-[10px] md:text-sm text-title font-bold transition-all border border-strong hover:border-brand/40 shadow-sm active:scale-95 group">
                     <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-lg text-muted group-hover:text-brand transition-colors">history</span>
@@ -66,7 +61,7 @@
         }
       </div>
       
-      <div class="flex flex-row items-center flex-nowrap md:flex-wrap gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0 shrink-0">
+      <div class="flex flex-row items-center flex-nowrap md:flex-wrap gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0 shrink-0 select-none">
         <!-- Sound Toggle -->
         <button (click)="soundNotificationService.toggleMute()" 
                 class="shrink-0 p-1.5 md:p-3 rounded-lg md:rounded-2xl transition-all border shadow-md md:shadow-lg active:scale-90" 
@@ -85,7 +80,7 @@
         </button>
 
         <!-- View Mode Toggle -->
-        <div class="shrink-0 flex gap-0.5 md:gap-1 bg-surface-elevated/80 backdrop-blur-md p-1 md:p-1.5 rounded-lg md:rounded-2xl border border-strong shadow-inner">
+        <div class="shrink-0 flex gap-0.5 md:gap-1 bg-surface-elevated/80 backdrop-blur-md p-1 md:p-1.5 rounded-lg md:rounded-2xl border border-strong shadow-inner font-sans">
           <button (click)="setViewMode('station')" 
                   class="px-2.5 md:px-6 py-1 md:py-2.5 text-[9px] md:text-sm font-black rounded-md md:rounded-xl transition-all uppercase tracking-wider" 
                   [class.bg-brand]="viewMode() === 'station'" 
@@ -107,6 +102,13 @@
                   [class.shadow-sm]="viewMode() === 'expo'"
                   [class.text-muted]="viewMode() !== 'expo'"
                   [class.hover:text-title]="viewMode() !== 'expo'">EXPO</button>
+          <button (click)="setViewMode('delivery')" 
+                  class="px-2.5 md:px-6 py-1 md:py-2.5 text-[9px] md:text-sm font-black rounded-md md:rounded-xl transition-all uppercase tracking-wider text-brand" 
+                  [class.bg-brand]="viewMode() === 'delivery'" 
+                  [class.text-white]="viewMode() === 'delivery'"
+                  [class.shadow-sm]="viewMode() === 'delivery'"
+                  [class.text-brand]="viewMode() !== 'delivery'"
+                  [class.hover:text-title]="viewMode() !== 'delivery'">📦 DELIVERY & IFOOD</button>
         </div>
 
         <!-- Station Selector -->
@@ -130,9 +132,11 @@
       </div>
     </div>
 
+    <!-- Main Views Container -->
     <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10 transition-all duration-500 overflow-x-hidden">
+      
       @if (viewMode() === 'station') {
-        <!-- Station View Grid (Ticket based) -->
+        <!-- Station View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           @for (ticket of groupedKdsTickets(); track ticket.orderId) {
             <div class="bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-strong flex flex-col shadow-2xl transition-all duration-300 hover:shadow-brand/10 hover:-translate-y-1 relative demo-kds-ticket" 
@@ -142,11 +146,9 @@
               
               <!-- Ticket Header -->
               <div class="p-4 text-white font-black flex justify-between items-center relative overflow-hidden shadow-lg" [class]="ticket.ticketTimerColor">
-                <!-- Glossy overlay for header -->
                 <div class="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none"></div>
 
-                <div class="flex items-center gap-3 overflow-hidden relative z-10">
-                    <!-- Context Icon -->
+                <div class="flex items-center gap-3 overflow-hidden relative z-10 font-sans">
                     <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
                         @if (ticket.orderType.includes('Delivery')) {
                              <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">two_wheeler</span>
@@ -155,7 +157,7 @@
                         } @else if (ticket.orderType === 'QuickSale') {
                              <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">bolt</span>
                         } @else if (ticket.orderType === 'Tab') {
-                            <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">id_card</span>
+                             <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">id_card</span>
                         } @else {
                              <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">restaurant</span>
                         }
@@ -185,7 +187,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 relative z-10">
+                <div class="flex items-center gap-3 relative z-10 font-sans">
                     <div class="flex flex-col items-end">
                         <span class="font-mono text-2xl tracking-tighter drop-shadow-md" [class.animate-pulse]="ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</span>
                         @if(ticket.isOrderCancelled) {
@@ -195,9 +197,9 @@
                 </div>
               </div>
 
-              <!-- Ticket Subheader: Comanda Impressa de Restaurante standard -->
+              <!-- Ticket Subheader -->
               <div class="px-4 py-3 bg-surface/40 border-b border-strong text-[11px] font-mono leading-normal select-none text-muted space-y-1.5 shrink-0">
-                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title">
+                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title font-sans">
                   <span class="flex items-center gap-1 text-brand">
                     <span translate="no" class="notranslate material-symbols-outlined text-[12px] leading-none">tag</span>
                     @if (ticket.orderType.startsWith('iFood')) {
@@ -256,7 +258,7 @@
               </div>
 
               <!-- Items List -->
-              <div class="p-3 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
+              <div class="p-3 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar font-sans">
                 @for (item of ticket.items; track item.id) {
                   <div (click)="updateStatus(item, false, $event)" 
                       class="p-4 rounded-2xl border transition-all relative cursor-pointer group shadow-sm bg-surface/50 border-strong overflow-hidden"
@@ -266,7 +268,6 @@
                       [class.bg-danger/5]="item.isCancelled"
                       [class.border-danger/30]="item.isCancelled">
                     
-                    <!-- Glow effect for active/preparing items -->
                     @if(item.status === 'EM_PREPARO' && !item.isCancelled) {
                         <div class="absolute inset-0 bg-brand/5 pointer-events-none"></div>
                     }
@@ -293,7 +294,6 @@
                              }
                         </div>
                         
-                        <!-- Status Badge -->
                         <div class="flex flex-col items-end gap-2 ml-2 text-right">
                             @if (item.timeToStart > 0 && item.status === 'PENDENTE' && !item.isCancelled) {
                                 <span class="text-[9px] font-bold text-muted whitespace-nowrap animate-pulse flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[10px]">schedule</span> {{ formatTime(item.timeToStart) }}</span>
@@ -315,7 +315,7 @@
                     } @else if((item.isCritical && !item.attention_acknowledged) || (item.status !== 'PRONTO')) {
                       <div class="mt-4 pt-3 space-y-2 relative z-10" [class]="item.isCritical && !item.attention_acknowledged ? 'border-t border-danger/10' : 'border-t border-strong'">
                         @if(item.isCritical && !item.attention_acknowledged) {
-                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2.5 bg-danger text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg animate-pulse hover:brightness-110 active:scale-95 transition-all">! ATENÇÃO !</button>
+                          <button (click)="acknowledgeAttention(item, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-2.5 bg-danger text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg animate-pulse hover:brightness-110 active:scale-95 transition-all w-full">! ATENÇÃO !</button>
                         }
                         @if(item.status !== 'PRONTO') {
                           <button (click)="markAsReady(item, ticket, $event)" [disabled]="updatingItems().has(item.id)" class="w-full text-center py-3 bg-success text-white rounded-xl text-sm font-black uppercase tracking-widest shadow-xl shadow-success/20 hover:brightness-110 active:scale-95 active:translate-y-0.5 transition-all flex items-center justify-center gap-2">
@@ -333,7 +333,7 @@
               
               <!-- Batch Actions Footer -->
               @if(!ticket.isOrderCancelled) {
-                  <div class="p-3 bg-surface border-t border-strong grid grid-cols-2 gap-3 relative z-10">
+                  <div class="p-3 bg-surface border-t border-strong grid grid-cols-2 gap-3 relative z-10 font-sans">
                       <button (click)="batchUpdateTicketStatus(ticket, 'START_ALL')" class="py-2.5 bg-brand/10 hover:bg-brand text-brand hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-brand/20 hover:border-brand transition-all active:scale-95 shadow-sm demo-kds-start-btn">
                           INICIAR TUDO
                       </button>
@@ -349,7 +349,7 @@
             </div>
           }
           @if (groupedKdsTickets().length === 0) {
-            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner">
+            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner font-sans">
               <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong">
                 <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted animate-pulse">timer</span>
               </div>
@@ -358,9 +358,11 @@
             </div>
           }
         </div>
-      } @else if (viewMode() === 'production') {
-        <!-- PRODUCTION VIEW (ALL DAY) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      } 
+      
+      @else if (viewMode() === 'production') {
+        <!-- PRODUCTION VIEW -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 font-sans">
             @for (agg of productionAggregates(); track agg.name + agg.notes) {
                 <div 
                     (click)="advanceProductionItems(agg)"
@@ -382,13 +384,13 @@
                     </div>
 
                     <div class="text-center border-t border-strong pt-4 mt-2">
-                         <h3 class="text-xl font-black text-title leading-tight line-clamp-2 drop-shadow-sm group-hover:text-brand transition-colors">{{ agg.name }}</h3>
-                         @if(agg.notes) {
-                             <div class="mt-2 inline-flex items-start gap-1.5 bg-warning/10 px-2 py-1 rounded-lg border border-warning/20">
-                                 <span translate="no" class="notranslate material-symbols-outlined text-xs text-warning mt-0.5">warning</span>
-                                 <p class="text-[10px] text-warning font-black uppercase tracking-tight whitespace-pre-wrap">{{ agg.notes }}</p>
-                             </div>
-                         }
+                          <h3 class="text-xl font-black text-title leading-tight line-clamp-2 drop-shadow-sm group-hover:text-brand transition-colors">{{ agg.name }}</h3>
+                          @if(agg.notes) {
+                              <div class="mt-2 inline-flex items-start gap-1.5 bg-warning/10 px-2 py-1 rounded-lg border border-warning/20">
+                                  <span translate="no" class="notranslate material-symbols-outlined text-xs text-warning mt-0.5">warning</span>
+                                  <p class="text-[10px] text-warning font-black uppercase tracking-tight whitespace-pre-wrap">{{ agg.notes }}</p>
+                              </div>
+                          }
                     </div>
 
                     <div class="flex justify-center mt-4">
@@ -397,7 +399,6 @@
                         </div>
                     </div>
 
-                    <!-- Status Decorative Icon -->
                     <span translate="no" class="notranslate material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-brand/5 pointer-events-none transition-all group-hover:text-brand/10 group-hover:scale-110">restaurant</span>
                 </div>
             } @empty {
@@ -409,7 +410,9 @@
                 </div>
             }
         </div>
-      } @else {
+      } 
+      
+      @else if (viewMode() === 'expo') {
         <!-- Expo View Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           @for (ticket of expoViewTickets(); track ticket.orderId) {
@@ -420,10 +423,9 @@
               <div class="p-4 text-white font-black flex justify-between items-center shadow-lg relative overflow-hidden" 
                    [class]="ticket.isOrderCancelled ? 'bg-danger' : (ticket.isReadyForPickup ? 'bg-success' : ticket.ticketTimerColor)">
                 
-                <!-- Glossy overlay -->
                 <div class="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none"></div>
 
-                <div class="flex items-center gap-3 relative z-10">
+                <div class="flex items-center gap-3 relative z-10 font-sans">
                     <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
                          <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">
                              {{ ticket.orderType.includes('Delivery') ? 'two_wheeler' : 
@@ -452,14 +454,13 @@
                 <span class="font-mono text-2xl tracking-tighter drop-shadow-md relative z-10">{{ formatTime(ticket.ticketElapsedTime) }}</span>
               </div>
               
-              <!-- Progress Bar -->
               <div class="h-2 w-full bg-surface border-b border-strong relative overflow-hidden">
-                  <div class="h-full bg-gradient-to-r from-success/50 to-success transition-all duration-700 ease-out shadow-[0_0_10px_rgba(34,197,94,0.3)]" [style.width.%]="ticket.progress"></div>
+                  <div class="h-full bg-gradient-to-r from-success/50 to-success transition-all duration-700 ease-out" [style.width.%]="ticket.progress"></div>
               </div>
               
-              <!-- Ticket Subheader: Comanda Impressa de Restaurante standard (Expo Mode) -->
+              <!-- Ticket Subheader -->
               <div class="px-4 py-3 bg-surface/40 border-b border-strong text-[11px] font-mono leading-normal select-none text-muted space-y-1.5 shrink-0">
-                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title">
+                <div class="flex justify-between items-center text-[10px] uppercase font-black text-title font-sans">
                   <span class="flex items-center gap-1 text-success">
                     <span translate="no" class="notranslate material-symbols-outlined text-[12px] leading-none">local_shipping</span>
                     @if (ticket.orderType.startsWith('iFood')) {
@@ -517,7 +518,7 @@
                 </div>
               </div>
               
-              <div class="p-4 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar">
+              <div class="p-4 space-y-3 flex-1 bg-transparent overflow-y-auto custom-scrollbar font-sans">
                 @for (item of ticket.items; track item.id) {
                   <div class="flex items-center justify-between p-4 rounded-2xl border border-strong bg-surface/30 backdrop-blur-sm group hover:border-brand/30 transition-all shadow-sm">
                     <div class="flex items-center gap-3 min-w-0">
@@ -535,7 +536,7 @@
                     <div class="flex items-center gap-2">
                         @if(item.status === 'PRONTO' && !item.isCancelled) {
                             <div class="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center border border-success/30 shadow-sm animate-in zoom-in">
-                                <span translate="no" class="notranslate material-symbols-outlined text-success text-[14px] drop-shadow-[0_0_5px_rgba(34,197,94,0.4)]">check_circle</span>
+                                <span translate="no" class="notranslate material-symbols-outlined text-success text-[14px]">check_circle</span>
                             </div>
                         } @else if (item.isCancelled) {
                             <span translate="no" class="notranslate material-symbols-outlined text-danger text-lg">cancel</span>
@@ -548,7 +549,7 @@
               </div>
 
               <!-- Expo Actions -->
-              <div class="p-5 bg-surface-elevated/80 border-t border-strong flex flex-col gap-4 relative z-10 backdrop-blur-md">
+              <div class="p-5 bg-surface-elevated/80 border-t border-strong flex flex-col gap-4 relative z-10 backdrop-blur-md font-sans">
                    @if (ticket.totalCount > 0) {
                       <div class="flex justify-between items-center mb-1">
                           <span class="text-[9px] font-black text-muted uppercase tracking-widest opacity-80">Andamento</span>
@@ -579,7 +580,7 @@
             </div>
           }
           @if (expoViewTickets().length === 0) {
-            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner transition-all duration-500 hover:border-brand/30 group">
+            <div class="col-span-full flex flex-col items-center justify-center h-80 bg-surface-elevated/50 backdrop-blur-md rounded-[2.5rem] border border-dashed border-strong shadow-inner group font-sans">
                 <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 border border-strong group-hover:scale-110 transition-transform">
                     <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted animate-pulse">delivery_dining</span>
                 </div>
@@ -589,27 +590,463 @@
           }
         </div>
       }
+
+      @else if (viewMode() === 'delivery') {
+        <!-- UNIFIED DELIVERY & IFOOD BOARD -->
+        <div class="flex flex-col gap-4 font-sans relative z-10 w-full h-full select-none">
+          
+          <!-- Delivery Board Header Sub-menu -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-surface-elevated/70 border border-strong rounded-2xl p-4 backdrop-blur-md shrink-0 w-full">
+            <div class="flex flex-wrap items-center gap-2">
+              <button (click)="deliverySubView.set('kanban')" 
+                      class="px-4 py-2 text-xs font-black rounded-xl border flex items-center gap-1.5 uppercase transition-all"
+                      [class.bg-brand]="deliverySubView() === 'kanban'"
+                      [class.text-white]="deliverySubView() === 'kanban'"
+                      [class.border-transparent]="deliverySubView() === 'kanban'"
+                      [class.bg-surface]="deliverySubView() !== 'kanban'"
+                      [class.text-muted]="deliverySubView() !== 'kanban'"
+                      [class.border-strong]="deliverySubView() !== 'kanban'">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">dashboard</span> QUADRO KANBAN
+              </button>
+              <button (click)="deliverySubView.set('tracking')" 
+                      class="px-4 py-2 text-xs font-black rounded-xl border flex items-center gap-1.5 uppercase transition-all"
+                      [class.bg-brand]="deliverySubView() === 'tracking'"
+                      [class.text-white]="deliverySubView() === 'tracking'"
+                      [class.border-transparent]="deliverySubView() === 'tracking'"
+                      [class.bg-surface]="deliverySubView() !== 'tracking'"
+                      [class.text-muted]="deliverySubView() !== 'tracking'"
+                      [class.border-strong]="deliverySubView() !== 'tracking'">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">map</span> MAPA DE RASTREIO
+              </button>
+              
+              <div class="w-px h-6 bg-strong hidden sm:block mx-1"></div>
+              
+              <button (click)="isLogVisible.set(!isLogVisible())" 
+                      class="px-4 py-2 text-xs font-black rounded-xl border border-strong bg-surface hover:text-title text-muted transition-all flex items-center gap-1.5 uppercase">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">history</span> Logs iFood
+              </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button (click)="isDriversModalOpen.set(true)" 
+                      class="px-4 py-2 text-xs font-black rounded-xl bg-surface hover:bg-surface-elevated border border-strong text-title transition-all flex items-center gap-1.5 uppercase">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">sports_motorsports</span> MOTORISTAS
+              </button>
+              <button (click)="toggleBatchMode()" 
+                      class="px-4 py-2 text-xs font-black rounded-xl border transition-all flex items-center gap-1.5 uppercase"
+                      [class.bg-warning/20]="isBatchMode()"
+                      [class.text-warning]="isBatchMode()"
+                      [class.border-warning/30]="isBatchMode()"
+                      [class.bg-surface]="!isBatchMode()"
+                      [class.text-muted]="!isBatchMode()"
+                      [class.border-strong]="!isBatchMode()">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">checklist</span> Atribuição em Lote
+              </button>
+              @if(isBatchMode()) {
+                <button (click)="openBatchAssignModal()" 
+                        [disabled]="selectedOrdersForBatch().size === 0"
+                        class="px-4 py-2 text-xs font-black rounded-xl bg-success text-white shadow-md shadow-success/15 hover:brightness-115 active:scale-95 disabled:opacity-50 flex items-center gap-1.5 uppercase">
+                  <span translate="no" class="notranslate material-symbols-outlined text-sm">local_shipping</span> Atribuir Massa ({{ selectedOrdersForBatch().size }})
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- SUBVIEW: REAL-TIME TRACKING MAP -->
+          @if (deliverySubView() === 'tracking') {
+            <div class="w-full bg-surface-elevated border border-strong rounded-[2rem] p-4 flex flex-col h-[calc(100vh-200px)] min-h-[650px]">
+                <app-delivery-tracking></app-delivery-tracking>
+            </div>
+          }
+
+          <!-- SUBVIEW: UNIFIED KANBAN BOARD -->
+          @if (deliverySubView() === 'kanban') {
+            <div cdkDropListGroup class="flex flex-row gap-4 overflow-x-auto h-[74vh] pb-4 shrink-0 grow">
+              
+              <!-- COLUMN 1: FILA DE PEDIDOS / NOVOS (RECEIVED / AWAITING_PREP) -->
+              <div class="w-80 md:w-[22rem] shrink-0 bg-surface-elevated/60 backdrop-blur-md rounded-2xl border border-strong p-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between border-b border-strong pb-3 mb-3 shrink-0">
+                  <span class="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> FILA / NOVOS
+                  </span>
+                  <span class="bg-slate-400/10 text-[10px] text-muted border border-slate-400/25 px-2.5 py-0.5 rounded-full font-black">{{ deliveryWaiting().length }}</span>
+                </div>
+                
+                <div cdkDropList id="AWAITING_PREP" [cdkDropListData]="deliveryWaiting()" (cdkDropListDropped)="drop($event)" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar h-full min-h-[100px] pb-10">
+                  @for (order of deliveryWaiting(); track order.id) {
+                    <div cdkDrag class="bg-surface/80 border border-strong hover:border-brand/40 shadow-sm rounded-2xl p-4 flex flex-col gap-3 relative cursor-pointer group active:scale-[0.98] transition-all" (click)="order.source === 'iFood' ? openIfoodDetailModal(order) : openDetailsModal(order)">
+                      
+                      <!-- Card Source Header -->
+                      <div class="flex items-center justify-between border-b border-strong pb-2 mb-1 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                          @if(order.source === 'iFood') {
+                            <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-red-600/15 text-red-400 rounded-md tracking-wider border border-red-500/10 flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> IFOOD
+                            </span>
+                          } @else {
+                            <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-emerald-600/15 text-emerald-400 rounded-md tracking-wider border border-emerald-500/10 flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> PRÓPRIO
+                            </span>
+                          }
+                          <span class="font-black text-sm text-title">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
+                        </div>
+                        <span class="font-mono text-xs font-black" [class]="order.timerColor">
+                          {{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}
+                        </span>
+                      </div>
+
+                      @if(order.isScheduledAndHeld) {
+                        <div class="bg-info/10 border border-info/20 text-info p-3 rounded-xl text-center">
+                          <h4 class="font-black text-[10px] uppercase tracking-widest mb-1 leading-none">Agendado</h4>
+                          <p class="text-xs font-bold">{{ order.ifood_scheduled_at | date:'dd/MM, HH:mm' }}</p>
+                          <div class="mt-2 text-info/80 text-[10px] uppercase tracking-widest leading-none">Início em:</div>
+                          <p class="font-mono text-lg font-bold">{{ formatTime(order.timeToPrepare) }}</p>
+                        </div>
+                      }
+
+                      <!-- Customer / Main Details -->
+                      <div class="space-y-1">
+                        <p class="font-black text-title leading-tight text-base">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
+                        @if(order.delivery_info?.deliveryAddress; as address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ address.streetName }}, {{ address.streetNumber }}
+                          </p>
+                        } @else if(order.address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ order.address }}
+                          </p>
+                        }
+                      </div>
+
+                      <!-- Sub details / Value / Items -->
+                      <div class="flex items-center justify-between text-xs text-muted leading-none border-t border-dashed border-strong/40 pt-2.5">
+                        <span class="bg-black/10 px-2 py-1 rounded-md shrink-0 font-medium">{{ order.order_items?.length }} Itens</span>
+                        <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+
+                      <!-- Actions inside Column 1 -->
+                      <div class="mt-1 flex flex-col gap-2 shrink-0">
+                        @if(order.source === 'iFood') {
+                          @if(!order.isScheduledAndHeld) {
+                            <button (click)="$event.stopPropagation(); confirmOrderAndPrepare(order)" [disabled]="updatingOrders().has(order.id)" class="w-full py-2.5 bg-brand text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                              <span translate="no" class="notranslate material-symbols-outlined text-sm">thumb_up</span> CONFIRMAR PEDIDO
+                            </button>
+                          }
+                        } @else {
+                          <button (click)="$event.stopPropagation(); updateOrderStatus(order, 'IN_PREPARATION')" class="w-full py-2.5 bg-brand text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">skillet</span> INICIAR PREPARO
+                          </button>
+                        }
+                      </div>
+
+                      @if(updatingOrders().has(order.id)) { <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div> }
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center h-40 text-center opacity-40 py-10">
+                      <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">shopping_basket</span>
+                      <p class="text-xs font-black uppercase tracking-widest">Sem pedidos na fila</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- COLUMN 2: EM PREPARO (IN_PREPARATION) -->
+              <div class="w-80 md:w-[22rem] shrink-0 bg-surface-elevated/60 backdrop-blur-md rounded-2xl border border-strong p-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between border-b border-strong pb-3 mb-3 shrink-0">
+                  <span class="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> EM PREPARO
+                  </span>
+                  <span class="bg-yellow-400/10 text-[10px] text-muted border border-yellow-400/25 px-2.5 py-0.5 rounded-full font-black">{{ deliveryPreparing().length }}</span>
+                </div>
+                
+                <div cdkDropList id="IN_PREPARATION" [cdkDropListData]="deliveryPreparing()" (cdkDropListDropped)="drop($event)" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar h-full min-h-[100px] pb-10">
+                  @for (order of deliveryPreparing(); track order.id) {
+                    <div cdkDrag class="bg-surface/80 border border-strong border-l-4 border-l-yellow-400 shadow-sm rounded-2xl p-4 flex flex-col gap-3 relative cursor-pointer active:scale-[0.98] transition-all" (click)="order.source === 'iFood' ? openIfoodDetailModal(order) : openDetailsModal(order)">
+                      
+                      <!-- Header -->
+                      <div class="flex items-center justify-between border-b border-strong pb-2 mb-1 shrink-0">
+                        <span class="font-black text-sm text-title">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
+                        <span class="font-mono text-xs font-black" [class]="order.timerColor">
+                          {{ formatTime(order.elapsedTime) }}
+                        </span>
+                      </div>
+
+                      <!-- Customer / Main Details -->
+                      <div class="space-y-1">
+                        <p class="font-black text-title leading-tight text-base">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
+                        @if(order.delivery_info?.deliveryAddress; as address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ address.streetName }}, {{ address.streetNumber }}
+                          </p>
+                        } @else if(order.address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ order.address }}
+                          </p>
+                        }
+                      </div>
+
+                      <div class="flex items-center justify-between text-xs text-muted border-t border-dashed border-strong/40 pt-2.5">
+                        <span class="bg-black/10 px-2 py-1 rounded-md shrink-0 font-medium">{{ order.order_items?.length }} Itens</span>
+                        <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+
+                      <!-- Actions inside Column 2 -->
+                      <div class="mt-1 flex flex-col gap-2 shrink-0">
+                        @if(order.source === 'iFood') {
+                          <button (click)="$event.stopPropagation(); markOrderAsReadyForDispatch(order)" [disabled]="updatingOrders().has(order.id)" class="w-full py-2.5 bg-success text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">restaurant</span> MARCAR PRONTO
+                          </button>
+                        } @else {
+                          <button (click)="$event.stopPropagation(); updateOrderStatus(order, 'READY_FOR_DISPATCH')" class="w-full py-2.5 bg-success text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">room_service</span> PRONTO PARA ENVIO
+                          </button>
+                        }
+                      </div>
+
+                      @if(updatingOrders().has(order.id)) { <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div> }
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center h-40 text-center opacity-40 py-10">
+                      <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">skillet</span>
+                      <p class="text-xs font-black uppercase tracking-widest">Nada em preparação</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- COLUMN 3: EXPO / PRONTOS PARA ENVIO (READY_FOR_DISPATCH) -->
+              <div class="w-80 md:w-[22rem] shrink-0 bg-surface-elevated/60 backdrop-blur-md rounded-2xl border border-strong p-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between border-b border-strong pb-3 mb-3 shrink-0">
+                  <span class="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-success"></span> PRONTOS PARA ENVIO
+                  </span>
+                  <span class="bg-success/10 text-[10px] text-muted border border-success/25 px-2.5 py-0.5 rounded-full font-black">{{ deliveryReady().length }}</span>
+                </div>
+                
+                <div cdkDropList id="READY_FOR_DISPATCH" [cdkDropListData]="deliveryReady()" (cdkDropListDropped)="drop($event)" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar h-full min-h-[100px] pb-10">
+                  @for (order of deliveryReady(); track order.id) {
+                    <div cdkDrag class="bg-surface/80 border border-strong border-l-4 border-l-success shadow-sm rounded-2xl p-4 flex flex-col gap-3 relative cursor-pointer active:scale-[0.98] transition-all" (click)="order.source === 'iFood' ? openIfoodDetailModal(order) : openDetailsModal(order)">
+                      
+                      <!-- Header -->
+                      <div class="flex items-center justify-between border-b border-strong pb-2 mb-1 shrink-0">
+                        <div class="flex items-center gap-2">
+                          @if(isBatchMode() && order.source === 'External') {
+                            <input type="checkbox" [checked]="selectedOrdersForBatch().has(order.id)" (click)="$event.stopPropagation(); toggleOrderSelection(order.id)" class="w-4 h-4 rounded text-brand border-strong bg-surface focus:ring-0">
+                          }
+                          <span class="font-black text-sm text-title">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
+                        </div>
+                        <span class="font-mono text-xs font-black" [class]="order.timerColor">
+                          {{ formatTime(order.elapsedTime) }}
+                        </span>
+                      </div>
+
+                      <!-- Details -->
+                      <div class="space-y-1">
+                        <p class="font-black text-title leading-tight text-base">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
+                        @if(order.delivery_info?.deliveryAddress; as address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ address.streetName }}, {{ address.streetNumber }}
+                          </p>
+                        } @else if(order.address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ order.address }}
+                          </p>
+                        }
+                      </div>
+
+                      <div class="flex items-center justify-between text-xs text-muted border-t border-dashed border-strong/40 pt-2.5 shrink-0">
+                        <span class="bg-black/10 px-2 py-1 rounded-md shrink-0 font-medium">Entregador: {{ order.driverName }}</span>
+                        <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+
+                      <!-- Actions inside Column 3 -->
+                      <div class="mt-1 flex flex-col gap-2 shrink-0">
+                        @if(order.source === 'iFood') {
+                          @if(order.requiresDeliveryCode) {
+                            <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'pickup')" class="w-full py-2.5 bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                              <span translate="no" class="notranslate material-symbols-outlined text-sm">pin</span> VALIDAR CÓDIGO RETIRADA
+                            </button>
+                          } @else if(order.delivery_info?.deliveredBy === 'MERCHANT') {
+                            <button (click)="$event.stopPropagation(); openIfoodAssignDriverModal(order)" class="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                              <span translate="no" class="notranslate material-symbols-outlined text-sm">local_shipping</span> MARCAR DESPACHADO
+                            </button>
+                          } @else {
+                            <div class="py-2.5 bg-black/5 text-center text-[10px] font-black text-muted rounded-xl border border-dashed uppercase tracking-wider">
+                              Logística iFood: Aguardando Retirada
+                            </div>
+                          }
+                        } @else {
+                          <button (click)="$event.stopPropagation(); openExternalAssignDriverModal(order)" class="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">two_wheeler</span> ENVIAR / ENTREGADOR
+                          </button>
+                        }
+                      </div>
+
+                      @if(updatingOrders().has(order.id)) { <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div> }
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center h-40 text-center opacity-40 py-10">
+                      <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">room_service</span>
+                      <p class="text-xs font-black uppercase tracking-widest">Nenhum pedido aguardando envio</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- COLUMN 4: PEDIDOS EM ROTA (OUT_FOR_DELIVERY) -->
+              <div class="w-80 md:w-[22rem] shrink-0 bg-surface-elevated/60 backdrop-blur-md rounded-2xl border border-strong p-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between border-b border-strong pb-3 mb-3 shrink-0">
+                  <span class="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span> EM ROTA / TRÂNSITO
+                  </span>
+                  <span class="bg-indigo-500/10 text-[10px] text-muted border border-indigo-500/25 px-2.5 py-0.5 rounded-full font-black">{{ deliveryEnRoute().length }}</span>
+                </div>
+                
+                <div cdkDropList id="OUT_FOR_DELIVERY" [cdkDropListData]="deliveryEnRoute()" (cdkDropListDropped)="drop($event)" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar h-full min-h-[100px] pb-10">
+                  @for (order of deliveryEnRoute(); track order.id) {
+                    <div class="bg-surface/80 border border-strong border-l-4 border-l-indigo-500 shadow-sm rounded-2xl p-4 flex flex-col gap-3 relative cursor-pointer active:scale-[0.98] transition-all" (click)="order.source === 'iFood' ? openIfoodDetailModal(order) : openDetailsModal(order)">
+                      
+                      <!-- Header -->
+                      <div class="flex items-center justify-between border-b border-strong pb-2 mb-1 shrink-0">
+                        <span class="font-black text-sm text-title font-sans">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
+                        <span class="font-mono text-xs font-black" [class]="order.timerColor">
+                          {{ formatTime(order.elapsedTime) }}
+                        </span>
+                      </div>
+
+                      <!-- Details -->
+                      <div class="space-y-1">
+                        <p class="font-black text-title leading-tight text-base">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
+                        @if(order.delivery_info?.deliveryAddress; as address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ address.streetName }}, {{ address.streetNumber }}
+                          </p>
+                        } @else if(order.address) {
+                          <p class="text-xs font-semibold text-muted tracking-wide truncate max-w-[280px]">
+                            {{ order.address }}
+                          </p>
+                        }
+                      </div>
+
+                      <div class="flex flex-col gap-1.5 border-t border-dashed border-strong/40 pt-2.5 shrink-0 text-xs">
+                        <p class="font-bold text-muted flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[13px]">person</span> Motoboy: <span class="text-title font-bold">{{ order.driverName }}</span></p>
+                        @if(order.source === 'iFood' && order.logisticsStatus) {
+                          <p class="font-black text-brand flex items-center gap-1 select-none text-[9px] uppercase tracking-wider leading-none">
+                            <span class="w-1.5 h-1.5 bg-brand rounded-full animate-ping"></span> Status iFood: {{ formatLogisticsStatus(order.logisticsStatus) }}
+                          </p>
+                        }
+                      </div>
+
+                      <!-- Actions inside Column 4 -->
+                      <div class="mt-1 flex flex-col gap-2 shrink-0">
+                        @if(order.source === 'iFood') {
+                          @if(order.requiresDeliveryCode) {
+                            <button (click)="$event.stopPropagation(); openVerifyCodeModal(order, 'delivery')" class="w-full py-2.5 bg-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                              <span translate="no" class="notranslate material-symbols-outlined text-sm">pin</span> VALIDAR CÓDIGO ENTREGA
+                            </button>
+                          } @else if(order.delivery_info?.deliveredBy === 'MERCHANT') {
+                            <button (click)="$event.stopPropagation(); updateLogisticsStatus(order, 'arrivedAtDestination')" class="w-full py-2.5 bg-success text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                              <span translate="no" class="notranslate material-symbols-outlined text-sm">home_pin</span> CHEGUEI AO ENDEREÇO
+                            </button>
+                          } @else {
+                            <div class="py-2.5 bg-black/5 text-center text-[10px] font-black text-brand rounded-xl border border-dashed uppercase tracking-wider select-none leading-none">
+                              Em trânsito com motoboy iFood
+                            </div>
+                          }
+                        } @else {
+                          <button (click)="$event.stopPropagation(); finalizeDelivery(order)" class="w-full py-2.5 bg-success text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-1 hover:brightness-110 active:scale-95 transition-all">
+                            <span translate="no" class="notranslate material-symbols-outlined text-sm">done_all</span> ENTREGUE
+                          </button>
+                        }
+                      </div>
+
+                      @if(updatingOrders().has(order.id)) { <div class="absolute inset-0 bg-surface/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-20"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div></div> }
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center h-40 text-center opacity-40 py-10">
+                      <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">navigation</span>
+                      <p class="text-xs font-black uppercase tracking-widest">Nenhum motoboy na rua</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- COLUMN 5: CONCLUÍDOS / HOJE (DELIVERED) -->
+              <div class="w-80 md:w-[22rem] shrink-0 bg-surface-elevated/60 backdrop-blur-md rounded-2xl border border-strong p-3 flex flex-col h-full overflow-hidden">
+                <div class="flex items-center justify-between border-b border-strong pb-3 mb-3 shrink-0">
+                  <span class="text-xs font-black uppercase tracking-wider text-muted flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 bg-gray-400 rounded-full"></span> ENTREGUES HOJE
+                  </span>
+                  <span class="bg-gray-400/10 text-[10px] text-muted border border-gray-400/25 px-2.5 py-0.5 rounded-full font-black">{{ deliveryCompleted().length }}</span>
+                </div>
+                
+                <div class="space-y-3 flex-1 overflow-y-auto custom-scrollbar h-full min-h-[100px] pb-10">
+                  @for (order of deliveryCompleted(); track order.id) {
+                    <div class="bg-surface/50 border border-strong shadow-sm rounded-2xl p-4 flex flex-col gap-3 relative cursor-pointer opacity-75 active:scale-[0.98] transition-all" (click)="order.source === 'iFood' ? openIfoodDetailModal(order) : openDetailsModal(order)">
+                      
+                      <!-- Header -->
+                      <div class="flex items-center justify-between border-b border-strong pb-2 mb-1 shrink-0 text-xs">
+                        <div class="flex items-center gap-2">
+                          @if(order.source === 'iFood') {
+                            <span class="px-1.5 py-0.5 text-[7px] font-black uppercase bg-red-600/10 text-red-500 rounded-md border border-red-500/10">IFOOD</span>
+                          } @else {
+                            <span class="px-1.5 py-0.5 text-[7px] font-black uppercase bg-emerald-600/10 text-emerald-500 rounded-md border border-emerald-500/10 font-sans">PRÓPRIO</span>
+                          }
+                          <span class="font-black text-title">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
+                        </div>
+                        <span class="font-bold text-success flex items-center gap-1 select-none text-[10px] uppercase leading-none">
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">check_circle</span> CONCLUÍDO
+                        </span>
+                      </div>
+
+                      <div class="space-y-1 text-xs">
+                        <p class="font-bold text-title leading-tight text-sm">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
+                        @if(order.driverName) {
+                          <p class="font-semibold text-muted">Atribuído: {{ order.driverName }}</p>
+                        }
+                      </div>
+
+                      <div class="flex items-center justify-between text-xs text-muted border-t border-dashed border-strong/40 pt-2 shrink-0 leading-none">
+                        <span>Total Pago</span>
+                        <strong class="text-title font-bold">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center h-40 text-center opacity-40 py-10">
+                      <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2 text-muted">celebration</span>
+                      <p class="text-xs font-black uppercase tracking-widest leading-none">Nenhuma entrega finalizada hoje</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+            </div>
+          }
+
+        </div>
+      }
+
     </div>
   }
 </div>
 
-<!-- Assign Employee Modal -->
+<!-- Assign Employee Modal (Station default) -->
 @if(isAssignEmployeeModalOpen()) {
   <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="isAssignEmployeeModalOpen.set(false)">
-    <div class="bg-surface-elevated/95 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-strong overflow-hidden animate-in zoom-in-95 duration-300" (click)="$event.stopPropagation()">
-      <div class="p-8 border-b border-subtle bg-surface/50">
+    <div class="bg-surface-elevated rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-strong overflow-hidden animate-in zoom-in-95 duration-300" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle bg-surface/50 font-sans">
           <div class="flex items-center gap-4">
               <div class="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center border border-brand/20">
                   <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl">person_add</span>
               </div>
               <div>
-                  <h3 class="text-2xl font-black text-title tracking-tight">Responsável</h3>
+                  <h3 class="text-2xl font-black text-title tracking-tight">Atribuir Responsável</h3>
                   <p class="text-muted text-sm font-bold uppercase tracking-widest mt-1">{{ selectedStation()?.name }}</p>
               </div>
           </div>
       </div>
       
-      <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+      <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar font-sans">
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
               @for(employee of employees(); track employee.id) {
                   <button (click)="assignEmployeeToStation(employee.id)" 
@@ -624,240 +1061,501 @@
                           <span translate="no" class="notranslate material-symbols-outlined text-3xl" [class.text-brand]="selectedStation()?.employee_id === employee.id" [class.text-muted]="selectedStation()?.employee_id !== employee.id">account_circle</span>
                       </div>
                       
-                      <span class="font-black text-center text-sm tracking-tight relative z-10" [class.text-brand]="selectedStation()?.employee_id === employee.id" [class.text-title]="selectedStation()?.employee_id !== employee.id">
-                          {{ employee.name }}
-                      </span>
-
-                      @if(selectedStation()?.employee_id === employee.id) {
-                          <div class="absolute top-2 right-2 w-6 h-6 bg-brand rounded-full flex items-center justify-center animate-in zoom-in">
-                              <span translate="no" class="notranslate material-symbols-outlined text-white text-base">check</span>
-                          </div>
-                      }
+                      <span class="font-black text-center text-sm tracking-tight text-title relative z-10 group-hover:text-brand transition-colors">{{ employee.name }}</span>
+                      <span class="text-[10px] uppercase font-black text-muted tracking-wider leading-none relative z-10">{{ employee.role }}</span>
                   </button>
               }
           </div>
-      </div>
-
-      <div class="p-8 bg-surface/50 border-t border-subtle flex flex-col sm:flex-row gap-4">
-          <button (click)="assignEmployeeToStation(null)" 
-                  class="flex-1 py-4 font-black rounded-2xl bg-danger/10 hover:bg-danger text-danger hover:text-white transition-all border border-danger/20 uppercase tracking-widest text-xs disabled:opacity-30" 
-                  [disabled]="!selectedStation()?.employee_id">
-              REMOVER ATRIBUIÇÃO
-          </button>
-          <button (click)="isAssignEmployeeModalOpen.set(false)" 
-                  class="flex-1 py-4 font-black rounded-2xl bg-surface-elevated hover:bg-white/5 text-title transition-all border border-strong uppercase tracking-widest text-xs">
-              VOLTAR
-          </button>
+          
+          <button (click)="assignEmployeeToStation(null)" class="w-full mt-8 py-4 bg-muted hover:bg-muted-hover text-muted hover:text-title rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-98">Desvincular Responsável</button>
       </div>
     </div>
   </div>
 }
 
-<!-- Recall / Undo Modal -->
+<!-- Recall / UNDO Modal -->
 @if(isRecallModalOpen()) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="isRecallModalOpen.set(false)">
-    <div class="bg-surface-elevated/95 rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col border border-strong animate-in zoom-in-95 duration-300 overflow-hidden" (click)="$event.stopPropagation()">
-        <div class="p-8 border-b border-subtle flex justify-between items-center bg-surface/50">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-warning/10 rounded-2xl flex items-center justify-center border border-warning/30">
-                    <span translate="no" class="notranslate material-symbols-outlined text-warning text-3xl">history</span>
-                </div>
-                <div>
-                    <h3 class="text-2xl font-black text-title tracking-tight">Restaurar Produção</h3>
-                    <p class="text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">Histórico de itens finalizados</p>
-                </div>
-            </div>
-            <button (click)="isRecallModalOpen.set(false)" class="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:bg-surface-elevated transition-colors border border-transparent hover:border-strong"><span translate="no" class="notranslate material-symbols-outlined">close</span></button>
-        </div>
-
-        <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
-            @if(recentlyCompletedItems().length === 0) {
-                <div class="flex flex-col items-center justify-center py-20 opacity-30">
-                    <span translate="no" class="notranslate material-symbols-outlined text-8xl mb-4">history_toggle_off</span>
-                    <p class="text-lg font-black uppercase tracking-widest">Nenhum item recente</p>
-                </div>
-            } @else {
-                <div class="p-4 bg-warning/5 border border-warning/10 rounded-2xl mb-8">
-                    <p class="text-xs font-bold text-warning flex items-center gap-2">
-                        <span translate="no" class="notranslate material-symbols-outlined text-sm">info</span>
-                        Clique em "Restaurar" para trazer o item de volta para a fila de produção ativa.
-                    </p>
-                </div>
-
-                <div class="space-y-4">
-                    @for(recall of recentlyCompletedItems(); track recall.finishedAt) {
-                        <div class="bg-surface border border-strong p-6 rounded-[2rem] flex justify-between items-center shadow-sm relative group hover:border-brand/40 transition-all">
-                            <div class="flex items-center gap-5">
-                                <div class="w-12 h-12 rounded-2xl bg-surface-elevated flex items-center justify-center text-xl font-black border border-strong text-title shadow-inner">
-                                    {{ recall.displayItem.quantity }}
-                                </div>
-                                <div>
-                                    <p class="font-black text-title text-lg leading-tight">{{ recall.displayItem.name }}</p>
-                                    <div class="flex items-center gap-3 mt-1 opacity-60">
-                                        <p class="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                                            <span translate="no" class="notranslate material-symbols-outlined text-[12px]">push_pin</span>
-                                            {{ recall.ticketInfo }}
-                                        </p>
-                                        <div class="w-1 h-1 rounded-full bg-muted"></div>
-                                        <p class="text-[10px] font-black flex items-center gap-1">
-                                            <span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span>
-                                            {{ recall.finishedAt | date:'HH:mm:ss' }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <button (click)="restoreItem(recall)" class="flex items-center gap-2 px-6 py-3 bg-brand hover:bg-brand-hover text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-95">
-                                <span translate="no" class="notranslate material-symbols-outlined text-base">undo</span> 
-                                RESTAURAR
-                            </button>
-                        </div>
-                    }
-                </div>
-            }
-        </div>
-        
-        <div class="p-8 bg-surface/50 text-center border-t border-subtle">
-            <button (click)="isRecallModalOpen.set(false)" class="px-10 py-4 font-black text-muted hover:text-title text-xs uppercase tracking-widest transition-colors hover:bg-surface-elevated rounded-2xl border border-transparent hover:border-strong">
-                FECHAR HISTÓRICO
-            </button>
-        </div>
-    </div>
-  </div>
-}
-
-<!-- Details Modal -->
-@if(isDetailModalOpen() && selectedTicketForDetail(); as ticket) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[70] flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="closeDetailModal()">
-    <div class="bg-surface-elevated/95 rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-strong animate-in zoom-in-95 duration-300 overflow-hidden" (click)="$event.stopPropagation()">
-      <div class="p-8 border-b border-subtle flex justify-between items-center bg-surface/50">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="isRecallModalOpen.set(false)">
+    <div class="bg-surface-elevated rounded-[2.5rem] shadow-2xl w-full max-w-xl border border-strong overflow-hidden animate-in zoom-in-95 duration-300" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle bg-surface/50 font-sans">
           <div class="flex items-center gap-4">
-              <div class="w-14 h-14 bg-brand/10 rounded-[1.25rem] flex items-center justify-center border border-brand/20 shadow-sm transition-transform hover:rotate-6">
-                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">receipt_long</span>
+              <div class="w-12 h-12 bg-zinc-500/10 rounded-2xl flex items-center justify-center border border-zinc-500/20">
+                  <span translate="no" class="notranslate material-symbols-outlined text-muted text-3xl">history</span>
               </div>
               <div>
-                  <h3 class="text-3xl font-black text-title tracking-tight">Detalhes do Pedido</h3>
-                  <p class="text-muted text-[11px] font-black uppercase tracking-[0.3em] mt-1">{{ ticket.orderId.substring(0, 8) }}</p>
+                  <h3 class="text-2xl font-black text-title tracking-tight">Histórico de Conclusão</h3>
+                  <p class="text-muted text-xs font-bold uppercase tracking-widest mt-1">Clique para re-abrir e desfazer término</p>
               </div>
           </div>
-          <button (click)="closeDetailModal()" class="w-12 h-12 flex items-center justify-center rounded-2xl text-muted hover:bg-surface-elevated transition-colors border border-transparent hover:border-strong">
-              <span translate="no" class="notranslate material-symbols-outlined text-2xl">close</span>
-          </button>
       </div>
-
-      <div class="p-10 flex-1 overflow-y-auto custom-scrollbar">
-        <!-- Ticket Summary Tiles -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
-                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Origem</p>
-                <p class="text-2xl font-black text-title">
-                    @if (ticket.orderType.startsWith('iFood')) {
-                        <span class="flex items-center gap-2">
-                             <img src="https://static.ifood.com.br/webapp/images/ifood-logo.png" class="h-4 object-contain opacity-50 grayscale hover:grayscale-0 transition-all" alt="iFood" referrerpolicy="no-referrer">
-                             #{{ ticket.ifoodDisplayId }}
-                        </span>
-                    } @else if (ticket.orderType === 'QuickSale') {
-                        <span>BALCÃO</span>
-                    } @else if (ticket.orderType === 'Tab') {
-                        <span>{{ ticket.tabName || ('CMD ' + ticket.commandNumber) }}</span>
-                    } @else {
-                        <span>MESA {{ ticket.tableNumber }}</span>
-                    }
-                </p>
-            </div>
-            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
-                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Horário</p>
-                <p class="text-2xl font-black text-title">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</p>
-            </div>
-            <div class="bg-surface p-6 rounded-[2rem] border border-strong shadow-sm group">
-                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-2 group-hover:text-brand transition-colors">Timer</p>
-                <p class="text-2xl font-black font-mono tracking-tighter" [class.text-danger]="ticket.isTicketLate" [class.text-title]="!ticket.isTicketLate">{{ formatTime(ticket.ticketElapsedTime) }}</p>
-            </div>
-            @if(ticket.waiterName) {
-                <div class="bg-brand/5 p-6 rounded-[2rem] border border-brand/20 shadow-sm group">
-                    <p class="text-[10px] font-black text-brand uppercase tracking-widest mb-2">Responsável</p>
-                    <p class="text-2xl font-black text-brand truncate">{{ ticket.waiterName }}</p>
-                </div>
-            }
-        </div>
-
-        <div class="space-y-8">
-            <h4 class="text-base font-black text-title uppercase tracking-widest flex items-center gap-3">
-                <div class="w-2 h-2 rounded-full bg-brand"></div>
-                Itens do Pedido
-            </h4>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                @for (item of ticket.items; track item.id) {
-                    <div class="p-6 rounded-[2.5rem] flex flex-col gap-6 relative overflow-hidden transition-all border border-strong bg-surface" 
-                         [class.ring-2]="item.isCritical || item.isCancelled" 
-                         [class.ring-danger]="item.isCritical || item.isCancelled">
-                      
-                      @if(item.isCancelled) {
-                          <div class="absolute top-0 left-0 w-full h-1 bg-danger"></div>
-                          <div class="flex items-center gap-3 text-danger font-black animate-pulse uppercase text-xs tracking-widest mb-2">
-                              <span translate="no" class="notranslate material-symbols-outlined text-sm">block</span>
-                              ITEM CANCELADO
-                          </div>
-                      } @else if(item.isCritical) {
-                          <div class="flex items-center gap-3 text-danger font-black animate-pulse uppercase text-xs tracking-widest mb-2">
-                              <span translate="no" class="notranslate material-symbols-outlined text-sm">info</span>
-                              ATENÇÃO NECESSÁRIA
-                          </div>
-                      }
-
-                      <div class="flex gap-5">
-                          <div class="flex-1 min-w-0">
-                              <div class="flex items-center gap-3 mb-2">
-                                  <div class="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-xl font-black border border-strong shadow-inner text-title">
-                                      {{ item.quantity }}
-                                  </div>
-                                  <p class="font-black text-title text-xl leading-tight truncate" [class.line-through]="item.isCancelled" [class.text-muted]="item.isCancelled">{{ item.name }}</p>
-                              </div>
-                              
-                              @if(item.notes) { 
-                                  <div class="p-3 bg-surface-elevated rounded-2xl border border-strong italic text-muted text-sm relative whitespace-pre-wrap">
-                                      <span class="text-xl text-brand absolute -top-2 -left-1 opacity-20">"</span>
-                                      {{ item.notes }}
-                                  </div> 
-                              }
-                              
-                              <div class="mt-4 flex items-center gap-4">
-                                  <span class="px-3 py-1 font-black text-[10px] uppercase tracking-widest rounded-lg border shadow-inner" 
-                                        [ngClass]="item.timerColor === 'text-white' ? 'bg-brand/10 text-brand border-brand/20' : 'bg-surface-elevated text-muted border-strong'">
-                                        {{ item.isCancelled ? 'CANCELADO' : item.status.replace('_', ' ') }}
-                                  </span>
-                                  <span class="font-mono text-sm font-bold text-muted">{{ formatTime(item.elapsedTimeSeconds) }}</span>
-                              </div>
-                          </div>
-
-                          <!-- Historical stats simplified -->
-                          <div class="w-[120px] pt-1">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-3 border-b border-strong pb-1">Logs de Status</p>
-                            <div class="flex flex-col gap-2">
-                              @for(history of getStatusHistory(item.status_timestamps); track history.status) {
-                                <div class="flex flex-col">
-                                    <span class="text-[9px] font-black text-title uppercase">{{ history.status.split('_').pop() }}</span>
-                                    <span class="font-mono text-[9px] text-muted">{{ history.time | date:'HH:mm:ss' }}</span>
-                                </div>
-                              }
-                            </div>
-                          </div>
-                      </div>
+      
+      <div class="p-6 max-h-[50vh] overflow-y-auto custom-scrollbar font-sans space-y-3">
+          @for (item of recentlyCompletedItems(); track item.finishedAt) {
+              <div (click)="restoreItem(item)" class="flex items-center justify-between p-4 bg-surface hover:bg-brand/10 hover:border-brand/35 rounded-2xl border border-strong cursor-pointer hover:shadow-lg transition-all group">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-surface-elevated flex items-center justify-center font-black text-sm border border-strong text-title font-mono shadow-inner group-hover:border-brand transition-colors">
+                        {{ item.displayItem.quantity }}
                     </div>
-                }
-            </div>
-        </div>
-      </div>
-
-      <div class="p-8 bg-surface/50 border-t border-subtle flex justify-end items-center gap-5">
-          <button (click)="closeDetailModal()" class="px-8 py-4 font-black rounded-2xl bg-surface-elevated hover:bg-white/5 text-title transition-all border border-strong uppercase tracking-widest text-xs">
-              FECHAR DETALHES
-          </button>
-          <button (click)="printTicket(ticket)" class="px-10 py-4 font-black rounded-2xl bg-brand hover:brightness-110 text-white transition-all shadow-xl shadow-brand/20 uppercase tracking-widest text-xs flex items-center gap-2">
-              <span translate="no" class="notranslate material-symbols-outlined text-xl">print</span>
-              IMPRIMIR VIA
-          </button>
+                    <div>
+                        <p class="font-bold text-title group-hover:text-brand transition-colors text-base">{{ item.displayItem.name }}</p>
+                        <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-0.5">Origem: {{ item.ticketInfo }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <span class="font-mono text-xs font-medium text-muted/70">{{ item.finishedAt | date:'HH:mm:ss' }}</span>
+                    <div class="w-8 h-8 bg-surface-elevated text-muted group-hover:bg-brand group-hover:text-white rounded-xl border border-strong flex items-center justify-center transition-all">
+                       <span translate="no" class="notranslate material-symbols-outlined text-base">undo</span>
+                    </div>
+                </div>
+              </div>
+          } @empty {
+              <div class="text-center py-10 opacity-50">
+                  <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted animate-pulse">history</span>
+                  <p class="text-sm font-bold uppercase tracking-widest mt-3">Histórico de desfazer vazio</p>
+              </div>
+          }
       </div>
     </div>
   </div>
+}
+
+<!-- Detail Modal (Kitchen) -->
+@if(isDetailModalOpen() && selectedTicketForDetail(); as ticket) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print animate-in fade-in duration-300" (click)="closeDetailModal()">
+    <div class="bg-surface-elevated rounded-[2.5rem] shadow-2xl w-full max-w-xl border border-strong overflow-hidden animate-in zoom-in-95 duration-300" (click)="$event.stopPropagation()">
+      <div class="p-6 md:p-8 border-b border-subtle bg-surface/50 flex justify-between items-center font-sans">
+          <div class="flex items-center gap-4">
+              <div class="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center border border-brand/20">
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl">receipt_long</span>
+              </div>
+              <div>
+                  <h3 class="text-2xl font-black text-title tracking-tight">
+                    Pedido #{{ ticket.orderId.slice(-6) | uppercase }}
+                  </h3>
+                  <p class="text-muted text-xs font-black uppercase tracking-widest mt-1">Origem: {{ ticket.orderType }}</p>
+              </div>
+          </div>
+          <button (click)="closeDetailModal()" class="w-10 h-10 rounded-xl bg-surface hover:bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title transition-all">
+              <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+          </button>
+      </div>
+      
+      <div class="p-6 md:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar font-sans space-y-6">
+          <div class="bg-surface rounded-2xl border border-strong p-4 space-y-3 shadow-inner">
+               <div class="flex justify-between text-xs font-bold border-b border-strong pb-2 text-muted">
+                   <span>Mesa / Identificador</span>
+                   <span class="text-title font-black uppercase">{{ ticket.orderType === 'Tab' ? (ticket.tabName || 'Comanda ' + ticket.commandNumber) : 'Mesa ' + ticket.tableNumber }}</span>
+               </div>
+               <div class="flex justify-between text-xs font-bold border-b border-strong pb-2 text-muted">
+                   <span>Atendente / Garçom</span>
+                   <span class="text-title font-black uppercase">{{ ticket.waiterName || 'CANAL ONLINE' }}</span>
+               </div>
+               <div class="flex justify-between text-xs font-bold border-b border-strong pb-2 text-muted">
+                   <span>Cliente</span>
+                   <span class="text-title font-black uppercase">{{ ticket.customerName || 'NÃO INFORMADO' }}</span>
+               </div>
+               <div class="flex justify-between text-xs font-bold text-muted">
+                   <span>Horário de Entrada</span>
+                   <span class="text-title font-mono font-black">{{ ticket.oldestTimestamp | date:'HH:mm:ss' }}</span>
+               </div>
+          </div>
+          
+          <div class="space-y-3">
+              <h4 class="text-xs font-black text-muted uppercase tracking-widest pl-1">Histórico de Preparo dos Itens</h4>
+              <div class="space-y-2">
+                  @for (item of ticket.items; track item.id) {
+                      <div class="p-4 bg-surface rounded-2xl border border-strong">
+                          <div class="flex justify-between items-start">
+                              <span class="font-bold text-title flex items-center gap-2 text-base">
+                                  <span class="w-6 h-6 rounded-lg bg-surface-elevated border border-strong flex items-center justify-center font-black text-xs font-mono select-none text-title shadow-inner">{{ item.quantity }}</span> 
+                                  {{ item.name }}
+                              </span>
+                              <span class="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-lg border shadow-sm backdrop-blur-md" 
+                                    [class.bg-brand/10]="item.status === 'EM_PREPARO'" [class.text-brand]="item.status === 'EM_PREPARO'" [class.border-brand/30]="item.status === 'EM_PREPARO'"
+                                    [class.bg-warning/10]="item.status === 'PENDENTE' && !item.isCancelled" [class.text-warning]="item.status === 'PENDENTE' && !item.isCancelled" [class.border-warning/30]="item.status === 'PENDENTE' && !item.isCancelled"
+                                    [class.bg-success/10]="item.status === 'PRONTO'" [class.text-success]="item.status === 'PRONTO'" [class.border-success/30]="item.status === 'PRONTO'"
+                                    [class.bg-danger/20]="item.isCancelled" [class.text-danger]="item.isCancelled" [class.border-danger/40]="item.isCancelled">
+                                  {{ item.isCancelled ? 'CANCELADO' : item.status }}
+                              </span>
+                          </div>
+                          @if (getStatusHistory(item.status_timestamps); as history) {
+                              @if (history.length > 0) {
+                                  <div class="mt-4 border-t border-strong pt-3 space-y-1.5 font-mono text-[10px] text-muted">
+                                      @for (step of history; track step.status) {
+                                          <div class="flex justify-between">
+                                              <span class="font-bold uppercase tracking-wider">{{ step.status }}</span>
+                                              <span>{{ step.step?.time ?? step.time | date:'HH:mm:ss (dd/MM)' }}</span>
+                                          </div>
+                                      }
+                                  </div>
+                              }
+                          @}
+                      </div>
+                  }
+              </div>
+          </div>
+      </div>
+      
+      <div class="p-6 md:p-8 bg-surface/50 border-t border-strong flex justify-end gap-3 font-sans">
+          <button (click)="printTicket(ticket)" class="px-6 py-3 bg-brand/10 hover:bg-brand text-brand hover:text-white border border-brand/20 hover:border-brand text-xs font-black rounded-xl uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2">
+              <span translate="no" class="notranslate material-symbols-outlined text-lg">print</span> IMPRIMIR KDS
+          </button>
+          <button (click)="closeDetailModal()" class="px-6 py-3 bg-surface hover:bg-surface-elevated border border-strong text-xs font-black rounded-xl uppercase tracking-widest text-muted hover:text-title transition-all">Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Traditional Delivery Detail Modal -->
+@if(isDetailsModalOpen() && selectedOrderForDetails(); as order) {
+  <app-delivery-details-modal 
+    [order]="order" 
+    (closeModal)="closeDetailsModal()"
+    (finalizeDelivery)="finalizeDelivery(order)">
+  </app-delivery-details-modal>
+}
+
+<!-- Assign Driver Modal (Traditional Delivery) -->
+@if(isExternalAssignDriverModalOpen()) {
+  <app-assign-driver-modal 
+    [orders]="ordersToAssignDriver()"
+    (closeModal)="isExternalAssignDriverModalOpen.set(false); ordersToAssignDriver.set([])"
+    (driverAssigned)="handleDriverAssigned($event)">
+  </app-assign-driver-modal>
+}
+
+<!-- Driver Management Modal (Traditional Delivery) -->
+@if(isDriversModalOpen()) {
+  <app-delivery-drivers-modal 
+    (closeModal)="isDriversModalOpen.set(false)"
+    (driversChanged)="loadTodayDeliveredOrders()">
+  </app-delivery-drivers-modal>
+}
+
+<!-- Traditional Delivery Custom Order Modal (Creation/Draft) -->
+@if(orderModalState()) {
+  <app-delivery-order-modal 
+    [order]="orderModalState() !== 'new' ? orderModalState() : null" 
+    [isOpen]="!!orderModalState()"
+    (closeModal)="orderModalState.set(null)">
+  </app-delivery-order-modal>
+}
+
+<!-- IFOOD INTEGRATED MODALS -->
+<!-- Webhook Logs View Modal -->
+@if(isLogVisible()) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="isLogVisible.set(false)">
+    <div class="bg-surface-elevated rounded-[2.5rem] border border-strong shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 font-sans" (click)="$event.stopPropagation()">
+      <div class="p-6 md:p-8 border-b border-subtle bg-surface/50 flex justify-between items-center">
+         <div class="flex items-center gap-3">
+             <div class="w-12 h-12 bg-red-600/10 border border-red-600/20 rounded-2xl flex items-center justify-center">
+                 <span translate="no" class="notranslate material-symbols-outlined text-red-500 text-3xl">history</span>
+             </div>
+             <div>
+                 <h3 class="text-2xl font-black text-title tracking-tight leading-none">Logs de Integração iFood</h3>
+                 <p class="text-muted text-xs font-bold uppercase tracking-wider mt-1.5 animate-pulse">Sincronizado via Webhooks em Tempo Real</p>
+             </div>
+         </div>
+         <button (click)="isLogVisible.set(false)" class="w-10 h-10 rounded-xl bg-surface hover:bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title transition-all">
+             <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+         </button>
+      </div>
+
+      <!-- Logs Grid -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-3">
+         @for (log of webhookLogs(); track log.id) {
+           <div (click)="openLogDetailModal(log)" class="p-4 bg-surface hover:bg-surface-elevated border border-strong rounded-2xl cursor-pointer hover:shadow-md transition-all flex items-center justify-between text-xs gap-4 relative overflow-hidden group">
+             <div class="flex items-center gap-3 min-w-0">
+               <span class="w-3 h-3 rounded-full flex-shrink-0 animate-pulse" [class]="log.log_status?.startsWith('ERROR') ? 'bg-danger' : 'bg-success'"></span>
+               <div class="truncate">
+                  <p class="font-black text-title uppercase tracking-wide leading-none select-all text-sm mb-1.5 font-sans">#{{ log.ifood_display_id || log.ifood_order_id?.slice(0, 8) }}</p>
+                  <p class="text-[10px] font-black text-muted uppercase tracking-wider leading-none select-none">{{ log.event_code || 'WEBHOOK_PAYLOAD' }}</p>
+               </div>
+             </div>
+
+             <div class="flex items-center gap-3 shrink-0">
+                <span class="px-2.5 py-1 text-[9px] font-black uppercase rounded-lg shadow-sm border font-sans" [class]="getLogStatusClass(log.log_status)">
+                    {{ log.log_status || 'PROCESSADO' }}
+                </span>
+                <span class="font-mono text-[10px] text-muted">{{ log.created_at | date:'HH:mm:ss (dd/MM)' }}</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-muted text-base group-hover:text-brand select-none">chevron_right</span>
+             </div>
+           </div>
+         } @empty {
+            <div class="text-center py-20 opacity-50 flex flex-col items-center justify-center">
+                <span translate="no" class="notranslate material-symbols-outlined text-5xl text-muted animate-pulse">history</span>
+                <p class="text-xs font-black uppercase tracking-widest mt-4">Nenhum evento registrado hoje</p>
+            </div>
+         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Log Webhook Detailed Modal -->
+@if(selectedLogForDetail(); as log) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="closeLogDetailModal()">
+    <div class="bg-surface-elevated rounded-[2.5rem] border border-strong shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 font-sans" (click)="$event.stopPropagation()">
+      <div class="p-6 md:p-8 border-b border-subtle bg-surface/50 flex justify-between items-center text-base">
+         <h4 class="text-xl font-black text-title uppercase tracking-wider">Detalhe de Payload do Log</h4>
+         <button (click)="closeLogDetailModal()" class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title transition-all">
+             <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
+         </button>
+      </div>
+      <div class="flex-1 p-6 overflow-y-auto custom-scrollbar font-mono text-xs text-title bg-surface/30 select-all space-y-4">
+          <div class="grid grid-cols-2 gap-4 border border-strong bg-surface p-4 rounded-xl">
+             <p class="text-[10px] text-muted font-bold">EVENTO: <strong class="text-title">{{ log.event_code }}</strong></p>
+             <p class="text-[10px] text-muted font-bold text-right">STATUS: <strong class="text-title">{{ log.log_status }}</strong></p>
+          </div>
+          <div class="p-4 bg-black/20 rounded-xl border border-strong max-h-[300px] overflow-auto">
+             <pre class="whitespace-pre-wrap [word-break:break-word] select-all">{{ log.payload | json }}</pre>
+          </div>
+          @if(log.error_message) {
+              <div class="p-4 bg-danger/10 border border-danger/20 rounded-xl text-danger">
+                 <h5 class="text-[10px] uppercase font-black tracking-widest mb-1.5 font-sans">Mensagem de Erro de Processamento:</h5>
+                 <p class="font-sans text-xs font-bold">{{ log.error_message }}</p>
+              </div>
+          }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- iFood Order Detail / Controls Modal -->
+@if(isIfoodDetailModalOpen() && selectedOrderForDetail(); as order) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="closeIfoodDetailModal()">
+    <div class="bg-surface-elevated rounded-[2.5rem] border border-strong shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 font-sans" (click)="$event.stopPropagation()">
+      <div class="p-6 md:p-8 border-b border-subtle bg-surface/50 flex justify-between items-center bg-red-600/5">
+         <div class="flex items-center gap-4">
+             <div class="w-12 h-12 bg-red-600/10 border border-red-600/20 rounded-2xl flex items-center justify-center shrink-0">
+                 <span translate="no" class="notranslate material-symbols-outlined text-red-500 text-3xl font-black">restaurant</span>
+             </div>
+             <div>
+                 <h3 class="text-2xl font-black text-title tracking-tight leading-none font-sans">iFood #{{ order.ifood_display_id }}</h3>
+                 <p class="text-muted text-[10px] font-black uppercase tracking-widest mt-1.5">ID: {{ order.ifood_order_id }}</p>
+             </div>
+         </div>
+         <button (click)="closeIfoodDetailModal()" class="w-10 h-10 rounded-xl bg-surface hover:bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title transition-all">
+             <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+         </button>
+      </div>
+
+      <!-- Detail content -->
+      <div class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-6">
+         <!-- Customer & Address -->
+         <div class="p-5 bg-surface rounded-2xl border border-strong space-y-4">
+            <div class="flex items-center gap-3">
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-xl">account_circle</span>
+              <div>
+                <p class="font-black text-title text-base leading-none">{{ order.customers?.name }}</p>
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-1 leading-none">Cliente iFood</p>
+              </div>
+            </div>
+            
+            <div class="border-t border-strong/40"></div>
+
+            <div class="flex items-start gap-3">
+              <span translate="no" class="notranslate material-symbols-outlined text-muted text-xl mt-0.5">location_on</span>
+              @if(order.delivery_info?.deliveryAddress; as address) {
+                 <div class="text-sm font-semibold text-muted font-sans space-y-1">
+                   <p class="text-title font-black">{{ address.streetName }}, {{ address.streetNumber }}</p>
+                   <p>{{ address.neighborhood }} - {{ address.city }}</p>
+                   @if(address.reference) {
+                     <p class="bg-black/10 px-2.5 py-1 rounded-lg text-title text-xs mt-1 border inline-block border-strong uppercase tracking-wide">Ponto de Referência: {{ address.reference }}</p>
+                   }
+                 </div>
+              } @else {
+                 <p class="text-sm font-bold text-muted uppercase tracking-wider italic">Pedido Retirada (Takeout) - Sem endereço</p>
+              }
+            </div>
+         </div>
+
+         <!-- Dispute / Dispute Details Alerts -->
+         @if(order.ifood_dispute_id) {
+           <div class="p-5 bg-danger/10 border-2 border-danger/25 rounded-2xl space-y-4 animate-pulse">
+              <div class="flex items-center gap-3">
+                <span translate="no" class="notranslate material-symbols-outlined text-danger text-2xl">error</span>
+                <div>
+                   <h4 class="font-black text-base text-danger uppercase tracking-tight">Ocorrência / Disputa Aberta</h4>
+                   <p class="text-danger/90 text-[10px] uppercase font-black tracking-widest mt-1">Sincronizado via iFood Assist</p>
+                </div>
+              </div>
+              <p class="text-title font-bold text-sm bg-surface p-4 rounded-xl border border-strong/40 select-all leading-relaxed">
+                Motivo: {{ getDisputeMessage(order) }}
+              </p>
+              
+              <!-- Evidence images if exist -->
+              @if(order.disputeEvidences && order.disputeEvidences.length > 0) {
+                <div class="space-y-2 mt-4 select-none">
+                  <h5 class="text-[10px] font-black text-muted uppercase tracking-widest leading-none pl-0.5">Mídias de Evidência do Cliente:</h5>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    @for(img of order.disputeEvidences; track img) {
+                       <a [href]="evidenceImagesMap().get(img) || img" target="_blank" class="block aspect-square rounded-xl overflow-hidden border border-strong bg-black">
+                         <img [src]="evidenceImagesMap().get(img) || img" class="object-cover w-full h-full hover:scale-105 transition-transform" alt="Dispute evidence" referrerpolicy="no-referrer">
+                       </a>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Action buttons for Dispute -->
+              <div class="flex flex-wrap gap-2 pt-2 border-t border-danger/10">
+                 <button (click)="handleAcceptDispute(order)" [disabled]="updatingOrders().has(order.id)" class="px-4 py-2.5 bg-success text-white text-xs font-black rounded-lg uppercase tracking-wider shadow-md hover:brightness-105 active:scale-95 transition-all">Aceitar Ocorrência</button>
+                 <button (click)="openRejectDisputeModal(order)" class="px-4 py-2.5 bg-danger text-white text-xs font-black rounded-lg uppercase tracking-wider shadow-md hover:brightness-105 active:scale-95 transition-all">Recusar Disputa</button>
+                 @if(hasRefundAlternative(order)) {
+                    <button (click)="openProposeRefundModal(order)" class="px-4 py-2.5 bg-warning text-title text-xs font-black rounded-lg uppercase tracking-wider shadow-md hover:brightness-105 active:scale-95 transition-all">Propor Reembolso</button>
+                 }
+              </div>
+           </div>
+         }
+
+         <!-- Items List -->
+         <div class="space-y-3">
+             <h4 class="text-xs font-black text-muted uppercase tracking-widest pl-1 leading-none select-none">Produtos do Pedido</h4>
+             <div class="space-y-2 font-sans select-none">
+                @for(item of order.order_items; track item.id) {
+                   <div class="flex items-center justify-between p-4 bg-surface rounded-2xl border border-strong">
+                      <div class="flex items-center gap-3">
+                         <div class="w-8 h-8 bg-surface-elevated rounded-xl border border-strong flex items-center justify-center font-black text-sm text-title shadow-inner">{{ item.quantity }}</div>
+                         <p class="font-bold text-title text-sm">{{ item.name }}</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                         <span class="text-title font-bold text-sm">{{ item.price | currency:'BRL':'symbol':'1.2-2' }}</span>
+                      </div>
+                   </div>
+                }
+             </div>
+         </div>
+
+         <!-- Financial totals summary -->
+         <div class="p-5 bg-surface rounded-2xl border border-strong font-sans select-none space-y-3">
+             <div class="flex justify-between text-xs text-muted">
+                 <span>Subtotal dos Itens</span>
+                 <span class="text-title font-semibold">{{ order.subTotal | currency:'BRL':'symbol':'1.1-2' }}</span>
+             </div>
+             @if(order.deliveryFee > 0) {
+                 <div class="flex justify-between text-xs text-muted">
+                     <span>Taxa de Entrega</span>
+                     <span class="text-title font-semibold">{{ order.deliveryFee | currency:'BRL':'symbol':'1.1-2' }}</span>
+                 </div>
+             }
+             @if(getOrderBenefitsTotal(order); as promo) {
+                 @if(promo > 0) {
+                     <div class="flex justify-between text-xs text-danger">
+                         <span>Descontos / Promoções do iFood</span>
+                         <span class="font-black">-{{ promo | currency:'BRL':'symbol':'1.1-2' }}</span>
+                     </div>
+                 }
+             }
+             <div class="border-t border-strong/40 my-1"></div>
+             <div class="flex justify-between text-sm">
+                 <span class="font-black text-title leading-none">Total Geral Liquido</span>
+                 <strong class="text-title text-base font-black">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+             </div>
+             <div class="border-t border-dashed border-strong/40 my-1"></div>
+             <div class="flex justify-between text-xs font-semibold text-muted">
+                 <span>Método: <strong class="text-title font-black">{{ order.paymentDetails }}</strong></span>
+                 @if(order.changeDue > 0) {
+                    <span class="text-warning">Troco para: <strong class="font-mono text-title">{{ order.changeDue | currency:'BRL':'symbol':'1.2-2' }}</strong></span>
+                 }
+             </div>
+         </div>
+         
+         <!-- Timeline webhooks logs history -->
+         <div class="space-y-3">
+             <h4 class="text-xs font-black text-muted uppercase tracking-widest pl-1 leading-none">Últimos Eventos do Pedido</h4>
+             <div class="max-h-[220px] overflow-y-auto border border-strong bg-surface rounded-2xl p-4 divide-y divide-strong custom-scrollbar font-sans select-all">
+                @for(log of webhookLogs(); track log.id) {
+                   @if(log.ifood_order_id === order.ifood_order_id) {
+                      <div class="py-3 flex justify-between items-center text-xs justify-between gap-4 first:pt-0 last:pb-0">
+                         <div>
+                            <p class="font-bold text-title uppercase tracking-wide text-[11px] mb-1 leading-none">{{ log.event_code }}</p>
+                            <p class="text-[9px] text-muted leading-none uppercase tracking-tight">{{ log.created_at | date:'dd/MM HH:mm:ss' }}</p>
+                         </div>
+                         <span class="px-2 py-0.5 text-[8px] font-black uppercase rounded border" [class]="getLogStatusClass(log.log_status)">
+                             {{ log.log_status || 'PROCESSADO' }}
+                         </span>
+                      </div>
+                   }
+                } @empty {
+                   <div class="text-center py-6 opacity-40 italic text-xs font-black uppercase tracking-widest">Sem webhook logs associados</div>
+                }
+             </div>
+         </div>
+
+      </div>
+
+      <!-- Bottom controls -->
+      <div class="p-6 md:p-8 bg-surface/50 border-t border-strong flex flex-wrap gap-2 justify-end font-sans">
+          <button (click)="openIfoodTrackingModal(order)" class="px-5 py-3 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-500 hover:text-white border border-indigo-500/20 hover:border-indigo-600 text-xs font-black rounded-lg uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 shrink-0">
+             <span translate="no" class="notranslate material-symbols-outlined text-lg">navigation</span> Rastrear Entrega
+          </button>
+          
+          <button (click)="cancelOrder(order)" [disabled]="updatingOrders().has(order.id) || order.ifoodStatus === 'CANCELLED'" class="px-5 py-3 bg-danger text-white hover:brightness-110 text-xs font-black rounded-lg uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0">
+             <span translate="no" class="notranslate material-symbols-outlined text-lg">cancel</span> Cancelar iFood
+          </button>
+
+          <button (click)="deleteOrder(order)" class="px-5 py-3 bg-muted hover:bg-muted-hover text-muted hover:text-title border border-strong text-xs font-black rounded-lg uppercase tracking-wider transition-all shrink-0">
+             Deletar permanentemente
+          </button>
+          
+          <button (click)="closeIfoodDetailModal()" class="px-5 py-3 bg-surface hover:bg-surface-elevated border border-strong text-xs font-black rounded-lg uppercase tracking-wider text-muted hover:text-title transition-all shrink-0">Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- iFood Assign Driver modal -->
+@if(isIfoodAssignDriverModalOpen()) {
+  <app-ifood-assign-driver-modal
+    (closeModal)="closeIfoodAssignDriverModal()"
+    (assignDriver)="assignIfoodDriver($event)">
+  </app-ifood-assign-driver-modal>
+}
+
+<!-- iFood Cancel Order Modal validation -->
+@if(isCancelModalOpen() && orderToCancel()) {
+  <app-cancel-ifood-order-modal
+    [reasons]="cancellationReasons()"
+    (closeModal)="handleCancelModalClose()"
+    (confirmCancellation)="handleConfirmCancellation($event)">
+  </app-cancel-ifood-order-modal>
+}
+
+<!-- iFood Dispute Reject Modal validation -->
+@if(isRejectDisputeModalOpen() && orderToReject()) {
+  <app-reject-dispute-modal
+    (closeModal)="isRejectDisputeModalOpen.set(false); orderToReject.set(null)"
+    (confirmRejection)="handleConfirmRejection($event)">
+  </app-reject-dispute-modal>
+}
+
+<!-- iFood Propose Refund alternative dispute modal -->
+@if(isProposeRefundModalOpen() && orderToProposeRefund(); as order) {
+  <app-propose-refund-modal
+    [maxAmount]="getRefundAlternative(order)?.metadata?.amount?.value ? (getRefundAlternative(order).metadata.amount.value / 100) : getOrderTotalAmount(order)"
+    (closeModal)="isProposeRefundModalOpen.set(false); orderToProposeRefund.set(null)"
+    (confirmRefund)="handleConfirmRefund($event)">
+  </app-propose-refund-modal>
+}
+
+<!-- iFood Verification code modal (delivery or pickup validation) -->
+@if (isVerifyCodeModalOpen() && orderForCodeModal()) {
+  <app-verify-code-modal
+    [type]="codeTypeForModal() === 'pickup' ? 'RETIRADA' : 'ENTREGA'"
+    [displayId]="orderForCodeModal()?.ifood_display_id || ''"
+    (closeModal)="isVerifyCodeModalOpen.set(false); orderForCodeModal.set(null); codeTypeForModal.set(null)"
+    (confirmVerification)="handleConfirmVerification($event)">
+  </app-verify-code-modal>
+}
+
+<!-- iFood Logistics Tracking modal map/steps display -->
+@if (isTrackingModalOpen() && orderForTracking()) {
+  <app-ifood-tracking-modal
+    [order]="orderForTracking()"
+    [trackingData]="trackingData()"
+    [isLoading]="isLoadingTracking()"
+    (closeModal)="closeIfoodTrackingModal()">
+  </app-ifood-tracking-modal>
 }

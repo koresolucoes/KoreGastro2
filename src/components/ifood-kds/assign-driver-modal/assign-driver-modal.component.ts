@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-assign-driver-modal',
+  selector: 'app-ifood-assign-driver-modal',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './assign-driver-modal.component.html',

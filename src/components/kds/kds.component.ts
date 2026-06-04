@@ -1,7 +1,22 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Station, Order, OrderItem, OrderItemStatus, Recipe, Employee, OrderType, IfoodOrderStatus } from '../../models/db.models';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { CdkDragDrop, moveItemInArray, transferArrayItem, CdkDrag, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
+
+import { 
+  Station, 
+  Order, 
+  OrderItem, 
+  OrderItemStatus, 
+  Recipe, 
+  Employee, 
+  OrderType, 
+  IfoodOrderStatus, 
+  IfoodWebhookLog 
+} from '../../models/db.models';
+import { ProcessedIfoodOrder, LogisticsStatus } from '../../models/app.models';
+
 import { PrintingService } from '../../services/printing.service';
 import { PosDataService } from '../../services/pos-data.service';
 import { SettingsDataService } from '../../services/settings-data.service';
@@ -9,18 +24,38 @@ import { NotificationService } from '../../services/notification.service';
 import { SoundNotificationService } from '../../services/sound-notification.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
 
-// Import new state services
+// Import state services
 import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
+import { IfoodStateService } from '../../services/ifood-state.service';
+import { DeliveryStateService } from '../../services/delivery-state.service';
+import { DeliveryDataService } from '../../services/delivery-data.service';
+import { WebhookService } from '../../services/webhook.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
+import { IfoodMenuService, IfoodCancellationReason, IfoodTrackingData } from '../../services/ifood-menu.service';
+import { OperationalAuthService } from '../../services/operational-auth.service';
+
+// Import subcomponents for iFood and Delivery
+import { CancelIfoodOrderModalComponent } from '../ifood-kds/cancel-ifood-order-modal/cancel-ifood-order-modal.component';
+import { IfoodTrackingModalComponent } from '../ifood-kds/ifood-tracking-modal/ifood-tracking-modal.component';
+import { RejectDisputeModalComponent } from '../ifood-kds/reject-dispute-modal/reject-dispute-modal.component';
+import { VerifyCodeModalComponent } from '../ifood-kds/verify-code-modal/verify-code-modal.component';
+import { OrderDetailsModalComponent as IfoodOrderDetailsModalComponent } from '../ifood-kds/order-details-modal/order-details-modal.component';
+import { ProposeRefundModalComponent } from '../ifood-kds/propose-refund-modal/propose-refund-modal.component';
+
+import { DeliveryDriversModalComponent } from '../delivery/delivery-drivers-modal/delivery-drivers-modal.component';
+import { DeliveryOrderModalComponent } from '../delivery/delivery-order-modal/delivery-order-modal.component';
+import { AssignDriverModalComponent } from '../delivery/assign-driver-modal/assign-driver-modal.component';
+import { DeliveryDetailsModalComponent } from '../delivery/delivery-details-modal/delivery-details-modal.component';
+import { DeliveryTrackingComponent } from '../delivery/delivery-tracking/delivery-tracking.component';
+import { AssignDriverModalComponent as IfoodAssignDriverModalComponent } from '../ifood-kds/assign-driver-modal/assign-driver-modal.component';
 
 interface BaseTicket {
   orderId: string;
   tableNumber: number;
-  // FIX: Added fields for Command/Tab support in KDS
   commandNumber?: number | null;
   tabName?: string | null;
-  
   ticketElapsedTime: number;
   ticketTimerColor: string;
   isTicketLate: boolean;
@@ -32,16 +67,13 @@ interface BaseTicket {
   waiterName?: string;
 }
 
-// New Interface for Grouped Items within a Ticket
 interface KdsDisplayItem {
-  id: string; // ID of the first item in the group (used for tracking in UI)
-  ids: string[]; // List of all item IDs in this group (for batch updates)
+  id: string; 
+  ids: string[]; 
   name: string;
-  quantity: number; // Sum of quantities
+  quantity: number; 
   status: OrderItemStatus;
   notes: string | null;
-  
-  // Computed/Derived properties for display
   timerColor: string;
   isLate: boolean;
   isCritical: boolean;
@@ -51,22 +83,19 @@ interface KdsDisplayItem {
   stationName?: string;
   isCancelled: boolean;
   elapsedTimeSeconds: number;
-  
-  status_timestamps?: Record<string, string> | null; // From the representative item
+  status_timestamps?: Record<string, string> | null; 
 }
 
-// Interface for All Day Production View
 interface ProductionAggregateItem {
   name: string;
   quantity: number;
   status: OrderItemStatus;
   notes: string | null;
-  minElapsedTime: number; // Time of the oldest item in this group
+  minElapsedTime: number; 
   maxElapsedTime: number;
   isCritical: boolean;
-  ids: string[]; // All item IDs that make up this aggregate
+  ids: string[]; 
 }
-
 
 interface StationTicket extends BaseTicket {
   items: KdsDisplayItem[];
@@ -75,15 +104,14 @@ interface StationTicket extends BaseTicket {
 interface ExpoTicket extends BaseTicket {
   items: KdsDisplayItem[];
   isReadyForPickup: boolean;
-  progress: number; // 0 to 100
+  progress: number; 
   completedCount: number;
   totalCount: number;
 }
 
-// For Recall Feature
 interface RecallItem {
   displayItem: KdsDisplayItem;
-  ticketInfo: string; // e.g. "Mesa 5" or "#1234"
+  ticketInfo: string; 
   finishedAt: number;
 }
 
@@ -92,18 +120,40 @@ type ProcessedOrderItem = OrderItem & {
   timerColor: string;
   isLate: boolean;
   isCritical: boolean;
-  prepTime: number; // in seconds
+  prepTime: number; 
   attention_acknowledged: boolean;
   isHeld: boolean;
-  timeToStart: number; // in seconds
+  timeToStart: number; 
   stationName?: string;
   isCancelled?: boolean; 
 };
 
+interface OrderWithDriver extends Order {
+  driverName?: string;
+}
+
 @Component({
   selector: 'app-kds',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    CdkDropList, 
+    CdkDrag, 
+    CdkDropListGroup,
+    CancelIfoodOrderModalComponent, 
+    IfoodTrackingModalComponent, 
+    RejectDisputeModalComponent, 
+    VerifyCodeModalComponent, 
+    IfoodOrderDetailsModalComponent, 
+    ProposeRefundModalComponent,
+    DeliveryDriversModalComponent,
+    DeliveryOrderModalComponent,
+    AssignDriverModalComponent,
+    DeliveryDetailsModalComponent,
+    DeliveryTrackingComponent,
+    IfoodAssignDriverModalComponent
+  ],
   templateUrl: './kds.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -118,13 +168,24 @@ export class KdsComponent implements OnInit, OnDestroy {
     soundNotificationService = inject(SoundNotificationService);
     ifoodDataService = inject(IfoodDataService);
     
+    // New injected services
+    route = inject(ActivatedRoute);
+    ifoodState = inject(IfoodStateService);
+    deliveryState = inject(DeliveryStateService);
+    deliveryDataService = inject(DeliveryDataService);
+    webhookService = inject(WebhookService);
+    supabaseStateService = inject(SupabaseStateService);
+    ifoodMenuService = inject(IfoodMenuService);
+    operationalAuthService = inject(OperationalAuthService);
+
     stations = this.posState.stations;
     employees = this.hrState.employees;
     recipesById = this.recipeState.recipesById;
     stationsById = computed(() => new Map(this.stations().map(s => [s.id, s.name])));
 
+    // Views can be Kitchen-stations, Production aggregate, Expo, or Unified Delivery & iFood!
+    viewMode = signal<'station' | 'expo' | 'production' | 'delivery'>('station');
     selectedStation = signal<Station | null>(null);
-    viewMode = signal<'station' | 'expo' | 'production'>('station');
 
     private timerInterval: ReturnType<typeof setInterval> | undefined;
     currentTime = signal(Date.now());
@@ -137,12 +198,87 @@ export class KdsComponent implements OnInit, OnDestroy {
 
     // RECALL / UNDO Feature
     isRecallModalOpen = signal(false);
-    // Stores items finished in the current session for quick undo
     recentlyCompletedItems = signal<RecallItem[]>([]);
 
-    // State for sound alerts
+    // Sound alert states
     private processedNewItems = signal<Set<string>>(new Set());
     private alertedLateItems = signal<Set<string>>(new Set());
+    private processedNewIfoodOrders = signal<Set<string>>(new Set());
+    private ifoodAlertedForPrep = signal<Set<string>>(new Set());
+    private ifoodProcessedDisputeIds = signal<Set<string>>(new Set());
+
+    // Unified Delivery / iFood view support states
+    deliverySubView = signal<'kanban' | 'tracking'>('kanban'); 
+    isDriversModalOpen = signal(false);
+    orderModalState = signal<'new' | Order | null>(null);
+    
+    isExternalAssignDriverModalOpen = signal(false);
+    ordersToAssignDriver = signal<Order[]>([]);
+    
+    isDetailsModalOpen = signal(false);
+    selectedOrderForDetails = signal<any | null>(null);
+    
+    isBatchMode = signal(false);
+    selectedOrdersForBatch = signal<Set<string>>(new Set());
+    
+    todayDelivered = signal<any[]>([]);
+
+    // iFood specifics modal support states
+    isLogVisible = signal(false);
+    selectedLogForDetail = signal<IfoodWebhookLog | null>(null);
+    updatingOrders = signal<Set<string>>(new Set());
+    isIfoodDetailModalOpen = signal(false);
+    selectedOrderForDetail = signal<any | null>(null);
+    
+    isIfoodAssignDriverModalOpen = signal(false);
+    orderForIfoodDriverModal = signal<any | null>(null);
+    
+    isCancelModalOpen = signal(false);
+    orderToCancel = signal<any | null>(null);
+    cancellationReasons = signal<IfoodCancellationReason[]>([]);
+    isLoadingCancellationReasons = signal(false);
+    
+    isRejectDisputeModalOpen = signal(false);
+    orderToReject = signal<any | null>(null);
+    
+    isVerifyCodeModalOpen = signal(false);
+    orderForCodeModal = signal<any | null>(null);
+    codeTypeForModal = signal<'pickup' | 'delivery' | null>(null);
+    
+    isTrackingModalOpen = signal(false);
+    isLoadingTracking = signal(false);
+    trackingData = signal<IfoodTrackingData | null>(null);
+    orderForTracking = signal<any | null>(null);
+    
+    isProposeRefundModalOpen = signal(false);
+    orderToProposeRefund = signal<any | null>(null);
+    refundAmount = signal(0);
+
+    evidenceImagesMap = signal<Map<string, string>>(new Map());
+
+    async loadEvidenceImages(evidences: string[]) {
+      for (const url of evidences) {
+        if (this.evidenceImagesMap().has(url)) continue;
+        try {
+          const res = await this.ifoodDataService.getEvidenceImage(url);
+          if (res && res.base64Image) {
+            const dataUrl = `data:${res.contentType || 'image/jpeg'};base64,${res.base64Image}`;
+            this.evidenceImagesMap.update(map => {
+              const newMap = new Map(map);
+              newMap.set(url, dataUrl);
+              return newMap;
+            });
+          }
+        } catch (e) {
+          console.error('Failed to load proxy evidence image:', e);
+        }
+      }
+    }
+
+    webhookLogs = computed(() => 
+      this.ifoodState.ifoodWebhookLogs()
+        .sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    );
 
     constructor() {
         effect(() => {
@@ -152,7 +288,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         });
         
-        // Main effect for sound notifications
+        // Sound notification effect
         effect(() => {
             const allItems = this.allKdsItemsProcessed();
             const currentItemIds = new Set(allItems.map(i => i.id));
@@ -162,13 +298,12 @@ export class KdsComponent implements OnInit, OnDestroy {
                 const previouslyProcessed = this.processedNewItems();
                 const previouslyLate = this.alertedLateItems();
                 
-                // 1. Check for new items
                 for (const item of allItems) {
                     if (!previouslyProcessed.has(item.id)) {
                         const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
                         if (isForThisView) {
                             if (item.isCancelled) {
-                                this.soundNotificationService.playAllergyAlertSound(); // Urgent sound for cancellation
+                                this.soundNotificationService.playAllergyAlertSound(); 
                             } else if (item.isCritical && !item.attention_acknowledged) {
                                 this.soundNotificationService.playAllergyAlertSound();
                             } else {
@@ -178,35 +313,87 @@ export class KdsComponent implements OnInit, OnDestroy {
                     }
                 }
                 
-                // 2. Check for newly late items (ignore if cancelled)
                 for (const item of allItems) {
                     if (item.isLate && !item.isCancelled && !previouslyLate.has(item.id)) {
                          const isForThisView = this.viewMode() === 'expo' || item.station_id === currentStationId;
-                         if(isForThisView) {
+                         if (isForThisView) {
                             this.soundNotificationService.playDelayedOrderSound();
                             previouslyLate.add(item.id);
                          }
                     }
                 }
 
-                // 3. Update state for next run
                 this.processedNewItems.set(currentItemIds);
-                // Clean up alertedLateItems set from items that are no longer visible
                 const currentLateIds = new Set(allItems.filter(i => i.isLate).map(i => i.id));
                 this.alertedLateItems.set(currentLateIds);
             });
         });
+
+        // iFood notification effect
+        effect(() => {
+            const orders = this.unifiedDeliveryOrders().filter(o => o.source === 'iFood');
+            const currentOrderIds = new Set(orders.map(o => o.id));
+            
+            untracked(() => {
+                const previouslyProcessed = this.processedNewIfoodOrders();
+                const previouslyAlertedForPrep = this.ifoodAlertedForPrep();
+                const now = Date.now();
+
+                for (const order of orders) {
+                    if (order.ifoodStatus && !previouslyProcessed.has(order.id) && order.ifoodStatus === 'RECEIVED' && !order.isScheduledAndHeld) {
+                        this.soundNotificationService.playNewOrderSound();
+                    }
+                    
+                    if (order.ifood_order_timing === 'SCHEDULED' && order.ifood_scheduled_at && !previouslyAlertedForPrep.has(order.id)) {
+                        const prepTime = new Date(order.ifood_scheduled_at).getTime();
+                        if (now >= (prepTime - 60000) && now < (prepTime + 60000)) {
+                            this.soundNotificationService.playAllergyAlertSound();
+                            this.notificationService.show(`Hora de preparar o pedido agendado #${order.ifood_display_id}!`, 'info', 10000);
+                            previouslyAlertedForPrep.add(order.id);
+                        }
+                    }
+                }
+                this.processedNewIfoodOrders.set(currentOrderIds);
+                this.ifoodAlertedForPrep.set(previouslyAlertedForPrep);
+            });
+        });
+
+        // iFood dispute notification effect
+        effect(() => {
+          const ordersWithDisputes = this.unifiedDeliveryOrders().filter(o => o.source === 'iFood' && !!o.ifood_dispute_id);
+          const currentDisputeIds = new Set(ordersWithDisputes.map(o => o.ifood_dispute_id!));
+
+          untracked(() => {
+            const previouslyProcessed = this.ifoodProcessedDisputeIds();
+            
+            for (const disputeId of currentDisputeIds) {
+              if (!previouslyProcessed.has(disputeId)) {
+                this.soundNotificationService.playAllergyAlertSound();
+              }
+            }
+          });
+          
+          this.ifoodProcessedDisputeIds.set(currentDisputeIds);
+        });
     }
 
-    ngOnInit(): void {
+    async ngOnInit() {
         this.timerInterval = setInterval(() => this.currentTime.set(Date.now()), 1000);
+        await this.loadTodayDeliveredOrders();
+        
+        // Auto-select view mode based on routing path to let `/kds`, `/delivery`, `/ifood-kds` reuse this exact component smoothly
+        this.route.url.subscribe(urlSegments => {
+            const path = urlSegments[0]?.path;
+            if (path === 'delivery' || path === 'ifood-kds') {
+                this.setViewMode('delivery');
+            }
+        });
     }
 
     ngOnDestroy(): void {
         if (this.timerInterval) clearInterval(this.timerInterval);
     }
 
-    // Central computed signal to process all KDS items with timing logic
     private allKdsItemsProcessed = computed<ProcessedOrderItem[]>(() => {
         const now = this.currentTime();
         const recipesMap = this.recipesById();
@@ -215,7 +402,6 @@ export class KdsComponent implements OnInit, OnDestroy {
 
         const itemsByOrder = new Map<string, ProcessedOrderItem[]>();
 
-        // 1. Group all relevant items by their order ID and process them
         for (const order of this.posState.orders()) {
             if (order.status !== 'OPEN' && order.status !== 'CANCELLED') continue;
 
@@ -272,7 +458,6 @@ export class KdsComponent implements OnInit, OnDestroy {
             }
         }
 
-        // 2. Apply chronological sorting / structure, removing the strict hold block
         const finalItems: ProcessedOrderItem[] = [];
         for (const orderItems of itemsByOrder.values()) {
             if (orderItems.length === 0) continue;
@@ -285,7 +470,6 @@ export class KdsComponent implements OnInit, OnDestroy {
                     const timeToStart = longestPrepTime - item.prepTime;
                     if (item.elapsedTimeSeconds < timeToStart) {
                         item.timeToStart = timeToStart - item.elapsedTimeSeconds;
-                        // item.isHeld = true; // Limitation removed per user request
                     }
                 }
                 finalItems.push(item);
@@ -294,7 +478,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         return finalItems;
     });
     
-    // Computed for Station View
     groupedKdsTickets = computed<StationTicket[]>(() => {
         const station = this.selectedStation();
         if (!station) return [];
@@ -306,7 +489,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         return this.groupItemsIntoTickets(itemsForStation);
     });
 
-    // Computed for Expo View
     expoViewTickets = computed<ExpoTicket[]>(() => {
         const allItems = this.allKdsItemsProcessed().filter(item => 
           item.status === 'PENDENTE' || item.status === 'EM_PREPARO' || item.status === 'PRONTO' || item.isCancelled
@@ -328,7 +510,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         });
     });
 
-    // Computed for Production View (All Day)
     productionAggregates = computed<ProductionAggregateItem[]>(() => {
         const station = this.selectedStation();
         if (!station) return [];
@@ -343,7 +524,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         const groups = new Map<string, ProductionAggregateItem>();
 
         for (const item of items) {
-            // Group by Recipe ID + Notes + Status
             const key = `${item.recipe_id}_${item.notes || ''}_${item.status}`;
             
             if (!groups.has(key)) {
@@ -367,16 +547,203 @@ export class KdsComponent implements OnInit, OnDestroy {
             if (item.isCritical) group.isCritical = true;
         }
 
-        // Sort by longest wait time (maxElapsedTime) descending
         return Array.from(groups.values()).sort((a, b) => b.maxElapsedTime - a.maxElapsedTime);
     });
 
-    // GROUPING LOGIC (SMART ROUTING)
+    // UNIFIED DELIVERY & iFOOD COMPUTED SIGNAL
+    unifiedDeliveryOrders = computed<any[]>(() => {
+        const now = this.currentTime();
+        const allLogs = this.webhookLogs();
+
+        const ifoodMapped = this.posState.openOrders()
+          .filter(o => o.order_type === 'iFood-Delivery' || o.order_type === 'iFood-Takeout')
+          .map(order => {
+            let isScheduledAndHeld = false;
+            let timeToPrepare = 0;
+            let startTime = new Date(order.timestamp).getTime();
+
+            if (order.ifood_order_timing === 'SCHEDULED' && order.ifood_scheduled_at) {
+              const prepStartTime = new Date(order.ifood_scheduled_at).getTime();
+
+              if (now < prepStartTime) {
+                isScheduledAndHeld = true;
+                timeToPrepare = Math.floor((prepStartTime - now) / 1000);
+              } else {
+                startTime = prepStartTime;
+              }
+            }
+            
+            const elapsedTime = isScheduledAndHeld ? 0 : Math.floor((now - startTime) / 1000);
+            const isLate = elapsedTime > 600;
+
+            let timerColor = 'text-green-300';
+            if (elapsedTime > 300) timerColor = 'text-yellow-300';
+            if (isLate) timerColor = 'text-red-300';
+            if (isScheduledAndHeld) {
+              timerColor = 'text-cyan-300';
+            }
+
+            const requiresCode = allLogs.some(log => log.ifood_order_id === order.ifood_order_id && log.event_code === 'DELIVERY_DROP_CODE_REQUESTED');
+            
+            const paymentDetails = this.getPaymentDetails(order);
+            const totalAmount = this.getOrderTotalAmount(order);
+            
+            let disputeDetails = order.ifood_dispute_details as any;
+            if (disputeDetails && typeof disputeDetails === 'string') {
+              try { disputeDetails = JSON.parse(disputeDetails); } catch (e) { disputeDetails = null; }
+            }
+
+            const evidences = disputeDetails?.metadata?.evidences;
+            const disputeEvidences = evidences?.map((e: any) => e.url).filter(Boolean) || [];
+
+            const ifoodStatus = this.getIfoodStatus(order);
+
+            let delivery_status: string;
+            if (ifoodStatus === 'RECEIVED') {
+              delivery_status = 'AWAITING_PREP';
+            } else if (ifoodStatus === 'IN_PREPARATION') {
+              delivery_status = 'IN_PREPARATION';
+            } else if (ifoodStatus === 'READY_FOR_PICKUP') {
+              delivery_status = 'READY_FOR_DISPATCH';
+            } else if (ifoodStatus === 'DISPATCHED') {
+              delivery_status = 'OUT_FOR_DELIVERY';
+            } else {
+              delivery_status = 'AWAITING_PREP';
+            }
+
+            return {
+              ...order,
+              source: 'iFood' as const,
+              driverName: order.delivery_drivers?.name ?? 'Logística iFood',
+              elapsedTime,
+              isLate,
+              timerColor,
+              ifoodStatus,
+              logisticsStatus: this.getLogisticsStatus(order, allLogs),
+              requiresDeliveryCode: requiresCode,
+              paymentDetails: paymentDetails.paymentDetails,
+              changeDue: paymentDetails.changeDue,
+              isScheduledAndHeld,
+              timeToPrepare,
+              totalAmount,
+              subTotal: (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              deliveryFee: (order.ifood_payments as any)?.total?.deliveryFee ?? 0,
+              additionalFees: (order.ifood_payments as any)?.total?.additionalFees ?? 0,
+              disputeEvidences,
+              delivery_status
+            };
+          });
+
+        const externalMapped = this.posState.openOrders()
+          .filter(o => o.order_type === 'External-Delivery')
+          .map(order => {
+            const startTime = new Date(order.timestamp).getTime();
+            const elapsedTime = Math.floor((now - startTime) / 1000);
+            const isLate = elapsedTime > 1800; 
+
+            let timerColor = 'text-green-300';
+            if (elapsedTime > 900) timerColor = 'text-yellow-300';
+            if (isLate) timerColor = 'text-red-300';
+
+            const totalAmount = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
+
+            return {
+              ...order,
+              source: 'External' as const,
+              driverName: order.delivery_drivers?.name ?? 'Não atribuído',
+              elapsedTime,
+              isLate,
+              timerColor,
+              ifoodStatus: null,
+              logisticsStatus: null,
+              requiresDeliveryCode: false,
+              paymentDetails: (order as any).payment_method ? `Pago na entrega (${(order as any).payment_method})` : 'A pagar',
+              changeDue: 0,
+              isScheduledAndHeld: false,
+              timeToPrepare: 0,
+              totalAmount,
+              subTotal: order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              deliveryFee: order.delivery_cost ?? 0,
+              additionalFees: 0,
+              disputeEvidences: [],
+              delivery_status: order.delivery_status || 'AWAITING_PREP'
+            };
+          });
+
+        return [...ifoodMapped, ...externalMapped].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    });
+
+    // Unify lists for Drag Drop Kanban Columns
+    deliveryWaiting = computed(() => this.unifiedDeliveryOrders().filter(o => o.delivery_status === 'AWAITING_PREP'));
+    deliveryPreparing = computed(() => this.unifiedDeliveryOrders().filter(o => o.delivery_status === 'IN_PREPARATION'));
+    deliveryReady = computed(() => this.unifiedDeliveryOrders().filter(o => o.delivery_status === 'READY_FOR_DISPATCH'));
+    deliveryEnRoute = computed(() => this.unifiedDeliveryOrders().filter(o => o.delivery_status === 'OUT_FOR_DELIVERY'));
+    deliveryCompleted = computed(() => {
+        // Traditional delivery orders finished today
+        const externalDelivered = this.todayDelivered()
+          .map(order => {
+            const totalAmount = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
+            return {
+              ...order,
+              source: 'External' as const,
+              driverName: order.delivery_drivers?.name ?? 'Não atribuído',
+              elapsedTime: 0,
+              isLate: false,
+              timerColor: order.status === 'CANCELLED' ? 'text-red-400' : 'text-gray-400',
+              ifoodStatus: null,
+              logisticsStatus: null,
+              requiresDeliveryCode: false,
+              paymentDetails: order.payment_method ? `Pago na entrega (${order.payment_method})` : 'Pago',
+              changeDue: 0,
+              isScheduledAndHeld: false,
+              timeToPrepare: 0,
+              totalAmount,
+              subTotal: order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              deliveryFee: order.delivery_cost ?? 0,
+              additionalFees: 0,
+              disputeEvidences: [],
+              delivery_status: 'DELIVERED'
+            };
+          });
+
+        // Mapped finished iFood orders
+        const ifoodFinished = this.ifoodState.recentlyFinishedIfoodOrders()
+          .map(order => {
+            const paymentDetails = this.getPaymentDetails(order);
+            const totalAmount = this.getOrderTotalAmount(order);
+            const subTotal = (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const deliveryFee = (order.ifood_payments as any)?.total?.deliveryFee ?? 0;
+            
+            return {
+              ...order,
+              source: 'iFood' as const,
+              driverName: order.delivery_drivers?.name ?? 'Logística iFood',
+              elapsedTime: 0,
+              isLate: false,
+              timerColor: order.status === 'CANCELLED' ? 'text-red-400' : 'text-gray-400',
+              ifoodStatus: order.status as IfoodOrderStatus,
+              logisticsStatus: null,
+              requiresDeliveryCode: false,
+              paymentDetails: paymentDetails.paymentDetails,
+              changeDue: paymentDetails.changeDue,
+              isScheduledAndHeld: false,
+              timeToPrepare: 0,
+              totalAmount,
+              subTotal,
+              deliveryFee,
+              additionalFees: 0,
+              disputeEvidences: [],
+              delivery_status: 'DELIVERED'
+            };
+          });
+
+        return [...externalDelivered, ...ifoodFinished].sort((a, b) => new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime());
+    });
+
     private groupItemsForDisplay(items: ProcessedOrderItem[]): KdsDisplayItem[] {
         const groupedMap = new Map<string, KdsDisplayItem>();
 
         for (const item of items) {
-            // Create a unique key for grouping.
             const key = `${item.recipe_id}_${item.status}_${item.notes || ''}_${item.isHeld}_${item.isCritical}_${item.isCancelled}`;
 
             if (groupedMap.has(key)) {
@@ -385,14 +752,12 @@ export class KdsComponent implements OnInit, OnDestroy {
                 group.ids.push(item.id);
             } else {
                 groupedMap.set(key, {
-                    id: item.id, // ID of the first one
+                    id: item.id, 
                     ids: [item.id],
                     name: item.name,
                     quantity: item.quantity,
                     status: item.status,
                     notes: item.notes,
-                    
-                    // Display properties taken from the first item
                     timerColor: item.timerColor,
                     isLate: item.isLate,
                     isCritical: item.isCritical,
@@ -448,14 +813,13 @@ export class KdsComponent implements OnInit, OnDestroy {
                 ticketTimerColor = 'bg-red-800'; 
             }
 
-            // Apply Grouping Here
             const groupedItems = this.groupItemsForDisplay(orderItems);
 
             tickets.push({
                 orderId: order.id,
                 tableNumber: order.table_number,
-                commandNumber: order.command_number, // Added
-                tabName: order.tab_name, // Added
+                commandNumber: order.command_number, 
+                tabName: order.tab_name, 
                 items: groupedItems,
                 ticketElapsedTime,
                 ticketTimerColor,
@@ -472,7 +836,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
 
     selectStation(station: Station) { this.selectedStation.set(station); }
-    setViewMode(mode: 'station' | 'expo' | 'production') { this.viewMode.set(mode); }
+    setViewMode(mode: 'station' | 'expo' | 'production' | 'delivery') { this.viewMode.set(mode); }
 
     getTicketTotalQty(items: KdsDisplayItem[]): number {
         if (!items) return 0;
@@ -496,7 +860,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.soundNotificationService.playConfirmationSound();
         this.setUpdatingForGroup(item.ids, true);
 
-        // Process all IDs concurrently
         const promises = item.ids.map(id => this.posDataService.acknowledgeOrderItemAttention(id));
         await Promise.all(promises);
         
@@ -530,7 +893,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         if (!success) {
             await this.notificationService.alert(`Erro ao marcar como pronto: ${error?.message}`);
         } else {
-             // Add to Recall list (Local session history)
              this.addToRecallList(item, ticket);
         }
         
@@ -549,10 +911,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             default: return;
         }
         
-        // If finishing, use the specialized function to track for recall
         if (nextStatus === 'PRONTO') {
-             // Find parent ticket if possible, otherwise pass null (affects recall display text)
-             // We can find it by searching groupedKdsTickets
              const parentTicket = this.groupedKdsTickets().find(t => t.items.some(i => i.id === item.id));
              await this.markAsReady(item, parentTicket || null, event || new MouseEvent('click'));
              return;
@@ -610,10 +969,9 @@ export class KdsComponent implements OnInit, OnDestroy {
         }
     }
 
-
-    // New: Batch actions for Production View
+    // Batch actions for Production View
     async advanceProductionItems(item: ProductionAggregateItem) {
-        if(this.updatingItems().has(item.ids[0])) return;
+        if (this.updatingItems().has(item.ids[0])) return;
         
         let nextStatus: OrderItemStatus;
         if (item.status === 'PENDENTE') nextStatus = 'EM_PREPARO';
@@ -624,12 +982,11 @@ export class KdsComponent implements OnInit, OnDestroy {
         this.setUpdatingForGroup(item.ids, true);
 
         const { success, error } = await this.posDataService.updateMultipleItemStatuses(item.ids, nextStatus);
-         if (!success) await this.notificationService.alert(`Erro ao atualizar itens: ${error?.message}`);
+        if (!success) await this.notificationService.alert(`Erro ao atualizar itens: ${error?.message}`);
         
         this.setUpdatingForGroup(item.ids, false);
     }
 
-    // Helper to manage loading state for groups
     private setUpdatingForGroup(ids: string[], isUpdating: boolean) {
         this.updatingItems.update(set => {
             const newSet = new Set(set);
@@ -655,17 +1012,14 @@ export class KdsComponent implements OnInit, OnDestroy {
             finishedAt: Date.now()
         };
 
-        this.recentlyCompletedItems.update(list => [recallItem, ...list].slice(0, 20)); // Keep last 20
+        this.recentlyCompletedItems.update(list => [recallItem, ...list].slice(0, 20)); 
     }
     
     async restoreItem(recallItem: RecallItem) {
         const item = recallItem.displayItem;
         this.soundNotificationService.playConfirmationSound();
-        // Restore to 'EM_PREPARO' as a safe default, or 'PENDENTE' if it was very fast? 
-        // 'EM_PREPARO' is usually safer as it puts it back on screen immediately.
         await this.posDataService.updateMultipleItemStatuses(item.ids, 'EM_PREPARO');
         
-        // Remove from list
         this.recentlyCompletedItems.update(list => list.filter(i => i !== recallItem));
         
         if (this.recentlyCompletedItems().length === 0) {
@@ -673,8 +1027,6 @@ export class KdsComponent implements OnInit, OnDestroy {
         }
     }
 
-
-    // ... (rest of methods like markOrderAsServed remain the same as they work on orderId) ...
     async markOrderAsServed(ticket: ExpoTicket) {
         if (this.updatingTickets().has(ticket.orderId)) return;
     
@@ -724,9 +1076,6 @@ export class KdsComponent implements OnInit, OnDestroy {
     async printTicket(ticket: StationTicket | ExpoTicket) {
         const station = this.selectedStation();
         if (station) {
-            // Need to map KdsDisplayItem back to OrderItem structure for printing
-            // We use the properties available in KdsDisplayItem which cover basic printing needs
-            // Note: Printing service expects OrderItem[], KdsDisplayItem extends a subset but is compatible structurally for key fields
              const itemsForPrint: any[] = ticket.items.map(item => ({
                 name: item.name,
                 quantity: item.quantity,
@@ -748,6 +1097,15 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
 
     formatTime(seconds: number): string {
+        if (isNaN(seconds) || seconds < 0) return '00:00';
+        
+        if (seconds >= 3600) {
+          const hours = Math.floor(seconds / 3600);
+          const mins = Math.floor((seconds % 3600) / 60);
+          const secs = seconds % 60;
+          return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -767,5 +1125,759 @@ export class KdsComponent implements OnInit, OnDestroy {
         case 'CANCELADO': return 'border-red-600 bg-red-900/30';
         default: return 'border-gray-600';
       }
+    }
+
+    // ==========================================
+    // UNIFIED DELIVERY BOARD METHODS & DRAG DROP
+    // ==========================================
+    async loadTodayDeliveredOrders() {
+        const { data, error } = await this.deliveryDataService.getTodayDeliveredOrders();
+        if (!error && data) {
+            this.todayDelivered.set(data);
+        }
+    }
+
+    drop(event: CdkDragDrop<any[]>) {
+      if (event.previousContainer === event.container) {
+        moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      } else {
+        const movedOrder = event.previousContainer.data[event.previousIndex];
+        const newStatus = event.container.id as any;
+
+        if (movedOrder.source === 'iFood') {
+          if (newStatus === 'IN_PREPARATION') {
+            if (movedOrder.ifoodStatus === 'RECEIVED') {
+              this.confirmOrderAndPrepare(movedOrder);
+            } else {
+              this.notificationService.show('Este pedido iFood não pode ser movido para preparação.', 'info');
+            }
+          } else if (newStatus === 'READY_FOR_DISPATCH' || newStatus === 'OUT_FOR_DELIVERY') {
+            if (movedOrder.ifoodStatus === 'RECEIVED' || movedOrder.ifoodStatus === 'IN_PREPARATION') {
+              this.markOrderAsReadyForDispatch(movedOrder);
+            } else {
+              this.notificationService.show('Este pedido iFood já está pronto ou despachado.', 'info');
+            }
+          } else {
+            this.notificationService.show('Ações de status de iFood dependem do fluxo oficial da API.', 'info');
+          }
+          return;
+        }
+
+        // Traditional Delivery Order
+        if (newStatus === 'OUT_FOR_DELIVERY' && !movedOrder.delivery_driver_id) {
+          this.notificationService.show('Atribua um entregador antes de mover para "Em Rota".', 'warning');
+          this.openExternalAssignDriverModal(movedOrder);
+          return;
+        }
+        
+        if (newStatus === 'DELIVERED') {
+          this.finalizeDelivery(movedOrder);
+          return;
+        }
+
+        transferArrayItem(
+          event.previousContainer.data,
+          event.container.data,
+          event.previousIndex,
+          event.currentIndex,
+        );
+        
+        this.updateOrderStatus(movedOrder, newStatus);
+      }
+    }
+
+    async updateOrderStatus(order: Order, status: any) {
+      const { success, error } = await this.deliveryDataService.updateDeliveryStatus(order.id, status);
+      if (success) {
+        this.webhookService.triggerWebhook('delivery.status_updated', {
+          orderId: order.id,
+          status: status,
+          driverId: order.delivery_driver_id,
+          timestamp: new Date().toISOString(),
+          fullOrder: order
+        });
+      } else {
+        this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
+      }
+    }
+
+    openEditModal(order: Order) {
+      if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') {
+        this.notificationService.show('Não é possível editar um pedido que já está em rota ou foi entregue.', 'info');
+        return;
+      }
+      this.orderModalState.set(order);
+    }
+
+    openExternalAssignDriverModal(order: any) {
+      this.ordersToAssignDriver.set([order]);
+      this.isExternalAssignDriverModalOpen.set(true);
+    }
+
+    toggleBatchMode() {
+        this.isBatchMode.update(v => !v);
+        if(!this.isBatchMode()) {
+            this.selectedOrdersForBatch.set(new Set());
+        }
+    }
+
+    toggleOrderSelection(orderId: string) {
+        this.selectedOrdersForBatch.update(set => {
+            const newSet = new Set(set);
+            if(newSet.has(orderId)) newSet.delete(orderId);
+            else newSet.add(orderId);
+            return newSet;
+        });
+    }
+
+    openBatchAssignModal() {
+        if(this.selectedOrdersForBatch().size === 0) return;
+        
+        const ordersToAssign = this.deliveryReady().filter(o => this.selectedOrdersForBatch().has(o.id));
+        this.ordersToAssignDriver.set(ordersToAssign);
+        this.isExternalAssignDriverModalOpen.set(true);
+    }
+
+    async handleDriverAssigned(event: { driverId: string }) {
+      this.isExternalAssignDriverModalOpen.set(false);
+      const orders = this.ordersToAssignDriver();
+      if (!orders || orders.length === 0) return;
+
+      const driver = this.deliveryState.deliveryDrivers().find(d => d.id === event.driverId);
+      if (!driver) {
+          this.notificationService.show('Entregador não encontrado.', 'error');
+          return;
+      }
+
+      let successCount = 0;
+      let lastError: any = null;
+      
+      for(const order of orders) {
+          const distance = order.delivery_distance_km ?? 0;
+          const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
+          
+          const { success, error } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
+      
+          if (success) {
+            successCount++;
+            this.webhookService.triggerWebhook('delivery.status_updated', {
+              orderId: order.id,
+              status: 'OUT_FOR_DELIVERY',
+              driverId: event.driverId,
+              timestamp: new Date().toISOString(),
+              fullOrder: order
+            });
+          } else {
+            lastError = error;
+          }
+      }
+      
+      if(successCount > 0) {
+          this.notificationService.show(`Atribuído(s) com sucesso e movido(s) para "Em Rota"!`, 'success');
+          this.selectedOrdersForBatch.set(new Set()); 
+          this.isBatchMode.set(false);
+      } else {
+          const errMsg = lastError?.message || lastError?.details || 'Erro desconhecido';
+          this.notificationService.show(`Erro ao atribuir entregador: ${errMsg}`, 'error');
+      }
+    }
+
+    async finalizeDelivery(order: any) {
+      const confirmed = await this.notificationService.confirm(
+        `Confirmar a finalização da entrega para o pedido #${order.id.slice(0, 8)}?`,
+        'Finalizar Entrega'
+      );
+      if (!confirmed) return;
+
+      const { success, error } = await this.deliveryDataService.finalizeDeliveryOrder(order);
+      if (success) {
+        this.notificationService.show('Entrega finalizada com sucesso!', 'success');
+        
+        this.todayDelivered.update(list => [{
+            ...order, 
+            status: 'COMPLETED', 
+            delivery_status: 'DELIVERED', 
+            completed_at: new Date().toISOString()
+        }, ...list]);
+
+        this.webhookService.triggerWebhook('delivery.status_updated', {
+          orderId: order.id,
+          status: 'DELIVERED',
+          driverId: order.delivery_driver_id,
+          timestamp: new Date().toISOString(),
+          fullOrder: order
+        });
+      } else {
+        this.notificationService.show(`Erro ao finalizar entrega: ${error?.message}`, 'error');
+      }
+    }
+
+    openDetailsModal(order: any) {
+      this.selectedOrderForDetails.set(order);
+      this.isDetailsModalOpen.set(true);
+    }
+
+    closeDetailsModal() {
+      this.isDetailsModalOpen.set(false);
+      this.selectedOrderForDetails.set(null);
+    }
+    
+    getOrderTotal(order: Order): number {
+      const itemsTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const deliveryCost = order.delivery_cost ?? 0;
+      return itemsTotal + deliveryCost;
+    }
+
+    // ==========================================
+    // INTEGRATED IFOOD SPECIFICS METHODS
+    // ==========================================
+    hasRefundAlternative(order: any): boolean {
+      return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'REFUND');
+    }
+
+    getRefundAlternative(order: any): any | undefined {
+      return order.ifood_dispute_details?.alternatives?.find((alt: any) => alt.type === 'REFUND');
+    }
+
+    hasAdditionalTimeAlternative(order: any): boolean {
+      return !!order.ifood_dispute_details?.alternatives?.some((alt: any) => alt.type === 'ADDITIONAL_TIME');
+    }
+    
+    getDisputeMessage(order: any | null): string | null {
+      if (!order || !order.ifood_dispute_details) return null;
+      
+      let details = order.ifood_dispute_details as any;
+      if (typeof details === 'string') {
+        try { details = JSON.parse(details); } catch (e) { return null; }
+      }
+      
+      if (details && typeof details === 'object') {
+          if ('message' in details && details.message) {
+            return details.message as string;
+          }
+          if (details.metadata?.items && Array.isArray(details.metadata.items) && details.metadata.items.length > 0) {
+              return details.metadata.items.map((item: any) => item.reason).filter(Boolean).join('; ');
+          }
+      }
+      return null;
+    }
+
+    private getIfoodStatus(order: Order): IfoodOrderStatus {
+      let details: any = order.ifood_dispute_details;
+      if (details && typeof details === 'string') {
+        try { details = JSON.parse(details); } catch (e) { details = null; }
+      }
+    
+      if (details?.handshakeType === 'AFTER_DELIVERY' || details?.handshakeType === 'AFTER_DELIVERY_PARTIALLY') {
+        return 'RECEIVED';
+      }
+    
+      if (order.status === 'CANCELLED') return 'CANCELLED';
+    
+      const items = order.order_items || [];
+      if (items.length === 0) return 'RECEIVED';
+    
+      const allReadyOrServed = items.every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+      if (allReadyOrServed) {
+        return order.order_type === 'iFood-Delivery' ? 'DISPATCHED' : 'READY_FOR_PICKUP';
+      }
+    
+      const hasPreparing = items.some(i => i.status === 'EM_PREPARO');
+      if (hasPreparing) return 'IN_PREPARATION';
+      
+      return 'RECEIVED';
+    }
+    
+    private getLogisticsStatus(order: Order, logs: IfoodWebhookLog[]): LogisticsStatus | null {
+      if (order.delivery_info?.deliveredBy !== 'IFOOD') return null;
+
+      const relevantLogs = logs
+          .filter(log => log.ifood_order_id === order.ifood_order_id && log.event_code)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      const latestStatusLog = relevantLogs.find(log => 
+          ['ASSIGNED_DRIVER', 'GOING_TO_ORIGIN', 'ARRIVED_AT_ORIGIN', 'COLLECTED',
+          'DELIVERY_DRIVER_DEALLOCATED', 'DELIVERY_RETURNING_TO_ORIGIN', 'DELIVERY_RETURNED_TO_ORIGIN',
+          'DELIVERY_CANCELLATION_REQUESTED', 'DELIVERY_DROP_CODE_REQUESTED', 
+          'DELIVERY_DROP_CODE_VALIDATION_SUCCESS', 'DELIVERY_RETURN_CODE_REQUESTED',
+          'DELIVERY_PICKUP_CODE_REQUESTED', 'DELIVERY_PICKUP_CODE_VALIDATION_SUCCESS',
+          'ARRIVED_AT_DESTINATION'].includes(log.event_code!)
+      );
+
+      if (latestStatusLog) {
+          switch(latestStatusLog.event_code) {
+              case 'ASSIGNED_DRIVER': return 'ASSIGNED';
+              case 'GOING_TO_ORIGIN': return 'GOING_TO_ORIGIN';
+              case 'ARRIVED_AT_ORIGIN': return 'ARRIVED_AT_ORIGIN';
+              case 'DISPATCHED_TO_CUSTOMER':
+              case 'COLLECTED': return 'DISPATCHED_TO_CUSTOMER';
+              case 'ARRIVED_AT_DESTINATION': return 'ARRIVED_AT_DESTINATION';
+          }
+      }
+      
+      const allItemsReady = (order.order_items || []).every(i => i.status === 'PRONTO' || i.status === 'SERVIDO');
+      if (allItemsReady) return 'AWAITING_DRIVER';
+
+      return null;
+    }
+
+    private getPaymentDetails(order: Order): { paymentDetails: string; changeDue: number } {
+      const paymentData = order.ifood_payments as any;
+      let paymentDetails = '';
+      let changeDue = 0;
+    
+      if (!paymentData) return { paymentDetails: 'Não informado', changeDue };
+    
+      const payments = paymentData?.payments || paymentData;
+      const isPrepaid = payments?.methods?.some((p: any) => p.prepaid === true) || false;
+
+      paymentDetails = isPrepaid ? 'Pago Online' : 'Pago na Entrega';
+      
+      let paymentMethodsSource: any[] = [];
+      if (payments && Array.isArray(payments.methods)) {
+        paymentMethodsSource = payments.methods;
+      } else if (Array.isArray(payments)) { 
+        paymentMethodsSource = payments;
+      }
+    
+      if (paymentMethodsSource.length > 0) {
+        const methodDescriptions = paymentMethodsSource.map(p => {
+          const methodType = p.method || p.name || 'OUTRO';
+          let description = '';
+          switch (methodType.toUpperCase()) {
+            case 'CREDIT': description = 'Crédito'; break;
+            case 'DEBIT': description = 'Débito'; break;
+            case 'CASH': description = 'Dinheiro'; break;
+            case 'MEAL_VOUCHER': description = 'Vale Refeição'; break;
+            case 'FOOD_VOUCHER': description = 'Vale Alimentação'; break;
+            case 'PIX': description = 'PIX'; break;
+            default: description = methodType;
+          }
+
+          if (p.card && p.card.brand) {
+            description += ` (${p.card.brand})`;
+          }
+          return description;
+        }).filter(Boolean); 
+
+        if (methodDescriptions.length > 0) {
+          paymentDetails += ` - ${methodDescriptions.join(', ')}`;
+        }
+
+        const cashPayment = paymentMethodsSource.find(p => p.method === 'CASH');
+        if (cashPayment && cashPayment.cash?.changeFor) {
+          changeDue = cashPayment.cash.changeFor;
+        }
+      }
+    
+      return { paymentDetails, changeDue };
+    }
+
+    private getOrderTotalAmount(order: Order): number {
+      const paymentData = order.ifood_payments as any;
+
+      if (paymentData && paymentData.total && typeof paymentData.total.orderAmount === 'number') {
+          return paymentData.total.orderAmount;
+      }
+
+      const payments = paymentData?.payments || paymentData; 
+      
+      if (!payments) {
+          return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      }
+      
+      if (payments.prepaid && typeof payments.prepaid === 'number' && payments.prepaid > 0) {
+          return payments.prepaid;
+      }
+
+      if (payments.methods && Array.isArray(payments.methods) && payments.methods.length > 0) {
+          return payments.methods.reduce((sum: number, method: any) => sum + (method.value || 0), 0);
+      }
+      
+      return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    async confirmOrderAndPrepare(order: any) {
+      if (!order.ifood_order_id) return;
+      
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+      this.soundNotificationService.playConfirmationSound();
+
+      try {
+          const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, 'CONFIRMED');
+          if (!apiSuccess) throw apiError;
+          
+          const itemIdsToUpdate = (order.order_items || []).filter(i => i.status === 'PENDENTE').map(i => i.id);
+          if (itemIdsToUpdate.length > 0) {
+              const { success: dbSuccess, error: dbError } = await this.posDataService.updateMultipleItemStatuses(itemIdsToUpdate, 'EM_PREPARO');
+              if (!dbSuccess) throw dbError;
+          }
+      } catch (error: any) {
+          this.notificationService.show(`Erro ao confirmar pedido iFood: ${error.message}`, 'error');
+      } finally {
+          this.updatingOrders.update(set => {
+              const newSet = new Set(set);
+              newSet.delete(order.id);
+              return newSet;
+          });
+      }
+    }
+
+    async markOrderAsReadyForDispatch(order: any) {
+        if (!order.ifood_order_id) return;
+        
+        this.updatingOrders.update(set => new Set(set).add(order.id));
+        this.soundNotificationService.playConfirmationSound();
+        
+        let targetStatus: IfoodOrderStatus = 'DISPATCHED'; 
+        if (order.order_type === 'iFood-Takeout') {
+          targetStatus = 'READY_FOR_PICKUP';
+        } else if (order.delivery_info?.deliveredBy === 'IFOOD') {
+          targetStatus = 'READY_FOR_PICKUP';
+        }
+
+        try {
+            const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, targetStatus);
+            if (!apiSuccess) throw apiError;
+            
+            const itemIdsToUpdate = (order.order_items || []).filter(i => i.status === 'PENDENTE' || i.status === 'EM_PREPARO').map(i => i.id);
+            if (itemIdsToUpdate.length > 0) {
+                const { success: dbSuccess, error: dbError } = await this.posDataService.updateMultipleItemStatuses(itemIdsToUpdate, 'PRONTO');
+                if (!dbSuccess) throw dbError;
+            }
+        } catch (error: any) {
+            this.notificationService.show(`Erro ao marcar iFood como pronto: ${error.message}`, 'error');
+        } finally {
+            this.updatingOrders.update(set => {
+                const newSet = new Set(set);
+                newSet.delete(order.id);
+                return newSet;
+            });
+        }
+    }
+
+    async cancelOrder(order: any) {
+      if (!order.ifood_order_id) return;
+    
+      this.isLoadingCancellationReasons.set(true);
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+    
+      try {
+        const reasons = await this.ifoodMenuService.getCancellationReasons(order.ifood_order_id);
+        if (reasons.length === 0) {
+          throw new Error('Não foi possível obter os motivos de cancelamento do iFood.');
+        }
+        this.cancellationReasons.set(reasons);
+        this.orderToCancel.set(order);
+        this.isCancelModalOpen.set(true);
+      } catch (error: any) {
+        this.notificationService.show(`Erro: ${error.message}`, 'error');
+        this.updatingOrders.update(s => {
+          const newSet = new Set(s);
+          newSet.delete(order.id);
+          return newSet;
+        });
+      } finally {
+        this.isLoadingCancellationReasons.set(false);
+      }
+    }
+    
+    handleCancelModalClose() {
+      this.isCancelModalOpen.set(false);
+      const order = this.orderToCancel();
+      if (order) {
+        this.updatingOrders.update(s => {
+          const newSet = new Set(s);
+          newSet.delete(order.id);
+          return newSet;
+        });
+      }
+      this.orderToCancel.set(null);
+    }
+
+    async handleConfirmCancellation(details: { code: string; reason: string; }) {
+      this.isCancelModalOpen.set(false);
+      const order = this.orderToCancel();
+      if (!order || !order.ifood_order_id) return;
+
+      this.soundNotificationService.playConfirmationSound();
+      const employeeId = this.operationalAuthService.activeEmployee()?.id || null;
+
+      try {
+        const { success: apiSuccess, error: apiError } = await this.ifoodDataService.sendStatusUpdate(order.ifood_order_id, 'CANCELLED', details);
+        if (!apiSuccess) throw apiError;
+        
+        const { success: dbSuccess, error: dbError } = await this.posDataService.cancelOrder(order.id, details.reason, employeeId);
+        if (!dbSuccess) throw dbError;
+
+        this.notificationService.show(`Solicitação de cancelamento para #${order.ifood_display_id} enviada.`, 'success');
+        this.closeIfoodDetailModal();
+
+      } catch (error: any) {
+        this.notificationService.show(`Erro ao cancelar pedido: ${error.message}`, 'error');
+      } finally {
+        this.updatingOrders.update(set => {
+          const newSet = new Set(set);
+          newSet.delete(order.id);
+          return newSet;
+        });
+        this.orderToCancel.set(null);
+      }
+    }
+
+    async deleteOrder(order: any) {
+        const confirmed = await this.notificationService.confirm(`Tem certeza que deseja DELETAR PERMANENTEMENTE o pedido #${order.ifood_display_id}? Esta ação não pode ser desfeita.`, 'Deletar Pedido?');
+        if (!confirmed) return;
+
+        this.updatingOrders.update(set => new Set(set).add(order.id));
+
+        try {
+            const { success, error } = await this.posDataService.deleteOrderAndItems(order.id);
+            if (!success) throw error;
+            
+            this.notificationService.show(`Pedido #${order.ifood_display_id} deletado com sucesso.`, 'success');
+            this.closeIfoodDetailModal();
+
+        } catch (error: any) {
+            this.notificationService.show(`Erro ao deletar pedido: ${error.message}`, 'error');
+        } finally {
+            this.updatingOrders.update(set => {
+                const newSet = new Set(set);
+                newSet.delete(order.id);
+                return newSet;
+            });
+        }
+    }
+    
+    // Logistics For iFood Merchant
+    openIfoodAssignDriverModal(order: any) {
+      this.orderForIfoodDriverModal.set(order);
+      this.isIfoodAssignDriverModalOpen.set(true);
+    }
+    closeIfoodAssignDriverModal() { this.isIfoodAssignDriverModalOpen.set(false); }
+
+    async assignIfoodDriver(form: { name: string; phone: string; vehicle: string; }) {
+      const order = this.orderForIfoodDriverModal();
+      if (!order || !order.ifood_order_id || !form.name || !form.phone) {
+        this.notificationService.show('Nome e telefone do entregador são obrigatórios.', 'warning');
+        return;
+      }
+      await this.handleLogisticsAction(order.id, order.ifood_order_id, 'assignDriver', {
+        workerName: form.name,
+        workerPhone: form.phone,
+        workerVehicleType: form.vehicle
+      });
+      this.closeIfoodAssignDriverModal();
+    }
+
+    async updateLogisticsStatus(order: any, action: 'goingToOrigin' | 'arrivedAtOrigin' | 'dispatch' | 'arrivedAtDestination') {
+      if (!order.ifood_order_id) return;
+      await this.handleLogisticsAction(order.id, order.ifood_order_id, action);
+    }
+
+    private async handleLogisticsAction(orderId: string, ifoodOrderId: string, action: string, details?: any) {
+      this.updatingOrders.update(set => new Set(set).add(orderId));
+      try {
+        const { success, error } = await this.ifoodDataService.sendLogisticsAction(ifoodOrderId, action, details);
+        if (!success) throw error;
+        await this.supabaseStateService.refetchIfoodLogs(); 
+      } catch (error: any) {
+        this.notificationService.show(`Erro na ação de logística: ${error.message}`, 'error');
+      } finally {
+         this.updatingOrders.update(set => {
+              const newSet = new Set(set);
+              newSet.delete(orderId);
+              return newSet;
+          });
+      }
+    }
+    
+    handleResendItem(order: any) {
+      this.notificationService.show('Reenviar Item é um processo manual. Por favor coordene diretamente no chat do iFood e re-emita o item usando o PDV se necessário.', 'info', 10000);
+    }
+
+    async handleAcceptDispute(order: any) {
+      if (!order.ifood_dispute_id) return;
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+      try {
+        const { success, error } = await this.ifoodDataService.sendDisputeAction(order.ifood_dispute_id, 'acceptDispute');
+        if (!success) throw error;
+        this.notificationService.show('Disputa aceita com sucesso.', 'success');
+      } catch (error: any) {
+        this.notificationService.show(`Erro ao aceitar disputa: ${error.message}`, 'error');
+      } finally {
+        this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+      }
+    }
+
+    openRejectDisputeModal(order: any) {
+      this.orderToReject.set(order);
+      this.isRejectDisputeModalOpen.set(true);
+    }
+
+    async handleConfirmRejection(reason: string) {
+      this.isRejectDisputeModalOpen.set(false);
+      const order = this.orderToReject();
+      if (!order || !order.ifood_dispute_id) return;
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+      try {
+        const { success, error } = await this.ifoodDataService.sendDisputeAction(order.ifood_dispute_id, 'rejectDispute', { reason });
+        if (!success) throw error;
+        this.notificationService.show('Disputa rejeitada com sucesso.', 'success');
+      } catch (error: any) {
+        this.notificationService.show(`Erro ao rejeitar disputa: ${error.message}`, 'error');
+      } finally {
+        this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+        this.orderToReject.set(null);
+      }
+    }
+
+    openProposeRefundModal(order: any) {
+      this.orderToProposeRefund.set(order);
+      this.refundAmount.set(0);
+      this.isProposeRefundModalOpen.set(true);
+    }
+
+    async handleConfirmRefund(details: { amount: number }) {
+      this.isProposeRefundModalOpen.set(false);
+      const order = this.orderToProposeRefund();
+      if (!order || !order.ifood_dispute_id || !order.ifood_dispute_details?.alternatives?.[0]?.id) return;
+
+      const alternativeId = order.ifood_dispute_details.alternatives[0].id;
+      const amountInCents = Math.round(details.amount * 100);
+
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+      try {
+          const { success, error } = await this.ifoodDataService.proposeDisputeAlternative(
+              order.ifood_dispute_id,
+              alternativeId,
+              {
+                  type: "REFUND",
+                  metadata: {
+                      amount: {
+                          value: String(amountInCents),
+                          currency: "BRL"
+                      }
+                  }
+              }
+          );
+          if (!success) throw error;
+          this.notificationService.show('Contraproposta de reembolso enviada.', 'success');
+      } catch (error: any) {
+          this.notificationService.show(`Erro ao enviar contraproposta: ${error.message}`);
+      } finally {
+          this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+          this.orderToProposeRefund.set(null);
+      }
+    }
+    
+    openNegotiateTimeModal(order: any) {
+      this.notificationService.alert('A funcionalidade de negociar atraso ainda não foi implementada pelo iFood.', 'Em Breve');
+    }
+
+    openVerifyCodeModal(order: any, type: 'pickup' | 'delivery') {
+      this.orderForCodeModal.set(order);
+      this.codeTypeForModal.set(type);
+      this.isVerifyCodeModalOpen.set(true);
+    }
+
+    async handleConfirmVerification(code: string) {
+      this.isVerifyCodeModalOpen.set(false);
+      const order = this.orderForCodeModal();
+      const type = this.codeTypeForModal();
+      if (!order || !order.ifood_order_id || !code || !type) return;
+
+      const action = type === 'pickup' ? 'validatePickupCode' : 'verifyDeliveryCode';
+      this.updatingOrders.update(set => new Set(set).add(order.id));
+
+      try {
+        const { success: serviceSuccess, error, data } = await this.ifoodDataService.sendLogisticsAction(order.ifood_order_id, action, { code });
+        
+        if (!serviceSuccess) throw error;
+        
+        let isCodeValid = false;
+        if (action === 'validatePickupCode') {
+            isCodeValid = data?.success === true;
+        } else if (action === 'verifyDeliveryCode') {
+            isCodeValid = true;
+        }
+
+        if (isCodeValid) {
+          this.notificationService.show('Código validado com sucesso!', 'success');
+        } else {
+          this.notificationService.show('Código de verificação inválido.', 'error');
+        }
+      } catch (error: any) {
+        this.notificationService.show(`Erro ao verificar código: ${error.message}`, 'error');
+      } finally {
+        this.updatingOrders.update(set => { const newSet = new Set(set); newSet.delete(order.id); return newSet; });
+        this.orderForCodeModal.set(null);
+        this.codeTypeForModal.set(null);
+      }
+    }
+    
+    openLogDetailModal(log: IfoodWebhookLog) {
+      this.selectedLogForDetail.set(log);
+    }
+    
+    closeLogDetailModal() {
+      this.selectedLogForDetail.set(null);
+    }
+   
+    openIfoodDetailModal(order: any) {
+      this.selectedOrderForDetail.set(order);
+      this.isIfoodDetailModalOpen.set(true);
+      if (order?.disputeEvidences && order.disputeEvidences.length > 0) {
+        this.loadEvidenceImages(order.disputeEvidences);
+      }
+    }
+
+    closeIfoodDetailModal() {
+      this.isIfoodDetailModalOpen.set(false);
+      this.selectedOrderForDetail.set(null);
+    }
+
+    getLogStatusClass(status: string | null): string {
+      if (!status) return 'bg-muted text-surface-elevated';
+      if (status.startsWith('SUCCESS')) return 'bg-success/10 border border-success/20 text-success';
+      if (status.startsWith('ERROR')) return 'bg-danger/10 border border-danger/20 text-danger';
+      return 'bg-brand/10 border border-brand/20 text-brand';
+    }
+
+    getOrderBenefitsTotal(order: any): number {
+      if (!order.ifood_benefits || !Array.isArray(order.ifood_benefits)) return 0;
+      return order.ifood_benefits.reduce((acc: number, benefit: any) => acc + (benefit.value || 0), 0);
+    }
+
+    async openIfoodTrackingModal(order: any) {
+      if (!order.ifood_order_id) {
+        this.notificationService.show('Este pedido não tem um ID iFood para rastreio.', 'warning');
+        return;
+      }
+      this.isLoadingTracking.set(true);
+      this.orderForTracking.set(order);
+      this.isTrackingModalOpen.set(true);
+      this.closeIfoodDetailModal(); 
+
+      try {
+        const data = await this.ifoodMenuService.trackOrder(order.ifood_order_id);
+        this.trackingData.set(data);
+      } catch (error: any) {
+        this.notificationService.show(`Erro ao buscar rastreio: ${error.message}`, 'error');
+        this.isTrackingModalOpen.set(false);
+      } finally {
+        this.isLoadingTracking.set(false);
+      }
+    }
+
+    closeIfoodTrackingModal() {
+      this.isTrackingModalOpen.set(false);
+      this.trackingData.set(null);
+      this.orderForTracking.set(null);
+    }
+    
+    formatLogisticsStatus(status: LogisticsStatus | null): string {
+      if (!status) return '';
+      return status.replace(/_/g, ' ').toLowerCase();
     }
 }

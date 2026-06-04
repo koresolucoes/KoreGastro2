@@ -70,9 +70,7 @@ export class TopNavComponent {
       name: 'Cozinha & KDS',
       icon: 'soup_kitchen',
       children: [
-        { name: 'KDS Cozinha', path: '/kds', icon: 'soup_kitchen', roles: ['Gerente', 'Cozinha'] },
-        { name: 'KDS Delivery', path: '/delivery', icon: 'pedal_bike', roles: ['Gerente', 'Caixa'] },
-        { name: 'KDS iFood', path: '/ifood-kds', icon: 'app_shortcut', roles: ['Gerente', 'Caixa'] },
+        { name: 'KDS Unificado', path: '/kds', icon: 'soup_kitchen', roles: ['Gerente', 'Cozinha', 'Caixa'] },
         { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', roles: ['Gerente', 'Cozinha', 'Garçom', 'Caixa'] },
       ]
     },

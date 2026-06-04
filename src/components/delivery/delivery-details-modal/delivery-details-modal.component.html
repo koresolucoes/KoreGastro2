@@ -2,7 +2,7 @@
   <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="closeModal.emit()">
     <div class="chef-surface border border-subtle shadow-2xl w-full max-w-3xl h-[85vh] flex flex-col rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
       <!-- Header -->
-      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
+      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface">
         <h3 class="text-xl font-black text-title flex items-center gap-3">
             <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt_long</span>
             Detalhes da Entrega <span class="text-muted text-sm tracking-widest font-bold">#{{ o.id.slice(0, 8) }}</span>
@@ -90,7 +90,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="p-5 sm:p-6 border-t border-subtle bg-surface/50 flex justify-end gap-3 rounded-b-2xl shrink-0">
+      <div class="p-5 sm:p-6 border-t border-subtle bg-surface flex justify-end gap-3 rounded-b-2xl shrink-0">
         <button (click)="closeModal.emit()" class="px-6 py-2.5 bg-surface hover:bg-surface-elevated border border-strong text-title font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-sm">Fechar</button>
         <button (click)="printGuide()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-brand/20 transition-all active:scale-95 flex items-center gap-2">
           <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span>

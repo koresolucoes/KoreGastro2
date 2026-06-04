@@ -177,12 +177,13 @@ export class DeliveryComponent implements OnInit {
 
     // Process all orders in parallel or sequentially
     let successCount = 0;
+    let lastError: any = null;
     
     for(const order of orders) {
         const distance = order.delivery_distance_km ?? 0;
         const deliveryCost = (driver.base_rate ?? 0) + ((driver.rate_per_km ?? 0) * distance);
         
-        const { success } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
+        const { success, error } = await this.deliveryDataService.assignDriverToOrder(order.id, event.driverId, distance, deliveryCost);
     
         if (success) {
           successCount++;
@@ -193,6 +194,8 @@ export class DeliveryComponent implements OnInit {
             timestamp: new Date().toISOString(),
             fullOrder: order
           });
+        } else {
+          lastError = error;
         }
     }
     
@@ -201,7 +204,8 @@ export class DeliveryComponent implements OnInit {
         this.selectedOrdersForBatch.set(new Set()); // clear batch selection
         this.isBatchMode.set(false);
     } else {
-        this.notificationService.show(`Erro ao atribuir entregador(es).`, 'error');
+        const errMsg = lastError?.message || lastError?.details || 'Erro desconhecido';
+        this.notificationService.show(`Erro ao atribuir entregador: ${errMsg}`, 'error');
     }
   }
 
