@@ -111,7 +111,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   openOrders = this.posState.openOrders;
   
   tablesForPayment = computed(() => 
-    this.posState.tables().filter(t => t.status === 'PAGANDO' || t.status === 'OCUPADA')
+    this.posState.tables().filter(t => t.status === 'PAGANDO')
   );
   
   quickSalesForPayment = computed(() => 
