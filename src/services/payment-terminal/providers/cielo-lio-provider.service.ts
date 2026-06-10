@@ -38,14 +38,15 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
         number: command.orderId.substring(0, 50), // orderId size limit
         reference: command.reference || `REF-${command.orderId}`.substring(0, 50),
         status: 'ENTERED',
+        price: Math.round(command.amount * 100),
         notes: `Cobrança terminal ${terminal.identifier}`,
         items: [
            {
               sku: "PAYMENT",
               name: "Consumo ChefOS",
-              unitPrice: Math.round(command.amount * 100), // convert to cents
+              unit_price: Math.round(command.amount * 100), // convert to cents
               quantity: 1,
-              unitOfMeasure: "EACH"
+              unit_of_measure: "EACH"
            }
         ]
       };
@@ -63,8 +64,16 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
     } catch (error: any) {
       console.error('[CieloLioProvider] Erro ao enviar pagamento', error);
       let errMsg = error.message;
-      if (error.error && error.error.message) {
-         errMsg = error.error.message;
+      if (error.error) {
+         if (error.error.message) {
+            errMsg = error.error.message;
+         } else if (Array.isArray(error.error) && error.error.length > 0 && error.error[0].message) {
+            errMsg = error.error[0].message;
+         } else if (error.error.error) {
+            errMsg = error.error.error;
+         } else {
+            errMsg = JSON.stringify(error.error);
+         }
       }
       return { success: false, status: 'ERROR', errorMessage: errMsg };
     }

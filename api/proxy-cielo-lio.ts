@@ -93,6 +93,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        responseData = null;
     }
 
+    if (!response.ok) {
+       console.error(`Cielo proxy failing ${response.status} ${targetUrl}`, responseData);
+    }
+
     res.status(response.status).json(responseData);
   } catch (error: any) {
     console.error('Cielo proxy error:', error);
