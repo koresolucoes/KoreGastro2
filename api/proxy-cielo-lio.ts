@@ -28,6 +28,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!clientId || !accessToken || !merchantId) {
+      console.error('Missing Cielo credentials.', {
+        clientIdPresent: !!clientId,
+        accessTokenPresent: !!accessToken,
+        merchantIdPresent: !!merchantId,
+        isSandbox,
+        receivedMerchantId: merchantId,
+      });
       return res.status(400).json({ 
         message: 'Missing Cielo credentials.',
         details: {
