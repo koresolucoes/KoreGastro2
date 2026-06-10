@@ -44,7 +44,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = JSON.stringify(req.body);
+      try {
+        if (typeof req.body === 'string') {
+          fetchOptions.body = req.body;
+        } else if (req.body != null) {
+          fetchOptions.body = JSON.stringify(req.body);
+        } else {
+          fetchOptions.body = '{}'; // Provide empty object to prevent missing body errors
+        }
+      } catch (e) {
+        fetchOptions.body = '{}';
+      }
     }
 
     const response = await fetch(targetUrl, fetchOptions);
