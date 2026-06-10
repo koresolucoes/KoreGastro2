@@ -19,6 +19,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const merchantId = req.headers['merchant-id'] as string;
     const isSandbox = req.headers['is-sandbox'] === 'true';
 
+    // Forward all other query parameters to the target URL
+    const queryParams = { ...req.query };
+    delete queryParams.path;
+    const queryString = new URLSearchParams(queryParams as any).toString();
+
     let clientId = process.env.CIELO_LIO_CLIENT_ID;
     let accessToken = process.env.CIELO_LIO_ACCESS_TOKEN;
 
@@ -50,7 +55,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? 'https://api.cielo.com.br/sandbox-lio/order-management/v1'
       : 'https://api.cielo.com.br/order-management/v1';
 
-    const targetUrl = `${baseUrl}${cieloPath}`;
+    let targetUrl = `${baseUrl}${cieloPath}`;
+    if (queryString) {
+      targetUrl += `?${queryString}`;
+    }
 
     const headersToSend: Record<string, string> = {
       'Client-Id': clientId,

@@ -55,6 +55,15 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
           headers: this.getHeaders(terminal.credentials)
       }));
 
+      // Release the order to the machine (wake it up)
+      try {
+         await firstValueFrom(this.http.put<any>(`/api/proxy-cielo-lio?path=/orders/${res.id}&operation=PLACE`, {}, {
+             headers: this.getHeaders(terminal.credentials)
+         }));
+      } catch (placeErr) {
+         console.warn('[CieloLioProvider] Aviso: Erro ao realizar o PLACE do pedido.', placeErr);
+      }
+
       return { 
         success: true, 
         status: 'PENDING', 
