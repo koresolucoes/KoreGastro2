@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { method, path, body, headers } = req;
+    const { method, body, headers } = req;
     const cieloPath = (req.query.path as string) || '';
 
     // Extracted headers from client
