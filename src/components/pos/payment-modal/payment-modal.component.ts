@@ -455,14 +455,55 @@ export class PaymentModalComponent {
           if (!terminalResult.success) {
              this.terminalStatus.set('ERROR');
              this.notificationService.alert('Erro na maquininha: ' + (terminalResult.errorMessage || 'Desconhecido'));
+             setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
              return;
           }
           
+          // Se for enviado para a Cielo LIO, status inicial será PENDING, então fazemos polling
+          if (terminalResult.status === 'PENDING' && terminalResult.transactionId) {
+             const cieloOrderId = terminalResult.transactionId;
+             let isApproved = false;
+             
+             for (let i = 0; i < 40; i++) { // Espera até 2 minutos (40 * 3s)
+                 await new Promise(r => setTimeout(r, 3000));
+                 
+                 // Se o modal fechar ou cancelarem a tela
+                 if (this.terminalStatus() !== 'WAITING') return;
+
+                 const checkRes = await this.terminalManager.checkPaymentStatus(terminalInfo, cieloOrderId);
+                 
+                 if (checkRes.status === 'APPROVED') {
+                    isApproved = true;
+                    if (checkRes.rawResponse?.transactions?.[0]) {
+                       const t = checkRes.rawResponse.transactions[0];
+                       cieloDetails = {
+                          tid: t.id,
+                          brand: t.paymentProduct?.name || ''
+                       };
+                    }
+                    break;
+                 } else if (checkRes.status === 'REJECTED' || checkRes.status === 'ERROR') {
+                    this.terminalStatus.set('ERROR');
+                    this.notificationService.alert('Pagamento na maquininha negado ou falhou. ' + (checkRes.errorMessage || ''));
+                    setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+                    return;
+                 }
+             }
+             
+             if (!isApproved) {
+                 this.terminalStatus.set('ERROR');
+                 this.notificationService.alert('Tempo limite de espera pela maquininha esgotado.');
+                 setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
+                 return;
+             }
+          }
+
           this.terminalStatus.set('APPROVED');
           setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
        } catch (err: any) {
           this.terminalStatus.set('ERROR');
           this.notificationService.alert('Erro ao comunicar com a maquininha: ' + err.message);
+          setTimeout(() => this.terminalStatus.set('IDLE'), 3000);
           return;
        }
     }
