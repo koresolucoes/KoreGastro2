@@ -317,64 +317,111 @@
         <!-- Mobile Card View -->
         <div class="block md:hidden p-4 space-y-4">
           @for (ingredient of filteredIngredients(); track ingredient.id) {
-            <div (click)="openDetailsModal(ingredient)" class="bg-gray-700/50 p-4 rounded-lg space-y-3 cursor-pointer hover:border-blue-500 border border-transparent" [class.bg-yellow-900/40]="isExpiringSoon(ingredient.expiration_date)">
+            <div (click)="openDetailsModal(ingredient)" 
+                 class="chef-surface p-4 rounded-2xl space-y-4 cursor-pointer transition-colors border border-subtle relative overflow-hidden" 
+                 [class.bg-danger/5]="isExpiringSoon(ingredient.expiration_date)"
+                 [class.border-danger/20]="isExpiringSoon(ingredient.expiration_date)"
+                 [class.bg-warning/5]="isLowStock(ingredient.stock, ingredient.min_stock) && !isExpiringSoon(ingredient.expiration_date)"
+                 [class.border-warning/20]="isLowStock(ingredient.stock, ingredient.min_stock) && !isExpiringSoon(ingredient.expiration_date)">
+              
+              <!-- Left Accent Border -->
+              <div class="absolute left-0 top-0 bottom-0 w-1"
+                   [class.bg-danger]="isExpiringSoon(ingredient.expiration_date)"
+                   [class.bg-warning]="isLowStock(ingredient.stock, ingredient.min_stock) && !isExpiringSoon(ingredient.expiration_date)"
+                   [class.bg-transparent]="!isLowStock(ingredient.stock, ingredient.min_stock) && !isExpiringSoon(ingredient.expiration_date)">
+              </div>
+
               <!-- Top row: Name and Status -->
-              <div class="flex justify-between items-start">
+              <div class="flex justify-between items-start gap-2 pl-2">
                   <div>
-                      <p class="font-semibold text-white">{{ ingredient.name }} @if(ingredient.is_sellable) { <span class="text-xs font-bold text-blue-400" title="Item vendável no PDV">(PDV)</span> }</p>
-                      <p class="text-xs text-gray-400">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
+                      <h3 class="font-bold text-title text-base leading-tight">{{ ingredient.name }}</h3>
+                      <div class="flex items-center gap-2 mt-1">
+                          <p class="text-[10px] uppercase tracking-wider font-bold text-muted">{{ ingredient.ingredient_categories?.name || 'Sem categoria' }}</p>
+                          @if(ingredient.is_sellable) { 
+                              <span class="text-[9px] font-black tracking-widest text-brand bg-brand/10 border border-brand/20 px-1.5 py-0.5 rounded" title="Item vendável no PDV">PDV</span> 
+                          }
+                      </div>
                   </div>
-                  @if (isLowStock(ingredient.stock, ingredient.min_stock)) {
-                    <span class="px-2 py-1 text-xs font-medium text-yellow-300 bg-yellow-900/50 rounded-full">Baixo</span>
-                  } @else {
-                    <span class="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 rounded-full">OK</span>
-                  }
+                  <div class="shrink-0 flex items-center justify-end">
+                    @if (isExpiringSoon(ingredient.expiration_date)) {
+                       <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-danger bg-danger/10 border border-danger/20 rounded-full">
+                         <span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+                         Vencendo
+                       </span>
+                    } @else if (isLowStock(ingredient.stock, ingredient.min_stock)) {
+                      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded-full">
+                         <span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+                         Baixo
+                       </span>
+                    }
+                  </div>
               </div>
 
               <!-- Middle: Details Grid -->
-              <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm pt-3 border-t border-gray-600/50">
+              <div class="grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-subtle pl-2">
                   <div>
-                      <p class="text-gray-400 text-xs">Estoque</p>
-                      <p class="text-white font-medium">{{ ingredient.stock }} {{ ingredient.unit }}</p>
+                      <p class="text-[11px] text-muted font-semibold uppercase tracking-wider">Estoque</p>
+                      <p class="text-title font-bold data-mono text-lg leading-tight" [class.text-warning]="isLowStock(ingredient.stock, ingredient.min_stock)">{{ ingredient.stock }}<span class="text-xs text-muted ml-0.5">{{ ingredient.unit }}</span></p>
                   </div>
                    <div>
-                      <p class="text-gray-400 text-xs">Custo Total</p>
-                      <p class="text-white font-semibold">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
+                      <p class="text-[11px] text-muted font-semibold uppercase tracking-wider">Custo Total</p>
+                      <p class="text-title font-bold data-mono text-lg leading-tight">{{ (ingredient.stock * ingredient.cost) | currency:'BRL' }}</p>
                   </div>
                   <div>
-                      <p class="text-gray-400 text-xs">Cód. Externo</p>
-                      <p class="text-white font-mono text-xs">{{ ingredient.external_code || '-' }}</p>
+                      <p class="text-[11px] text-muted font-semibold uppercase tracking-wider">Cód. Externo</p>
+                      <p class="text-body font-mono text-sm">{{ ingredient.external_code || '-' }}</p>
                   </div>
                   <div>
-                      <p class="text-gray-400 text-xs">Últ. Mov.</p>
-                      <p class="text-white font-medium">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
+                      <p class="text-[11px] text-muted font-semibold uppercase tracking-wider">Últ. Mov.</p>
+                      <p class="text-body font-mono text-sm">{{ ingredient.last_movement_at | date:'dd/MM/yy' }}</p>
                   </div>
               </div>
 
               <!-- Bottom: Actions -->
-              <div (click)="$event.stopPropagation()" class="pt-3 border-t border-gray-600/50">
+              <div (click)="$event.stopPropagation()" class="pt-3 border-t border-subtle flex justify-end">
                   @if (ingredientPendingDeletion()?.id === ingredient.id) {
-                      <div class="flex gap-2 justify-end items-center">
-                          <span class="text-sm text-red-300">Certeza?</span>
-                          <button (click)="confirmDeleteIngredient()" class="px-3 py-1 font-semibold rounded-md bg-red-600 hover:bg-red-500 text-white text-xs">Sim</button>
-                          <button (click)="cancelDeleteIngredient()" class="px-3 py-1 rounded-md bg-gray-600 hover:bg-gray-500 text-white text-xs">Não</button>
+                      <div class="flex gap-3 justify-end items-center bg-danger/5 p-2 rounded-xl border border-danger/20 w-full">
+                          <span class="text-xs text-danger font-bold uppercase tracking-widest shrink-0">Excluir?</span>
+                          <div class="flex gap-2 ml-auto">
+                              <button (click)="cancelDeleteIngredient()" class="px-4 py-1.5 rounded-lg bg-surface hover:bg-surface-elevated text-muted font-bold text-xs border border-subtle transition-colors">Não</button>
+                              <button (click)="confirmDeleteIngredient()" class="px-4 py-1.5 font-bold rounded-lg bg-danger hover:bg-danger/90 text-white text-xs shadow-sm transition-colors">Sim</button>
+                          </div>
                       </div>
                   } @else {
-                      <div class="flex gap-2 justify-end">
-                          <button (click)="openLabelModal(ingredient)" class="text-purple-400 hover:text-purple-300 font-medium text-sm p-1">
-                              <span translate="no" class="notranslate material-symbols-outlined text-lg">label</span>
+                      <div class="flex gap-2">
+                          <button (click)="openLabelModal(ingredient)" class="w-9 h-9 flex items-center justify-center rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 transition-colors border border-purple-500/20" title="Imprimir Etiqueta">
+                              <span translate="no" class="notranslate material-symbols-outlined text-[18px]">label</span>
                           </button>
-                          <button (click)="openAdjustmentModal(ingredient)" class="text-green-400 hover:text-green-300 font-medium text-sm px-2 py-1 bg-green-500/10 rounded-md">Ajustar</button>
-                          <button (click)="openEditModal(ingredient)" class="text-blue-400 hover:text-blue-300 font-medium text-sm">Editar</button>
-                          <button (click)="requestDeleteIngredient(ingredient)" class="text-red-400 hover:text-red-300 font-medium text-sm">Deletar</button>
+                          <button (click)="openAdjustmentModal(ingredient)" class="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface-elevated hover:bg-surface text-title font-bold text-xs transition-colors border border-subtle" title="Ajuste Rápido">
+                              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">edit_square</span>
+                              <span>Ajustar</span>
+                          </button>
+                          
+                          <div class="relative group/menu inline-block text-left">
+                              <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-elevated hover:bg-surface text-muted transition-colors border border-subtle">
+                                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">more_vert</span>
+                              </button>
+                              <div class="hidden group-hover/menu:block absolute bottom-full right-0 mb-2 w-48 rounded-xl shadow-lg chef-glass ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-subtle/50">
+                                <div class="py-1">
+                                  <button (click)="openEditModal(ingredient)" class="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-elevated flex items-center gap-2 text-muted hover:text-title font-medium transition-colors">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">edit</span> Editar Cadastro
+                                  </button>
+                                  <div class="border-t border-subtle/50 my-1"></div>
+                                  <button (click)="requestDeleteIngredient(ingredient)" class="w-full text-left px-4 py-2.5 text-sm hover:bg-danger/10 flex items-center gap-2 text-danger font-medium transition-colors">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">delete</span> Excluir
+                                  </button>
+                                </div>
+                              </div>
+                          </div>
                       </div>
                   }
               </div>
             </div>
           }
           @if(filteredIngredients().length === 0) {
-            <div class="text-center text-gray-500 py-16">
-              Nenhum ingrediente encontrado com os filtros atuais.
+            <div class="text-center text-muted py-16 text-sm flex flex-col items-center">
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-3 opacity-20 block">search_off</span>
+              <span class="font-medium">Nenhum ingrediente encontrado.</span>
             </div>
           }
         </div>

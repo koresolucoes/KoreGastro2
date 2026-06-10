@@ -297,6 +297,11 @@ export class CashierDataService {
         
         for (const order of orders) {
             for (const item of order.order_items) {
+                // Ignore auxiliary items created by preparations splitting
+                if (item.notes && item.notes.includes('[AUX_PREP_IDX:') && !item.notes.includes('[AUX_PREP_IDX:0]')) {
+                    continue;
+                }
+
                 const existing = itemMap.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0, totalCost: 0 };
                 const itemCost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
                 existing.quantity += item.quantity;
@@ -486,21 +491,24 @@ export class CashierDataService {
 
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
-            return recipePreps.map(prep => ({
+            return recipePreps.map((prep: any, index: number) => {
+                const isPrimary = index === 0;
+                return {
                 order_id: order.id,
                 recipe_id: item.recipe.id,
                 name: `${item.recipe.name} (${prep.name})`,
                 quantity: item.quantity,
-                price: (item.effectivePrice / recipePreps.length),
-                original_price: (item.originalPrice / recipePreps.length),
-                discount_type: item.discountType,
-                discount_value: item.discountValue,
-                notes: item.notes,
+                price: isPrimary ? item.effectivePrice : item.originalPrice,
+                original_price: isPrimary ? item.originalPrice : item.originalPrice,
+                discount_type: (isPrimary && (item.effectivePrice < item.originalPrice)) || !isPrimary ? 'amount' : null,
+                discount_value: isPrimary ? (item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null) : item.originalPrice,
+                notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
                 status: 'SERVIDO' as OrderItemStatus,
                 station_id: prep.station_id,
                 group_id: groupId,
                 status_timestamps,
-            }));
+                };
+            });
         } else {
             return [{
                 order_id: order.id,
@@ -598,22 +606,25 @@ export class CashierDataService {
 
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
-            return recipePreps.map((prep: any) => ({
+            return recipePreps.map((prep: any, index: number) => {
+                const isPrimary = index === 0;
+                return {
                 order_id: order.id, 
                 recipe_id: item.recipe.id, 
                 name: `${item.recipe.name} (${prep.name})`, 
                 quantity: item.quantity, 
-                notes: item.notes,
+                notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
                 status: 'PENDENTE' as OrderItemStatus, 
                 station_id: prep.station_id, 
                 status_timestamps, 
-                price: (item.effectivePrice / recipePreps.length), 
-                original_price: (item.originalPrice / recipePreps.length),
+                price: isPrimary ? item.effectivePrice : item.originalPrice, 
+                original_price: isPrimary ? item.originalPrice : item.originalPrice,
                 group_id: groupId, 
                 user_id: userId,
-                discount_type: item.discountType, 
-                discount_value: item.discountValue
-            }));
+                discount_type: (isPrimary && (item.effectivePrice < item.originalPrice)) || !isPrimary ? 'amount' : null, 
+                discount_value: isPrimary ? (item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null) : item.originalPrice
+                };
+            });
         } else if (fallbackStationId) {
              return [{
                 order_id: order.id, 
@@ -695,14 +706,18 @@ export class CashierDataService {
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
-            return recipePreps.map((prep: any) => ({
-                order_id: order.id, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: item.notes,
+            return recipePreps.map((prep: any, index: number) => {
+                const isPrimary = index === 0;
+                return {
+                order_id: order.id, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
                 status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
-                price: item.effectivePrice / recipePreps.length, 
-                original_price: item.recipe.price / recipePreps.length,
+                price: isPrimary ? item.effectivePrice : item.recipe.price, 
+                original_price: isPrimary ? item.recipe.price : item.recipe.price,
                 group_id: groupId, user_id: userId,
-                discount_type: null, discount_value: null
-            }));
+                discount_type: (isPrimary && (item.effectivePrice < item.recipe.price)) || !isPrimary ? 'amount' : null,
+                discount_value: isPrimary ? (item.effectivePrice < item.recipe.price ? (item.recipe.price - item.effectivePrice) : null) : item.recipe.price
+                };
+            });
         }
         return [{
             order_id: order.id, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,

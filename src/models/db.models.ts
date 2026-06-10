@@ -444,6 +444,8 @@ export interface RecipePreparation {
   recipe_id: string;
   station_id: string;
   name: string;
+  prep_instructions?: string;
+  prep_time_in_minutes?: number;
   display_order: number;
   created_at: string;
   user_id: string;

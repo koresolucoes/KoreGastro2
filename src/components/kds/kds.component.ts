@@ -436,8 +436,30 @@ export class KdsComponent implements OnInit, OnDestroy {
                     continue; 
                 }
 
-                const recipe = recipesMap.get(item.recipe_id);
-                const prepTimeSecs = (recipe?.prep_time_in_minutes ?? 15) * 60;
+                // Check for AUX_RECIPE_ID in notes for split KDS items
+                let effectiveRecipeId = item.recipe_id;
+                let cleanedNotesInitial = item.notes || '';
+                const auxIdMatch = cleanedNotesInitial.match(/\[AUX_RECIPE_ID:(.+?)\]/);
+                if (auxIdMatch && !effectiveRecipeId) {
+                    effectiveRecipeId = auxIdMatch[1];
+                }
+
+                const recipe = recipesMap.get(effectiveRecipeId);
+                let prepTimeInMinutes = recipe?.prep_time_in_minutes ?? 15;
+
+                if (recipe) {
+                    const match = item.name.match(/\((.*?)\)$/);
+                    if (match) {
+                        const prepName = match[1];
+                        const preps = this.recipeState.recipePreparations().filter(p => p.recipe_id === recipe.id);
+                        const specificPrep = preps.find(p => p.name === prepName);
+                        if (specificPrep && specificPrep.prep_time_in_minutes) {
+                            prepTimeInMinutes = specificPrep.prep_time_in_minutes;
+                        }
+                    }
+                }
+
+                const prepTimeSecs = prepTimeInMinutes * 60;
                 
                 const startTime = item.status_timestamps?.['PENDENTE'] ?? item.created_at;
                 const pendingTimestamp = new Date(startTime).getTime();
@@ -452,12 +474,13 @@ export class KdsComponent implements OnInit, OnDestroy {
                 const note = item.notes?.toLowerCase() ?? '';
                 let cleanedNotes = item.notes;
                 if (cleanedNotes) {
-                    cleanedNotes = cleanedNotes.replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '').trim();
+                    cleanedNotes = cleanedNotes.replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '').replace(/\n?\[AUX_RECIPE_ID:[^\]]*\]/g, '').replace(/\n?\[AUX_PREP_IDX:[^\]]*\]/g, '').trim();
                     if (!cleanedNotes) cleanedNotes = null;
                 }
                 
                 orderItems.push({
                     ...item,
+                    recipe_id: effectiveRecipeId || item.recipe_id,
                     notes: cleanedNotes,
                     elapsedTimeSeconds,
                     timerColor,
@@ -641,7 +664,7 @@ export class KdsComponent implements OnInit, OnDestroy {
               isScheduledAndHeld,
               timeToPrepare,
               totalAmount,
-              subTotal: (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              subTotal: (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
               deliveryFee: (order.ifood_payments as any)?.total?.deliveryFee ?? 0,
               additionalFees: (order.ifood_payments as any)?.total?.additionalFees ?? 0,
               disputeEvidences,
@@ -660,7 +683,7 @@ export class KdsComponent implements OnInit, OnDestroy {
             if (elapsedTime > 900) timerColor = 'text-yellow-300';
             if (isLate) timerColor = 'text-red-300';
 
-            const totalAmount = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
+            const totalAmount = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
 
             return {
               ...order,
@@ -677,7 +700,7 @@ export class KdsComponent implements OnInit, OnDestroy {
               isScheduledAndHeld: false,
               timeToPrepare: 0,
               totalAmount,
-              subTotal: order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              subTotal: order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
               deliveryFee: order.delivery_cost ?? 0,
               additionalFees: 0,
               disputeEvidences: [],
@@ -697,7 +720,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         // Traditional delivery orders finished today
         const externalDelivered = this.todayDelivered()
           .map(order => {
-            const totalAmount = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
+            const totalAmount = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
             return {
               ...order,
               source: 'External' as const,
@@ -713,7 +736,7 @@ export class KdsComponent implements OnInit, OnDestroy {
               isScheduledAndHeld: false,
               timeToPrepare: 0,
               totalAmount,
-              subTotal: order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+              subTotal: order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
               deliveryFee: order.delivery_cost ?? 0,
               additionalFees: 0,
               disputeEvidences: [],
@@ -726,7 +749,7 @@ export class KdsComponent implements OnInit, OnDestroy {
           .map(order => {
             const paymentDetails = this.getPaymentDetails(order);
             const totalAmount = this.getOrderTotalAmount(order);
-            const subTotal = (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const subTotal = (order.ifood_payments as any)?.total?.subTotal ?? order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
             const deliveryFee = (order.ifood_payments as any)?.total?.deliveryFee ?? 0;
             
             return {
@@ -759,7 +782,7 @@ export class KdsComponent implements OnInit, OnDestroy {
         const groupedMap = new Map<string, KdsDisplayItem>();
 
         for (const item of items) {
-            const key = `${item.recipe_id}_${item.status}_${item.notes || ''}_${item.isHeld}_${item.isCritical}_${item.isCancelled}`;
+            const key = `${item.recipe_id}_${item.name}_${item.status}_${item.notes || ''}_${item.isHeld}_${item.isCritical}_${item.isCancelled}`;
 
             if (groupedMap.has(key)) {
                 const group = groupedMap.get(key)!;
@@ -1338,7 +1361,7 @@ export class KdsComponent implements OnInit, OnDestroy {
     }
     
     getOrderTotal(order: Order): number {
-      const itemsTotal = order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const itemsTotal = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
       const deliveryCost = order.delivery_cost ?? 0;
       return itemsTotal + deliveryCost;
     }
@@ -1498,7 +1521,7 @@ export class KdsComponent implements OnInit, OnDestroy {
       const payments = paymentData?.payments || paymentData; 
       
       if (!payments) {
-          return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
       }
       
       if (payments.prepaid && typeof payments.prepaid === 'number' && payments.prepaid > 0) {
@@ -1509,7 +1532,7 @@ export class KdsComponent implements OnInit, OnDestroy {
           return payments.methods.reduce((sum: number, method: any) => sum + (method.value || 0), 0);
       }
       
-      return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
     }
 
     async confirmOrderAndPrepare(order: any) {

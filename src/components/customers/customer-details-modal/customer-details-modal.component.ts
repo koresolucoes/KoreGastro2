@@ -142,6 +142,14 @@ export class CustomerDetailsModalComponent {
   }
   
   getOrderTotal(order: Order): number {
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+  }
+
+  isAuxiliaryItem(item: any): boolean {
+      return !!item.notes && item.notes.includes('[AUX_PREP_IDX:') && !item.notes.includes('[AUX_PREP_IDX:0]');
+  }
+
+  getVisibleItems(items?: any[]): any[] {
+      return (items || []).filter(item => !this.isAuxiliaryItem(item));
   }
 }

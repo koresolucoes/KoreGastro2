@@ -115,7 +115,7 @@
                 <div class="border-t border-subtle border-dashed pt-4">
                     <h5 class="text-[9px] font-black uppercase tracking-widest text-muted mb-3 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">fastfood</span> Itens do Pedido</h5>
                     <ul class="space-y-2">
-                    @for (item of order.order_items; track item.id) {
+                    @for (item of getVisibleItems(order.order_items); track item.id) {
                         <li class="flex justify-between items-center text-sm">
                         <div class="flex items-center gap-2">
                             <span class="bg-surface-elevated text-brand text-[10px] font-black min-w-[24px] h-6 flex items-center justify-center rounded-md border border-strong">{{ item.quantity }}x</span>

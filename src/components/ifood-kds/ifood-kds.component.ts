@@ -343,7 +343,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     
     if (!payments) {
         // Fallback to item sum if no payment info exists at all
-        return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
     }
     
     // For prepaid orders, this is often the most reliable total in the old structure
@@ -357,7 +357,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
     }
     
     // Final fallback
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
   }
 
   processedOrders = computed<ProcessedIfoodOrder[]>(() => {
@@ -399,7 +399,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const totalInfo = paymentData?.total;
 
         const totalAmount = this.getOrderTotalAmount(order);
-        const subTotal = totalInfo?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const subTotal = totalInfo?.subTotal ?? order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
         const deliveryFee = totalInfo?.deliveryFee ?? 0;
         const additionalFees = totalInfo?.additionalFees ?? 0;
         
@@ -459,7 +459,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const totalInfo = paymentData?.total;
         
         const totalAmount = this.getOrderTotalAmount(order);
-        const subTotal = totalInfo?.subTotal ?? order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const subTotal = totalInfo?.subTotal ?? order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
         const deliveryFee = totalInfo?.deliveryFee ?? 0;
         const additionalFees = totalInfo?.additionalFees ?? 0;
 
@@ -868,7 +868,7 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
 
   // Helper for template
   getOrderTotal(order: Order): number {
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
   }
 
   getOrderBenefitsTotal(order: ProcessedIfoodOrder): number {

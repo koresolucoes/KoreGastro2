@@ -346,10 +346,15 @@
                                     <div class="flex items-center gap-1">
                                         <select [value]="prep.station_id || ''" (change)="updatePreparationField(prep.id, 'station_id', $any($event.target).value)" class="bg-transparent text-sm text-brand font-bold focus:outline-none cursor-pointer appearance-none pr-1">
                                             <option value="">Selecione...</option>
-                                            @for(s of stations(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
+                                            @for(s of stations(); track s.id) { <option [value]="s.id" [selected]="s.id === prep.station_id">{{ s.name }}</option> }
                                         </select>
                                         <button (click)="openAddStationModal(prep.id)" class="text-muted hover:text-brand w-6 h-6 flex items-center justify-center bg-surface rounded-lg text-sm transition-colors border border-strong" title="Nova Estação">+</button>
                                     </div>
+                                </div>
+                                <div class="flex items-center gap-3 bg-surface-elevated px-3 py-2 rounded-xl border border-strong" title="Tempo de preparo em minutos">
+                                    <span class="text-[10px] font-bold text-muted uppercase tracking-widest"><span translate="no" class="notranslate material-symbols-outlined text-[14px] align-middle">timer</span></span>
+                                    <input type="number" [value]="prep.prep_time_in_minutes || ''" (input)="updatePreparationField(prep.id, 'prep_time_in_minutes', +$any($event.target).value)" placeholder="Min" class="w-12 bg-transparent text-right text-brand focus:outline-none data-mono font-bold text-sm">
+                                    <span class="text-[10px] font-bold text-muted uppercase tracking-widest">Min</span>
                                 </div>
                                 
                                 <button (click)="removePreparation(prep.id)" class="text-muted hover:text-danger w-8 h-8 flex items-center justify-center hover:bg-surface-elevated rounded-xl transition-colors" title="Remover Etapa"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">delete</span></button>

@@ -377,6 +377,7 @@ export class DashboardComponent implements OnInit {
     const orders = this.dashboardState.performanceCompletedOrders();
     for (const order of orders) {
        for (const item of order.order_items) {
+           if (item.notes?.includes('[AUX_PREP_IDX:') && !item.notes?.includes('[AUX_PREP_IDX:0]')) continue;
            if (item.status_timestamps && item.status_timestamps['PRONTO'] && item.created_at) {
                const start = new Date(item.created_at).getTime();
                const end = new Date(item.status_timestamps['PRONTO']).getTime();
@@ -398,6 +399,7 @@ export class DashboardComponent implements OnInit {
     for (const order of orders) {
       for (const item of order.order_items) {
         if (!item.recipe_id || item.status === 'CANCELADO') continue;
+        if (item.notes?.includes('[AUX_PREP_IDX:') && !item.notes?.includes('[AUX_PREP_IDX:0]')) continue;
         const existing = itemCounts.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0 };
         existing.quantity += item.quantity;
         existing.revenue += (item.price * item.quantity);
@@ -517,6 +519,7 @@ export class DashboardComponent implements OnInit {
     for (const order of orders) {
       for (const item of order.order_items) {
         if (!item.recipe_id || item.status === 'CANCELADO') continue;
+        if (item.notes?.includes('[AUX_PREP_IDX:') && !item.notes?.includes('[AUX_PREP_IDX:0]')) continue;
         const current = salesMap.get(item.recipe_id) || { quantity: 0, revenue: 0 };
         current.quantity += item.quantity;
         current.revenue += (item.price * item.quantity);

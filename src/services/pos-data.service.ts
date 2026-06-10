@@ -118,30 +118,43 @@ export class PosDataService {
         const recipePreps = prepsByRecipeId.get(item.recipe.id);
         const baseEffectivePrice = this.pricingService.getEffectivePrice(item.recipe);
         const effectivePrice = baseEffectivePrice + (item.optionsPrice || 0);
+        const calculatedOriginalPrice = item.recipe.price + (item.optionsPrice || 0);
         const status_timestamps = { 'PENDENTE': new Date().toISOString() };
         // Furo 8: Congelar o custo no momento da venda
         const currentCost = (this.recipeState.recipeCosts().get(item.recipe.id)?.totalCost ?? 0) + (item.optionsCost || 0);
         
         if (recipePreps?.length > 0) {
             const groupId = uuidv4();
-            return recipePreps.map((prep: any) => ({
-                order_id: orderId, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: item.notes,
-                status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
-                price: effectivePrice / recipePreps.length, 
-                original_price: effectivePrice / recipePreps.length,
-                group_id: groupId, user_id: userId,
-                discount_type: null, discount_value: null,
-                added_by_employee_id: employeeId,
-                unit_cost: currentCost / recipePreps.length
-            }));
+            return recipePreps.map((prep: any, index: number) => {
+                const isPrimary = index === 0;
+                return {
+                    order_id: orderId, 
+                    recipe_id: item.recipe.id, 
+                    name: `${item.recipe.name} (${prep.name})`, 
+                    quantity: item.quantity, 
+                    notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
+                    status: 'PENDENTE' as OrderItemStatus, 
+                    station_id: prep.station_id, 
+                    status_timestamps, 
+                    price: isPrimary ? effectivePrice : calculatedOriginalPrice, 
+                    original_price: isPrimary ? calculatedOriginalPrice : calculatedOriginalPrice,
+                    group_id: groupId, user_id: userId,
+                    discount_type: (isPrimary && (effectivePrice < calculatedOriginalPrice)) || !isPrimary ? 'amount' : null, 
+                    discount_value: isPrimary ? (effectivePrice < calculatedOriginalPrice ? (calculatedOriginalPrice - effectivePrice) : null) : calculatedOriginalPrice,
+                    added_by_employee_id: employeeId,
+                    unit_cost: isPrimary ? currentCost : 0
+                };
+            });
         }
+
         return [{
             order_id: orderId, recipe_id: item.recipe.id, name: item.recipe.name, quantity: item.quantity, notes: item.notes,
             status: 'PENDENTE' as OrderItemStatus, station_id: fallbackStationId, status_timestamps,
             price: effectivePrice, 
-            original_price: effectivePrice,
+            original_price: calculatedOriginalPrice,
             group_id: null, user_id: userId,
-            discount_type: null, discount_value: null,
+            discount_type: effectivePrice < calculatedOriginalPrice ? 'amount' : null, 
+            discount_value: effectivePrice < calculatedOriginalPrice ? (calculatedOriginalPrice - effectivePrice) : null,
             added_by_employee_id: employeeId,
             unit_cost: currentCost
         }];
@@ -400,7 +413,7 @@ export class PosDataService {
           return { ...item, price: Math.max(0, item.original_price - itemDiscount), discount_type: discountType, discount_value: discountValue };
         });
       } else {
-        updates = items.map(item => ({ ...item, price: 0, discount_type: discountType, discount_value: discountValue }));
+        updates = items.map(item => ({ ...item, price: item.original_price, discount_type: discountType, discount_value: discountValue }));
       }
     }
     const { error } = await supabase.from('order_items').upsert(updates);
@@ -567,7 +580,6 @@ export class PosDataService {
         .update({ 
             status: 'CANCELADO' as OrderItemStatus, 
             notes: `CANCELADO: ${reason}`,
-            price: 0, 
             cancelled_by: employeeId // AUDIT
         })
         .in('id', itemIds);
@@ -586,7 +598,7 @@ export class PosDataService {
                        ...order,
                        order_items: order.order_items.map(item => {
                            if (itemIds.includes(item.id)) {
-                               return { ...item, status: 'CANCELADO', notes: `CANCELADO: ${reason}`, price: 0 };
+                               return { ...item, status: 'CANCELADO', notes: `CANCELADO: ${reason}` };
                            }
                            return item;
                        })

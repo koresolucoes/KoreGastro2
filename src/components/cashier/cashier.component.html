@@ -748,7 +748,7 @@
              <div class="space-y-3">
                 <h4 class="text-[10px] font-black text-muted uppercase tracking-widest border-b border-subtle pb-2">Itens do Pedido</h4>
                 <ul class="space-y-4">
-                    @for(item of order.order_items; track item.id) {
+                    @for(item of getVisibleItems(order.order_items || []); track item.id) {
                         <li class="flex justify-between items-baseline gap-4 group">
                             <div class="flex flex-col">
                                 <span class="text-title font-black text-sm uppercase tracking-tight">{{ item.quantity }}x {{ item.name }}</span>

@@ -227,6 +227,10 @@ export class PrintingService {
     `;
   }
 
+  private isAuxiliaryItem(item: OrderItem): boolean {
+    return !!item.notes && item.notes.includes('[AUX_PREP_IDX:') && !item.notes.includes('[AUX_PREP_IDX:0]');
+  }
+
   private generatePreBillHtml(order: Order, options: PreBillOptions): string {
     const date = this.datePipe.transform(new Date(), "dd/MM/yyyy HH:mm");
     const subtotal = order.order_items.reduce(
@@ -249,7 +253,7 @@ export class PrintingService {
     const identifier = this.getOrderIdentifier(order);
 
     const itemsHtml = order.order_items
-      .filter((item) => item.price > 0)
+      .filter((item) => !this.isAuxiliaryItem(item))
       .map(
         (item) => `
         <tr>
@@ -355,7 +359,7 @@ export class PrintingService {
     const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
 
     const itemsHtml = order.order_items
-      .filter((item) => item.price > 0 || item.quantity > 0)
+      .filter((item) => !this.isAuxiliaryItem(item))
       .map(
         (item) => `
         <tr>

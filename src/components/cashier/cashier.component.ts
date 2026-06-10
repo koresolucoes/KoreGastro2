@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory } from '../../models/db.models';
+import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory, OrderItem } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
@@ -402,6 +402,14 @@ export class CashierComponent implements OnInit, OnDestroy {
     return { percentage, isAllReady: ready === total };
   }
 
+  isAuxiliaryItem(item: OrderItem): boolean {
+      return !!item.notes && item.notes.includes('[AUX_PREP_IDX:') && !item.notes.includes('[AUX_PREP_IDX:0]');
+  }
+
+  getVisibleItems(items?: OrderItem[]): OrderItem[] {
+      return (items || []).filter(item => !this.isAuxiliaryItem(item));
+  }
+
   // --- Table Payment Methods ---
   openTableOptionsModal(table: Table) {
     this.selectedTableForOptions.set(table);
@@ -673,7 +681,7 @@ export class CashierComponent implements OnInit, OnDestroy {
   }
 
   getOrderTotal(order: Order): number {
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
   }
 
   reprintReceipt(order: Order) {
