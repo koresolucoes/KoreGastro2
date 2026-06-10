@@ -16,7 +16,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
     if (credentials && credentials['isSandbox'] !== undefined && !credentials['isSandbox']) {
       return 'https://api.cielo.com.br/order-management/v1'; // Production
     }
-    return 'https://api.cielo.com.br/sandbox/order-management/v1'; // Sandbox
+    return 'https://api.cielo.com.br/sandbox-lio/order-management/v1'; // Sandbox
   }
 
   private getHeaders(credentials: Record<string, string> | undefined) {

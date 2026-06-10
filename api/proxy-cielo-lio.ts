@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const baseUrl = isSandbox 
-      ? 'https://api.cielo.com.br/sandbox/order-management/v1'
+      ? 'https://api.cielo.com.br/sandbox-lio/order-management/v1'
       : 'https://api.cielo.com.br/order-management/v1';
 
     const targetUrl = `${baseUrl}${cieloPath}`;
