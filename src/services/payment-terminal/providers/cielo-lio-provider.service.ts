@@ -52,7 +52,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
         ]
       };
 
-      const res = await firstValueFrom(this.http.post<any>(`/api/cielo-lio?path=/orders`, payload, {
+      const res = await firstValueFrom(this.http.post<any>(`/api/proxy-cielo-lio?path=/orders`, payload, {
           headers: this.getHeaders(terminal.credentials)
       }));
 
@@ -75,7 +75,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
   async checkPaymentStatus(terminal: TerminalConfig, orderIdOrCieloId: string): Promise<TerminalPaymentResult> {
      try {
        console.log(`[CieloLioProvider] Checando status da ordem ${orderIdOrCieloId}`);
-       const res = await firstValueFrom(this.http.get<any>(`/api/cielo-lio?path=/orders/${orderIdOrCieloId}`, {
+       const res = await firstValueFrom(this.http.get<any>(`/api/proxy-cielo-lio?path=/orders/${orderIdOrCieloId}`, {
            headers: this.getHeaders(terminal.credentials)
        }));
 
@@ -98,7 +98,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
      try {
        console.log(`[CieloLioProvider] Cancelando pagamento ${cieloOrderId}`);
        await firstValueFrom(this.http.put<any>(
-          `/api/cielo-lio?path=/orders/${cieloOrderId}`, 
+          `/api/proxy-cielo-lio?path=/orders/${cieloOrderId}`, 
           { status: 'CANCELED' },
           { headers: this.getHeaders(terminal.credentials) }
        ));
