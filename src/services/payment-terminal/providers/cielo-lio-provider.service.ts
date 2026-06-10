@@ -37,7 +37,9 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
       const payload = {
         number: command.orderId.substring(0, 50), // orderId size limit
         reference: command.reference || `REF-${command.orderId}`.substring(0, 50),
-        status: 'ENTERED',
+        status: 'DRAFT',
+        deviceId: terminal.identifier, // Para Lio V1/V2
+        device_id: terminal.identifier, // Envio redundante no caso do backend usar snake_case
         price: Math.round(command.amount * 100),
         notes: `Cobrança terminal ${terminal.identifier}`,
         items: [
