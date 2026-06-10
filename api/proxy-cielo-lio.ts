@@ -28,7 +28,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!clientId || !accessToken || !merchantId) {
-      return res.status(400).json({ message: 'Missing Cielo credentials (check environment variables or Merchant ID in the request)' });
+      return res.status(400).json({ 
+        message: 'Missing Cielo credentials.',
+        details: {
+          clientIdPresent: !!clientId,
+          accessTokenPresent: !!accessToken,
+          merchantIdPresent: !!merchantId,
+          isSandbox
+        }
+      });
     }
 
     const baseUrl = isSandbox 
