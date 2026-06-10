@@ -10,19 +10,24 @@ import { PaymentTerminalProvider, PaymentTerminalCommand, TerminalConfig, Termin
   providedIn: 'root'
 })
 export class CieloLioProviderService implements PaymentTerminalProvider {
-  // baseUrl = 'https://api.cielo.com.br/order-management/v1'; // Produção
-  private baseUrl = 'https://api.cielo.com.br/sandbox/order-management/v1'; // Sandbox
-
   constructor(private http: HttpClient) {}
+
+  private getBaseUrl(credentials: Record<string, any> | undefined): string {
+    if (credentials && credentials['isSandbox'] !== undefined && !credentials['isSandbox']) {
+      return 'https://api.cielo.com.br/order-management/v1'; // Production
+    }
+    return 'https://api.cielo.com.br/sandbox/order-management/v1'; // Sandbox
+  }
 
   private getHeaders(credentials: Record<string, string> | undefined) {
     if (!credentials || !credentials['clientId'] || !credentials['accessToken'] || !credentials['merchantId']) {
       throw new Error('Credenciais da Cielo ausentes ou incompletas. Vá em Configurações > Maquininhas e preencha Client ID, Access Token e Merchant ID.');
     }
     return {
-      'Client-Id': credentials['clientId'],
-      'Access-Token': credentials['accessToken'],
-      'Merchant-Id': credentials['merchantId'],
+      'Client-Id': credentials['clientId'] as string,
+      'Access-Token': credentials['accessToken'] as string,
+      'Merchant-Id': credentials['merchantId'] as string,
+      'Is-Sandbox': credentials['isSandbox'] === false ? 'false' : 'true',
       'Content-Type': 'application/json'
     };
   }
@@ -47,7 +52,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
         ]
       };
 
-      const res = await firstValueFrom(this.http.post<any>(`${this.baseUrl}/orders`, payload, {
+      const res = await firstValueFrom(this.http.post<any>(`/api/cielo-lio?path=/orders`, payload, {
           headers: this.getHeaders(terminal.credentials)
       }));
 
@@ -70,7 +75,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
   async checkPaymentStatus(terminal: TerminalConfig, orderIdOrCieloId: string): Promise<TerminalPaymentResult> {
      try {
        console.log(`[CieloLioProvider] Checando status da ordem ${orderIdOrCieloId}`);
-       const res = await firstValueFrom(this.http.get<any>(`${this.baseUrl}/orders/${orderIdOrCieloId}`, {
+       const res = await firstValueFrom(this.http.get<any>(`/api/cielo-lio?path=/orders/${orderIdOrCieloId}`, {
            headers: this.getHeaders(terminal.credentials)
        }));
 
@@ -93,7 +98,7 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
      try {
        console.log(`[CieloLioProvider] Cancelando pagamento ${cieloOrderId}`);
        await firstValueFrom(this.http.put<any>(
-          `${this.baseUrl}/orders/${cieloOrderId}`, 
+          `/api/cielo-lio?path=/orders/${cieloOrderId}`, 
           { status: 'CANCELED' },
           { headers: this.getHeaders(terminal.credentials) }
        ));

@@ -36,8 +36,8 @@ import { CommonModule } from '@angular/common';
                  <h3 class="font-bold text-title text-base">{{ terminal.name }}</h3>
                </div>
                
-               <div class="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button (click)="editTerminal(terminal)" class="p-1.5 text-muted hover:text-brand transition-colors rounded-lg hover:bg-surface-elevated">
+               <div class="flex transition-opacity z-50 relative pointer-events-auto">
+                  <button (click)="openForm(terminal)" class="p-1.5 text-muted hover:text-brand transition-colors rounded-lg hover:bg-surface-elevated">
                      <span translate="no" class="notranslate material-symbols-outlined text-[18px]">edit</span>
                   </button>
                   <button (click)="deleteTerminal(terminal)" class="p-1.5 text-muted hover:text-danger transition-colors rounded-lg hover:bg-surface-elevated">
@@ -116,6 +116,10 @@ import { CommonModule } from '@angular/common';
                             <label class="block text-[10px] uppercase font-bold text-muted mb-1">Merchant ID (EC)</label>
                             <input type="text" formControlName="merchantId" class="w-full bg-surface border border-subtle rounded-lg px-3 py-2 text-sm text-title focus:border-brand">
                          </div>
+                         <div class="flex items-center gap-2 pt-2">
+                           <input type="checkbox" id="isSandboxCielo" formControlName="isSandbox" class="w-4 h-4 text-brand rounded border-strong bg-surface focus:ring-brand focus:ring-2">
+                           <label for="isSandboxCielo" class="text-xs font-bold text-title">Modo Sandbox / Desenvolvimento</label>
+                         </div>
                       </div>
                    }
 
@@ -159,7 +163,8 @@ export class PaymentTerminalsSettingsComponent {
     credentials: this.fb.group({
       clientId: [''],
       accessToken: [''],
-      merchantId: ['']
+      merchantId: [''],
+      isSandbox: [true]
     })
   });
 
@@ -188,6 +193,7 @@ export class PaymentTerminalsSettingsComponent {
            clientId: creds.clientId || '',
            accessToken: creds.accessToken || '',
            merchantId: creds.merchantId || '',
+           isSandbox: creds.isSandbox !== undefined ? creds.isSandbox : true
         }
       });
     } else {
@@ -216,7 +222,11 @@ export class PaymentTerminalsSettingsComponent {
     // Cleanup empty credentials keys so it doesn't store empty stuff
     const creds = formValue.credentials;
     if (creds && typeof creds === 'object') {
-       Object.keys(creds).forEach(k => { if (!creds[k]) delete creds[k]; });
+       Object.keys(creds).forEach(k => { 
+           if (creds[k] === '' || creds[k] === null || creds[k] === undefined) {
+               delete creds[k]; 
+           }
+       });
     }
 
     try {
