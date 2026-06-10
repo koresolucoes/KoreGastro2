@@ -16,13 +16,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cieloPath = (req.query.path as string) || '';
 
     // Extracted headers from client
-    const clientId = req.headers['client-id'] as string;
-    const accessToken = req.headers['access-token'] as string;
     const merchantId = req.headers['merchant-id'] as string;
     const isSandbox = req.headers['is-sandbox'] === 'true';
 
+    let clientId = process.env.CIELO_LIO_CLIENT_ID;
+    let accessToken = process.env.CIELO_LIO_ACCESS_TOKEN;
+
+    if (isSandbox) {
+       clientId = process.env.CIELO_LIO_SANDBOX_CLIENT_ID || clientId;
+       accessToken = process.env.CIELO_LIO_SANDBOX_ACCESS_TOKEN || accessToken;
+    }
+
     if (!clientId || !accessToken || !merchantId) {
-      return res.status(400).json({ message: 'Missing Cielo credentials in headers' });
+      return res.status(400).json({ message: 'Missing Cielo credentials (check environment variables or Merchant ID in the request)' });
     }
 
     const baseUrl = isSandbox 

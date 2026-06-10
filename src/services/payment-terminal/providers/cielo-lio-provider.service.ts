@@ -20,12 +20,10 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
   }
 
   private getHeaders(credentials: Record<string, string> | undefined) {
-    if (!credentials || !credentials['clientId'] || !credentials['accessToken'] || !credentials['merchantId']) {
-      throw new Error('Credenciais da Cielo ausentes ou incompletas. Vá em Configurações > Maquininhas e preencha Client ID, Access Token e Merchant ID.');
+    if (!credentials || !credentials['merchantId']) {
+      throw new Error('Credenciais da Cielo ausentes ou incompletas. Vá em Configurações > Maquininhas e preencha o Merchant ID.');
     }
     return {
-      'Client-Id': credentials['clientId'] as string,
-      'Access-Token': credentials['accessToken'] as string,
       'Merchant-Id': credentials['merchantId'] as string,
       'Is-Sandbox': credentials['isSandbox'] === false ? 'false' : 'true',
       'Content-Type': 'application/json'

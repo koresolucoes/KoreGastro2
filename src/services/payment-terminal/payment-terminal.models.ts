@@ -5,7 +5,7 @@ export interface TerminalConfig {
   name: string; // Ex: Caixa 1, Maquininha Balcão
   provider: TerminalProviderType;
   identifier: string; // O Device ID, Número lógico, etc.
-  credentials?: Record<string, string>; // Client ID, Access Token (ideally from backend)
+  credentials?: Record<string, string>; // Merchant ID, Sandbox flag
 }
 
 export interface PaymentTerminalCommand {

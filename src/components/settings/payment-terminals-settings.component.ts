@@ -105,14 +105,6 @@ import { CommonModule } from '@angular/common';
                       <div class="bg-surface-elevated p-3 rounded-xl border border-strong space-y-3" formGroupName="credentials">
                          <p class="text-xs font-bold text-title mb-2">Credenciais LIO</p>
                          <div>
-                            <label class="block text-[10px] uppercase font-bold text-muted mb-1">Client ID</label>
-                            <input type="text" formControlName="clientId" class="w-full bg-surface border border-subtle rounded-lg px-3 py-2 text-sm text-title focus:border-brand">
-                         </div>
-                         <div>
-                            <label class="block text-[10px] uppercase font-bold text-muted mb-1">Access Token</label>
-                            <input type="password" formControlName="accessToken" class="w-full bg-surface border border-subtle rounded-lg px-3 py-2 text-sm text-title focus:border-brand">
-                         </div>
-                         <div>
                             <label class="block text-[10px] uppercase font-bold text-muted mb-1">Merchant ID (EC)</label>
                             <input type="text" formControlName="merchantId" class="w-full bg-surface border border-subtle rounded-lg px-3 py-2 text-sm text-title focus:border-brand">
                          </div>
@@ -161,8 +153,6 @@ export class PaymentTerminalsSettingsComponent {
     identifier: ['', Validators.required],
     is_active: [true],
     credentials: this.fb.group({
-      clientId: [''],
-      accessToken: [''],
       merchantId: [''],
       isSandbox: [true]
     })
@@ -190,8 +180,6 @@ export class PaymentTerminalsSettingsComponent {
         identifier: terminal.identifier,
         is_active: terminal.is_active,
         credentials: {
-           clientId: creds.clientId || '',
-           accessToken: creds.accessToken || '',
            merchantId: creds.merchantId || '',
            isSandbox: creds.isSandbox !== undefined ? creds.isSandbox : true
         }
