@@ -229,6 +229,40 @@
         "responses": { "204": { "description": "Excluido" } }
       }
     },
+    "/catalog": {
+      "get": {
+        "summary": "Obter Catálogo de Cardápio",
+        "description": "Lista o catálogo completo de pratos organizados por categorias, incluindo suas customizações, opções extras, e hierarquia equivalente a integrações como iFood. Ideal para PDV e apps de autoatendimento.",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Catálogo retornado com sucesso" } }
+      }
+    },
+    "/menu-checkout": {
+      "post": {
+        "summary": "Finalizar Pedido de Autoatendimento ou Cardápio Digital",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderData": { "type": "object" },
+                  "items": { "type": "array", "items": { "type": "object" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Pedido Criado" } }
+      }
+    },
     "/menu-items": {
       "get": {
         "summary": "Listar Itens do Cardápio",

@@ -268,6 +268,53 @@ Recurso para consultar e gerenciar itens do cardápio.
 
 ---
 
+#### `GET /api/v2/catalog`
+Lista o catálogo completo de pratos (receitas) organizados por categorias, incluindo suas customizações, opções extras, e hierarquia equivalente a integrações como iFood. Ideal para exibir o cardápio no aplicativo de autoatendimento ou PDV.
+
+**Parâmetros de Query:**
+- `restaurantId` (string, **obrigatório**). Pode ser enviado no cabeçalho Authorization como Bearer.
+
+**Resposta (200 OK):**
+```json
+{
+  "restaurantId": "uuid-do-restaurante",
+  "catalog": [
+    {
+      "id": "uuid-categoria",
+      "name": "Hambúrgueres",
+      "items": [
+        {
+          "id": "uuid-receita",
+          "name": "Hambúrguer Clássico",
+          "description": "Pão, carne e queijo",
+          "price": 30.00,
+          "isAvailable": true,
+          "hasStock": true,
+          "customizations": [
+            {
+              "id": "uuid-grupo-opcao",
+              "name": "Escolha o ponto da carne",
+              "min": 1,
+              "max": 1,
+              "options": [
+                {
+                  "id": "uuid-opcao",
+                  "name": "Ao ponto",
+                  "price": 0,
+                  "productId": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
 #### `GET /api/v2/menu-items`
 Lista os itens do cardápio.
 
@@ -413,6 +460,40 @@ Sinaliza que a conta de um pedido de mesa (`Dine-in`) foi solicitada. Isso atual
 }
 ```
 **Resposta (200 OK):** `{ "success": true, "message": "Table status updated to PAGANDO." }`
+
+---
+
+#### `POST /api/v2/menu-checkout`
+Cria um pedido externo oriundo do cardápio digital (autoatendimento/QR Code). Aciona o webhook realtime `order.created` para atualizar retaguardas e PDVs.
+
+**Cabeçalhos:**
+- `Authorization`: `Bearer {restaurantId}`
+
+**Corpo da Requisição (JSON):**
+```json
+{
+  "orderData": {
+    "table_number": 0,
+    "customer_name": "Nome do Cliente",
+    "customer_id": "uuid-do-cliente-opcional",
+    "order_type": "External-Delivery",
+    "notes": "Contato: 1199999999",
+    "delivery_info": { "address": "Endereço completo" }
+  },
+  "items": [
+    {
+      "recipe_id": "uuid-da-receita",
+      "name": "Hambúrguer",
+      "quantity": 1,
+      "price": 30.0,
+      "original_price": 30.0,
+      "station_id": "uuid-da-estacao-producao",
+      "notes": "Sem cebola"
+    }
+  ]
+}
+```
+**Resposta (201 Created):** Retorna o ID e objeto base do pedido final.
 
 ---
 

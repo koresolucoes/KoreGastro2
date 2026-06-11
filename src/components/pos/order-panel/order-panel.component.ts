@@ -625,7 +625,11 @@ export class OrderPanelComponent implements OnInit {
 
   cleanNotes(notes: string | null | undefined): string {
       if (!notes) return '';
-      return notes.replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '').trim();
+      return notes
+          .replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '')
+          .replace(/\n?\[AUX_RECIPE_ID:[^\]]*\]/g, '')
+          .replace(/\n?\[AUX_PREP_IDX:[^\]]*\]/g, '')
+          .trim();
   }
 
   confirmCustomization(event: { options: IfoodOption[], notes: string }) {

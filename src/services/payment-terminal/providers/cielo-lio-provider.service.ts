@@ -19,13 +19,13 @@ export class CieloLioProviderService implements PaymentTerminalProvider {
     return 'https://api.cielo.com.br/sandbox-lio/order-management/v1'; // Sandbox
   }
 
-  private getHeaders(credentials: Record<string, string> | undefined) {
+  private getHeaders(credentials: Record<string, any> | undefined) {
     if (!credentials || !credentials['merchantId']) {
       throw new Error('Credenciais da Cielo ausentes ou incompletas. Vá em Configurações > Maquininhas e preencha o Merchant ID.');
     }
     return {
       'Merchant-Id': credentials['merchantId'] as string,
-      'Is-Sandbox': credentials['isSandbox'] === false ? 'false' : 'true',
+      'Is-Sandbox': String(credentials['isSandbox']) === 'false' ? 'false' : 'true',
       'Content-Type': 'application/json'
     };
   }

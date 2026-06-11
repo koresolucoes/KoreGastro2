@@ -239,7 +239,7 @@ export class MenuComponent implements OnInit {
         user_id: uid,
         table_number: 0,
         customer_name: event.name,
-        customer_id: this.customerAuthService.customer()?.id || null, // ADDED HERE
+        customer_id: this.customerAuthService.customer()?.id || null,
         order_type: event.type === 'delivery' ? 'External-Delivery' : 'QuickSale',
         status: 'OPEN',
         notes: `Contato: ${event.phone}${event.address ? ' | Endereço: ' + event.address : ''}`,

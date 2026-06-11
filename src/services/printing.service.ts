@@ -129,6 +129,15 @@ export class PrintingService {
     }, 250);
   }
 
+  private cleanNotes(notes: string | null | undefined): string {
+    if (!notes) return '';
+    return notes
+      .replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '')
+      .replace(/\n?\[AUX_RECIPE_ID:[^\]]*\]/g, '')
+      .replace(/\n?\[AUX_PREP_IDX:[^\]]*\]/g, '')
+      .trim();
+  }
+
   private generateTicketHtml(
     order: Order,
     items: OrderItem[],
@@ -145,8 +154,9 @@ export class PrintingService {
 
     let itemsHtml = items
       .map((item) => {
-        const notesHtml = item.notes
-          ? `<p style="font-style: italic; margin-left: 15px; margin-top: 2px;"> -> ${item.notes}</p>`
+        const cleanedNotes = this.cleanNotes(item.notes);
+        const notesHtml = cleanedNotes
+          ? `<p style="font-style: italic; margin-left: 15px; margin-top: 2px;"> -> ${cleanedNotes}</p>`
           : "";
         const itemName = item.name.includes("(")
           ? item.name.split("(")[0].trim()
