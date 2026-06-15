@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, inject, signal, effect, untracked } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-customer-behavior',
@@ -79,7 +80,7 @@ import { CrmDataService, RfmCustomer } from '../../../services/crm-data.service'
                              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap shadow-sm" [ngClass]="getSegmentStyles(c.segment)">
                                  {{ c.segment }}
                              </span>
-                             <button class="w-8 h-8 rounded-lg bg-surface border border-subtle flex items-center justify-center text-muted hover:text-brand hover:border-brand transition-all hidden lg:flex" title="Ver Detalhes">
+                             <button (click)="viewCustomerDetails(c)" class="w-8 h-8 rounded-lg bg-surface border border-subtle flex items-center justify-center text-muted hover:text-brand hover:border-brand transition-all hidden lg:flex" title="Ver Detalhes">
                                  <span translate="no" class="notranslate material-symbols-outlined text-[18px]">chevron_right</span>
                              </button>
                         </div>
@@ -97,6 +98,7 @@ export class CustomerBehaviorReportComponent {
   endDate = input.required<string>();
   
   crmService = inject(CrmDataService);
+  notificationService = inject(NotificationService);
   
   customers = signal<RfmCustomer[]>([]);
   isLoading = signal(false);
@@ -112,6 +114,11 @@ export class CustomerBehaviorReportComponent {
             });
         }
     });
+  }
+
+  async viewCustomerDetails(customer: RfmCustomer) {
+      const msg = `Detalhes do Cliente:\n\nNome: ${customer.name}\nTelefone: ${customer.phone || 'N/A'}\nEmail: ${customer.email || 'N/A'}\nSegmento: ${customer.segment}\nCompras: ${customer.frequency}\nTotal Gasto: R$ ${customer.monetary.toFixed(2)}`;
+      await this.notificationService.alert(msg);
   }
 
   async loadData() {
