@@ -581,6 +581,12 @@ export interface Reservation {
   notes: string | null;
   status: ReservationStatus;
   created_at: string;
+  table_id?: string | null;
+  customer_id?: string | null;
+  expected_duration_minutes?: number | null;
+  cancellation_reason?: string | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
 }
 
 export interface Schedule {

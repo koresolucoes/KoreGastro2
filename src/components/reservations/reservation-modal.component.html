@@ -13,6 +13,16 @@
     <form (ngSubmit)="onSave()" class="flex flex-col">
       <div class="p-5 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
         <div>
+          <label for="customerId" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Cliente Registrado (Opcional)</label>
+          <select id="customerId" [ngModel]="reservationForm().customer_id" (ngModelChange)="onCustomerSelect($event)" name="customerId" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+            <option [ngValue]="null">Selecionar cliente (opcional)</option>
+            @for (customer of posState.customers(); track customer.id) {
+              <option [ngValue]="customer.id">{{ customer.name }} {{ customer.phone ? '(' + customer.phone + ')' : '' }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
           <label for="customerName" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Nome do Cliente *</label>
           <input type="text" id="customerName" [ngModel]="reservationForm().customer_name" (ngModelChange)="updateFormField('customer_name', $event)" name="customerName" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="Ex: Maria Antonieta">
         </div>
@@ -36,6 +46,22 @@
           <div>
             <label for="reservationTime" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Hora *</label>
             <input type="time" id="reservationTime" [(ngModel)]="formTime" name="reservationTime" required class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label for="tableId" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Mesa</label>
+            <select id="tableId" [ngModel]="reservationForm().table_id" (ngModelChange)="updateFormField('table_id', $event)" name="tableId" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+              <option [ngValue]="null">Sem mesa definida</option>
+              @for (table of posState.tables(); track table.id) {
+                <option [ngValue]="table.id">Mesa {{ table.number }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="expectedDuration" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Duração Est. (Min.)</label>
+            <input type="number" id="expectedDuration" [ngModel]="reservationForm().expected_duration_minutes" (ngModelChange)="updateFormField('expected_duration_minutes', $event)" name="expectedDuration" min="15" step="15" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" placeholder="120">
           </div>
         </div>
         

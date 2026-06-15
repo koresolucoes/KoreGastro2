@@ -791,6 +791,10 @@ export class PrintingService {
     this.printToIframe(receiptHtml);
   }
 
+  printHtml(html: string) {
+    this.printToIframe(html);
+  }
+
   private printToIframe(html: string) {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';

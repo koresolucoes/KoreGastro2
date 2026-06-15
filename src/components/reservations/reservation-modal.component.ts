@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, InputSignal, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, InputSignal, OutputEmitterRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Reservation } from '../../models/db.models';
+import { PosStateService } from '../../services/pos-state.service';
 
 @Component({
   selector: 'app-reservation-modal',
@@ -11,6 +12,8 @@ import { Reservation } from '../../models/db.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationModalComponent {
+  posState = inject(PosStateService);
+
   initialData: InputSignal<Partial<Reservation> | null> = input.required<Partial<Reservation> | null>();
 
   save: OutputEmitterRef<Partial<Reservation>> = output<Partial<Reservation>>();
@@ -40,17 +43,27 @@ export class ReservationModalComponent {
     });
   }
 
-  updateFormField(field: keyof Omit<Reservation, 'id' | 'created_at' | 'user_id' | 'status' | 'reservation_time'>, value: any) {
+  updateFormField(field: keyof Omit<Reservation, 'id' | 'created_at' | 'user_id' | 'reservation_time'>, value: any) {
     this.reservationForm.update(form => {
       const newForm = { ...form };
-      if (field === 'party_size') {
+      if (field === 'party_size' || field === 'expected_duration_minutes') {
         const num = Number(value);
-        (newForm as any)[field] = isNaN(num) ? undefined : num;
+        (newForm as any)[field] = isNaN(num) || value === '' ? null : num;
       } else {
         (newForm as any)[field] = value;
       }
       return newForm;
     });
+  }
+
+  onCustomerSelect(customerId: string | null) {
+    const customer = this.posState.customers().find(c => c.id === customerId);
+    this.reservationForm.update(form => ({
+      ...form,
+      customer_id: customerId,
+      customer_name: customer ? customer.name : form.customer_name,
+      customer_phone: customer ? (customer.phone || undefined) : form.customer_phone
+    }));
   }
 
   isFormValid = computed(() => {

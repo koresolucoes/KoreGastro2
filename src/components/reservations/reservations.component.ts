@@ -7,6 +7,8 @@ import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { ReservationModalComponent } from './reservation-modal.component';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { PrintingService } from '../../services/printing.service';
+import { PosStateService } from '../../services/pos-state.service';
 
 @Component({
   selector: 'app-reservations',
@@ -21,9 +23,17 @@ export class ReservationsComponent implements OnInit {
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
   supabaseStateService = inject(SupabaseStateService);
+  printingService = inject(PrintingService);
+  posState = inject(PosStateService);
 
   activeView = signal<'daily' | 'overview'>('daily');
   selectedDate = signal(new Date().toISOString().split('T')[0]);
+
+  getTableName(tableId: string | undefined | null) {
+    if (!tableId) return '';
+    const table = this.posState.tables().find(t => t.id === tableId);
+    return table ? `Mesa ${table.number}` : '';
+  }
 
   // Modal State
   isModalOpen = signal(false);
@@ -56,6 +66,32 @@ export class ReservationsComponent implements OnInit {
   confirmedReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'CONFIRMED'));
   completedOrCancelledReservations = computed(() => this.reservationsForDay().filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED'));
   
+  occupancyByHour = computed(() => {
+    const reservations = this.reservationsForDay().filter(r => r.status === 'CONFIRMED' || r.status === 'PENDING' || r.status === 'COMPLETED');
+    const hourlySummary = new Map<string, { count: number; pax: number; confirmed: number; pending: number }>();
+    
+    // Group by hour
+    reservations.forEach(res => {
+      const date = new Date(res.reservation_time);
+      const hourKey = `${date.getHours().toString().padStart(2, '0')}:00`;
+      
+      if (!hourlySummary.has(hourKey)) {
+        hourlySummary.set(hourKey, { count: 0, pax: 0, confirmed: 0, pending: 0 });
+      }
+      
+      const stats = hourlySummary.get(hourKey)!;
+      stats.count++;
+      stats.pax += res.party_size || 0;
+      
+      if (res.status === 'CONFIRMED') stats.confirmed++;
+      if (res.status === 'PENDING') stats.pending++;
+    });
+    
+    return Array.from(hourlySummary.entries())
+      .map(([hour, stats]) => ({ hour, ...stats }))
+      .sort((a, b) => a.hour.localeCompare(b.hour));
+  });
+
   groupedOverviewReservations = computed(() => {
     const allReservations = this.settingsState.reservations();
     
@@ -87,7 +123,6 @@ export class ReservationsComponent implements OnInit {
       .map(([date, reservations]) => ({ date, reservations }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   });
-
 
   handleDateChange(event: Event) {
     const newDate = (event.target as HTMLInputElement).value;
@@ -139,6 +174,16 @@ export class ReservationsComponent implements OnInit {
     const confirmed = await this.notificationService.confirm(confirmMessage, 'Confirmar Ação');
     if (!confirmed) return;
 
+    if (status === 'CANCELLED') {
+        // Implement cancel reason option if desired
+        reservation.cancellation_reason = 'Cancelado manualmente';
+        const { success, error } = await this.reservationDataService.updateReservation(reservation.id, reservation);
+        if(!success) {
+            await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
+            return;
+        }
+    }
+
     const { success, error } = await this.reservationDataService.updateReservationStatus(reservation.id, status);
     if (!success) {
       await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
@@ -164,4 +209,38 @@ export class ReservationsComponent implements OnInit {
       default: return 'text-gray-300';
     }
   }
+
+  printDailyReport() {
+    const dateStr = this.selectedDate();
+    const dayReservations = this.reservationsForDay();
+    const confirmed = dayReservations.filter(r => r.status === 'CONFIRMED').length;
+    const pending = dayReservations.filter(r => r.status === 'PENDING').length;
+    
+    let content = `
+      <h1>Relatório de Reservas</h1>
+      <h2>Data: ${dateStr}</h2>
+      <p><strong>Total de Reservas Confirmadas:</strong> ${confirmed}</p>
+      <p><strong>Total de Reservas Pendentes:</strong> ${pending}</p>
+      <hr />
+      <h3>Ocupação por Horário</h3>
+      <ul>
+    `;
+    
+    this.occupancyByHour().forEach(stat => {
+        content += `<li>${stat.hour} - ${stat.count} reservas (${stat.pax} pessoas) - Confirmadas: ${stat.confirmed} | Pendentes: ${stat.pending}</li>`;
+    });
+    
+    content += `</ul><hr /><h3>Lista de Reservas (Confirmadas/Pendentes)</h3>`;
+    
+    const activeR = dayReservations.filter(r => r.status === 'CONFIRMED' || r.status === 'PENDING').sort((a,b) => new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime());
+    
+    activeR.forEach(r => {
+        const time = new Date(r.reservation_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        content += `<p><strong>${time}</strong> - ${r.customer_name} (${r.party_size} pax) [${r.status === 'CONFIRMED' ? 'CONFIRMADA' : 'PENDENTE'}]</p>`;
+        if (r.notes) content += `<p><em>Obs: ${r.notes}</em></p>`;
+    });
+    
+    this.printingService.printHtml(content);
+  }
 }
+

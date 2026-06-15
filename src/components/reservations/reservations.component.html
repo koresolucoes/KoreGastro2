@@ -24,6 +24,11 @@
           [value]="selectedDate()" 
           (change)="handleDateChange($event)" 
           class="bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-title font-bold focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-inner text-sm transition-all h-[40px]">
+        
+        <button (click)="printDailyReport()" class="bg-surface hover:bg-surface-elevated border border-strong text-title font-black py-2 px-4 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-sm active:scale-95 h-[40px]">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span>
+          Imprimir Resumo
+        </button>
       }
       
       @if (canAddReservation()) {
@@ -36,6 +41,28 @@
   </div>
 
   @if (activeView() === 'daily') {
+    <!-- Occupancy Overview -->
+    @if (occupancyByHour().length > 0) {
+      <div class="chef-surface border border-subtle rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+        <h2 class="text-xs font-black uppercase tracking-[0.1em] text-title flex items-center gap-2">
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-brand">bar_chart</span>
+          Ocupação por Horário
+        </h2>
+        <div class="flex flex-row overflow-x-auto hide-scrollbar gap-4 pb-2">
+          @for (stat of occupancyByHour(); track stat.hour) {
+            <div class="bg-surface-elevated border border-strong rounded-xl p-3 min-w-[120px] flex flex-col items-center">
+              <span class="text-lg font-black data-mono text-title">{{ stat.hour }}</span>
+              <span class="text-xs font-bold text-muted mt-1">{{ stat.pax }} Pax ({{ stat.count }})</span>
+              <div class="w-full h-1.5 bg-strong rounded-full mt-2 overflow-hidden flex">
+                 <div class="bg-success h-full" [style.width.%]="(stat.confirmed / stat.count) * 100"></div>
+                 <div class="bg-warning h-full" [style.width.%]="(stat.pending / stat.count) * 100"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <!-- Reservation Columns -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[400px]">
       <!-- Pending Column -->
@@ -49,9 +76,12 @@
               <div class="flex justify-between items-start">
                 <div>
                   <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
-                  <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
+                  <div class="flex flex-wrap items-center gap-4 mt-2 text-xs font-bold text-muted">
                     <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
                     <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">group</span>{{ reservation.party_size }}</span>
+                    @if (reservation.table_id) {
+                      <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-warning">table_restaurant</span>{{ getTableName(reservation.table_id) }}</span>
+                    }
                   </div>
                 </div>
               </div>
@@ -97,9 +127,12 @@
                <div class="flex justify-between items-start">
                 <div>
                   <p class="font-black text-title text-base">{{ reservation.customer_name }}</p>
-                  <div class="flex items-center gap-4 mt-2 text-xs font-bold text-muted">
+                  <div class="flex flex-wrap items-center gap-4 mt-2 text-xs font-bold text-muted">
                     <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">schedule</span>{{ reservation.reservation_time | date:'HH:mm' }}</span>
                     <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">group</span>{{ reservation.party_size }}</span>
+                    @if (reservation.table_id) {
+                      <span class="flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">table_restaurant</span>{{ getTableName(reservation.table_id) }}</span>
+                    }
                   </div>
                 </div>
               </div>
