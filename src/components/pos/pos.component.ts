@@ -207,8 +207,9 @@ export class PosComponent implements OnInit {
     }
 
     const table = this.selectedTable();
-    if (!table || !this.activeOrder() || this.activeOrder()?.order_items.length === 0) return;
+    if (!table || !this.activeOrder()) return;
     
+    // We allow closing even if empty now
     const { success, error } = await this.posDataService.updateTableStatus(table.id, 'PAGANDO');
     if (success) { 
         this.closeOrderPanel();

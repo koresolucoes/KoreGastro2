@@ -1,0 +1,7 @@
+ALTER TABLE public.reservations 
+ADD COLUMN IF NOT EXISTS table_id UUID REFERENCES public.tables(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS expected_duration_minutes INTEGER,
+ADD COLUMN IF NOT EXISTS cancellation_reason TEXT,
+ADD COLUMN IF NOT EXISTS check_in_time TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS check_out_time TIMESTAMPTZ;

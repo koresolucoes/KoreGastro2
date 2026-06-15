@@ -808,7 +808,7 @@ export class PrintingService {
     const doc = iframe.contentWindow?.document;
     if (doc) {
       // Inject script to auto-print when loaded
-      const htmlWithPrint = html.replace('</body>', `
+      const printScript = `
         <script>
           window.onload = () => {
             setTimeout(() => {
@@ -817,8 +817,10 @@ export class PrintingService {
             }, 100);
           };
         </script>
-        </body>
-      `);
+      `;
+      const htmlWithPrint = html.includes('</body>') 
+        ? html.replace('</body>', printScript + '</body>')
+        : html + printScript;
       
       doc.open();
       doc.write(htmlWithPrint);

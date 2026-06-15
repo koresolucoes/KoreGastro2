@@ -52,12 +52,17 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label for="tableId" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Mesa</label>
-            <select id="tableId" [ngModel]="reservationForm().table_id" (ngModelChange)="updateFormField('table_id', $event)" name="tableId" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50">
+            <select id="tableId" [ngModel]="reservationForm().table_id" (ngModelChange)="updateFormField('table_id', $event)" name="tableId" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-sm text-title font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/50" [class.border-warning]="tableConflicts()[reservationForm().table_id || '']">
               <option [ngValue]="null">Sem mesa definida</option>
               @for (table of posState.tables(); track table.id) {
-                <option [ngValue]="table.id">Mesa {{ table.number }}</option>
+                <option [ngValue]="table.id" [disabled]="tableConflicts()[table.id]">
+                  Mesa {{ table.number }} {{ tableConflicts()[table.id] ? '(Indisponível no Horário)' : '' }}
+                </option>
               }
             </select>
+            @if(tableConflicts()[reservationForm().table_id || '']) {
+                <p class="text-[10px] text-warning mt-1 font-bold">Mesa possui conflito neste horário.</p>
+            }
           </div>
           <div>
             <label for="expectedDuration" class="block text-[10px] font-black text-muted uppercase tracking-widest mb-2">Duração Est. (Min.)</label>

@@ -142,8 +142,12 @@
               </div>
               @if(reservation.notes) { <p class="text-[10px] font-bold text-title mt-3 p-2 bg-info/10 border border-info/20 rounded-lg flex items-start gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[14px] text-info">info</span> "{{ reservation.notes }}"</p> }
               <div class="flex gap-2 mt-4">
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'COMPLETED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border-2 border-success text-success transition-all active:scale-95 text-center leading-none">Concluir</button>
-                <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95 text-center leading-none">Cancelar</button>
+                @if (!reservation.check_in_time) {
+                  <button (click)="$event.stopPropagation(); markCheckIn(reservation)" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border-2 border-brand text-brand transition-all active:scale-95 text-center leading-none">Registrar Chegada</button>
+                  <button (click)="$event.stopPropagation(); updateStatus(reservation, 'CANCELLED')" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-surface hover:bg-surface-elevated border border-strong text-title transition-all active:scale-95 text-center leading-none">Cancelar</button>
+                } @else {
+                  <button (click)="$event.stopPropagation(); markCheckOut(reservation)" class="flex-1 px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-lg bg-success hover:bg-success/90 border border-success text-white transition-all active:scale-95 text-center leading-none">Finalizar (Saída)</button>
+                }
               </div>
             </div>
           } @empty {
@@ -172,6 +176,19 @@
                   </div>
                 </div>
               </div>
+              @if(reservation.status === 'CANCELLED' && reservation.cancellation_reason) {
+                <div class="mt-2 text-[10px] text-danger/80 break-words font-medium">Motivo: {{ reservation.cancellation_reason }}</div>
+              }
+              @if(reservation.status === 'COMPLETED') {
+                <div class="mt-2 text-[10px] text-success/80 flex gap-3 font-medium">
+                  @if (reservation.check_in_time) {
+                    <span>In: {{ reservation.check_in_time | date:'HH:mm' }}</span>
+                  }
+                  @if (reservation.check_out_time) {
+                    <span>Out: {{ reservation.check_out_time | date:'HH:mm' }}</span>
+                  }
+                </div>
+              }
             </div>
           } @empty {
              <div class="flex flex-col items-center justify-center h-48 opacity-40">

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Reservation } from '../../models/db.models';
 import { PosStateService } from '../../services/pos-state.service';
+import { SettingsStateService } from '../../services/settings-state.service';
 
 @Component({
   selector: 'app-reservation-modal',
@@ -13,6 +14,7 @@ import { PosStateService } from '../../services/pos-state.service';
 })
 export class ReservationModalComponent {
   posState = inject(PosStateService);
+  settingsState = inject(SettingsStateService);
 
   initialData: InputSignal<Partial<Reservation> | null> = input.required<Partial<Reservation> | null>();
 
@@ -68,7 +70,38 @@ export class ReservationModalComponent {
 
   isFormValid = computed(() => {
     const form = this.reservationForm();
-    return form.customer_name && form.party_size && form.party_size > 0 && this.formDate() && this.formTime();
+    const hasConflict = !!(form.table_id && this.tableConflicts()[form.table_id]);
+    return form.customer_name && form.party_size && form.party_size > 0 && this.formDate() && this.formTime() && !hasConflict;
+  });
+
+  tableConflicts = computed(() => {
+    const dateStr = this.formDate();
+    const timeStr = this.formTime();
+    const durStr = this.reservationForm().expected_duration_minutes || 120; // Default 120
+    const resId = this.reservationForm().id;
+
+    if (!dateStr || !timeStr) return {};
+
+    const targetStart = new Date(`${dateStr}T${timeStr}`);
+    const targetEnd = new Date(targetStart.getTime() + durStr * 60000);
+    const conflicts: Record<string, boolean> = {};
+
+    this.settingsState.reservations().forEach(res => {
+      // Ignore current reservation, cancelled or completed ones
+      if (res.id === resId || res.status === 'CANCELLED' || res.status === 'COMPLETED') return;
+      if (!res.table_id) return;
+      
+      const resStart = new Date(res.reservation_time);
+      const dur = res.expected_duration_minutes || 120;
+      const resEnd = new Date(resStart.getTime() + dur * 60000);
+
+      // Simple overlap logic: max(start) < min(end)
+      if (targetStart < resEnd && targetEnd > resStart) {
+        conflicts[res.table_id] = true;
+      }
+    });
+
+    return conflicts;
   });
   
   onSave() {

@@ -9,6 +9,7 @@ import { ReservationModalComponent } from './reservation-modal.component';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { PrintingService } from '../../services/printing.service';
 import { PosStateService } from '../../services/pos-state.service';
+import { PosDataService } from '../../services/pos-data.service';
 
 @Component({
   selector: 'app-reservations',
@@ -25,6 +26,7 @@ export class ReservationsComponent implements OnInit {
   supabaseStateService = inject(SupabaseStateService);
   printingService = inject(PrintingService);
   posState = inject(PosStateService);
+  posDataService = inject(PosDataService);
 
   activeView = signal<'daily' | 'overview'>('daily');
   selectedDate = signal(new Date().toISOString().split('T')[0]);
@@ -175,18 +177,78 @@ export class ReservationsComponent implements OnInit {
     if (!confirmed) return;
 
     if (status === 'CANCELLED') {
-        // Implement cancel reason option if desired
-        reservation.cancellation_reason = 'Cancelado manualmente';
-        const { success, error } = await this.reservationDataService.updateReservation(reservation.id, reservation);
+        const reason = window.prompt("Motivo do cancelamento (opcional):", "");
+        if (reason === null) return; // User pressed cancel on the prompt
+        
+        const { success, error } = await this.reservationDataService.updateReservation(reservation.id, {
+          status: 'CANCELLED',
+          cancellation_reason: reason || 'Cancelado manualmente'
+        });
         if(!success) {
-            await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
-            return;
+            await this.notificationService.alert(`Erro ao cancelar reserva: ${error?.message}`);
         }
+        return;
     }
 
     const { success, error } = await this.reservationDataService.updateReservationStatus(reservation.id, status);
     if (!success) {
       await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
+    }
+  }
+
+  async markCheckIn(reservation: Reservation) {
+    const confirmed = await this.notificationService.confirm(`Registrar chegada de ${reservation.customer_name}?`, 'Confirmar Check-in');
+    if (!confirmed) return;
+
+    if (reservation.table_id) {
+       const table = this.posState.tables().find(t => t.id === reservation.table_id);
+       if (table) {
+           const existingOrder = this.posDataService.getOrderByTableNumber(table.number);
+           if (!existingOrder) {
+               const emp = this.operationalAuthService.activeEmployee();
+               if (!emp) {
+                   await this.notificationService.alert('Nenhum funcionário ativo para abrir a mesa.');
+                   return;
+               }
+               const result = await this.posDataService.createOrderForTable(table, emp.id);
+               if (result.success && result.data) {
+                   if (reservation.customer_id) {
+                       await this.posDataService.associateCustomerToOrder(result.data.id, reservation.customer_id);
+                   }
+                   if (reservation.party_size) {
+                       await this.posDataService.updateTableCustomerCount(table.id, reservation.party_size);
+                   }
+               } else {
+                   await this.notificationService.alert('Falha ao abrir a mesa automaticamente.');
+               }
+           } else {
+               // Table already has an order, maybe just associate customer if empty?
+               if (reservation.customer_id && !existingOrder.customer_id) {
+                   await this.posDataService.associateCustomerToOrder(existingOrder.id, reservation.customer_id);
+               }
+           }
+       }
+    }
+
+    const check_in_time = new Date().toISOString();
+    const { success, error } = await this.reservationDataService.updateReservation(reservation.id, { check_in_time });
+    if (success) {
+      // nothing
+    } else {
+      await this.notificationService.alert(`Erro ao registrar check-in: ${error?.message}`);
+    }
+  }
+
+  async markCheckOut(reservation: Reservation) {
+    const confirmed = await this.notificationService.confirm(`Registrar saída de ${reservation.customer_name} e finalizar reserva?`, 'Confirmar Check-out');
+    if (!confirmed) return;
+
+    const check_out_time = new Date().toISOString();
+    const { success, error } = await this.reservationDataService.updateReservation(reservation.id, { check_out_time, status: 'COMPLETED' });
+    if (success) {
+      // nothing
+    } else {
+      await this.notificationService.alert(`Erro ao registrar check-out: ${error?.message}`);
     }
   }
 
@@ -217,28 +279,56 @@ export class ReservationsComponent implements OnInit {
     const pending = dayReservations.filter(r => r.status === 'PENDING').length;
     
     let content = `
+      <html>
+      <head>
+        <title>Relatório de Reservas - ${dateStr}</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; color: #333; }
+          h1 { font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+          h2 { font-size: 18px; color: #666; }
+          h3 { font-size: 16px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+          p { margin: 5px 0; font-size: 14px; }
+          ul { list-style-type: none; padding: 0; }
+          li { padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+          .time { font-weight: bold; width: 60px; display: inline-block; }
+          .status-confirmada { color: green; font-weight: bold; font-size: 12px; }
+          .status-pendente { color: orange; font-weight: bold; font-size: 12px; }
+          .notes { font-style: italic; color: #666; font-size: 12px; display: block; margin-left: 65px; margin-top: 2px; }
+        </style>
+      </head>
+      <body>
       <h1>Relatório de Reservas</h1>
-      <h2>Data: ${dateStr}</h2>
-      <p><strong>Total de Reservas Confirmadas:</strong> ${confirmed}</p>
-      <p><strong>Total de Reservas Pendentes:</strong> ${pending}</p>
-      <hr />
-      <h3>Ocupação por Horário</h3>
+      <h2>Data: ${dateStr.split('-').reverse().join('/')}</h2>
+      <p><strong>Reservas Confirmadas:</strong> ${confirmed}</p>
+      <p><strong>Reservas Pendentes:</strong> ${pending}</p>
+      <p><strong>Total de Pessoas:</strong> ${dayReservations.reduce((acc, r) => acc + (r.status !== 'CANCELLED' ? (r.party_size || 0) : 0), 0)}</p>
+      
+      <h3>Resumo por Horário</h3>
       <ul>
     `;
     
     this.occupancyByHour().forEach(stat => {
-        content += `<li>${stat.hour} - ${stat.count} reservas (${stat.pax} pessoas) - Confirmadas: ${stat.confirmed} | Pendentes: ${stat.pending}</li>`;
+        content += `<li><span class="time">${stat.hour}</span> ${stat.count} reservas (${stat.pax} pessoas) - Conf: ${stat.confirmed} | Pend: ${stat.pending}</li>`;
     });
     
-    content += `</ul><hr /><h3>Lista de Reservas (Confirmadas/Pendentes)</h3>`;
+    content += `</ul><h3>Lista de Reservas Ativas</h3>`;
     
     const activeR = dayReservations.filter(r => r.status === 'CONFIRMED' || r.status === 'PENDING').sort((a,b) => new Date(a.reservation_time).getTime() - new Date(b.reservation_time).getTime());
     
+    if (activeR.length === 0) {
+      content += `<p>Nenhuma reserva ativa para esta data.</p>`;
+    }
+
     activeR.forEach(r => {
         const time = new Date(r.reservation_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        content += `<p><strong>${time}</strong> - ${r.customer_name} (${r.party_size} pax) [${r.status === 'CONFIRMED' ? 'CONFIRMADA' : 'PENDENTE'}]</p>`;
-        if (r.notes) content += `<p><em>Obs: ${r.notes}</em></p>`;
+        const hasTable = r.table_id ? ` [Mesa: ${this.getTableName(r.table_id)}]` : '';
+        const statusClass = r.status === 'CONFIRMED' ? 'status-confirmada' : 'status-pendente';
+        const statusText = r.status === 'CONFIRMED' ? 'CONFIRMADA' : 'PENDENTE';
+        content += `<p><span class="time">${time}</span> ${r.customer_name} (${r.party_size} pax)${hasTable} <span class="${statusClass}">[${statusText}]</span></p>`;
+        if (r.notes) content += `<span class="notes">Obs: ${r.notes}</span>`;
     });
+    
+    content += `</body></html>`;
     
     this.printingService.printHtml(content);
   }
