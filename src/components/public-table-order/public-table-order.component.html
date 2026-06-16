@@ -68,7 +68,7 @@
                     </h2>
                 </div>
 
-                @if (order()?.order_items?.length === 0) {
+                @if (!order()?.order_items || order()?.order_items?.length === 0) {
                      <div class="text-center py-12 text-muted bg-surface rounded-3xl border border-subtle shadow-sm border-dashed">
                         <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 opacity-50">shopping_basket</span>
                         <p class="font-medium">Sua comanda está vazia.</p>

@@ -34,12 +34,46 @@ export class TableQrModalComponent {
   });
 
   async copyLink() {
-    try {
-      await navigator.clipboard.writeText(this.tableUrl());
+    let successful = false;
+    let usedFallback = false;
+
+    // Try modern API if available and securely context
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(this.tableUrl());
+        successful = true;
+      } catch (e) {
+        console.error('Clipboard API falhou, tentando fallback', e);
+        usedFallback = true;
+      }
+    } else {
+      usedFallback = true;
+    }
+    
+    if (usedFallback) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = this.tableUrl();
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        // execCommand must be synchronous from a user event to work reliably
+        successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch (err) {
+        console.error('Fallback execCommand falhou', err);
+      }
+    }
+
+    if (successful) {
       await this.notificationService.success('Link copiado para a área de transferência');
-    } catch (e) {
-      console.error(e);
-      await this.notificationService.alert('Não foi possível copiar o link.');
+    } else {
+      // One last try for simple environments - prompt the user to copy manually
+      prompt('Copie o link abaixo:', this.tableUrl());
     }
   }
 

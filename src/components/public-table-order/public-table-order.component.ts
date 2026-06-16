@@ -199,13 +199,13 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
 
   get totalItems(): number {
     const o = this.order();
-    if (!o) return 0;
+    if (!o || !o.order_items) return 0;
     return o.order_items.reduce((acc, item) => acc + item.quantity, 0);
   }
 
   get totalAmount(): number {
     const o = this.order();
-    if (!o) return 0;
+    if (!o || !o.order_items) return 0;
     return o.order_items.reduce((acc, item) => acc + item.total_price, 0);
   }
 
