@@ -37,8 +37,20 @@
             </div>
         } @else if (order()) {
             
-            <!-- Resumo -->
-            <div class="bg-brand/5 border border-brand/20 rounded-3xl p-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+            <!-- Tabs -->
+            <div class="flex bg-surface-elevated p-1 rounded-2xl mb-6 shadow-inner border border-subtle">
+                <button (click)="activeTab.set('COMANDA')" [class.bg-surface]="activeTab() === 'COMANDA'" [class.shadow]="activeTab() === 'COMANDA'" [class.text-title]="activeTab() === 'COMANDA'" [class.text-muted]="activeTab() !== 'COMANDA'" class="flex-1 py-3 text-sm font-bold rounded-xl transition-all">Minha Comanda</button>
+                <button (click)="activeTab.set('CARDAPIO')" [class.bg-surface]="activeTab() === 'CARDAPIO'" [class.shadow]="activeTab() === 'CARDAPIO'" [class.text-title]="activeTab() === 'CARDAPIO'" [class.text-muted]="activeTab() !== 'CARDAPIO'" class="flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                   Cardápio
+                   @if (cartItems().length > 0) {
+                      <span class="bg-brand text-white text-[10px] px-1.5 py-0.5 rounded-full">{{ cartItems().length }}</span>
+                   }
+                </button>
+            </div>
+
+            @if (activeTab() === 'COMANDA') {
+                 <!-- Resumo da Comanda -->
+                 <div class="bg-brand/5 border border-brand/20 rounded-3xl p-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
                 <div>
                     <p class="text-sm text-brand font-bold uppercase tracking-wider mb-1">Total Atual</p>
                     <p class="text-4xl font-black text-title">{{ totalAmount | currency:'BRL' }}</p>
@@ -92,15 +104,185 @@
 
             <!-- Botões de Ação Final -->
             <div class="pt-6 border-t border-subtle flex flex-col gap-3">
-                <button (click)="onRequestBill()" class="w-full bg-title text-surface font-black text-lg py-4 rounded-2xl shadow-xl shadow-black/10 hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                <button (click)="onRequestBillClick()" class="w-full bg-title text-surface font-black text-lg py-4 rounded-2xl shadow-xl shadow-black/10 hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
                     <span translate="no" class="notranslate material-symbols-outlined">payments</span>
                     Pedir a Conta
                 </button>
-                <div class="text-center">
-                    <p class="text-xs text-muted font-medium mt-4">No momento o pagamento do autoatendimento é aceito diretamente na mesa pelo garçom.</p>
-                </div>
             </div>
+            } @else if (activeTab() === 'CARDAPIO') {
+               <!-- Render Cardápio -->
+               <!-- Category Selector -->
+               <div class="flex overflow-x-auto gap-2 pb-4 scrollbar-hide snap-x">
+                   @for (cat of menuCategories(); track cat.id) {
+                       <button (click)="activeCategoryId.set(cat.id)" [class.bg-brand]="activeCategoryId() === cat.id" [class.text-white]="activeCategoryId() === cat.id" [class.bg-surface]="activeCategoryId() !== cat.id" [class.text-muted]="activeCategoryId() !== cat.id" class="px-5 py-2.5 rounded-full whitespace-nowrap font-bold text-sm transition-colors border border-subtle snap-start shadow-sm">
+                           {{ cat.name }}
+                       </button>
+                   }
+               </div>
+
+               @if (activeCategoryId()) {
+                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       @for (recipe of getRecipesForCategory(activeCategoryId()!); track recipe.id) {
+                           <div class="bg-surface rounded-2xl p-4 border border-subtle shadow-sm flex flex-col justify-between gap-3">
+                               <div class="flex gap-4">
+                                  @if (recipe.image_url) {
+                                      <img [src]="recipe.image_url" alt="{{ recipe.name }}" class="w-20 h-20 rounded-xl object-cover bg-surface-elevated shrink-0" crossorigin="anonymous">
+                                  } @else {
+                                      <div class="w-20 h-20 rounded-xl bg-surface-elevated shrink-0 flex items-center justify-center text-muted">
+                                          <span translate="no" class="notranslate material-symbols-outlined text-3xl opacity-50">fastfood</span>
+                                      </div>
+                                  }
+                                  <div class="flex-1">
+                                      <h3 class="font-bold text-base leading-tight">{{ recipe.name }}</h3>
+                                      @if (recipe.description) {
+                                          <p class="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{{ recipe.description }}</p>
+                                      }
+                                  </div>
+                               </div>
+                               <div class="flex items-center justify-between mt-2 pt-2 border-t border-subtle">
+                                   <p class="font-black text-lg">{{ recipe.sale_price | currency:'BRL' }}</p>
+                                   <button (click)="addToCart(recipe)" class="w-10 h-10 rounded-full bg-brand/10 text-brand hover:bg-brand/20 transition-colors flex items-center justify-center border border-brand/20">
+                                       <span translate="no" class="notranslate material-symbols-outlined text-xl">add</span>
+                                   </button>
+                               </div>
+                           </div>
+                       }
+                   </div>
+               } @else {
+                   <div class="text-center py-10 text-muted">Aguarde...</div>
+               }
+
+               <!-- Floating Cart Button / Checkout Bar -->
+               @if (cartItems().length > 0) {
+                   <div class="fixed bottom-0 left-0 right-0 p-4 bg-surface/80 backdrop-blur-xl border-t border-subtle shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-[100] animate-in slide-in-from-bottom">
+                       <div class="max-w-2xl mx-auto">
+                           <div class="mb-4 max-h-[30vh] overflow-y-auto space-y-2 pb-2">
+                               <h3 class="font-bold text-sm tracking-widest text-muted uppercase mb-2">Seu Pedido</h3>
+                               @for (item of cartItems(); track item.recipe.id) {
+                                   <div class="flex items-center justify-between text-sm bg-surface-elevated p-2 rounded-xl shadow-sm border border-subtle">
+                                       <div class="flex-1 flex flex-col justify-center">
+                                           <div class="flex items-center gap-2">
+                                               <span class="font-bold bg-title text-surface px-2 py-0.5 rounded-md text-xs">{{ item.quantity }}x</span>
+                                               <span class="font-medium line-clamp-1 truncate w-40">{{ item.recipe.name }}</span>
+                                           </div>
+                                           @if (item.notes) {
+                                               <span class="text-[10px] text-muted italic mt-1 pl-8">Obs: {{ item.notes }}</span>
+                                           }
+                                       </div>
+                                       <div class="flex items-center gap-3">
+                                           <span class="font-bold">{{ (item.recipe.sale_price * item.quantity) | currency:'BRL' }}</span>
+                                           <div class="flex items-center gap-1 bg-surface rounded-lg p-0.5 border border-subtle">
+                                               <button (click)="updateCartQty(item, -1)" class="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span></button>
+                                               <button (click)="updateCartQty(item, 1)" class="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">add</span></button>
+                                           </div>
+                                       </div>
+                                   </div>
+                               }
+                           </div>
+                           
+                           <button [disabled]="cartLoading()" (click)="submitCart()" class="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg hover:shadow-xl hover:shadow-brand/20 transition-all active:scale-95 flex items-center justify-between px-6 shadow-brand/30 shadow-lg disabled:opacity-50">
+                               <span>{{ cartLoading() ? 'Enviando...' : 'Enviar Pedido' }}</span>
+                               <span class="bg-black/20 px-3 py-1 rounded-xl text-sm">{{ cartTotalAmount | currency:'BRL' }}</span>
+                           </button>
+                       </div>
+                   </div>
+                   <!-- Padding to prevent cart from hiding content -->
+                   <div class="h-[200px]"></div>
+               }
+            }
 
         }
     </main>
+
+    <!-- Checkout Modal -->
+    @if (showCheckoutModal()) {
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div class="bg-surface rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-auto sm:zoom-in-95 duration-200 border border-subtle">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-black text-title">Como deseja pagar?</h2>
+                    <button (click)="closeCheckoutModal()" class="text-muted hover:text-danger bg-surface-elevated p-2 rounded-full transition-colors active:scale-95 border border-transparent hover:border-danger/20">
+                    <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+                    </button>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <!-- PIX Option -->
+                    <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'PIX'" [class.bg-brand/5]="checkoutMethod() === 'PIX'">
+                        <input type="radio" name="payment_method" value="PIX" [checked]="checkoutMethod() === 'PIX'" (change)="checkoutMethod.set('PIX')" class="peer sr-only">
+                        <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
+                            <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-title">Pagar com PIX</h3>
+                            <p class="text-xs text-muted font-medium mt-1">Rápido e prático pelo celular</p>
+                        </div>
+                        @if (checkoutMethod() === 'PIX') {
+                            <div class="absolute top-4 right-4 text-brand">
+                                <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
+                            </div>
+                        }
+                    </label>
+
+                    <!-- Waiter Option -->
+                    <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'WAITER'" [class.bg-brand/5]="checkoutMethod() === 'WAITER'">
+                        <input type="radio" name="payment_method" value="WAITER" [checked]="checkoutMethod() === 'WAITER'" (change)="checkoutMethod.set('WAITER')" class="peer sr-only">
+                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+                            <span translate="no" class="notranslate material-symbols-outlined text-2xl">point_of_sale</span>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-title">Pagar na Mesa</h3>
+                            <p class="text-xs text-muted font-medium mt-1">O garçom levará a maquininha</p>
+                        </div>
+                        @if (checkoutMethod() === 'WAITER') {
+                            <div class="absolute top-4 right-4 text-brand">
+                                <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
+                            </div>
+                        }
+                    </label>
+                </div>
+
+                <button [disabled]="!checkoutMethod()" (click)="confirmCheckout()" class="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Confirmar Pedido de Conta
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Add Item Modal -->
+    @if (selectedRecipeForCart) {
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div class="bg-surface rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-auto sm:zoom-in-95 duration-200 border border-subtle">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-black text-title">Adicionar Item</h2>
+                    <button (click)="cancelAddToCart()" class="text-muted hover:text-danger bg-surface-elevated p-2 rounded-full transition-colors active:scale-95 border border-transparent hover:border-danger/20">
+                    <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-4 mb-6">
+                    @if (selectedRecipeForCart.image_url) {
+                        <img [src]="selectedRecipeForCart.image_url" alt="Item Image" class="w-16 h-16 rounded-xl object-cover bg-surface-elevated shrink-0" crossorigin="anonymous">
+                    }
+                    <div>
+                        <h3 class="font-bold text-lg leading-tight">{{ selectedRecipeForCart.name }}</h3>
+                        <p class="text-base font-black mt-1 text-brand">{{ selectedRecipeForCart.sale_price | currency:'BRL' }}</p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-title mb-2">Observações (Opcional)</label>
+                    <textarea 
+                       [value]="recipeNoteStr()" 
+                       (input)="recipeNoteStr.set($any($event.target).value)" 
+                       placeholder="Ex: Tirar cebola, ponto da carne..."
+                       class="w-full bg-surface-elevated border border-subtle rounded-xl p-4 text-sm font-medium placeholder-muted focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand resize-none h-24"
+                    ></textarea>
+                </div>
+
+                <button (click)="confirmAddToCart()" class="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95">
+                    Adicionar à Bandeja
+                </button>
+            </div>
+        </div>
+    }
 </div>
