@@ -25,7 +25,7 @@
     "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/supabase-js": "2",
     "@vercel/node": "^5.3.22",
-    "angularx-qrcode": "^21.0.5",
+    "angularx-qrcode": "^20.0.0",
     "buffer": "^6.0.3",
     "chart.js": "^4.5.1",
     "crypto": "^1.0.1",
