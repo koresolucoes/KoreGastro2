@@ -653,11 +653,17 @@ export class PosDataService {
 
   async updateTableStatus(tableId: string, status: TableStatus): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('tables').update({ status }).eq('id', tableId);
+    if (!error) {
+       this.posState.tables.update(tables => tables.map(t => t.id === tableId ? { ...t, status } : t));
+    }
     return { success: !error, error };
   }
   
   async updateTableCustomerCount(tableId: string, count: number): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('tables').update({ customer_count: count }).eq('id', tableId);
+    if (!error) {
+       this.posState.tables.update(tables => tables.map(t => t.id === tableId ? { ...t, customer_count: count } : t));
+    }
     return { success: !error, error };
   }
 
@@ -675,6 +681,12 @@ export class PosDataService {
 
   async associateCustomerToOrder(orderId: string, customerId: string | null): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from('orders').update({ customer_id: customerId }).eq('id', orderId);
+    if (!error) {
+       const { data: updatedOrder } = await supabase.from('orders').select('*, order_items(*), customers(*)').eq('id', orderId).single();
+       if (updatedOrder) {
+          this.posState.orders.update(orders => orders.map(o => o.id === orderId ? updatedOrder as any : o));
+       }
+    }
     return { success: !error, error };
   }
 
@@ -683,5 +695,15 @@ export class PosDataService {
     if (error) return { success: false, error };
     const response = data as { success: boolean, message: string };
     return { success: response.success, error: response.success ? null : { message: response.message }, message: response.message };
+  }
+
+  async createCustomer(customerData: Partial<Customer>): Promise<{ success: boolean; data?: Customer; error: any }> {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'Not authenticated' } };
+    const { data, error } = await supabase.from('customers').insert({ ...customerData, user_id: userId }).select().single();
+    if (!error && data) {
+      this.posState.customers.update(c => [...c, data]);
+    }
+    return { success: !error, data, error };
   }
 }

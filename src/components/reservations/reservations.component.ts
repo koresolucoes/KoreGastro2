@@ -176,6 +176,48 @@ export class ReservationsComponent implements OnInit {
     const confirmed = await this.notificationService.confirm(confirmMessage, 'Confirmar Ação');
     if (!confirmed) return;
 
+    if (status === 'CONFIRMED' && !reservation.customer_id) {
+       let customerIdToLink = '';
+       const existingCustomers = this.posState.customers();
+       let match = null;
+       if (reservation.customer_phone) {
+           const cleanPhone = reservation.customer_phone.replace(/\D/g, '');
+           match = existingCustomers.find(c => c.phone?.replace(/\D/g, '') === cleanPhone);
+       }
+       if (!match && reservation.customer_name) {
+           match = existingCustomers.find(c => c.name.toLowerCase() === reservation.customer_name.toLowerCase());
+       }
+
+       if (match) {
+           const link = await this.notificationService.confirm(`Encontramos um cadastro com este nome/telefone (${match.name}). Deseja vincular a reserva a este cliente?`, 'Vincular Cliente');
+           if (link) {
+               customerIdToLink = match.id;
+           }
+       } else {
+           const create = await this.notificationService.confirm('Este cliente não está na sua base de clientes. Deseja criar um novo cadastro para ele?', 'Novo Cliente');
+           if (create) {
+               const { success, data, error } = await this.posDataService.createCustomer({
+                   name: reservation.customer_name,
+                   phone: reservation.customer_phone || undefined,
+                   email: reservation.customer_email || undefined
+               });
+               if (success && data) {
+                  customerIdToLink = data.id;
+               } else {
+                  await this.notificationService.alert('Falha ao criar cliente: ' + error?.message);
+               }
+           }
+       }
+
+       if (customerIdToLink) {
+           const { success, error } = await this.reservationDataService.updateReservation(reservation.id, { customer_id: customerIdToLink, status: status });
+           if (!success) {
+               await this.notificationService.alert(`Erro ao atualizar reserva: ${error?.message}`);
+           }
+           return; 
+       }
+    }
+
     if (status === 'CANCELLED') {
         const reason = window.prompt("Motivo do cancelamento (opcional):", "");
         if (reason === null) return; // User pressed cancel on the prompt
@@ -200,6 +242,39 @@ export class ReservationsComponent implements OnInit {
     const confirmed = await this.notificationService.confirm(`Registrar chegada de ${reservation.customer_name}?`, 'Confirmar Check-in');
     if (!confirmed) return;
 
+    let finalCustomerId = reservation.customer_id;
+    if (!finalCustomerId) {
+       const existingCustomers = this.posState.customers();
+       let match = null;
+       if (reservation.customer_phone) {
+           const cleanPhone = reservation.customer_phone.replace(/\D/g, '');
+           match = existingCustomers.find(c => c.phone?.replace(/\D/g, '') === cleanPhone);
+       }
+       if (!match && reservation.customer_name) {
+           match = existingCustomers.find(c => c.name.toLowerCase() === reservation.customer_name.toLowerCase());
+       }
+
+       if (match) {
+           const link = await this.notificationService.confirm(`Este cliente existe na base (${match.name}). Deseja vincular?`, 'Vincular Cliente');
+           if (link) finalCustomerId = match.id;
+       } else {
+           const create = await this.notificationService.confirm('Este cliente não está na sua base. Deseja cadastrá-lo agora para acompanhar histórico e fidelidade?', 'Cadastrar Cliente');
+           if (create) {
+               const { success, data } = await this.posDataService.createCustomer({
+                   name: reservation.customer_name,
+                   phone: reservation.customer_phone || undefined,
+                   email: reservation.customer_email || undefined
+               });
+               if (success && data) finalCustomerId = data.id;
+           }
+       }
+       
+       if (finalCustomerId) {
+           await this.reservationDataService.updateReservation(reservation.id, { customer_id: finalCustomerId });
+           reservation.customer_id = finalCustomerId;
+       }
+    }
+
     if (reservation.table_id) {
        const table = this.posState.tables().find(t => t.id === reservation.table_id);
        if (table) {
@@ -212,8 +287,8 @@ export class ReservationsComponent implements OnInit {
                }
                const result = await this.posDataService.createOrderForTable(table, emp.id);
                if (result.success && result.data) {
-                   if (reservation.customer_id) {
-                       await this.posDataService.associateCustomerToOrder(result.data.id, reservation.customer_id);
+                   if (finalCustomerId) {
+                       await this.posDataService.associateCustomerToOrder(result.data.id, finalCustomerId);
                    }
                    if (reservation.party_size) {
                        await this.posDataService.updateTableCustomerCount(table.id, reservation.party_size);
@@ -223,18 +298,16 @@ export class ReservationsComponent implements OnInit {
                }
            } else {
                // Table already has an order, maybe just associate customer if empty?
-               if (reservation.customer_id && !existingOrder.customer_id) {
-                   await this.posDataService.associateCustomerToOrder(existingOrder.id, reservation.customer_id);
+               if (finalCustomerId && !existingOrder.customer_id) {
+                   await this.posDataService.associateCustomerToOrder(existingOrder.id, finalCustomerId);
                }
            }
        }
     }
 
     const check_in_time = new Date().toISOString();
-    const { success, error } = await this.reservationDataService.updateReservation(reservation.id, { check_in_time });
-    if (success) {
-      // nothing
-    } else {
+    const { success, error } = await this.reservationDataService.updateReservation(reservation.id, { check_in_time, status: 'COMPLETED' });
+    if (!success) {
       await this.notificationService.alert(`Erro ao registrar check-in: ${error?.message}`);
     }
   }
