@@ -70,7 +70,7 @@ export class TableQrModalComponent {
     }
 
     if (successful) {
-      await this.notificationService.success('Link copiado para a área de transferência');
+      this.notificationService.show('Link copiado para a área de transferência', 'success');
     } else {
       // One last try for simple environments - prompt the user to copy manually
       prompt('Copie o link abaixo:', this.tableUrl());

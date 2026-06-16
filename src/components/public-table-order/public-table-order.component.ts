@@ -136,7 +136,7 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
   }
 
   get cartTotalAmount(): number {
-     return this.cartItems().reduce((acc, item) => acc + (item.recipe.sale_price * item.quantity), 0);
+     return this.cartItems().reduce((acc, item) => acc + (Number(item.recipe.price || 0) * item.quantity), 0);
   }
 
   async submitCart() {
@@ -152,9 +152,10 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
      const orderItemsPayload = items.map(item => ({
         order_id: o.id,
         recipe_id: item.recipe.id,
+        name: item.recipe.name,
         quantity: item.quantity,
-        sale_price: item.recipe.sale_price,
-        total_price: item.recipe.sale_price * item.quantity,
+        price: item.recipe.price,
+        original_price: item.recipe.price,
         notes: item.notes,
         status: 'PENDENTE',
         user_id: o.user_id
@@ -206,7 +207,7 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
   get totalAmount(): number {
     const o = this.order();
     if (!o || !o.order_items) return 0;
-    return o.order_items.reduce((acc, item) => acc + item.total_price, 0);
+    return o.order_items.reduce((acc: number, item: any) => acc + (Number(item.price || 0) * item.quantity), 0);
   }
 
   private showToast(message: string, isError = false) {

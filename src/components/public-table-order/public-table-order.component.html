@@ -93,7 +93,7 @@
                                       <p class="text-xs text-muted mt-1 font-medium bg-canvas inline-block px-2 py-1 rounded">Obs: {{ item.notes }}</p>
                                     }
                                     <div class="mt-2 text-sm font-black text-title">
-                                        {{ item.total_price | currency:'BRL' }}
+                                        {{ (item.price * item.quantity) | currency:'BRL' }}
                                     </div>
                                 </div>
                             </div>
@@ -140,7 +140,7 @@
                                   </div>
                                </div>
                                <div class="flex items-center justify-between mt-2 pt-2 border-t border-subtle">
-                                   <p class="font-black text-lg">{{ recipe.sale_price | currency:'BRL' }}</p>
+                                   <p class="font-black text-lg">{{ recipe.price | currency:'BRL' }}</p>
                                    <button (click)="addToCart(recipe)" class="w-10 h-10 rounded-full bg-brand/10 text-brand hover:bg-brand/20 transition-colors flex items-center justify-center border border-brand/20">
                                        <span translate="no" class="notranslate material-symbols-outlined text-xl">add</span>
                                    </button>
@@ -170,7 +170,7 @@
                                            }
                                        </div>
                                        <div class="flex items-center gap-3">
-                                           <span class="font-bold">{{ (item.recipe.sale_price * item.quantity) | currency:'BRL' }}</span>
+                                           <span class="font-bold">{{ (item.recipe.price * item.quantity) | currency:'BRL' }}</span>
                                            <div class="flex items-center gap-1 bg-surface rounded-lg p-0.5 border border-subtle">
                                                <button (click)="updateCartQty(item, -1)" class="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span></button>
                                                <button (click)="updateCartQty(item, 1)" class="w-7 h-7 flex items-center justify-center hover:bg-black/5 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">add</span></button>
@@ -265,7 +265,7 @@
                     }
                     <div>
                         <h3 class="font-bold text-lg leading-tight">{{ selectedRecipeForCart.name }}</h3>
-                        <p class="text-base font-black mt-1 text-brand">{{ selectedRecipeForCart.sale_price | currency:'BRL' }}</p>
+                        <p class="text-base font-black mt-1 text-brand">{{ selectedRecipeForCart.price | currency:'BRL' }}</p>
                     </div>
                 </div>
 

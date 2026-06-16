@@ -26,7 +26,7 @@ export class PublicDataService {
       supabase.from('menus').select('*').eq('user_id', userId).eq('is_active', true),
       supabase.from('menu_categories').select('*').eq('user_id', userId).eq('is_active', true),
       supabase.from('menu_items').select('*').eq('user_id', userId).eq('is_active', true),
-      supabase.from('menu_item_options').select('*').eq('user_id', userId),
+      supabase.from('menu_item_option_groups').select('*').eq('user_id', userId),
       supabase.from('menu_item_option_choices').select('*').eq('user_id', userId)
     ]);
 
