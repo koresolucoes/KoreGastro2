@@ -1,0 +1,42 @@
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div class="bg-surface rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col items-center animate-in zoom-in-95 duration-200 p-8 border border-subtle">
+    <!-- Close Button -->
+    <button (click)="closeModal.emit()" class="absolute top-4 right-4 text-muted hover:text-danger bg-surface-elevated p-2 rounded-full transition-colors active:scale-95 border border-transparent hover:border-danger/20 z-10">
+      <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+    </button>
+
+    <div class="flex flex-col items-center text-center w-full relative z-0">
+      <div class="bg-brand/10 p-4 rounded-full mb-4">
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">qr_code_scanner</span>
+      </div>
+      
+      <h2 class="text-2xl font-black text-title mb-1">
+        @if (table()?.number === 0) {
+          Comanda {{ order()?.command_number }}
+        } @else {
+          Mesa {{ table()?.number }}
+        }
+      </h2>
+      <p class="text-sm text-muted mb-8 font-medium">Escaneie para acessar o autoatendimento</p>
+
+      <div class="bg-white p-4 rounded-2xl shadow-inner border border-black/10 mb-8 w-full flex items-center justify-center print:shadow-none print:border-none">
+        @if (tableUrl()) {
+          <qrcode [qrdata]="tableUrl()" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
+        } @else {
+          <div class="w-64 h-64 flex items-center justify-center text-muted">Mesa Vazia</div>
+        }
+      </div>
+      
+      <div class="flex w-full gap-3 mt-4 print:hidden">
+         <button (click)="copyLink()" class="flex-1 py-3 text-sm font-bold bg-surface-elevated text-title border border-subtle rounded-xl hover:bg-surface transition-colors active:scale-95 shadow-sm flex justify-center items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">content_copy</span>
+            Copiar Link
+         </button>
+         <button (click)="printQr()" class="flex-1 py-3 text-sm font-bold bg-brand text-white rounded-xl hover:opacity-90 transition-opacity active:scale-95 shadow-md shadow-brand/20 flex justify-center items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">print</span>
+            Imprimir
+         </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -64,6 +64,7 @@ export class PosDataService {
           return { success: false, error: { message: `A Comanda #${commandNumber} já está aberta.` } };
       }
 
+      const session_token = crypto.randomUUID();
       const { data, error } = await supabase.from('orders').insert({
           table_number: 0, 
           command_number: commandNumber,
@@ -71,7 +72,8 @@ export class PosDataService {
           order_type: 'Tab',
           status: 'OPEN',
           user_id: userId,
-          created_by_employee_id: employeeId
+          created_by_employee_id: employeeId,
+          session_token
       }).select('*, customers(*)').single();
 
       if (error) return { success: false, error };
@@ -88,11 +90,13 @@ export class PosDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
     
+    const session_token = crypto.randomUUID();
     const { data, error } = await supabase.from('orders').insert({ 
         table_number: table.number, 
         order_type: 'Dine-in', 
         user_id: userId,
-        created_by_employee_id: employeeId 
+        created_by_employee_id: employeeId,
+        session_token
     }).select('*, customers(*)').single();
     
     if (error) return { success: false, error };

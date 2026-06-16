@@ -48,6 +48,9 @@
                     <span translate="no" class="notranslate material-symbols-outlined text-xl">person_add</span>
                 </button>
             }
+             <button (click)="viewQrCodeClicked.emit()" class="text-muted hover:text-brand bg-surface border border-subtle p-2.5 rounded-xl hover-surface-elevated transition-colors shadow-sm" title="QR Code da Mesa">
+                <span translate="no" class="notranslate material-symbols-outlined text-xl">qr_code_scanner</span>
+            </button>
              <button (click)="closePanel.emit()" class="text-muted hover:text-danger bg-surface border border-subtle p-2.5 rounded-xl hover-surface-elevated hover:border-danger/30 transition-colors shadow-sm ml-2">
                 <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
             </button>

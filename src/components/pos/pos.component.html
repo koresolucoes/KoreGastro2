@@ -123,6 +123,7 @@
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
           (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()"
+          (viewQrCodeClicked)="isQrCodeModalOpen.set(true)"
           (redeemRewardClicked)="isRedeemModalOpen.set(true)">
         </app-order-panel>
       </div>
@@ -142,6 +143,7 @@
           (customerCountChanged)="handleCustomerCountChanged($event)"
           (associateCustomerClicked)="isCustomerSelectModalOpen.set(true)"
           (removeCustomerAssociationClicked)="handleRemoveCustomerAssociation()"
+          (viewQrCodeClicked)="isQrCodeModalOpen.set(true)"
           (redeemRewardClicked)="isRedeemModalOpen.set(true)">
         </app-order-panel>
       </div>
@@ -194,6 +196,14 @@
     [orderId]="orderIdForModals()"
     (closeModal)="isRedeemModalOpen.set(false)">
   </app-redeem-reward-modal>
+}
+
+@if (isQrCodeModalOpen()) {
+  <app-table-qr-modal
+    [table]="sourceTableForModals()"
+    [order]="activeOrder()"
+    (closeModal)="isQrCodeModalOpen.set(false)">
+  </app-table-qr-modal>
 }
 
 

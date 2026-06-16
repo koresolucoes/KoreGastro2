@@ -288,4 +288,19 @@ export class PublicDataService {
     }
     return data || [];
   }
+
+  async getOrderBySessionToken(sessionToken: string): Promise<{ order: any | null; error: any }> {
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, recipes(*))')
+      .eq('session_token', sessionToken)
+      .single();
+
+    return { order, error };
+  }
+
+  async publicUpdateTableStatus(tableId: string, status: string): Promise<{ success: boolean; error: any }> {
+    const { error } = await supabase.from('tables').update({ status }).eq('id', tableId);
+    return { success: !error, error };
+  }
 }

@@ -12,6 +12,7 @@ import { MoveOrderModalComponent } from './move-order-modal/move-order-modal.com
 import { SplitOrderModalComponent } from './split-order-modal/split-order-modal.component';
 import { CustomerSelectModalComponent } from '../shared/customer-select-modal/customer-select-modal.component';
 import { RedeemRewardModalComponent } from '../shared/redeem-reward-modal/redeem-reward-modal.component';
+import { TableQrModalComponent } from './table-qr-modal/table-qr-modal.component';
 
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -36,6 +37,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
     SplitOrderModalComponent,
     CustomerSelectModalComponent,
     RedeemRewardModalComponent,
+    TableQrModalComponent,
   ],
   templateUrl: './pos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,6 +78,7 @@ export class PosComponent implements OnInit {
   isPreBillModalOpen = signal(false);
   isCustomerSelectModalOpen = signal(false);
   isRedeemModalOpen = signal(false);
+  isQrCodeModalOpen = signal(false);
 
   // Context Menu State
   isContextMenuOpen = signal(false);

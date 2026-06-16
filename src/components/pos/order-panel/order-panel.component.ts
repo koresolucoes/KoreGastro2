@@ -76,6 +76,7 @@ export class OrderPanelComponent implements OnInit {
   associateCustomerClicked: OutputEmitterRef<void> = output<void>();
   removeCustomerAssociationClicked: OutputEmitterRef<void> = output<void>();
   redeemRewardClicked: OutputEmitterRef<void> = output<void>();
+  viewQrCodeClicked: OutputEmitterRef<void> = output<void>();
 
   // Component State
   shoppingCart = signal<CartItem[]>([]);

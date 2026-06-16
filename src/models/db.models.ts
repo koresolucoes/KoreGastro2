@@ -7,7 +7,7 @@ export type WebhookEvent =
   | 'delivery.status_updated';
 
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
-export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO';
+export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO' | 'CHAMANDO_GARCOM';
 export type OrderItemStatus = 'PENDENTE' | 'EM_PREPARO' | 'PRONTO' | 'SERVIDO' | 'AGUARDANDO' | 'CANCELADO';
 export type TransactionType = 'Receita' | 'Despesa' | 'Gorjeta' | 'Abertura de Caixa';
 export type DiscountType = 'percentage' | 'fixed_value';
@@ -392,6 +392,7 @@ export interface Order {
   ifood_order_id?: string | null;
   ifood_display_id?: string | null;
   delivery_info?: IfoodOrderDelivery | null;
+  session_token?: string | null;
   notes?: string | null;
   ifood_order_timing?: string | null;
   ifood_scheduled_at?: string | null;
