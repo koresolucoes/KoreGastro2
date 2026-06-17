@@ -61,6 +61,8 @@ export class MenuComponent implements OnInit {
 
   // Data
   companyProfile = signal<Partial<CompanyProfile> | null>(null);
+  tableOrder = signal<Order | null>(null);
+  sessionToken = signal<string | null>(null);
   recipes = signal<Recipe[]>([]);
   categories = signal<Category[]>([]);
   loyaltySettings = signal<LoyaltySettings | null>(null);
@@ -80,6 +82,20 @@ export class MenuComponent implements OnInit {
   async ngOnInit() {
     this.route.params.subscribe(async params => {
       let id = params['userId'];
+      const token = params['sessionToken'];
+      
+      if (token) {
+        this.isLoading.set(true);
+        this.sessionToken.set(token);
+        const { order, error } = await this.publicData.getOrderBySessionToken(token);
+        if (order && !error) {
+            this.tableOrder.set(order as Order);
+            id = order.user_id;
+        } else {
+            console.error('Table order not found');
+        }
+        this.isLoading.set(false);
+      }
       
       if (!id) {
         // Se estiver logado, pegue a loja ativa. Isso conserta o erro onde gerentes
@@ -94,7 +110,7 @@ export class MenuComponent implements OnInit {
           } else {
             // Fallback if signal is not populated yet
             const { data: { session } } = await (supabase.auth as any).getSession();
-            if (session?.user) {
+            if (session?.user && session.user.id) {
               id = session.user.id;
             }
           }
@@ -222,6 +238,85 @@ export class MenuComponent implements OnInit {
       this.cart.addToCart(recipe, basePrice + optionsPrice, event.options, event.notes);
       this.customizingRecipe.set(null);
     }
+  }
+
+  onProceedToCheckout() {
+    if (this.tableOrder()) {
+      this.onConfirmTableOrder();
+    } else {
+      this.view.set('checkout');
+    }
+  }
+
+  async onConfirmTableOrder() {
+     const order = this.tableOrder();
+     if (!order) return;
+     
+     this.isLoading.set(true);
+     try {
+       const orderItems = this.cart.items().map(item => {
+         let finalNotes = item.notes || '';
+         let finalCostOptions = 0;
+
+         if (item.options && item.options.length > 0) {
+             const groups = this.getRecipeOptionGroups(item.recipe.id);
+             const groupedOptions = new Map<string, typeof item.options>();
+             item.options.forEach(opt => {
+                 const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
+                 arr.push(opt);
+                 groupedOptions.set(opt.ifood_option_group_id, arr);
+             });
+
+             const groupStrings: string[] = [];
+             groups.forEach(g => {
+                 const selectedInGroup = groupedOptions.get(g.id);
+                 if (selectedInGroup && selectedInGroup.length > 0) {
+                     groupStrings.push(`${g.name}: ${selectedInGroup.map(o => o.name).join(', ')}`);
+                     finalCostOptions += selectedInGroup.reduce((sum, o) => sum + o.price, 0);
+                 }
+             });
+
+             const optionsText = groupStrings.join(' | ');
+             if (finalNotes) {
+                 finalNotes = `${optionsText}\nObs: ${finalNotes}`;
+             } else {
+                 finalNotes = optionsText;
+             }
+         }
+
+         return {
+           order_id: order.id,
+           recipe_id: item.recipe.id,
+           name: item.recipe.name,
+           quantity: item.quantity,
+           price: item.effectivePrice,
+           original_price: item.recipe.price + finalCostOptions,
+           notes: finalNotes,
+           status: 'PENDENTE',
+           user_id: order.user_id
+         };
+       });
+
+       const { error } = await supabase.from('order_items').insert(orderItems);
+       if (error) throw error;
+       
+       this.cart.clearCart();
+       
+       // Alert or show success
+       // Since the user is at the table, just show success view or simple alert and go back to menu
+       const successDiv = document.createElement('div');
+       successDiv.className = 'bg-emerald-50 text-emerald-600 fixed top-4 left-4 right-4 z-[300] p-4 rounded-2xl shadow-xl flex items-center justify-center font-bold animate-in slide-in-from-top text-center';
+       successDiv.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Pedido enviado para a cozinha!`;
+       document.body.appendChild(successDiv);
+       setTimeout(() => successDiv.remove(), 4000);
+       
+       this.view.set('menu');
+
+     } catch (err: any) {
+        alert('Erro ao enviar pedido: ' + err.message);
+     } finally {
+        this.isLoading.set(false);
+     }
   }
 
   async onConfirmOrder(event: { type: string, name: string, phone: string, address: string }) {

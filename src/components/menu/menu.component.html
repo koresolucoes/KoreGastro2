@@ -14,7 +14,16 @@
   
   <!-- Header / Cover Section -->
   <header class="relative w-full overflow-hidden sm:rounded-3xl bg-brand sm:mx-0">
-    <div class="absolute top-4 right-4 z-10 flex gap-2">
+    <div class="absolute top-4 right-4 z-10 flex flex-wrap justify-end gap-2 pr-4 sm:pr-0">
+      
+      <!-- Table Actions -->
+      @if (tableOrder()) {
+        <div class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-white/10 shadow-lg">
+           <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-300">receipt_long</span>
+           <span>Mesa {{ tableOrder()?.table_number }}</span>
+        </div>
+      }
+
       <!-- Reservar Button -->
       @if (reservationSettings()) {
         <button [routerLink]="['/book', userId()]" 
@@ -205,7 +214,7 @@
 @if (view() === 'cart') {
   <app-menu-cart 
     (close)="view.set('menu')"
-    (checkout)="view.set('checkout')">
+    (checkout)="onProceedToCheckout()">
   </app-menu-cart>
 }
 

@@ -139,7 +139,7 @@ export const APP_ROUTES: Routes = [
   }, // Public booking route
   { 
     path: 't/:sessionToken', 
-    loadComponent: () => import('./components/public-table-order/public-table-order.component').then(m => m.PublicTableOrderComponent) 
+    loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent) 
   }, // Public table/order route
   { 
     path: 'technical-sheets', 
