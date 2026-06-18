@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 export default async function handler(req: any, res: any) {
   const supabaseUrl = process.env.SUPABASE_URL || '';
