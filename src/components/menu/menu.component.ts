@@ -338,7 +338,7 @@ export class MenuComponent implements OnInit {
         customer_name: data.name,
         notes: order.notes ? `${order.notes}\n${notes}` : notes
       };
-      const { error } = await supabase.from('orders').update(updates).eq('id', order.id);
+      const { error } = await this.publicData.publicUpdateTableOrder(order.id, updates);
       if (error) throw error;
 
       this.tableOrder.update(o => o ? { ...o, ...updates } : null);
@@ -364,7 +364,7 @@ export class MenuComponent implements OnInit {
       // Let's just update the note with a clearly visible tag:
       const billNote = `[SOLICITOU FECHAMENTO DE CONTA]`;
       const notes = order.notes ? `${order.notes}\n${billNote}` : billNote;
-      const { error } = await supabase.from('orders').update({ notes }).eq('id', order.id);
+      const { error } = await this.publicData.publicUpdateTableOrder(order.id, { notes });
       if (error) throw error;
       
       this.notificationService.show('Fechamento de conta solicitado ao caixa.', 'success');

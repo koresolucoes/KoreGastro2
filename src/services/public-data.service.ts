@@ -290,13 +290,30 @@ export class PublicDataService {
   }
 
   async getOrderBySessionToken(sessionToken: string): Promise<{ order: any | null; error: any }> {
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*, recipes(*))')
-      .eq('session_token', sessionToken)
-      .single();
+    try {
+      const response = await fetch(`/api/public-order?token=${sessionToken}`);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const data = await response.json();
+      return { order: data.order, error: null };
+    } catch (error) {
+      return { order: null, error };
+    }
+  }
 
-    return { order, error };
+  async publicUpdateTableOrder(orderId: string, updates: any): Promise<{ success: boolean; error: any }> {
+    try {
+      const response = await fetch(`/api/public-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, updates })
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error };
+    }
   }
 
   async publicUpdateTableStatus(tableId: string, status: string): Promise<{ success: boolean; error: any }> {
