@@ -8,7 +8,7 @@ import { PricingService } from '../../services/pricing.service';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
 import { UnitContextService } from '../../services/unit-context.service';
-import { Recipe, Category, Promotion, PromotionRecipe, CompanyProfile, LoyaltySettings, LoyaltyReward, ReservationSettings, Station, IfoodOptionGroup, RecipeIfoodOptionGroup, IfoodOption } from '../../models/db.models';
+import { Recipe, Category, Promotion, PromotionRecipe, CompanyProfile, LoyaltySettings, LoyaltyReward, ReservationSettings, Station, IfoodOptionGroup, RecipeIfoodOptionGroup, IfoodOption, Order } from '../../models/db.models';
 
 import { MenuCustomizationComponent } from './customization/menu-customization.component';
 import { MenuCartComponent } from './cart/menu-cart.component';
@@ -89,10 +89,11 @@ export class MenuComponent implements OnInit {
         this.sessionToken.set(token);
         const { order, error } = await this.publicData.getOrderBySessionToken(token);
         if (order && !error) {
+            console.log('Order fetched successfully:', order);
             this.tableOrder.set(order as Order);
             id = order.user_id;
         } else {
-            console.error('Table order not found');
+            console.error('Table order not found or error:', error);
         }
         this.isLoading.set(false);
       }
