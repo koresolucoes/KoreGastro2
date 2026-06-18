@@ -369,6 +369,31 @@ export class MenuComponent implements OnInit {
     }
   }
 
+  async callWaiter() {
+    const order = this.tableOrder();
+    if (!order) return;
+    
+    this.isLoading.set(true);
+    try {
+      try {
+         await fetch(`/api/public-call-waiter?token=${this.sessionToken()}`);
+      } catch(e) {}
+      
+      const billNote = `[CHAMANDO GARÇOM]`;
+      const notes = order.notes ? (order.notes.includes(billNote) ? order.notes : `${order.notes}\n${billNote}`) : billNote;
+      const { error } = await this.publicData.publicUpdateTableOrder(order.id, { notes });
+      if (error) throw error;
+      
+      this.tableOrder.update(o => o ? { ...o, notes } : null);
+      this.notificationService.show('Garçom chamado! Em breve alguém irá te atender.', 'success');
+    } catch(e: any) {
+      console.error(e);
+      this.notificationService.alert('Não foi possível chamar o garçom.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   async requestBill() {
     const order = this.tableOrder();
     if (!order) return;
