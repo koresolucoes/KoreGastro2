@@ -291,6 +291,14 @@ export class PublicDataService {
 
   async getOrderBySessionToken(sessionToken: string): Promise<{ order: any | null; error: any }> {
     try {
+      // Tenta primeiro a função RPC (bypassa RLS via Security Definer no banco)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_order_by_session', { p_session_token: sessionToken });
+      
+      if (!rpcError && rpcData) {
+        return { order: rpcData, error: null };
+      }
+
+      // Se a RPC falhar (ex: não criada no banco ainda), tenta usar a API serverless (precisa de variável no Vercel/Node)
       const response = await fetch(`/api/public-order?token=${sessionToken}`);
       if (!response.ok) {
         throw new Error(await response.text());
@@ -304,6 +312,18 @@ export class PublicDataService {
 
   async publicUpdateTableOrder(orderId: string, updates: any): Promise<{ success: boolean; error: any }> {
     try {
+      // Tenta via RPC primeiro
+      const { data: rpcData, error: rpcError } = await supabase.rpc('update_table_order', { 
+        p_order_id: orderId, 
+        p_customer_name: updates.customer_name || null,
+        p_notes: updates.notes || null
+      });
+
+      if (!rpcError && rpcData) {
+         return { success: true, error: null };
+      }
+
+      // Fallback para API Vercel
       const response = await fetch(`/api/public-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

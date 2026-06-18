@@ -5,11 +5,7 @@ dotenv.config();
 const supabase = createClient(process.env.SUPABASE_URL as string, process.env.SUPABASE_ANON_KEY as string);
 
 async function check() {
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('session_token', 'baeaa559-1212-4b7a-a32c-dd0fb946a0a9')
-    .single();
-  console.log("order:", order, "error:", error);
+  const { data, error } = await supabase.from('orders').select('session_token').limit(20);
+  console.log(data);
 }
 check();
