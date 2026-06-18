@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostBinding } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, HostBinding, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -77,7 +77,17 @@ export class MenuComponent implements OnInit {
 
   @HostBinding('class') hostClasses = 'block min-h-screen bg-surface text-body';
 
-  constructor() {}
+  constructor() {
+    effect(() => {
+      const cust = this.customerAuthService.customer();
+      const order = this.tableOrder();
+      
+      if (cust && order && !order.customer_name && this.view() === 'table-checkin') {
+         // Auto-checkin since they logged in or already had a session
+         this.submitTableCheckin({ name: cust.name, phone: cust.phone, cpf: cust.cpf || '' });
+      }
+    });
+  }
 
   async ngOnInit() {
     this.route.params.subscribe(async params => {
@@ -226,6 +236,12 @@ export class MenuComponent implements OnInit {
     return this.optionGroups()
       .filter(g => groupIds.includes(g.id))
       .sort((a,b) => a.sequence - b.sequence);
+  }
+
+  getTableTotal() {
+    const order: any = this.tableOrder();
+    if (!order || !order.order_items) return 0;
+    return order.order_items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
   }
 
   // Actions

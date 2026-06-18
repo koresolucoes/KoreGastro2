@@ -24,6 +24,17 @@ export default async function handler(req: any, res: any) {
         .single();
       
       if (error) throw error;
+
+      // Update table to occupied
+      if (order && order.table_number && order.user_id) {
+         try {
+            await supabase.from('tables')
+              .update({ status: 'OCUPADA' })
+              .eq('number', order.table_number)
+              .eq('user_id', order.user_id);
+         } catch(e) {}
+      }
+
       return res.status(200).json({ order });
     }
     

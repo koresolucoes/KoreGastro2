@@ -18,13 +18,13 @@
       
       <!-- Table Actions -->
       @if (tableOrder()) {
-        <div class="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-white font-bold text-sm border border-white/10 shadow-lg">
+        <button (click)="view.set('table-bill')" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-white font-bold text-sm border border-white/10 shadow-lg transition-all cursor-pointer">
            <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-300">receipt_long</span>
            <span>Mesa {{ tableOrder()?.table_number }}</span>
-        </div>
+        </button>
         <button (click)="requestBill()" class="flex items-center gap-2 px-4 py-2 bg-red-500/80 hover:bg-red-500 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-red-500/50 shadow-lg">
            <span translate="no" class="notranslate material-symbols-outlined !text-sm">payments</span>
-           <span>Fechar Conta</span>
+           <span class="hidden sm:inline">Fechar Conta</span>
         </button>
       }
 
@@ -86,11 +86,11 @@
   </header>
 
   <!-- Sticky Category Nav -->
-  <nav class="sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-strong py-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-    <div class="flex items-center gap-3 overflow-x-auto no-scrollbar">
+  <nav class="sticky top-0 z-20 bg-surface/90 backdrop-blur-2xl border-b border-strong py-4 mb-2 -mx-4 px-4 sm:mx-0 sm:px-0 shadow-sm">
+    <div class="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
       @for (group of menuGroups(); track group.category.id) {
         <button (click)="scrollToCategory(group.category.id)"
-                [class]="activeCategorySlug() === group.category.id ? 'bg-brand text-on-brand shadow-lg border-brand' : 'bg-surface text-muted hover:bg-surface-elevated border-strong'"
+                [class]="activeCategorySlug() === group.category.id ? 'bg-brand text-on-brand shadow-lg border-brand scale-105' : 'bg-surface text-title hover:bg-surface-elevated border-subtle'"
                 class="whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold border transition-all duration-300">
           {{ group.category.name }}
         </button>
@@ -99,14 +99,14 @@
   </nav>
 
   <!-- Search -->
-  <div class="px-4 sm:px-0 mb-12">
+  <div class="px-4 sm:px-0 mb-12 mt-6">
     <div class="relative group max-w-2xl mx-auto">
-      <span translate="no" class="notranslate material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-title transition-colors">search</span>
+      <span translate="no" class="notranslate material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors !text-[28px]">search</span>
       <input type="text" 
              [ngModel]="searchTerm()"
              (ngModelChange)="searchTerm.set($event)"
-             placeholder="O que vamos pedir hoje?"
-             class="w-full pl-16 pr-6 py-5 bg-surface border border-strong rounded-[2rem] text-title font-medium shadow-sm focus:shadow-xl outline-none transition-all placeholder:text-muted">
+             placeholder="O que deu vontade de comer?"
+             class="w-full pl-16 pr-6 py-5 bg-surface border-[2px] border-subtle rounded-[2rem] text-title font-bold text-lg shadow-sm focus:shadow-[0_8px_30px_rgb(0,0,0,0.08)] focus:border-brand outline-none transition-all placeholder:text-muted/60 placeholder:font-medium">
     </div>
   </div>
 
@@ -122,39 +122,43 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           @for (recipe of group.recipes; track recipe.id) {
             <div (click)="onSelectRecipe(recipe)" 
-                 class="group bg-surface rounded-[2rem] border border-subtle p-4 hover:border-brand hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden flex flex-col">
+                 class="group bg-surface rounded-[2rem] border border-subtle p-3 hover:border-brand/40 shadow-sm hover:shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer overflow-hidden flex flex-col">
               
               <!-- Image Container -->
-              <div class="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6 bg-surface-elevated">
+              <div class="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-surface-elevated">
                 @if (recipe.image_url) {
-                   <img [src]="recipe.image_url" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerpolicy="no-referrer">
+                   <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
                 } @else {
-                  <div class="w-full h-full flex items-center justify-center text-muted group-hover:text-brand transition-colors">
-                    <span translate="no" class="notranslate material-symbols-outlined !text-6xl">restaurant</span>
+                  <div class="absolute inset-0 flex items-center justify-center text-muted group-hover:text-brand transition-colors">
+                    <span translate="no" class="notranslate material-symbols-outlined !text-6xl opacity-40">restaurant</span>
                   </div>
                 }
                 <!-- Price Tag on Image -->
-                <div class="absolute bottom-4 right-4 px-4 py-2 bg-surface backdrop-blur-md rounded-xl shadow-lg border border-strong">
+                <div class="absolute bottom-3 right-3 px-4 py-2 bg-surface/90 backdrop-blur-md rounded-xl shadow-lg border border-white/20">
                   <span class="text-sm font-black text-title">{{ getEffectivePrice(recipe) | currency : 'BRL' }}</span>
                 </div>
+                <!-- Linear Gradient for bottom legibility if we wanted any text -->
+                <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
               </div>
 
               <!-- Details -->
-              <div class="flex-1 px-2 pb-2">
-                <h3 class="text-lg font-black text-title group-hover:text-brand transition-colors leading-tight mb-2">{{ recipe.name }}</h3>
+              <div class="flex-1 px-3 pb-1">
+                <div class="flex justify-between items-start gap-2 mb-2">
+                   <h3 class="text-[17px] font-black text-title group-hover:text-brand transition-colors leading-tight">{{ recipe.name }}</h3>
+                </div>
                 @if (recipe.description) {
-                  <p class="text-sm text-muted line-clamp-2 leading-relaxed">{{ recipe.description }}</p>
+                  <p class="text-sm text-muted line-clamp-2 leading-relaxed font-medium">{{ recipe.description }}</p>
                 }
               </div>
 
               <!-- Button -->
-              <div class="mt-4 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-muted">
-                  <span translate="no" class="notranslate material-symbols-outlined !text-xs font-bold">schedule</span>
+              <div class="mt-4 px-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-muted px-3 py-1.5 bg-surface-elevated rounded-lg">
+                  <span translate="no" class="notranslate material-symbols-outlined !text-xs font-bold opacity-70">schedule</span>
                   <span class="text-[10px] font-bold uppercase tracking-wider">{{ recipe.prep_time_in_minutes || 15 }}-{{ (recipe.prep_time_in_minutes || 15) + 10 }} min</span>
                 </div>
-                <button class="w-12 h-12 bg-surface-elevated text-title rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl border border-strong hover:bg-brand hover:text-on-brand hover:border-brand">
-                  <span translate="no" class="notranslate material-symbols-outlined">add</span>
+                <button class="w-10 h-10 bg-brand/10 text-brand rounded-full flex items-center justify-center group-hover:bg-brand group-hover:text-on-brand transition-colors duration-300 shadow-sm">
+                  <span translate="no" class="notranslate material-symbols-outlined !text-xl font-bold">add</span>
                 </button>
               </div>
             </div>
@@ -218,8 +222,10 @@
 @if (view() === 'cart') {
   <app-menu-cart 
     [isTableOrder]="tableOrder() !== null"
+    [recipes]="recipes()"
     (close)="view.set('menu')"
-    (checkout)="onProceedToCheckout()">
+    (checkout)="onProceedToCheckout()"
+    (addRecipe)="onSelectRecipe($event)">
   </app-menu-cart>
 }
 
@@ -275,6 +281,65 @@
         </button>
       </div>
     </form>
+  </div>
+}
+
+@if (view() === 'table-bill') {
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-surface w-full max-w-lg sm:rounded-[3rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-500 rounded-t-[2rem]">
+      <!-- Header -->
+      <div class="px-6 py-5 border-b border-strong flex items-center justify-between shrink-0 bg-surface">
+        <h2 class="text-xl font-black text-title flex items-center gap-2">
+           <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt_long</span>
+           Sua Conta
+        </h2>
+        <button (click)="view.set('menu')" class="w-10 h-10 rounded-full bg-surface-elevated flex items-center justify-center text-muted hover:text-title hover:shadow-md transition-all">
+          <span translate="no" class="notranslate material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Items List -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-surface-elevated/30">
+        @if ($any(tableOrder())?.order_items?.length > 0) {
+           <div class="space-y-4">
+              @for (item of $any(tableOrder()).order_items; track item.id) {
+                <div class="flex justify-between items-start bg-surface p-4 rounded-2xl shadow-sm border border-subtle">
+                   <div>
+                     <p class="font-bold text-title flex items-center gap-2">
+                        <span class="w-6 h-6 bg-surface-elevated text-muted text-xs rounded-md flex items-center justify-center">{{ item.quantity }}x</span>
+                        {{ item.name }}
+                     </p>
+                     @if (item.notes) {
+                        <p class="text-xs text-muted mt-2 ml-8">{{ item.notes }}</p>
+                     }
+                   </div>
+                   <p class="font-bold text-title">{{ (item.price * item.quantity) | currency:'BRL' }}</p>
+                </div>
+              }
+           </div>
+        } @else {
+           <div class="flex flex-col items-center justify-center py-12 text-center">
+             <div class="w-20 h-20 bg-surface-elevated rounded-full flex items-center justify-center mb-4">
+                <span translate="no" class="notranslate material-symbols-outlined !text-4xl text-muted">history</span>
+             </div>
+             <p class="font-bold text-title">Nenhum consumo ainda</p>
+             <p class="text-muted text-sm mt-1">Seus pedidos processados aparecerão aqui.</p>
+           </div>
+        }
+      </div>
+
+      <!-- Footer/Total -->
+      <div class="p-6 bg-surface border-t border-strong shrink-0">
+         <div class="flex justify-between items-end mb-6">
+            <span class="text-muted font-medium">Total Parcial</span>
+            <span class="text-3xl font-black text-title">{{ getTableTotal() | currency:'BRL' }}</span>
+         </div>
+         <button (click)="requestBill()" class="w-full py-4 bg-red-500 text-white rounded-2xl font-bold shadow-xl hover:bg-red-600 active:scale-95 transition-all flex justify-center items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined">payments</span>
+            Pedir a Conta no Caixa
+         </button>
+      </div>
+    </div>
   </div>
 }
 
