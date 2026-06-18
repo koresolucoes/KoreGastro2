@@ -154,24 +154,32 @@ export class MenuCartComponent {
      if (cartItems.length === 0 || all.length === 0) return [];
      
      const cartCategoryIds = new Set(cartItems.map(i => i.recipe.category_id));
-     const inCartIds = new Set(cartItems.map(i => i.recipe.id));
      
-     // 1. Prioritize active items NOT in the cart
-     let pool = all.filter(r => !inCartIds.has(r.id) && r.status === 'active');
+     // 1. Consider all active items
+     let pool = all.filter(r => r.status === 'active');
      
      // 2. Score them
-     // If a user bought drinks, recommend snacks (different category).
-     // simple scoring: Different category = 10 points. Has image = 5 points.
      const scored = pool.map(r => {
         let score = 0;
-        if (!cartCategoryIds.has(r.category_id)) score += 10;
+        
+        // If it's already in the cart, it's a good candidate for "one more" (e.g. another beer)
+        const inCartCount = cartItems.filter(i => i.recipe.id === r.id).reduce((sum, i) => sum + i.quantity, 0);
+        if (inCartCount > 0) {
+            score += 15 + inCartCount; // More they bought, higher the chance they want another one
+        } else {
+            // If they haven't bought this item, but it's from a different category (e.g. snacks if they bought drinks)
+            if (!cartCategoryIds.has(r.category_id)) {
+                score += 10;
+            }
+        }
+        
         if (r.image_url) score += 5;
-        // tie breaker random
-        score += Math.random() * 2;
+        score += Math.random() * 2; // small random factor to rotate
         return { r, score };
      });
 
      scored.sort((a, b) => b.score - a.score);
+     // Filter out duplicates if any, and return top 4
      return scored.slice(0, 4).map(s => s.r);
   });
 }

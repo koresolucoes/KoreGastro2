@@ -102,6 +102,7 @@ export class MenuComponent implements OnInit {
         if (order && !error) {
             console.log('Order fetched successfully:', order);
             this.tableOrder.set(order as Order);
+            try { fetch('/api/public-table-occupied?token=' + token).catch(console.error); } catch(e){}
             if (!id) {
                 id = order.user_id;
             }
@@ -374,15 +375,13 @@ export class MenuComponent implements OnInit {
     
     this.isLoading.set(true);
     try {
-      // Just notify the POS by updating tab_name or notes, 
-      // or we can just send a special event to a webhook if there was one.
-      // Easiest is to add a specific note that KDS or POS can see, or use 'PENDING_PAYMENT' status if available.
-      // Let's just update the note with a clearly visible tag:
       const billNote = `[SOLICITOU FECHAMENTO DE CONTA]`;
-      const notes = order.notes ? `${order.notes}\n${billNote}` : billNote;
+      const notes = order.notes ? (order.notes.includes(billNote) ? order.notes : `${order.notes}\n${billNote}`) : billNote;
       const { error } = await this.publicData.publicUpdateTableOrder(order.id, { notes });
       if (error) throw error;
       
+      this.tableOrder.update(o => o ? { ...o, notes } : null);
+      this.view.set('menu');
       this.notificationService.show('Fechamento de conta solicitado ao caixa.', 'success');
     } catch(e: any) {
       console.error(e);
