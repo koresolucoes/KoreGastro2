@@ -55,7 +55,7 @@ export class MenuComponent implements OnInit {
   // State
   userId = signal<string | null>(null);
   isLoading = signal(true);
-  view = signal<'menu' | 'cart' | 'checkout' | 'success' | 'info' | 'loyalty' | 'reservations' | 'auth' | 'profile'>('menu');
+  view = signal<'menu' | 'cart' | 'checkout' | 'success' | 'info' | 'loyalty' | 'reservations' | 'auth' | 'profile' | 'table-checkin' | 'table-bill'>('menu');
   searchTerm = signal('');
   activeCategorySlug = signal<string | null>(null);
 
@@ -94,6 +94,9 @@ export class MenuComponent implements OnInit {
             this.tableOrder.set(order as Order);
             if (!id) {
                 id = order.user_id;
+            }
+            if (!order.customer_name) {
+                this.view.set('table-checkin');
             }
         } else {
             console.error('Table order not found or error:', error);
@@ -298,7 +301,8 @@ export class MenuComponent implements OnInit {
            original_price: item.recipe.price + finalCostOptions,
            notes: finalNotes,
            status: 'PENDENTE',
-           user_id: order.user_id
+           user_id: order.user_id,
+           station_id: this.stations()[0]?.id
          };
        });
 
@@ -308,7 +312,6 @@ export class MenuComponent implements OnInit {
        this.cart.clearCart();
        
        // Alert or show success
-       // Since the user is at the table, just show success view or simple alert and go back to menu
        const successDiv = document.createElement('div');
        successDiv.className = 'bg-emerald-50 text-emerald-600 fixed top-4 left-4 right-4 z-[300] p-4 rounded-2xl shadow-xl flex items-center justify-center font-bold animate-in slide-in-from-top text-center';
        successDiv.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Pedido enviado para a cozinha!`;
@@ -322,6 +325,55 @@ export class MenuComponent implements OnInit {
      } finally {
         this.isLoading.set(false);
      }
+  }
+
+  async submitTableCheckin(data: { name: string, phone: string, cpf: string }) {
+    const order = this.tableOrder();
+    if (!order) return;
+
+    this.isLoading.set(true);
+    try {
+      const notes = `Contato: ${data.phone} | CPF: ${data.cpf}`;
+      const updates = {
+        customer_name: data.name,
+        notes: order.notes ? `${order.notes}\n${notes}` : notes
+      };
+      const { error } = await supabase.from('orders').update(updates).eq('id', order.id);
+      if (error) throw error;
+
+      this.tableOrder.update(o => o ? { ...o, ...updates } : null);
+      this.view.set('menu');
+      this.notificationService.show('Mesa vinculada com sucesso.', 'success');
+    } catch (e: any) {
+      console.error(e);
+      this.notificationService.alert('Não foi possível fazer o check-in.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async requestBill() {
+    const order = this.tableOrder();
+    if (!order) return;
+    
+    this.isLoading.set(true);
+    try {
+      // Just notify the POS by updating tab_name or notes, 
+      // or we can just send a special event to a webhook if there was one.
+      // Easiest is to add a specific note that KDS or POS can see, or use 'PENDING_PAYMENT' status if available.
+      // Let's just update the note with a clearly visible tag:
+      const billNote = `[SOLICITOU FECHAMENTO DE CONTA]`;
+      const notes = order.notes ? `${order.notes}\n${billNote}` : billNote;
+      const { error } = await supabase.from('orders').update({ notes }).eq('id', order.id);
+      if (error) throw error;
+      
+      this.notificationService.show('Fechamento de conta solicitado ao caixa.', 'success');
+    } catch(e: any) {
+      console.error(e);
+      this.notificationService.alert('Erro ao solicitar fechamento.');
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   async onConfirmOrder(event: { type: string, name: string, phone: string, address: string }) {

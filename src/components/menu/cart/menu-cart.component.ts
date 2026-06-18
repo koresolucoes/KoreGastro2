@@ -1,5 +1,5 @@
 
-import { Component, inject, output } from '@angular/core';
+import { Component, inject, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CartService } from '../../../services/cart.service';
 
@@ -97,7 +97,7 @@ import { CartService } from '../../../services/cart.service';
             <button (click)="checkout.emit()" 
                     class="w-full py-4 px-6 bg-brand hover:opacity-90 text-on-brand rounded-2xl font-bold flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] shadow-xl">
               <span translate="no" class="notranslate material-symbols-outlined">check_circle</span>
-              Finalizar Pedido
+              @if (isTableOrder()) { Pedir na Mesa } @else { Finalizar Pedido }
             </button>
           </div>
         }
@@ -110,6 +110,7 @@ import { CartService } from '../../../services/cart.service';
 })
 export class MenuCartComponent {
   cart = inject(CartService);
+  isTableOrder = input<boolean>(false);
   close = output<void>();
   checkout = output<void>();
 }
