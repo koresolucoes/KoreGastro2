@@ -87,13 +87,17 @@ export class MenuComponent implements OnInit {
       if (token) {
         this.isLoading.set(true);
         this.sessionToken.set(token);
+        // By having userId from the URL, we can guarantee the menu loads even if the session token is invalid/closed.
         const { order, error } = await this.publicData.getOrderBySessionToken(token);
         if (order && !error) {
             console.log('Order fetched successfully:', order);
             this.tableOrder.set(order as Order);
-            id = order.user_id;
+            if (!id) {
+                id = order.user_id;
+            }
         } else {
             console.error('Table order not found or error:', error);
+            // We have `id` from params, so the menu will still load for this restaurant!
         }
         this.isLoading.set(false);
       }

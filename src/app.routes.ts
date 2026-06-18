@@ -142,6 +142,10 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent) 
   }, // Public table/order route
   { 
+    path: 'menu/:userId/t/:sessionToken', 
+    loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent) 
+  }, // Public table/order route with userId constraint
+  { 
     path: 'technical-sheets', 
 
     loadComponent: () => import('./components/technical-sheets/technical-sheets.component').then(m => m.TechnicalSheetsComponent), 

@@ -28,9 +28,9 @@ export class TableQrModalComponent {
     
     // In actual prod, replace window.location.origin with the proper deploy URL if needed
     // But since it's a PWA, it should be the same origin.
-    // E.g., https://meurestaurante.com/t/:session_token
+    // E.g., https://meurestaurante.com/menu/:userId/t/:session_token
     const base = window.location.origin;
-    return `${base}/#/t/${o.session_token || o.id}`;
+    return `${base}/#/menu/${o.user_id}/t/${o.session_token || o.id}`;
   });
 
   async copyLink() {
