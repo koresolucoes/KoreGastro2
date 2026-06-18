@@ -30,7 +30,7 @@ export class TableQrModalComponent {
     // But since it's a PWA, it should be the same origin.
     // E.g., https://meurestaurante.com/t/:session_token
     const base = window.location.origin;
-    return `${base}/t/${o.session_token || o.id}`;
+    return `${base}/#/t/${o.session_token || o.id}`;
   });
 
   async copyLink() {
