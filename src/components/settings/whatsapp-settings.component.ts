@@ -104,43 +104,49 @@ export class WhatsappSettingsComponent {
   }
 
   async launchFacebookLogin() {
-      // In a real app, this would initialize the Facebook SDK and call FB.login
-      // using Embedded Signup. Since we are in an iframe sandbox without a real APP ID,
-      // we'll mock the flow visually to demonstrate the functional architecture.
-      
       const storeId = this.unitContextService.activeUnitId();
       if (!storeId) return this.notificationService.show('Loja não identificada.', 'warning');
 
       try {
-          // Simulate popup delay
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Construct redirect URI for the callback
+          const redirectUri = `${window.location.origin}/api/whatsapp/auth/callback`;
           
-          await this.notificationService.alert(
-              'O login do Facebook foi aberto e você autorizou o chefOS como provedor de tecnologia.', 
-              'Integração Meta'
-          );
-
-          const mockToken = 'EAA_MOCK_TOKEN_' + Math.random().toString(36).substring(7);
-          const mockWaba = 'WABA_' + Math.floor(Math.random() * 900000 + 100000);
-          const mockPhoneId = 'PHONE_' + Math.floor(Math.random() * 900000 + 100000);
-
-          const { error } = await supabase.from('whatsapp_configs').upsert({
-              store_id: storeId,
-              waba_id: mockWaba,
-              phone_number_id: mockPhoneId,
-              access_token: mockToken,
-              phone_number: '+55 11 99999-9999',
-              is_active: true
-          });
-
-          if (error) throw error;
+          // Fetch the authorization URL from our server
+          const response = await fetch(`/api/whatsapp/auth/url?redirectUri=${encodeURIComponent(redirectUri)}`);
+          if (!response.ok) {
+              throw new Error('Falha ao obter URL de autenticação do Facebook');
+          }
           
-          this.notificationService.show('WhatsApp conectado com sucesso!', 'success');
-          await this.loadConfig();
+          const data = await response.json();
+          let authUrl = data.url;
+
+          // Append state parameter for our callback to know the storeId
+          authUrl += `&state=${storeId}`;
+
+          const authWindow = window.open(authUrl, 'facebook_oauth', 'width=600,height=700');
+          
+          if (!authWindow) {
+             return this.notificationService.show('Por favor, permita popups para concluir a integração.', 'warning');
+          }
+
+          // Handle the popup response via postMessage
+          const handleOAuthMessage = async (event: MessageEvent) => {
+              // Note: in a real environment we would firmly check origin, but in previews it could be varied
+              if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+                  window.removeEventListener('message', handleOAuthMessage);
+                  this.notificationService.show('WhatsApp conectado com sucesso!', 'success');
+                  await this.loadConfig();
+              } else if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+                  window.removeEventListener('message', handleOAuthMessage);
+                  this.notificationService.show(`Erro: ${event.data.error}`, 'error');
+              }
+          };
+
+          window.addEventListener('message', handleOAuthMessage);
           
       } catch (err) {
           console.error(err);
-          this.notificationService.show('Erro ao conectar WhatsApp.', 'error');
+          this.notificationService.show('Erro ao iniciar conexão com WhatsApp.', 'error');
       }
   }
 
