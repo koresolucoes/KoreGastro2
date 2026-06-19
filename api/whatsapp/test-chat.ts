@@ -10,15 +10,6 @@ const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SU
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
-
 // Create submit_public_order function declaration
 const submitOrderFunc: FunctionDeclaration = {
   name: "submit_public_order",
@@ -62,6 +53,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
+        if (!process.env.GEMINI_API_KEY && !process.env.VITE_GEMINI_API_KEY) {
+            return res.status(200).json({ reply: '[Configuração Pendente] A chave da API do Gemini (GEMINI_API_KEY) não está configurada no servidor. Por favor, adicione-a no painel lateral de configurações.' });
+        }
+
+        const ai = new GoogleGenAI({
+          apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            }
+          }
+        });
+
         const { storeId, messageText, history = [] } = req.body;
 
         if (!storeId || !messageText) {
@@ -134,7 +138,13 @@ Ao acionar a tool, não precisa retornar uma mensagem longa, apenas agradeça (e
         return res.status(200).json({ reply: replyText });
     } catch (error: any) {
         console.error('Test chat error:', error);
-        return res.status(500).json({ error: error.message });
+        
+        let fallbackReply = "Desculpe, ocorreu um erro interno no backend.";
+        if (error.message && error.message.includes("API key not valid")) {
+            fallbackReply = "A chave de API do Gemini configurada é inválida (GEMINI_API_KEY). Por favor, corrija-a nas variáveis de ambiente.";
+        }
+
+        return res.status(200).json({ reply: `[Erro do Sistema] ${fallbackReply}` });
     }
 }
 
