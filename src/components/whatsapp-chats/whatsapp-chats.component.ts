@@ -9,7 +9,7 @@ import { WhatsappSettingsComponent } from '../settings/whatsapp-settings.compone
 @Component({
   selector: 'app-whatsapp-chats',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, WhatsappSettingsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, WhatsappSettingsComponent, DatePipe],
   templateUrl: './whatsapp-chats.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -24,6 +24,62 @@ export class WhatsappChatsComponent implements OnInit, OnDestroy {
   selectedChat = computed(() => this.chats().find(c => c.id === this.selectedChatId()));
   
   messages = signal<any[]>([]);
+  
+  isTesting = signal(false);
+  testMessages = signal<any[]>([{ role: 'model', text: 'Olá! Sou o Assistente IA do restaurante. Como posso ajudar com o seu pedido hoje?' }]);
+  testInput = signal('');
+
+  async sendTestMessage() {
+     const val = this.testInput().trim();
+     if (!val) return;
+     
+     this.testInput.set('');
+     this.testMessages.update(m => [...m, { role: 'user', text: val }]);
+     this.scrollToBottomTest();
+
+     const storeId = this.unitContextService.activeUnitId();
+     
+     try {
+       const res = await fetch('/api/whatsapp/test-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeId,
+            messageText: val,
+            history: this.testMessages().slice(0, -1) // all except the one just sent
+          })
+       });
+       
+       if (res.ok) {
+           const data = await res.json();
+           this.testMessages.update(m => [...m, { role: 'model', text: data.reply }]);
+           this.scrollToBottomTest();
+       } else {
+           this.testMessages.update(m => [...m, { role: 'model', text: '[Erro de Servidor: ' + res.statusText + ']' }]);
+       }
+     } catch (e: any) {
+        this.testMessages.update(m => [...m, { role: 'model', text: '[Erro de Rede]' }]);
+     }
+  }
+
+  scrollToBottomTest() {
+      setTimeout(() => {
+          const el = document.getElementById('test-messages-container');
+          if (el) el.scrollTop = el.scrollHeight;
+      }, 50);
+  }
+
+  startTesting() {
+      this.isTesting.set(true);
+      if (this.testMessages().length <= 1) {
+          this.testMessages.set([{ role: 'model', text: 'Olá! Sou o Assistente IA do restaurante. Como posso ajudar com o seu pedido hoje?' }]);
+      }
+      this.scrollToBottomTest();
+  }
+
+  stopTesting() {
+      this.isTesting.set(false);
+  }
   newMessage = signal('');
   
   private messageSubscription: any;

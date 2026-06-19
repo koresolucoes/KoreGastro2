@@ -18,7 +18,7 @@
       <div class="flex-grow flex items-center justify-center">
           <div class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       </div>
-  } @else if(isConfigured() === false) {
+  } @else if(isConfigured() === false && !isTesting()) {
       <div class="flex-grow flex items-center justify-center p-8">
           <div class="max-w-md w-full bg-surface-elevated rounded-3xl p-8 border border-subtle shadow-xl text-center flex flex-col items-center">
               <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
@@ -28,26 +28,39 @@
               <p class="text-muted text-sm leading-relaxed mb-8">
                   Conecte sua conta do WhatsApp Business para ter acesso a um atendente virtual com inteligência artificial, disponível 24h para sua loja.
               </p>
-              <button (click)="isConfigModalOpen.set(true)" class="w-full py-4 px-6 bg-brand hover:bg-brand-600 text-white font-black uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-95">
-                  Conectar WhatsApp Agora
-              </button>
+              <div class="flex flex-col gap-3 w-full">
+                <button (click)="isConfigModalOpen.set(true)" class="w-full py-4 px-6 bg-[#1877F2] hover:bg-[#166FE5] text-white font-black uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-95">
+                    Conectar WhatsApp Oficial
+                </button>
+                <div class="relative py-2">
+                   <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-subtle"></div></div>
+                   <div class="relative flex justify-center"><span class="bg-surface-elevated px-4 text-xs text-muted uppercase font-bold tracking-widest">Ou</span></div>
+                </div>
+                <button (click)="startTesting()" class="w-full py-4 px-6 bg-surface hover:bg-surface-elevated text-brand border-2 border-brand font-black uppercase tracking-widest rounded-2xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined">science</span>
+                    Testar ChatBot em Sandbox
+                </button>
+              </div>
           </div>
       </div>
   } @else {
     <div class="flex-grow flex overflow-hidden relative">
        <!-- Sidebar: Chats -->
-       <div [class.hidden]="selectedChatId()" class="w-full md:w-80 md:flex border-r border-subtle bg-surface-elevated flex-col shrink-0">
-        <div class="p-4 border-b border-subtle">
+       <div [class.hidden]="selectedChatId() || isTesting()" class="w-full md:w-80 md:flex border-r border-subtle bg-surface-elevated flex-col shrink-0">
+        <div class="p-4 border-b border-subtle flex flex-col gap-4">
            <div class="relative">
              <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">search</span>
              <input type="text" placeholder="Buscar conversas..." class="w-full bg-surface border border-strong rounded-xl pl-9 pr-4 py-2.5 text-xs font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand">
            </div>
+           <button (click)="startTesting()" class="w-full py-2 bg-brand/10 hover:bg-brand/20 text-brand rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2 border border-brand/20 transition-all">
+               <span translate="no" class="notranslate material-symbols-outlined text-sm">science</span> Simulador de Chat
+           </button>
         </div>
         <div class="flex-grow overflow-y-auto">
            @if(chats().length === 0) {
               <div class="p-6 text-center text-muted">
                  <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 opacity-50">forum</span>
-                 <p class="text-xs font-bold">Nenhuma conversa encontrada.</p>
+                 <p class="text-xs font-bold">Nenhuma conversa real.</p>
               </div>
            }
            @for(chat of chats(); track chat.id) {
@@ -72,9 +85,51 @@
         </div>
      </div>
 
-     <!-- Main content: Chat Messages -->
-     <div [class.hidden]="!selectedChatId()" class="w-full md:w-auto flex-grow flex flex-col md:flex bg-surface relative">
-        @if(selectedChatId()) {
+     <!-- Main content -->
+     <div [class.hidden]="!selectedChatId() && !isTesting()" class="w-full md:w-auto flex-grow flex flex-col md:flex bg-surface relative">
+        @if(isTesting()) {
+           <!-- TEST CHAT -->
+           <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10 border-b-brand/40">
+              <div class="flex items-center gap-2 sm:gap-3">
+                 <button (click)="stopTesting()" class="p-2 -ml-2 text-muted hover:text-title hover:bg-surface rounded-xl transition-all flex items-center justify-center shrink-0">
+                    <span translate="no" class="notranslate material-symbols-outlined">arrow_back</span>
+                 </button>
+                 <div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand">science</span>
+                 </div>
+                 <div>
+                    <h3 class="text-sm font-black text-title text-brand">Simulador de Chat</h3>
+                    <p class="text-[10px] text-brand/70 font-bold uppercase tracking-wider">Modo Sandbox - Peça como cliente</p>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Test Messages Area -->
+           <div class="flex-grow overflow-y-auto px-6 py-20 bg-surface/50" id="test-messages-container">
+              <div class="flex flex-col gap-4 max-w-3xl mx-auto">
+                 @for(msg of testMessages(); track $index) {
+                    <div class="flex" [class.justify-end]="msg.role === 'user'">
+                       <div [class.bg-brand/10]="msg.role === 'user'" [class.bg-white]="msg.role === 'model'" class="max-w-[80%] rounded-2xl px-4 py-2 shadow-sm border border-black/5 relative group">
+                          @if(msg.role === 'model') {
+                             <div class="flex items-center gap-1 mb-1 text-[9px] font-black tracking-widest uppercase text-brand">
+                                <span translate="no" class="notranslate material-symbols-outlined text-[10px]">smart_toy</span> Gemini IA
+                             </div>
+                          } 
+                          <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed" [innerHTML]="msg.text"></p>
+                       </div>
+                    </div>
+                 }
+              </div>
+           </div>
+
+           <!-- Test Input -->
+           <div class="h-16 bg-surface-elevated border-t border-subtle shrink-0 absolute bottom-0 w-full px-4 flex items-center gap-3">
+              <input type="text" [ngModel]="testInput()" (ngModelChange)="testInput.set($event)" (keydown.enter)="sendTestMessage()" placeholder="Mensagem de teste..." class="flex-grow bg-surface border border-strong rounded-full px-5 py-2.5 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand">
+              <button (click)="sendTestMessage()" [disabled]="!testInput().trim()" class="w-10 h-10 bg-brand text-white rounded-full flex items-center justify-center shrink-0 shadow-sm disabled:opacity-50 hover:bg-brand-600 transition-colors">
+                 <span translate="no" class="notranslate material-symbols-outlined ml-1">send</span>
+              </button>
+           </div>
+        } @else if(selectedChatId()) {
            <!-- Chat Header -->
            <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10">
               <div class="flex items-center gap-1 sm:gap-3">
@@ -142,10 +197,13 @@
                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-12 h-12 opacity-50 grayscale">
               </div>
               <h2 class="text-xl font-black text-title">WhatsApp Integrado</h2>
-              <p class="text-sm text-muted mt-2 max-w-md">Selecione uma conversa na lateral esquerda para visualizar o histórico ou assumir o atendimento da IA.</p>
+              <p class="text-sm text-muted mt-2 max-w-md">Selecione uma conversa na lateral ou teste seu assistente virtual.</p>
+              <button (click)="startTesting()" class="mt-6 py-2.5 px-6 bg-surface border-2 border-brand text-brand hover:bg-surface-elevated font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-2">
+                 <span translate="no" class="notranslate material-symbols-outlined">science</span> Simular Conversa
+              </button>
            </div>
         }
-     </div>
+      </div>
   </div>
   }
 </div>
