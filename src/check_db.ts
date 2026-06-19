@@ -8,8 +8,8 @@ async function check() {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(url, key);
     
-    // Find Gerente role
-    const { data: roles } = await supabase.from('roles').select('id, name').eq('name', 'Gerente').limit(1);
+    // Add permission to all roles so the user can see it regardless
+    const { data: roles } = await supabase.from('roles').select('id, name');
     if (roles && roles.length) {
        for (const role of roles) {
            await supabase.from('role_permissions').upsert({
@@ -18,5 +18,18 @@ async function check() {
            });
        }
     }
+    
+    const { data: plans } = await supabase.from('plans').select('id');
+    if (plans && plans.length) {
+       for (const plan of plans) {
+           await supabase.from('plan_permissions').upsert({
+               plan_id: plan.id,
+               permission_key: '/whatsapp-chats'
+           });
+       }
+    }
+    console.log("Permissions added to all roles and plans.");
 }
 check();
+
+

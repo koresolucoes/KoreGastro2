@@ -311,9 +311,15 @@ export class OperationalAuthService {
     }
 
     // For all other regular routes, both plan and role permissions are required.
-    const hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
-    const hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+    let hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
+    let hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
     
+    // Cross-reference: if they have access to settings, give them access to whatsapp-chats
+    if (routeKey === '/whatsapp-chats' && (!hasPlanPermission || !hasRolePermission)) {
+        hasPlanPermission = this.subscriptionState.activeUserPermissions().has('/settings');
+        hasRolePermission = this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === '/settings');
+    }
+
     return hasPlanPermission && hasRolePermission;
   }
 

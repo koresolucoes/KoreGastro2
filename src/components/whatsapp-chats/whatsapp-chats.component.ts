@@ -4,16 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { UnitContextService } from '../../services/unit-context.service';
 import { supabase } from '../../services/supabase-client';
 import { RouterLink } from '@angular/router';
+import { WhatsappSettingsComponent } from '../settings/whatsapp-settings.component';
 
 @Component({
   selector: 'app-whatsapp-chats',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, WhatsappSettingsComponent],
   templateUrl: './whatsapp-chats.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WhatsappChatsComponent implements OnInit, OnDestroy {
   private unitContextService = inject(UnitContextService);
+
+  isConfigured = signal<boolean | null>(null);
+  isConfigModalOpen = signal(false);
 
   chats = signal<any[]>([]);
   selectedChatId = signal<string | null>(null);
@@ -26,13 +30,32 @@ export class WhatsappChatsComponent implements OnInit, OnDestroy {
   private chatSubscription: any;
 
   ngOnInit() {
-    this.loadChats();
-    this.setupRealtime();
+    this.checkConfig();
   }
 
   ngOnDestroy() {
     if (this.messageSubscription) supabase.removeChannel(this.messageSubscription);
     if (this.chatSubscription) supabase.removeChannel(this.chatSubscription);
+  }
+
+  async checkConfig() {
+    const storeId = this.unitContextService.activeUnitId();
+    if (!storeId) return;
+
+    const { data } = await supabase
+      .from('whatsapp_configs')
+      .select('id, is_active')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (data) {
+       this.isConfigured.set(true);
+       this.loadChats();
+       this.setupRealtime();
+    } else {
+       this.isConfigured.set(false);
+    }
   }
 
   async loadChats() {
@@ -50,9 +73,11 @@ export class WhatsappChatsComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectChat(chatId: string) {
+  selectChat(chatId: string | null) {
     this.selectedChatId.set(chatId);
-    this.loadMessages(chatId);
+    if (chatId) {
+       this.loadMessages(chatId);
+    }
   }
 
   async loadMessages(chatId: string) {

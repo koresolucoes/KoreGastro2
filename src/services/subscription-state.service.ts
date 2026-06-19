@@ -161,6 +161,7 @@ export class SubscriptionStateService {
                       if (permKeys.includes('/dashboard') || permKeys.includes('/menu') || permKeys.includes('/ifood-kds')) {
                         if (!permKeys.includes('/menu-builder')) permKeys.push('/menu-builder');
                         if (!permKeys.includes('/ifood-store-manager')) permKeys.push('/ifood-store-manager');
+                        if (!permKeys.includes('/whatsapp-chats')) permKeys.push('/whatsapp-chats');
                       }
 
                       const permSet = new Set<string>(permKeys);

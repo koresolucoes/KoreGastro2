@@ -14,9 +14,29 @@
     </div>
   </div>
 
-  <div class="flex-grow flex overflow-hidden">
-     <!-- Sidebar: Chats -->
-     <div class="w-80 border-r border-subtle bg-surface-elevated flex flex-col shrink-0">
+  @if(isConfigured() === null) {
+      <div class="flex-grow flex items-center justify-center">
+          <div class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+      </div>
+  } @else if(isConfigured() === false) {
+      <div class="flex-grow flex items-center justify-center p-8">
+          <div class="max-w-md w-full bg-surface-elevated rounded-3xl p-8 border border-subtle shadow-xl text-center flex flex-col items-center">
+              <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
+                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-10 h-10">
+              </div>
+              <h2 class="text-2xl font-black text-title mb-2">Configure o WhatsApp IA</h2>
+              <p class="text-muted text-sm leading-relaxed mb-8">
+                  Conecte sua conta do WhatsApp Business para ter acesso a um atendente virtual com inteligência artificial, disponível 24h para sua loja.
+              </p>
+              <button (click)="isConfigModalOpen.set(true)" class="w-full py-4 px-6 bg-brand hover:bg-brand-600 text-white font-black uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-95">
+                  Conectar WhatsApp Agora
+              </button>
+          </div>
+      </div>
+  } @else {
+    <div class="flex-grow flex overflow-hidden relative">
+       <!-- Sidebar: Chats -->
+       <div [class.hidden]="selectedChatId()" class="w-full md:w-80 md:flex border-r border-subtle bg-surface-elevated flex-col shrink-0">
         <div class="p-4 border-b border-subtle">
            <div class="relative">
              <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">search</span>
@@ -53,11 +73,14 @@
      </div>
 
      <!-- Main content: Chat Messages -->
-     <div class="flex-grow flex flex-col bg-surface relative">
+     <div [class.hidden]="!selectedChatId()" class="w-full md:w-auto flex-grow flex flex-col md:flex bg-surface relative">
         @if(selectedChatId()) {
            <!-- Chat Header -->
-           <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 absolute top-0 w-full z-10">
-              <div class="flex items-center gap-3">
+           <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10">
+              <div class="flex items-center gap-1 sm:gap-3">
+                 <button (click)="selectChat(null)" class="md:hidden p-2 -ml-2 text-muted hover:text-title hover:bg-surface rounded-xl transition-all flex items-center justify-center shrink-0">
+                    <span translate="no" class="notranslate material-symbols-outlined">arrow_back</span>
+                 </button>
                  <div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
                     <span translate="no" class="notranslate material-symbols-outlined text-brand">person</span>
                  </div>
@@ -67,9 +90,10 @@
                  </div>
               </div>
               <div>
-                 <button (click)="toggleHumanControl()" [class.bg-amber-500]="selectedChat()?.status !== 'human'" [class.bg-green-500]="selectedChat()?.status === 'human'" class="text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                 <button (click)="toggleHumanControl()" [class.bg-amber-500]="selectedChat()?.status !== 'human'" [class.bg-green-500]="selectedChat()?.status === 'human'" class="text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 sm:px-4 rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-1 sm:gap-2">
                     <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ selectedChat()?.status === 'human' ? 'smart_toy' : 'person' }}</span>
-                    {{ selectedChat()?.status === 'human' ? 'Devolver para IA' : 'Assumir Atendimento' }}
+                    <span class="hidden sm:inline">{{ selectedChat()?.status === 'human' ? 'Devolver para IA' : 'Assumir Atendimento' }}</span>
+                    <span class="sm:hidden">{{ selectedChat()?.status === 'human' ? 'IA' : 'Assumir' }}</span>
                  </button>
               </div>
            </div>
@@ -123,4 +147,26 @@
         }
      </div>
   </div>
+  }
 </div>
+
+@if(isConfigModalOpen()) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="isConfigModalOpen.set(false); checkConfig()">
+    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md flex-shrink-0">
+        <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
+           <div class="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20">
+             <span translate="no" class="notranslate material-symbols-outlined text-green-500">smart_toy</span>
+           </div>
+           Configuração do Assistente
+        </h3>
+        <button (click)="isConfigModalOpen.set(false); checkConfig()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto">
+         <app-whatsapp-settings></app-whatsapp-settings>
+      </div>
+    </div>
+  </div>
+}
