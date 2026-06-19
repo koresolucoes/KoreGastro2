@@ -79,6 +79,7 @@ export class TopNavComponent {
       icon: 'bar_chart',
       children: [
         { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Gerente'] },
+        { name: 'WhatsApp IA', path: '/whatsapp-chats', icon: 'chat', roles: ['Gerente'] },
         { name: 'Cardápios', path: '/menu-builder', icon: 'restaurant_menu', roles: ['Gerente'] },
         { name: 'Relatórios', path: '/reports', icon: 'analytics', roles: ['Gerente'] },
         { name: 'Desempenho', path: '/performance', icon: 'trending_up', roles: ['Gerente'] },
@@ -134,7 +135,7 @@ export class TopNavComponent {
     
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Salão & PDV', 'Cozinha & KDS', 'Gestão', 'Estoque', 'Rotinas', 'Delivery/iFood'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery', '/ifood-menu', '/ifood-store-manager'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery', '/ifood-menu', '/ifood-store-manager', '/whatsapp-chats'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

@@ -30,5 +30,6 @@ export const ALL_PERMISSION_KEYS = [
   '/tutorials',
   '/delivery',
   '/checklists',
-  '/temperatures'
+  '/temperatures',
+  '/whatsapp-chats'
 ];

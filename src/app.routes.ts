@@ -168,7 +168,8 @@ export const APP_ROUTES: Routes = [
   },
   { 
     path: 'whatsapp-chats', 
-    loadComponent: () => import('./components/whatsapp-chats/whatsapp-chats.component').then(m => m.WhatsappChatsComponent)
+    loadComponent: () => import('./components/whatsapp-chats/whatsapp-chats.component').then(m => m.WhatsappChatsComponent),
+    canActivate: [roleGuard]
   },
   { 
     path: 'employees', 
