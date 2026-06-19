@@ -335,7 +335,6 @@ export class OperationalAuthService {
     const managerEmployee = employees.find(e => e.role_id === managerRole.id);
     
     if (managerEmployee) {
-        console.log('[OperationalAuth] Auto-login successful for:', managerEmployee.name);
         this.login(managerEmployee);
         return true;
     }

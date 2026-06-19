@@ -145,6 +145,7 @@ export class LaunchpadComponent {
       title: 'Vendas & Atendimento',
       icon: 'point_of_sale',
       items: [
+        { name: 'WhatsApp IA', path: '/whatsapp-chats', icon: 'chat', color: 'bg-green-500 shadow-green-500/20', description: 'Assuma ou monitore conversas e pedidos do WhatsApp.' },
         { name: 'PDV', path: '/pos', icon: 'receipt_long', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Realize vendas, gerencie mesas e comandas.' },
         { name: 'Caixa', path: '/cashier', icon: 'point_of_sale', color: 'bg-blue-500 shadow-blue-500/20', description: 'Controle de fluxo de caixa e fechamentos.' },
         { name: 'Clientes', path: '/customers', icon: 'group', color: 'bg-indigo-500 shadow-indigo-500/20', description: 'Cadastros e histórico de clientes.' },

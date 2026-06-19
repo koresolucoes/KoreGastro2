@@ -80,8 +80,6 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
         
         if (activeUnitId && !isDemo) {
-            console.log(`[SupabaseState] Active Unit changed: ${activeUnitId}. Loading Essentials...`);
-            
             // 1. Clear previous operator session immediately to prevent access leak
             this.operationalAuthService.resetSession();
             this.isDataLoaded.set(false);
@@ -227,7 +225,6 @@ export class SupabaseStateService {
   public async loadBackOfficeData() {
      const userId = this.unitContextService.activeUnitId();
      if (!userId) return;
-     console.log('[SupabaseState] Loading BackOffice Data (Lazy)...');
 
      const yesterday = new Date();
      yesterday.setDate(yesterday.getDate() - 1);
@@ -279,7 +276,6 @@ export class SupabaseStateService {
   private subscribeToChanges(userId: string) {
     this.unsubscribeFromChanges();
     
-    console.log(`[SupabaseState] Initializing Realtime subscription for ${userId}...`);
     this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
       .on(
         'postgres_changes', 
@@ -287,15 +283,10 @@ export class SupabaseStateService {
         (payload: any) => this.handleChanges(payload)
       )
       .subscribe((status, err) => {
-        console.log(`Supabase realtime subscription status: ${status}`);
-        
         if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn(`[SupabaseState] Realtime connection failed (${status}). Retrying in 5s...`, err);
-            
             // Cleanup and retry
             if (this.retryTimeout) clearTimeout(this.retryTimeout);
             this.retryTimeout = setTimeout(() => {
-                console.log('[SupabaseState] Retrying Realtime connection...');
                 this.subscribeToChanges(userId);
             }, 5000);
         }

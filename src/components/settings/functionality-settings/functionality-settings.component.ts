@@ -11,11 +11,12 @@ import { SettingsStateService } from '../../../services/settings-state.service';
 import { DemoService } from '../../../services/demo.service';
 import { FocusNFeService } from '../../../services/focus-nfe.service';
 import { UnitContextService } from '../../../services/unit-context.service';
+import { WhatsappSettingsComponent } from '../whatsapp-settings.component';
 
 @Component({
   selector: 'app-functionality-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, WhatsappSettingsComponent],
   templateUrl: './functionality-settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -48,6 +49,7 @@ export class FunctionalitySettingsComponent {
   isLoyaltyModalOpen = signal(false);
   isReservationModalOpen = signal(false);
   isFocusNFeModalOpen = signal(false);
+  isWhatsappModalOpen = signal(false);
 
   // Reservation Form
   reservationForm = signal<Partial<ReservationSettings>>({});

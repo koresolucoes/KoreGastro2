@@ -33,8 +33,6 @@ export class UnitContextService {
   }
 
   async loadContext(userId: string) {
-    console.log('Loading unit context for user:', userId);
-
     // 1. Fetch stores owned by the user directly
     const { data: ownedStores, error: ownedError } = await supabase
       .from('stores')

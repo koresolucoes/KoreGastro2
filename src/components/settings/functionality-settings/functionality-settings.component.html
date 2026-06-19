@@ -139,10 +139,53 @@
   </div>
   }
 
+  <!-- Card: WhatsApp / Assistant IA -->
+  <div class="chef-surface rounded-[32px] p-8 flex flex-col border border-subtle hover:border-brand/40 hover:shadow-xl transition-all group overflow-hidden relative">
+    <div class="absolute -right-6 -top-6 w-24 h-24 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-colors"></div>
+    <div class="flex-grow">
+      <div class="flex items-start gap-5">
+        <div class="w-14 h-14 p-3 bg-green-500/10 rounded-2xl shadow-sm border border-green-500/20 flex items-center justify-center">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-8 h-8">
+        </div>
+        <div>
+          <h2 class="text-xl font-black text-title title-display tracking-tight">WhatsApp & IA</h2>
+          <p class="text-xs text-muted mt-2 leading-relaxed font-medium">Assistente virtual 24h com Gemini para atender e fechar pedidos no WhatsApp.</p>
+        </div>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-subtle flex justify-end">
+      <button (click)="isWhatsappModalOpen.set(true)" class="bg-surface hover:bg-brand hover:text-white border border-strong hover:border-brand text-title font-black uppercase tracking-widest text-[10px] py-3.5 px-6 rounded-xl transition-all shadow-sm active:scale-95">
+        Configurar Assistente
+      </button>
+    </div>
+  </div>
+
 </div>
 
 
 <!-- MODALS -->
+
+<!-- Whatsapp Modal -->
+@if(isWhatsappModalOpen()) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="isWhatsappModalOpen.set(false)">
+    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md flex-shrink-0">
+        <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
+           <div class="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20">
+             <span translate="no" class="notranslate material-symbols-outlined text-green-500">smart_toy</span>
+           </div>
+           WhatsApp IA
+        </h3>
+        <button (click)="isWhatsappModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto">
+         <app-whatsapp-settings></app-whatsapp-settings>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- iFood Modal -->
 @if(isIFoodModalOpen()) {

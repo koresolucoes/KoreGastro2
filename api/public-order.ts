@@ -39,7 +39,29 @@ export default async function handler(req: any, res: any) {
     }
     
     if (req.method === 'POST') {
-      const { orderId, updates } = req.body || {};
+      const { orderId, updates, create, orderData, items } = req.body || {};
+      
+      if (create) {
+         // Logic for AI/Webhook to create order hitting this endpoint
+         if (!orderData || !items) return res.status(400).json({ error: 'Missing orderData or items' });
+         
+         const { data: orderResponse, error: orderError } = await supabase
+             .from('orders')
+             .insert(orderData)
+             .select('*')
+             .single();
+         if (orderError) throw orderError;
+
+         if (items.length > 0) {
+             const { error: itemsError } = await supabase
+                 .from('order_items')
+                 .insert(items);
+             if (itemsError) throw itemsError;
+         }
+         
+         return res.status(201).json({ success: true, order: orderResponse });
+      }
+
       if (!orderId || !updates) return res.status(400).json({ error: 'Missing orderId or updates' });
 
       // Only allow safe updates like notes, customer_name from public checkout

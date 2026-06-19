@@ -43,7 +43,6 @@ export class SubscriptionStateService {
 
   async loadSubscriptionForUnit(storeId: string) {
       this.isLoading.set(true);
-      console.log(`[Subscription] Iniciando verificação para a Loja: ${storeId}`);
       
       // Reset state clean
       this.subscriptions.set([]); 
@@ -71,7 +70,6 @@ export class SubscriptionStateService {
                   .order('created_at', { ascending: false });
 
               if (storeSubs && storeSubs.length > 0) {
-                  console.log('[Subscription] Sucesso: Assinatura encontrada vinculada diretamente à loja (store_id).');
                   this.subscriptions.set(storeSubs);
                   subscriptionFound = true;
                   if (!ownerId) ownerId = storeSubs[0].user_id;
@@ -112,7 +110,6 @@ export class SubscriptionStateService {
                   .order('created_at', { ascending: false });
 
               if (ownerSubs && ownerSubs.length > 0) {
-                  console.log(`[Subscription] Sucesso: Assinatura encontrada para o dono da loja (${ownerId}).`);
                   this.subscriptions.set(ownerSubs);
                   subscriptionFound = true;
               }
@@ -126,7 +123,6 @@ export class SubscriptionStateService {
               const now = new Date();
               
               if (now < trialEndDate) {
-                  console.log('[Subscription] Teste Premium Gratuito de 30 dias ativado para novo usuário.');
                   this.subscriptions.set([{
                       id: 'mock-trial',
                       user_id: currentUser.id,
@@ -147,7 +143,6 @@ export class SubscriptionStateService {
           }
 
           if (!subscriptionFound) {
-              console.warn('[Subscription] Nenhuma assinatura ativa encontrada para esta loja.');
               this.subscriptions.set([]);
           } else {
               // --- CRITICAL FIX: Load Permissions for the Found Plan ---
@@ -170,7 +165,6 @@ export class SubscriptionStateService {
 
                       const permSet = new Set<string>(permKeys);
                       this.activeUserPermissions.set(permSet);
-                      console.log(`[Subscription] Permissões carregadas: ${permSet.size}`);
                   }
               }
           }
@@ -193,7 +187,7 @@ export class SubscriptionStateService {
           }
           
       } catch (err) {
-          console.error('[Subscription] Erro fatal ao verificar assinatura:', err);
+          // Silent catch
       } finally {
           // IMPORTANT: Signal that loading is finished so guards can proceed
           this.isLoading.set(false);

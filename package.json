@@ -21,11 +21,12 @@
     "@angular/material": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.6-0",
-    "@google/genai": "latest",
+    "@google/genai": "^2.8.0",
     "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/supabase-js": "2",
     "@vercel/node": "^5.3.22",
     "angularx-qrcode": "^20.0.0",
+    "axios": "^1.18.0",
     "buffer": "^6.0.3",
     "chart.js": "^4.5.1",
     "crypto": "^1.0.1",
@@ -37,7 +38,9 @@
     "ng2-charts": "^9.0.0",
     "rxjs": "^7.8.2",
     "tailwindcss": "latest",
+    "twilio": "^6.0.2",
     "uuid": "^11.1.0",
+    "whatsapp": "^0.0.5-Alpha",
     "zod": "^4.3.6"
   },
   "devDependencies": {
