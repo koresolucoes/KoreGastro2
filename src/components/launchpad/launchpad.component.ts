@@ -218,7 +218,7 @@ export class LaunchpadComponent {
 
   visibleCategories = computed(() => {
     const isDemo = this.demoService.isDemoMode();
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/mise-en-place', '/checklists', '/temperatures', '/menu', '/customers', '/technical-sheets', '/purchasing', '/suppliers', '/employees', '/leave-management', '/my-leave', '/payroll'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/mise-en-place', '/checklists', '/temperatures', '/menu', '/customers', '/technical-sheets', '/purchasing', '/suppliers', '/employees', '/leave-management', '/my-leave', '/payroll', '/whatsapp-chats'];
 
     return this.allCategories.map(cat => ({
       ...cat,
