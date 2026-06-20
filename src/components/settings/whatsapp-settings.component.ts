@@ -56,6 +56,30 @@ import { supabase } from '../../services/supabase-client';
                    </p>
                </div>
 
+               @if (config()?.waba_id === 'PENDING_CONFIG') {
+                  <div class="mt-6 p-6 bg-yellow-500/5 rounded-2xl border border-yellow-500/20">
+                     <h4 class="text-[11px] font-bold text-yellow-600 mb-2 uppercase tracking-widest">Configuração Manual Necessária</h4>
+                     <p class="text-[10px] text-muted leading-relaxed mb-4">
+                        Não foi possível detectar automaticamente seus IDs do WhatsApp. Por favor, insira-os manualmente. Você pode encontrá-los no Meta for Developers > WhatsApp > API Setup.
+                     </p>
+                     <div class="space-y-4">
+                        <div>
+                           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">WhatsApp Business Account ID (WABA ID)</label>
+                           <input type="text" [(ngModel)]="manualWabaId" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                        </div>
+                        <div>
+                           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Phone Number ID</label>
+                           <input type="text" [(ngModel)]="manualPhoneId" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                        </div>
+                        <div>
+                           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Número de Telefone (Ex: +5511999999999)</label>
+                           <input type="text" [(ngModel)]="manualPhoneNumber" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                        </div>
+                        <button (click)="saveManualConfig()" class="px-6 py-2.5 text-[10px] font-black text-white bg-green-500 hover:bg-green-600 rounded-xl transition-all uppercase tracking-widest active:scale-95 w-full">Salvar Configuração</button>
+                     </div>
+                  </div>
+               }
+
             } @else {
                <div class="text-center py-8">
                   <div class="w-20 h-20 bg-surface rounded-full flex items-center justify-center border border-subtle mx-auto mb-6">
@@ -82,6 +106,10 @@ export class WhatsappSettingsComponent {
 
   config = signal<any | null>(null);
 
+  manualWabaId = '';
+  manualPhoneId = '';
+  manualPhoneNumber = '';
+
   constructor() {
     this.loadConfig();
   }
@@ -98,8 +126,46 @@ export class WhatsappSettingsComponent {
       
       if (!error && data) {
          this.config.set(data);
+         if (data.waba_id && data.waba_id !== 'PENDING_CONFIG') {
+             this.manualWabaId = data.waba_id;
+         }
+         if (data.phone_number_id && data.phone_number_id !== 'PENDING_CONFIG') {
+             this.manualPhoneId = data.phone_number_id;
+         }
+         if (data.phone_number && data.phone_number !== 'Pendente') {
+             this.manualPhoneNumber = data.phone_number;
+         }
       } else {
          this.config.set(null);
+      }
+  }
+
+  async saveManualConfig() {
+      if (!this.manualWabaId || !this.manualPhoneId || !this.manualPhoneNumber) {
+          return this.notificationService.show('Por favor, preencha todos os campos.', 'warning');
+      }
+
+      const storeId = this.unitContextService.activeUnitId();
+      if (!storeId) return;
+
+      const configId = this.config()?.id;
+      if (!configId) return;
+
+      const { error } = await supabase
+          .from('whatsapp_configs')
+          .update({
+              waba_id: this.manualWabaId,
+              phone_number_id: this.manualPhoneId,
+              phone_number: this.manualPhoneNumber
+          })
+          .eq('id', configId);
+
+      if (!error) {
+          this.notificationService.show('Configuração salva com sucesso!', 'success');
+          await this.loadConfig();
+      } else {
+          this.notificationService.show('Erro ao salvar configuração.', 'error');
+          console.error(error);
       }
   }
 

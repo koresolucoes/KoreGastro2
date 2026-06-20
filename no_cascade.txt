@@ -1,0 +1,1 @@
+    ADD CONSTRAINT "inventory_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."stores"("id");

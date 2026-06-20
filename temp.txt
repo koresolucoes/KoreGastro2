@@ -1,0 +1,12 @@
+CREATE POLICY "Enable all based on user_id" ON public.menus FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_items FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_groups FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_choices FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    WITH CHECK (auth.uid() = user_id);
+    USING (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menus FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_items FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_groups FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable all based on user_id" ON public.menu_item_option_choices FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
