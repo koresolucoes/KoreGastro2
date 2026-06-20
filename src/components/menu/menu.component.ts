@@ -82,7 +82,7 @@ export class MenuComponent implements OnInit {
       const cust = this.customerAuthService.customer();
       const order = this.tableOrder();
       
-      if (cust && order && !order.customer_name && this.view() === 'table-checkin') {
+      if (cust && order && !order.customer_id && this.view() === 'table-checkin') {
          // Auto-checkin since they logged in or already had a session
          this.submitTableCheckin({ name: cust.name, phone: cust.phone, cpf: cust.cpf || '' });
       }

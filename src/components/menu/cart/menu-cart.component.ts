@@ -156,7 +156,7 @@ export class MenuCartComponent {
      const cartCategoryIds = new Set(cartItems.map(i => i.recipe.category_id));
      
      // 1. Consider all active items
-     let pool = all.filter(r => r.status === 'active');
+     let pool = all.filter(r => r.is_available);
      
      // 2. Score them
      const scored = pool.map(r => {

@@ -101,6 +101,14 @@ export class StoreManagementComponent implements OnInit {
               const { success, message, store_id } = await this.settingsDataService.createNewStore(name);
               
               if (success) {
+                  // VERY IMPORTANT: Refresh session to obtain the new store ID in the JWT claims 
+                  // handled by the Supabase Custom Claims hook. Otherwise RLS will block loading roles.
+                  try {
+                      await import('../../../services/supabase-client').then(m => m.supabase.auth.refreshSession());
+                  } catch (e) {
+                      console.warn('Could not refresh session:', e);
+                  }
+
                   this.notificationService.show('Loja criada com sucesso!', 'success');
                   await this.unitContextService.loadContext(this.authService.currentUser()?.id!);
                   
