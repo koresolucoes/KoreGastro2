@@ -323,8 +323,14 @@ export class MenuComponent implements OnInit {
          };
        });
 
-       const { error } = await supabase.from('order_items').insert(orderItems);
-       if (error) throw error;
+       const response = await fetch('/api/public-order', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ insertItems: orderItems })
+       });
+       
+       const resData = await response.json();
+       if (!response.ok) throw new Error(resData.error || 'Erro ao inserir itens no pedido');
        
        this.cart.clearCart();
        
@@ -438,12 +444,6 @@ export class MenuComponent implements OnInit {
         delivery_info: event.type === 'delivery' ? { address: event.address } : null
       };
 
-      const { error: orderError } = await supabase
-        .from('orders')
-        .insert(orderData);
-
-      if (orderError) throw orderError;
-
       const orderItems = this.cart.items().map(item => {
          let finalNotes = item.notes || '';
          let optionRecipeIds: string[] = [];
@@ -493,11 +493,14 @@ export class MenuComponent implements OnInit {
           }
       });
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      const response = await fetch('/api/public-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ create: true, orderData, items: orderItems })
+      });
+      
+      const resData = await response.json();
+      if (!response.ok) throw new Error(resData.error || 'Erro ao processar o pedido online');
 
       this.cart.clearCart();
       this.view.set('success');

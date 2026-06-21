@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, Order, Employee, Customer } from '../../models/db.models';
 
