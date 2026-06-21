@@ -324,10 +324,10 @@ export class RecipeDataService {
                    description: r.description,
                    price: r.price,
                    image_url: r.image_url,
-                   category_id: categoryIdMap.get(r.category_id) || r.category_id,
+                   category_id: r.category_id ? (categoryIdMap.get(r.category_id) || targetCategories?.[0]?.id || null) : null,
                    is_available: r.is_available,
                    is_sub_recipe: r.is_sub_recipe,
-                   user_id: ownerId,
+                   user_id: targetStoreId,
                    store_id: targetStoreId,
                    prep_time_in_minutes: r.prep_time_in_minutes,
                    operational_cost: r.operational_cost,
@@ -366,9 +366,9 @@ export class RecipeDataService {
                const sourcePrepsToInsertIdx: number[] = [];
 
                sourcePreparations.forEach((p, index) => {
-                   const mappedStationId = p.station_id ? stationIdMap.get(p.station_id) || p.station_id : null;
+                   const mappedStationId = p.station_id ? (stationIdMap.get(p.station_id) || targetStations?.[0]?.id || null) : null;
                    prepsToInsert.push({
-                       recipe_id: recipeIdMap.get(p.recipe_id) || p.recipe_id,
+                       recipe_id: recipeIdMap.get(p.recipe_id),
                        station_id: mappedStationId,
                        name: p.name,
                        prep_instructions: p.prep_instructions,
@@ -441,12 +441,12 @@ export class RecipeDataService {
                       stock: 0, // Reset stock for the new store
                       cost: ing.cost,
                       min_stock: 0, 
-                      category_id: ing.category_id ? (ingCategoryIdMap.get(ing.category_id) || null) : null,
+                      category_id: ing.category_id ? (ingCategoryIdMap.get(ing.category_id) || targetIngCategories?.[0]?.id || null) : null,
                       supplier_id: null, // Suppliers are isolated, reset
                       is_sellable: ing.is_sellable,
                       price: ing.price,
                       pos_category_id: null,
-                      station_id: ing.station_id ? (stationIdMap.get(ing.station_id) || null) : null,
+                      station_id: ing.station_id ? (stationIdMap.get(ing.station_id) || targetStations?.[0]?.id || null) : null,
                       external_code: ing.external_code,
                       is_portionable: ing.is_portionable,
                       is_yield_product: ing.is_yield_product,
@@ -483,16 +483,18 @@ export class RecipeDataService {
               const targetPairs = new Set(targetRecipeIngs?.map(tri => `${tri.recipe_id}_${tri.ingredient_id}`) || []);
 
               sourceRecipeIngs.forEach(ri => {
-                  const targetRecipeId = recipeIdMap.get(ri.recipe_id) || ri.recipe_id;
-                  const targetIngredientId = ingredientIdMap.get(ri.ingredient_id) || ri.ingredient_id;
+                  const targetRecipeId = recipeIdMap.get(ri.recipe_id);
+                  const targetIngredientId = ingredientIdMap.get(ri.ingredient_id);
                   
+                  if (!targetRecipeId || !targetIngredientId) return; // Skip if mapping failed
+
                   // Skip if this specific recipe/ingredient pair already exists in the target
                   if (!targetPairs.has(`${targetRecipeId}_${targetIngredientId}`)) {
                       recIngsToInsert.push({
                           recipe_id: targetRecipeId,
                           ingredient_id: targetIngredientId,
                           quantity: ri.quantity,
-                          preparation_id: ri.preparation_id ? (prepIdMap.get(ri.preparation_id) || ri.preparation_id) : null,
+                          preparation_id: ri.preparation_id ? (prepIdMap.get(ri.preparation_id) || null) : null,
                           user_id: targetStoreId,
                           correction_factor: ri.correction_factor
                       });
