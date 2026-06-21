@@ -355,19 +355,40 @@ export class RecipeDataService {
         }
       }
 
+      const prepIdMap = new Map<string, string>(); // old preparation id -> new preparation id
       // 3. Clone Preparations only for NEW recipes
       if (newSourceRecipeIds.size > 0) {
           const { data: sourcePreparations } = await supabase.from('recipe_preparations')
               .select('*').in('recipe_id', Array.from(newSourceRecipeIds));
 
           if (sourcePreparations && sourcePreparations.length > 0) {
-               const prepsToInsert = sourcePreparations.map(p => ({
-                   recipe_id: recipeIdMap.get(p.recipe_id) || p.recipe_id,
-                   step_order: p.step_order,
-                   description: p.description,
-                   user_id: targetStoreId
-               }));
-               await supabase.from('recipe_preparations').insert(prepsToInsert);
+               const prepsToInsert: any[] = [];
+               const sourcePrepsToInsertIdx: number[] = [];
+
+               sourcePreparations.forEach((p, index) => {
+                   const mappedStationId = p.station_id ? stationIdMap.get(p.station_id) || p.station_id : null;
+                   prepsToInsert.push({
+                       recipe_id: recipeIdMap.get(p.recipe_id) || p.recipe_id,
+                       station_id: mappedStationId,
+                       name: p.name,
+                       prep_instructions: p.prep_instructions,
+                       prep_time_in_minutes: p.prep_time_in_minutes,
+                       display_order: p.display_order,
+                       user_id: targetStoreId
+                   });
+                   sourcePrepsToInsertIdx.push(index);
+               });
+               
+               if (prepsToInsert.length > 0) {
+                   const { data: insertedPreps } = await supabase.from('recipe_preparations').insert(prepsToInsert).select();
+                   if (insertedPreps && insertedPreps.length > 0) {
+                       insertedPreps.forEach((newPrep: any, i: number) => {
+                           const originalIdx = sourcePrepsToInsertIdx[i];
+                           const oldId = sourcePreparations[originalIdx].id;
+                           prepIdMap.set(oldId, newPrep.id);
+                       });
+                   }
+               }
           }
       }
 
@@ -471,7 +492,7 @@ export class RecipeDataService {
                           recipe_id: targetRecipeId,
                           ingredient_id: targetIngredientId,
                           quantity: ri.quantity,
-                          preparation_id: ri.preparation_id,
+                          preparation_id: ri.preparation_id ? (prepIdMap.get(ri.preparation_id) || ri.preparation_id) : null,
                           user_id: targetStoreId,
                           correction_factor: ri.correction_factor
                       });
