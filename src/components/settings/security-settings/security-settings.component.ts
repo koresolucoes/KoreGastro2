@@ -62,7 +62,11 @@ export class SecuritySettingsComponent {
     this.editingRole.set(role);
     const currentPermissions = new Set(this.rolePermissions().filter(p => p.role_id === role.id).map(p => p.permission_key));
     const formState: Record<string, boolean> = {};
-    for (const key of this.allPermissions) {
+    
+    // Flatten all permissions from the groups to ensure we have every key
+    const allKeys = this.allPermissionGroups.flatMap(g => g.permissions.map(p => p.key));
+    
+    for (const key of allKeys) {
       formState[key] = currentPermissions.has(key);
     }
     this.rolePermissionsForm.set(formState);

@@ -19,6 +19,7 @@ import { ALL_PERMISSION_KEYS } from "../config/permissions";
 import { v4 as uuidv4 } from "uuid";
 import { WebhookService } from "./webhook.service";
 import { UnitContextService } from "./unit-context.service";
+import { HrStateService } from "./hr-state.service";
 
 @Injectable({
   providedIn: "root",
@@ -27,6 +28,7 @@ export class SettingsDataService {
   private authService = inject(AuthService);
   private webhookService = inject(WebhookService);
   private unitContextService = inject(UnitContextService);
+  private hrState = inject(HrStateService);
 
   private getActiveUnitId(): string | null {
     return this.unitContextService.activeUnitId();
@@ -476,6 +478,16 @@ export class SettingsDataService {
         .from("role_permissions")
         .insert(permissionsToInsert);
       if (insertError) return { success: false, error: insertError };
+    }
+
+    // Refetch the role_permissions to update local state
+    const { data: updatedPermissions, error: refetchError } = await supabase
+      .from("role_permissions")
+      .select("*")
+      .eq("user_id", userId);
+      
+    if (!refetchError && updatedPermissions) {
+      this.hrState.rolePermissions.set(updatedPermissions);
     }
 
     return { success: true, error: null };

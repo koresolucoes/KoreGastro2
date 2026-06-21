@@ -13,6 +13,7 @@ export const ALL_PERMISSION_KEYS = [
   '/customers',
   '/menu',
   '/menu-builder',
+  '/ifood-menu',
   '/ifood-store-manager',
   '/technical-sheets',
   '/mise-en-place',
