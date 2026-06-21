@@ -275,7 +275,7 @@ export class RequisitionService {
                     .eq('id', existingStock.id);
             } else {
                 await supabase.from('station_stocks').insert({
-                    user_id: userId,
+                    user_id: requisition.user_id,
                     station_id: requisition.station_id,
                     ingredient_id: item.ingredient_id,
                     quantity: qty,
