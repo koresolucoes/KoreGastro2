@@ -10,160 +10,195 @@
 }
 
 <!-- Main Layout -->
-<main class="max-w-7xl mx-auto min-h-screen flex flex-col py-6 relative">
+<main class="w-full min-h-screen bg-surface pb-6 relative">
   
   <!-- Header / Cover Section -->
-  <header class="relative w-full overflow-hidden sm:rounded-3xl bg-brand sm:mx-0">
-    <div class="absolute top-4 right-4 z-10 flex flex-wrap justify-end gap-2 pr-4 sm:pr-0">
-      
-      <!-- Table Actions -->
-      @if (tableOrder()) {
-        <button (click)="view.set('table-bill')" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-white font-bold text-sm border border-white/10 shadow-lg transition-all cursor-pointer">
-           <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-300">receipt_long</span>
-           <span>Mesa {{ tableOrder()?.table_number }}</span>
-        </button>
-        <button (click)="callWaiter()" class="flex items-center gap-2 px-4 py-2 bg-blue-500/80 hover:bg-blue-500 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-blue-500/50 shadow-lg">
-           <span translate="no" class="notranslate material-symbols-outlined !text-sm">room_service</span>
-           <span class="hidden sm:inline">Chamar</span>
-        </button>
-        <button (click)="requestBill()" class="flex items-center gap-2 px-4 py-2 bg-red-500/80 hover:bg-red-500 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-red-500/50 shadow-lg">
-           <span translate="no" class="notranslate material-symbols-outlined !text-sm">payments</span>
-           <span class="hidden sm:inline">Conta</span>
-        </button>
-      }
-
-      <!-- Reservar Button -->
-      @if (reservationSettings()) {
-        <button [routerLink]="['/book', userId()]" 
-                class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-brand/50 shadow-lg"
-                title="Fazer uma Reserva">
-          <span translate="no" class="notranslate material-symbols-outlined !text-sm">event_seat</span>
-          <span class="hidden sm:inline">Reservar Mesa</span>
-        </button>
-      }
-
-      <!-- Profile/Login Button -->
-      <button (click)="customerAuthService.customer() ? view.set('profile') : view.set('auth')" 
-              class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold text-sm transition-all border border-white/10 shadow-lg">
-        @if (customerAuthService.customer()) {
-          <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-400">stars</span>
-          <span>{{ customerAuthService.customer()?.loyalty_points }} pts</span>
-        } @else {
-          <span translate="no" class="notranslate material-symbols-outlined !text-sm">person</span>
-          <span>Entrar</span>
-        }
-      </button>
-    </div>
-
-    <div class="aspect-[21/9] w-full">
+  <header class="w-full bg-surface">
+    <div class="relative h-48 sm:h-64 md:h-80 w-full overflow-hidden">
       @if (companyProfile()?.menu_header_url) {
-        <img [src]="companyProfile()?.menu_header_url" class="w-full h-full object-cover opacity-60" referrerpolicy="no-referrer">
-      } @else if (companyProfile()?.logo_url) {
-        <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover opacity-20 blur-sm" referrerpolicy="no-referrer">
+        <img [src]="companyProfile()?.menu_header_url" class="absolute inset-0 w-full h-full object-cover opacity-90" referrerpolicy="no-referrer">
+      } @else {
+        <div class="absolute inset-0 bg-brand/20"></div>
       }
-      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+      
+      <!-- Top actions -->
+      <div class="absolute top-4 right-4 z-10 flex gap-2 flex-wrap justify-end">
+        @if (tableOrder()) {
+          <button (click)="view.set('table-bill')" class="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full text-white font-bold text-xs border border-white/20 transition-colors hover:bg-black/60">
+             <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-300">receipt_long</span>
+             <span>Mesa {{ tableOrder()?.table_number }}</span>
+          </button>
+          <button (click)="callWaiter()" class="flex items-center gap-2 px-3 py-1.5 bg-blue-500/80 backdrop-blur-md rounded-full text-white font-bold text-xs border border-blue-400/50 hover:bg-blue-600 transition-colors">
+             <span translate="no" class="notranslate material-symbols-outlined !text-sm">room_service</span>
+             <span class="hidden sm:inline">Garçom</span>
+          </button>
+          <button (click)="requestBill()" class="flex items-center gap-2 px-3 py-1.5 bg-red-500/80 backdrop-blur-md rounded-full text-white font-bold text-xs border border-red-400/50 hover:bg-red-600 transition-colors">
+             <span translate="no" class="notranslate material-symbols-outlined !text-sm">payments</span>
+             <span class="hidden sm:inline">Conta</span>
+          </button>
+        }
+
+        @if (reservationSettings()) {
+          <button [routerLink]="['/book', userId()]" class="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full text-white font-bold text-xs border border-white/20 hover:bg-black/60 transition-colors">
+            <span translate="no" class="notranslate material-symbols-outlined !text-sm">event_seat</span>
+            <span class="hidden sm:inline">Reservar</span>
+          </button>
+        }
+
+        <button (click)="customerAuthService.customer() ? view.set('profile') : view.set('auth')" class="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full text-white font-bold text-xs border border-white/20 hover:bg-black/60 transition-colors">
+          @if (customerAuthService.customer()) {
+            <span translate="no" class="notranslate material-symbols-outlined !text-sm text-yellow-400">stars</span>
+            <span>{{ customerAuthService.customer()?.loyalty_points }} pts</span>
+          } @else {
+            <span translate="no" class="notranslate material-symbols-outlined !text-sm">person</span>
+            <span>Entrar</span>
+          }
+        </button>
+      </div>
     </div>
 
-    <!-- Company Badge -->
-    <div class="absolute -bottom-1 left-4 sm:left-8 flex items-end gap-4 sm:gap-6 pb-6">
-      <div class="w-24 h-24 sm:w-32 sm:h-32 bg-surface rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 shadow-2xl">
-        <div class="w-full h-full rounded-xl sm:rounded-2xl overflow-hidden bg-surface-elevated">
-          @if (companyProfile()?.logo_url) {
-            <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover" referrerpolicy="no-referrer">
-          } @else {
-            <div class="w-full h-full flex items-center justify-center text-muted">
-              <span translate="no" class="notranslate material-symbols-outlined !text-5xl">store</span>
-            </div>
-          }
+    <!-- Info Block below cover -->
+    <div class="max-w-4xl mx-auto px-4 -mt-10 sm:-mt-12 relative z-10">
+      <div class="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 mb-2">
+        <div class="w-20 h-20 sm:w-28 sm:h-28 bg-surface rounded-2xl p-1 shadow-md shrink-0 border border-subtle">
+          <div class="w-full h-full rounded-xl overflow-hidden bg-surface-elevated">
+            @if (companyProfile()?.logo_url) {
+              <img [src]="companyProfile()?.logo_url" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+            } @else {
+              <div class="w-full h-full flex items-center justify-center text-muted">
+                <span translate="no" class="notranslate material-symbols-outlined !text-4xl text-muted">store</span>
+              </div>
+            }
+          </div>
         </div>
-      </div>
-      <div class="mb-2">
-        <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight">{{ companyProfile()?.company_name || 'Nosso Cardápio' }}</h1>
-        <div class="flex items-center gap-2 mt-1 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit">
-          <div class="w-2 h-2 rounded-full" [class]="isRestaurantOpen() ? 'bg-success' : 'bg-danger'"></div>
-          <span class="text-[10px] sm:text-xs font-bold text-white uppercase tracking-widest leading-none">
-            {{ isRestaurantOpen() ? 'Aberto agora' : 'Fechado no momento' }}
-          </span>
+        <div class="pb-1 flex-1">
+          <h1 class="text-2xl sm:text-3xl font-black text-title leading-tight">{{ companyProfile()?.company_name || 'Carregando Restaurante...' }}</h1>
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            <span class="flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full bg-surface-elevated" [class]="isRestaurantOpen() ? 'text-success' : 'text-danger'">
+              <span class="w-1.5 h-1.5 rounded-full" [class]="isRestaurantOpen() ? 'bg-success' : 'bg-danger'"></span>
+              {{ isRestaurantOpen() ? 'Aberto Hoje' : 'Fechado' }}
+            </span>
+            <span class="text-muted text-xs">•</span>
+            <span class="text-xs font-medium text-muted flex items-center gap-1">
+              <span translate="no" class="notranslate material-symbols-outlined !text-[14px]">star</span>
+              Novo
+            </span>
+          </div>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Sticky Category Nav -->
-  <nav class="sticky top-0 z-20 bg-surface/90 backdrop-blur-2xl border-b border-strong py-4 mb-2 -mx-4 px-4 sm:mx-0 sm:px-0 shadow-sm">
-    <div class="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
-      @for (group of menuGroups(); track group.category.id) {
-        <button (click)="scrollToCategory(group.category.id)"
-                [class]="activeCategorySlug() === group.category.id ? 'bg-brand text-on-brand shadow-lg border-brand scale-105' : 'bg-surface text-title hover:bg-surface-elevated border-subtle'"
-                class="whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold border transition-all duration-300">
-          {{ group.category.name }}
-        </button>
-      }
-    </div>
-  </nav>
-
   <!-- Search -->
-  <div class="px-4 sm:px-0 mb-12 mt-6">
-    <div class="relative group max-w-2xl mx-auto">
-      <span translate="no" class="notranslate material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors !text-[28px]">search</span>
+  <div class="max-w-4xl mx-auto px-4 mt-6 mb-8">
+    <div class="relative group w-full">
+      <span translate="no" class="notranslate material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-colors !text-xl">search</span>
       <input type="text" 
              [ngModel]="searchTerm()"
              (ngModelChange)="searchTerm.set($event)"
-             placeholder="O que deu vontade de comer?"
-             class="w-full pl-16 pr-6 py-5 bg-surface border-[2px] border-subtle rounded-[2rem] text-title font-bold text-lg shadow-sm focus:shadow-[0_8px_30px_rgb(0,0,0,0.08)] focus:border-brand outline-none transition-all placeholder:text-muted/60 placeholder:font-medium">
+             placeholder="Busque por pratos, ingredientes..."
+             class="w-full pl-11 pr-4 py-3 sm:py-3.5 bg-surface-elevated border-none rounded-xl text-title font-medium shadow-sm focus:ring-1 focus:ring-brand outline-none transition-all placeholder:text-muted/60">
     </div>
   </div>
 
+  <!-- Featured Items / Promotions -->
+  @if (!searchTerm() && promotedRecipes().length > 0) {
+    <div class="max-w-4xl mx-auto px-4 mb-10">
+      <h2 class="text-lg font-bold text-title mb-4 flex items-center gap-2">
+        <span translate="no" class="notranslate material-symbols-outlined !text-xl text-brand">local_fire_department</span>
+        Exclusivo e Destaques
+      </h2>
+      <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+        @for (recipe of promotedRecipes(); track recipe.id) {
+          <div class="shrink-0 w-64 snap-start border border-subtle rounded-2xl overflow-hidden cursor-pointer group bg-surface shadow-sm hover:shadow-md transition-shadow" (click)="onSelectRecipe(recipe)">
+             <div class="aspect-video relative bg-surface-elevated">
+               @if (recipe.image_url) {
+                 <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerpolicy="no-referrer">
+               } @else {
+                 <div class="absolute inset-0 flex items-center justify-center">
+                    <span translate="no" class="notranslate material-symbols-outlined !text-3xl text-muted opacity-30">restaurant</span>
+                 </div>
+               }
+               <!-- Discount Badge -->
+               @if (getEffectivePrice(recipe) < (recipe.price || 0)) {
+                 <div class="absolute top-2 left-2 bg-success text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg">
+                   Oferta Especial
+                 </div>
+               }
+             </div>
+             <div class="p-4 flex flex-col items-start h-24 justify-between">
+               <h3 class="font-bold text-title text-sm truncate w-full group-hover:text-brand transition-colors">{{ recipe.name }}</h3>
+               <div class="w-full flex items-center gap-2">
+                 <span class="font-bold text-success text-sm sm:text-base">{{ getEffectivePrice(recipe) | currency:'BRL' }}</span>
+                 @if (getEffectivePrice(recipe) < (recipe.price || 0)) {
+                   <span class="text-xs text-muted line-through">{{ recipe.price | currency:'BRL' }}</span>
+                 }
+               </div>
+             </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Sticky Category Nav -->
+  <nav class="sticky top-0 z-20 bg-surface/95 backdrop-blur-md border-b border-subtle mb-6 sm:mb-8 pt-2">
+    <div class="max-w-4xl mx-auto px-4 overflow-x-auto no-scrollbar pb-3">
+      <div class="flex items-center gap-2">
+        @for (group of menuGroups(); track group.category.id) {
+          <button (click)="scrollToCategory(group.category.id)"
+                  [class]="activeCategorySlug() === group.category.id ? 'bg-title text-surface font-bold shadow-sm' : 'bg-surface-elevated text-title hover:bg-subtle font-medium'"
+                  class="whitespace-nowrap px-4 py-2 rounded-full text-sm transition-all duration-300">
+            {{ group.category.name }}
+          </button>
+        }
+      </div>
+    </div>
+  </nav>
+
   <!-- Menu Feed -->
-  <section class="flex-1 px-4 sm:px-0 pb-32">
+  <section class="max-w-4xl mx-auto px-4 pb-32 space-y-10 sm:space-y-14">
     @for (group of menuGroups(); track group.category.id) {
-      <div [id]="'cat-' + group.category.id" class="mb-16 scroll-mt-24">
-        <h2 class="text-2xl font-black text-title mb-8 pl-1 flex items-center gap-4">
+      <div [id]="'cat-' + group.category.id" class="scroll-mt-24 sm:scroll-mt-28">
+        <h2 class="text-xl sm:text-2xl font-black text-title mb-6 flex items-center gap-4">
           {{ group.category.name }}
-          <div class="h-px bg-strong flex-1"></div>
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (recipe of group.recipes; track recipe.id) {
             <div (click)="onSelectRecipe(recipe)" 
-                 class="group bg-surface rounded-[2rem] border border-subtle p-3 hover:border-brand/40 shadow-sm hover:shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer overflow-hidden flex flex-col">
+                 class="group bg-surface flex flex-row items-stretch sm:items-start p-4 border border-transparent border-b-subtle md:border-subtle md:rounded-2xl hover:bg-surface-elevated md:hover:bg-surface md:hover:border-brand/30 md:hover:shadow-lg transition-all duration-300 cursor-pointer -mx-4 md:mx-0">
+              
+              <!-- Details Content -->
+              <div class="flex-1 flex flex-col justify-center min-w-0 pr-4 pl-4 md:pl-0">
+                 <h3 class="text-sm sm:text-base font-bold text-title group-hover:text-brand transition-colors line-clamp-2 md:line-clamp-1 break-words leading-tight mb-1">{{ recipe.name }}</h3>
+                 @if (recipe.description) {
+                   <p class="text-xs sm:text-sm text-muted line-clamp-2 mt-1 leading-relaxed">{{ recipe.description }}</p>
+                 }
+                 <div class="mt-3 flex items-center gap-2 flex-wrap">
+                   @if (getEffectivePrice(recipe) < (recipe.price || 0)) {
+                     <span class="text-success font-bold text-sm sm:text-base">{{ getEffectivePrice(recipe) | currency:'BRL' }}</span>
+                     <span class="text-muted text-[10px] sm:text-xs line-through">{{ recipe.price | currency:'BRL' }}</span>
+                   } @else {
+                     <span class="font-bold text-title text-sm sm:text-base">{{ recipe.price | currency:'BRL' }}</span>
+                   }
+                 </div>
+              </div>
               
               <!-- Image Container -->
-              <div class="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-surface-elevated">
+              <div class="w-24 h-24 sm:w-[120px] sm:h-[120px] rounded-xl overflow-hidden shrink-0 bg-surface-elevated relative shadow-sm border border-subtle">
                 @if (recipe.image_url) {
-                   <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerpolicy="no-referrer">
+                   <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerpolicy="no-referrer">
                 } @else {
-                  <div class="absolute inset-0 flex items-center justify-center text-muted group-hover:text-brand transition-colors">
-                    <span translate="no" class="notranslate material-symbols-outlined !text-6xl opacity-40">restaurant</span>
-                  </div>
+                   <div class="absolute inset-0 flex items-center justify-center text-muted group-hover:text-brand transition-colors">
+                     <span translate="no" class="notranslate material-symbols-outlined !text-3xl opacity-30">local_dining</span>
+                   </div>
                 }
-                <!-- Price Tag on Image -->
-                <div class="absolute bottom-3 right-3 px-4 py-2 bg-surface/90 backdrop-blur-md rounded-xl shadow-lg border border-white/20">
-                  <span class="text-sm font-black text-title">{{ getEffectivePrice(recipe) | currency : 'BRL' }}</span>
+                <!-- Hover "+" icon for desktop -->
+                <div class="absolute bottom-1.5 right-1.5 w-7 h-7 bg-surface/90 backdrop-blur-md rounded-full shadow flex items-center justify-center text-brand opacity-0 md:group-hover:opacity-100 transition-opacity">
+                   <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">add</span>
                 </div>
-                <!-- Linear Gradient for bottom legibility if we wanted any text -->
-                <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-              </div>
-
-              <!-- Details -->
-              <div class="flex-1 px-3 pb-1">
-                <div class="flex justify-between items-start gap-2 mb-2">
-                   <h3 class="text-[17px] font-black text-title group-hover:text-brand transition-colors leading-tight">{{ recipe.name }}</h3>
-                </div>
-                @if (recipe.description) {
-                  <p class="text-sm text-muted line-clamp-2 leading-relaxed font-medium">{{ recipe.description }}</p>
-                }
-              </div>
-
-              <!-- Button -->
-              <div class="mt-4 px-3 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-muted px-3 py-1.5 bg-surface-elevated rounded-lg">
-                  <span translate="no" class="notranslate material-symbols-outlined !text-xs font-bold opacity-70">schedule</span>
-                  <span class="text-[10px] font-bold uppercase tracking-wider">{{ recipe.prep_time_in_minutes || 15 }}-{{ (recipe.prep_time_in_minutes || 15) + 10 }} min</span>
-                </div>
-                <button class="w-10 h-10 bg-brand/10 text-brand rounded-full flex items-center justify-center group-hover:bg-brand group-hover:text-on-brand transition-colors duration-300 shadow-sm">
-                  <span translate="no" class="notranslate material-symbols-outlined !text-xl font-bold">add</span>
-                </button>
               </div>
             </div>
           }
@@ -172,15 +207,13 @@
     }
 
     @if (menuGroups().length === 0 && searchTerm()) {
-      <div class="py-24 flex flex-col items-center justify-center text-center space-y-6">
-        <div class="w-24 h-24 bg-surface-elevated rounded-full flex items-center justify-center text-muted">
-          <span translate="no" class="notranslate material-symbols-outlined !text-5xl">search_off</span>
+      <div class="py-16 flex flex-col items-center justify-center text-center px-4">
+        <div class="w-20 h-20 sm:w-24 sm:h-24 bg-surface-elevated rounded-full flex items-center justify-center text-muted mb-4">
+          <span translate="no" class="notranslate material-symbols-outlined !text-4xl sm:!text-5xl">search_off</span>
         </div>
-        <div>
-          <h3 class="text-xl font-bold text-title">Nenhum resultado para "{{ searchTerm() }}"</h3>
-          <p class="text-muted">Tente buscar por outro termo ou categoria.</p>
-        </div>
-        <button (click)="searchTerm.set('')" class="px-8 py-3 bg-brand text-on-brand rounded-2xl font-bold transition-all hover:bg-opacity-90 active:scale-95 shadow-xl">
+        <h3 class="text-lg sm:text-xl font-bold text-title mb-2">Nenhum resultado para "{{ searchTerm() }}"</h3>
+        <p class="text-sm sm:text-base text-muted mb-6 max-w-sm">Tente buscar por outro nome de prato, ingrediente ou navegar pelas categorias.</p>
+        <button (click)="searchTerm.set('')" class="px-6 py-2.5 bg-surface-elevated text-title border border-subtle rounded-xl font-bold transition-all hover:bg-subtle active:scale-95 shadow-sm text-sm sm:text-base">
           Limpar busca
         </button>
       </div>
@@ -190,23 +223,28 @@
 
 <!-- Floating Cart Button -->
 @if (cart.totalItems() > 0 && view() === 'menu') {
-  <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-30 animate-in slide-in-from-bottom-8 duration-500">
+  <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 sm:px-0 z-30 animate-in slide-in-from-bottom-8 duration-500">
     <button (click)="view.set('cart')" 
-            class="w-full bg-brand text-on-brand p-4 rounded-3xl shadow-2xl flex items-center justify-between group overflow-hidden relative">
+            class="w-full bg-brand text-on-brand p-4 rounded-2xl shadow-xl flex items-center justify-between group overflow-hidden relative border border-white/10 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all">
       <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+      
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center relative">
-          <span translate="no" class="notranslate material-symbols-outlined">shopping_bag</span>
-          <span class="absolute -top-2 -right-2 w-6 h-6 bg-surface text-title text-[10px] font-black rounded-lg flex items-center justify-center shadow-lg border-2 border-brand">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center relative shadow-inner">
+          <span translate="no" class="notranslate material-symbols-outlined shrink-0 text-[20px] sm:text-[24px]">shopping_bag</span>
+          <span class="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-surface text-title text-[10px] sm:text-xs font-black rounded-lg flex items-center justify-center shadow-lg border border-brand/20">
             {{ cart.totalItems() }}
           </span>
         </div>
-        <div class="text-left">
-          <p class="text-[10px] font-bold uppercase tracking-widest opacity-80">Ver sacola</p>
-          <p class="text-lg font-black leading-none">{{ cart.subtotal() | currency : 'BRL' }}</p>
+        <div class="text-left flex flex-col justify-center">
+          <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-80 leading-none mb-1">Ver Sacola</p>
+          <p class="text-lg sm:text-xl font-black leading-none">{{ cart.subtotal() | currency : 'BRL' }}</p>
         </div>
       </div>
-      <span translate="no" class="notranslate material-symbols-outlined translate-x-0 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+      
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:inline text-sm font-bold opacity-90">Comprar</span>
+        <span translate="no" class="notranslate material-symbols-outlined translate-x-0 group-hover:translate-x-1 transition-transform bg-white/10 w-8 h-8 rounded-full flex items-center justify-center">arrow_forward</span>
+      </div>
     </button>
   </div>
 }

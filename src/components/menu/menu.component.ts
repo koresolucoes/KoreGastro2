@@ -194,6 +194,18 @@ export class MenuComponent implements OnInit {
   }
 
   // Computed Properties
+  activePromotions = computed(() => {
+    return this.pricing.promotions().filter(p => p.is_active);
+  });
+
+  promotedRecipes = computed(() => {
+    const promoRecipes = this.pricing.promotionRecipes();
+    const recipes = this.recipes();
+    const promotedIds = promoRecipes.map(pr => pr.recipe_id);
+    // Find recipes that are in active promotions
+    return recipes.filter(r => promotedIds.includes(r.id)).slice(0, 10);
+  });
+
   menuGroups = computed(() => {
     const search = this.searchTerm().toLowerCase();
     const recipes = this.recipes();
