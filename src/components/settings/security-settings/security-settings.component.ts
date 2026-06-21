@@ -30,8 +30,9 @@ export class SecuritySettingsComponent {
     { name: 'Delivery', permissions: [ { key: '/delivery', label: 'Painel de Delivery' } ] },
     { name: 'iFood', permissions: [ { key: '/ifood-kds', label: 'KDS Delivery' }, { key: '/ifood-menu', label: 'Cardápio iFood' }, { key: '/ifood-store-manager', label: 'Gestor de Loja' } ] },
     { name: 'Produção', permissions: [ { key: '/kds', label: 'Cozinha (KDS)' }, { key: '/mise-en-place', label: 'Mise en Place' }, { key: '/technical-sheets', label: 'Fichas Técnicas' } ] },
-    { name: 'Gestão', permissions: [ { key: '/dashboard', label: 'Dashboard' }, { key: '/inventory', label: 'Estoque' }, { key: '/purchasing', label: 'Compras' }, { key: '/suppliers', label: 'Fornecedores' }, { key: '/performance', label: 'Desempenho' }, { key: '/reports', label: 'Relatórios' } ] },
+    { name: 'Gestão', permissions: [ { key: '/dashboard', label: 'Dashboard' }, { key: '/whatsapp-chats', label: 'WhatsApp IA' }, { key: '/menu-builder', label: 'Construtor de Cardápios' }, { key: '/inventory', label: 'Estoque' }, { key: '/purchasing', label: 'Compras' }, { key: '/suppliers', label: 'Fornecedores' }, { key: '/performance', label: 'Desempenho' }, { key: '/reports', label: 'Relatórios' } ] },
     { name: 'RH', permissions: [ { key: '/employees', label: 'Funcionários' }, { key: '/schedules', label: 'Escalas' }, { key: '/my-leave', label: 'Minhas Ausências' }, { key: '/leave-management', label: 'Gestão de Ausências' }, { key: '/time-clock', label: 'Controle de Ponto' }, { key: '/payroll', label: 'Folha de Pagamento' } ] },
+    { name: 'Rotinas', permissions: [ { key: '/checklists', label: 'Checklists' }, { key: '/temperatures', label: 'Temperaturas' } ] },
     { name: 'Outros', permissions: [ { key: '/menu', label: 'Cardápio Online' }, { key: '/my-profile', label: 'Meu Perfil' }, { key: '/tutorials', label: 'Tutoriais' }, { key: '/settings', label: 'Configurações' } ] }
   ];
 
