@@ -56,11 +56,11 @@ import { supabase } from '../../services/supabase-client';
                    </p>
                </div>
 
-               @if (config()?.waba_id === 'PENDING_CONFIG') {
+               @if (config()?.waba_id === 'PENDING_CONFIG' || showManualUI()) {
                   <div class="mt-6 p-6 bg-yellow-500/5 rounded-2xl border border-yellow-500/20">
-                     <h4 class="text-[11px] font-bold text-yellow-600 mb-2 uppercase tracking-widest">Configuração Manual Necessária</h4>
+                     <h4 class="text-[11px] font-bold text-yellow-600 mb-2 uppercase tracking-widest">Configuração Manual</h4>
                      <p class="text-[10px] text-muted leading-relaxed mb-4">
-                        Não foi possível detectar automaticamente seus IDs do WhatsApp. Por favor, insira-os manualmente. Você pode encontrá-los no Meta for Developers > WhatsApp > API Setup.
+                        Insira os dados do WhatsApp Cloud API. Você pode encontrá-los no Meta for Developers > WhatsApp > API Setup.
                      </p>
                      <div class="space-y-4">
                         <div>
@@ -75,6 +75,10 @@ import { supabase } from '../../services/supabase-client';
                            <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Número de Telefone (Ex: +5511999999999)</label>
                            <input type="text" [(ngModel)]="manualPhoneNumber" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
                         </div>
+                        <div>
+                           <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Access Token (Permanente do Usuário do Sistema)</label>
+                           <input type="password" [(ngModel)]="manualAccessToken" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                        </div>
                         <button (click)="saveManualConfig()" class="px-6 py-2.5 text-[10px] font-black text-white bg-green-500 hover:bg-green-600 rounded-xl transition-all uppercase tracking-widest active:scale-95 w-full">Salvar Configuração</button>
                      </div>
                   </div>
@@ -88,11 +92,41 @@ import { supabase } from '../../services/supabase-client';
                   <h4 class="text-lg font-black text-title mb-2">Conta não conectada</h4>
                   <p class="text-xs text-muted mb-8 max-w-sm mx-auto">Para habilitar o Assistente IA de pedidos do chefOS via WhatsApp, faça login com sua conta do Facebook associada à sua Empresa.</p>
 
-                  <button (click)="launchFacebookLogin()" class="group relative inline-flex items-center justify-center px-8 py-3.5 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-[#1877F2]/30 active:scale-95 border border-[#1877F2]">
-                     <img src="https://upload.wikimedia.org/wikipedia/commons/c/c2/F_icon.svg" class="w-5 h-5 mr-3 bg-white rounded-sm p-[1px]" alt="Facebook">
-                     Continuar com o Facebook
-                     <div class="absolute inset-0 h-full w-full rounded-2xl bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-                  </button>
+                  <div class="flex flex-col gap-3 max-w-sm mx-auto">
+                    <button (click)="launchFacebookLogin()" class="group relative inline-flex items-center justify-center px-8 py-3.5 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-[#1877F2]/30 active:scale-95 border border-[#1877F2]">
+                       <img src="https://upload.wikimedia.org/wikipedia/commons/c/c2/F_icon.svg" class="w-5 h-5 mr-3 bg-white rounded-sm p-[1px]" alt="Facebook">
+                       Continuar com o Facebook
+                       <div class="absolute inset-0 h-full w-full rounded-2xl bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+                    </button>
+                    <button (click)="toggleManualUI()" class="px-8 py-3.5 bg-surface-elevated hover:bg-surface border border-subtle text-title rounded-2xl text-xs font-black transition-all active:scale-95">
+                       Configuração Manual via Meta Developers
+                    </button>
+                  </div>
+
+                  @if (showManualUI()) {
+                    <div class="mt-8 text-left">
+                       <h4 class="text-[11px] font-bold text-title mb-2 uppercase tracking-widest">Configuração Manual</h4>
+                       <div class="space-y-4">
+                          <div>
+                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">WhatsApp Business Account ID (WABA ID)</label>
+                             <input type="text" [(ngModel)]="manualWabaId" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                          </div>
+                          <div>
+                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Phone Number ID</label>
+                             <input type="text" [(ngModel)]="manualPhoneId" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                          </div>
+                          <div>
+                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Número de Telefone (Ex: +5511999999999)</label>
+                             <input type="text" [(ngModel)]="manualPhoneNumber" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                          </div>
+                          <div>
+                             <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Access Token (Permanent)</label>
+                             <input type="password" [(ngModel)]="manualAccessToken" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-2 text-sm text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all">
+                          </div>
+                          <button (click)="saveManualConfig()" class="px-6 py-2.5 text-[10px] font-black text-white bg-green-500 hover:bg-green-600 rounded-xl transition-all uppercase tracking-widest active:scale-95 w-full">Salvar</button>
+                       </div>
+                    </div>
+                  }
                </div>
             }
          </div>
@@ -105,10 +139,12 @@ export class WhatsappSettingsComponent {
   private notificationService = inject(NotificationService);
 
   config = signal<any | null>(null);
+  showManualUI = signal<boolean>(false);
 
   manualWabaId = '';
   manualPhoneId = '';
   manualPhoneNumber = '';
+  manualAccessToken = '';
 
   constructor() {
     this.loadConfig();
@@ -135,13 +171,20 @@ export class WhatsappSettingsComponent {
          if (data.phone_number && data.phone_number !== 'Pendente') {
              this.manualPhoneNumber = data.phone_number;
          }
+         if (data.access_token) {
+             this.manualAccessToken = data.access_token;
+         }
       } else {
          this.config.set(null);
       }
   }
 
+  toggleManualUI() {
+    this.showManualUI.set(!this.showManualUI());
+  }
+
   async saveManualConfig() {
-      if (!this.manualWabaId || !this.manualPhoneId || !this.manualPhoneNumber) {
+      if (!this.manualWabaId || !this.manualPhoneId || !this.manualPhoneNumber || !this.manualAccessToken) {
           return this.notificationService.show('Por favor, preencha todos os campos.', 'warning');
       }
 
@@ -149,19 +192,37 @@ export class WhatsappSettingsComponent {
       if (!storeId) return;
 
       const configId = this.config()?.id;
-      if (!configId) return;
 
-      const { error } = await supabase
-          .from('whatsapp_configs')
-          .update({
-              waba_id: this.manualWabaId,
-              phone_number_id: this.manualPhoneId,
-              phone_number: this.manualPhoneNumber
-          })
-          .eq('id', configId);
+      let error;
+      if (configId) {
+          const res = await supabase
+              .from('whatsapp_configs')
+              .update({
+                  waba_id: this.manualWabaId,
+                  phone_number_id: this.manualPhoneId,
+                  phone_number: this.manualPhoneNumber,
+                  access_token: this.manualAccessToken,
+                  is_active: true
+              })
+              .eq('id', configId);
+          error = res.error;
+      } else {
+          const res = await supabase
+              .from('whatsapp_configs')
+              .insert({
+                  store_id: storeId,
+                  waba_id: this.manualWabaId,
+                  phone_number_id: this.manualPhoneId,
+                  phone_number: this.manualPhoneNumber,
+                  access_token: this.manualAccessToken,
+                  is_active: true
+              });
+          error = res.error;
+      }
 
       if (!error) {
           this.notificationService.show('Configuração salva com sucesso!', 'success');
+          this.showManualUI.set(false);
           await this.loadConfig();
       } else {
           this.notificationService.show('Erro ao salvar configuração.', 'error');
