@@ -130,9 +130,11 @@ export class PosComponent implements OnInit {
         if (allHalls.length > 0) {
             const isSelectedHallValid = currentHall && allHalls.some(h => h.id === currentHall.id);
             if (!isSelectedHallValid) {
+                untracked(() => this.isEditMode.set(false));
                 this.selectedHall.set(allHalls[0]);
             }
         } else {
+            untracked(() => this.isEditMode.set(false));
             this.selectedHall.set(null);
         }
     });
@@ -282,6 +284,9 @@ export class PosComponent implements OnInit {
   }
   
   selectHall(hall: Hall) {
+    if (this.isEditMode()) {
+        this.isEditMode.set(false); // Triggers save in the table layout effect
+    }
     this.selectedHall.set(hall);
     this.isContextMenuOpen.set(false);
   }

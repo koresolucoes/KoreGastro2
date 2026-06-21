@@ -639,12 +639,12 @@ export class PosDataService {
   }
   
   async upsertTables(tables: Partial<Table>[]): Promise<{ success: boolean; error: any }> {
-      const userId = this.getActiveUnitId();
-      if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+      const fallbackUserId = this.getActiveUnitId();
+      if (!fallbackUserId) return { success: false, error: { message: 'Active unit not found' } };
       const tablesToUpsert = tables.map(t => {
-          let { id, ...rest } = t;
+          let { id, user_id, ...rest } = t;
           if (id?.startsWith('temp-')) { id = id.replace('temp-', ''); }
-          return { id, ...rest, user_id: userId };
+          return { id, user_id: user_id || fallbackUserId, ...rest };
       });
       const { error } = await supabase.from('tables').upsert(tablesToUpsert);
       return { success: !error, error };

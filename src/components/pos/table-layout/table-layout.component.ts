@@ -42,6 +42,8 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
   currentTime = signal(Date.now());
   private timer: any;
 
+  private wasEditMode = false;
+
   constructor() {
     effect(() => {
         const hallId = this.hall().id;
@@ -51,9 +53,10 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
     effect(() => {
         const editMode = this.isEditMode();
-        if (!editMode) {
+        if (this.wasEditMode && !editMode) {
           untracked(() => this.saveLayout());
         }
+        this.wasEditMode = editMode;
     });
   }
 
@@ -65,6 +68,9 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if(this.timer) clearInterval(this.timer);
+    if (this.isEditMode()) {
+        untracked(() => this.saveLayout());
+    }
   }
 
   getEmployeeName(table: Table): string {
@@ -145,7 +151,7 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
             width: tableWidth, 
             height: tableHeight, 
             created_at: new Date().toISOString(), 
-            user_id: ''
+            user_id: this.hall().user_id || ''
         };
 
         return [...currentTablesInHall, newTable];
