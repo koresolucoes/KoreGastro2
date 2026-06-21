@@ -95,6 +95,7 @@ export class TechnicalSheetsComponent {
   searchTerm = signal('');
   selectedRecipeId = signal<string | null>(null);
   activeTab = signal<'basic' | 'ingredients' | 'advanced' | 'options'>('basic');
+  itemType = signal<'prepared' | 'simple'>('prepared');
   
   // Option Groups State
   publicDataService = inject(PublicDataService);
@@ -228,6 +229,16 @@ export class TechnicalSheetsComponent {
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
     const costsMap = this.recipeCosts(); // Calculated costs for other recipes (sub-recipes)
 
+    if (this.itemType() === 'simple') {
+        if (form.recipe.source_ingredient_id) {
+            const ingredient = ingredientsMap.get(form.recipe.source_ingredient_id);
+            if (ingredient) {
+                total = ingredient.cost || 0;
+            }
+        }
+        return total;
+    }
+
     for (const item of form.ingredients) {
       const ingredient = ingredientsMap.get(item.ingredient_id);
       if (ingredient) {
@@ -340,6 +351,13 @@ export class TechnicalSheetsComponent {
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
     const customPriceOverride = this.pricingService.customPrices().find(cp => cp.recipe_id === recipe.id);
 
+    // Determine if it's a simple item (no preparations, ingredients or sub-recipes)
+    if (preparations.length === 0 && ingredients.length === 0 && subRecipes.length === 0) {
+        this.itemType.set('simple');
+    } else {
+        this.itemType.set('prepared');
+    }
+
     // Map ingredients to form structure
     const mappedIngredients = ingredients.map(i => {
           const { recipe_id, user_id, ingredients, ...rest } = i;
@@ -378,6 +396,7 @@ export class TechnicalSheetsComponent {
   openAddModal() {
     this.selectedRecipeId.set(null);
     this.linkedOptionGroups.set([]);
+    this.itemType.set('prepared');
     // Auto-select first category if available
     const firstCategoryId = this.categories()[0]?.id;
     
@@ -393,6 +412,27 @@ export class TechnicalSheetsComponent {
     this.recipeImagePreviewUrl.set(null);
     this.aiSuggestions.set(null);
     this.viewMode.set('edit');
+  }
+
+  setItemType(type: 'prepared' | 'simple') {
+      this.itemType.set(type);
+      if (type === 'simple') {
+          // Clear any preparations, ingredients, subrecipes
+          this.recipeForm.update(form => ({
+              ...form,
+              preparations: [],
+              ingredients: [],
+              subRecipes: []
+          }));
+          if (this.activeTab() === 'ingredients') {
+              this.activeTab.set('basic');
+          }
+      } else {
+          // If switching back to prepared, add at least one prep step
+          if (this.recipeForm().preparations.length === 0) {
+              this.addPreparation();
+          }
+      }
   }
 
   closeModal() {
@@ -754,10 +794,12 @@ export class TechnicalSheetsComponent {
           return;
       }
       
+      const defaultUnit = prompt(`Unidade de medida para armazenar o estoque de "${recipe.name}" (ex: kg, g, l, ml, un)?\nPadrão: un`, 'un') as IngredientUnit || 'un';
+
       const { success, error, data } = await this.inventoryDataService.addIngredient({
           name: recipe.name,
-          unit: 'un',
-          cost: this.formTotalOverallCost(),
+          unit: defaultUnit,
+          cost: this.formTotalOverallCost() / (recipe.yield_quantity || 1),
           stock: 0,
           min_stock: 0,
           is_yield_product: true // Mark as produced item
@@ -765,7 +807,7 @@ export class TechnicalSheetsComponent {
       
       if (success && data) {
           this.updateRecipeField('source_ingredient_id', data.id);
-          this.notificationService.show(`Item de estoque "${data.name}" criado e vinculado!`, 'success');
+          this.notificationService.show(`Item de estoque "${data.name}" criado (${defaultUnit}) e vinculado!`, 'success');
       } else {
           this.notificationService.show(`Erro: ${error?.message}`, 'error');
       }

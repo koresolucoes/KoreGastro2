@@ -409,7 +409,7 @@ export class InventoryDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
-    const recipeComposition = this.recipeState.recipeCosts().get(subRecipeId);
+    const recipeComposition = this.recipeState.recipeTheoreticalCosts().get(subRecipeId);
     if (!recipeComposition) {
       return { success: false, error: { message: `Recipe composition not found for ${subRecipeId}` } };
     }

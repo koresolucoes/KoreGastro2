@@ -18,6 +18,80 @@ export class RecipeStateService {
   // Computed
   recipesById = computed(() => new Map(this.recipes().map(r => [r.id, r])));
 
+  recipeTheoreticalCosts = computed(() => {
+    // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
+    const recipeIngredients = this.recipeIngredients();
+    const recipeSubRecipes = this.recipeSubRecipes();
+    const recipes = this.recipes();
+    const memo = new Map<string, { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> }>();
+
+    const calculateCost = (recipeId: string): { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> } => {
+        if (memo.has(recipeId)) {
+            return memo.get(recipeId)!;
+        }
+
+        let totalCost = 0;
+        const rawIngredients = new Map<string, number>();
+        let ingredientCount = 0;
+        
+        const recipe = recipes.find(r => r.id === recipeId);
+        
+        // This calculates the theoretical cost strictly from components!
+        // But if it's a simple item mapped directly to an ingredient with NO components, theoretical cost = ingredient cost.
+        const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
+        const subRecipes = recipeSubRecipes.filter(rsr => rsr.parent_recipe_id === recipeId);
+        
+        if (directIngredients.length === 0 && subRecipes.length === 0 && recipe?.source_ingredient_id) {
+            const ingredient = ingredientsMap.get(recipe.source_ingredient_id);
+            if (ingredient) {
+                totalCost += (ingredient.cost || 0);
+                rawIngredients.set(recipe.source_ingredient_id, 1);
+            }
+            ingredientCount = 1;
+        } else {
+            for (const ri of directIngredients) {
+                const ingredient = ingredientsMap.get(ri.ingredient_id);
+                if (ingredient) {
+                    const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
+                    const actualQuantity = ri.quantity * factor;
+                    totalCost += (ingredient.cost || 0) * actualQuantity;
+                    rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
+                }
+            }
+
+            for (const sr of subRecipes) {
+                const subRecipeCost = calculateCost(sr.child_recipe_id);
+                totalCost += subRecipeCost.totalCost * sr.quantity;
+                for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
+                  rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
+                }
+            }
+            
+            ingredientCount = directIngredients.length + subRecipes.length;
+        }
+        
+        if (recipe) {
+            if (recipe.labor_cost) totalCost += recipe.labor_cost;
+            if (recipe.yield_quantity && recipe.yield_quantity > 0) {
+                totalCost = totalCost / recipe.yield_quantity;
+                for (const [ingId, qty] of rawIngredients.entries()) {
+                    rawIngredients.set(ingId, qty / recipe.yield_quantity);
+                }
+            }
+        }
+        
+        const result = { totalCost, ingredientCount, rawIngredients };
+        memo.set(recipeId, result);
+        return result;
+    };
+
+    for (const recipe of recipes) {
+        if (!memo.has(recipe.id)) calculateCost(recipe.id);
+    }
+    return memo;
+  });
+
   recipeCosts = computed(() => {
     // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
     const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
@@ -33,37 +107,42 @@ export class RecipeStateService {
 
         let totalCost = 0;
         const rawIngredients = new Map<string, number>();
+        let ingredientCount = 0;
         
         const recipe = recipes.find(r => r.id === recipeId);
         if (recipe?.source_ingredient_id) {
             const ingredient = ingredientsMap.get(recipe.source_ingredient_id);
             if (ingredient) {
                 totalCost += (ingredient.cost || 0);
-                rawIngredients.set(recipe.source_ingredient_id, (rawIngredients.get(recipe.source_ingredient_id) || 0) + 1);
+                // Note: For actual quantity, normally it gives 1 unit. Yield logic below applies later
+                rawIngredients.set(recipe.source_ingredient_id, 1);
             }
-        }
+            ingredientCount = 1;
+        } else {
+            const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
+            for (const ri of directIngredients) {
+                // FIX: Add a guard to ensure ingredient exists before accessing its properties.
+                const ingredient = ingredientsMap.get(ri.ingredient_id);
+                if (ingredient) {
+                    // Furo 5: Aplicar fator de correção (se existir, senão 1)
+                    const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
+                    const actualQuantity = ri.quantity * factor;
+                    
+                    totalCost += (ingredient.cost || 0) * actualQuantity;
+                    rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
+                }
+            }
 
-        const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
-        for (const ri of directIngredients) {
-            // FIX: Add a guard to ensure ingredient exists before accessing its properties.
-            const ingredient = ingredientsMap.get(ri.ingredient_id);
-            if (ingredient) {
-                // Furo 5: Aplicar fator de correção (se existir, senão 1)
-                const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
-                const actualQuantity = ri.quantity * factor;
-                
-                totalCost += (ingredient.cost || 0) * actualQuantity;
-                rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
+            const subRecipes = recipeSubRecipes.filter(rsr => rsr.parent_recipe_id === recipeId);
+            for (const sr of subRecipes) {
+                const subRecipeCost = calculateCost(sr.child_recipe_id);
+                totalCost += subRecipeCost.totalCost * sr.quantity;
+                for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
+                  rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
+                }
             }
-        }
-
-        const subRecipes = recipeSubRecipes.filter(rsr => rsr.parent_recipe_id === recipeId);
-        for (const sr of subRecipes) {
-            const subRecipeCost = calculateCost(sr.child_recipe_id);
-            totalCost += subRecipeCost.totalCost * sr.quantity;
-            for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
-              rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
-            }
+            
+            ingredientCount = directIngredients.length + subRecipes.length;
         }
         
         if (recipe) {
@@ -82,7 +161,7 @@ export class RecipeStateService {
         
         const result = {
             totalCost,
-            ingredientCount: directIngredients.length + subRecipes.length,
+            ingredientCount,
             rawIngredients,
         };
         memo.set(recipeId, result);

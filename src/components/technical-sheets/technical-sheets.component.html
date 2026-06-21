@@ -152,14 +152,35 @@
           <!-- Tabs Navigation -->
           <div class="flex border-b border-subtle mb-8 gap-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
             <button (click)="activeTab.set('basic')" [class.border-brand]="activeTab() === 'basic'" [class.text-brand]="activeTab() === 'basic'" class="demo-basic-info-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">info</span> Dados Básicos</button>
-            <button (click)="activeTab.set('ingredients')" [class.border-brand]="activeTab() === 'ingredients'" [class.text-brand]="activeTab() === 'ingredients'" class="demo-ingredients-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">kitchen</span> Ingredientes & Custos</button>
-            <button (click)="activeTab.set('advanced')" [class.border-brand]="activeTab() === 'advanced'" [class.text-brand]="activeTab() === 'advanced'" class="demo-advanced-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">settings</span> Processo & MOD</button>
+            @if(itemType() === 'prepared') {
+                <button (click)="activeTab.set('ingredients')" [class.border-brand]="activeTab() === 'ingredients'" [class.text-brand]="activeTab() === 'ingredients'" class="demo-ingredients-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">kitchen</span> Ingredientes & Custos</button>
+                <button (click)="activeTab.set('advanced')" [class.border-brand]="activeTab() === 'advanced'" [class.text-brand]="activeTab() === 'advanced'" class="demo-advanced-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">settings</span> Processo & MOD</button>
+            }
             <button (click)="activeTab.set('options')" [class.border-brand]="activeTab() === 'options'" [class.text-brand]="activeTab() === 'options'" class="demo-options-tab px-2 py-4 border-b-2 border-transparent text-muted hover:text-title font-bold transition-colors flex items-center gap-2 flex-shrink-0"><span translate="no" class="notranslate material-symbols-outlined text-[20px]">category</span> Opcionais & Combos</button>
           </div>
 
           <!-- 1. Basic Info -->
           @if (activeTab() === 'basic') {
           <section class="bg-surface-elevated p-6 rounded-2xl border border-subtle animate-in fade-in slide-in-from-bottom-4 duration-300">
+             
+             <!-- Product Type Selection -->
+             <div class="grid grid-cols-2 gap-4 mb-8">
+                 <button (click)="setItemType('prepared')" [class.border-brand]="itemType() === 'prepared'" [class.bg-brand/5]="itemType() === 'prepared'" [class.bg-surface]="itemType() !== 'prepared'" class="border border-strong p-4 rounded-xl text-left transition-all hover:bg-surface-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span translate="no" class="notranslate material-symbols-outlined" [class.text-brand]="itemType() === 'prepared'" [class.text-muted]="itemType() !== 'prepared'">restaurant_menu</span>
+                        <span class="font-bold text-title" [class.text-brand]="itemType() === 'prepared'">Produzido no Local</span>
+                    </div>
+                    <p class="text-xs text-muted">Pratos, lanches, porções. Requer ficha técnica, ingredientes e etapas de preparo.</p>
+                 </button>
+                 <button (click)="setItemType('simple')" [class.border-brand]="itemType() === 'simple'" [class.bg-brand/5]="itemType() === 'simple'" [class.bg-surface]="itemType() !== 'simple'" class="border border-strong p-4 rounded-xl text-left transition-all hover:bg-surface-hover">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span translate="no" class="notranslate material-symbols-outlined" [class.text-brand]="itemType() === 'simple'" [class.text-muted]="itemType() !== 'simple'">inventory</span>
+                        <span class="font-bold text-title" [class.text-brand]="itemType() === 'simple'">Item Simples / Pronto</span>
+                    </div>
+                    <p class="text-xs text-muted">Bebidas, industrializados. Sem ficha técnica e com baixa direta de 1 unidade no estoque.</p>
+                 </button>
+             </div>
+
              <div class="flex flex-col sm:flex-row gap-8">
                 <!-- Image Upload Box -->
                 <div class="flex-shrink-0">
@@ -244,8 +265,31 @@
                 </div>
              </div>
              
+             <!-- Simple Item Stock Link -->
+             @if(itemType() === 'simple') {
+                <div class="mt-6 bg-brand/5 border border-brand/20 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                     <div class="flex items-center gap-4">
+                         <div class="w-10 h-10 bg-brand/10 rounded-full flex items-center justify-center text-brand">
+                             <span translate="no" class="notranslate material-symbols-outlined">inventory</span>
+                         </div>
+                         <div class="flex-1">
+                             <h5 class="text-brand font-bold text-sm">Vincular Produto de Estoque</h5>
+                             <p class="text-xs text-brand/70 font-medium mt-0.5">Selecione o item de estoque correspondente que será descontado a cada venda.</p>
+                         </div>
+                     </div>
+                     <div class="flex-1 w-full max-w-sm">
+                        <select [value]="recipeForm().recipe.source_ingredient_id || ''" (change)="updateRecipeField('source_ingredient_id', $any($event.target).value || null)" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-body focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all font-medium appearance-none cursor-pointer">
+                            <option value="">Não controlar estoque deste item</option>
+                            @for(ing of ingredients(); track ing.id) {
+                                <option [value]="ing.id">{{ing.name}} (Estoque: {{ing.stock}}{{ing.unit}})</option>
+                            }
+                        </select>
+                     </div>
+                </div>
+             }
+
              <!-- Link to Stock Item (Only for sub-recipes usually) -->
-             @if(recipeForm().recipe.is_sub_recipe) {
+             @if(recipeForm().recipe.is_sub_recipe && itemType() === 'prepared') {
                 <div class="mt-6 bg-purple/10 border border-purple/30 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                      <div class="flex items-center gap-4">
                          <div class="w-10 h-10 bg-purple/20 rounded-full flex items-center justify-center text-purple">
