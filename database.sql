@@ -3107,6 +3107,7 @@ CREATE TABLE IF NOT EXISTS "public"."requisitions" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "processed_at" timestamp with time zone,
     "processed_by" "uuid",
+    "target_unit_id" "uuid",
     CONSTRAINT "requisitions_status_check" CHECK (("status" = ANY (ARRAY['PENDING'::"text", 'APPROVED'::"text", 'REJECTED'::"text", 'DELIVERED'::"text", 'PARTIAL'::"text"])))
 );
 
@@ -5571,7 +5572,7 @@ CREATE POLICY "Multi-tenant access policy" ON "public"."recipes" USING ("public"
 
 
 
-CREATE POLICY "Multi-tenant access policy" ON "public"."requisitions" USING ("public"."has_access_to_store"("user_id")) WITH CHECK ("public"."has_access_to_store"("user_id"));
+CREATE POLICY "Multi-tenant access policy" ON "public"."requisitions" USING (("public"."has_access_to_store"("user_id") OR ("target_unit_id" IS NOT NULL AND "public"."has_access_to_store"("target_unit_id")))) WITH CHECK (("public"."has_access_to_store"("user_id") OR ("target_unit_id" IS NOT NULL AND "public"."has_access_to_store"("target_unit_id"))));
 
 
 
@@ -6177,7 +6178,7 @@ CREATE POLICY "Multi-unit Access Select" ON "public"."recipes" FOR SELECT USING 
 
 
 
-CREATE POLICY "Multi-unit Access Select" ON "public"."requisition_items" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text")));
+CREATE POLICY "Multi-unit Access Select" ON "public"."requisition_items" FOR SELECT USING ((("auth"."uid"() = "user_id") OR EXISTS (SELECT 1 FROM "public"."requisitions" r WHERE r.id = requisition_id AND r.target_unit_id IS NOT NULL AND "public"."has_access_to_store"(r.target_unit_id)) OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text")));
 
 
 
@@ -6403,7 +6404,7 @@ CREATE POLICY "Multi-unit Access Update" ON "public"."recipes" FOR UPDATE USING 
 
 
 
-CREATE POLICY "Multi-unit Access Update" ON "public"."requisition_items" FOR UPDATE USING ((("auth"."uid"() = "user_id") OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text"))) WITH CHECK ((("auth"."uid"() = "user_id") OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text")));
+CREATE POLICY "Multi-unit Access Update" ON "public"."requisition_items" FOR UPDATE USING ((("auth"."uid"() = "user_id") OR EXISTS (SELECT 1 FROM "public"."requisitions" r WHERE r.id = requisition_id AND r.target_unit_id IS NOT NULL AND "public"."has_access_to_store"(r.target_unit_id)) OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text"))) WITH CHECK ((("auth"."uid"() = "user_id") OR EXISTS (SELECT 1 FROM "public"."requisitions" r WHERE r.id = requisition_id AND r.target_unit_id IS NOT NULL AND "public"."has_access_to_store"(r.target_unit_id)) OR (COALESCE((("auth"."jwt"() -> 'app_metadata'::"text") -> 'stores'::"text"), '[]'::"jsonb") ? ("user_id")::"text")));
 
 
 
