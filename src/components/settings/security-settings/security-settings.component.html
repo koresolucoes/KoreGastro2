@@ -81,20 +81,18 @@
             <h4 class="text-[12px] font-black text-brand mb-4 uppercase tracking-widest border-b border-brand/20 pb-2 inline-block">{{ group.name }}</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               @for (permission of group.permissions; track permission.key) {
-                <label [for]="'perm-' + permission.key.replace('/', '')" class="flex items-start p-4 bg-surface hover:bg-surface-elevated border border-subtle hover:border-brand/40 rounded-xl transition-all cursor-pointer group shadow-sm">
+                <div class="flex items-start p-4 bg-surface hover:bg-surface-elevated border border-subtle hover:border-brand/40 rounded-xl transition-all cursor-pointer group shadow-sm"
+                     (click)="updatePermission(permission.key, !rolePermissionsForm()[permission.key])">
                   <div class="relative flex items-center pt-0.5 mt-0.5">
-                    <input 
-                      [id]="'perm-' + permission.key.replace('/', '')"
-                      type="checkbox"
-                      class="peer sr-only"
-                      [checked]="!!rolePermissionsForm()[permission.key]"
-                      (change)="updatePermission(permission.key, $any($event.target).checked)">
-                    <div class="w-5 h-5 bg-surface-elevated border-2 border-strong rounded peer-checked:bg-brand peer-checked:border-brand flex items-center justify-center transition-all group-hover:border-brand/50">
-                        <span translate="no" class="notranslate material-symbols-outlined text-white text-[14px] opacity-0 peer-checked:opacity-100 font-bold scale-50 peer-checked:scale-100 transition-all">check</span>
+                    <div class="w-5 h-5 bg-surface-elevated border-2 border-strong rounded flex items-center justify-center transition-all group-hover:border-brand/50"
+                         [class.bg-brand]="!!rolePermissionsForm()[permission.key]"
+                         [class.border-brand]="!!rolePermissionsForm()[permission.key]">
+                        <span translate="no" class="notranslate material-symbols-outlined text-white text-[14px] font-bold transition-all duration-200"
+                              [ngClass]="!!rolePermissionsForm()[permission.key] ? 'opacity-100 scale-100' : 'opacity-0 scale-50'">check</span>
                     </div>
                   </div>
-                  <span class="ml-3 text-sm font-bold text-title leading-tight">{{ permission.label }}</span>
-                </label>
+                  <span class="ml-3 text-sm font-bold text-title leading-tight select-none">{{ permission.label }}</span>
+                </div>
               }
             </div>
           </div>

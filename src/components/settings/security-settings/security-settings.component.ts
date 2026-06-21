@@ -39,12 +39,25 @@ export class SecuritySettingsComponent {
   userAvailablePermissions = computed(() => {
     const activeEmployee = this.operationalAuthService.activeEmployee();
     if (!activeEmployee || !activeEmployee.role_id) return new Set<string>();
+    
+    // Se o usuário atual for gerente/admin e não tiver permissões explícitas, 
+    // ele deve ter acesso implícito a todas, assim como na lógica de rotas.
+    const roleName = (activeEmployee.role || '').toLowerCase();
+    const isGerente = roleName.includes('gerente') || roleName.includes('admin');
+    
+    if (isGerente) {
+      return new Set(this.allPermissionGroups.flatMap(g => g.permissions.map(p => p.key)));
+    }
+
     return new Set(this.rolePermissions().filter(p => p.role_id === activeEmployee.role_id).map(p => p.permission_key));
   });
 
   permissionGroups = computed(() => {
-    const isGerente = this.operationalAuthService.activeEmployee()?.role === 'Gerente';
+    const roleName = (this.operationalAuthService.activeEmployee()?.role || '').toLowerCase();
+    const isGerente = roleName.includes('gerente') || roleName.includes('admin');
+    
     if (isGerente) return this.allPermissionGroups;
+    
     const available = this.userAvailablePermissions();
     return this.allPermissionGroups.map(group => ({
         ...group,
@@ -84,12 +97,11 @@ export class SecuritySettingsComponent {
 
   async savePermissions() {
     const role = this.editingRole();
-    const activeEmployee = this.operationalAuthService.activeEmployee();
-    if (!role || !activeEmployee?.role_id) return;
+    if (!role) return;
     
     const permissions = Object.entries(this.rolePermissionsForm()).filter(([, isEnabled]) => isEnabled).map(([key]) => key);
 
-    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, permissions, activeEmployee.role_id);
+    const { success, error } = await this.settingsDataService.updateRolePermissions(role.id, permissions);
     if (success) {
       this.closePermissionsModal();
     } else {

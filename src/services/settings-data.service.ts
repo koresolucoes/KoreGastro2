@@ -455,8 +455,7 @@ export class SettingsDataService {
 
   async updateRolePermissions(
     roleId: string,
-    permissions: string[],
-    callerRoleId: string,
+    permissions: string[]
   ): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId)
