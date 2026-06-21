@@ -17,7 +17,9 @@ export class PublicDataService {
       { data: menuCategories },
       { data: menuItems },
       { data: menuOptions },
-      { data: menuChoices }
+      { data: menuChoices },
+      { data: ingredientsData },
+      { data: recipeIngredientsData }
     ] = await Promise.all([
       supabase.from('recipes').select('*').eq('user_id', userId).eq('is_available', true).eq('is_sub_recipe', false),
       supabase.from('categories').select('*').eq('user_id', userId),
@@ -27,13 +29,38 @@ export class PublicDataService {
       supabase.from('menu_categories').select('*').eq('user_id', userId).eq('is_active', true),
       supabase.from('menu_items').select('*').eq('user_id', userId).eq('is_active', true),
       supabase.from('menu_item_option_groups').select('*').eq('user_id', userId),
-      supabase.from('menu_item_option_choices').select('*').eq('user_id', userId)
+      supabase.from('menu_item_option_choices').select('*').eq('user_id', userId),
+      supabase.from('ingredients').select('id, stock').eq('user_id', userId),
+      supabase.from('recipe_ingredients').select('recipe_id, ingredient_id, quantity').eq('user_id', userId)
     ]);
 
     const baseRecipes = recipesData || [];
     let baseCategories = categoriesData || [];
     let baseOptionGroups = ifoodOptionGroups || [];
     let baseRecipeOptionGroups = recipeIfoodOptionGroups || [];
+
+    // Calculate stock for base recipes
+    const stockMap = new Map((ingredientsData || []).map(i => [i.id, Number(i.stock || 0)]));
+    const recipeIngredientsMap = new Map<string, any[]>();
+    for (const ri of (recipeIngredientsData || [])) {
+        const arr = recipeIngredientsMap.get(ri.recipe_id) || [];
+        arr.push(ri);
+        recipeIngredientsMap.set(ri.recipe_id, arr);
+    }
+
+    for (const recipe of baseRecipes) {
+        let hasStock = true;
+        const ingredients = recipeIngredientsMap.get(recipe.id);
+        if (ingredients) {
+            for (const ing of ingredients) {
+                if ((stockMap.get(ing.ingredient_id) || 0) < ing.quantity) {
+                    hasStock = false;
+                    break;
+                }
+            }
+        }
+        (recipe as any).hasStock = hasStock;
+    }
 
     // Filter "delivery" menus
     const onlineMenus = (menus || []).filter(m => {
@@ -98,7 +125,7 @@ export class PublicDataService {
                     status: (linkedRecipe && linkedRecipe.is_available === false) ? 'UNAVAILABLE' as const : 'AVAILABLE' as const,
                     sequence: choice.display_order,
                     ifood_product_id: linkedRecipe ? linkedRecipe.id : null,
-                    hasStock: true // public menu doesn't strict check stock here yet
+                    hasStock: linkedRecipe ? (linkedRecipe as any).hasStock !== false : true
                 };
             }).sort((a,b) => a.sequence - b.sequence);
 

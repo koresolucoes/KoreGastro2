@@ -87,6 +87,15 @@ export default async function handler(req: any, res: any) {
         .single();
 
       if (error) throw error;
+
+      // Update table status if requesting bill
+      if (allowedUpdates.notes && allowedUpdates.notes.includes('[SOLICITOU FECHAMENTO DE CONTA]') && data && data.table_number && data.user_id) {
+         await supabase.from('tables')
+             .update({ status: 'PAGANDO' })
+             .eq('number', data.table_number)
+             .eq('user_id', data.user_id);
+      }
+
       return res.status(200).json({ order: data });
     }
 

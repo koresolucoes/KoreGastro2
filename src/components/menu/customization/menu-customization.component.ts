@@ -60,11 +60,19 @@ import { Recipe, IfoodOptionGroup, IfoodOption } from '../../../models/db.models
 
                 <div class="space-y-1">
                   @for (option of group.ifood_options; track option.id) {
-                    <button (click)="toggleOption(group, option)" 
+                    <button (click)="$any(option).hasStock !== false ? toggleOption(group, option) : null" 
                             class="w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 text-left group"
-                            [class]="isOptionSelected(option.id) ? 'border-brand bg-brand/5' : 'border-subtle hover:border-strong active:scale-[0.98]'">
+                            [class.opacity-50]="$any(option).hasStock === false"
+                            [class.grayscale]="$any(option).hasStock === false"
+                            [class.cursor-not-allowed]="$any(option).hasStock === false"
+                            [class]="isOptionSelected(option.id) ? 'border-brand bg-brand/5' : ($any(option).hasStock !== false ? 'border-subtle hover:border-strong active:scale-[0.98]' : 'border-subtle')">
                       <div class="flex-1">
-                        <p class="font-medium text-title group-hover:text-brand transition-colors">{{ option.name }}</p>
+                        <div class="flex items-center gap-2">
+                           <p class="font-medium text-title transition-colors" [class.group-hover:text-brand]="$any(option).hasStock !== false">{{ option.name }}</p>
+                           @if ($any(option).hasStock === false) {
+                             <span class="text-[10px] font-bold bg-black text-white px-2 py-0.5 rounded-md">Esgotado</span>
+                           }
+                        </div>
                         @if (option.price > 0) {
                           <p class="text-sm font-bold text-brand">+ {{ option.price | currency : 'BRL' }}</p>
                         }

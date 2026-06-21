@@ -111,10 +111,17 @@
       </h2>
       <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
         @for (recipe of promotedRecipes(); track recipe.id) {
-          <div class="shrink-0 w-64 snap-start border border-subtle rounded-2xl overflow-hidden cursor-pointer group bg-surface shadow-sm hover:shadow-md transition-shadow" (click)="onSelectRecipe(recipe)">
+          <div class="shrink-0 w-64 snap-start border border-subtle rounded-2xl overflow-hidden group shadow-sm transition-shadow" 
+               [class.cursor-pointer]="recipe.hasStock !== false"
+               [class.hover:shadow-md]="recipe.hasStock !== false"
+               [class.bg-surface]="recipe.hasStock !== false"
+               [class.opacity-50]="recipe.hasStock === false"
+               [class.grayscale]="recipe.hasStock === false"
+               [class.bg-surface-elevated]="recipe.hasStock === false"
+               (click)="recipe.hasStock !== false ? onSelectRecipe(recipe) : null">
              <div class="aspect-video relative bg-surface-elevated">
                @if (recipe.image_url) {
-                 <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerpolicy="no-referrer">
+                 <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500" [class.group-hover:scale-105]="recipe.hasStock !== false" referrerpolicy="no-referrer">
                } @else {
                  <div class="absolute inset-0 flex items-center justify-center">
                     <span translate="no" class="notranslate material-symbols-outlined !text-3xl text-muted opacity-30">restaurant</span>
@@ -124,6 +131,11 @@
                @if (getEffectivePrice(recipe) < (recipe.price || 0)) {
                  <div class="absolute top-2 left-2 bg-success text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg">
                    Oferta Especial
+                 </div>
+               }
+               @if (recipe.hasStock === false) {
+                 <div class="absolute top-2 right-2 bg-black text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg shadow-md">
+                   Esgotado
                  </div>
                }
              </div>
@@ -167,12 +179,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (recipe of group.recipes; track recipe.id) {
-            <div (click)="onSelectRecipe(recipe)" 
-                 class="group bg-surface flex flex-row items-stretch sm:items-start p-4 border border-transparent border-b-subtle md:border-subtle md:rounded-2xl hover:bg-surface-elevated md:hover:bg-surface md:hover:border-brand/30 md:hover:shadow-lg transition-all duration-300 cursor-pointer -mx-4 md:mx-0">
+            <div (click)="recipe.hasStock !== false ? onSelectRecipe(recipe) : null" 
+                 [class.cursor-pointer]="recipe.hasStock !== false"
+                 [class.hover:bg-surface-elevated]="recipe.hasStock !== false"
+                 [class.md:hover:bg-surface]="recipe.hasStock !== false"
+                 [class.md:hover:border-brand/30]="recipe.hasStock !== false"
+                 [class.md:hover:shadow-lg]="recipe.hasStock !== false"
+                 [class.opacity-50]="recipe.hasStock === false"
+                 [class.grayscale]="recipe.hasStock === false"
+                 class="group bg-surface flex flex-row items-stretch sm:items-start p-4 border border-transparent border-b-subtle md:border-subtle md:rounded-2xl transition-all duration-300 -mx-4 md:mx-0 relative">
               
               <!-- Details Content -->
               <div class="flex-1 flex flex-col justify-center min-w-0 pr-4 pl-4 md:pl-0">
-                 <h3 class="text-sm sm:text-base font-bold text-title group-hover:text-brand transition-colors line-clamp-2 md:line-clamp-1 break-words leading-tight mb-1">{{ recipe.name }}</h3>
+                 <h3 class="text-sm sm:text-base font-bold text-title transition-colors line-clamp-2 md:line-clamp-1 break-words leading-tight mb-1" [class.group-hover:text-brand]="recipe.hasStock !== false">{{ recipe.name }}</h3>
                  @if (recipe.description) {
                    <p class="text-xs sm:text-sm text-muted line-clamp-2 mt-1 leading-relaxed">{{ recipe.description }}</p>
                  }
@@ -189,16 +208,23 @@
               <!-- Image Container -->
               <div class="w-24 h-24 sm:w-[120px] sm:h-[120px] rounded-xl overflow-hidden shrink-0 bg-surface-elevated relative shadow-sm border border-subtle">
                 @if (recipe.image_url) {
-                   <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerpolicy="no-referrer">
+                   <img [src]="recipe.image_url" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500" [class.group-hover:scale-105]="recipe.hasStock !== false" referrerpolicy="no-referrer">
                 } @else {
-                   <div class="absolute inset-0 flex items-center justify-center text-muted group-hover:text-brand transition-colors">
+                   <div class="absolute inset-0 flex items-center justify-center text-muted transition-colors" [class.group-hover:text-brand]="recipe.hasStock !== false">
                      <span translate="no" class="notranslate material-symbols-outlined !text-3xl opacity-30">local_dining</span>
                    </div>
                 }
                 <!-- Hover "+" icon for desktop -->
-                <div class="absolute bottom-1.5 right-1.5 w-7 h-7 bg-surface/90 backdrop-blur-md rounded-full shadow flex items-center justify-center text-brand opacity-0 md:group-hover:opacity-100 transition-opacity">
-                   <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">add</span>
-                </div>
+                @if (recipe.hasStock !== false) {
+                  <div class="absolute bottom-1.5 right-1.5 w-7 h-7 bg-surface/90 backdrop-blur-md rounded-full shadow flex items-center justify-center text-brand opacity-0 md:group-hover:opacity-100 transition-opacity">
+                     <span translate="no" class="notranslate material-symbols-outlined !text-sm font-bold">add</span>
+                  </div>
+                }
+                @if (recipe.hasStock === false) {
+                  <div class="absolute bottom-1.5 right-1.5 bg-black text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md">
+                    Esgotado
+                  </div>
+                }
               </div>
             </div>
           }
