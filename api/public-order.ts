@@ -39,8 +39,16 @@ export default async function handler(req: any, res: any) {
     }
     
     if (req.method === 'POST') {
-      const { orderId, updates, create, orderData, items } = req.body || {};
+      const { orderId, updates, create, orderData, items, insertItems } = req.body || {};
       
+      if (insertItems && insertItems.length > 0) {
+         const { error: itemsError } = await supabase
+             .from('order_items')
+             .insert(insertItems);
+         if (itemsError) throw itemsError;
+         return res.status(201).json({ success: true, message: 'Items inserted' });
+      }
+
       if (create) {
          // Logic for AI/Webhook to create order hitting this endpoint
          if (!orderData || !items) return res.status(400).json({ error: 'Missing orderData or items' });

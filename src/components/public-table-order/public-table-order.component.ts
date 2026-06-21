@@ -161,10 +161,17 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
         user_id: o.user_id
      }));
 
-     const { error } = await supabase.from('order_items').insert(orderItemsPayload);
+     // We use the public-order endpoint to bypass RLS restrictions securely
+     const response = await fetch('/api/public-order', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ insertItems: orderItemsPayload })
+     });
 
-     if (error) {
-         this.errorMsg.set('Erro ao enviar pedido: ' + error.message);
+     const resData = await response.json();
+
+     if (!response.ok) {
+         this.errorMsg.set('Erro ao enviar pedido: ' + (resData.error || 'Falha no servidor'));
          setTimeout(() => this.errorMsg.set(null), 5000);
      } else {
          this.cartItems.set([]); // clear cart
