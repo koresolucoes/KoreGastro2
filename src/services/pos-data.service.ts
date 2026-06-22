@@ -702,8 +702,8 @@ export class PosDataService {
   }
 
   async createCustomer(customerData: Partial<Customer>): Promise<{ success: boolean; data?: Customer; error: any }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return { success: false, error: { message: 'Not authenticated' } };
     const { data, error } = await supabase.from('customers').insert({ ...customerData, user_id: userId }).select().single();
     if (!error && data) {
       this.posState.customers.update(c => [...c, data]);

@@ -33,10 +33,6 @@ export class UnitContextService {
   }
 
   async loadContext(userId: string) {
-    // Force a session refresh to ensure our JWT stores claim is up to date 
-    // with any newly granted unit permissions
-    await this.authService.refreshSession();
-
     // 1. Fetch stores owned by the user directly
     const { data: ownedStores, error: ownedError } = await supabase
       .from('stores')

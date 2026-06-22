@@ -90,18 +90,6 @@ export class AuthService {
 
 
   /**
-   * Refreshes the user session to update JWT claims (e.g., when stores are added).
-   */
-  async refreshSession(): Promise<{ error: any }> {
-    // Supabase v2 method to force session refresh
-    const { error } = await (supabase.auth as any).refreshSession();
-    if (!error) {
-       await this.checkSession();
-    }
-    return { error };
-  }
-
-  /**
    * Signs out the current user.
    */
   async signOut(): Promise<{ error: any }> {
