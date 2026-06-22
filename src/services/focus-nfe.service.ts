@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { SettingsStateService } from './settings-state.service';
 import { NotificationService } from './notification.service';
 import { DemoService } from './demo.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,6 +13,7 @@ export class FocusNFeService {
   private settingsState = inject(SettingsStateService);
   private notificationService = inject(NotificationService);
   private demoService = inject(DemoService);
+  private unitContextService = inject(UnitContextService);
 
   private async proxyRequest<T>(action: string, payload: any): Promise<{ success: boolean; error?: any; data?: T }> {
     if (this.demoService.isDemoMode()) {
@@ -19,7 +21,7 @@ export class FocusNFeService {
         return { success: false, error: { message: 'Modo de demonstração' } };
     }
 
-    const restaurantId = this.authService.currentUser()?.id;
+    const restaurantId = this.unitContextService.activeUnitId();
     const apiKey = this.settingsState.companyProfile()?.external_api_key;
 
     if (!restaurantId || !apiKey) {

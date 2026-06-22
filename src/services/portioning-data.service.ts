@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PortioningEvent, PortioningEventOutput } from '../models/db.models';
+import { UnitContextService } from './unit-context.service';
 
 export interface PortioningForm {
   employee_id: string | null;
@@ -17,9 +18,10 @@ export interface PortioningForm {
 })
 export class PortioningDataService {
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
 
   async createPortioningEvent(form: PortioningForm) {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     // This should ideally be a single database transaction / RPC call

@@ -4,6 +4,7 @@ import { WebhookEvent } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import { DemoService } from './demo.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +14,7 @@ export class WebhookService {
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
   private demoService = inject(DemoService);
+  private unitContextService = inject(UnitContextService);
 
   /**
    * Triggers a webhook event by sending a request to a secure backend endpoint.
@@ -26,7 +28,7 @@ export class WebhookService {
       return;
     }
       
-    const restaurantId = this.authService.currentUser()?.id;
+    const restaurantId = this.unitContextService.activeUnitId();
     const apiKey = this.settingsState.companyProfile()?.external_api_key;
 
     // The webhook configurations are loaded into the settingsState.

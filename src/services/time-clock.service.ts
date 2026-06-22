@@ -2,15 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { TimeClockEntry } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TimeClockService {
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
 
   async getEntriesForPeriod(startDate: string, endDate: string, employeeId: string): Promise<{ data: TimeClockEntry[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { data: null, error: { message: 'User not authenticated' } };
 
     // Create Date objects from the string inputs, ensuring they are parsed as local time.
@@ -32,7 +34,7 @@ export class TimeClockService {
   }
 
   async addEntry(entry: Partial<TimeClockEntry>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { error } = await supabase.from('time_clock_entries').insert({

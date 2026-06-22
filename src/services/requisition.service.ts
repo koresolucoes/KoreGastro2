@@ -125,7 +125,7 @@ export class RequisitionService {
   }
 
   async updateRequisitionStatus(id: string, status: RequisitionStatus, items?: { id: string, quantity_delivered: number }[]): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     if (status === 'DELIVERED' && items) {

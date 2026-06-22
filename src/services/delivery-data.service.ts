@@ -7,6 +7,7 @@ import { PosStateService } from './pos-state.service';
 import { PricingService } from './pricing.service';
 import { InventoryDataService } from './inventory-data.service';
 import { WebhookService } from './webhook.service';
+import { UnitContextService } from './unit-context.service';
 
 // Interface for the new order cart item
 interface DeliveryCartItem {
@@ -23,9 +24,14 @@ export class DeliveryDataService {
   private pricingService = inject(PricingService);
   private inventoryDataService = inject(InventoryDataService);
   private webhookService = inject(WebhookService);
+  private unitContextService = inject(UnitContextService);
+
+  private getActiveUnitId(): string | null {
+    return this.unitContextService.activeUnitId();
+  }
 
   async getTodayDeliveredOrders(): Promise<{ data: Order[] | null; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { data: null, error: 'Not authenticated' };
 
     const todayStr = new Date().toISOString().split('T')[0];
@@ -72,7 +78,7 @@ export class DeliveryDataService {
   }
 
   async finalizeDeliveryOrder(order: Order): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     // 1. Update order status
@@ -133,7 +139,7 @@ export class DeliveryDataService {
 
 
   async addDriver(driver: Partial<DeliveryDriver>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' }};
     const { error } = await supabase.from('delivery_drivers').insert({ ...driver, user_id: userId });
     return { success: !error, error };
@@ -150,7 +156,7 @@ export class DeliveryDataService {
   }
 
   async createExternalDeliveryOrder(cart: DeliveryCartItem[], customerId: string | null, notes: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     // 1. Create the order
@@ -194,7 +200,7 @@ export class DeliveryDataService {
   }
 
   async updateExternalDeliveryOrder(orderId: string, cart: DeliveryCartItem[], customerId: string | null, notes: string, distance: number, deliveryCost: number): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     // 1. Delete old items

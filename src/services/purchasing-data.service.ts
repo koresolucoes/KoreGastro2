@@ -4,6 +4,7 @@ import { PurchaseOrder, PurchaseOrderStatus, PurchaseOrderItem } from '../models
 import { AuthService } from './auth.service';
 import { InventoryDataService } from './inventory-data.service';
 import { supabase } from './supabase-client';
+import { UnitContextService } from './unit-context.service';
 
 type FormItem = {
     id: string; // Can be temp id
@@ -22,13 +23,14 @@ type FormItem = {
 export class PurchasingDataService {
   private authService = inject(AuthService);
   private inventoryDataService = inject(InventoryDataService);
+  private unitContextService = inject(UnitContextService);
 
   async createPurchaseOrder(
     orderData: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string },
     items: FormItem[],
     employeeId: string | null // AUDIT: Created By
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { data: order, error: orderError } = await supabase
@@ -67,7 +69,7 @@ export class PurchasingDataService {
     orderData: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string },
     items: FormItem[]
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     const { error: orderError } = await supabase.from('purchase_orders').update(orderData).eq('id', orderId);

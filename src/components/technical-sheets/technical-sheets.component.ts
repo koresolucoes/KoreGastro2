@@ -362,7 +362,7 @@ export class TechnicalSheetsComponent {
                 station_id: this.stations()[0]?.id ?? null,
                 display_order: 0,
                 recipe_id: recipe.id
-            }];
+            } as any];
         }
     } else {
         this.itemType.set('prepared');

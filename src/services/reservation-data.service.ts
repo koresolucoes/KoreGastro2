@@ -2,16 +2,18 @@ import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { Reservation, ReservationSettings, ReservationStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
+import { UnitContextService } from './unit-context.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ReservationDataService {
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
 
   // --- Settings ---
   async getReservationSettings(): Promise<ReservationSettings | null> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return null;
 
     const { data, error } = await supabase
@@ -27,7 +29,7 @@ export class ReservationDataService {
   }
 
   async updateReservationSettings(settings: Partial<ReservationSettings>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { error } = await supabase.from('reservation_settings').upsert({ ...settings, user_id: userId }, { onConflict: 'user_id' });
@@ -47,7 +49,7 @@ export class ReservationDataService {
   }
 
   async createManualReservation(reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { error } = await supabase.from('reservations').insert({

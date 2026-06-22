@@ -101,7 +101,7 @@ export class FunctionalitySettingsComponent {
   });
 
   apiAccessQrCodeData = computed(() => {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     const apiKey = this.companyProfileForm().external_api_key;
     if (!userId || !apiKey) return null;
     return JSON.stringify({ restaurantId: userId, apiKey });

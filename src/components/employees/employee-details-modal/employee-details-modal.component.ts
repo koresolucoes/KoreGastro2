@@ -4,6 +4,7 @@ import { Employee, TimeClockEntry, Transaction } from '../../../models/db.models
 import { TimeClockService } from '../../../services/time-clock.service';
 import { supabase } from '../../../services/supabase-client';
 import { AuthService } from '../../../services/auth.service';
+import { UnitContextService } from '../../../services/unit-context.service';
 // FIX: Import HrStateService to access HR-related data
 import { HrStateService } from '../../../services/hr-state.service';
 
@@ -31,6 +32,7 @@ export class EmployeeDetailsModalComponent {
 
   private timeClockService = inject(TimeClockService);
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
   // FIX: Inject HrStateService
   private hrState = inject(HrStateService);
 
@@ -63,7 +65,7 @@ export class EmployeeDetailsModalComponent {
     startDate.setDate(endDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId) {
         this.isLoading.set(false);
         return;

@@ -4,6 +4,7 @@ import { NotificationService } from './notification.service';
 import { Recipe } from '../models/db.models';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
+import { UnitContextService } from './unit-context.service';
 
 export interface IfoodCancellationReason {
   code: string;
@@ -156,6 +157,7 @@ export class IfoodMenuService {
   private settingsState = inject(SettingsStateService);
   private notificationService = inject(NotificationService);
   private authService = inject(AuthService);
+  private unitContextService = inject(UnitContextService);
 
   private companyProfile = this.settingsState.companyProfile;
 
@@ -306,7 +308,7 @@ export class IfoodMenuService {
 
   async syncItem(itemPayload: any, recipe: Recipe, syncHash: string): Promise<void> {
     const { item, products } = await this.proxyRequest<{ item: any, products: any[] }>('PUT', '/catalog/v2.0/merchants/{merchantId}/items', itemPayload);
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.unitContextService.activeUnitId();
     if (!userId || !item) throw new Error("User not found or invalid iFood response");
     const syncRecord = {
       recipe_id: recipe.id, user_id: userId, ifood_item_id: item.id, ifood_product_id: products[0].id,

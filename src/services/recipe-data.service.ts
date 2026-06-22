@@ -20,8 +20,7 @@ export class RecipeDataService {
 
   async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean; error: any; data?: Recipe }> {
     const storeId = this.getActiveUnitId();
-    const ownerId = this.authService.currentUser()?.id;
-    if (!storeId || !ownerId) return { success: false, error: { message: 'Active unit or user not found' }, data: undefined };
+    if (!storeId) return { success: false, error: { message: 'Active unit or user not found' }, data: undefined };
     
     const { data, error } = await supabase.from('recipes').insert({ 
       ...recipe, 
@@ -247,8 +246,7 @@ export class RecipeDataService {
 
   async cloneMenuFromStore(sourceStoreId: string): Promise<{ success: boolean, error: any }> {
     const targetStoreId = this.getActiveUnitId();
-    const ownerId = this.authService.currentUser()?.id;
-    if (!targetStoreId || !ownerId) return { success: false, error: { message: 'Active unit or user not found' } };
+    if (!targetStoreId) return { success: false, error: { message: 'Active unit or user not found' } };
     if (sourceStoreId === targetStoreId) return { success: false, error: { message: 'Source and target stores are the same' } };
 
     try {
