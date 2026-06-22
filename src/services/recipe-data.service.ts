@@ -25,7 +25,7 @@ export class RecipeDataService {
     
     const { data, error } = await supabase.from('recipes').insert({ 
       ...recipe, 
-      user_id: ownerId, 
+      user_id: storeId, 
       store_id: storeId 
     }).select().single();
     return { success: !error, error, data };
