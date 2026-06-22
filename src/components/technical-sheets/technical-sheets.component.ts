@@ -350,10 +350,20 @@ export class TechnicalSheetsComponent {
     const subRecipes = this.recipeSubRecipes().filter(sr => sr.parent_recipe_id === recipe.id);
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
     const customPriceOverride = this.pricingService.customPrices().find(cp => cp.recipe_id === recipe.id);
+    let mappedPreps = preparations.map(p => ({...p}));
 
-    // Determine if it's a simple item (no preparations, ingredients or sub-recipes)
-    if (preparations.length === 0 && ingredients.length === 0 && subRecipes.length === 0) {
+    // Determine if it's a simple item (no ingredients, no sub-recipes, and either 0 preps or 1 'Pronto' prep)
+    if (ingredients.length === 0 && subRecipes.length === 0 && (preparations.length === 0 || (preparations.length === 1 && preparations[0].name === 'Pronto'))) {
         this.itemType.set('simple');
+        if (mappedPreps.length === 0) {
+            mappedPreps = [{ 
+                id: crypto.randomUUID(), 
+                name: 'Pronto',
+                station_id: this.stations()[0]?.id ?? null,
+                display_order: 0,
+                recipe_id: recipe.id
+            }];
+        }
     } else {
         this.itemType.set('prepared');
     }
@@ -381,7 +391,7 @@ export class TechnicalSheetsComponent {
 
     this.recipeForm.set({
       recipe: { ...recipe },
-      preparations: preparations.map(p => ({...p})),
+      preparations: mappedPreps,
       ingredients: mappedIngredients,
       subRecipes: subRecipes.map(({ parent_recipe_id, user_id, recipes, ...rest }) => rest),
       image_file: null,
@@ -417,22 +427,42 @@ export class TechnicalSheetsComponent {
   setItemType(type: 'prepared' | 'simple') {
       this.itemType.set(type);
       if (type === 'simple') {
-          // Clear any preparations, ingredients, subrecipes
+          // Keep exactly 1 preparation for station routing purposes
+          // Named "Pronto" so KDS hides " (Pronto)" suffix.
+          const currentPreps = this.recipeForm().preparations;
+          const defaultStation = this.stations()[0]?.id ?? null;
+          
           this.recipeForm.update(form => ({
               ...form,
-              preparations: [],
+              preparations: [{ 
+                  id: currentPreps[0]?.id || crypto.randomUUID(), 
+                  name: 'Pronto',
+                  station_id: currentPreps[0]?.station_id || defaultStation,
+                  display_order: 0
+              }],
               ingredients: [],
               subRecipes: []
           }));
-          if (this.activeTab() === 'ingredients') {
+          if (this.activeTab() === 'ingredients' || this.activeTab() === 'advanced') {
               this.activeTab.set('basic');
           }
       } else {
-          // If switching back to prepared, add at least one prep step
+          // If switching back to prepared, make sure there's at least one prep step
           if (this.recipeForm().preparations.length === 0) {
               this.addPreparation();
+          } else if (this.recipeForm().preparations.length === 1 && this.recipeForm().preparations[0].name === 'Pronto') {
+              this.updatePreparationField(this.recipeForm().preparations[0].id, 'name', 'Preparo');
           }
       }
+  }
+
+  updateSimpleItemStation(stationId: string) {
+      this.recipeForm.update(form => {
+          if (form.preparations.length === 0) return form;
+          const preps = [...form.preparations];
+          preps[0] = { ...preps[0], station_id: stationId };
+          return { ...form, preparations: preps };
+      });
   }
 
   closeModal() {
