@@ -49,6 +49,45 @@ export class CompanySettingsComponent {
     return cnpj.replace(/[^\d]/g, '').length === 14;
   });
 
+  isGeolocationEnabled = computed(() => {
+    const radius = this.companyProfileForm().time_clock_radius;
+    return radius !== null && radius !== undefined && radius > 0;
+  });
+
+  toggleGeolocation(event: Event) {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked) {
+        this.companyProfileForm.update(form => ({ ...form, time_clock_radius: 100 }));
+        setTimeout(() => this.initMap(), 100);
+    } else {
+        this.companyProfileForm.update(form => ({ ...form, time_clock_radius: null }));
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+            this.mapInitialized = false;
+        }
+    }
+  }
+
+  useCurrentLocation() {
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            this.companyProfileForm.update(form => ({
+                ...form,
+                latitude: lat,
+                longitude: lon
+            }));
+            this.notificationService.show('Localização atualizada via GPS.', 'success');
+        }, (error) => {
+            this.notificationService.show('Erro ao obter localização: ' + error.message, 'error');
+        });
+    } else {
+        this.notificationService.show('Geolocalização não suportada pelo seu navegador.', 'error');
+    }
+  }
+
   constructor() {
     effect(() => {
         const profile = this.companyProfile();

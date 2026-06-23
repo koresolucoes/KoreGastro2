@@ -50,12 +50,13 @@
   <div
     class="hidden md:block relative w-full h-full min-h-[70vh] rounded-3xl overflow-hidden bg-surface-elevated border border-subtle select-none shadow-inner"
   >
-    <!-- Grid Pattern Background -->
-    <div
-      class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"
-    ></div>
+    <div #desktopContainer class="absolute inset-0 overflow-auto">
+      <!-- Grid Pattern Background -->
+      <div
+        class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50 pointer-events-none"
+      ></div>
 
-    @for (table of localTables(); track table.id) {
+      @for (table of localTables(); track table.id) {
       <div
         (click)="tableClicked.emit(table)"
         (contextmenu)="onRightClick($event, table)"
@@ -115,6 +116,7 @@
         </div>
       </div>
     }
+    </div>
   </div>
 } @else {
   <!-- ======================= -->
@@ -218,12 +220,13 @@
   <div
     class="hidden md:block relative w-full h-full min-h-[70vh] bg-surface-elevated rounded-3xl overflow-hidden border-2 border-dashed border-warning/50 shadow-inner"
   >
-    <!-- Grid Pattern Background -->
-    <div
-      class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"
-    ></div>
+    <div #desktopEditContainer class="absolute inset-0 overflow-auto">
+      <!-- Grid Pattern Background -->
+      <div
+        class="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50 pointer-events-none"
+      ></div>
 
-    @for (table of localTables(); track table.id) {
+      @for (table of localTables(); track table.id) {
       <div
         (mousedown)="onDragStart($event, table)"
         class="absolute flex flex-col items-center justify-center p-2 transition-all duration-75 border-2 shadow-md cursor-move group backdrop-blur-sm"
@@ -301,10 +304,11 @@
         </div>
       </div>
     }
+    </div>
 
     <!-- Edit Mode Controls -->
     <div
-      class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 p-3 bg-surface border border-subtle rounded-2xl shadow-2xl z-40 backdrop-blur-md"
+      class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 p-3 bg-surface border border-subtle rounded-2xl shadow-2xl z-40 backdrop-blur-md pointer-events-auto"
     >
       <span
         class="text-sm font-bold text-title px-2 hidden sm:block uppercase tracking-widest"
@@ -316,6 +320,15 @@
         Modo Edição</span
       >
       <div class="h-6 w-px bg-strong hidden sm:block"></div>
+      <button
+        (click)="autoArrange()"
+        class="px-5 py-2.5 font-bold text-sm rounded-xl text-title bg-surface-elevated hover:bg-surface border border-strong shadow-sm flex items-center gap-2 transition-transform active:scale-95"
+      >
+        <span translate="no" class="notranslate material-symbols-outlined"
+          >grid_view</span
+        >
+        Reorganizar
+      </button>
       <button
         (click)="addTable()"
         class="px-5 py-2.5 font-black text-sm rounded-xl text-white bg-warning hover:bg-warning-hover border border-warning/50 shadow-md flex items-center gap-2 transition-transform active:scale-95"

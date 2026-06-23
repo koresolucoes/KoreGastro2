@@ -3,11 +3,14 @@ import { UnitContextService } from './unit-context.service';
 import { ChecklistTemplate, ChecklistLog, Equipment, TemperatureLog } from '../models/db.models';
 import { supabase } from './supabase-client';
 
+import { NotificationService } from './notification.service';
+
 @Injectable({
   providedIn: 'root'
 })
 export class OperationalService {
   private unitContext = inject(UnitContextService);
+  private notificationService = inject(NotificationService);
 
   get supabase() {
     return supabase;

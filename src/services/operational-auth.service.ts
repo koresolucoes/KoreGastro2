@@ -10,6 +10,7 @@ import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DemoService } from './demo.service';
 import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
 import { NotificationService } from './notification.service';
+import { SettingsStateService } from './settings-state.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -26,6 +27,7 @@ export class OperationalAuthService {
   private subscriptionState = inject(SubscriptionStateService);
   private demoService = inject(DemoService);
   private notificationService = inject(NotificationService);
+  private settingsState = inject(SettingsStateService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
@@ -166,21 +168,54 @@ export class OperationalAuthService {
     });
   }
 
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  }
+
   async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
+    const profile = this.settingsState.companyProfile();
+    const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius && profile.time_clock_radius > 0);
+
     let location: { latitude: number, longitude: number } | null = null;
-    try {
-      location = await this.getCurrentLocation();
-    } catch (locationError: any) {
-      this.notificationService.show(locationError.message, 'error', 6000);
-      return { success: false, error: locationError };
+    
+    if (isLocationRequired) {
+      try {
+        location = await this.getCurrentLocation();
+        
+        const distance = this.getDistance(location.latitude, location.longitude, profile!.latitude!, profile!.longitude!);
+        if (distance > profile!.time_clock_radius!) {
+             this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
+             return { success: false, error: new Error('Distância inválida.') };
+        }
+      } catch (locationError: any) {
+        this.notificationService.show(locationError.message, 'error', 6000);
+        return { success: false, error: locationError };
+      }
+    } else {
+      try {
+        location = await this.getCurrentLocation();
+      } catch (e) {
+        // Ignora erro se não for obrigatório
+      }
     }
 
     const { data: newEntry, error } = await supabase
       .from('time_clock_entries')
       .insert({ 
         employee_id: employee.id,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: location?.latitude || null,
+        longitude: location?.longitude || null,
       })
       .select('id')
       .single();

@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, effect, untracked, input, output, InputSignal, OutputEmitterRef, inject, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus, Order } from '../../../models/db.models';
 import { PosDataService } from '../../../services/pos-data.service';
@@ -24,6 +24,9 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
   employeeNameMap: InputSignal<Map<string, string>> = input.required<Map<string, string>>();
   hallIndex: InputSignal<number> = input.required<number>();
   selectedTable: InputSignal<Table | null> = input<Table | null>(null);
+  
+  @ViewChild('desktopContainer') desktopContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('desktopEditContainer') desktopEditContainer?: ElementRef<HTMLDivElement>;
   
   tableClicked: OutputEmitterRef<Table> = output<Table>();
   tableRightClicked: OutputEmitterRef<{ event: MouseEvent, table: Table }> = output();
@@ -181,6 +184,39 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     this.localTables.update(tables => tables.map(t =>
       t.id === tableId ? { ...t, shape: t.shape === 'circle' ? 'square' : 'circle' } : t
     ));
+  }
+
+  autoArrange() {
+    const container = this.desktopEditContainer?.nativeElement || this.desktopContainer?.nativeElement;
+    if (!container) return;
+    
+    // Sort tables by number to arrange them sequentially
+    const sortedTables = [...this.localTables()].sort((a, b) => a.number - b.number);
+    
+    // Hardcoded size from padding/button space
+    const containerWidth = container.clientWidth;
+    const gap = 30; // spacing between tables
+    let currentX = gap;
+    let currentY = gap;
+    let maxRowHeight = 0;
+    
+    const updatedTables = sortedTables.map(t => {
+       // if adding this table exceeds container width (and it's not the first in the row)
+       if (currentX + t.width > containerWidth - gap && currentX !== gap) {
+           currentX = gap;
+           currentY += maxRowHeight + gap;
+           maxRowHeight = 0;
+       }
+       
+       const newTable = { ...t, x: currentX, y: currentY };
+       
+       currentX += t.width + gap;
+       maxRowHeight = Math.max(maxRowHeight, t.height);
+       
+       return newTable;
+    });
+
+    this.localTables.set(updatedTables);
   }
 
   async saveLayout() {
