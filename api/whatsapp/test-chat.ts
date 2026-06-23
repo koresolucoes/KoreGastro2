@@ -154,7 +154,7 @@ async function createOrder(storeId: string, args: any) {
         id: orderId,
         user_id: storeId,
         status: 'OPEN',
-        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'iFood-Takeout' : 'iFood-Delivery',
+        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'External-Pickup' : 'External-Delivery',
         notes: `[TESTE IA] Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
         ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
         ifood_order_id: `test-ia-${orderId}`,

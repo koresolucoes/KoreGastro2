@@ -293,7 +293,7 @@ async function createOrder(storeId: string, args: any, customerId: string | null
         user_id: storeId,
         customer_id: customerId,
         status: 'OPEN',
-        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'iFood-Takeout' : 'iFood-Delivery', // Use Delivery
+        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'External-Pickup' : 'External-Delivery',
         notes: `Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
         ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
         ifood_order_id: `wa-${orderId}`,

@@ -681,7 +681,7 @@ export class KdsComponent implements OnInit, OnDestroy {
           });
 
         const externalMapped = this.posState.openOrders()
-          .filter(o => o.order_type === 'External-Delivery')
+          .filter(o => o.order_type === 'External-Delivery' || o.order_type === 'External-Pickup')
           .map(order => {
             const startTime = new Date(order.timestamp).getTime();
             const elapsedTime = Math.floor((now - startTime) / 1000);
@@ -1258,6 +1258,17 @@ export class KdsComponent implements OnInit, OnDestroy {
           timestamp: new Date().toISOString(),
           fullOrder: order
         });
+        
+        // Notify WhatsApp
+        if (order.ifood_order_id?.startsWith('wa-') || order.ifood_order_id?.startsWith('test-ia-')) {
+             try {
+                  await fetch('/api/whatsapp/notify-status', {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ orderId: order.id, status })
+                  });
+             } catch(e) {}
+        }
       } else {
         this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
       }

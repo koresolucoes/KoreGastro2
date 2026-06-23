@@ -121,6 +121,17 @@ export class DeliveryComponent implements OnInit {
         timestamp: new Date().toISOString(),
         fullOrder: order
       });
+      
+      // Notify WhatsApp
+      if (order.ifood_order_id?.startsWith('wa-') || order.ifood_order_id?.startsWith('test-ia-')) {
+           try {
+                await fetch('/api/whatsapp/notify-status', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ orderId: order.id, status })
+                });
+           } catch(e) {}
+      }
     } else {
       this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
       // Realtime will eventually correct the UI, but an immediate revert could be implemented here if needed.

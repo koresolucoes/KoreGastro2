@@ -8,6 +8,7 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { ThemeService } from '../../services/theme.service';
+import { PosStateService } from '../../services/pos-state.service';
 
 export interface NavLink {
   name: string;
@@ -40,6 +41,7 @@ export class TopNavComponent {
   demoService = inject(DemoService);
   unitContextService = inject(UnitContextService);
   themeService = inject(ThemeService);
+  posState = inject(PosStateService);
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
@@ -48,6 +50,13 @@ export class TopNavComponent {
   shiftButtonState = this.operationalAuthService.shiftButtonState;
   companyProfile = this.settingsState.companyProfile;
   
+  pendingExternalOrdersCount = computed(() => {
+    return this.posState.openOrders().filter(o => 
+      (o.order_type === 'External-Delivery' || o.order_type === 'External-Pickup') &&
+      (!o.delivery_status || o.delivery_status === 'AWAITING_PREP' || o.delivery_status === 'RECEIVED')
+    ).length;
+  });
+
   isMobileMenuOpen = signal(false);
   openDropdown = signal<string | null>(null);
   
