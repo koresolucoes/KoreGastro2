@@ -118,6 +118,18 @@ import { supabase } from '../../services/supabase-client';
                   @if (showManualUI()) {
                     <div class="mt-8 text-left">
                        <h4 class="text-[11px] font-bold text-title mb-2 uppercase tracking-widest">Configuração Manual</h4>
+                       <div class="mt-4 mb-6 pt-4 border-t border-blue-500/10">
+                         <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">URL do Webhook (Configuração Manual)</p>
+                         <div class="flex items-center gap-2">
+                           <code class="flex-1 bg-surface-elevated border border-subtle px-3 py-2 rounded-lg text-xs font-mono text-title break-all">
+                             {{ getWebhookUrl() }}
+                           </code>
+                           <button (click)="copyWebhookUrl()" class="p-2 bg-surface hover:bg-surface-elevated border border-subtle rounded-lg text-muted hover:text-title transition-all group" title="Copiar URL">
+                             <span translate="no" class="notranslate material-symbols-outlined text-[18px] group-active:scale-95 transition-transform">content_copy</span>
+                           </button>
+                         </div>
+                         <p class="text-[9px] text-muted mt-2">Verify Token: <strong>chefos_whatsapp_webhook_2024</strong> (Use isso caso precise configurar manualmente no painel da Meta)</p>
+                       </div>
                        <div class="space-y-4">
                           <div>
                              <label class="block text-[10px] font-bold text-muted uppercase tracking-widest mb-1">WhatsApp Business Account ID (WABA ID)</label>
