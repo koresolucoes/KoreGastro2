@@ -54,6 +54,18 @@ import { supabase } from '../../services/supabase-client';
                      O sistema já registrou o webhook no Meta Developers para que seu assistente da IA do Gemini 
                      receba e envie as mensagens usando as instruções nativas do cardápio. Nenhuma ação adicional é requerida.
                    </p>
+                   <div class="mt-4 pt-4 border-t border-blue-500/10">
+                     <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">URL do Webhook (Configuração Manual)</p>
+                     <div class="flex items-center gap-2">
+                       <code class="flex-1 bg-surface-elevated border border-subtle px-3 py-2 rounded-lg text-xs font-mono text-title break-all">
+                         {{ getWebhookUrl() }}
+                       </code>
+                       <button (click)="copyWebhookUrl()" class="p-2 bg-surface hover:bg-surface-elevated border border-subtle rounded-lg text-muted hover:text-title transition-all group" title="Copiar URL">
+                         <span translate="no" class="notranslate material-symbols-outlined text-[18px] group-active:scale-95 transition-transform">content_copy</span>
+                       </button>
+                     </div>
+                     <p class="text-[9px] text-muted mt-2">Verify Token: <strong>chefos_whatsapp_webhook_2024</strong> (Use isso caso precise configurar manualmente no painel da Meta)</p>
+                   </div>
                </div>
 
                @if (config()?.waba_id === 'PENDING_CONFIG' || showManualUI()) {
@@ -148,6 +160,15 @@ export class WhatsappSettingsComponent {
 
   constructor() {
     this.loadConfig();
+  }
+
+  getWebhookUrl(): string {
+    return `${window.location.origin}/api/whatsapp/webhook`;
+  }
+
+  copyWebhookUrl() {
+    navigator.clipboard.writeText(this.getWebhookUrl());
+    this.notificationService.show('URL do Webhook copiada!', 'success');
   }
 
   async loadConfig() {

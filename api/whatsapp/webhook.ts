@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const token = req.query['hub.verify_token'];
         const challenge = req.query['hub.challenge'];
         
-        if (mode === 'subscribe') {
+        if (mode === 'subscribe' && token === 'chefos_whatsapp_webhook_2024') {
             return res.status(200).send(challenge);
         }
         return res.status(403).end();
