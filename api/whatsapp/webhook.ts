@@ -174,7 +174,7 @@ async function processMessage(value: any, storeIdQuery?: string) {
         return;
     }
 
-    // 4. Load Restaurant Menu and History
+    // 4. Load Restaurant Menu, History, and Customer Context
     const { data: menu } = await supabase.from('recipes')
         .select('id, name, price, description')
         .eq('user_id', storeId)
@@ -185,14 +185,37 @@ async function processMessage(value: any, storeIdQuery?: string) {
         .eq('chat_id', chat.id)
         .order('created_at', { ascending: false })
         .limit(20);
+        
+    let customerContext = "";
+    const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', storeId)
+        .eq('phone', customerPhone)
+        .single();
+        
+    if (customer) {
+       customerContext = `O cliente já está cadastrado no sistema.\nNome: ${customer.name}\nEndereço cadastrado: ${customer.address || 'Não informado'}\nTelefone: ${customer.phone}\n\nSe o cliente quiser entrega, confirme se é no endereço cadastrado.`;
+       
+       const { data: pastOrders } = await supabase
+           .from('orders')
+           .select('notes, created_at')
+           .eq('customer_id', customer.id)
+           .order('created_at', { ascending: false })
+           .limit(3);
+           
+       if (pastOrders && pastOrders.length > 0) {
+           customerContext += `\n\nÚltimos pedidos do cliente:\n` + pastOrders.map((o: any) => `- Pedido em ${new Date(o.created_at).toLocaleDateString()}: ${o.notes}`).join('\n');
+       }
+    } else {
+       customerContext = `Este é um cliente novo.`;
+    }
 
     const messageHistory = (history || []).reverse().map((msg: any) => ({
         role: msg.sender_type === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
     }));
 
-    // Start with the latest message as the main content prompt to append.
-    // However we've already appended it to history technically, but let's just make `contents` array.
     const contents = messageHistory;
 
     const systemInstruction = `Você é o Assistente Virtual e Garçom IA deste restaurante.
@@ -201,6 +224,9 @@ Regras de Negócio Importantes:
 2. Sempre seja educado, direto e chame o cliente pelo primeiro nome se ele falar.
 3. Este é o nosso cardápio de produtos disponíveis (NÃO invente itens que não estão aqui, referencie-os pelos UUIDs quando for fazer o pedido):
 ${JSON.stringify(menu || [], null, 2)}
+
+Contexto do Cliente:
+${customerContext}
 
 Seu objetivo:
 Identificar o que o cliente quer, informar o preço correto.
@@ -236,7 +262,7 @@ Ao acionar a tool, não precisa retornar uma mensagem longa, apenas agradeça (e
                 const args = call.args as any;
                 // Create order in Supabase
                 try {
-                   await createOrder(storeId, args);
+                   await createOrder(storeId, args, chat.customer_id);
                    replyText = `Ótimo! Seu pedido foi enviado para a cozinha com sucesso. Vamos preparar rapidinho!`;
                 } catch(e) {
                    console.error("Error creating order from tool:", e);
@@ -260,16 +286,18 @@ Ao acionar a tool, não precisa retornar uma mensagem longa, apenas agradeça (e
     }
 }
 
-async function createOrder(storeId: string, args: any) {
+async function createOrder(storeId: string, args: any, customerId: string | null) {
     const orderId = uuidv4();
     const finalOrderData = {
         id: orderId,
         user_id: storeId,
+        customer_id: customerId,
         status: 'OPEN',
         order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'iFood-Takeout' : 'iFood-Delivery', // Use Delivery
         notes: `Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
         ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
-        ifood_order_id: `wa-${orderId}`
+        ifood_order_id: `wa-${orderId}`,
+        table_number: 0
     };
 
     let orderItems = [];
