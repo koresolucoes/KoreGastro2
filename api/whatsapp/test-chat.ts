@@ -163,6 +163,12 @@ async function createOrder(storeId: string, args: any) {
 
     let orderItems = [];
 
+    const { data: stations } = await supabase.from('stations').select('id').eq('user_id', storeId).order('created_at', { ascending: true });
+    let fallbackStationId = null;
+    if (stations && stations.length > 0) {
+        fallbackStationId = stations[0].id;
+    }
+
     if (args.items && args.items.length > 0) {
        const { data: recipes } = await supabase.from('recipes').select('id, price, name').in('id', args.items.map((i: any) => i.recipe_id));
        
@@ -179,7 +185,7 @@ async function createOrder(storeId: string, args: any) {
              notes: item.notes || '',
              status: 'PENDENTE',
              status_timestamps: { 'PENDENTE': new Date().toISOString() },
-             station_id: null
+             station_id: fallbackStationId
            };
        });
     }

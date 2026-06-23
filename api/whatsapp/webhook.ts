@@ -136,12 +136,21 @@ async function processMessage(value: any, storeIdQuery?: string) {
         
     if (!chat) {
         // Find existing customer by phone or create new pseudo customer?
-        const { data: customer } = await supabase
+        let { data: customer } = await supabase
             .from('customers')
             .select('id')
             .eq('user_id', storeId)
             .eq('phone', customerPhone)
             .single();
+
+        if (!customer) {
+            const { data: newCustomer } = await supabase.from('customers').insert({
+                user_id: storeId,
+                name: 'Cliente WhatsApp',
+                phone: customerPhone
+            }).select('id').single();
+            customer = newCustomer;
+        }
 
         const { data: newChat, error: insertError } = await supabase.from('whatsapp_chats').insert({
             store_id: storeId,
@@ -302,6 +311,12 @@ async function createOrder(storeId: string, args: any, customerId: string | null
 
     let orderItems = [];
 
+    const { data: stations } = await supabase.from('stations').select('id').eq('user_id', storeId).order('created_at', { ascending: true });
+    let fallbackStationId = null;
+    if (stations && stations.length > 0) {
+        fallbackStationId = stations[0].id;
+    }
+
     if (args.items && args.items.length > 0) {
        // Need to fetch original price
        const { data: recipes } = await supabase.from('recipes').select('id, price, name').in('id', args.items.map((i: any) => i.recipe_id));
@@ -319,7 +334,7 @@ async function createOrder(storeId: string, args: any, customerId: string | null
              notes: item.notes || '',
              status: 'PENDENTE',
              status_timestamps: { 'PENDENTE': new Date().toISOString() },
-             station_id: null
+             station_id: fallbackStationId
            };
        });
     }

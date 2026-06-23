@@ -125,12 +125,16 @@ export class DeliveryComponent implements OnInit {
       // Notify WhatsApp
       if (order.ifood_order_id?.startsWith('wa-') || order.ifood_order_id?.startsWith('test-ia-')) {
            try {
-                await fetch('/api/whatsapp/notify-status', {
+                console.log("Calling notify-status for WhatsApp:", order.id, status);
+                const res = await fetch('/api/whatsapp/notify-status', {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({ orderId: order.id, status })
                 });
-           } catch(e) {}
+                console.log("Notify Status Res:", res.status, await res.text());
+           } catch(e) {
+                console.error("Notify Status Err:", e);
+           }
       }
     } else {
       this.notificationService.show(`Erro ao atualizar status do pedido: ${error?.message}`, 'error');
