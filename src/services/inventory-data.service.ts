@@ -459,7 +459,7 @@ export class InventoryDataService {
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     // Check if it's a test order
-    const { data: orderData } = await this.supabase
+    const { data: orderData } = await supabase
       .from('orders')
       .select('notes')
       .eq('id', orderId)
