@@ -163,7 +163,7 @@ async function processMessage(value: any, storeIdQuery?: string) {
     await supabase.from('whatsapp_messages').insert({
         chat_id: chat.id,
         wa_message_id: message.id,
-        sender_type: 'customer',
+        sender_type: 'user',
         content: messageText
     });
 
@@ -187,7 +187,7 @@ async function processMessage(value: any, storeIdQuery?: string) {
         .limit(20);
 
     const messageHistory = (history || []).reverse().map((msg: any) => ({
-        role: msg.sender_type === 'customer' ? 'user' : 'model',
+        role: msg.sender_type === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
     }));
 
