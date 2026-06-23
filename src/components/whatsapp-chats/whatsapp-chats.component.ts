@@ -202,7 +202,7 @@ export class WhatsappChatsComponent implements OnInit, OnDestroy {
       const chat = this.selectedChat();
       if (!chat) return;
 
-      const newStatus = chat.status === 'human' ? 'active' : 'human';
+      const newStatus = chat.status === 'human' ? 'bot' : 'human';
       await supabase.from('whatsapp_chats').update({ status: newStatus }).eq('id', chat.id);
   }
 

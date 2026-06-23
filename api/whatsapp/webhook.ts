@@ -143,13 +143,17 @@ async function processMessage(value: any, storeIdQuery?: string) {
             .eq('phone', customerPhone)
             .single();
 
-        const { data: newChat } = await supabase.from('whatsapp_chats').insert({
+        const { data: newChat, error: insertError } = await supabase.from('whatsapp_chats').insert({
             store_id: storeId,
             customer_phone: customerPhone,
             customer_id: customer?.id || null,
-            status: 'active',
+            status: 'bot',
             last_message_at: new Date().toISOString()
         }).select().single();
+        if (insertError || !newChat) {
+            console.error('Error creating chat:', insertError);
+            return;
+        }
         chat = newChat;
     } else {
         await supabase.from('whatsapp_chats').update({ last_message_at: new Date().toISOString() }).eq('id', chat.id);
