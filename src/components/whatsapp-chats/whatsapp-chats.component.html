@@ -209,8 +209,8 @@
 </div>
 
 @if(isConfigModalOpen()) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in" (click)="isConfigModalOpen.set(false); checkConfig()">
-    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden" (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-subtle overflow-hidden">
       <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md flex-shrink-0">
         <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
            <div class="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20">
