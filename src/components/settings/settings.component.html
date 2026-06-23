@@ -25,29 +25,29 @@
 
         @for(item of navItems; track item.id) {
           <button (click)="selectTab(item.id)"
-                  class="flex-shrink-0 w-full flex items-center gap-4 px-4 py-4 lg:p-4 rounded-none border-b border-subtle last:border-0 lg:border-none lg:rounded-2xl text-left transition-all outline-none group active:scale-[0.98] lg:active:scale-[0.98] relative overflow-hidden bg-surface hover:bg-surface-elevated lg:bg-transparent"
-                  [class.lg:bg-brand]="activeTab() === item.id"
-                  [class.lg:text-white]="activeTab() === item.id"
-                  [class.lg:shadow-xl]="activeTab() === item.id"
-                  [class.lg:shadow-brand/20]="activeTab() === item.id">
+                  class="flex-shrink-0 w-full flex items-center gap-4 px-4 py-4 lg:py-3 lg:px-4 rounded-none border-b border-subtle last:border-0 lg:border-none lg:rounded-xl text-left transition-all outline-none group relative overflow-hidden bg-surface lg:bg-transparent"
+                  [class.lg:bg-surface-elevated]="activeTab() === item.id"
+                  [class.hover:bg-surface-elevated]="activeTab() !== item.id">
             
-            <div class="p-3 lg:p-2 rounded-full lg:rounded-xl transition-colors relative z-10 bg-surface-elevated border border-strong lg:border-none flex items-center justify-center" 
-                 [class.lg:bg-white/20]="activeTab() === item.id"
-                 [class.lg:bg-surface/50]="activeTab() !== item.id"
-                 [class.lg:group-hover:bg-brand/10]="activeTab() !== item.id">
-              <span translate="no" class="notranslate material-symbols-outlined text-[20px] lg:text-[20px] block leading-none text-brand lg:text-inherit" [class.lg:text-brand]="activeTab() !== item.id">{{ item.icon }}</span>
+            <div class="p-2 lg:p-0 rounded-full lg:rounded-none transition-colors relative z-10 bg-surface-elevated border border-strong lg:border-none lg:bg-transparent flex items-center justify-center">
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px] lg:text-[20px] block leading-none transition-colors" 
+                    [class.text-brand]="activeTab() === item.id"
+                    [class.text-muted]="activeTab() !== item.id"
+                    [class.group-hover:text-title]="activeTab() !== item.id">{{ item.icon }}</span>
             </div>
             
             <div class="flex-1 min-w-0 flex flex-col justify-center">
-              <span class="font-bold text-sm lg:font-black lg:text-[11px] lg:uppercase lg:tracking-widest relative z-10 transition-transform lg:group-hover:translate-x-1 text-title lg:text-inherit">{{ item.label }}</span>
+              <span class="font-bold text-sm lg:font-black lg:text-[11px] lg:uppercase lg:tracking-widest relative z-10 transition-colors"
+                    [class.text-title]="activeTab() === item.id"
+                    [class.text-muted]="activeTab() !== item.id"
+                    [class.group-hover:text-title]="activeTab() !== item.id">{{ item.label }}</span>
               <span class="text-xs text-muted font-medium lg:hidden truncate mt-0.5">{{ item.desc }}</span>
             </div>
             
-            <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 group-hover:text-brand transition-all">chevron_right</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 transition-all">chevron_right</span>
 
             @if(activeTab() === item.id) {
-              <div class="hidden lg:block absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -translate-y-12 translate-x-12"></div>
-              <div class="hidden lg:block absolute inset-y-0 right-0 w-1 bg-white/40 rounded-full"></div>
+              <div class="hidden lg:block absolute inset-y-1/4 left-0 w-1 bg-brand rounded-r-full"></div>
             }
           </button>
         }

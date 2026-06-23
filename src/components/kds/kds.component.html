@@ -201,6 +201,9 @@
                         </div>
                         
                         <div class="flex items-center gap-2 mt-0.5">
+                            @if(ticket.isTest) {
+                                <span class="text-[9px] font-black uppercase bg-white text-purple-700 px-1.5 py-0.5 rounded-md shadow-lg border border-purple-200 ml-1">Teste IA</span>
+                            }
                             @if(ticket.customerName) {
                                 <span class="text-[9px] font-black uppercase tracking-wider bg-black/20 px-1.5 py-0.5 rounded-md truncate max-w-[100px]">{{ ticket.customerName }}</span>
                             }
@@ -460,15 +463,20 @@
                     </div>
                     
                     <div class="flex flex-col leading-tight">
-                        @if (ticket.orderType.startsWith('iFood')) {
-                            <span class="text-lg" title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
-                        } @else if (ticket.orderType === 'QuickSale') {
-                            <span class="text-lg">Balcão</span>
-                        } @else if (ticket.orderType === 'Tab') {
-                            <span class="text-lg">{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
-                        } @else {
-                            <span class="text-lg">Mesa {{ ticket.tableNumber }}</span>
-                        }
+                        <div class="flex items-center gap-1.5">
+                            @if (ticket.orderType.startsWith('iFood')) {
+                                <span class="text-lg" title="{{ ticket.orderType === 'iFood-Delivery' ? 'iFood Entrega' : 'iFood Retirada' }}">#{{ ticket.ifoodDisplayId }}</span>
+                            } @else if (ticket.orderType === 'QuickSale') {
+                                <span class="text-lg">Balcão</span>
+                            } @else if (ticket.orderType === 'Tab') {
+                                <span class="text-lg">{{ ticket.tabName || ('Comanda ' + ticket.commandNumber) }}</span>
+                            } @else {
+                                <span class="text-lg">Mesa {{ ticket.tableNumber }}</span>
+                            }
+                            @if(ticket.isTest) {
+                                <span class="text-[9px] font-black uppercase bg-white text-purple-700 px-1.5 py-0.5 rounded-md shadow-lg border border-purple-200 ml-1">Teste IA</span>
+                            }
+                        </div>
                         
                         @if(ticket.isOrderCancelled) {
                             <span class="text-[9px] font-black uppercase bg-black/30 px-1.5 py-0.5 rounded-md mt-0.5">Cancelado</span>
@@ -711,6 +719,11 @@
                             <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-emerald-600/15 text-emerald-400 rounded-md tracking-wider border border-emerald-500/10 flex items-center gap-1">
                               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> PRÓPRIO
                             </span>
+                          }
+                          @if(order.notes && order.notes.includes('[TESTE IA]')) {
+                              <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-purple-600/15 text-purple-400 rounded-md tracking-wider border border-purple-500/10 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> TESTE
+                              </span>
                           }
                           <span class="font-black text-sm text-title">#{{ order.source === 'iFood' ? order.ifood_display_id : order.id.slice(0, 8) }}</span>
                         </div>

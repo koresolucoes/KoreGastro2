@@ -176,7 +176,7 @@ async function createOrder(storeId: string, args: any) {
              notes: item.notes || '',
              status: 'PENDENTE',
              status_timestamps: { 'PENDENTE': new Date().toISOString() },
-             station_id: '00000000-0000-0000-0000-000000000000'
+             station_id: null
            };
        });
     }

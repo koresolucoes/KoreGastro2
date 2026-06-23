@@ -1,268 +1,65 @@
 <div class="h-full flex flex-col md:flex-row bg-background overflow-hidden">
   <!-- Sidebar Categories -->
   <div
-    class="w-full md:w-64 flex-shrink-0 bg-surface border-b md:border-b-0 md:border-r border-subtle md:h-full flex flex-col no-print z-30 shadow-sm md:shadow-lg"
+    class="w-full md:w-72 flex-shrink-0 bg-surface border-b md:border-b-0 md:border-r border-subtle md:h-full flex flex-col no-print z-30 lg:bg-transparent lg:border-r-0 lg:p-6"
   >
     <div
-      class="p-4 md:p-6 border-b border-subtle md:pb-8 flex justify-between items-center md:block"
+      class="p-4 md:p-0 border-b border-subtle lg:border-none md:pb-8 flex justify-between items-center md:block"
     >
       <div>
         <h1
-          class="text-xl md:text-3xl font-black text-title title-display tracking-tight leading-none md:mb-2 whitespace-nowrap"
+          class="text-xl md:text-3xl font-black text-title title-display tracking-tight leading-none md:mb-2 whitespace-nowrap hidden lg:block"
         >
-          Relatórios <span class="md:hidden">&</span
-          ><br class="hidden md:block" />
-          <span class="hidden md:inline">Gestão</span
-          ><span class="md:hidden">Gestão</span>
+          Relatórios &<br class="hidden md:block" />
+          <span class="hidden md:inline">Gestão</span>
         </h1>
         <p
-          class="hidden md:block text-muted text-[11px] font-bold uppercase tracking-widest leading-relaxed mt-4"
+          class="hidden md:block text-muted text-[11px] font-bold uppercase tracking-widest leading-relaxed mt-4 mb-8"
         >
           Inteligência Operacional
         </p>
       </div>
     </div>
 
-    <div
-      class="flex flex-row overflow-x-auto md:flex-col md:flex-1 p-2 md:p-4 gap-2 md:overflow-y-auto custom-scrollbar scrollbar-none items-center md:items-stretch"
-    >
-      <!-- BI Category -->
-      <button
-        (click)="setCategory('bi')"
-        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
-        [class.bg-brand/10]="activeCategory() === 'bi'"
-        [class.border-brand/30]="activeCategory() === 'bi'"
-        [class.bg-surface]="activeCategory() !== 'bi'"
-        [class.border-strong]="activeCategory() !== 'bi'"
-        [class.hover:bg-surface-elevated]="activeCategory() !== 'bi'"
-      >
-        <div
-          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
-          [class.bg-brand]="activeCategory() === 'bi'"
-          [class.text-white]="activeCategory() === 'bi'"
-          [class.border-transparent]="activeCategory() === 'bi'"
-          [class.bg-surface-elevated]="activeCategory() !== 'bi'"
-          [class.text-brand]="activeCategory() !== 'bi'"
-          [class.border-strong]="activeCategory() !== 'bi'"
-        >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm md:text-base"
-            >query_stats</span
-          >
-        </div>
-        <div class="hidden md:block">
-          <p
-            class="text-sm font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'bi'"
-            [class.text-brand]="activeCategory() === 'bi'"
-          >
-            Inteligência BI
-          </p>
-          <p
-            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
-          >
-            Vendas & Clientes
-          </p>
-        </div>
-        <div class="md:hidden pr-2">
-          <p
-            class="text-xs font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'bi'"
-            [class.text-brand]="activeCategory() === 'bi'"
-          >
-            Inteligência BI
-          </p>
-        </div>
-      </button>
+    <div class="p-4 lg:p-0 flex-1 overflow-y-auto">
+      @let navItems = [
+        { id: 'bi', icon: 'query_stats', label: 'Inteligência BI', desc: 'Vendas & Clientes' },
+        { id: 'financial', icon: 'account_balance', label: 'DRE & Financeiro', desc: 'Fluxo e CMV' },
+        { id: 'audit', icon: 'policy', label: 'Auditoria', desc: 'Logs e Fraudes' },
+        { id: 'losses', icon: 'trending_down', label: 'Perdas (Waste)', desc: 'Custo com erros' },
+        { id: 'custom', icon: 'construction', label: 'Personalizado', desc: 'Construtor Livre' }
+      ];
 
-      <!-- Financial Category -->
-      <button
-        (click)="setCategory('financial')"
-        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
-        [class.bg-emerald-500/10]="activeCategory() === 'financial'"
-        [class.border-emerald-500/30]="activeCategory() === 'financial'"
-        [class.bg-surface]="activeCategory() !== 'financial'"
-        [class.border-strong]="activeCategory() !== 'financial'"
-        [class.hover:bg-surface-elevated]="activeCategory() !== 'financial'"
-      >
-        <div
-          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
-          [class.bg-emerald-500]="activeCategory() === 'financial'"
-          [class.text-white]="activeCategory() === 'financial'"
-          [class.border-transparent]="activeCategory() === 'financial'"
-          [class.bg-surface-elevated]="activeCategory() !== 'financial'"
-          [class.text-emerald-500]="activeCategory() !== 'financial'"
-          [class.border-strong]="activeCategory() !== 'financial'"
-        >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm md:text-base"
-            >account_balance</span
-          >
-        </div>
-        <div class="hidden md:block">
-          <p
-            class="text-sm font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'financial'"
-            [class.text-emerald-600]="activeCategory() === 'financial'"
-          >
-            DRE & Financeiro
-          </p>
-          <p
-            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
-          >
-            Fluxo e CMV
-          </p>
-        </div>
-        <div class="md:hidden pr-2">
-          <p
-            class="text-xs font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'financial'"
-            [class.text-emerald-600]="activeCategory() === 'financial'"
-          >
-            Financeiro
-          </p>
-        </div>
-      </button>
+      <nav class="flex flex-row md:flex-col overflow-x-auto md:overflow-visible gap-0 rounded-3xl lg:rounded-none border border-subtle lg:border-none shadow-sm lg:shadow-none bg-surface lg:bg-transparent scrollbar-none snap-x">
+        @for(item of navItems; track item.id) {
+          <button (click)="setCategory($any(item.id))"
+                  class="snap-start flex-shrink-0 w-64 md:w-full flex items-center gap-4 px-4 py-4 lg:py-3 lg:px-4 rounded-none border-r md:border-r-0 md:border-b border-subtle last:border-0 lg:border-none lg:rounded-xl text-left transition-all outline-none group relative overflow-hidden bg-surface lg:bg-transparent"
+                  [class.lg:bg-surface-elevated]="activeCategory() === item.id"
+                  [class.hover:bg-surface-elevated]="activeCategory() !== item.id">
+            
+            <div class="p-2 lg:p-0 rounded-full lg:rounded-none transition-colors relative z-10 bg-surface-elevated border border-strong lg:border-none lg:bg-transparent flex items-center justify-center">
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px] lg:text-[20px] block leading-none transition-colors" 
+                    [class.text-brand]="activeCategory() === item.id"
+                    [class.text-muted]="activeCategory() !== item.id"
+                    [class.group-hover:text-title]="activeCategory() !== item.id">{{ item.icon }}</span>
+            </div>
+            
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+              <span class="font-bold text-sm lg:font-black lg:text-[11px] lg:uppercase lg:tracking-widest relative z-10 transition-colors"
+                    [class.text-title]="activeCategory() === item.id"
+                    [class.text-muted]="activeCategory() !== item.id"
+                    [class.group-hover:text-title]="activeCategory() !== item.id">{{ item.label }}</span>
+              <span class="text-xs text-muted font-medium truncate mt-0.5">{{ item.desc }}</span>
+            </div>
+            
+            <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-40 lg:hidden group-hover:opacity-100 transition-all">chevron_right</span>
 
-      <!-- Audit Category -->
-      <button
-        (click)="setCategory('audit')"
-        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
-        [class.bg-indigo-500/10]="activeCategory() === 'audit'"
-        [class.border-indigo-500/30]="activeCategory() === 'audit'"
-        [class.bg-surface]="activeCategory() !== 'audit'"
-        [class.border-strong]="activeCategory() !== 'audit'"
-        [class.hover:bg-surface-elevated]="activeCategory() !== 'audit'"
-      >
-        <div
-          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
-          [class.bg-indigo-500]="activeCategory() === 'audit'"
-          [class.text-white]="activeCategory() === 'audit'"
-          [class.border-transparent]="activeCategory() === 'audit'"
-          [class.bg-surface-elevated]="activeCategory() !== 'audit'"
-          [class.text-indigo-500]="activeCategory() !== 'audit'"
-          [class.border-strong]="activeCategory() !== 'audit'"
-        >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm md:text-base"
-            >policy</span
-          >
-        </div>
-        <div class="hidden md:block">
-          <p
-            class="text-sm font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'audit'"
-            [class.text-indigo-600]="activeCategory() === 'audit'"
-          >
-            Auditoria
-          </p>
-          <p
-            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
-          >
-            Logs e Fraudes
-          </p>
-        </div>
-        <div class="md:hidden pr-2">
-          <p
-            class="text-xs font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'audit'"
-            [class.text-indigo-600]="activeCategory() === 'audit'"
-          >
-            Auditoria
-          </p>
-        </div>
-      </button>
-
-      <!-- Losses Category -->
-      <button
-        (click)="setCategory('losses')"
-        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group"
-        [class.bg-amber-500/10]="activeCategory() === 'losses'"
-        [class.border-amber-500/30]="activeCategory() === 'losses'"
-        [class.bg-surface]="activeCategory() !== 'losses'"
-        [class.border-strong]="activeCategory() !== 'losses'"
-        [class.hover:bg-surface-elevated]="activeCategory() !== 'losses'"
-      >
-        <div
-          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
-          [class.bg-amber-500]="activeCategory() === 'losses'"
-          [class.text-white]="activeCategory() === 'losses'"
-          [class.border-transparent]="activeCategory() === 'losses'"
-          [class.bg-surface-elevated]="activeCategory() !== 'losses'"
-          [class.text-amber-500]="activeCategory() !== 'losses'"
-          [class.border-strong]="activeCategory() !== 'losses'"
-        >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm md:text-base"
-            >trending_down</span
-          >
-        </div>
-        <div class="hidden md:block">
-          <p
-            class="text-sm font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'losses'"
-            [class.text-amber-600]="activeCategory() === 'losses'"
-          >
-            Perdas (Waste)
-          </p>
-          <p
-            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
-          >
-            Custo com erros
-          </p>
-        </div>
-        <div class="md:hidden pr-2">
-          <p
-            class="text-xs font-black title-display tracking-tight"
-            [class.text-title]="activeCategory() !== 'losses'"
-            [class.text-amber-600]="activeCategory() === 'losses'"
-          >
-            Perdas
-          </p>
-        </div>
-      </button>
-
-      <!-- Custom Category -->
-      <button
-        (click)="setCategory('custom')"
-        class="flex-shrink-0 w-auto md:w-full text-left px-3 py-2 md:px-4 md:py-4 rounded-xl md:rounded-2xl transition-all flex items-center gap-2 md:gap-3 border shadow-sm group md:mt-4"
-        [class.bg-title/5]="activeCategory() === 'custom'"
-        [class.border-title/30]="activeCategory() === 'custom'"
-        [class.bg-surface]="activeCategory() !== 'custom'"
-        [class.border-strong]="activeCategory() !== 'custom'"
-        [class.hover:bg-surface-elevated]="activeCategory() !== 'custom'"
-      >
-        <div
-          class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner border transition-colors flex-shrink-0"
-          [class.bg-title]="activeCategory() === 'custom'"
-          [class.text-surface]="activeCategory() === 'custom'"
-          [class.border-transparent]="activeCategory() === 'custom'"
-          [class.bg-surface-elevated]="activeCategory() !== 'custom'"
-          [class.text-title]="activeCategory() !== 'custom'"
-          [class.border-strong]="activeCategory() !== 'custom'"
-        >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm md:text-base"
-            >construction</span
-          >
-        </div>
-        <div class="hidden md:block">
-          <p
-            class="text-sm font-black title-display tracking-tight"
-            [class.text-title]="true"
-          >
-            Personalizado
-          </p>
-          <p
-            class="text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5"
-          >
-            Construtor Próprio
-          </p>
-        </div>
-        <div class="md:hidden pr-2">
-          <p
-            class="text-xs font-black title-display tracking-tight"
-            [class.text-title]="true"
-          >
-            Personalizado
-          </p>
-        </div>
-      </button>
+            @if(activeCategory() === item.id) {
+              <div class="hidden lg:block absolute inset-y-1/4 left-0 w-1 bg-brand rounded-r-full"></div>
+            }
+          </button>
+        }
+      </nav>
     </div>
   </div>
 

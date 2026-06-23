@@ -385,10 +385,17 @@ export class IfoodKdsComponent implements OnInit, OnDestroy {
         const elapsedTime = isScheduledAndHeld ? 0 : Math.floor((now - startTime) / 1000);
         const isLate = elapsedTime > 600; // Late after 10 minutes
 
+        const isTest = order.notes ? order.notes.includes('[TESTE IA]') : false;
+
         let timerColor = 'text-green-300';
-        if (elapsedTime > 300) timerColor = 'text-yellow-300'; // 5 mins
-        if (isLate) timerColor = 'text-red-300';
-        if (isScheduledAndHeld) {
+        if (isTest) {
+            timerColor = 'text-purple-300';
+        } else if (elapsedTime > 300) {
+            timerColor = 'text-yellow-300'; // 5 mins
+        } else if (isLate) {
+            timerColor = 'text-red-300';
+        }
+        if (isScheduledAndHeld && !isTest) {
           timerColor = 'text-cyan-300';
         }
 

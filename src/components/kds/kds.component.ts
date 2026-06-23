@@ -65,6 +65,7 @@ interface BaseTicket {
   isOrderCancelled?: boolean; 
   customerName?: string;
   waiterName?: string;
+  isTest?: boolean;
 }
 
 interface KdsDisplayItem {
@@ -614,10 +615,17 @@ export class KdsComponent implements OnInit, OnDestroy {
             const elapsedTime = isScheduledAndHeld ? 0 : Math.floor((now - startTime) / 1000);
             const isLate = elapsedTime > 600;
 
+            const isTest = order.notes ? order.notes.includes('[TESTE IA]') : false;
+
             let timerColor = 'text-green-300';
-            if (elapsedTime > 300) timerColor = 'text-yellow-300';
-            if (isLate) timerColor = 'text-red-300';
-            if (isScheduledAndHeld) {
+            if (isTest) {
+                timerColor = 'text-purple-300';
+            } else if (elapsedTime > 300) {
+                timerColor = 'text-yellow-300';
+            } else if (isLate) {
+                timerColor = 'text-red-300';
+            }
+            if (isScheduledAndHeld && !isTest) {
               timerColor = 'text-cyan-300';
             }
 
@@ -679,9 +687,16 @@ export class KdsComponent implements OnInit, OnDestroy {
             const elapsedTime = Math.floor((now - startTime) / 1000);
             const isLate = elapsedTime > 1800; 
 
+            const isTest = order.notes ? order.notes.includes('[TESTE IA]') : false;
+
             let timerColor = 'text-green-300';
-            if (elapsedTime > 900) timerColor = 'text-yellow-300';
-            if (isLate) timerColor = 'text-red-300';
+            if (isTest) {
+                timerColor = 'text-purple-300';
+            } else if (elapsedTime > 900) {
+                timerColor = 'text-yellow-300';
+            } else if (isLate) {
+                timerColor = 'text-red-300';
+            }
 
             const totalAmount = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) + (order.delivery_cost ?? 0);
 
@@ -842,9 +857,16 @@ export class KdsComponent implements OnInit, OnDestroy {
             const avgPrepTime = orderItems.reduce((acc, item) => acc + item.prepTime, 0) / orderItems.length;
             const percentage = avgPrepTime > 0 ? (ticketElapsedTime / avgPrepTime) * 100 : 0;
             
+            const isTest = order.notes ? order.notes.includes('[TESTE IA]') : false;
+
             let ticketTimerColor = 'bg-green-600';
-            if (percentage > 50) ticketTimerColor = 'bg-yellow-600';
-            if (percentage > 80) ticketTimerColor = 'bg-red-600';
+            if (isTest) {
+                ticketTimerColor = 'bg-purple-600';
+            } else if (percentage > 50) {
+                ticketTimerColor = 'bg-yellow-600';
+            } else if (percentage > 80) {
+                ticketTimerColor = 'bg-red-600';
+            }
             
             const isOrderCancelled = order.status === 'CANCELLED';
             if (isOrderCancelled) {
@@ -861,13 +883,15 @@ export class KdsComponent implements OnInit, OnDestroy {
                 items: groupedItems,
                 ticketElapsedTime,
                 ticketTimerColor,
-                isTicketLate: !isOrderCancelled && ticketElapsedTime > avgPrepTime,
+                isTicketLate: !isOrderCancelled && !isTest && ticketElapsedTime > avgPrepTime,
                 oldestTimestamp: new Date(oldestTimestamp).toISOString(),
                 orderType: order.order_type,
                 ifoodDisplayId: order.ifood_display_id,
                 isOrderCancelled,
                 customerName: order.customers?.name,
-                waiterName: order.waiter?.name
+                waiterName: order.waiter?.name,
+                isTest,
+                notes: order.notes
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());

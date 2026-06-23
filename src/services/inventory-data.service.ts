@@ -458,6 +458,17 @@ export class InventoryDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
+    // Check if it's a test order
+    const { data: orderData } = await this.supabase
+      .from('orders')
+      .select('notes')
+      .eq('id', orderId)
+      .single();
+    
+    if (orderData && orderData.notes && orderData.notes.includes('[TESTE IA]')) {
+      return { success: true, error: null, warningMessage: 'Dedução ignorada (Pedido de Teste)' };
+    }
+
     const recipeCompositions = this.recipeState.recipeCosts();
     const processedGroupIds = new Set<string>();
     

@@ -40,7 +40,14 @@
             [class.border-l-transparent]="!order.ifood_dispute_id && !order.isScheduledAndHeld">
             
             <div class="p-3 flex justify-between items-center border-b border-subtle bg-surface-elevated/50">
-              <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+                @if(order.notes && order.notes.includes('[TESTE IA]')) {
+                  <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-purple-600/15 text-purple-400 rounded-md tracking-wider border border-purple-500/10 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> TESTE
+                  </span>
+                }
+              </div>
               <span class="font-mono text-sm font-bold" [class]="order.timerColor">{{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}</span>
             </div>
             
@@ -146,7 +153,14 @@
                [class.border-l-transparent]="!order.ifood_dispute_id && !order.isScheduledAndHeld">
             
             <div class="p-3 flex justify-between items-center border-b border-subtle bg-surface-elevated/50">
-              <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+                @if(order.notes && order.notes.includes('[TESTE IA]')) {
+                  <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-purple-600/15 text-purple-400 rounded-md tracking-wider border border-purple-500/10 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> TESTE
+                  </span>
+                }
+              </div>
               <span class="font-mono text-sm font-bold" [class]="order.timerColor">
                 {{ order.isScheduledAndHeld ? 'AGENDADO' : formatTime(order.elapsedTime) }}
               </span>
@@ -226,7 +240,14 @@
         @for (order of readyOrders(); track order.id) {
           <div (click)="openDetailModal(order)" class="bg-surface rounded-xl overflow-hidden shadow-sm flex flex-col cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md border border-subtle group border-l-4 border-l-success">
             <div class="p-3 flex justify-between items-center border-b border-subtle bg-surface-elevated/50">
-              <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-title text-sm tracking-widest">#{{ order.ifood_display_id }}</span>
+                @if(order.notes && order.notes.includes('[TESTE IA]')) {
+                  <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-purple-600/15 text-purple-400 rounded-md tracking-wider border border-purple-500/10 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> TESTE
+                  </span>
+                }
+              </div>
               <span class="font-mono text-sm font-bold" [class]="order.timerColor">{{ formatTime(order.elapsedTime) }}</span>
             </div>
             <div class="p-4 space-y-4">
@@ -287,7 +308,14 @@
         @for(order of finishedOrders(); track order.id) {
             <div (click)="openDetailModal(order)" class="bg-surface rounded-xl overflow-hidden shadow-sm flex flex-col cursor-pointer transition-all hover:shadow-md border border-subtle group opacity-80 hover:opacity-100" [class.border-l-4]="order.ifoodStatus === 'CANCELLED'" [class.border-l-danger]="order.ifoodStatus === 'CANCELLED'">
                 <div class="p-3 flex justify-between items-center border-b border-subtle bg-surface-elevated/50">
-                    <span class="font-black text-title text-sm tracking-widest" [class.text-danger]="order.ifoodStatus === 'CANCELLED'">#{{ order.ifood_display_id }}</span>
+                    <div class="flex items-center gap-2">
+                      <span class="font-black text-title text-sm tracking-widest" [class.text-danger]="order.ifoodStatus === 'CANCELLED'">#{{ order.ifood_display_id }}</span>
+                      @if(order.notes && order.notes.includes('[TESTE IA]')) {
+                        <span class="px-2 py-0.5 text-[8px] font-black uppercase bg-purple-600/15 text-purple-400 rounded-md tracking-wider border border-purple-500/10 flex items-center gap-1">
+                          <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> TESTE
+                        </span>
+                      }
+                    </div>
                     <span class="font-mono text-sm font-bold" [class]="order.ifoodStatus === 'CANCELLED' ? 'text-danger' : order.timerColor">{{ order.ifoodStatus === 'CANCELLED' ? 'CANCELADO' : formatTime(order.elapsedTime) }}</span>
                 </div>
                 <div class="p-4 space-y-4">
