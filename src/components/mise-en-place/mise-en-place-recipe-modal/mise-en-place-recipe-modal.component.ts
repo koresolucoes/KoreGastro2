@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, computed, InputSignal, OutputEmitterRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, signal, InputSignal, OutputEmitterRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Recipe, RecipePreparation, RecipeIngredient, RecipeSubRecipe, IngredientUnit } from '../../../models/db.models';
 
@@ -20,6 +20,9 @@ export interface FullRecipeForModal {
 export class MiseEnPlaceRecipeModalComponent {
   recipeData: InputSignal<FullRecipeForModal | null> = input.required<FullRecipeForModal | null>();
   close: OutputEmitterRef<void> = output<void>();
+
+  // Use a giant layout by default unless we want a toggle later
+  activeTab = signal<'ingredients' | 'execution'>('ingredients');
 
   hasIngredients = computed(() => {
     const data = this.recipeData();

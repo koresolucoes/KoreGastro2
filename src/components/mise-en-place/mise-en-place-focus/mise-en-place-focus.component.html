@@ -33,10 +33,10 @@
                 </div>
                 
                 @if(task().sub_recipe_id) {
-                    <div class="chef-surface px-6 py-3 rounded-xl text-brand hover:text-brand-hover hover:bg-surface-elevated font-semibold mb-10 flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm border border-subtle">
-                        <span translate="no" class="notranslate material-symbols-outlined">menu_book</span>
+                    <button (click)="viewRecipe()" class="chef-surface w-full max-w-sm px-6 py-4 rounded-2xl text-brand hover:text-brand-hover hover:bg-surface-elevated font-black uppercase tracking-wider mb-10 flex items-center justify-center gap-3 active:scale-95 transition-all shadow-sm border border-subtle">
+                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">menu_book</span>
                         Consultar Ficha Técnica
-                    </div>
+                    </button>
                 }
 
                 <button (click)="startProduction()" class="w-full btn-primary hover:bg-brand-hover text-white font-bold py-5 rounded-2xl shadow-xl shadow-brand/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
@@ -63,7 +63,7 @@
                     </div>
                 </div>
 
-                <div class="w-full chef-surface rounded-2xl p-6 mb-10 border-l-[6px] border-l-brand relative overflow-hidden">
+                <div class="w-full chef-surface rounded-2xl p-6 mb-6 border-l-[6px] border-l-brand relative overflow-hidden">
                     <div class="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-brand/5 to-transparent pointer-events-none"></div>
                     <div class="flex justify-between items-end relative z-10">
                         <div class="pr-4">
@@ -75,6 +75,15 @@
                         </div>
                     </div>
                 </div>
+
+                @if(task().sub_recipe_id) {
+                    <button (click)="viewRecipe()" class="w-full chef-surface border border-brand/30 text-brand hover:bg-brand/5 font-black uppercase tracking-wider py-4 rounded-xl mb-10 flex items-center justify-center gap-3 active:scale-95 transition-all shadow-sm">
+                        <span translate="no" class="notranslate material-symbols-outlined text-xl">menu_book</span>
+                        Consultar Ficha Técnica
+                    </button>
+                } @else {
+                    <div class="mb-10"></div>
+                }
 
                 <button (click)="finishProduction()" class="w-full bg-success text-white hover:opacity-90 font-bold py-5 rounded-2xl shadow-xl shadow-success/30 text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
                     <span translate="no" class="notranslate material-symbols-outlined text-3xl">check_circle</span>

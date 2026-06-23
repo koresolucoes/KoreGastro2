@@ -89,6 +89,31 @@ export class OperationalService {
     return data;
   }
 
+  async uploadOperationalImage(file: File, folder: 'checklists' | 'temperatures'): Promise<string | null> {
+      const storeId = this.unitContext.activeUnitId();
+      if (!storeId) return null;
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${storeId}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await this.supabase.storage
+          .from('operational_images')
+          .upload(fileName, file, { cacheControl: '3600', upsert: false });
+          
+      if (error) {
+          console.error(`Error uploading image to ${folder}:`, error);
+          this.notificationService.show('Erro ao fazer upload da imagem.', 'error');
+          return null;
+      }
+      
+      const { data: publicUrlData } = this.supabase.storage
+          .from('operational_images')
+          .getPublicUrl(fileName);
+          
+      return publicUrlData.publicUrl;
+  }
+
+
   // --- Checklist Templates ---
   async getChecklistTemplates(section?: string): Promise<ChecklistTemplate[]> {
     const storeId = this.unitContext.activeUnitId();

@@ -1,91 +1,124 @@
 @if (recipeData(); as data) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" (click)="close.emit()">
-    <div class="chef-surface w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200" (click)="$event.stopPropagation()">
-      <!-- Header -->
-      <div class="p-6 border-b border-subtle flex justify-between items-center flex-shrink-0 bg-surface/50 rounded-t-2xl">
+  <div class="fixed inset-0 bg-app/95 backdrop-blur-md z-[200] flex items-center justify-center transition-all animate-in fade-in" (click)="close.emit()">
+    <!-- Giant Container -->
+    <div class="w-full h-full md:w-[95vw] md:h-[95vh] bg-surface flex flex-col md:rounded-[3rem] shadow-2xl overflow-hidden border border-strong" (click)="$event.stopPropagation()">
+      
+      <!-- Top Header & Tabs -->
+      <div class="p-6 md:p-10 border-b border-subtle flex flex-col md:flex-row md:items-center justify-between gap-8 bg-surface-elevated/30">
         <div>
-            <h3 class="title-display text-2xl text-title">Ficha Técnica: {{ data.recipe.name }}</h3>
-            <p class="text-muted text-sm mt-1 font-medium">Modo de preparo e ingredientes</p>
+            <h3 class="title-display text-4xl md:text-6xl text-title font-black text-left">{{ data.recipe.name }}</h3>
+            <p class="text-xl text-muted mt-2 font-bold text-left">Ficha Técnica (Rendimento Calculado)</p>
         </div>
-        <button (click)="close.emit()" class="w-10 h-10 rounded-full hover-surface-elevated flex items-center justify-center text-muted hover:text-title transition-colors">
-          <span translate="no" class="notranslate material-symbols-outlined">close</span>
+        
+        <!-- Giant Toggles -->
+        <div class="flex bg-surface-elevated p-2 rounded-3xl border border-subtle shadow-inner">
+            <button (click)="activeTab.set('ingredients')" 
+                class="px-8 py-5 rounded-2xl text-2xl font-black transition-all"
+                [class.bg-brand]="activeTab() === 'ingredients'" [class.text-white]="activeTab() === 'ingredients'" [class.shadow-md]="activeTab() === 'ingredients'" 
+                [class.text-muted]="activeTab() !== 'ingredients'" [class.hover:text-title]="activeTab() !== 'ingredients'">
+                <div class="flex items-center gap-3">
+                    <span translate="no" class="notranslate material-symbols-outlined text-3xl">scale</span> Ingredientes
+                </div>
+            </button>
+            <button (click)="activeTab.set('execution')" 
+                class="px-8 py-5 rounded-2xl text-2xl font-black transition-all"
+                [class.bg-brand]="activeTab() === 'execution'" [class.text-white]="activeTab() === 'execution'" [class.shadow-md]="activeTab() === 'execution'" 
+                [class.text-muted]="activeTab() !== 'execution'" [class.hover:text-title]="activeTab() !== 'execution'">
+                <div class="flex items-center gap-3">
+                    <span translate="no" class="notranslate material-symbols-outlined text-3xl">skillet</span> Execução
+                </div>
+            </button>
+        </div>
+        
+        <button (click)="close.emit()" class="absolute top-8 right-8 w-16 h-16 rounded-full bg-surface-elevated hover:bg-subtle flex items-center justify-center text-muted hover:text-title transition-colors border border-strong shadow-sm active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-4xl">close</span>
         </button>
       </div>
       
-      <!-- Body -->
-      <div class="flex-1 p-6 overflow-y-auto custom-scrollbar">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <!-- Ingredients & Sub-Recipes Column -->
-          <div class="md:col-span-1 space-y-8">
-            <div>
-              <h4 class="font-bold text-lg text-title mb-4 pb-2 border-b border-subtle">Ingredientes</h4>
-              @if(hasIngredients()) {
-                <ul class="space-y-2 text-sm">
-                  @for(prep of data.preparations; track prep.id) {
-                      @for(ing of prep.ingredients; track ing.ingredient_id) {
-                          <li class="flex justify-between items-center bg-surface-elevated px-3 py-2.5 rounded-lg border border-subtle">
-                              <span class="text-body font-medium">{{ ing.name }}</span>
-                              <span class="data-mono font-bold text-brand">{{ ing.quantity | number:'1.0-3' }} <span class="text-xs text-muted">{{ ing.unit }}</span></span>
-                          </li>
-                      }
-                  }
-                </ul>
-              } @else {
-                  <p class="text-muted text-sm font-medium italic">Nenhum ingrediente direto.</p>
-              }
-            </div>
-            @if(data.subRecipes.length > 0) {
-                <div>
-                  <h4 class="font-bold text-lg text-title mb-4 pb-2 border-b border-subtle">Sub-Receitas</h4>
-                  <ul class="space-y-2 text-sm">
-                    @for(sub of data.subRecipes; track sub.child_recipe_id) {
-                        <li class="flex justify-between items-center bg-surface-elevated px-3 py-2.5 rounded-lg border border-subtle">
-                            <span class="text-body font-medium">{{ sub.name }}</span>
-                            <span class="data-mono font-bold text-purple"><span class="text-xs text-muted">x</span> {{ sub.quantity | number }}</span>
-                        </li>
-                    }
-                  </ul>
-                </div>
-            }
-          </div>
-
-          <!-- Preparations Column -->
-          <div class="md:col-span-2">
-            <h4 class="font-bold text-lg text-title mb-4 pb-2 border-b border-subtle">Modo de Preparo</h4>
-            @if(data.preparations.length > 0) {
-              <div class="space-y-6">
-                @for(prep of data.preparations; track prep.id; let i = $index) {
-                  <div class="bg-surface-elevated p-5 rounded-xl border border-subtle shadow-sm relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-brand"></div>
-                    <h5 class="font-bold text-brand text-lg mb-3 pl-2 flex items-center gap-2">
-                        <span class="bg-brand/10 text-brand px-2.5 py-0.5 rounded-md text-sm">Etapa {{ i + 1 }}</span> 
-                        {{ prep.name }}
-                    </h5>
-                    
-                    @if (prep.ingredients.length > 0) {
-                        <div class="pl-2 mb-4">
-                            <p class="text-xs font-bold text-muted uppercase tracking-wider mb-2">Usar na etapa:</p>
-                            <div class="flex flex-wrap gap-2">
-                            @for(ing of prep.ingredients; track ing.ingredient_id) {
-                                <span class="inline-flex items-center gap-1.5 bg-surface text-body text-xs font-medium px-2.5 py-1.5 rounded-md border border-subtle">
-                                    {{ ing.name }} 
-                                    <span class="text-brand data-mono font-bold">{{ ing.quantity | number:'1.0-3' }}{{ ing.unit }}</span>
-                                </span>
-                            }
+      <!-- Body Area -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12">
+        
+        <!-- INGREDIENTS TAB -->
+        @if(activeTab() === 'ingredients') {
+            <div class="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-300">
+                @if(hasIngredients()) {
+                    <div class="space-y-4">
+                    @for(prep of data.preparations; track prep.id) {
+                        @for(ing of prep.ingredients; track ing.ingredient_id) {
+                            <div class="flex justify-between items-center bg-surface-elevated/50 px-8 py-6 rounded-3xl border-2 border-subtle shadow-sm hover:border-brand/30 transition-colors">
+                                <span class="text-3xl font-bold text-title">{{ ing.name }}</span>
+                                <div class="bg-surface px-6 py-3 rounded-2xl border border-strong">
+                                    <span class="data-mono font-black text-brand text-5xl">{{ ing.quantity | number:'1.0-3' }} <span class="text-2xl text-muted">{{ ing.unit }}</span></span>
+                                </div>
                             </div>
-                        </div>
+                        }
                     }
-                  </div>
+                    </div>
+                } @else {
+                    <div class="text-center py-20 opacity-50">
+                        <span translate="no" class="notranslate material-symbols-outlined text-8xl mb-6">kitchen</span>
+                        <p class="text-4xl font-bold">Nenhum ingrediente direto.</p>
+                    </div>
                 }
-              </div>
-            } @else {
-              <div class="text-center py-16 bg-surface-elevated rounded-2xl border border-dashed border-strong">
-                <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">description</span>
-                <p class="text-muted font-medium">Nenhum modo de preparo cadastrado para esta receita.</p>
-              </div>
-            }
-          </div>
-        </div>
+
+                @if(data.subRecipes.length > 0) {
+                    <div class="mt-16">
+                        <h4 class="font-black text-3xl text-title mb-8 pb-4 border-b-2 border-subtle flex items-center gap-4">
+                            <span translate="no" class="notranslate material-symbols-outlined text-4xl">dataset_linked</span> Sub-Receitas
+                        </h4>
+                        <div class="space-y-4">
+                        @for(sub of data.subRecipes; track sub.child_recipe_id) {
+                            <div class="flex justify-between items-center bg-purple/5 px-8 py-6 rounded-3xl border-2 border-purple/20 shadow-sm">
+                                <span class="text-3xl font-bold text-title">{{ sub.name }}</span>
+                                <div class="bg-surface px-6 py-3 rounded-2xl border border-purple/20">
+                                    <span class="data-mono font-black text-purple text-5xl"><span class="text-2xl text-purple/50 mr-2">x</span>{{ sub.quantity | number }}</span>
+                                </div>
+                            </div>
+                        }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- EXECUTION TAB -->
+        @if(activeTab() === 'execution') {
+            <div class="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-300">
+                @if(data.preparations.length > 0) {
+                    <ol class="space-y-10 relative">
+                        <div class="absolute left-10 top-10 bottom-10 w-2 bg-brand/20 rounded-full"></div>
+                        @for(prep of data.preparations; track prep.id; let i = $index) {
+                            <li class="relative pl-24">
+                                <div class="absolute left-0 top-0 w-24 h-24 bg-brand text-white font-black text-5xl flex items-center justify-center rounded-3xl shadow-xl shadow-brand/30 z-10 font-sans tracking-tighter">
+                                    {{ i + 1 }}
+                                </div>
+                                <div class="bg-surface-elevated/80 p-10 rounded-[3rem] border border-strong shadow-sm min-h-[140px] pt-8">
+                                    <h5 class="font-black text-title text-4xl leading-tight font-sans tracking-tight mb-8">{{ prep.name }}</h5>
+                                    
+                                    @if(prep.ingredients.length > 0) {
+                                        <div class="bg-app/50 p-6 rounded-3xl border border-subtle mt-6 inline-flex gap-4 flex-wrap">
+                                            <span class="text-lg font-bold text-muted uppercase tracking-widest flex items-center mr-4">Usar:</span>
+                                            @for(ing of prep.ingredients; track ing.ingredient_id) {
+                                                <span class="inline-flex items-center gap-2 bg-surface text-title text-xl font-bold px-4 py-2 rounded-xl border-2 border-strong shadow-sm">
+                                                    {{ ing.name }} 
+                                                    <span class="text-brand data-mono">{{ ing.quantity | number:'1.0-3' }}{{ ing.unit }}</span>
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                } @else {
+                    <div class="text-center py-20 opacity-50">
+                        <span translate="no" class="notranslate material-symbols-outlined text-8xl mb-6 text-muted">description</span>
+                        <p class="text-4xl font-bold text-muted">Nenhum modo de preparo cadastrado.</p>
+                    </div>
+                }
+            </div>
+        }
+
       </div>
     </div>
   </div>

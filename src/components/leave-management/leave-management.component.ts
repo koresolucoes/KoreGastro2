@@ -6,6 +6,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { LeaveRequestDetailsModalComponent } from './leave-request-details-modal/leave-request-details-modal.component';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id'>>;
 
@@ -22,6 +23,7 @@ export class LeaveManagementComponent {
   hrState = inject(HrStateService);
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
+  supabaseStateService = inject(SupabaseStateService);
   // FIX: Add explicit type to injected pipe to resolve type inference issues.
   datePipe: DatePipe = inject(DatePipe);
 
@@ -29,6 +31,10 @@ export class LeaveManagementComponent {
   // FIX: Access state from the correct feature-specific service
   leaveRequests = this.hrState.leaveRequests;
   employees = this.hrState.employees;
+
+  constructor() {
+    this.supabaseStateService.loadBackOfficeData();
+  }
 
   // View State
   activeTab = signal<LeaveRequestStatus>('Pendente');

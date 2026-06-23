@@ -52,8 +52,10 @@ export class MiseEnPlaceComponent {
   recipeCosts = this.recipeState.recipeCosts;
 
   // View State
-  viewMode = signal<'manager' | 'cook'>('manager'); // Toggle based on role or user choice
+  viewMode = signal<'manager' | 'cook'>('manager');
   selectedDate = signal(new Date().toISOString().split('T')[0]);
+  selectedStationFilter = signal<string | 'all'>('all'); // NEW FILTER
+
   activePlan = computed(() => {
     const plans = this.inventoryState.productionPlans();
     const date = this.selectedDate();
@@ -79,18 +81,56 @@ export class MiseEnPlaceComponent {
   // Tasks filtered and sorted
   tasks = computed(() => {
     const allTasks = this.activePlan()?.production_tasks || [];
+    let filtered = allTasks;
+    
+    if (this.selectedStationFilter() !== 'all') {
+        filtered = filtered.filter(t => t.station_id === this.selectedStationFilter());
+    }
+    
     // Sort by priority (ascending, 1 is highest/first)
-    return [...allTasks].sort((a, b) => (a.priority || 999) - (b.priority || 999));
+    return [...filtered].sort((a, b) => (a.priority || 999) - (b.priority || 999));
   });
 
-  // Filter for Cook View (only their station or assigned to them)
+  // Filter for Cook View
   cookTasks = computed(() => {
       const all = this.tasks();
-      const me = this.activeEmployee();
-      if (!me) return [];
       
       // Simple filter: tasks not completed
       return all.filter(t => t.status !== 'Concluído');
+  });
+
+  // Highlight missing ingredients for tasks
+  taskWarnings = computed(() => {
+     const warnings = new Map<string, boolean>();
+     const recipes = this.recipeState.recipes();
+     const allTaskIngredients = this.recipeState.recipeIngredients();
+     const inventory = this.inventoryState.ingredients();
+     const allPreparations = this.recipeState.recipePreparations();
+
+     const inventoryMap = new Map(inventory.map(i => [i.id, i.stock]));
+
+     for (const task of this.tasks()) {
+         if (!task.sub_recipe_id || task.status === 'Concluído') continue;
+         
+         const recipePreps = allPreparations.filter(p => p.recipe_id === task.sub_recipe_id);
+         let hasShortage = false;
+
+         for (const prep of recipePreps) {
+             const ingredients = allTaskIngredients.filter(i => i.preparation_id === prep.id);
+             for (const ing of ingredients) {
+                 const currentStock = inventoryMap.get(ing.ingredient_id) || 0;
+                 const requiredAmount = ing.quantity * task.quantity_to_produce; // Simplified scale
+                 if (currentStock < requiredAmount) {
+                     hasShortage = true;
+                     break;
+                 }
+             }
+             if (hasShortage) break;
+         }
+         warnings.set(task.id, hasShortage);
+     }
+     
+     return warnings;
   });
 
   recipeForModal = computed(() => {
@@ -118,8 +158,8 @@ export class MiseEnPlaceComponent {
               return {
                 ...i,
                 name: ingredientDetails?.name || 'Ingrediente Excluído',
-                unit: ingredientDetails?.unit || 'un', // Fallback to recipe ingredient unit override or base unit
-                quantity: i.quantity
+                unit: ingredientDetails?.unit || 'un', // Fallback
+                quantity: i.quantity * (task.quantity_to_produce || 1)
               };
             });
           return { ...p, ingredients: prepIngredients };
@@ -130,7 +170,8 @@ export class MiseEnPlaceComponent {
         .filter(sr => sr.parent_recipe_id === recipe.id)
         .map(sr => ({
           ...sr,
-          name: recipesMap.get(sr.child_recipe_id)?.name || '?'
+          name: recipesMap.get(sr.child_recipe_id)?.name || '?',
+          quantity: sr.quantity * (task.quantity_to_produce || 1)
         }));
 
       return { recipe, preparations: recipePreps, subRecipes: recipeSubRecipesData }; 
@@ -173,22 +214,6 @@ export class MiseEnPlaceComponent {
     this.selectedDate.set(newDate);
   }
 
-  // --- Drag and Drop Logic ---
-  drop(event: CdkDragDrop<string[]>) {
-    // Reorder logic
-    const currentTasks = this.tasks();
-    moveItemInArray(currentTasks, event.previousIndex, event.currentIndex);
-    
-    // Update priorities locally and in DB
-    const updates = currentTasks.map((task, index) => ({
-        id: task.id,
-        priority: index + 1
-    }));
-    
-    // We optimistically update local state via service if needed, or rely on realtime
-    this.dataService.updateTaskPriorities(updates);
-  }
-
   // --- Focus Mode ---
   enterFocusMode(task: ProductionTask) {
       this.focusedTask.set(task);
@@ -196,6 +221,26 @@ export class MiseEnPlaceComponent {
 
   exitFocusMode() {
       this.focusedTask.set(null);
+  }
+
+  get tasksTodo() { return this.tasks().filter(t => t.status === 'A Fazer'); }
+  get tasksInProgress() { return this.tasks().filter(t => t.status === 'Em Preparo'); }
+  get tasksDone() { return this.tasks().filter(t => t.status === 'Concluído'); }
+
+  // --- Drag and Drop Logic ---
+  drop(event: CdkDragDrop<ProductionTask[]>) {
+    if (event.previousContainer === event.container) {
+      // Reorder logic inside same list
+      const items = [...event.container.data];
+      moveItemInArray(items, event.previousIndex, event.currentIndex);
+      items.forEach((item, idx) => item.priority = idx + 1);
+      this.dataService.updateTaskPriorities(items.map(t => ({ id: t.id, priority: t.priority })));
+    } else {
+      // Moved to another list/status
+      const task = event.previousContainer.data[event.previousIndex];
+      const newStatus = event.container.id as ProductionTaskStatus;
+      this.dataService.updateTask(task.id, { status: newStatus });
+    }
   }
 
   // --- Task Management ---

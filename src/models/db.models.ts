@@ -840,6 +840,7 @@ export interface ChecklistLog {
   employee_id: string | null;
   status: 'completed' | 'pending' | 'issue';
   notes: string | null;
+  image_url: string | null;
   completed_at: string;
   checklist_templates?: ChecklistTemplate;
   employees?: { name: string };
@@ -862,6 +863,7 @@ export interface TemperatureLog {
   employee_id: string | null;
   temperature: number;
   notes: string | null;
+  image_url: string | null;
   recorded_at: string;
   equipment?: Equipment;
   employees?: { name: string };

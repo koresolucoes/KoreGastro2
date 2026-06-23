@@ -6,6 +6,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { LeaveDataService } from '../../services/leave-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { SupabaseStateService } from '../../services/supabase-state.service';
 
 type LeaveForm = Partial<Omit<LeaveRequest, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'status' | 'manager_notes' | 'employees' | 'attachment_url'>>;
 
@@ -23,11 +24,16 @@ export class MyLeaveComponent {
   leaveDataService = inject(LeaveDataService);
   notificationService = inject(NotificationService);
   operationalAuthService = inject(OperationalAuthService);
+  supabaseStateService = inject(SupabaseStateService);
   // FIX: Add explicit type to injected pipe to resolve type inference issues.
   datePipe: DatePipe = inject(DatePipe);
 
   // Data
   activeEmployee = this.operationalAuthService.activeEmployee;
+
+  constructor() {
+    this.supabaseStateService.loadBackOfficeData();
+  }
 
   // Modal State
   isModalOpen = signal(false);

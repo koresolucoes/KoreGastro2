@@ -23,6 +23,7 @@ export class MiseEnPlaceFocusComponent implements OnInit, OnDestroy {
   // Outputs
   close = output<void>();
   taskCompleted = output<void>();
+  openRecipe = output<ProductionTask>();
 
   // Services
   private dataService = inject(MiseEnPlaceDataService);
@@ -155,5 +156,13 @@ export class MiseEnPlaceFocusComponent implements OnInit, OnDestroy {
 
   cancel() {
       this.close.emit();
+  }
+
+  viewRecipe() {
+      if (this.task().sub_recipe_id) {
+          this.openRecipe.emit(this.task());
+      } else {
+          this.notificationService.show('Esta tarefa não possui ficha técnica.', 'info');
+      }
   }
 }

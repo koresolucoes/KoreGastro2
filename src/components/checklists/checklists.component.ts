@@ -13,192 +13,183 @@ import autoTable from 'jspdf-autotable';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div class="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div class="p-4 md:p-8 text-body min-h-[calc(100vh-64px)] bg-app flex flex-col pt-20">
       <!-- Page Header -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-subtle pb-6">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center border border-success/20 shadow-inner">
-            <span translate="no" class="notranslate material-symbols-outlined text-success text-2xl">checklist</span>
-          </div>
-          <div>
-            <h1 class="text-3xl font-black title-display tracking-tight text-title">Checklists</h1>
-            <p class="text-muted text-sm font-medium">Controle operacional e rotinas diárias</p>
-          </div>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-4 md:mt-0">
+        <div>
+           <h1 class="text-4xl font-black title-display tracking-tight text-title flex items-center gap-3">
+              Rotinas & Checklists
+           </h1>
+           <p class="text-muted mt-2 font-medium">Controle de abertura, fechamento e limpeza</p>
         </div>
 
         <div class="flex flex-wrap gap-3">
-          <button (click)="generatePDF()" class="flex-1 md:flex-none bg-surface-elevated hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-strong shadow-sm hover:translate-y-[-2px] active:scale-95 transition-all">
+          <button (click)="generatePDF()" class="flex-1 md:flex-none chef-surface hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-subtle shadow-sm active:scale-95 transition-all">
             <span translate="no" class="notranslate material-symbols-outlined text-info">picture_as_pdf</span>
-            Relatório
+            Gerar Relatório
           </button>
           @if (isManager()) {
-            <button (click)="showAddTemplateModal.set(true)" class="flex-1 md:flex-none bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-brand/20 hover:translate-y-[-2px] active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
+            <button (click)="showAddTemplateModal.set(true)" class="flex-1 md:flex-none btn-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
               <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
-              Nova Tarefa
+              Criar Rotina
             </button>
           }
         </div>
       </div>
 
       <!-- Filters -->
-      <div class="flex flex-col sm:flex-row gap-4 p-4 chef-surface bg-surface-elevated/20 transition-all">
-        <div class="flex-1 relative group">
-          <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">category</span>
-          <select [ngModel]="selectedSection()" (ngModelChange)="selectedSection.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
-            <option value="">Todas as Seções</option>
-            <option value="Cozinha">Cozinha</option>
-            <option value="Salão">Salão</option>
-            <option value="Bar">Bar</option>
-            <option value="Caixa">Caixa</option>
-            <option value="Geral">Geral</option>
-          </select>
-        </div>
-        
+      <div class="flex flex-col sm:flex-row gap-4 mb-8">
         <div class="flex-1 relative group">
           <span translate="no" class="notranslate absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand material-symbols-outlined text-[20px] transition-colors">schedule</span>
-          <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-elevated border-2 border-strong text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
-            <option value="">Todos os Tipos</option>
-            <option value="opening">Abertura</option>
-            <option value="closing">Fechamento</option>
-            <option value="custom">Outros</option>
+          <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="w-full pl-12 pr-4 py-3 rounded-xl chef-surface border border-subtle text-title font-bold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all appearance-none cursor-pointer">
+            <option value="">Qualquer Turno</option>
+            <option value="opening">Abertura (Manhã)</option>
+            <option value="closing">Fechamento (Noite)</option>
+            <option value="custom">Rotinas Específicas</option>
           </select>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Checklist Tasks -->
-        <div class="lg:col-span-2 space-y-6">
-          <div class="chef-surface overflow-hidden">
-            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex justify-between items-center">
-              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-60">task_alt</span>
-                Tarefas Pendentes
-              </h3>
-              <button (click)="loadData()" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-xl transition-all" title="Atualizar">
-                <span translate="no" class="notranslate material-symbols-outlined text-[20px]" [class.animate-spin]="isLoading()">refresh</span>
-              </button>
-            </div>
-            
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 pb-12">
+        <!-- Checklist Groups (Clipboard Style) -->
+        <div class="xl:col-span-2 space-y-8">
             @if (isLoading() && templates().length === 0) {
-               <div class="p-16 text-center text-muted">
-                <div class="animate-pulse flex flex-col items-center">
-                   <div class="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
-                      <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">sync</span>
-                   </div>
-                   <p class="font-bold uppercase tracking-widest text-xs">Sincronizando tarefas...</p>
-                </div>
-              </div>
-            } @else if (filteredTemplates().length === 0) {
-              <div class="p-16 text-center text-muted">
-                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 opacity-20">inventory</span>
-                <p class="text-lg font-bold">Nenhuma tarefa encontrada.</p>
-                @if (isManager()) {
-                   <button (click)="showAddTemplateModal.set(true)" class="mt-4 text-brand font-black text-sm uppercase tracking-widest hover:underline">Nova tarefa</button>
-                }
+               <div class="flex justify-center py-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand"></div>
+               </div>
+            } @else if (groupedTemplates().length === 0) {
+              <div class="chef-surface p-16 text-center text-muted rounded-3xl border border-dashed border-strong">
+                <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4 opacity-50">inventory</span>
+                <p class="text-xl font-bold title-display text-title">Nenhuma rotina pendente.</p>
+                <p class="mt-2 text-sm font-medium">Todas as áreas estão em dia.</p>
               </div>
             } @else {
-              <div class="divide-y divide-subtle">
-                @for (template of filteredTemplates(); track template.id) {
-                  <div class="p-6 hover:bg-surface-elevated transition-colors group">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                      <div class="flex-1 min-w-0">
-                        <div class="flex flex-wrap items-center gap-2 mb-3">
-                           <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-surface-elevated text-muted border border-strong">
-                             {{ template.section }}
-                           </span>
-                           <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border"
-                                 [ngClass]="{
-                                   'bg-info/10 text-info border-info/20': template.checklist_type === 'opening',
-                                   'bg-purple/10 text-purple border-purple/20': template.checklist_type === 'closing',
-                                   'bg-muted/10 text-muted border-muted/20': template.checklist_type === 'custom'
-                                 }">
-                             {{ getTypeName(template.checklist_type) }}
-                           </span>
-                        </div>
-                        <h4 class="text-lg font-bold text-title leading-tight">{{ template.task_description }}</h4>
-                      </div>
-                      
-                      <div class="flex items-center gap-3">
-                        <button (click)="logTask(template, 'completed')" 
-                                [disabled]="isSubmitting()"
-                                class="flex-1 sm:flex-none bg-success/10 hover:bg-success text-success hover:text-white border border-success/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
-                          <span translate="no" class="notranslate material-symbols-outlined text-[18px]">check_circle</span>
-                          OK
-                        </button>
-                        <button (click)="logTask(template, 'issue')" 
-                                [disabled]="isSubmitting()"
-                                class="flex-1 sm:flex-none bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
-                          <span translate="no" class="notranslate material-symbols-outlined text-[18px]">report_problem</span>
-                          Falha
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
+               @for (group of groupedTemplates(); track group.section) {
+                   <!-- Section Card (Clipboard) -->
+                   <div class="chef-surface rounded-2xl overflow-hidden shadow-sm border border-subtle relative">
+                       <!-- Top clipboard clip -->
+                       <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-3 bg-surface-elevated rounded-b-xl border border-t-0 border-subtle shadow-inner z-10 hidden sm:block"></div>
+                       
+                       <div class="bg-surface-elevated/30 p-6 border-b border-subtle">
+                           <div class="flex justify-between items-end">
+                               <div>
+                                    <span class="inline-block px-3 py-1 bg-surface rounded text-xs font-black uppercase tracking-widest text-muted border border-strong shadow-inner mb-3">
+                                        Praça / Setor
+                                    </span>
+                                    <h3 class="text-3xl font-black text-title title-display tracking-tight">{{ group.section }}</h3>
+                               </div>
+                               <div class="text-right">
+                                   <div class="text-4xl font-black text-brand data-mono tracking-tighter">{{ getSectionProgress(group.section) }}%</div>
+                                   <div class="text-[10px] font-bold uppercase tracking-widest text-muted">Concluído hoje</div>
+                               </div>
+                           </div>
+                           
+                           <!-- Progress Bar -->
+                           <div class="h-2 w-full bg-surface-elevated rounded-full mt-5 overflow-hidden border border-strong inset-shadow-sm">
+                                <div class="h-full bg-brand transition-all duration-1000 ease-in-out" [style.width.%]="getSectionProgress(group.section)"></div>
+                           </div>
+                       </div>
+
+                       <div class="divide-y divide-subtle bg-app/50">
+                           @for (template of group.templates; track template.id) {
+                               <div class="p-4 sm:p-6 transition-all border-l-4 cursor-pointer select-none group/card" 
+                                    [class.opacity-60]="isTaskDone(template.id)"
+                                    [class.border-l-success]="isTaskDone(template.id)"
+                                    [class.border-l-transparent]="!isTaskDone(template.id)"
+                                    [class.bg-success/5]="isTaskDone(template.id)"
+                                    [class.hover:bg-surface-elevated]="!isTaskDone(template.id)"
+                                    (click)="toggleTask(template)">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div class="flex items-start gap-4 flex-1">
+                                             <!-- Checkbox UI -->
+                                             <div class="w-10 h-10 shrink-0 rounded-xl border-2 flex items-center justify-center transition-all" 
+                                                [class.border-success]="isTaskDone(template.id)" [class.bg-success]="isTaskDone(template.id)" 
+                                                [class.border-strong]="!isTaskDone(template.id)" [class.bg-surface]="!isTaskDone(template.id)"
+                                                [class.group-hover/card:border-brand]="!isTaskDone(template.id)">
+                                                @if (isTaskDone(template.id)) {
+                                                    <span translate="no" class="notranslate material-symbols-outlined text-white text-2xl font-bold">check</span>
+                                                }
+                                             </div>
+                                             
+                                             <div class="pt-1">
+                                                 <label class="text-xl font-bold text-title cursor-pointer leading-tight mb-2 block" [class.line-through]="isTaskDone(template.id)">
+                                                     {{ template.task_description }}
+                                                 </label>
+                                                 <div class="flex items-center gap-2">
+                                                     <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest"
+                                                         [ngClass]="{
+                                                            'bg-info/10 text-info border border-info/20': template.checklist_type === 'opening',
+                                                            'bg-purple/10 text-purple border border-purple/20': template.checklist_type === 'closing',
+                                                            'bg-surface-elevated text-muted border border-strong': template.checklist_type === 'custom'
+                                                         }">
+                                                     {{ getTypeName(template.checklist_type) }}
+                                                     </span>
+                                                 </div>
+                                             </div>
+                                        </div>
+                                        
+                                        <div class="flex gap-2 sm:pl-12">
+                                             @if (!isTaskDone(template.id)) {
+                                                 <button (click)="openIssueModal(template, $event)" class="text-danger bg-surface z-10 hover:bg-danger/10 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 border border-danger/30 hover:border-danger hover:shadow-md active:scale-95 text-center justify-center">
+                                                     <span translate="no" class="notranslate material-symbols-outlined text-lg">photo_camera</span> 
+                                                     <span class="hidden sm:inline">Reportar com Foto</span>
+                                                 </button>
+                                             }
+                                        </div>
+                                    </div>
+                               </div>
+                           }
+                       </div>
+                   </div>
+               }
             }
-          </div>
         </div>
 
-        <!-- Recent Logs -->
-        <div class="lg:col-span-1 space-y-6">
-          <div class="chef-surface overflow-hidden flex flex-col max-h-[800px]">
-            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/30 flex-shrink-0">
-              <h3 class="text-lg font-black text-title uppercase tracking-widest flex items-center gap-2">
-                <span translate="no" class="notranslate material-symbols-outlined text-purple opacity-60">history</span>
-                Execuções
-              </h3>
-            </div>
-            <div class="flex-1 overflow-y-auto hide-scrollbar p-0">
-              @if (recentLogs().length === 0) {
-                <div class="p-12 text-center text-muted italic text-sm">
-                   <span translate="no" class="notranslate material-symbols-outlined block text-4xl mb-2 opacity-10">history_edu</span>
-                   Nenhum registro.
-                </div>
-              } @else {
-                <div class="divide-y divide-subtle">
-                  @for (log of recentLogs(); track log.id) {
-                    <div class="p-5 hover:bg-surface-elevated transition-colors">
-                      <div class="flex justify-between items-start gap-4">
-                        <div class="min-w-0">
-                          <p class="text-sm font-bold text-title line-clamp-2 leading-snug">{{ log.checklist_templates?.task_description }}</p>
-                          <div class="flex items-center gap-1.5 mt-2">
-                             <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-muted">person</span>
-                             <p class="text-[10px] font-bold text-muted uppercase tracking-wider truncate">{{ log.employees?.name || 'Sistema' }}</p>
-                          </div>
-                          @if(log.notes) {
-                             <div class="mt-2 p-2 bg-warning/5 border border-warning/20 rounded-lg text-[10px] text-warning font-bold italic">
-                                OBS: {{ log.notes }}
+        <!-- Recent Logs Side Panel -->
+        <div class="xl:col-span-1 border-l border-subtle pl-0 xl:pl-8">
+            <h3 class="text-xl font-bold text-title title-display tracking-tight mb-6 flex items-center gap-2">
+                <span translate="no" class="notranslate material-symbols-outlined text-brand">history</span>
+                Diário de Bordo
+            </h3>
+            
+            <div class="relative border-l-2 border-subtle ml-3 space-y-8 pb-8">
+                @if (recentLogs().length === 0) {
+                    <div class="pl-8 text-muted italic text-sm">Nenhum registro recente.</div>
+                }
+                
+                @for (log of recentLogs(); track log.id) {
+                    <div class="relative pl-8 group">
+                         <!-- Timeline dot -->
+                         <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-app transition-colors"
+                            [class.bg-success]="log.status === 'completed'"
+                            [class.bg-danger]="log.status === 'issue'">
+                         </div>
+                         
+                         <div class="p-4 chef-surface rounded-2xl border border-subtle shadow-sm group-hover:shadow-md transition-shadow">
+                             <div class="text-[10px] font-black uppercase tracking-widest text-muted mb-2">{{ log.completed_at | date:'HH:mm' }} • Hoje</div>
+                             <p class="text-sm font-bold text-title leading-snug">{{ log.checklist_templates?.task_description }}</p>
+                             
+                             @if(log.status === 'issue') {
+                                 <div class="mt-3 p-3 bg-danger/5 border border-danger/20 rounded-xl">
+                                     <div class="flex items-center gap-1.5 text-danger font-bold text-[10px] uppercase tracking-widest mb-1">
+                                         <span translate="no" class="notranslate material-symbols-outlined text-[14px]">warning</span> Atenção Necessária
+                                     </div>
+                                     <p class="text-xs text-danger/80 italic font-medium">{{ log.notes || 'Sem detalhes' }}</p>
+                                 </div>
+                             }
+                             
+                             <div class="mt-3 pt-3 border-t border-subtle flex items-center gap-2 text-muted text-xs font-medium">
+                                 <div class="w-5 h-5 rounded-full bg-surface-elevated flex items-center justify-center border border-strong shrink-0">
+                                     <span translate="no" class="notranslate material-symbols-outlined text-[10px]">person</span>
+                                 </div>
+                                 <span class="truncate">{{ log.employees?.name || 'Chef Executivo' }}</span>
                              </div>
-                          }
-                        </div>
-                        <div class="flex-shrink-0">
-                          @if (log.status === 'completed') {
-                            <div class="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center text-success border border-success/20">
-                               <span translate="no" class="notranslate material-symbols-outlined text-[20px]">check_circle</span>
-                            </div>
-                          } @else if (log.status === 'issue') {
-                            <div class="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center text-danger border border-danger/20 animate-pulse">
-                               <span translate="no" class="notranslate material-symbols-outlined text-[20px]">report_problem</span>
-                            </div>
-                          }
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-1.5 mt-3 opacity-50">
-                        <span translate="no" class="notranslate material-symbols-outlined text-[14px]">calendar_month</span>
-                        <p class="text-[10px] font-bold uppercase tracking-widest">{{ log.completed_at | date:'dd MMM, HH:mm' }}</p>
-                      </div>
+                         </div>
                     </div>
-                  }
-                </div>
-              }
+                }
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Add Template Modal -->
+      </div>      <!-- Add Template Modal -->
     @if (showAddTemplateModal()) {
        <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddTemplateModal.set(false)">
         <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
@@ -250,6 +241,46 @@ import autoTable from 'jspdf-autotable';
         </div>
       </div>
     }
+
+    <!-- Setup Issue/Photo Modal -->
+    @if(templateToIssue()) {
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex flex-col pt-10 px-4 pb-4 animate-in fade-in zoom-in-95 duration-200" (click)="closeIssueModal()">
+            <div class="max-w-md mx-auto w-full flex flex-col bg-surface rounded-3xl overflow-hidden shadow-2xl relative" (click)="$event.stopPropagation()">
+                <div class="p-6 bg-danger border-b border-danger-hover text-white flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-black title-display tracking-tight flex items-center gap-2 mb-1">
+                            <span translate="no" class="notranslate material-symbols-outlined">report</span> Reportar Problema
+                        </h3>
+                        <p class="text-sm font-bold text-white/80 line-clamp-2 leading-tight">{{ templateToIssue()!.task_description }}</p>
+                    </div>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                    <!-- Fake Camera Viewport -->
+                     <button class="w-full aspect-[4/3] bg-app border-2 border-dashed border-strong rounded-2xl flex flex-col items-center justify-center text-muted hover:text-brand hover:bg-brand/5 hover:border-brand/30 transition-all group active:scale-[0.98]">
+                         <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2 group-hover:scale-110 transition-transform">photo_camera</span>
+                         <span class="font-bold uppercase tracking-widest text-xs">Capturar Foto (Obrigatório)</span>
+                     </button>
+                     
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Descreva o ocorrido</label>
+                         <textarea [ngModel]="issueNote()" (ngModelChange)="issueNote.set($event)" rows="3" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-title font-medium focus:outline-none focus:border-danger focus:ring-1 focus:ring-danger transition-all resize-none" placeholder="O que quebrou? Faltou algo?"></textarea>
+                     </div>
+                </div>
+                
+                <div class="p-6 pt-0 flex gap-3">
+                    <button (click)="closeIssueModal()" class="flex-1 px-6 py-4 bg-surface hover-surface-elevated text-title rounded-2xl text-sm font-bold border border-strong transition-all active:scale-95 text-center">
+                        Cancelar
+                    </button>
+                    <button (click)="submitIssue()" [disabled]="!issueNote().trim() || isSubmitting()" class="flex-1 px-6 py-4 bg-danger hover:bg-danger-hover text-white rounded-2xl text-sm font-black shadow-lg shadow-danger/20 transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50">
+                        <span translate="no" class="notranslate material-symbols-outlined text-lg">check_circle</span>
+                        Reportar
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+  </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -274,19 +305,60 @@ export class ChecklistsComponent implements OnInit {
     checklist_type: ['opening', Validators.required]
   });
 
+  // Issue modal state
+  templateToIssue = signal<ChecklistTemplate | null>(null);
+  issueNote = signal('');
+
   filteredTemplates = computed(() => {
     let list = this.templates();
-    const section = this.selectedSection();
+    // Removed section filter to allow grouped list
     const type = this.selectedType();
 
-    if (section) {
-      list = list.filter(t => t.section === section);
-    }
     if (type) {
       list = list.filter(t => t.checklist_type === type);
     }
     return list;
   });
+
+  groupedTemplates = computed(() => {
+     const list = this.filteredTemplates();
+     const groups = new Map<string, ChecklistTemplate[]>();
+     
+     list.forEach(t => {
+         const section = t.section || 'Geral';
+         if (!groups.has(section)) {
+             groups.set(section, []);
+         }
+         groups.get(section)!.push(t);
+     });
+     
+     return Array.from(groups.entries()).map(([section, templates]) => ({ section, templates }));
+  });
+
+  // Calculate progress for a section
+  getSectionProgress(section: string): number {
+     const templates = this.groupedTemplates().find(g => g.section === section)?.templates || [];
+     if (templates.length === 0) return 0;
+     
+     let completed = 0;
+     const logs = this.recentLogs();
+     
+     // Check if each template has a 'completed' log today
+     const todayStr = new Date().toISOString().split('T')[0];
+     
+     templates.forEach(t => {
+         const isDone = logs.some(l => l.template_id === t.id && l.status === 'completed' && l.completed_at.startsWith(todayStr));
+         if (isDone) completed++;
+     });
+     
+     return Math.round((completed / templates.length) * 100);
+  }
+
+  isTaskDone(templateId: string): boolean {
+     const logs = this.recentLogs();
+     const todayStr = new Date().toISOString().split('T')[0];
+     return logs.some(l => l.template_id === templateId && l.status === 'completed' && l.completed_at.startsWith(todayStr));
+  }
 
   ngOnInit() {
     this.loadData();
@@ -342,22 +414,41 @@ export class ChecklistsComponent implements OnInit {
     }
   }
 
-  async logTask(template: ChecklistTemplate, status: 'completed' | 'issue') {
+  async toggleTask(template: ChecklistTemplate) {
+      if(this.isSubmitting()) return;
+      if (this.isTaskDone(template.id)) {
+          // Prevent unchecking for this simplified flow, or implement uncheck if needed.
+          // For now, doing nothing to prevent accidental unchecks, or we could delete the log.
+          // Let's allow unchecking by finding the log and deleting it (not supported by service directly yet).
+          return;
+      }
+      
+      // Mark as done
+      await this.logTask(template, 'completed', null);
+  }
+
+  openIssueModal(template: ChecklistTemplate, event: Event) {
+      event.stopPropagation();
+      this.templateToIssue.set(template);
+      this.issueNote.set('');
+  }
+
+  closeIssueModal() {
+      this.templateToIssue.set(null);
+  }
+
+  async submitIssue() {
+      const template = this.templateToIssue();
+      if(!template) return;
+      await this.logTask(template, 'issue', this.issueNote());
+      this.closeIssueModal();
+  }
+
+  async logTask(template: ChecklistTemplate, status: 'completed' | 'issue', providedNotes: string | null = null) {
     const employee = this.authService.activeEmployee();
     if (!employee) {
       this.notificationService.show('Você precisa estar logado como um funcionário para executar checklists.', 'error');
       return;
-    }
-
-    let notes = null;
-    if (status === 'issue') {
-      const result = await this.notificationService.prompt(
-        'Por favor, descreva o problema encontrado:',
-        'Reportar Problema',
-        { inputType: 'textarea', placeholder: 'Detalhes do problema...' }
-      );
-      if (!result.confirmed || !result.value) return; // User cancelled or empty
-      notes = result.value;
     }
 
     this.isSubmitting.set(true);
@@ -366,7 +457,7 @@ export class ChecklistsComponent implements OnInit {
         template_id: template.id,
         employee_id: employee.id,
         status: status,
-        notes: notes
+        notes: providedNotes
       });
 
       if (log) {
