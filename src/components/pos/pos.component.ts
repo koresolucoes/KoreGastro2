@@ -1,6 +1,7 @@
 
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Hall, Table, Order, Employee, Customer } from '../../models/db.models';
 
 import { OrderPanelComponent } from './order-panel/order-panel.component';
@@ -140,8 +141,38 @@ export class PosComponent implements OnInit {
     });
   }
 
+  route = inject(ActivatedRoute);
+  router = inject(Router);
+
   ngOnInit() {
     // Data is loaded centrally by SupabaseStateService
+    this.route.queryParams.subscribe(params => {
+        if (params['action'] === 'quickSale') {
+            this.openQuickSale(params['customerId']);
+        }
+    });
+  }
+
+  openQuickSale(customerId?: string) {
+      this.viewMode.set('tabs');
+      const fakeTable: Table = {
+          id: 'tab-quicksale',
+          number: 0,
+          hall_id: 'tabs',
+          status: 'LIVRE', // LIVRE so it starts a new order
+          x: 0, y: 0, width: 0, height: 0, created_at: '', user_id: ''
+      };
+      this.selectedTable.set(fakeTable);
+      this.isOrderPanelOpen.set(true);
+
+      // We wait for the order to be created (when user adds items), 
+      // but ideally we'd like to associate the customer right away.
+      // Since an order is created only when items are added, the association will happen
+      // manually by the operator or we can store it to auto-associate.
+      // For now, we just open the panel.
+      
+      // Clear query params
+      this.router.navigate([], { queryParams: { action: null, customerId: null }, queryParamsHandling: 'merge' });
   }
 
   // --- VIEW TOGGLE ---

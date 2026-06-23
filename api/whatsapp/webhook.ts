@@ -1,12 +1,17 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAI, Type, FunctionDeclaration, Chat } from "@google/genai";
-import { v4 as uuidv4 } from 'uuid';
-import * as dotenv from 'dotenv';
+import { v4 as uuidv4 } from "uuid";
+import * as dotenv from "dotenv";
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabaseUrl =
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseKey =
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  "";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -14,368 +19,569 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
   httpOptions: {
     headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
+      "User-Agent": "aistudio-build",
+    },
+  },
 });
 
 // Create submit_public_order function declaration
+const requestHumanHandoffFunc: FunctionDeclaration = {
+  name: "request_human_handoff",
+  description:
+    "Pausa a automação e solicita transbordo para um atendente humano. Use se o cliente estiver frustrado, irritado, se a dúvida fugir do escopo ou se o cliente pedir explicitamente para falar com um atendente.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      reason: {
+        type: Type.STRING,
+        description: "O motivo do transbordo.",
+      },
+    },
+    required: ["reason"],
+  },
+};
+
 const submitOrderFunc: FunctionDeclaration = {
   name: "submit_public_order",
-  description: "Submit a complete food order for delivery or takeout. Use ONLY when the user has finished choosing all items, selected a payment method, and provided a valid delivery address or takeout choice.",
+  description:
+    "Submit a complete food order for delivery or takeout. Use ONLY when the user has finished choosing all items, selected a payment method, and provided a valid delivery address or takeout choice.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       customer_name: {
         type: Type.STRING,
-        description: "The name of the customer."
+        description: "The name of the customer.",
       },
       address: {
-          type: Type.STRING,
-          description: "Full delivery address if applicable. Put 'TAKEOUT' if the customer will pick it up."
+        type: Type.STRING,
+        description:
+          "Full delivery address se for entrega. Coloque 'TAKEOUT' ou 'Retirada' se for retirar no local.",
       },
       payment_method: {
-          type: Type.STRING,
-          description: "How the customer plans to pay (e.g. 'Credit Card PIX', 'Cash on delivery')"
+        type: Type.STRING,
+        description:
+          "Forma de pagamento (ex: 'Cartão de Crédito', 'Pix', 'Dinheiro com troco para 100').",
+      },
+      notes: {
+        type: Type.STRING,
+        description:
+          "Anotações gerais do pedido ou observações do cliente (ex: Troco, ponto da carne, etc).",
+      },
+      customer_tags: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description:
+          "Tags para classificar o cliente (ex: 'Vegano', 'VIP', 'Reclamou').",
       },
       items: {
-          type: Type.ARRAY,
-          description: "List of items the customer ordered",
-          items: {
-              type: Type.OBJECT,
-              properties: {
-                  recipe_id: { type: Type.STRING, description: "The UUID of the product from the menu" },
-                  quantity: { type: Type.NUMBER },
-                  notes: { type: Type.STRING, description: "Special instructions for the item" }
-              },
-              required: ["recipe_id", "quantity"]
-          }
-      }
+        type: Type.ARRAY,
+        description: "List of items the customer ordered",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            recipe_id: {
+              type: Type.STRING,
+              description: "UUID da receita do cardápio.",
+            },
+            quantity: {
+              type: Type.NUMBER,
+              description: "Quantidade solicitada.",
+            },
+            notes: {
+              type: Type.STRING,
+              description:
+                "Instruções específicas para este item (ex: 'Meia mussarela meia calabresa', 'Sem cebola', 'Borda de catupiry').",
+            },
+          },
+          required: ["recipe_id", "quantity"],
+        },
+      },
     },
-    required: ["customer_name", "items", "payment_method", "address"]
-  }
+    required: ["customer_name", "items", "payment_method", "address"],
+  },
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method === 'GET') {
-        const mode = req.query['hub.mode'];
-        const token = req.query['hub.verify_token'];
-        const challenge = req.query['hub.challenge'];
-        
-        if (mode === 'subscribe' && token === 'chefos_whatsapp_webhook_2024') {
-            return res.status(200).send(challenge);
-        }
-        return res.status(403).end();
+  if (req.method === "GET") {
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+
+    if (mode === "subscribe" && token === "chefos_whatsapp_webhook_2024") {
+      return res.status(200).send(challenge);
     }
+    return res.status(403).end();
+  }
 
-    if (req.method === 'POST') {
-        try {
-            const body = req.body;
-            console.log('WhatsApp Webhook:', JSON.stringify(body));
+  if (req.method === "POST") {
+    try {
+      const body = req.body;
+      console.log("WhatsApp Webhook:", JSON.stringify(body));
 
-            if (body.object !== 'whatsapp_business_account') {
-                return res.status(404).end();
-            }
+      if (body.object !== "whatsapp_business_account") {
+        return res.status(404).end();
+      }
 
-            const storeIdQuery = req.query.storeId as string | undefined;
+      const storeIdQuery = req.query.storeId as string | undefined;
 
-            for (const entry of body.entry) {
-                for (const change of entry.changes) {
-                    if (change.value && change.value.messages && change.value.messages[0]) {
-                        await processMessage(change.value, storeIdQuery);
-                    }
-                }
-            }
-            return res.status(200).send('EVENT_RECEIVED');
-        } catch (error) {
-            console.error('Webhook error:', error);
-            // Don't fail the webhook processing itself for business logic errors
-            return res.status(200).send('ERROR_HANDLED');
+      for (const entry of body.entry) {
+        for (const change of entry.changes) {
+          if (
+            change.value &&
+            change.value.messages &&
+            change.value.messages[0]
+          ) {
+            await processMessage(change.value, storeIdQuery);
+          }
         }
+      }
+      return res.status(200).send("EVENT_RECEIVED");
+    } catch (error) {
+      console.error("Webhook error:", error);
+      // Don't fail the webhook processing itself for business logic errors
+      return res.status(200).send("ERROR_HANDLED");
     }
-    
-    return res.status(405).end();
+  }
+
+  return res.status(405).end();
 }
 
 async function processMessage(value: any, storeIdQuery?: string) {
-    const message = value.messages[0];
-    const customerPhone = message.from; // Sender ID
-    const messageText = message.text?.body;
-    if (!messageText) return;
+  const message = value.messages[0];
+  const customerPhone = message.from; // Sender ID
+  let messageText = message.text?.body;
+  const isAudio = message.type === "audio";
 
-    const phoneNumberId = value.metadata.phone_number_id;
+  // We can't return early if it's audio because we need the token first
+  if (!messageText && !isAudio) return;
 
-    // 1. Get configs
-    let configQuery = supabase
-        .from('whatsapp_configs')
-        .select('store_id, access_token')
-        .eq('is_active', true);
+  const phoneNumberId = value.metadata.phone_number_id;
 
-    if (storeIdQuery) {
-        configQuery = configQuery.eq('store_id', storeIdQuery);
-    } else {
-        configQuery = configQuery.eq('phone_number_id', phoneNumberId);
-    }
+  // 1. Get configs
+  let configQuery = supabase
+    .from("whatsapp_configs")
+    .select("store_id, access_token")
+    .eq("is_active", true);
 
-    const { data: config } = await configQuery.single();
+  if (storeIdQuery) {
+    configQuery = configQuery.eq("store_id", storeIdQuery);
+  } else {
+    configQuery = configQuery.eq("phone_number_id", phoneNumberId);
+  }
 
-    if (!config) {
-        console.error('No active WhatsApp config found for phone ID or store ID:', phoneNumberId, storeIdQuery);
-        return;
-    }
+  const { data: config } = await configQuery.single();
 
-    const storeId = config.store_id;
+  if (!config) {
+    console.error(
+      "No active WhatsApp config found for phone ID or store ID:",
+      phoneNumberId,
+      storeIdQuery,
+    );
+    return;
+  }
 
-    // 2. Fetch/Create Chat
-    let { data: chat } = await supabase
-        .from('whatsapp_chats')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('customer_phone', customerPhone)
+  if (isAudio) {
+    const audioId = message.audio.id;
+    messageText = await transcribeWhatsAppAudio(audioId, config.access_token);
+    if (!messageText) return; // Transcription failed or empty
+  }
+
+  const storeId = config.store_id;
+
+  // 2. Fetch/Create Chat
+  let { data: chat } = await supabase
+    .from("whatsapp_chats")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("customer_phone", customerPhone)
+    .single();
+
+  if (!chat) {
+    // Find existing customer by phone or create new pseudo customer?
+    let { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", storeId)
+      .eq("phone", customerPhone)
+      .single();
+
+    if (!customer) {
+      const { data: newCustomer } = await supabase
+        .from("customers")
+        .insert({
+          user_id: storeId,
+          name: "Cliente WhatsApp",
+          phone: customerPhone,
+        })
+        .select("id")
         .single();
-        
-    if (!chat) {
-        // Find existing customer by phone or create new pseudo customer?
-        let { data: customer } = await supabase
-            .from('customers')
-            .select('id')
-            .eq('user_id', storeId)
-            .eq('phone', customerPhone)
-            .single();
-
-        if (!customer) {
-            const { data: newCustomer } = await supabase.from('customers').insert({
-                user_id: storeId,
-                name: 'Cliente WhatsApp',
-                phone: customerPhone
-            }).select('id').single();
-            customer = newCustomer;
-        }
-
-        const { data: newChat, error: insertError } = await supabase.from('whatsapp_chats').insert({
-            store_id: storeId,
-            customer_phone: customerPhone,
-            customer_id: customer?.id || null,
-            status: 'bot',
-            last_message_at: new Date().toISOString()
-        }).select().single();
-        if (insertError || !newChat) {
-            console.error('Error creating chat:', insertError);
-            return;
-        }
-        chat = newChat;
-    } else {
-        await supabase.from('whatsapp_chats').update({ last_message_at: new Date().toISOString() }).eq('id', chat.id);
+      customer = newCustomer;
     }
 
-    // 3. Save incoming message
-    await supabase.from('whatsapp_messages').insert({
-        chat_id: chat.id,
-        wa_message_id: message.id,
-        sender_type: 'user',
-        content: messageText
-    });
-
-    // Handle Human Handoff Mode
-    if (chat.status === 'human') {
-        // Just store the message, do not invoke AI
-        console.log(`Chat ${chat.id} is in HUMAN mode. Skipping Gemini.`);
-        return;
+    const { data: newChat, error: insertError } = await supabase
+      .from("whatsapp_chats")
+      .insert({
+        store_id: storeId,
+        customer_phone: customerPhone,
+        customer_id: customer?.id || null,
+        status: "bot",
+        last_message_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (insertError || !newChat) {
+      console.error("Error creating chat:", insertError);
+      return;
     }
+    chat = newChat;
+  } else {
+    await supabase
+      .from("whatsapp_chats")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", chat.id);
+  }
 
-    // 4. Load Restaurant Menu, History, and Customer Context
-    const { data: menu } = await supabase.from('recipes')
-        .select('id, name, price, description')
-        .eq('user_id', storeId)
-        .eq('is_available', true);
+  // 3. Save incoming message
+  await supabase.from("whatsapp_messages").insert({
+    chat_id: chat.id,
+    wa_message_id: message.id,
+    sender_type: "user",
+    content: messageText,
+  });
 
-    const { data: history } = await supabase.from('whatsapp_messages')
-        .select('sender_type, content')
-        .eq('chat_id', chat.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-        
-    let customerContext = "";
-    const { data: customer } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('user_id', storeId)
-        .eq('phone', customerPhone)
-        .single();
-        
-    if (customer) {
-       customerContext = `O cliente já está cadastrado no sistema.\nNome: ${customer.name}\nEndereço cadastrado: ${customer.address || 'Não informado'}\nTelefone: ${customer.phone}\n\nSe o cliente quiser entrega, confirme se é no endereço cadastrado.`;
-       
-       const { data: pastOrders } = await supabase
-           .from('orders')
-           .select('notes, created_at')
-           .eq('customer_id', customer.id)
-           .order('created_at', { ascending: false })
-           .limit(3);
-           
-       if (pastOrders && pastOrders.length > 0) {
-           customerContext += `\n\nÚltimos pedidos do cliente:\n` + pastOrders.map((o: any) => `- Pedido em ${new Date(o.created_at).toLocaleDateString()}: ${o.notes}`).join('\n');
-       }
-    } else {
-       customerContext = `Este é um cliente novo.`;
+  // Handle Human Handoff Mode
+  if (chat.status === "human") {
+    // Just store the message, do not invoke AI
+    console.log(`Chat ${chat.id} is in HUMAN mode. Skipping Gemini.`);
+    return;
+  }
+
+  // 4. Load Restaurant Menu, History, and Customer Context
+  const { data: menu } = await supabase
+    .from("recipes")
+    .select("id, name, price, description")
+    .eq("user_id", storeId)
+    .eq("is_available", true);
+
+  const { data: history } = await supabase
+    .from("whatsapp_messages")
+    .select("sender_type, content")
+    .eq("chat_id", chat.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  let customerContext = "";
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("*")
+    .eq("user_id", storeId)
+    .eq("phone", customerPhone)
+    .single();
+
+  if (customer) {
+    customerContext = `O cliente já está cadastrado.\nNome: ${customer.name}\nEndereço cadastrado: ${customer.address || "Não informado"}\nTelefone: ${customer.phone}\nPontos de Fidelidade: ${customer.loyalty_points || 0}\nTags/Anotações do cliente: ${customer.notes || "Nenhuma"}\n\nSe o cliente quiser entrega, confirme se é no endereço cadastrado. Pode sugerir que ele resgate pontos se tiver.`;
+
+    const { data: pastOrders } = await supabase
+      .from("orders")
+      .select("notes, created_at")
+      .eq("customer_id", customer.id)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (pastOrders && pastOrders.length > 0) {
+      customerContext +=
+        `\n\nÚltimos pedidos do cliente:\n` +
+        pastOrders
+          .map(
+            (o: any) =>
+              `- Pedido em ${new Date(o.created_at).toLocaleDateString()}: ${o.notes || "Sem observações"}`,
+          )
+          .join("\n");
     }
+  } else {
+    customerContext = `Este é um cliente novo. Sem pontos de fidelidade.`;
+  }
 
-    const messageHistory = (history || []).reverse().map((msg: any) => ({
-        role: msg.sender_type === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-    }));
+  const messageHistory = (history || []).reverse().map((msg: any) => ({
+    role: msg.sender_type === "user" ? "user" : "model",
+    parts: [{ text: msg.content }],
+  }));
 
-    const contents = messageHistory;
+  const contents = messageHistory;
 
-    const systemInstruction = `Você é o Assistente Virtual e Garçom IA deste restaurante.
+  const systemInstruction = `Você é o Assistente Virtual e Garçom IA deste restaurante.
 Regras de Negócio Importantes:
 1. NÃO aceite alterações ou personalizações em pratos promocionais.
-2. Sempre seja educado, direto e chame o cliente pelo primeiro nome se ele falar.
-3. Este é o nosso cardápio de produtos disponíveis (NÃO invente itens que não estão aqui, referencie-os pelos UUIDs quando for fazer o pedido):
+2. Sempre seja educado, direto e chame o cliente pelo primeiro nome.
+3. Se o cliente solicitar modificações complexas ("meia", "sem cebola", "troco para 100"), entenda e anote no campo 'notes' da tool.
+4. Faça sugestões contextuais (Upsell/Cross-sell) caso faça sentido (ex: "Quer adicionar fritas por mais R$ 10?").
+5. Responda a dúvidas frequentes (FAQ): Aceitamos Cartão, Pix, VR, VA e Dinheiro. Somos Pet-Friendly. O horário é das 18h às 23h.
+6. Se o cliente se mostrar irritado, frustrado ou pedir explicitamente para falar com um atendente, chame a tool "request_human_handoff".
+7. Este é o nosso cardápio de produtos disponíveis (NÃO invente itens):
 ${JSON.stringify(menu || [], null, 2)}
 
 Contexto do Cliente:
 ${customerContext}
 
 Seu objetivo:
-Identificar o que o cliente quer, informar o preço correto.
-Para o pedido ser válido e fechado, você PRECISA recolher:
-- O nome do cliente
+Identificar o que o cliente quer, fazer upsell leve e fechar o pedido recolhendo:
+- Nome do cliente
 - Os itens solicitados
-- O meio de pagamento
-- O Endereço de entrega COMPLETO (ou perguntar se é para retirar no local)
+- O meio de pagamento (e troco se aplicável)
+- O Endereço COMPLETO ou Retirada.
 
-APENAS QUANDO e SOMENTE QUANDO você tiver todas as informações e o pedido estiver 100% FECHADO, você DEVE acionar a tool "submit_public_order".
-Isso evita requisições fantasmas na Cozinha!
-Ao acionar a tool, não precisa retornar uma mensagem longa, apenas agradeça (ex: Pedido confirmado com sucesso!) e feche o fluxo.`;
+APENAS QUANDO e SOMENTE QUANDO tiver tudo, acione "submit_public_order" para fechar o pedido.`;
 
-    const chatSession = ai.chats.create({
-        model: "gemini-3.5-flash",
-        config: {
-            systemInstruction,
-            tools: [{ functionDeclarations: [submitOrderFunc] }],
-            temperature: 0.2
+  const chatSession = ai.chats.create({
+    model: "gemini-3.5-flash",
+    config: {
+      systemInstruction,
+      tools: [
+        { functionDeclarations: [submitOrderFunc, requestHumanHandoffFunc] },
+      ],
+      temperature: 0.2,
+    },
+    history: contents.slice(0, -1), // All except the very last one
+  });
+
+  const response = await chatSession.sendMessage({
+    message: contents[contents.length - 1]?.parts[0]?.text || "Hello",
+  });
+
+  // Handle Function Call from AI
+  const functionCalls = response.functionCalls;
+  let replyText = response.text || "";
+
+  if (functionCalls && functionCalls.length > 0) {
+    for (const call of functionCalls) {
+      if (call.name === "submit_public_order") {
+        const args = call.args as any;
+        // Create order in Supabase
+        try {
+          await createOrder(storeId, args, chat.customer_id);
+          replyText = `Ótimo! Seu pedido foi enviado para a cozinha com sucesso. Vamos preparar rapidinho!`;
+        } catch (e) {
+          console.error("Error creating order from tool:", e);
+          replyText =
+            "Houve um erro interno ao lançar seu pedido, aguarde enquanto um atendente verifica.";
+        }
+      } else if (call.name === "request_human_handoff") {
+        await supabase
+          .from("whatsapp_chats")
+          .update({ status: "human" })
+          .eq("id", chat.id);
+        replyText =
+          replyText ||
+          "Entendi. Aguarde um momento, vou transferir você para um de nossos atendentes.";
+      }
+    }
+  }
+
+  if (replyText) {
+    // Send reply to WhatsApp
+    await sendWhatsAppMessage(
+      customerPhone,
+      replyText,
+      config.access_token,
+      phoneNumberId,
+    );
+
+    // Save AI reply to DB
+    await supabase.from("whatsapp_messages").insert({
+      chat_id: chat.id,
+      wa_message_id: "bot-" + uuidv4(),
+      sender_type: "bot",
+      content: replyText,
+    });
+  }
+}
+
+async function createOrder(
+  storeId: string,
+  args: any,
+  customerId: string | null,
+) {
+  const orderId = uuidv4();
+
+  // Add extra order notes and tags
+  let fullNotes = `Nome: ${args.customer_name || "Desconhecido"} | Pgto: ${args.payment_method || "Não inf."} | End: ${args.address || "Não inf."}`;
+  if (args.notes) {
+    fullNotes += `\nObs: ${args.notes}`;
+  }
+
+  if (
+    customerId &&
+    args.customer_tags &&
+    Array.isArray(args.customer_tags) &&
+    args.customer_tags.length > 0
+  ) {
+    // Fetch current customer notes
+    const { data: c } = await supabase
+      .from("customers")
+      .select("notes")
+      .eq("id", customerId)
+      .single();
+    let existingNotes = c?.notes || "";
+    const tagsString = args.customer_tags
+      .map((t: string) => `[${t}]`)
+      .join(" ");
+
+    // Append tags if not already there
+    for (const t of args.customer_tags) {
+      if (!existingNotes.includes(`[${t}]`)) {
+        existingNotes += ` [${t}]`;
+      }
+    }
+    await supabase
+      .from("customers")
+      .update({ notes: existingNotes.trim() })
+      .eq("id", customerId);
+  }
+
+  const finalOrderData = {
+    id: orderId,
+    user_id: storeId,
+    customer_id: customerId,
+    status: "OPEN",
+    order_type:
+      args.address && args.address.toUpperCase().includes("TAKEOUT")
+        ? "External-Pickup"
+        : "External-Delivery",
+    notes: fullNotes,
+    ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
+    ifood_order_id: `wa-${orderId}`,
+    table_number: 0,
+  };
+
+  let orderItems = [];
+
+  const { data: stations } = await supabase
+    .from("stations")
+    .select("id")
+    .eq("user_id", storeId)
+    .order("created_at", { ascending: true });
+  let fallbackStationId = null;
+  if (stations && stations.length > 0) {
+    fallbackStationId = stations[0].id;
+  }
+
+  if (args.items && args.items.length > 0) {
+    // Need to fetch original price
+    const { data: recipes } = await supabase
+      .from("recipes")
+      .select("id, price, name")
+      .in(
+        "id",
+        args.items.map((i: any) => i.recipe_id),
+      );
+
+    orderItems = args.items.map((item: any) => {
+      const r = recipes?.find((x) => x.id === item.recipe_id);
+      return {
+        order_id: orderId,
+        user_id: storeId,
+        recipe_id: item.recipe_id,
+        name: r ? r.name : "Unknown Item",
+        quantity: item.quantity,
+        price: r ? r.price : 0,
+        original_price: r ? r.price : 0,
+        notes: item.notes || "",
+        status: "PENDENTE",
+        status_timestamps: { PENDENTE: new Date().toISOString() },
+        station_id: fallbackStationId,
+      };
+    });
+  }
+
+  const { error: orderError } = await supabase
+    .from("orders")
+    .insert(finalOrderData);
+
+  if (orderError) {
+    console.error("Order Insert Error:", orderError);
+    throw orderError;
+  }
+
+  if (orderItems.length > 0) {
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+    if (itemsError) {
+      console.error("Items Insert Error:", itemsError);
+      throw itemsError;
+    }
+  }
+}
+
+async function sendWhatsAppMessage(
+  to: string,
+  body: string,
+  token: string,
+  phoneNumberId: string,
+) {
+  // Official WhatsApp Cloud API Call
+  try {
+    await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: to,
+        type: "text",
+        text: { body },
+      }),
+    });
+  } catch (e) {
+    console.error("Error sending WA message", e);
+  }
+}
+
+async function transcribeWhatsAppAudio(
+  mediaId: string,
+  accessToken: string,
+): Promise<string | null> {
+  try {
+    const mediaRes = await fetch(
+      `https://graph.facebook.com/v19.0/${mediaId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+    const mediaData = await mediaRes.json();
+
+    if (!mediaData.url) {
+      console.error("Failed to get media URL:", mediaData);
+      return null;
+    }
+
+    const audioRes = await fetch(mediaData.url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const arrayBuffer = await audioRes.arrayBuffer();
+    const base64Audio = Buffer.from(arrayBuffer).toString("base64");
+    const mimeType = mediaData.mime_type || "audio/ogg";
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: "Você é um assistente de transcrição. Transcreva este áudio exatamente como foi dito. Se houver instruções de pedido, transcreva literalmente. Não adicione comentários, apenas o texto do áudio.",
+            },
+            { inlineData: { data: base64Audio, mimeType } },
+          ],
         },
-        history: contents.slice(0, -1) // All except the very last one
+      ],
     });
 
-    const response = await chatSession.sendMessage({ message: contents[contents.length - 1]?.parts[0]?.text || "Hello" });
-
-    // Handle Function Call from AI
-    const functionCalls = response.functionCalls;
-    let replyText = response.text || "";
-
-    if (functionCalls && functionCalls.length > 0) {
-        for (const call of functionCalls) {
-            if (call.name === 'submit_public_order') {
-                const args = call.args as any;
-                // Create order in Supabase
-                try {
-                   await createOrder(storeId, args, chat.customer_id);
-                   replyText = `Ótimo! Seu pedido foi enviado para a cozinha com sucesso. Vamos preparar rapidinho!`;
-                } catch(e) {
-                   console.error("Error creating order from tool:", e);
-                   replyText = "Houve um erro interno ao lançar seu pedido, aguarde enquanto um atendente verifica.";
-                }
-            }
-        }
-    }
-
-    if (replyText) {
-        // Send reply to WhatsApp
-        await sendWhatsAppMessage(customerPhone, replyText, config.access_token, phoneNumberId);
-
-        // Save AI reply to DB
-        await supabase.from('whatsapp_messages').insert({
-            chat_id: chat.id,
-            wa_message_id: 'bot-' + uuidv4(),
-            sender_type: 'bot',
-            content: replyText
-        });
-    }
-}
-
-async function createOrder(storeId: string, args: any, customerId: string | null) {
-    const orderId = uuidv4();
-    const finalOrderData = {
-        id: orderId,
-        user_id: storeId,
-        customer_id: customerId,
-        status: 'OPEN',
-        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'External-Pickup' : 'External-Delivery',
-        notes: `Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
-        ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
-        ifood_order_id: `wa-${orderId}`,
-        table_number: 0
-    };
-
-    let orderItems = [];
-
-    const { data: stations } = await supabase.from('stations').select('id').eq('user_id', storeId).order('created_at', { ascending: true });
-    let fallbackStationId = null;
-    if (stations && stations.length > 0) {
-        fallbackStationId = stations[0].id;
-    }
-
-    if (args.items && args.items.length > 0) {
-       // Need to fetch original price
-       const { data: recipes } = await supabase.from('recipes').select('id, price, name').in('id', args.items.map((i: any) => i.recipe_id));
-       
-       orderItems = args.items.map((item: any) => {
-           const r = recipes?.find((x) => x.id === item.recipe_id);
-           return {
-             order_id: orderId,
-             user_id: storeId,
-             recipe_id: item.recipe_id,
-             name: r ? r.name : 'Unknown Item',
-             quantity: item.quantity,
-             price: r ? r.price : 0,
-             original_price: r ? r.price : 0,
-             notes: item.notes || '',
-             status: 'PENDENTE',
-             status_timestamps: { 'PENDENTE': new Date().toISOString() },
-             station_id: fallbackStationId
-           };
-       });
-    }
-
-    const { error: orderError } = await supabase
-        .from('orders')
-        .insert(finalOrderData);
-
-    if (orderError) {
-        console.error("Order Insert Error:", orderError);
-        throw orderError;
-    }
-
-    if (orderItems.length > 0) {
-        const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(orderItems);
-        if (itemsError) {
-             console.error("Items Insert Error:", itemsError);
-             throw itemsError;
-        }
-    }
-}
-
-async function sendWhatsAppMessage(to: string, body: string, token: string, phoneNumberId: string) {
-    // Official WhatsApp Cloud API Call
-    try {
-        await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messaging_product: "whatsapp",
-                to: to,
-                type: "text",
-                text: { body }
-            })
-        });
-    } catch(e) {
-        console.error("Error sending WA message", e);
-    }
+    return response.text;
+  } catch (e) {
+    console.error("Error transcribing audio:", e);
+    return null;
+  }
 }

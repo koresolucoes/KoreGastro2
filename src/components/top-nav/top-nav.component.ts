@@ -52,7 +52,7 @@ export class TopNavComponent {
   
   pendingExternalOrdersCount = computed(() => {
     return this.posState.openOrders().filter(o => 
-      (o.order_type === 'External-Delivery' || o.order_type === 'External-Pickup') &&
+      o.order_type === 'External-Delivery' &&
       (!o.delivery_status || o.delivery_status === 'AWAITING_PREP' || o.delivery_status === 'RECEIVED')
     ).length;
   });

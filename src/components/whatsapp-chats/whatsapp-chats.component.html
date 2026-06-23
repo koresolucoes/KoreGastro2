@@ -8,9 +8,9 @@
         <div class="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20">
            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-6 h-6">
         </div>
-        WhatsApp IA
+        WhatsApp IA & CRM
       </h1>
-      <p class="text-xs text-muted mt-1 font-medium ml-14">Acompanhe as conversas do assistente virtual ou assuma o controle.</p>
+      <p class="text-xs text-muted mt-1 font-medium ml-14">Acompanhe conversas, gerencie clientes e feche pedidos pelo chat.</p>
     </div>
   </div>
 
@@ -50,22 +50,29 @@
         <div class="p-4 border-b border-subtle flex flex-col gap-4">
            <div class="relative">
              <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">search</span>
-             <input type="text" placeholder="Buscar conversas..." class="w-full bg-surface border border-strong rounded-xl pl-9 pr-4 py-2.5 text-xs font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand">
+             <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Buscar conversas..." class="w-full bg-surface border border-strong rounded-xl pl-9 pr-4 py-2.5 text-xs font-bold text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand">
            </div>
+           
+           <div class="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              <button (click)="chatFilter.set('all')" [class.bg-brand]="chatFilter() === 'all'" [class.text-white]="chatFilter() === 'all'" [class.bg-surface]="chatFilter() !== 'all'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-subtle whitespace-nowrap">Todos</button>
+              <button (click)="chatFilter.set('human')" [class.bg-amber-500]="chatFilter() === 'human'" [class.text-white]="chatFilter() === 'human'" [class.bg-surface]="chatFilter() !== 'human'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-subtle whitespace-nowrap">Aguardando Humano</button>
+              <button (click)="chatFilter.set('bot')" [class.bg-green-500]="chatFilter() === 'bot'" [class.text-white]="chatFilter() === 'bot'" [class.bg-surface]="chatFilter() !== 'bot'" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-subtle whitespace-nowrap">Bot IA</button>
+           </div>
+           
            <button (click)="startTesting()" class="w-full py-2 bg-brand/10 hover:bg-brand/20 text-brand rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2 border border-brand/20 transition-all">
                <span translate="no" class="notranslate material-symbols-outlined text-sm">science</span> Simulador de Chat
            </button>
         </div>
         <div class="flex-grow overflow-y-auto">
-           @if(chats().length === 0) {
+           @if(filteredChats().length === 0) {
               <div class="p-6 text-center text-muted">
                  <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 opacity-50">forum</span>
-                 <p class="text-xs font-bold">Nenhuma conversa real.</p>
+                 <p class="text-xs font-bold">Nenhuma conversa encontrada.</p>
               </div>
            }
-           @for(chat of chats(); track chat.id) {
+           @for(chat of filteredChats(); track chat.id) {
               <div (click)="selectChat(chat.id)" [class.bg-brand-50]="selectedChatId() === chat.id" [class.border-brand]="selectedChatId() === chat.id" class="p-4 border-b border-subtle hover:bg-surface cursor-pointer transition-colors flex items-start gap-3 border-l-4 border-l-transparent">
-                 <div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
+                 <div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20 relative">
                     <span translate="no" class="notranslate material-symbols-outlined text-brand">person</span>
                  </div>
                  <div class="flex-grow min-w-0">
@@ -140,7 +147,7 @@
                     <span translate="no" class="notranslate material-symbols-outlined text-brand">person</span>
                  </div>
                  <div>
-                    <h3 class="text-sm font-black text-title">{{ selectedChat()?.customer_phone }}</h3>
+                    <h3 class="text-sm font-black text-title">{{ customerData()?.name || selectedChat()?.customer_phone }}</h3>
                     <p class="text-[10px] text-muted font-bold uppercase tracking-wider">Última msg: {{ selectedChat()?.last_message_at | date:'shortTime' }}</p>
                  </div>
               </div>
@@ -182,9 +189,27 @@
            </div>
 
            <!-- Input Area -->
-           <div class="h-16 bg-surface-elevated border-t border-subtle shrink-0 absolute bottom-0 w-full px-4 flex items-center gap-3">
-              <button class="p-2 text-muted hover:text-title hover:bg-surface rounded-full transition-colors">
-                 <span translate="no" class="notranslate material-symbols-outlined">sentiment_satisfied</span>
+           <div class="h-16 bg-surface-elevated border-t border-subtle shrink-0 absolute bottom-0 w-full px-4 flex items-center gap-3 relative">
+              <!-- Quick Replies Dropup -->
+              @if(showQuickReplies()) {
+                 <div class="absolute bottom-full left-4 mb-2 w-64 bg-surface-elevated rounded-2xl border border-subtle shadow-xl overflow-hidden z-20">
+                    <div class="bg-surface p-3 border-b border-subtle flex justify-between items-center">
+                       <span class="text-xs font-black uppercase tracking-widest text-title">Respostas Rápidas</span>
+                       <button (click)="showQuickReplies.set(false)" class="text-muted hover:text-title"><span translate="no" class="notranslate material-symbols-outlined text-sm">close</span></button>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto p-2">
+                       @for(qr of quickReplies(); track $index) {
+                          <button (click)="insertQuickReply(qr.content)" class="w-full text-left p-3 rounded-xl hover:bg-surface transition-colors flex flex-col gap-1">
+                             <span class="text-xs font-bold text-title">{{ qr.title }}</span>
+                             <span class="text-[10px] text-muted truncate w-full">{{ qr.content }}</span>
+                          </button>
+                       }
+                    </div>
+                 </div>
+              }
+
+              <button (click)="showQuickReplies.set(!showQuickReplies())" class="p-2 text-muted hover:text-brand hover:bg-brand/10 rounded-full transition-colors relative" title="Respostas Rápidas">
+                 <span translate="no" class="notranslate material-symbols-outlined">bolt</span>
               </button>
               <input type="text" [ngModel]="newMessage()" (ngModelChange)="newMessage.set($event)" (keydown.enter)="sendMessage()" placeholder="Digite uma mensagem..." class="flex-grow bg-surface border border-strong rounded-full px-5 py-2.5 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand">
               <button (click)="sendMessage()" [disabled]="!newMessage().trim()" class="w-10 h-10 bg-brand text-white rounded-full flex items-center justify-center shrink-0 shadow-sm disabled:opacity-50 hover:bg-brand-600 transition-colors">
@@ -203,8 +228,99 @@
               </button>
            </div>
         }
-      </div>
-  </div>
+     </div>
+
+     <!-- Right Sidebar CRM -->
+     <div [class.hidden]="!selectedChatId() || isTesting()" class="w-full xl:w-80 hidden xl:flex border-l border-subtle bg-surface-elevated flex-col shrink-0 min-h-0">
+         <div class="p-5 border-b border-subtle flex flex-col items-center text-center">
+            <div class="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center mb-3 border border-brand/20">
+               <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl">person</span>
+            </div>
+            <h3 class="text-lg font-black text-title">{{ customerData()?.name || 'Cliente Novo' }}</h3>
+            <p class="text-xs text-muted font-bold">{{ selectedChat()?.customer_phone }}</p>
+
+            <div class="mt-4 flex gap-2 w-full">
+                <button (click)="openQuickOrderModal()" class="flex-1 py-2 bg-brand text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-brand-600 transition-colors flex justify-center items-center gap-1">
+                   <span translate="no" class="notranslate material-symbols-outlined text-sm">shopping_cart</span>
+                   Novo Pedido
+                </button>
+            </div>
+         </div>
+
+         <div class="flex-grow overflow-y-auto p-5 flex flex-col gap-6">
+            @if(customerData()) {
+               <!-- Loyalty points -->
+               @if(customerData()?.loyalty_points > 0) {
+                  <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-3">
+                     <span translate="no" class="notranslate material-symbols-outlined text-amber-500">stars</span>
+                     <div>
+                        <p class="text-xs font-bold text-amber-700">Fidelidade</p>
+                        <p class="text-[10px] text-amber-600">{{ customerData()?.loyalty_points }} pontos acumulados</p>
+                     </div>
+                  </div>
+               }
+
+               <!-- CRM Form -->
+               <div class="flex flex-col gap-3">
+                   <h4 class="text-xs font-black uppercase tracking-widest text-muted mb-1">Dados do Cliente</h4>
+                   
+                   <div>
+                      <label class="text-[10px] font-bold text-muted ml-1 mb-1 block uppercase">Nome</label>
+                      <input type="text" [(ngModel)]="customerData().name" class="w-full bg-surface border border-strong rounded-xl px-3 py-2 text-xs font-bold text-title focus:border-brand outline-none">
+                   </div>
+                   
+                   <div>
+                      <label class="text-[10px] font-bold text-muted ml-1 mb-1 block uppercase">Endereço (Opcional)</label>
+                      <input type="text" [(ngModel)]="customerData().address" disabled class="w-full bg-surface/50 border border-strong rounded-xl px-3 py-2 text-xs text-muted outline-none opacity-70">
+                      <p class="text-[9px] text-muted mt-1 ml-1">O cliente precisa atualizar via chat IA.</p>
+                   </div>
+                   
+                   <div>
+                      <label class="text-[10px] font-bold text-muted ml-1 mb-1 block uppercase">Anotações Internas</label>
+                      <textarea [(ngModel)]="customerData().notes" rows="3" placeholder="Ex: Cliente VIP, alergia a amendoim..." class="w-full bg-surface border border-strong rounded-xl px-3 py-2 text-xs text-title focus:border-brand outline-none resize-none"></textarea>
+                   </div>
+                   
+                   <button (click)="saveCustomerNotes()" [disabled]="isSavingNotes()" class="w-full py-2 mt-2 bg-surface border border-strong text-title rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-surface-elevated transition-colors flex items-center justify-center gap-2">
+                       @if(isSavingNotes()) {
+                           <span class="w-3 h-3 border-2 border-brand border-t-transparent rounded-full animate-spin"></span> Salvando...
+                       } @else {
+                           <span translate="no" class="notranslate material-symbols-outlined text-sm">save</span> Salvar Dados
+                       }
+                   </button>
+               </div>
+
+               <!-- Order History -->
+               <div>
+                  <h4 class="text-xs font-black uppercase tracking-widest text-muted mb-3">Últimos Pedidos</h4>
+                  @if(customerOrders().length === 0) {
+                      <p class="text-xs text-muted italic">Nenhum pedido anterior.</p>
+                  } @else {
+                      <div class="flex flex-col gap-2">
+                          @for(order of customerOrders(); track order.id) {
+                              <div class="bg-surface border border-subtle rounded-xl p-3 flex justify-between items-center">
+                                  <div>
+                                      <p class="text-xs font-bold text-title">Pedido #{{ order.id.substring(0,6).toUpperCase() }}</p>
+                                      <p class="text-[10px] text-muted">{{ order.created_at | date:'short' }}</p>
+                                  </div>
+                                  <div class="text-right">
+                                      <p class="text-xs font-black text-brand">{{ order.total_amount | currency:'BRL' }}</p>
+                                      <span class="text-[9px] px-1.5 py-0.5 rounded bg-surface-elevated border border-strong uppercase font-bold text-muted">{{ order.status }}</span>
+                                  </div>
+                              </div>
+                          }
+                      </div>
+                  }
+               </div>
+            } @else {
+               <div class="h-full flex flex-col items-center justify-center text-center opacity-50">
+                   <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-2">person_off</span>
+                   <p class="text-xs font-bold">Cliente não cadastrado na base.</p>
+               </div>
+            }
+         </div>
+     </div>
+
+    </div>
   }
 </div>
 
@@ -224,6 +340,44 @@
       </div>
       <div class="p-8 overflow-y-auto">
          <app-whatsapp-settings></app-whatsapp-settings>
+      </div>
+    </div>
+  </div>
+}
+
+@if (isQuickOrderModalOpen()) {
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+    <div class="chef-surface rounded-2xl md:rounded-[40px] shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col border border-subtle overflow-hidden relative">
+      <div class="p-5 md:p-8 border-b border-subtle bg-surface-elevated flex items-center justify-between shrink-0">
+         <div>
+             <h3 class="text-lg md:text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
+               <div class="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center border border-brand/20">
+                 <span translate="no" class="notranslate material-symbols-outlined text-brand">shopping_cart</span>
+               </div>
+               Venda Rápida
+             </h3>
+             <p class="text-xs text-muted font-medium ml-14 mt-1">Lançamento direto para {{ customerData()?.name }}</p>
+         </div>
+         <button (click)="closeQuickOrderModal()" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
+            <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
+         </button>
+      </div>
+      
+      <div class="flex-grow overflow-y-auto bg-surface-elevated/50 relative p-4 md:p-0 min-h-[500px]">
+          @if (activeEmployee()) {
+             <app-order-panel
+                [selectedTable]="quickOrderTable()"
+                [currentOrder]="currentQuickOrder()"
+                [orderError]="null"
+                [activeEmployee]="activeEmployee()"
+                (closePanel)="closeQuickOrderModal()">
+             </app-order-panel>
+          } @else {
+             <div class="h-full flex items-center justify-center flex-col text-center opacity-50">
+                 <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">lock</span>
+                 <p class="text-sm font-bold">Faça login no caixa para abrir pedidos.</p>
+             </div>
+          }
       </div>
     </div>
   </div>

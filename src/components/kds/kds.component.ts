@@ -681,7 +681,7 @@ export class KdsComponent implements OnInit, OnDestroy {
           });
 
         const externalMapped = this.posState.openOrders()
-          .filter(o => o.order_type === 'External-Delivery' || o.order_type === 'External-Pickup')
+          .filter(o => o.order_type === 'External-Delivery')
           .map(order => {
             const startTime = new Date(order.timestamp).getTime();
             const elapsedTime = Math.floor((now - startTime) / 1000);
@@ -890,8 +890,7 @@ export class KdsComponent implements OnInit, OnDestroy {
                 isOrderCancelled,
                 customerName: order.customers?.name,
                 waiterName: order.waiter?.name,
-                isTest,
-                notes: order.notes
+                isTest
             });
         }
         return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
