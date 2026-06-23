@@ -77,10 +77,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(404).end();
             }
 
+            const storeIdQuery = req.query.storeId as string | undefined;
+
             for (const entry of body.entry) {
                 for (const change of entry.changes) {
                     if (change.value && change.value.messages && change.value.messages[0]) {
-                        await processMessage(change.value);
+                        await processMessage(change.value, storeIdQuery);
                     }
                 }
             }
@@ -95,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).end();
 }
 
-async function processMessage(value: any) {
+async function processMessage(value: any, storeIdQuery?: string) {
     const message = value.messages[0];
     const customerPhone = message.from; // Sender ID
     const messageText = message.text?.body;
@@ -104,15 +106,21 @@ async function processMessage(value: any) {
     const phoneNumberId = value.metadata.phone_number_id;
 
     // 1. Get configs
-    const { data: config } = await supabase
+    let configQuery = supabase
         .from('whatsapp_configs')
         .select('store_id, access_token')
-        .eq('phone_number_id', phoneNumberId)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
+
+    if (storeIdQuery) {
+        configQuery = configQuery.eq('store_id', storeIdQuery);
+    } else {
+        configQuery = configQuery.eq('phone_number_id', phoneNumberId);
+    }
+
+    const { data: config } = await configQuery.single();
 
     if (!config) {
-        console.error('No active WhatsApp config found for phone ID:', phoneNumberId);
+        console.error('No active WhatsApp config found for phone ID or store ID:', phoneNumberId, storeIdQuery);
         return;
     }
 
@@ -254,8 +262,10 @@ async function createOrder(storeId: string, args: any) {
         id: orderId,
         user_id: storeId,
         status: 'OPEN',
-        order_type: args.address.toUpperCase().includes('TAKEOUT') ? 'iFood-Takeout' : 'iFood-Delivery', // Use Delivery
-        notes: `Nome: ${args.customer_name} | Pgto: ${args.payment_method} | End: ${args.address}`
+        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'iFood-Takeout' : 'iFood-Delivery', // Use Delivery
+        notes: `Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
+        ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
+        ifood_order_id: `wa-${orderId}`
     };
 
     let orderItems = [];
@@ -277,25 +287,28 @@ async function createOrder(storeId: string, args: any) {
              notes: item.notes || '',
              status: 'PENDENTE',
              status_timestamps: { 'PENDENTE': new Date().toISOString() },
-             station_id: '00000000-0000-0000-0000-000000000000'
+             station_id: null
            };
        });
     }
 
-    // GARGALO DE VALIDAÇÃO: Envia para a rota public-order
-    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${host}/api/public-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            create: true,
-            orderData: finalOrderData,
-            items: orderItems
-        })
-    });
+    const { error: orderError } = await supabase
+        .from('orders')
+        .insert(finalOrderData);
 
-    if (!response.ok) {
-        throw new Error('Failed to hit public-order endpoint');
+    if (orderError) {
+        console.error("Order Insert Error:", orderError);
+        throw orderError;
+    }
+
+    if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+        if (itemsError) {
+             console.error("Items Insert Error:", itemsError);
+             throw itemsError;
+        }
     }
 }
 

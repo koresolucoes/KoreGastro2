@@ -163,7 +163,9 @@ export class WhatsappSettingsComponent {
   }
 
   getWebhookUrl(): string {
-    return `${window.location.origin}/api/whatsapp/webhook`;
+    const storeId = this.unitContextService.activeUnitId();
+    if (!storeId) return '';
+    return `${window.location.origin}/api/whatsapp/webhook?storeId=${storeId}`;
   }
 
   copyWebhookUrl() {

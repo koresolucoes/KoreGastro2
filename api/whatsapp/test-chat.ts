@@ -154,8 +154,10 @@ async function createOrder(storeId: string, args: any) {
         id: orderId,
         user_id: storeId,
         status: 'OPEN',
-        order_type: args.address.toUpperCase().includes('TAKEOUT') ? 'iFood-Takeout' : 'iFood-Delivery', // Use Delivery but mark test
-        notes: `[TESTE IA] Nome: ${args.customer_name} | Pgto: ${args.payment_method} | End: ${args.address}`
+        order_type: (args.address && args.address.toUpperCase().includes('TAKEOUT')) ? 'iFood-Takeout' : 'iFood-Delivery',
+        notes: `[TESTE IA] Nome: ${args.customer_name || 'Desconhecido'} | Pgto: ${args.payment_method || 'Não inf.'} | End: ${args.address || 'Não inf.'}`,
+        ifood_display_id: Math.floor(1000 + Math.random() * 9000).toString(),
+        ifood_order_id: `test-ia-${orderId}`
     };
 
     let orderItems = [];
@@ -181,18 +183,22 @@ async function createOrder(storeId: string, args: any) {
        });
     }
 
-    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${host}/api/public-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            create: true,
-            orderData: finalOrderData,
-            items: orderItems
-        })
-    });
+    const { error: orderError } = await supabase
+        .from('orders')
+        .insert(finalOrderData);
 
-    if (!response.ok) {
-        throw new Error('Failed to hit public-order endpoint');
+    if (orderError) {
+        console.error("Order Insert Error:", orderError);
+        throw orderError;
+    }
+
+    if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+        if (itemsError) {
+             console.error("Items Insert Error:", itemsError);
+             throw itemsError;
+        }
     }
 }
