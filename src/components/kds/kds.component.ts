@@ -1344,6 +1344,19 @@ export class KdsComponent implements OnInit, OnDestroy {
               timestamp: new Date().toISOString(),
               fullOrder: order
             });
+
+            if (order.ifood_order_id?.startsWith('wa-') || order.ifood_order_id?.startsWith('test-ia-')) {
+               try {
+                    console.log("Calling notify-status for WhatsApp:", order.id, 'OUT_FOR_DELIVERY');
+                    await fetch('/api/whatsapp/notify-status', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ orderId: order.id, status: 'OUT_FOR_DELIVERY' })
+                    });
+               } catch(e) {
+                    console.error("Notify status error:", e);
+               }
+            }
           } else {
             lastError = error;
           }

@@ -58,8 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
              if (order.order_type?.includes('Takeout') || order.order_type?.includes('Pickup')) {
                   text = `🛵 Ei! Seu pedido já está PRONTO e esperando por você aqui no balcão! Venha buscar! 😉🍔`;
              } else {
-                  text = `🛵 Ei! Seu pedido já está PRONTO e acabou de sair para entrega! O motoboy já está a caminho! Prepare a mesa! 🥳🍔`;
+                  text = `📦 Ei! Seu pedido já está PRONTO e está aguardando o motoboy para coleta! 😉🍔`;
              }
+        } else if (status === 'OUT_FOR_DELIVERY') {
+             text = `🛵 Oba! Seu pedido acabou de sair para entrega! O motoboy já está a caminho! Prepare a mesa! 🥳🍔`;
         } else {
              return res.status(200).json({ success: true, message: 'Unhandled status' });
         }
