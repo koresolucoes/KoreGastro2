@@ -109,7 +109,7 @@ export class InventoryDataService {
     const { id, stock, ...updateData } = ingredient;
 
     const wasSellable = currentIngredient.is_sellable;
-    const isNowSellable = updateData.is_sellable;
+    const isNowSellable = updateData.is_sellable !== undefined ? updateData.is_sellable : currentIngredient.is_sellable;
 
     if (wasSellable !== isNowSellable) {
       if (isNowSellable) {

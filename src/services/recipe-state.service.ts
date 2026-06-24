@@ -68,8 +68,10 @@ export class RecipeStateService {
                         if (visiting.has(ingredient.proxy_recipe_id)) {
                             itemCost = ingredient.cost || 0;
                         } else {
+                            const proxyRecipe = recipes.find(r => r.id === ingredient.proxy_recipe_id);
+                            const yq = proxyRecipe?.yield_quantity || 1;
                             const subRecipeCost = calculateCost(ingredient.proxy_recipe_id);
-                            itemCost = subRecipeCost.totalCost || ingredient.cost || 0;
+                            itemCost = (subRecipeCost.totalCost / yq) || ingredient.cost || 0;
                             countedSubRecipeIds.add(ingredient.proxy_recipe_id);
                         }
                     }
@@ -85,8 +87,10 @@ export class RecipeStateService {
                 if (visiting.has(sr.child_recipe_id)) {
                     continue; // Cycle detected
                 }
+                const proxyRecipe = recipes.find(r => r.id === sr.child_recipe_id);
+                const yq = proxyRecipe?.yield_quantity || 1;
                 const subRecipeCost = calculateCost(sr.child_recipe_id);
-                totalCost += subRecipeCost.totalCost * sr.quantity;
+                totalCost += (subRecipeCost.totalCost / yq) * sr.quantity;
                 for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
                   rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
                 }
@@ -167,8 +171,10 @@ export class RecipeStateService {
                         if (visiting.has(ingredient.proxy_recipe_id)) {
                             itemCost = ingredient.cost || 0;
                         } else {
+                            const proxyRecipe = recipes.find(r => r.id === ingredient.proxy_recipe_id);
+                            const yq = proxyRecipe?.yield_quantity || 1;
                             const subRecipeCost = calculateCost(ingredient.proxy_recipe_id);
-                            itemCost = subRecipeCost.totalCost || ingredient.cost || 0;
+                            itemCost = (subRecipeCost.totalCost / yq) || ingredient.cost || 0;
                             countedSubRecipeIds.add(ingredient.proxy_recipe_id);
                         }
                     }
@@ -185,8 +191,10 @@ export class RecipeStateService {
                 if (visiting.has(sr.child_recipe_id)) {
                     continue; // Cycle detected
                 }
+                const proxyRecipe = recipes.find(r => r.id === sr.child_recipe_id);
+                const yq = proxyRecipe?.yield_quantity || 1;
                 const subRecipeCost = calculateCost(sr.child_recipe_id);
-                totalCost += subRecipeCost.totalCost * sr.quantity;
+                totalCost += (subRecipeCost.totalCost / yq) * sr.quantity;
                 for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
                   rawIngredients.set(ingId, (rawIngredients.get(ingId) || 0) + (qty * sr.quantity));
                 }
