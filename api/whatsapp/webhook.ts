@@ -323,9 +323,9 @@ async function processMessage(value: any, storeIdQuery?: string) {
 
     const { data: pastOrders } = await supabase
       .from("orders")
-      .select("notes, created_at")
+      .select("notes, timestamp")
       .eq("customer_id", customer.id)
-      .order("created_at", { ascending: false })
+      .order("timestamp", { ascending: false })
       .limit(3);
 
     if (pastOrders && pastOrders.length > 0) {
@@ -334,7 +334,7 @@ async function processMessage(value: any, storeIdQuery?: string) {
         pastOrders
           .map(
             (o: any) =>
-              `- Pedido em ${new Date(o.created_at).toLocaleDateString()}: ${o.notes || "Sem observações"}`,
+              `- Pedido em ${new Date(o.timestamp).toLocaleDateString()}: ${o.notes || "Sem observações"}`,
           )
           .join("\n");
     }
@@ -390,7 +390,14 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
     message: contents[contents.length - 1]?.parts[0]?.text || "Hello",
   });
 
-  let replyText = response.text || "";
+  let replyText = "";
+  try {
+    if (response.text) {
+      replyText = response.text;
+    }
+  } catch (e) {
+    // response.text can throw if there are no text parts
+  }
 
   while (response.functionCalls && response.functionCalls.length > 0) {
     const functionResponses = [];
@@ -439,9 +446,13 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
     }
 
     if (functionResponses.length > 0) {
-      response = await chatSession.sendMessage(functionResponses as any);
-      if (response.text) {
-        replyText = response.text;
+      response = await chatSession.sendMessage({ message: functionResponses as any });
+      try {
+        if (response.text) {
+          replyText = response.text;
+        }
+      } catch (e) {
+        // Safe catch
       }
     } else {
       break;
