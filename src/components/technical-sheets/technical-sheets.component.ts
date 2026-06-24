@@ -256,7 +256,7 @@ export class TechnicalSheetsComponent {
         
         let itemCost = ingredient.cost || 0;
         if (ingredient.proxy_recipe_id) {
-            const proxyRecipe = this.stateService.recipeState.recipes().find(r => r.id === ingredient.proxy_recipe_id);
+            const proxyRecipe = this.recipeState.recipes().find(r => r.id === ingredient.proxy_recipe_id);
             const yq = proxyRecipe?.yield_quantity || 1;
             const subTotalCost = costsMap.get(ingredient.proxy_recipe_id)?.totalCost;
             itemCost = subTotalCost !== undefined ? (subTotalCost / yq) : (ingredient.cost || 0);
@@ -271,7 +271,7 @@ export class TechnicalSheetsComponent {
       if (countedSubRecipeIds.has(item.child_recipe_id)) {
           continue;
       }
-      const proxyRecipe = this.stateService.recipeState.recipes().find(r => r.id === item.child_recipe_id);
+      const proxyRecipe = this.recipeState.recipes().find(r => r.id === item.child_recipe_id);
       const yq = proxyRecipe?.yield_quantity || 1;
       const proxyIng = this.ingredients().find(i => i.proxy_recipe_id === item.child_recipe_id);
       const subTotalCost = costsMap.get(item.child_recipe_id)?.totalCost;

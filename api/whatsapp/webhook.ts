@@ -44,7 +44,7 @@ const requestHumanHandoffFunc: FunctionDeclaration = {
 const submitOrderFunc: FunctionDeclaration = {
   name: "submit_public_order",
   description:
-    "Submit a complete food order for delivery or takeout. Use ONLY when the user has finished choosing all items, selected a payment method, and provided a valid delivery address or takeout choice.",
+    "Submit a complete food order for delivery or takeout. Use ONLY when the user has finished choosing all items, selected a payment method, and provided a valid delivery address or takeout choice. DO NOT call this if the order was already submitted in previous messages.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -98,6 +98,46 @@ const submitOrderFunc: FunctionDeclaration = {
       },
     },
     required: ["customer_name", "items", "payment_method", "address"],
+  },
+};
+
+const manageReservationFunc: FunctionDeclaration = {
+  name: "manage_reservation",
+  description:
+    "Gerencia reservas de mesas (checar disponibilidade, criar, cancelar, atualizar ou listar reservas do cliente).",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      action: {
+        type: Type.STRING,
+        description: "Ação: 'CHECK_AVAILABILITY', 'CREATE', 'CANCEL', 'UPDATE' ou 'LIST_MY_RESERVATIONS'.",
+      },
+      date: {
+        type: Type.STRING,
+        description: "Data da reserva no formato YYYY-MM-DD (obrigatório para CHECK, CREATE, UPDATE).",
+      },
+      time: {
+        type: Type.STRING,
+        description: "Hora da reserva no formato HH:MM (obrigatório para CHECK, CREATE, UPDATE).",
+      },
+      party_size: {
+        type: Type.NUMBER,
+        description: "Número de pessoas (obrigatório para CHECK, CREATE, UPDATE).",
+      },
+      customer_name: {
+        type: Type.STRING,
+        description: "Nome do cliente (obrigatório para CREATE).",
+      },
+      reservation_id: {
+        type: Type.STRING,
+        description: "ID da reserva (obrigatório para CANCEL e UPDATE).",
+      },
+      notes: {
+        type: Type.STRING,
+        description: "Observações especiais (opcional).",
+      },
+    },
+    required: ["action"],
   },
 };
 
@@ -265,7 +305,7 @@ async function processMessage(value: any, storeIdQuery?: string) {
 
   const { data: history } = await supabase
     .from("whatsapp_messages")
-    .select("sender_type, content")
+    .select("sender_type, content, created_at")
     .eq("chat_id", chat.id)
     .order("created_at", { ascending: false })
     .limit(20);
@@ -302,10 +342,14 @@ async function processMessage(value: any, storeIdQuery?: string) {
     customerContext = `Este é um cliente novo. Sem pontos de fidelidade.`;
   }
 
-  const messageHistory = (history || []).reverse().map((msg: any) => ({
-    role: msg.sender_type === "user" ? "user" : "model",
-    parts: [{ text: msg.content }],
-  }));
+  const messageHistory = (history || []).reverse().map((msg: any) => {
+    const date = new Date(msg.created_at);
+    const timeStr = date.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    return {
+      role: msg.sender_type === "user" ? "user" : "model",
+      parts: [{ text: `[${timeStr}] ${msg.content}` }],
+    };
+  });
 
   const contents = messageHistory;
 
@@ -317,63 +361,90 @@ Regras de Negócio Importantes:
 4. Faça sugestões contextuais (Upsell/Cross-sell) caso faça sentido (ex: "Quer adicionar fritas por mais R$ 10?").
 5. Responda a dúvidas frequentes (FAQ): Aceitamos Cartão, Pix, VR, VA e Dinheiro. Somos Pet-Friendly. O horário é das 18h às 23h.
 6. Se o cliente se mostrar irritado, frustrado ou pedir explicitamente para falar com um atendente, chame a tool "request_human_handoff".
-7. Este é o nosso cardápio de produtos disponíveis (NÃO invente itens):
+7. IMPORTANTE: Nunca acione a tool "submit_public_order" para um pedido que já foi enviado/confirmado no histórico. Se o cliente iniciar uma nova conversa (ex: "Oi"), trate como um novo atendimento e NÃO reenvie itens do passado.
+8. Se o cliente quiser reservar uma mesa, verifique a disponibilidade, confirme os detalhes e utilize a tool "manage_reservation" para criar ou gerenciar a reserva. O cliente também pode listar suas próprias reservas ou pedir para cancelar/alterar.
+9. Este é o nosso cardápio de produtos disponíveis (NÃO invente itens):
 ${JSON.stringify(menu || [], null, 2)}
 
 Contexto do Cliente:
 ${customerContext}
 
 Seu objetivo:
-Identificar o que o cliente quer, fazer upsell leve e fechar o pedido recolhendo:
-- Nome do cliente
-- Os itens solicitados
-- O meio de pagamento (e troco se aplicável)
-- O Endereço COMPLETO ou Retirada.
-
-APENAS QUANDO e SOMENTE QUANDO tiver tudo, acione "submit_public_order" para fechar o pedido.`;
+Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa). 
+- Para Pedidos: faça upsell leve e feche o pedido recolhendo Nome, Itens, Pagamento e Endereço/Retirada. Somente acione "submit_public_order" quando tiver tudo.
+- Para Reservas de Mesa: obtenha Nome, Data (YYYY-MM-DD), Hora (HH:MM) e número de pessoas. Confirme a disponibilidade e só então efetive a reserva.`;
 
   const chatSession = ai.chats.create({
     model: "gemini-3.5-flash",
     config: {
       systemInstruction,
       tools: [
-        { functionDeclarations: [submitOrderFunc, requestHumanHandoffFunc] },
+        { functionDeclarations: [submitOrderFunc, requestHumanHandoffFunc, manageReservationFunc] },
       ],
       temperature: 0.2,
     },
     history: contents.slice(0, -1), // All except the very last one
   });
 
-  const response = await chatSession.sendMessage({
+  let response = await chatSession.sendMessage({
     message: contents[contents.length - 1]?.parts[0]?.text || "Hello",
   });
 
-  // Handle Function Call from AI
-  const functionCalls = response.functionCalls;
   let replyText = response.text || "";
 
-  if (functionCalls && functionCalls.length > 0) {
-    for (const call of functionCalls) {
+  while (response.functionCalls && response.functionCalls.length > 0) {
+    const functionResponses = [];
+
+    for (const call of response.functionCalls) {
       if (call.name === "submit_public_order") {
         const args = call.args as any;
-        // Create order in Supabase
         try {
           await createOrder(storeId, args, chat.customer_id);
-          replyText = `Ótimo! Seu pedido foi enviado para a cozinha com sucesso. Vamos preparar rapidinho!`;
+          functionResponses.push({
+            functionResponse: {
+              name: call.name,
+              response: { success: true, result: "Pedido criado com sucesso!" }
+            }
+          });
         } catch (e) {
           console.error("Error creating order from tool:", e);
-          replyText =
-            "Houve um erro interno ao lançar seu pedido, aguarde enquanto um atendente verifica.";
+          functionResponses.push({
+            functionResponse: {
+              name: call.name,
+              response: { success: false, error: "Erro interno ao criar pedido." }
+            }
+          });
         }
       } else if (call.name === "request_human_handoff") {
         await supabase
           .from("whatsapp_chats")
           .update({ status: "human" })
           .eq("id", chat.id);
-        replyText =
-          replyText ||
-          "Entendi. Aguarde um momento, vou transferir você para um de nossos atendentes.";
+        functionResponses.push({
+          functionResponse: {
+            name: call.name,
+            response: { success: true, result: "Transferência para humano realizada." }
+          }
+        });
+      } else if (call.name === "manage_reservation") {
+        const args = call.args as any;
+        try {
+          const res = await handleReservation(storeId, customerPhone, args, chat.customer_id);
+          functionResponses.push({ functionResponse: { name: call.name, response: res } });
+        } catch (e: any) {
+          console.error("Error managing reservation:", e);
+          functionResponses.push({ functionResponse: { name: call.name, response: { success: false, error: e.message } } });
+        }
       }
+    }
+
+    if (functionResponses.length > 0) {
+      response = await chatSession.sendMessage(functionResponses as any);
+      if (response.text) {
+        replyText = response.text;
+      }
+    } else {
+      break;
     }
   }
 
@@ -394,6 +465,75 @@ APENAS QUANDO e SOMENTE QUANDO tiver tudo, acione "submit_public_order" para fec
       content: replyText,
     });
   }
+}
+
+async function handleReservation(
+  storeId: string,
+  customerPhone: string,
+  args: any,
+  customerId: string | null
+) {
+  const { action, date, time, party_size, customer_name, reservation_id, notes } = args;
+
+  if (action === "LIST_MY_RESERVATIONS") {
+    let q = supabase.from("reservations").select("*").eq("user_id", storeId);
+    if (customerId) {
+      q = q.eq("customer_id", customerId);
+    } else {
+      q = q.eq("customer_phone", customerPhone);
+    }
+    const { data } = await q.order("reservation_time", { ascending: true });
+    return { success: true, reservations: data || [] };
+  }
+
+  if (action === "CHECK_AVAILABILITY") {
+    if (!date || !time || !party_size) {
+      return { success: false, error: "date, time e party_size são obrigatórios." };
+    }
+    // Simplification: just return available and tell AI to confirm with user.
+    return { success: true, available: true, message: "A princípio temos disponibilidade. O atendente pode confirmar posteriormente se precisar." };
+  }
+
+  if (action === "CREATE") {
+    if (!date || !time || !party_size || !customer_name) {
+      return { success: false, error: "date, time, party_size e customer_name são obrigatórios." };
+    }
+    const reservationTime = new Date(`${date}T${time}:00`);
+    const { data, error } = await supabase.from("reservations").insert({
+      user_id: storeId,
+      customer_id: customerId,
+      customer_phone: customerPhone,
+      customer_name,
+      party_size,
+      reservation_time: reservationTime.toISOString(),
+      status: "PENDING",
+      notes: notes || null
+    }).select().single();
+    
+    if (error) throw error;
+    return { success: true, reservation: data };
+  }
+
+  if (action === "UPDATE") {
+    if (!reservation_id) return { success: false, error: "reservation_id é obrigatório." };
+    const updates: any = {};
+    if (date && time) updates.reservation_time = new Date(`${date}T${time}:00`).toISOString();
+    if (party_size) updates.party_size = party_size;
+    if (notes) updates.notes = notes;
+
+    const { data, error } = await supabase.from("reservations").update(updates).eq("id", reservation_id).eq("user_id", storeId).select().single();
+    if (error) throw error;
+    return { success: true, reservation: data };
+  }
+
+  if (action === "CANCEL") {
+    if (!reservation_id) return { success: false, error: "reservation_id é obrigatório." };
+    const { data, error } = await supabase.from("reservations").update({ status: "CANCELLED", cancellation_reason: notes || "Cancelado pelo cliente via WhatsApp" }).eq("id", reservation_id).eq("user_id", storeId).select().single();
+    if (error) throw error;
+    return { success: true, reservation: data };
+  }
+
+  return { success: false, error: "Ação inválida." };
 }
 
 async function createOrder(
