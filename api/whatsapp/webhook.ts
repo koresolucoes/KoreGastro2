@@ -509,7 +509,7 @@ async function handleReservation(
     if (!date || !time || !party_size || !customer_name) {
       return { success: false, error: "date, time, party_size e customer_name são obrigatórios." };
     }
-    const reservationTime = new Date(`${date}T${time}:00`);
+    const reservationTime = new Date(`${date}T${time}:00-03:00`);
     const { data, error } = await supabase.from("reservations").insert({
       user_id: storeId,
       customer_id: customerId,
@@ -528,7 +528,7 @@ async function handleReservation(
   if (action === "UPDATE") {
     if (!reservation_id) return { success: false, error: "reservation_id é obrigatório." };
     const updates: any = {};
-    if (date && time) updates.reservation_time = new Date(`${date}T${time}:00`).toISOString();
+    if (date && time) updates.reservation_time = new Date(`${date}T${time}:00-03:00`).toISOString();
     if (party_size) updates.party_size = party_size;
     if (notes) updates.notes = notes;
 
