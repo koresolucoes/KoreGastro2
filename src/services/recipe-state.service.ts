@@ -25,11 +25,17 @@ export class RecipeStateService {
     const recipeSubRecipes = this.recipeSubRecipes();
     const recipes = this.recipes();
     const memo = new Map<string, { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> }>();
+    const visiting = new Set<string>();
 
     const calculateCost = (recipeId: string): { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> } => {
         if (memo.has(recipeId)) {
             return memo.get(recipeId)!;
         }
+        if (visiting.has(recipeId)) {
+            return { totalCost: 0, ingredientCount: 0, rawIngredients: new Map<string, number>() };
+        }
+
+        visiting.add(recipeId);
 
         let totalCost = 0;
         const rawIngredients = new Map<string, number>();
@@ -50,17 +56,35 @@ export class RecipeStateService {
             }
             ingredientCount = 1;
         } else {
+            const countedSubRecipeIds = new Set<string>();
             for (const ri of directIngredients) {
                 const ingredient = ingredientsMap.get(ri.ingredient_id);
                 if (ingredient) {
                     const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
                     const actualQuantity = ri.quantity * factor;
-                    totalCost += (ingredient.cost || 0) * actualQuantity;
+                    
+                    let itemCost = ingredient.cost || 0;
+                    if (ingredient.proxy_recipe_id) {
+                        if (visiting.has(ingredient.proxy_recipe_id)) {
+                            itemCost = ingredient.cost || 0;
+                        } else {
+                            const subRecipeCost = calculateCost(ingredient.proxy_recipe_id);
+                            itemCost = subRecipeCost.totalCost || ingredient.cost || 0;
+                            countedSubRecipeIds.add(ingredient.proxy_recipe_id);
+                        }
+                    }
+                    totalCost += itemCost * actualQuantity;
                     rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
                 }
             }
 
             for (const sr of subRecipes) {
+                if (countedSubRecipeIds.has(sr.child_recipe_id)) {
+                    continue; // Already counted as proxy ingredient in directIngredients
+                }
+                if (visiting.has(sr.child_recipe_id)) {
+                    continue; // Cycle detected
+                }
                 const subRecipeCost = calculateCost(sr.child_recipe_id);
                 totalCost += subRecipeCost.totalCost * sr.quantity;
                 for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
@@ -82,6 +106,7 @@ export class RecipeStateService {
         }
         
         const result = { totalCost, ingredientCount, rawIngredients };
+        visiting.delete(recipeId);
         memo.set(recipeId, result);
         return result;
     };
@@ -99,18 +124,27 @@ export class RecipeStateService {
     const recipeSubRecipes = this.recipeSubRecipes();
     const recipes = this.recipes();
     const memo = new Map<string, { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> }>();
+    const visiting = new Set<string>();
 
     const calculateCost = (recipeId: string): { totalCost: number; ingredientCount: number; rawIngredients: Map<string, number> } => {
         if (memo.has(recipeId)) {
             return memo.get(recipeId)!;
         }
+        if (visiting.has(recipeId)) {
+            return { totalCost: 0, ingredientCount: 0, rawIngredients: new Map<string, number>() };
+        }
+
+        visiting.add(recipeId);
 
         let totalCost = 0;
         const rawIngredients = new Map<string, number>();
         let ingredientCount = 0;
         
         const recipe = recipes.find(r => r.id === recipeId);
-        if (recipe?.source_ingredient_id) {
+        const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
+        const subRecipes = recipeSubRecipes.filter(rsr => rsr.parent_recipe_id === recipeId);
+
+        if (directIngredients.length === 0 && subRecipes.length === 0 && recipe?.source_ingredient_id) {
             const ingredient = ingredientsMap.get(recipe.source_ingredient_id);
             if (ingredient) {
                 totalCost += (ingredient.cost || 0);
@@ -119,7 +153,7 @@ export class RecipeStateService {
             }
             ingredientCount = 1;
         } else {
-            const directIngredients = recipeIngredients.filter(ri => ri.recipe_id === recipeId);
+            const countedSubRecipeIds = new Set<string>();
             for (const ri of directIngredients) {
                 // FIX: Add a guard to ensure ingredient exists before accessing its properties.
                 const ingredient = ingredientsMap.get(ri.ingredient_id);
@@ -128,13 +162,29 @@ export class RecipeStateService {
                     const factor = ri.correction_factor && ri.correction_factor > 0 ? ri.correction_factor : 1;
                     const actualQuantity = ri.quantity * factor;
                     
-                    totalCost += (ingredient.cost || 0) * actualQuantity;
+                    let itemCost = ingredient.cost || 0;
+                    if (ingredient.proxy_recipe_id) {
+                        if (visiting.has(ingredient.proxy_recipe_id)) {
+                            itemCost = ingredient.cost || 0;
+                        } else {
+                            const subRecipeCost = calculateCost(ingredient.proxy_recipe_id);
+                            itemCost = subRecipeCost.totalCost || ingredient.cost || 0;
+                            countedSubRecipeIds.add(ingredient.proxy_recipe_id);
+                        }
+                    }
+                    totalCost += itemCost * actualQuantity;
                     rawIngredients.set(ri.ingredient_id, (rawIngredients.get(ri.ingredient_id) || 0) + actualQuantity);
                 }
             }
 
             const subRecipes = recipeSubRecipes.filter(rsr => rsr.parent_recipe_id === recipeId);
             for (const sr of subRecipes) {
+                if (countedSubRecipeIds.has(sr.child_recipe_id)) {
+                    continue; // Already counted as proxy ingredient in directIngredients
+                }
+                if (visiting.has(sr.child_recipe_id)) {
+                    continue; // Cycle detected
+                }
                 const subRecipeCost = calculateCost(sr.child_recipe_id);
                 totalCost += subRecipeCost.totalCost * sr.quantity;
                 for (const [ingId, qty] of subRecipeCost.rawIngredients.entries()) {
@@ -164,6 +214,7 @@ export class RecipeStateService {
             ingredientCount,
             rawIngredients,
         };
+        visiting.delete(recipeId);
         memo.set(recipeId, result);
         return result;
     };

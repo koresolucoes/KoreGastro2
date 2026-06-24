@@ -342,7 +342,7 @@
           <section class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
             
             <!-- Pre-made Components (Sub-recipes) -->
-            <div class="bg-surface-elevated rounded-2xl border border-subtle p-6 shadow-sm">
+            <div class="bg-surface-elevated rounded-2xl border border-subtle p-6 shadow-sm hidden">
                  <div class="flex justify-between items-end mb-6">
                      <div>
                         <h4 class="text-lg font-bold text-title flex items-center gap-2">
@@ -365,7 +365,7 @@
                                 </div>
                                 <span class="text-body flex-1 font-semibold text-sm">{{ getSubRecipeName(sr.child_recipe_id) }}</span>
                                 <div class="flex items-center gap-2 bg-surface-elevated rounded-lg px-2 py-1.5 border border-strong">
-                                    <input type="number" [value]="sr.quantity" (change)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm">
+                                    <input type="number" [value]="sr.quantity" (input)="updateFormSubRecipe(sr.child_recipe_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm">
                                     <span class="text-muted text-xs font-bold uppercase tracking-widest">un</span>
                                 </div>
                                 <button (click)="removeFormSubRecipe(sr.child_recipe_id)" class="text-muted hover:text-danger hover:bg-surface-elevated w-8 h-8 rounded-lg flex items-center justify-center transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span></button>
@@ -429,25 +429,29 @@
                             <div class="p-4">
                                 <div class="space-y-3">
                                      @for(ing of getIngredientsForPreparation(prep.id); track ing.ingredient_id) {
-                                        <div class="flex items-center gap-4 text-sm bg-surface-elevated p-3 rounded-xl border border-strong hover:border-subtle transition-all group">
-                                            <div class="p-2 bg-success/10 rounded-lg text-success">
-                                                <span translate="no" class="notranslate material-symbols-outlined text-[18px]">grocery</span>
-                                            </div>
-                                            <span class="text-title flex-1 font-medium">{{ getIngredientName(ing.ingredient_id) }}</span>
-                                            
-                                            <!-- Qty -->
-                                            <div class="flex items-center gap-2 bg-surface rounded-lg px-2 py-1.5 border border-strong group-hover:border-subtle transition-colors">
-                                                <input type="number" [value]="ing.quantity" (change)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm">
-                                                <span class="text-muted text-xs font-bold uppercase tracking-widest min-w-[20px] text-center">{{ getIngredientUnit(ing.ingredient_id) }}</span>
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm bg-surface-elevated p-4 rounded-xl border border-strong hover:border-subtle transition-all group">
+                                            <div class="flex items-center gap-3 flex-1 min-w-[150px]">
+                                                <div class="p-2 bg-success/10 rounded-lg text-success">
+                                                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">grocery</span>
+                                                </div>
+                                                <span class="text-title font-medium">{{ getIngredientName(ing.ingredient_id) }}</span>
                                             </div>
                                             
-                                            <!-- Fator de Correção -->
-                                            <div class="flex items-center gap-2 bg-surface rounded-lg px-2 py-1.5 border border-strong group-hover:border-subtle transition-colors" title="Fator de Correção (FC)">
-                                                <span class="text-muted text-[10px] font-bold uppercase tracking-widest">FC</span>
-                                                <input type="number" [value]="ing.correction_factor || 1" (change)="updateFormIngredientFactor(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm" step="0.01">
+                                            <div class="flex flex-wrap items-center gap-3 justify-end w-full sm:w-auto">
+                                                <!-- Qty -->
+                                                <div class="flex items-center gap-2 bg-surface rounded-lg px-2 py-1.5 border border-strong group-hover:border-subtle transition-colors">
+                                                    <input type="number" [value]="ing.quantity" (input)="updateFormIngredient(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-16 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm">
+                                                    <span class="text-muted text-xs font-bold uppercase tracking-widest min-w-[20px] text-center">{{ getIngredientUnit(ing.ingredient_id) }}</span>
+                                                </div>
+                                                
+                                                <!-- Fator de Correção -->
+                                                <div class="flex items-center gap-2 bg-surface rounded-lg px-2 py-1.5 border border-strong group-hover:border-subtle transition-colors" title="Fator de Correção (FC)">
+                                                    <span class="text-muted text-[10px] font-bold uppercase tracking-widest">FC</span>
+                                                    <input type="number" [value]="ing.correction_factor || 1" (input)="updateFormIngredientFactor(prep.id, ing.ingredient_id, +$any($event.target).value)" class="w-12 bg-transparent text-right text-title focus:outline-none data-mono font-bold text-sm" step="0.01">
+                                                </div>
+                                                
+                                                <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-muted hover:text-danger w-8 h-8 rounded-lg flex items-center justify-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-elevated"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span></button>
                                             </div>
-                                            
-                                            <button (click)="removeFormIngredient(prep.id, ing.ingredient_id)" class="text-muted hover:text-danger w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-elevated"><span translate="no" class="notranslate material-symbols-outlined text-[18px]">close</span></button>
                                         </div>
                                      }
                                      

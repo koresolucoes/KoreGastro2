@@ -220,6 +220,31 @@ export class SupabaseStateService {
     this.settingsState.paymentTerminals.set(paymentTerminals.data || []);
   }
 
+  public async refetchRecipesData() {
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return;
+
+    const [
+        recipes,
+        recipeIngredients,
+        recipePreparations,
+        recipeSubRecipes,
+        storeCustomPrices
+    ] = await Promise.all([
+        supabase.from('recipes').select('*').eq('store_id', userId),
+        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
+        supabase.from('recipe_preparations').select('*').eq('user_id', userId),
+        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
+        supabase.from('store_custom_prices').select('*').eq('store_id', userId),
+    ]);
+
+    this.recipeState.recipes.set(recipes.data || []);
+    this.recipeState.recipeIngredients.set(recipeIngredients.data || []);
+    this.recipeState.recipePreparations.set(recipePreparations.data || []);
+    this.recipeState.recipeSubRecipes.set(recipeSubRecipes.data || []);
+    this.pricingService.customPrices.set(storeCustomPrices.data || []);
+  }
+
   // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
   // Called by Inventory, Reports, HR components on init
   public async loadBackOfficeData() {
@@ -321,6 +346,12 @@ export class SupabaseStateService {
         case 'stations': this.handleSimpleUpdate(this.posState.stations, payload, '*, employees(*)'); break;
         case 'categories': this.handleSimpleUpdate(this.recipeState.categories, payload); break;
         case 'recipes': this.handleSimpleUpdate(this.recipeState.recipes, payload); break;
+        case 'recipe_preparations':
+        case 'recipe_ingredients':
+        case 'recipe_sub_recipes':
+        case 'store_custom_prices':
+            this.refetchRecipesData();
+            break;
         case 'employees': this.handleSimpleUpdate(this.hrState.employees, payload); break;
         case 'ingredients': this.handleSimpleUpdate(this.inventoryState.ingredients, payload, '*, ingredient_categories(name), suppliers(name)'); break;
         case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;

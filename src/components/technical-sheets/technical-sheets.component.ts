@@ -239,6 +239,7 @@ export class TechnicalSheetsComponent {
         return total;
     }
 
+    const countedSubRecipeIds = new Set<string>();
     for (const item of form.ingredients) {
       const ingredient = ingredientsMap.get(item.ingredient_id);
       if (ingredient) {
@@ -252,12 +253,23 @@ export class TechnicalSheetsComponent {
         }
         // Apply correction factor if exists
         const fc = item.correction_factor || 1;
-        total += (ingredient.cost * (convertedQuantity || 0)) * fc;
+        
+        let itemCost = ingredient.cost || 0;
+        if (ingredient.proxy_recipe_id) {
+            itemCost = costsMap.get(ingredient.proxy_recipe_id)?.totalCost || ingredient.cost || 0;
+            countedSubRecipeIds.add(ingredient.proxy_recipe_id);
+        }
+
+        total += (itemCost * (convertedQuantity || 0)) * fc;
       }
     }
 
     for (const item of form.subRecipes) {
-      const subRecipeCost = costsMap.get(item.child_recipe_id)?.totalCost ?? 0;
+      if (countedSubRecipeIds.has(item.child_recipe_id)) {
+          continue;
+      }
+      const proxyIng = this.ingredients().find(i => i.proxy_recipe_id === item.child_recipe_id);
+      const subRecipeCost = costsMap.get(item.child_recipe_id)?.totalCost || proxyIng?.cost || 0;
       total += subRecipeCost * (item.quantity || 0);
     }
 
@@ -373,20 +385,7 @@ export class TechnicalSheetsComponent {
           const { recipe_id, user_id, ingredients, ...rest } = i;
           const baseIngredient = ingredientsMap.get(i.ingredient_id);
           const baseUnit = baseIngredient?.unit || 'un';
-          
-          let displayUnit: IngredientUnit = baseUnit;
-          let displayQuantity = rest.quantity;
-
-          // Heuristic: Display small KG amounts as G for better UX
-          if (baseUnit === 'kg' && displayQuantity > 0 && displayQuantity < 1) {
-              displayUnit = 'g';
-              displayQuantity *= 1000;
-          } else if (baseUnit === 'l' && displayQuantity > 0 && displayQuantity < 1) {
-              displayUnit = 'ml';
-              displayQuantity *= 1000;
-          }
-
-          return { ...rest, quantity: displayQuantity, unit: displayUnit };
+          return { ...rest, quantity: rest.quantity, unit: baseUnit };
     });
 
     this.recipeForm.set({
@@ -627,15 +626,76 @@ export class TechnicalSheetsComponent {
       this.stopAddingItem();
   }
 
-  addSubRecipeToPrep(recipe: Recipe) {
-      const exists = this.recipeForm().subRecipes.some(sr => sr.child_recipe_id === recipe.id);
-      if (!exists) {
-          this.recipeForm.update(form => ({
-              ...form,
-              subRecipes: [...form.subRecipes, { child_recipe_id: recipe.id, quantity: 1 }]
-          }));
+  async ensureProxyIngredientForSubRecipe(recipe: Recipe): Promise<Ingredient | null> {
+      const activeUnitId = this.recipeDataService['getActiveUnitId'] ? this.recipeDataService['getActiveUnitId']() : null;
+      if (!activeUnitId) return null;
+
+      // Check if already exists
+      const existing = this.ingredients().find(i => i.proxy_recipe_id === recipe.id);
+      if (existing) return existing;
+
+      const costForProxy = (this.recipeCosts().get(recipe.id)?.totalCost || 0) / (recipe.yield_quantity || 1);
+
+      // Create a proxy ingredient in the database
+      const newIngData: Partial<Ingredient> = {
+          name: recipe.name,
+          unit: 'un', // Sub-recipes are usually counted in units (un), portion, etc.
+          cost: costForProxy,
+          min_stock: 0,
+          is_sellable: false,
+          proxy_recipe_id: recipe.id,
+          user_id: activeUnitId
+      };
+
+      const { success, data, error } = await this.inventoryDataService.addIngredient(newIngData);
+      if (success && data) {
+          // Optimistically add to inventoryState ingredients list
+          this.inventoryState.ingredients.update(list => {
+              if (!list.some(i => i.id === data.id)) {
+                  return [...list, data];
+              }
+              return list;
+          });
+          await this.stateService.refetchRecipesData();
+          return this.ingredients().find(i => i.proxy_recipe_id === recipe.id) || data;
+      } else {
+          console.error('Error creating proxy ingredient for sub-recipe:', error);
+          return null;
       }
-      this.stopAddingItem();
+  }
+
+  async addSubRecipeToPrep(recipe: Recipe) {
+      const prepId = this.addingToPreparationId();
+      if (!prepId) return;
+
+      if (prepId === 'sub-recipe') {
+          const exists = this.recipeForm().subRecipes.some(sr => sr.child_recipe_id === recipe.id);
+          if (!exists) {
+              this.recipeForm.update(form => ({
+                  ...form,
+                  subRecipes: [...form.subRecipes, { child_recipe_id: recipe.id, quantity: 1 }]
+              }));
+          }
+          this.stopAddingItem();
+      } else {
+          // Add as proxy ingredient in the step
+          const proxyIngredient = await this.ensureProxyIngredientForSubRecipe(recipe);
+          if (proxyIngredient) {
+              const exists = this.recipeForm().ingredients.some(i => i.preparation_id === prepId && i.ingredient_id === proxyIngredient.id);
+              if (!exists) {
+                  this.recipeForm.update(form => ({
+                      ...form,
+                      ingredients: [...form.ingredients, { 
+                          ingredient_id: proxyIngredient.id, 
+                          quantity: 1, 
+                          preparation_id: prepId, 
+                          unit: proxyIngredient.unit 
+                      }]
+                  }));
+              }
+          }
+          this.stopAddingItem();
+      }
   }
 
   getAddingToPreparationName(prepId: string | null): string {
@@ -736,17 +796,24 @@ export class TechnicalSheetsComponent {
     const { cost, hasStock, ...recipeData } = form.recipe as any;
     const recipeDataToSave = { ...recipeData, operational_cost: this.formTotalOverallCost() };
     
-    // Prepare ingredients with unit conversion back to base unit if needed
+    // Prepare ingredients
     const ingredientsMap = new Map<string, Ingredient>(this.ingredients().map(i => [i.id, i]));
+    const subRecipesToSave: any[] = [];
     
     const ingredientsToSave = form.ingredients.map((formIng) => {
         const base = ingredientsMap.get(formIng.ingredient_id);
         if (!base) return null;
         
-        let qty = formIng.quantity;
-        // Simple conversion logic (reversed)
-        if (formIng.unit === 'g' && base.unit === 'kg') qty /= 1000;
-        else if (formIng.unit === 'ml' && base.unit === 'l') qty /= 1000;
+        const qty = formIng.quantity;
+        
+        // If this ingredient is a proxy for a sub-recipe, save it as a sub-recipe relation too
+        if (base.proxy_recipe_id) {
+            subRecipesToSave.push({
+                parent_recipe_id: this.selectedRecipeId() || '',
+                child_recipe_id: base.proxy_recipe_id,
+                quantity: qty
+            });
+        }
         
         return {
             preparation_id: formIng.preparation_id,
@@ -756,16 +823,37 @@ export class TechnicalSheetsComponent {
         };
     }).filter((i): i is any => i !== null);
 
+    // Add legacy form subRecipes if not already in subRecipesToSave
+    for (const legacy of form.subRecipes) {
+        if (!subRecipesToSave.some(sr => sr.child_recipe_id === legacy.child_recipe_id)) {
+            subRecipesToSave.push({
+                parent_recipe_id: this.selectedRecipeId() || '',
+                child_recipe_id: legacy.child_recipe_id,
+                quantity: legacy.quantity
+            });
+        }
+    }
+
     if (this.selectedRecipeId()) {
         const { success, error } = await this.recipeDataService.updateRecipeDetails(
             this.selectedRecipeId()!, recipeDataToSave, form.custom_store_price
         );
         const { success: sheetSuccess, error: sheetError } = await this.recipeDataService.saveTechnicalSheet(
-             this.selectedRecipeId()!, recipeDataToSave, form.preparations as any, ingredientsToSave, form.subRecipes as any
+             this.selectedRecipeId()!, recipeDataToSave, form.preparations as any, ingredientsToSave, subRecipesToSave as any
         );
 
         if (success && sheetSuccess) {
             if (form.image_file) await this.recipeDataService.updateRecipeImage(this.selectedRecipeId()!, form.image_file);
+            
+            // Sync proxy ingredient cost if it exists
+            const proxyIng = this.ingredients().find(i => i.proxy_recipe_id === this.selectedRecipeId());
+            if (proxyIng) {
+                const yieldQty = recipeDataToSave.yield_quantity || 1;
+                const unitCost = this.formTotalOverallCost() / yieldQty;
+                await this.inventoryDataService.updateIngredient({ id: proxyIng.id, cost: unitCost });
+            }
+
+            await this.stateService.refetchRecipesData();
             this.notificationService.show('Receita salva com sucesso!', 'success');
             this.closeModal();
         } else {
@@ -779,11 +867,15 @@ export class TechnicalSheetsComponent {
                  await this.recipeDataService.updateRecipeDetails(data.id, {}, form.custom_store_price);
              }
 
+             // Map subRecipes parent_recipe_id with the new recipe ID
+             const finalSubRecipes = subRecipesToSave.map(sr => ({ ...sr, parent_recipe_id: data.id }));
+
              const { success: tsSuccess, error: tsError } = await this.recipeDataService.saveTechnicalSheet(
-                data.id, {}, form.preparations as any, ingredientsToSave, form.subRecipes as any
+                data.id, {}, form.preparations as any, ingredientsToSave, finalSubRecipes as any
             );
             if (tsSuccess) {
                 if (form.image_file) await this.recipeDataService.updateRecipeImage(data.id, form.image_file);
+                await this.stateService.refetchRecipesData();
                 this.notificationService.show('Receita criada com sucesso!', 'success');
                 this.closeModal();
             } else {
@@ -798,7 +890,11 @@ export class TechnicalSheetsComponent {
 
   async toggleAvailability(recipe: Recipe) {
       const { success, error } = await this.recipeDataService.updateRecipeAvailability(recipe.id, !recipe.is_available);
-      if (!success) this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      if (success) {
+          await this.stateService.refetchRecipesData();
+      } else {
+          this.notificationService.show(`Erro: ${error?.message}`, 'error');
+      }
   }
 
   requestDelete(recipe: Recipe) { this.recipePendingDeletion.set(recipe); }
@@ -808,6 +904,7 @@ export class TechnicalSheetsComponent {
       if (!recipe) return;
       const { success, error } = await this.recipeDataService.deleteRecipe(recipe.id);
       if (success) {
+          await this.stateService.refetchRecipesData();
           this.notificationService.show('Receita excluída.', 'success');
           this.recipePendingDeletion.set(null);
           if (this.selectedRecipeId() === recipe.id) this.closeModal();
