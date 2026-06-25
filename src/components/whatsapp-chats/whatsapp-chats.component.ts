@@ -14,6 +14,7 @@ import { UnitContextService } from "../../services/unit-context.service";
 import { supabase } from "../../services/supabase-client";
 import { RouterLink } from "@angular/router";
 import { WhatsappSettingsComponent } from "../settings/whatsapp-settings.component";
+import { WhatsappAgentSettingsComponent } from "../settings/whatsapp-agent-settings.component";
 import { OrderPanelComponent } from "../pos/order-panel/order-panel.component";
 import { Table, Order, Employee } from "../../models/db.models";
 import { OperationalAuthService } from "../../services/operational-auth.service";
@@ -29,6 +30,7 @@ import { v4 as uuidv4 } from "uuid";
     FormsModule,
     RouterLink,
     WhatsappSettingsComponent,
+    WhatsappAgentSettingsComponent,
     DatePipe,
     OrderPanelComponent,
   ],

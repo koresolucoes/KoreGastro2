@@ -8830,3 +8830,34 @@ CREATE POLICY "Enable read access for all users" ON public.menu_item_option_choi
 
 -- Reload schema cache
 NOTIFY pgrst, reload_schema;
+
+-- Agent Configs Table
+CREATE TABLE IF NOT EXISTS "public"."whatsapp_agent_configs" (
+    "store_id" "uuid" NOT NULL,
+    "restaurant_name" "text",
+    "restaurant_address" "text",
+    "restaurant_hours" "text",
+    "agent_tone" "text" DEFAULT 'educado e profissional',
+    "extra_rules" "text",
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'whatsapp_agent_configs_pkey') THEN
+        ALTER TABLE "public"."whatsapp_agent_configs" ADD CONSTRAINT "whatsapp_agent_configs_pkey" PRIMARY KEY ("store_id");
+    END IF;
+END $$;
+
+ALTER TABLE "public"."whatsapp_agent_configs" ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own agent configs" ON "public"."whatsapp_agent_configs";
+CREATE POLICY "Users can view their own agent configs" ON "public"."whatsapp_agent_configs" FOR SELECT USING (auth.uid() = store_id);
+
+DROP POLICY IF EXISTS "Users can insert their own agent configs" ON "public"."whatsapp_agent_configs";
+CREATE POLICY "Users can insert their own agent configs" ON "public"."whatsapp_agent_configs" FOR INSERT WITH CHECK (auth.uid() = store_id);
+
+DROP POLICY IF EXISTS "Users can update their own agent configs" ON "public"."whatsapp_agent_configs";
+CREATE POLICY "Users can update their own agent configs" ON "public"."whatsapp_agent_configs" FOR UPDATE USING (auth.uid() = store_id) WITH CHECK (auth.uid() = store_id);
+
+NOTIFY pgrst, reload_schema;

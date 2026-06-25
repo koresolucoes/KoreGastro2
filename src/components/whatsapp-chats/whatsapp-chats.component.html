@@ -12,6 +12,12 @@
       </h1>
       <p class="text-xs text-muted mt-1 font-medium ml-14">Acompanhe conversas, gerencie clientes e feche pedidos pelo chat.</p>
     </div>
+    @if(isConfigured() === true || isTesting()) {
+      <button (click)="isConfigModalOpen.set(true)" class="p-3 bg-surface hover:bg-surface-elevated border border-subtle text-title rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-2 shadow-sm">
+        <span translate="no" class="notranslate material-symbols-outlined text-sm">settings</span>
+        <span class="hidden sm:inline">Configurações do Agente IA</span>
+      </button>
+    }
   </div>
 
   @if(isConfigured() === null) {
@@ -217,15 +223,25 @@
               </button>
            </div>
         } @else {
-           <div class="flex-grow flex flex-col items-center justify-center text-center p-8">
-              <div class="w-24 h-24 bg-surface rounded-full flex items-center justify-center border border-subtle mb-6">
+           <div class="flex-grow flex flex-col items-center justify-center text-center p-8 overflow-y-auto">
+              <div class="w-24 h-24 bg-surface rounded-full flex items-center justify-center border border-subtle mb-6 shrink-0 mt-8">
                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-12 h-12 opacity-50 grayscale">
               </div>
-              <h2 class="text-xl font-black text-title">WhatsApp Integrado</h2>
-              <p class="text-sm text-muted mt-2 max-w-md">Selecione uma conversa na lateral ou teste seu assistente virtual.</p>
-              <button (click)="startTesting()" class="mt-6 py-2.5 px-6 bg-surface border-2 border-brand text-brand hover:bg-surface-elevated font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-2">
-                 <span translate="no" class="notranslate material-symbols-outlined">science</span> Simular Conversa
-              </button>
+              <h2 class="text-xl font-black text-title shrink-0">WhatsApp Integrado</h2>
+              <p class="text-sm text-muted mt-2 max-w-md shrink-0">Selecione uma conversa na lateral ou teste seu assistente virtual.</p>
+              
+              <div class="flex flex-wrap justify-center gap-4 mt-6 mb-12 shrink-0">
+                 <button (click)="startTesting()" class="py-2.5 px-6 bg-surface border-2 border-brand text-brand hover:bg-surface-elevated font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined">science</span> Simular Conversa
+                 </button>
+                 <button (click)="isConfigModalOpen.set(true)" class="py-2.5 px-6 bg-brand text-white hover:bg-brand-600 font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined">settings</span> Configurar Conexão Oficial
+                 </button>
+              </div>
+
+              <div class="w-full max-w-2xl text-left pb-12">
+                <app-whatsapp-agent-settings></app-whatsapp-agent-settings>
+              </div>
            </div>
         }
      </div>
@@ -338,7 +354,8 @@
           <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
-      <div class="p-8 overflow-y-auto">
+      <div class="p-8 overflow-y-auto space-y-8">
+         <app-whatsapp-agent-settings></app-whatsapp-agent-settings>
          <app-whatsapp-settings></app-whatsapp-settings>
       </div>
     </div>
