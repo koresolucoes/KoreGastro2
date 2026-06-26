@@ -9,8 +9,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const MP_CLIENT_ID = process.env.MERCADO_PAGO_CLIENT_ID!;
-const MP_CLIENT_SECRET = process.env.MERCADO_PAGO_CLIENT_SECRET!;
+const MP_CLIENT_ID = process.env.MERCADOPAGO_CLIENT_ID || process.env.MERCADO_PAGO_CLIENT_ID;
+const MP_CLIENT_SECRET = process.env.MERCADOPAGO_CLIENT_SECRET || process.env.MERCADO_PAGO_CLIENT_SECRET;
 const REDIRECT_URI = process.env.VITE_PUBLIC_URL ? `${process.env.VITE_PUBLIC_URL}/api/mercadopago-oauth` : 'http://localhost:3000/api/mercadopago-oauth';
 
 export default async function (req: Request, res: Response) {
@@ -31,8 +31,8 @@ export default async function (req: Request, res: Response) {
         'Accept': 'application/json'
       },
       body: new URLSearchParams({
-        client_id: MP_CLIENT_ID,
-        client_secret: MP_CLIENT_SECRET,
+        client_id: MP_CLIENT_ID as string,
+        client_secret: MP_CLIENT_SECRET as string,
         grant_type: 'authorization_code',
         code: code as string,
         redirect_uri: REDIRECT_URI

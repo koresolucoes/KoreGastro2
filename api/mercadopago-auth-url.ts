@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const MP_CLIENT_ID = process.env.MERCADO_PAGO_CLIENT_ID!;
+const MP_CLIENT_ID = process.env.MERCADOPAGO_CLIENT_ID || process.env.MERCADO_PAGO_CLIENT_ID;
 const REDIRECT_URI = process.env.VITE_PUBLIC_URL ? `${process.env.VITE_PUBLIC_URL}/api/mercadopago-oauth` : 'http://localhost:3000/api/mercadopago-oauth';
 
 export default function (req: Request, res: Response) {
