@@ -252,23 +252,20 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
   }
 
   setupRealtimeSync() {
-     // We can try to listen to updates for this order if the user has read access
-     // But wait, Realtime requires RLS read access. 
-     // We have Permitir leitura pública de pedidos e order_items, so maybe it works!
      const token = this.sessionToken();
-     if (!token) return;
+     const ord = this.order();
+     if (!token || !ord) return;
+
+     if (this.channel) {
+       supabase.removeChannel(this.channel);
+     }
 
      this.channel = supabase.channel('public-order-' + token)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `session_token=eq.${token}` }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${ord.id}` }, payload => {
           this.loadOrder();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, payload => {
-          // Since we can't easily filter by order_id because we don't know it until loaded, we just reload on any item change 
-          // that matches our order_id once loaded, but it's simpler to just reload on ANY item change if it matches our order.id
-          const targetOrderId = (payload.new as any)?.order_id || (payload.old as any)?.order_id;
-          if (this.order() && targetOrderId === this.order()?.id) {
-             this.loadOrder();
-          }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${ord.id}` }, payload => {
+          this.loadOrder();
       })
       .subscribe();
   }

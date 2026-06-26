@@ -7,11 +7,13 @@ import {
   ChangeDetectionStrategy,
   HostBinding,
   effect,
+  untracked
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { FormsModule } from "@angular/forms";
 import { supabase } from "../../services/supabase-client";
+import { v4 as uuidv4 } from "uuid";
 import { PublicDataService } from "../../services/public-data.service";
 import { PricingService } from "../../services/pricing.service";
 import { CartService } from "../../services/cart.service";
@@ -112,7 +114,108 @@ export class MenuComponent implements OnInit {
 
   @HostBinding("class") hostClasses = "block min-h-screen bg-surface text-body";
 
+  private realtimeChannel: any;
+
+  ngOnDestroy() {
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+    }
+  }
+
+  setupRealtime() {
+    const order = this.tableOrder();
+    if (!order) return;
+    
+    if (this.realtimeChannel) {
+        supabase.removeChannel(this.realtimeChannel);
+    }
+    
+    this.realtimeChannel = supabase.channel('menu-order-' + order.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${order.id}` }, payload => {
+          this.refreshTableOrder();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${order.id}` }, payload => {
+          this.refreshTableOrder();
+      })
+      .subscribe();
+  }
+
+  async refreshTableOrder() {
+     const token = this.sessionToken();
+     if (!token) return;
+     const { order } = await this.publicData.getOrderBySessionToken(token);
+     if (order) {
+         this.tableOrder.set(order as Order);
+     }
+  }
+
+  // Checkout & Split Bill State
+  checkoutStep = signal<'METHOD' | 'SPLIT' | 'PAYING'>('METHOD');
+  checkoutMethod = signal<'PIX' | 'WAITER' | null>(null);
+  
+  splitMode = signal<'total' | 'item'>('total');
+  splitCount = signal(1);
+  serviceFeeApplied = signal(true);
+  
+  discountCodeInput = signal('');
+  isApplyingDiscount = signal(false);
+
+  itemGroups = signal<{ id: string, name: string, items: any[], total: number, isPaid: boolean, serviceFeeApplied: boolean }[]>([]);
+  unassignedItems = signal<any[]>([]);
+  selectedGroupId = signal<string | null>(null);
+
+  Math = Math;
+
+  // Derived calculations for checkout
+  orderSubtotalBeforeDiscount = computed(() => {
+     const o = this.tableOrder();
+     if (!o || !o.order_items) return 0;
+     return o.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+  });
+
+  globalDiscountAmount = computed(() => {
+    const order = this.tableOrder();
+    if (!order || !order.discount_type || !order.discount_value) return 0;
+    if (order.discount_type === 'percentage') {
+      return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
+    }
+    return order.discount_value;
+  });
+
+  orderSubtotal = computed(() => this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount());
+  tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
+  orderTotal = computed(() => this.orderSubtotal() + this.tipAmount());
+
+  splitTotalPerPerson = computed(() => {
+      if (this.splitMode() === 'total') {
+          const total = this.orderTotal();
+          const count = this.splitCount();
+          if (!total || count <= 0) return 0;
+          return total / count;
+      } else {
+          const groupId = this.selectedGroupId();
+          if (!groupId) return 0;
+          const group = this.itemGroups().find(g => g.id === groupId);
+          if (!group) return 0;
+          return group.total + (group.serviceFeeApplied ? group.total * 0.1 : 0);
+      }
+  });
+
   constructor() {
+    effect(() => {
+      const ord = this.tableOrder();
+      if (this.splitMode() === 'item' && ord) {
+        // If we switch to item mode, populate unassigned items if empty
+        untracked(() => {
+            if (this.itemGroups().length === 0 && this.unassignedItems().length === 0) {
+                this.itemGroups.set([]);
+                this.unassignedItems.set([...(ord.order_items || [])]);
+                this.selectedGroupId.set(null);
+            }
+        });
+      }
+    });
+
     effect(() => {
       const cust = this.customerAuthService.customer();
       const order = this.tableOrder();
@@ -147,6 +250,7 @@ export class MenuComponent implements OnInit {
         if (order && !error) {
           console.log("Order fetched successfully:", order);
           this.tableOrder.set(order as Order);
+          this.setupRealtime();
           try {
             fetch("/api/public-table-occupied?token=" + token).catch(
               console.error,
@@ -498,39 +602,172 @@ export class MenuComponent implements OnInit {
     }
   }
 
+  async applyDiscountCode() {
+      const code = this.discountCodeInput().trim().toUpperCase();
+      if (!code) return;
+      
+      this.isApplyingDiscount.set(true);
+      
+      // Simulate simple discount checking logic for public code
+      if (code === 'KORE10') {
+          const o = this.tableOrder();
+          if (o) {
+              await fetch('/api/public-order', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                      orderId: o.id, 
+                      updates: { action: 'APPLY_DISCOUNT', discountType: 'percentage', discountValue: 10 } 
+                  })
+              });
+              this.notificationService.show("Desconto aplicado!", "success");
+              this.refreshTableOrder();
+          }
+      } else {
+          this.notificationService.show("Código inválido", "error");
+      }
+      this.isApplyingDiscount.set(false);
+  }
+
+  addGroup() {
+    const newGroup = {
+      id: uuidv4(),
+      name: `Minha Parte`,
+      items: [],
+      total: 0,
+      isPaid: false,
+      serviceFeeApplied: true
+    };
+    this.itemGroups.update(groups => [...groups, newGroup]);
+    this.selectedGroupId.set(newGroup.id);
+  }
+
+  selectGroup(groupId: string) {
+    this.selectedGroupId.set(groupId);
+  }
+
+  assignItemToGroup(item: any) {
+     const groupId = this.selectedGroupId();
+     if (!groupId) {
+         if (this.itemGroups().length === 0) this.addGroup();
+         else return;
+     }
+     const targetId = groupId || this.selectedGroupId();
+     if(!targetId) return;
+
+     this.unassignedItems.update(items => items.filter(i => i.id !== item.id));
+     this.itemGroups.update(groups => groups.map(g => {
+         if (g.id === targetId) {
+             const newItems = [...g.items, item];
+             const newTotal = newItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+             return { ...g, items: newItems, total: newTotal };
+         }
+         return g;
+     }));
+  }
+
+  moveItemToUnassigned(item: any, fromGroupId: string) {
+      this.itemGroups.update(groups => groups.map(g => {
+          if (g.id === fromGroupId) {
+              const newItems = g.items.filter(i => i.id !== item.id);
+              const newTotal = newItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+              return { ...g, items: newItems, total: newTotal };
+          }
+          return g;
+      }));
+      this.unassignedItems.update(items => [...items, item]);
+  }
+
+  toggleServiceFee() {
+    if (this.splitMode() === 'item') {
+      const groupId = this.selectedGroupId();
+      if (!groupId) return;
+      this.itemGroups.update(groups =>
+        groups.map(g =>
+          g.id === groupId ? { ...g, serviceFeeApplied: !g.serviceFeeApplied } : g
+        )
+      );
+    } else {
+      this.serviceFeeApplied.update(v => !v);
+    }
+  }
+
+  goToSplitStep() {
+     if (this.checkoutMethod() === 'PIX') {
+        this.checkoutStep.set('SPLIT');
+     } else {
+        this.confirmCheckout();
+     }
+  }
+
+  goToPaymentStep() {
+     if (this.splitMode() === 'item') {
+         if (!this.selectedGroupId()) {
+             this.notificationService.show("Selecione um grupo para pagar", "error");
+             return;
+         }
+         const group = this.itemGroups().find(g => g.id === this.selectedGroupId());
+         if (!group || group.items.length === 0) {
+             this.notificationService.show("Adicione itens ao grupo para pagar", "error");
+             return;
+         }
+     }
+     this.checkoutStep.set('PAYING');
+  }
+
+  async confirmCheckout() {
+    const o = this.tableOrder();
+    if (!o || !this.sessionToken()) return;
+
+    if (this.checkoutMethod() === 'PIX') {
+         const amount = this.splitTotalPerPerson();
+         const payment = { method: 'PIX', amount: amount };
+         
+         const res = await fetch('/api/public-order', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ 
+                 orderId: o.id, 
+                 updates: { 
+                     action: 'FINALIZE',
+                     payments: [payment],
+                     tipAmount: this.tipAmount(),
+                     total: amount
+                 } 
+             })
+         });
+         
+         if (res.ok) {
+             this.notificationService.show("Pagamento via PIX confirmado!", "success");
+             this.view.set('menu');
+             this.refreshTableOrder();
+         } else {
+             this.notificationService.show("Erro ao processar pagamento", "error");
+         }
+    } else {
+        const { error: rpcError } = await supabase.rpc('public_request_bill', { p_session_token: this.sessionToken() });
+        if (!rpcError) {
+           this.view.set('menu');
+           this.notificationService.show("A conta foi solicitada e em breve iremos até a mesa!", "success");
+        } else {
+           this.notificationService.show("Erro: " + rpcError.message, "error");
+        }
+    }
+  }
+
   async requestBill() {
     const order = this.tableOrder();
     if (!order) return;
-
-    this.isLoading.set(true);
-    try {
-      try {
-        await fetch(`/api/public-request-bill?token=${this.sessionToken()}`);
-      } catch (e) {}
-
-      const billNote = `[SOLICITOU FECHAMENTO DE CONTA]`;
-      const notes = order.notes
-        ? order.notes.includes(billNote)
-          ? order.notes
-          : `${order.notes}\n${billNote}`
-        : billNote;
-      const { error } = await this.publicData.publicUpdateTableOrder(order.id, {
-        notes,
-      });
-      if (error) throw error;
-
-      this.tableOrder.update((o) => (o ? { ...o, notes } : null));
-      this.view.set("menu");
-      this.notificationService.show(
-        "Fechamento de conta solicitado ao caixa.",
-        "success",
-      );
-    } catch (e: any) {
-      console.error(e);
-      this.notificationService.alert("Erro ao solicitar fechamento.");
-    } finally {
-      this.isLoading.set(false);
+    
+    if (order.order_items) {
+         this.unassignedItems.set([...order.order_items]);
+         this.itemGroups.set([]);
+         this.selectedGroupId.set(null);
     }
+    
+    this.checkoutStep.set('METHOD');
+    this.checkoutMethod.set(null);
+    this.view.set("table-bill");
   }
 
   async onConfirmOrder(event: {
