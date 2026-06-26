@@ -9,15 +9,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const MP_CLIENT_ID = process.env.MERCADOPAGO_CLIENT_ID || process.env.MERCADO_PAGO_CLIENT_ID;
-const MP_CLIENT_SECRET = process.env.MERCADOPAGO_CLIENT_SECRET || process.env.MERCADO_PAGO_CLIENT_SECRET;
-const REDIRECT_URI = process.env.VITE_PUBLIC_URL ? `${process.env.VITE_PUBLIC_URL}/api/mercadopago-oauth` : 'http://localhost:3000/api/mercadopago-oauth';
-
 export default async function (req: Request, res: Response) {
   const { code, state } = req.query;
 
   if (!code || !state) {
     return res.status(400).send('Missing code or state parameter.');
+  }
+
+  const MP_CLIENT_ID = process.env.MERCADOPAGO_CLIENT_ID || process.env.MERCADO_PAGO_CLIENT_ID;
+  const MP_CLIENT_SECRET = process.env.MERCADOPAGO_CLIENT_SECRET || process.env.MERCADO_PAGO_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.VITE_PUBLIC_URL ? `${process.env.VITE_PUBLIC_URL}/api/mercadopago-oauth` : 'http://localhost:3000/api/mercadopago-oauth';
+
+  if (!MP_CLIENT_ID || !MP_CLIENT_SECRET) {
+      return res.status(500).send('Mercado Pago credentials not configured on server.');
   }
 
   // The state parameter should ideally be the user_id (the active unit / store id)
