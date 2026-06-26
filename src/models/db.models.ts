@@ -175,6 +175,8 @@ export interface Store {
   name: string;
   owner_id: string;
   created_at: string;
+  mp_access_token?: string;
+  mp_public_key?: string;
 }
 
 export interface UnitPermission {
@@ -647,6 +649,10 @@ export interface CompanyProfile {
   time_clock_radius: number | null;
   focusnfe_token?: string | null;
   focusnfe_cert_valid_until?: string | null;
+  mp_access_token?: string | null;
+  mp_refresh_token?: string | null;
+  mp_user_id?: string | null;
+  mp_public_key?: string | null;
 }
 
 export interface LoyaltySettings {

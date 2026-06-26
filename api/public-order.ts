@@ -72,6 +72,56 @@ export default async function handler(req: any, res: any) {
 
       if (!orderId || !updates) return res.status(400).json({ error: 'Missing orderId or updates' });
 
+      if (updates.action === 'GENERATE_PIX') {
+          const { amount } = updates;
+          
+          // Get order and company profile
+          const { data: order, error: orderError } = await supabase.from('orders').select('*').eq('id', orderId).single();
+          if (orderError) throw orderError;
+
+          const { data: company, error: companyError } = await supabase.from('company_profile').select('mp_access_token').eq('user_id', order.user_id).single();
+          
+          const mpToken = company?.mp_access_token || process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+          if (!mpToken) {
+              return res.status(400).json({ error: 'Mercado Pago não configurado para esta loja. Entre em contato com o restaurante.' });
+          }
+
+          // Calculate our platform fee (e.g., 2% + R$0.50, or just a fixed R$ 1.00 for demonstration)
+          const applicationFee = 1.00; // Fixed R$ 1.00 platform fee
+
+          // Call MP API with application_fee to perform split
+          const response = await fetch('https://api.mercadopago.com/v1/payments', {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${mpToken}`,
+                  'X-Idempotency-Key': `${orderId}-${Date.now()}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  transaction_amount: amount,
+                  description: `Pedido ${orderId.substring(0, 8).toUpperCase()}`,
+                  payment_method_id: 'pix',
+                  application_fee: applicationFee,
+                  payer: {
+                      email: 'cliente@email.com' // Should be fetched from auth if logged in, or anonymous
+                  }
+              })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+              throw new Error(data.message || 'Erro ao gerar PIX no Mercado Pago');
+          }
+
+          return res.status(200).json({ 
+              success: true, 
+              qr_code: data.point_of_interaction?.transaction_data?.qr_code,
+              qr_code_base64: data.point_of_interaction?.transaction_data?.qr_code_base64,
+              payment_id: data.id
+          });
+      }
+
       // Handle checkout/finalize
       if (updates.action === 'FINALIZE') {
           const { payments, tipAmount, total } = updates;

@@ -128,6 +128,33 @@
         }
     </div>
     
+    <div class="mt-8 pt-8 border-t border-subtle">
+        <h3 class="text-lg font-black text-title mb-2 flex items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined text-[#32BCAD]">payments</span>
+            Integração de Pagamentos (Mercado Pago)
+        </h3>
+        <p class="text-xs text-muted font-medium mb-6">Conecte sua conta do Mercado Pago para habilitar recebimentos via PIX e Cartão, e realizar o split de pagamentos automaticamente.</p>
+        
+        <div class="bg-surface-elevated border border-strong rounded-xl p-6 flex items-center justify-between">
+            <div>
+                <h4 class="text-sm font-bold text-title mb-1">Status da Integração</h4>
+                @if (companyProfileForm().mp_access_token) {
+                    <p class="text-xs text-[#32BCAD] font-medium flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-sm">check_circle</span> Conectado com sucesso</p>
+                } @else {
+                    <p class="text-xs text-muted font-medium flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-sm">error</span> Não conectado</p>
+                }
+            </div>
+            
+            <button (click)="connectMercadoPago()" class="px-6 py-2.5 bg-[#009EE3] hover:bg-[#0089C7] text-white font-bold text-sm rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                @if (companyProfileForm().mp_access_token) {
+                    Reconectar Conta
+                } @else {
+                    Conectar Mercado Pago
+                }
+            </button>
+        </div>
+    </div>
+    
     <div class="mt-8 pt-8 border-t border-subtle flex justify-end">
         <button (click)="saveCompanyProfile()" class="px-8 py-3.5 bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider text-sm rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:shadow-brand/20">
             Salvar Dados

@@ -170,6 +170,16 @@ export class CompanySettingsComponent {
     this.mapInitialized = true;
   }
   
+  connectMercadoPago() {
+      // You can get this from an env variable or keep it hardcoded for the frontend
+      const clientId = 'SUA_CLIENT_ID_AQUI'; // We'll need to instruct them to set this or fetch from an endpoint
+      // Fetching the URL dynamically from an API might be better if we want to keep client_id secret,
+      // but for MP OAuth, client_id is typically public in the URL.
+      
+      // Let's call our backend to get the auth URL to keep it secure
+      window.location.href = `/api/mercadopago-auth-url?state=${this.companyProfileForm().user_id}`;
+  }
+  
   updateCompanyProfileField(field: keyof Omit<CompanyProfile, 'user_id' | 'created_at' | 'logo_url' | 'menu_cover_url' | 'menu_header_url'>, value: string) {
       this.companyProfileForm.update(form => ({ ...form, [field]: value }));
   }
