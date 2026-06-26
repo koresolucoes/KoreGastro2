@@ -197,53 +197,209 @@
     <!-- Checkout Modal -->
     @if (showCheckoutModal()) {
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-            <div class="bg-surface rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-auto sm:zoom-in-95 duration-200 border border-subtle">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-black text-title">Como deseja pagar?</h2>
+            <div class="bg-surface rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col p-6 animate-in slide-in-from-bottom-auto sm:zoom-in-95 duration-200 border border-subtle max-h-[90vh]">
+                <div class="flex items-center justify-between mb-6 shrink-0">
+                    <h2 class="text-xl font-black text-title">
+                       @if (checkoutStep() === 'METHOD') {
+                           Como deseja pagar?
+                       } @else if (checkoutStep() === 'SPLIT') {
+                           Dividir Conta
+                       } @else {
+                           Finalizar Pagamento
+                       }
+                    </h2>
                     <button (click)="closeCheckoutModal()" class="text-muted hover:text-danger bg-surface-elevated p-2 rounded-full transition-colors active:scale-95 border border-transparent hover:border-danger/20">
                     <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
                     </button>
                 </div>
 
-                <div class="space-y-3 mb-6">
-                    <!-- PIX Option -->
-                    <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'PIX'" [class.bg-brand/5]="checkoutMethod() === 'PIX'">
-                        <input type="radio" name="payment_method" value="PIX" [checked]="checkoutMethod() === 'PIX'" (change)="checkoutMethod.set('PIX')" class="peer sr-only">
-                        <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
-                            <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-title">Pagar com PIX</h3>
-                            <p class="text-xs text-muted font-medium mt-1">Rápido e prático pelo celular</p>
-                        </div>
-                        @if (checkoutMethod() === 'PIX') {
-                            <div class="absolute top-4 right-4 text-brand">
-                                <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
-                            </div>
-                        }
-                    </label>
+                <div class="flex-1 overflow-y-auto mb-6 pr-2 -mr-2">
+                    @if (checkoutStep() === 'METHOD') {
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'PIX'" [class.bg-brand/5]="checkoutMethod() === 'PIX'">
+                                <input type="radio" name="payment_method" value="PIX" [checked]="checkoutMethod() === 'PIX'" (change)="checkoutMethod.set('PIX')" class="peer sr-only">
+                                <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-title">Pagar com PIX Agora</h3>
+                                    <p class="text-xs text-muted font-medium mt-1">Divida a conta e pague pelo celular</p>
+                                </div>
+                                @if (checkoutMethod() === 'PIX') {
+                                    <div class="absolute top-4 right-4 text-brand">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
+                                    </div>
+                                }
+                            </label>
 
-                    <!-- Waiter Option -->
-                    <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'WAITER'" [class.bg-brand/5]="checkoutMethod() === 'WAITER'">
-                        <input type="radio" name="payment_method" value="WAITER" [checked]="checkoutMethod() === 'WAITER'" (change)="checkoutMethod.set('WAITER')" class="peer sr-only">
-                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
-                            <span translate="no" class="notranslate material-symbols-outlined text-2xl">point_of_sale</span>
+                            <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'WAITER'" [class.bg-brand/5]="checkoutMethod() === 'WAITER'">
+                                <input type="radio" name="payment_method" value="WAITER" [checked]="checkoutMethod() === 'WAITER'" (change)="checkoutMethod.set('WAITER')" class="peer sr-only">
+                                <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-2xl">point_of_sale</span>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-title">Pagar na Mesa</h3>
+                                    <p class="text-xs text-muted font-medium mt-1">O garçom levará a maquininha</p>
+                                </div>
+                                @if (checkoutMethod() === 'WAITER') {
+                                    <div class="absolute top-4 right-4 text-brand">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
+                                    </div>
+                                }
+                            </label>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-title">Pagar na Mesa</h3>
-                            <p class="text-xs text-muted font-medium mt-1">O garçom levará a maquininha</p>
+                    } @else if (checkoutStep() === 'SPLIT') {
+                        <!-- Discount code section -->
+                        <div class="mb-6 bg-surface-elevated p-4 rounded-2xl border border-subtle">
+                            <h3 class="text-sm font-bold text-title mb-2">Código de Resgate</h3>
+                            <div class="flex gap-2">
+                                <input type="text" [value]="discountCodeInput()" (input)="discountCodeInput.set($any($event.target).value)" placeholder="Insira o cupom" class="flex-1 bg-surface border border-subtle rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand uppercase">
+                                <button (click)="applyDiscountCode()" [disabled]="isApplyingDiscount() || !discountCodeInput()" class="bg-brand text-white px-4 py-2 rounded-xl font-bold text-sm disabled:opacity-50">
+                                    {{ isApplyingDiscount() ? '...' : 'Aplicar' }}
+                                </button>
+                            </div>
+                            @if (globalDiscountAmount() > 0) {
+                                <p class="text-emerald-600 text-xs font-bold mt-2">Desconto de {{ globalDiscountAmount() | currency:'BRL' }} aplicado!</p>
+                            }
                         </div>
-                        @if (checkoutMethod() === 'WAITER') {
-                            <div class="absolute top-4 right-4 text-brand">
-                                <span translate="no" class="notranslate material-symbols-outlined text-xl">check_circle</span>
+
+                        <!-- Split Type Selector -->
+                        <div class="flex bg-surface-elevated p-1 rounded-2xl mb-6 border border-subtle">
+                           <button (click)="splitMode.set('total')" [class.bg-surface]="splitMode() === 'total'" [class.shadow]="splitMode() === 'total'" [class.text-title]="splitMode() === 'total'" class="flex-1 py-2 text-sm font-bold text-muted rounded-xl transition-all">Valor Total</button>
+                           <button (click)="splitMode.set('item')" [class.bg-surface]="splitMode() === 'item'" [class.shadow]="splitMode() === 'item'" [class.text-title]="splitMode() === 'item'" class="flex-1 py-2 text-sm font-bold text-muted rounded-xl transition-all">Por Item</button>
+                        </div>
+
+                        @if (splitMode() === 'total') {
+                            <div class="text-center py-6">
+                                <h3 class="text-sm font-bold text-muted mb-4 uppercase tracking-wider">Dividir em quantas pessoas?</h3>
+                                <div class="flex items-center justify-center gap-6">
+                                    <button (click)="splitCount.set(Math.max(1, splitCount() - 1))" class="w-12 h-12 rounded-full bg-surface-elevated border border-subtle flex items-center justify-center hover:bg-black/5 active:scale-95 transition-all text-title">
+                                        <span translate="no" class="notranslate material-symbols-outlined">remove</span>
+                                    </button>
+                                    <span class="text-4xl font-black text-brand">{{ splitCount() }}</span>
+                                    <button (click)="splitCount.set(splitCount() + 1)" class="w-12 h-12 rounded-full bg-brand/10 text-brand border border-brand/20 flex items-center justify-center hover:bg-brand/20 active:scale-95 transition-all">
+                                        <span translate="no" class="notranslate material-symbols-outlined">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        } @else {
+                            <div class="space-y-4">
+                               <div class="flex items-center justify-between">
+                                  <h3 class="font-bold text-title text-sm">Meus Grupos</h3>
+                                  <button (click)="addGroup()" class="text-brand text-sm font-bold flex items-center gap-1 hover:underline">
+                                      <span translate="no" class="notranslate material-symbols-outlined text-sm">add_circle</span> Adicionar
+                                  </button>
+                               </div>
+
+                               <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                   @for (group of itemGroups(); track group.id) {
+                                      <button (click)="selectGroup(group.id)" [class.bg-brand]="selectedGroupId() === group.id" [class.text-white]="selectedGroupId() === group.id" [class.bg-surface-elevated]="selectedGroupId() !== group.id" class="px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border border-subtle shadow-sm">
+                                          {{ group.name }}
+                                      </button>
+                                   }
+                               </div>
+                               
+                               @if (selectedGroupId()) {
+                                   <div class="bg-brand/5 border border-brand/20 rounded-2xl p-4">
+                                       <h4 class="font-bold text-sm text-brand mb-2">Itens no Grupo:</h4>
+                                       <div class="space-y-2">
+                                           @for (item of itemGroups() | keyvalue; track item.value.id) {
+                                               @if (item.value.id === selectedGroupId()) {
+                                                   @for (gItem of item.value.items; track gItem.id) {
+                                                       <div class="flex justify-between items-center text-sm bg-surface p-2 rounded-lg shadow-sm border border-brand/10">
+                                                          <span class="font-medium truncate flex-1">{{ gItem.recipes?.name }}</span>
+                                                          <div class="flex items-center gap-3">
+                                                             <span class="font-bold text-muted">{{ gItem.price | currency:'BRL' }}</span>
+                                                             <button (click)="moveItemToUnassigned(gItem, item.value.id)" class="text-danger hover:bg-red-50 p-1 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span></button>
+                                                          </div>
+                                                       </div>
+                                                   }
+                                                   @if (item.value.items.length === 0) {
+                                                       <p class="text-xs text-muted italic">Nenhum item adicionado.</p>
+                                                   }
+                                               }
+                                           }
+                                       </div>
+                                   </div>
+                               }
+
+                               <div class="pt-4 border-t border-subtle">
+                                   <h4 class="font-bold text-sm text-title mb-2">Itens Disponíveis</h4>
+                                   <div class="space-y-2">
+                                       @for (item of unassignedItems(); track item.id) {
+                                          <div class="flex justify-between items-center text-sm bg-surface-elevated p-2 rounded-lg border border-subtle">
+                                             <div class="flex items-center gap-2 flex-1 min-w-0">
+                                                <span class="bg-title text-surface text-[10px] px-1.5 py-0.5 rounded font-black">{{ item.quantity }}x</span>
+                                                <span class="font-medium truncate">{{ item.recipes?.name }}</span>
+                                             </div>
+                                             <div class="flex items-center gap-3 shrink-0">
+                                                <span class="font-bold text-muted">{{ item.price | currency:'BRL' }}</span>
+                                                <button [disabled]="!selectedGroupId()" (click)="assignItemToGroup(item)" class="text-brand hover:bg-brand/10 p-1 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-brand/20"><span translate="no" class="notranslate material-symbols-outlined text-sm">add</span></button>
+                                             </div>
+                                          </div>
+                                       }
+                                       @if (unassignedItems().length === 0) {
+                                           <p class="text-xs text-muted text-center py-4">Todos os itens foram distribuídos.</p>
+                                       }
+                                   </div>
+                               </div>
                             </div>
                         }
-                    </label>
+                    } @else if (checkoutStep() === 'PAYING') {
+                        <div class="text-center py-4 space-y-6">
+                            <div class="bg-brand/5 border border-brand/20 rounded-3xl p-6">
+                                <p class="text-sm text-brand font-bold uppercase tracking-wider mb-2">Sua Parte</p>
+                                <p class="text-5xl font-black text-title tracking-tight">{{ splitTotalPerPerson() | currency:'BRL' }}</p>
+                            </div>
+                            
+                            <!-- Toggle Taxa de Serviço -->
+                            <label class="flex items-center justify-between p-4 bg-surface-elevated border border-subtle rounded-2xl cursor-pointer">
+                                <div>
+                                    <p class="font-bold text-sm text-title">Taxa de Serviço (10%)</p>
+                                    <p class="text-xs text-muted mt-0.5">Ajuda a equipe do salão</p>
+                                </div>
+                                <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" name="toggle" id="toggle" [checked]="serviceFeeApplied()" (change)="toggleServiceFee()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-subtle appearance-none cursor-pointer transition-transform duration-200 ease-in-out z-10" [class.translate-x-6]="serviceFeeApplied()" [class.border-brand]="serviceFeeApplied()"/>
+                                    <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-subtle cursor-pointer transition-colors duration-200 ease-in-out" [class.bg-brand]="serviceFeeApplied()"></label>
+                                </div>
+                            </label>
+
+                            <div class="bg-surface-elevated border border-subtle p-4 rounded-2xl flex items-center gap-4 text-left">
+                                <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-sm">Chave PIX</h3>
+                                    <p class="text-xs text-muted font-medium mt-1 truncate">kore@restaurante.com.br</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
 
-                <button [disabled]="!checkoutMethod()" (click)="confirmCheckout()" class="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Confirmar Pedido de Conta
-                </button>
+                <div class="shrink-0 pt-4 border-t border-subtle">
+                    @if (checkoutStep() === 'METHOD') {
+                        <button [disabled]="!checkoutMethod()" (click)="goToSplitStep()" class="w-full bg-brand text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-brand/20">
+                            Continuar
+                        </button>
+                    } @else if (checkoutStep() === 'SPLIT') {
+                        <div class="flex gap-2">
+                           <button (click)="checkoutStep.set('METHOD')" class="bg-surface-elevated text-title p-4 rounded-2xl font-bold hover:bg-black/5 transition-all border border-subtle">Voltar</button>
+                           <button (click)="goToPaymentStep()" class="flex-1 bg-brand text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 shadow-xl shadow-brand/20 flex justify-between px-6 items-center">
+                               <span>Pagar Parte</span>
+                               <span class="bg-black/20 px-2 py-1 rounded-lg text-sm">{{ splitTotalPerPerson() | currency:'BRL' }}</span>
+                           </button>
+                        </div>
+                    } @else if (checkoutStep() === 'PAYING') {
+                        <div class="flex gap-2">
+                           <button (click)="checkoutStep.set('SPLIT')" class="bg-surface-elevated text-title p-4 rounded-2xl font-bold hover:bg-black/5 transition-all border border-subtle">Voltar</button>
+                           <button (click)="confirmCheckout()" class="flex-1 bg-[#32BCAD] text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 shadow-xl shadow-[#32BCAD]/20 flex justify-center items-center gap-2">
+                               <span translate="no" class="notranslate material-symbols-outlined">qr_code_scanner</span>
+                               Confirmar Pagamento PIX
+                           </button>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     }

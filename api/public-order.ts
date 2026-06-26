@@ -72,6 +72,47 @@ export default async function handler(req: any, res: any) {
 
       if (!orderId || !updates) return res.status(400).json({ error: 'Missing orderId or updates' });
 
+      // Handle checkout/finalize
+      if (updates.action === 'FINALIZE') {
+          const { payments, tipAmount, total } = updates;
+          
+          // Get order
+          const { data: order, error: orderError } = await supabase.from('orders').select('*').eq('id', orderId).single();
+          if (orderError) throw orderError;
+          
+          // Call finalize_order_transaction RPC
+          const { data: rpcResult, error: rpcError } = await supabase.rpc('finalize_order_transaction', {
+              p_order_id: orderId,
+              p_user_id: order.user_id,
+              p_table_id: null, // we can leave table handling to the rpc if we don't have table_id, wait, the order has table_number, but to get table_id we'd need to query tables.
+              p_payments: payments,
+              p_closed_by_employee_id: null,
+              p_tip_amount: tipAmount
+          });
+
+          if (rpcError) throw rpcError;
+          
+          // Also set table to LIVRE if we know it
+          if (order.table_number) {
+             await supabase.from('tables')
+              .update({ status: 'LIVRE', employee_id: null, customer_count: 0 })
+              .eq('number', order.table_number)
+              .eq('user_id', order.user_id);
+          }
+
+          return res.status(200).json({ success: true });
+      }
+
+      // Handle discount
+      if (updates.action === 'APPLY_DISCOUNT') {
+          const { discountType, discountValue } = updates;
+          const { error } = await supabase.from('orders')
+              .update({ discount_type: discountType, discount_value: discountValue })
+              .eq('id', orderId);
+          if (error) throw error;
+          return res.status(200).json({ success: true });
+      }
+
       // Only allow safe updates like notes, customer_name from public checkout
       const allowedUpdates: any = {};
       if (updates.customer_name !== undefined) allowedUpdates.customer_name = updates.customer_name;

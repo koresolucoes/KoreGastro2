@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CustomerAuthService, MenuCustomer } from '../../../services/customer-auth.service';
 import { LoyaltySettings } from '../../../models/db.models';
+import { supabase } from '../../../services/supabase-client';
 
 @Component({
   selector: 'app-menu-profile',
@@ -80,7 +81,7 @@ import { LoyaltySettings } from '../../../models/db.models';
     </div>
   `
 })
-export class MenuProfileComponent implements OnInit {
+export class MenuProfileComponent implements OnInit, OnDestroy {
   authService = inject(CustomerAuthService);
   close = output<void>();
   storeId = input.required<string>();
@@ -88,10 +89,28 @@ export class MenuProfileComponent implements OnInit {
   customer = this.authService.customer;
   orders = signal<any[]>([]);
   isLoading = signal(true);
+  private channel: any;
 
   async ngOnInit() {
     await this.authService.refreshCustomerData(this.storeId());
-    this.fetchHistory();
+    await this.fetchHistory();
+    this.setupRealtime();
+  }
+
+  ngOnDestroy() {
+    if (this.channel) {
+      supabase.removeChannel(this.channel);
+    }
+  }
+
+  setupRealtime() {
+    const cust = this.customer();
+    if (!cust) return;
+    this.channel = supabase.channel('menu-profile-' + cust.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `customer_id=eq.${cust.id}` }, payload => {
+          this.fetchHistory();
+      })
+      .subscribe();
   }
 
   async fetchHistory() {
