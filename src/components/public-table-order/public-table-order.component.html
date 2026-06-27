@@ -82,7 +82,7 @@
                                 </div>
                                 <div class="flex-1">
                                     <h4 class="font-bold text-title flex items-center gap-2">
-                                        {{ item.recipes?.name || 'Item não encontrado' }}
+                                        {{ item.recipes?.name || item.name || 'Item não encontrado' }}
                                         @if (item.status === 'PENDENTE' || item.status === 'EM_PREPARO') {
                                             <span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] uppercase font-black tracking-wider">Preparando</span>
                                         } @else {
@@ -309,7 +309,7 @@
                                                @if (item.value.id === selectedGroupId()) {
                                                    @for (gItem of item.value.items; track gItem.id) {
                                                        <div class="flex justify-between items-center text-sm bg-surface p-2 rounded-lg shadow-sm border border-brand/10">
-                                                          <span class="font-medium truncate flex-1">{{ gItem.recipes?.name }}</span>
+                                                          <span class="font-medium truncate flex-1">{{ gItem.recipes?.name || gItem.name }}</span>
                                                           <div class="flex items-center gap-3">
                                                              <span class="font-bold text-muted">{{ gItem.price | currency:'BRL' }}</span>
                                                              <button (click)="moveItemToUnassigned(gItem, item.value.id)" class="text-danger hover:bg-red-50 p-1 rounded-md transition-colors"><span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span></button>
@@ -332,7 +332,7 @@
                                           <div class="flex justify-between items-center text-sm bg-surface-elevated p-2 rounded-lg border border-subtle">
                                              <div class="flex items-center gap-2 flex-1 min-w-0">
                                                 <span class="bg-title text-surface text-[10px] px-1.5 py-0.5 rounded font-black">{{ item.quantity }}x</span>
-                                                <span class="font-medium truncate">{{ item.recipes?.name }}</span>
+                                                <span class="font-medium truncate">{{ item.recipes?.name || item.name }}</span>
                                              </div>
                                              <div class="flex items-center gap-3 shrink-0">
                                                 <span class="font-bold text-muted">{{ item.price | currency:'BRL' }}</span>
