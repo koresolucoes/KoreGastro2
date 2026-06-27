@@ -1,26 +1,53 @@
-
-import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, untracked, input, output, InputSignal, OutputEmitterRef, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Table, Order, Recipe, Category, OrderItemStatus, OrderItem, Employee, DiscountType, Customer, Ingredient, IfoodOptionGroup, IfoodOption, RecipeIfoodOptionGroup } from '../../../models/db.models';
-import { v4 as uuidv4 } from 'uuid';
-import { PricingService } from '../../../services/pricing.service';
-import { RecipeStateService } from '../../../services/recipe-state.service';
-import { InventoryStateService } from '../../../services/inventory-state.service';
-import { PublicDataService } from '../../../services/public-data.service';
-import { PosDataService } from '../../../services/pos-data.service';
-import { NotificationService } from '../../../services/notification.service';
-import { MenuDataService } from '../../../services/menu-data.service';
-import { MenuStateService } from '../../../services/menu-state.service';
-import { ManagerAuthModalComponent } from '../../shared/manager-auth-modal/manager-auth-modal.component';
-import { CancellationReasonModalComponent } from '../cancellation-reason-modal/cancellation-reason-modal.component';
-import { MenuCustomizationComponent } from '../../menu/customization/menu-customization.component';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  WritableSignal,
+  effect,
+  untracked,
+  input,
+  output,
+  InputSignal,
+  OutputEmitterRef,
+  OnInit,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import {
+  Table,
+  Order,
+  Recipe,
+  Category,
+  OrderItemStatus,
+  OrderItem,
+  Employee,
+  DiscountType,
+  Customer,
+  Ingredient,
+  IfoodOptionGroup,
+  IfoodOption,
+  RecipeIfoodOptionGroup,
+} from "../../../models/db.models";
+import { v4 as uuidv4 } from "uuid";
+import { PricingService } from "../../../services/pricing.service";
+import { RecipeStateService } from "../../../services/recipe-state.service";
+import { InventoryStateService } from "../../../services/inventory-state.service";
+import { PublicDataService } from "../../../services/public-data.service";
+import { PosDataService } from "../../../services/pos-data.service";
+import { NotificationService } from "../../../services/notification.service";
+import { MenuDataService } from "../../../services/menu-data.service";
+import { MenuStateService } from "../../../services/menu-state.service";
+import { ManagerAuthModalComponent } from "../../shared/manager-auth-modal/manager-auth-modal.component";
+import { CancellationReasonModalComponent } from "../cancellation-reason-modal/cancellation-reason-modal.component";
+import { MenuCustomizationComponent } from "../../menu/customization/menu-customization.component";
 
 interface CartItem {
-    id: string;
-    recipe: Recipe;
-    quantity: number;
-    notes: string;
-    options?: IfoodOption[];
+  id: string;
+  recipe: Recipe;
+  quantity: number;
+  notes: string;
+  options?: IfoodOption[];
 }
 
 interface GroupedOrderItem {
@@ -45,10 +72,15 @@ interface SingleOrderItem {
 type DisplayOrderItem = GroupedOrderItem | SingleOrderItem;
 
 @Component({
-  selector: 'app-order-panel',
+  selector: "app-order-panel",
   standalone: true,
-  imports: [CommonModule, ManagerAuthModalComponent, CancellationReasonModalComponent, MenuCustomizationComponent],
-  templateUrl: './order-panel.component.html',
+  imports: [
+    CommonModule,
+    ManagerAuthModalComponent,
+    CancellationReasonModalComponent,
+    MenuCustomizationComponent,
+  ],
+  templateUrl: "./order-panel.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderPanelComponent implements OnInit {
@@ -65,7 +97,8 @@ export class OrderPanelComponent implements OnInit {
   selectedTable: InputSignal<Table | null> = input.required<Table | null>();
   currentOrder: InputSignal<Order | null> = input.required<Order | null>();
   orderError: InputSignal<string | null> = input.required<string | null>();
-  activeEmployee: InputSignal<(Employee & { role: string }) | null> = input.required<(Employee & { role: string }) | null>();
+  activeEmployee: InputSignal<(Employee & { role: string }) | null> =
+    input.required<(Employee & { role: string }) | null>();
 
   closePanel: OutputEmitterRef<void> = output<void>();
   checkoutStarted: OutputEmitterRef<void> = output<void>();
@@ -83,26 +116,26 @@ export class OrderPanelComponent implements OnInit {
   categories = this.recipeState.categories;
   recipes = this.recipeState.recipesWithStockStatus;
   selectedCategory: WritableSignal<Category | null> = signal(null);
-  recipeSearchTerm = signal('');
+  recipeSearchTerm = signal("");
 
   // Mobile View State ('menu' = Product List, 'cart' = Order Details/Actions)
-  mobileTab = signal<'menu' | 'cart'>('menu');
+  mobileTab = signal<"menu" | "cart">("menu");
 
   // Quick Add Modal (Spotlight Flow)
   isQuickAddModalOpen = signal(false);
   quickAddRecipe = signal<Recipe | null>(null);
   quickAddQuantity = signal(1);
-  quickAddNotes = signal('');
+  quickAddNotes = signal("");
 
   // Notes Modal Signals (Editing existing)
   isNotesModalOpen = signal(false);
   editingCartItemId = signal<string | null>(null);
-  noteInput = signal('');
-  
+  noteInput = signal("");
+
   // Discount Modal Signals
   isDiscountModalOpen = signal(false);
   editingDiscountItem = signal<DisplayOrderItem | null>(null);
-  discountType = signal<DiscountType>('percentage');
+  discountType = signal<DiscountType>("percentage");
   discountValue = signal<number | null>(null);
 
   // Customization Modal Signals
@@ -113,48 +146,67 @@ export class OrderPanelComponent implements OnInit {
 
   // Global Discount Modal
   isGlobalDiscountModalOpen = signal(false);
-  globalDiscountType = signal<DiscountType>('percentage');
+  globalDiscountType = signal<DiscountType>("percentage");
   globalDiscountValue = signal<number | null>(null);
 
   // Cancellation State
   isManagerAuthModalOpen = signal(false);
   isCancellationReasonModalOpen = signal(false);
-  pendingCancellationAction = signal<{ type: 'item' | 'order', item?: DisplayOrderItem } | null>(null);
-  cancellationModalTitle = signal('');
-  
+  pendingCancellationAction = signal<{
+    type: "item" | "order";
+    item?: DisplayOrderItem;
+  } | null>(null);
+  cancellationModalTitle = signal("");
+
   // Holds the employee who authorized/performed the cancellation (Manager or Current User)
   cancellationAuthorizer = signal<Employee | null>(null);
 
-  criticalKeywords = ['alergia', 'sem glúten', 'sem lactose', 'celíaco', 'nozes', 'amendoim', 'vegetariano', 'vegano'];
+  criticalKeywords = [
+    "alergia",
+    "sem glúten",
+    "sem lactose",
+    "celíaco",
+    "nozes",
+    "amendoim",
+    "vegetariano",
+    "vegano",
+  ];
 
   // AI Suggestions
   aiSuggestions = computed(() => {
     const cart = this.shoppingCart();
     const orderItems = this.currentOrder()?.order_items || [];
-    const allItemIds = new Set([...cart.map(i => i.recipe.id), ...orderItems.map(i => i.recipe_id)]);
-    
+    const allItemIds = new Set([
+      ...cart.map((i) => i.recipe.id),
+      ...orderItems.map((i) => i.recipe_id),
+    ]);
+
     if (allItemIds.size === 0) return [];
-    
+
     // Determine categories already in cart
     const cartCategories = new Set<string>();
-    cart.forEach(i => cartCategories.add(i.recipe.category_id!));
-    orderItems.forEach(i => {
-        const recipe = this.recipes().find(r => r.id === i.recipe_id);
-        if (recipe?.category_id) cartCategories.add(recipe.category_id);
+    cart.forEach((i) => cartCategories.add(i.recipe.category_id!));
+    orderItems.forEach((i) => {
+      const recipe = this.recipes().find((r) => r.id === i.recipe_id);
+      if (recipe?.category_id) cartCategories.add(recipe.category_id);
     });
 
     // Find available recipes not in cart and ideally not in the same category
-    const available = this.filteredRecipes().filter(r => !allItemIds.has(r.id) && r.hasStock !== false);
-    const crossSell = available.filter(r => !cartCategories.has(r.category_id!));
-    
+    const available = this.filteredRecipes().filter(
+      (r) => !allItemIds.has(r.id) && r.hasStock !== false,
+    );
+    const crossSell = available.filter(
+      (r) => !cartCategories.has(r.category_id!),
+    );
+
     // Sort by price desc (Upsell bias) and return top 2
-    crossSell.sort((a,b) => (b.price || 0) - (a.price || 0));
+    crossSell.sort((a, b) => (b.price || 0) - (a.price || 0));
     return crossSell.slice(0, 2);
   });
 
   ngOnInit() {
-    this.menuDataService.loadAllMenuData().catch(err => {
-      console.error('Failed to load menu data in order panel', err);
+    this.menuDataService.loadAllMenuData().catch((err) => {
+      console.error("Failed to load menu data in order panel", err);
     });
   }
 
@@ -162,21 +214,25 @@ export class OrderPanelComponent implements OnInit {
     try {
       const [groups, recipeGroups] = await Promise.all([
         this.publicDataService.getPublicOptionGroups(userId),
-        this.publicDataService.getPublicRecipeOptionGroups(userId)
+        this.publicDataService.getPublicRecipeOptionGroups(userId),
       ]);
       this.optionGroups.set(groups);
       this.recipeOptionGroups.set(recipeGroups);
     } catch (err) {
-      console.error('Error loading option groups', err);
+      console.error("Error loading option groups", err);
     }
   }
 
   getRecipeOptionGroups(recipeId: string): IfoodOptionGroup[] {
     // If it's a Virtual Recipe from Menu Builder, we'll map Menu Options to Ifood structures dynamically
-    const virtualRecipe = this.filteredRecipes().find(r => r.id === recipeId);
+    const virtualRecipe = this.filteredRecipes().find((r) => r.id === recipeId);
     if (virtualRecipe && virtualRecipe.menu_item_id) {
-        const menuOptions = this.menuStateService.options().filter(o => o.menu_item_id === virtualRecipe.menu_item_id);
-        const mappedGroups = menuOptions.map(opt => ({
+      const menuOptions = this.menuStateService
+        .options()
+        .filter((o) => o.menu_item_id === virtualRecipe.menu_item_id);
+      const mappedGroups = menuOptions.map(
+        (opt) =>
+          ({
             id: opt.id,
             user_id: virtualRecipe.user_id,
             name: opt.name,
@@ -184,43 +240,57 @@ export class OrderPanelComponent implements OnInit {
             min_required: opt.min_choices || 0,
             max_options: opt.max_choices || 1,
             sequence: opt.display_order,
-            status: 'AVAILABLE',
-            ifood_options: this.getGroupOptions(opt.id)
-        } as unknown as IfoodOptionGroup));
-        return mappedGroups.sort((a,b) => a.sequence - b.sequence);
+            status: "AVAILABLE",
+            ifood_options: this.getGroupOptions(opt.id),
+          }) as unknown as IfoodOptionGroup,
+      );
+      return mappedGroups.sort((a, b) => a.sequence - b.sequence);
     }
 
     // Fallback: Legacy ifood_option_group relationships
-    const relations = this.recipeOptionGroups().filter(r => r.recipe_id === recipeId);
-    const groupIds = relations.map(r => r.ifood_option_group_id);
+    const relations = this.recipeOptionGroups().filter(
+      (r) => r.recipe_id === recipeId,
+    );
+    const groupIds = relations.map((r) => r.ifood_option_group_id);
     return this.optionGroups()
-      .filter(g => groupIds.includes(g.id))
-      .sort((a,b) => a.sequence - b.sequence);
+      .filter((g) => groupIds.includes(g.id))
+      .sort((a, b) => a.sequence - b.sequence);
   }
 
   // Helper method to also get mapped options for a group
   getGroupOptions(groupId: string): IfoodOption[] {
     // Check if groupId is a MenuItemOption
-    const menuOption = this.menuStateService.options().find(o => o.id === groupId);
+    const menuOption = this.menuStateService
+      .options()
+      .find((o) => o.id === groupId);
     if (menuOption) {
-        const choices = this.menuStateService.optionChoices().filter(c => c.menu_item_option_id === menuOption.id);
-        return choices.map(choice => {
-            const linkedRecipe = choice.recipe_id ? this.recipes().find(r => r.id === choice.recipe_id) : null;
-            return {
-                id: choice.id,
-                user_id: menuOption.user_id || '',
-                ifood_option_group_id: menuOption.id,
-                name: choice.custom_name || linkedRecipe?.name || 'Complemento',
-                external_code: choice.id,
-                price: choice.additional_price,
-                status: (linkedRecipe && linkedRecipe.is_available === false) ? 'UNAVAILABLE' as const : 'AVAILABLE' as const,
-                sequence: choice.display_order,
-                ifood_product_id: linkedRecipe ? linkedRecipe.id : null,
-                hasStock: linkedRecipe ? linkedRecipe.hasStock : true
-            } as unknown as IfoodOption;
-        }).sort((a,b) => a.sequence - b.sequence);
+      const choices = this.menuStateService
+        .optionChoices()
+        .filter((c) => c.menu_item_option_id === menuOption.id);
+      return choices
+        .map((choice) => {
+          const linkedRecipe = choice.recipe_id
+            ? this.recipes().find((r) => r.id === choice.recipe_id)
+            : null;
+          return {
+            id: choice.id,
+            user_id: menuOption.user_id || "",
+            ifood_option_group_id: menuOption.id,
+            name: choice.custom_name || linkedRecipe?.name || "Complemento",
+            external_code: choice.id,
+            price: choice.additional_price,
+            status:
+              linkedRecipe && linkedRecipe.is_available === false
+                ? ("UNAVAILABLE" as const)
+                : ("AVAILABLE" as const),
+            sequence: choice.display_order,
+            ifood_product_id: linkedRecipe ? linkedRecipe.id : null,
+            hasStock: linkedRecipe ? linkedRecipe.hasStock : true,
+          } as unknown as IfoodOption;
+        })
+        .sort((a, b) => a.sequence - b.sequence);
     }
-    
+
     // Fallback legacy global options
     return []; // Handled inherently elsewhere if needed? Wait... Customization modal loads options how?
   }
@@ -229,61 +299,68 @@ export class OrderPanelComponent implements OnInit {
 
   categoriesWithIcons = computed(() => {
     const iconMap: Record<string, string> = {
-      'bebidas': 'local_bar',
-      'bebibas': 'local_bar', // typo handling
-      'drinks': 'local_bar',
-      'cervejas': 'sports_bar',
-      'salgados': 'bakery_dining',
-      'lanches': 'lunch_dining',
-      'hambúrgueres': 'lunch_dining',
-      'burger': 'lunch_dining',
-      'pizzas': 'local_pizza',
-      'massas': 'dinner_dining',
-      'carnes': 'kebab_dining',
-      'churrasco': 'kebab_dining',
-      'sobremesas': 'icecream',
-      'doce': 'icecream',
-      'entradas': 'tapas',
-      'porções': 'restaurant_menu',
-      'pratos': 'dinner_dining',
-      'cafés': 'coffee',
-      'coffee': 'coffee',
-      'vinhos': 'wine_bar',
-      'aperitivos': 'liquor',
-      'peixes': 'set_meal',
-      'frutos do mar': 'set_meal',
-      'sushi': 'set_meal',
-      'saladas': 'eco',
-      'fit': 'fitness_center',
-      'combos': 'layers',
+      bebidas: "local_bar",
+      bebibas: "local_bar", // typo handling
+      drinks: "local_bar",
+      cervejas: "sports_bar",
+      salgados: "bakery_dining",
+      lanches: "lunch_dining",
+      hambúrgueres: "lunch_dining",
+      burger: "lunch_dining",
+      pizzas: "local_pizza",
+      massas: "dinner_dining",
+      carnes: "kebab_dining",
+      churrasco: "kebab_dining",
+      sobremesas: "icecream",
+      doce: "icecream",
+      entradas: "tapas",
+      porções: "restaurant_menu",
+      pratos: "dinner_dining",
+      cafés: "coffee",
+      coffee: "coffee",
+      vinhos: "wine_bar",
+      aperitivos: "liquor",
+      peixes: "set_meal",
+      "frutos do mar": "set_meal",
+      sushi: "set_meal",
+      saladas: "eco",
+      fit: "fitness_center",
+      combos: "layers",
     };
 
     // Filter categories to only those that have recipes shown in the current view
-    const pdvMenus = this.menuStateService.menus().filter(menu => {
+    const pdvMenus = this.menuStateService.menus().filter((menu) => {
       if (!menu.is_active || !menu.type) return false;
-      return menu.type.split(',').map(t => t.trim()).includes('pdv');
+      return menu.type
+        .split(",")
+        .map((t) => t.trim())
+        .includes("pdv");
     });
 
     if (pdvMenus.length > 0) {
-        const validMenuIds = new Set(pdvMenus.map(m => m.id));
-        const menuCategories = this.menuStateService.categories()
-          .filter(c => validMenuIds.has(c.menu_id))
-          .sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
-        
-        return menuCategories.map(cat => ({
-          ...cat,
-          icon: iconMap[cat.name.toLowerCase()] || 'category'
-        }));
+      const validMenuIds = new Set(pdvMenus.map((m) => m.id));
+      const menuCategories = this.menuStateService
+        .categories()
+        .filter((c) => validMenuIds.has(c.menu_id))
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+      return menuCategories.map((cat) => ({
+        ...cat,
+        icon: iconMap[cat.name.toLowerCase()] || "category",
+      }));
     }
 
-    let allowedCategoryIds = new Set(this.recipeState.categories().map(c => c.id));
+    let allowedCategoryIds = new Set(
+      this.recipeState.categories().map((c) => c.id),
+    );
 
-    return this.recipeState.categories()
-      .filter(cat => allowedCategoryIds.has(cat.id))
-      .map(cat => ({
-      ...cat,
-      icon: cat.icon || iconMap[cat.name.toLowerCase()] || 'category'
-    }));
+    return this.recipeState
+      .categories()
+      .filter((cat) => allowedCategoryIds.has(cat.id))
+      .map((cat) => ({
+        ...cat,
+        icon: cat.icon || iconMap[cat.name.toLowerCase()] || "category",
+      }));
   });
 
   recipePrices = computed(() => {
@@ -298,42 +375,54 @@ export class OrderPanelComponent implements OnInit {
     }
     return priceMap;
   });
-  
+
   cartItemQuantities = computed(() => {
     const quantities = new Map<string, number>();
     // Items in cart
     for (const item of this.shoppingCart()) {
-        quantities.set(item.recipe.id, (quantities.get(item.recipe.id) || 0) + item.quantity);
+      quantities.set(
+        item.recipe.id,
+        (quantities.get(item.recipe.id) || 0) + item.quantity,
+      );
     }
-    
+
     // Items already in order (excluding cancelled)
     const processedGroupIds = new Set<string>();
     for (const item of this.currentOrder()?.order_items || []) {
-        if (item.status === 'CANCELADO') continue;
-        if (item.recipe_id) {
-            if (item.group_id) {
-                if (!processedGroupIds.has(item.group_id)) {
-                    quantities.set(item.recipe_id, (quantities.get(item.recipe_id) || 0) + item.quantity);
-                    processedGroupIds.add(item.group_id);
-                }
-            } else {
-                quantities.set(item.recipe_id, (quantities.get(item.recipe_id) || 0) + item.quantity);
-            }
+      if (item.status === "CANCELADO") continue;
+      if (item.recipe_id) {
+        if (item.group_id) {
+          if (!processedGroupIds.has(item.group_id)) {
+            quantities.set(
+              item.recipe_id,
+              (quantities.get(item.recipe_id) || 0) + item.quantity,
+            );
+            processedGroupIds.add(item.group_id);
+          }
+        } else {
+          quantities.set(
+            item.recipe_id,
+            (quantities.get(item.recipe_id) || 0) + item.quantity,
+          );
         }
+      }
     }
     return quantities;
   });
 
   totalCartItems = computed(() => {
-    return this.shoppingCart().reduce((total, item) => total + item.quantity, 0);
+    return this.shoppingCart().reduce(
+      (total, item) => total + item.quantity,
+      0,
+    );
   });
 
   constructor() {
     effect(() => {
-        const employee = this.activeEmployee();
-        if (employee && employee.user_id) {
-            this.loadOptionGroups(employee.user_id);
-        }
+      const employee = this.activeEmployee();
+      if (employee && employee.user_id) {
+        this.loadOptionGroups(employee.user_id);
+      }
     });
 
     effect(() => {
@@ -342,91 +431,108 @@ export class OrderPanelComponent implements OnInit {
     });
   }
 
-  setMobileTab(tab: 'menu' | 'cart') {
+  setMobileTab(tab: "menu" | "cart") {
     this.mobileTab.set(tab);
   }
 
   getCartItemPrice(item: CartItem): number {
     const basePrice = this.recipePrices().get(item.recipe.id) || 0;
-    const optionsPrice = item.options?.reduce((sum, opt) => sum + opt.price, 0) || 0;
+    const optionsPrice =
+      item.options?.reduce((sum, opt) => sum + opt.price, 0) || 0;
     return basePrice + optionsPrice;
   }
 
   isItemCritical(item: OrderItem): boolean {
-    const note = item.notes?.toLowerCase() ?? '';
+    const note = item.notes?.toLowerCase() ?? "";
     if (!note) return false;
-    return this.criticalKeywords.some(keyword => note.includes(keyword));
+    return this.criticalKeywords.some((keyword) => note.includes(keyword));
   }
 
   isItemCancelled(item: DisplayOrderItem): boolean {
-    if ('items' in item) {
-        return item.items.every(i => i.status === 'CANCELADO');
+    if ("items" in item) {
+      return item.items.every((i) => i.status === "CANCELADO");
     }
-    return item.item.status === 'CANCELADO';
+    return item.item.status === "CANCELADO";
   }
-  
+
   isAttentionAcknowledged(item: OrderItem): boolean {
-    return !!item.status_timestamps?.['ATTENTION_ACKNOWLEDGED'];
+    return !!item.status_timestamps?.["ATTENTION_ACKNOWLEDGED"];
   }
 
   filteredRecipes = computed(() => {
-      const category = this.selectedCategory();
-      const term = this.recipeSearchTerm().toLowerCase();
-      
-      const pdvMenus = this.menuStateService.menus().filter(menu => {
-        if (!menu.is_active || !menu.type) return false;
-        return menu.type.split(',').map(t => t.trim()).includes('pdv');
-      });
+    const category = this.selectedCategory();
+    const term = this.recipeSearchTerm().toLowerCase();
 
-      let recipesToShow: (Recipe & { menu_item_id?: string })[] = [];
+    const pdvMenus = this.menuStateService.menus().filter((menu) => {
+      if (!menu.is_active || !menu.type) return false;
+      return menu.type
+        .split(",")
+        .map((t) => t.trim())
+        .includes("pdv");
+    });
 
-      if (pdvMenus.length > 0) {
-         const validMenuIds = new Set(pdvMenus.map(m => m.id));
-         const menuCategories = this.menuStateService.categories().filter(c => validMenuIds.has(c.menu_id));
-         const validCatIds = new Set(menuCategories.map(c => c.id));
-         
-         const menuItems = this.menuStateService.items()
-            .filter(i => validCatIds.has(i.menu_category_id) && i.is_active)
-            .sort((a,b) => (a.display_order ?? 0) - (b.display_order ?? 0));
-            
-         const recipesMap = new Map(this.recipes().map(r => [r.id, r]));
-         
-         recipesToShow = menuItems.map(item => {
-             const baseRecipe = recipesMap.get(item.recipe_id);
-             if (!baseRecipe) return null;
-             
-             const customPrice = (item.custom_price !== null && item.custom_price !== undefined) ? Number(item.custom_price) : this.pricingService.getEffectivePrice(baseRecipe);
+    let recipesToShow: (Recipe & { menu_item_id?: string })[] = [];
 
-             return {
-                 ...baseRecipe,
-                 id: baseRecipe.id, 
-                 menu_item_id: item.id,
-                 category_id: item.menu_category_id,
-                 name: (item.custom_name && item.custom_name.trim() !== '') ? item.custom_name : baseRecipe.name,
-                 description: item.custom_description ?? baseRecipe.description,
-                 price: customPrice,
-                 image_url: item.custom_image_url ?? baseRecipe.image_url
-             } as (Recipe & { menu_item_id?: string });
-         }).filter((r): r is (Recipe & { menu_item_id?: string }) => r !== null);
-         
-      } else {
-         recipesToShow = this.recipes().filter(r => !r.is_sub_recipe);
-      }
-      
-      if (term) {
-        // Spotlight Search: Search across all categories by name OR code
-        recipesToShow = recipesToShow.filter(r => 
-            r.name.toLowerCase().includes(term) || 
-            r.external_code?.toLowerCase().includes(term) ||
-            r.ncm_code?.includes(term)
-        );
-      } else if (category) {
-        // Category Filter only if no search term
-        recipesToShow = recipesToShow.filter(r => r.category_id === category.id);
-      }
-      return recipesToShow;
+    if (pdvMenus.length > 0) {
+      const validMenuIds = new Set(pdvMenus.map((m) => m.id));
+      const menuCategories = this.menuStateService
+        .categories()
+        .filter((c) => validMenuIds.has(c.menu_id));
+      const validCatIds = new Set(menuCategories.map((c) => c.id));
+
+      const menuItems = this.menuStateService
+        .items()
+        .filter((i) => validCatIds.has(i.menu_category_id) && i.is_active)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+      const recipesMap = new Map(this.recipes().map((r) => [r.id, r]));
+
+      recipesToShow = menuItems
+        .map((item) => {
+          const baseRecipe = recipesMap.get(item.recipe_id);
+          if (!baseRecipe) return null;
+
+          const customPrice =
+            item.custom_price !== null && item.custom_price !== undefined
+              ? Number(item.custom_price)
+              : this.pricingService.getEffectivePrice(baseRecipe);
+
+          return {
+            ...baseRecipe,
+            id: baseRecipe.id,
+            menu_item_id: item.id,
+            category_id: item.menu_category_id,
+            name:
+              item.custom_name && item.custom_name.trim() !== ""
+                ? item.custom_name
+                : baseRecipe.name,
+            description: item.custom_description ?? baseRecipe.description,
+            price: customPrice,
+            image_url: item.custom_image_url ?? baseRecipe.image_url,
+          } as Recipe & { menu_item_id?: string };
+        })
+        .filter((r): r is Recipe & { menu_item_id?: string } => r !== null);
+    } else {
+      recipesToShow = this.recipes().filter((r) => !r.is_sub_recipe);
+    }
+
+    if (term) {
+      // Spotlight Search: Search across all categories by name OR code
+      recipesToShow = recipesToShow.filter(
+        (r) =>
+          r.name.toLowerCase().includes(term) ||
+          r.external_code?.toLowerCase().includes(term) ||
+          r.ncm_code?.includes(term),
+      );
+    } else if (category) {
+      // Category Filter only if no search term
+      recipesToShow = recipesToShow.filter(
+        (r) => r.category_id === category.id,
+      );
+    }
+    return recipesToShow;
   });
-  
+
   groupedOrderItems = computed<DisplayOrderItem[]>(() => {
     const order = this.currentOrder();
     if (!order) return [];
@@ -441,8 +547,11 @@ export class OrderPanelComponent implements OnInit {
         if (!grouped.has(item.group_id)) {
           const recipe = recipesMap.get(item.recipe_id!);
           grouped.set(item.group_id, {
-            isGroup: true, groupId: item.group_id, recipeName: recipe?.name ?? 'Prato Desconhecido',
-            recipeId: item.recipe_id!, quantity: item.quantity, 
+            isGroup: true,
+            groupId: item.group_id,
+            recipeName: recipe?.name ?? "Prato Desconhecido",
+            recipeId: item.recipe_id!,
+            quantity: item.quantity,
             totalPrice: 0, // Calculated below
             originalTotalPrice: 0, // Calculated below
             items: [],
@@ -452,37 +561,71 @@ export class OrderPanelComponent implements OnInit {
         grouped.get(item.group_id)!.items.push(item);
       } else {
         const hasDiscount = !!item.discount_type;
-        singles.push({ 
-            isGroup: false, 
-            item,
-            hasDiscount,
-            originalTotalPrice: (hasDiscount ? item.original_price : item.price) * item.quantity
+        singles.push({
+          isGroup: false,
+          item,
+          hasDiscount,
+          originalTotalPrice:
+            (hasDiscount ? item.original_price : item.price) * item.quantity,
         });
       }
     }
 
     // Post-process grouped items
     for (const group of grouped.values()) {
-        group.totalPrice = group.items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + item.price, 0);
-        group.originalTotalPrice = group.items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + item.original_price, 0);
-        group.hasDiscount = group.items.some(i => i.discount_type);
+      group.totalPrice = group.items
+        .filter(
+          (i: any) =>
+            !(
+              i.notes?.includes("[AUX_PREP_IDX:") &&
+              !i.notes?.includes("[AUX_PREP_IDX:0]")
+            ),
+        )
+        .reduce(
+          (sum: number, item: any) => sum + item.price * item.quantity,
+          0,
+        );
+      group.originalTotalPrice = group.items
+        .filter(
+          (i: any) =>
+            !(
+              i.notes?.includes("[AUX_PREP_IDX:") &&
+              !i.notes?.includes("[AUX_PREP_IDX:0]")
+            ),
+        )
+        .reduce(
+          (sum: number, item: any) => sum + item.original_price * item.quantity,
+          0,
+        );
+      group.hasDiscount = group.items.some((i) => i.discount_type);
     }
-    
+
     return [...Array.from(grouped.values()), ...singles];
   });
-  
-  orderSubtotalBeforeDiscount = computed(() => 
-    this.currentOrder()?.order_items
-        .filter(item => item.status !== 'CANCELADO')
-        .filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) ?? 0
+
+  orderSubtotalBeforeDiscount = computed(
+    () =>
+      this.currentOrder()
+        ?.order_items.filter((item) => item.status !== "CANCELADO")
+        .filter(
+          (i: any) =>
+            !(
+              i.notes?.includes("[AUX_PREP_IDX:") &&
+              !i.notes?.includes("[AUX_PREP_IDX:0]")
+            ),
+        )
+        .reduce(
+          (sum: number, item: any) => sum + item.price * item.quantity,
+          0,
+        ) ?? 0,
   );
-  
+
   globalDiscountAmount = computed(() => {
     const order = this.currentOrder();
     if (!order || !order.discount_type || !order.discount_value) {
       return 0;
     }
-    if (order.discount_type === 'percentage') {
+    if (order.discount_type === "percentage") {
       return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
     }
     return order.discount_value;
@@ -491,16 +634,16 @@ export class OrderPanelComponent implements OnInit {
   orderSubtotal = computed(() => {
     return this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount();
   });
-  
+
   orderTotal = computed(() => {
-      // For standard flow, return subtotal.
-      return this.orderSubtotal();
+    // For standard flow, return subtotal.
+    return this.orderSubtotal();
   });
 
-  selectCategory(category: Category | null) { 
-      this.selectedCategory.set(category); 
-      // Clear search if selecting category directly, for cleaner UX
-      if(category) this.recipeSearchTerm.set('');
+  selectCategory(category: Category | null) {
+    this.selectedCategory.set(category);
+    // Clear search if selecting category directly, for cleaner UX
+    if (category) this.recipeSearchTerm.set("");
   }
 
   // --- NEW: Stock & Quick Add Logic ---
@@ -512,51 +655,69 @@ export class OrderPanelComponent implements OnInit {
     const cart = this.shoppingCart();
 
     const accumulate = (recipeId: string, quantity: number) => {
-        const composition = recipeCompositions.get(recipeId);
-        if (composition) {
-            composition.directIngredients.forEach(ing => {
-                const totalUsed = ing.quantity * quantity;
-                reserved.set(ing.ingredientId, (reserved.get(ing.ingredientId) || 0) + totalUsed);
-            });
-            composition.subRecipeIngredients.forEach(subIng => {
-                const totalUsed = subIng.quantity * quantity;
-                reserved.set(subIng.ingredientId, (reserved.get(subIng.ingredientId) || 0) + totalUsed);
-            });
-        }
+      const composition = recipeCompositions.get(recipeId);
+      if (composition) {
+        composition.directIngredients.forEach((ing) => {
+          const totalUsed = ing.quantity * quantity;
+          reserved.set(
+            ing.ingredientId,
+            (reserved.get(ing.ingredientId) || 0) + totalUsed,
+          );
+        });
+        composition.subRecipeIngredients.forEach((subIng) => {
+          const totalUsed = subIng.quantity * quantity;
+          reserved.set(
+            subIng.ingredientId,
+            (reserved.get(subIng.ingredientId) || 0) + totalUsed,
+          );
+        });
+      }
     };
 
     // 1. Ingredients already sent to kitchen (Active only)
     if (order) {
-        const processedGroupIds = new Set<string>();
-        for (const item of order.order_items) {
-            if (item.status === 'CANCELADO') continue;
+      const processedGroupIds = new Set<string>();
+      for (const item of order.order_items) {
+        if (item.status === "CANCELADO") continue;
 
-            if (item.group_id) {
-                if (processedGroupIds.has(item.group_id)) continue;
-                processedGroupIds.add(item.group_id);
-                const representativeItem = order.order_items.find(i => i.group_id === item.group_id);
-                if(representativeItem) {
-                    accumulate(representativeItem.recipe_id!, representativeItem.quantity);
-                }
-            } else {
-                if (item.recipe_id) {
-                    accumulate(item.recipe_id, item.quantity);
-                }
-            }
+        if (item.group_id) {
+          if (processedGroupIds.has(item.group_id)) continue;
+          processedGroupIds.add(item.group_id);
+          const representativeItem = order.order_items.find(
+            (i) => i.group_id === item.group_id,
+          );
+          if (representativeItem) {
+            accumulate(
+              representativeItem.recipe_id!,
+              representativeItem.quantity,
+            );
+          }
+        } else {
+          if (item.recipe_id) {
+            accumulate(item.recipe_id, item.quantity);
+          }
         }
+      }
     }
 
     // 2. Ingredients in the current shopping cart
     for (const item of cart) {
-        accumulate(item.recipe.id, item.quantity);
+      accumulate(item.recipe.id, item.quantity);
     }
 
     return reserved;
   });
 
-  private hasEnoughStockFor(recipe: Recipe, quantityToCheck: number = 1): boolean {
-    const ingredientsMap = new Map<string, Ingredient>(this.inventoryState.ingredients().map(i => [i.id, i]));
-    const composition = this.recipeState.recipeDirectComposition().get(recipe.id);
+  private hasEnoughStockFor(
+    recipe: Recipe,
+    quantityToCheck: number = 1,
+  ): boolean {
+    const ingredientsMap = new Map<string, Ingredient>(
+      this.inventoryState.ingredients().map((i) => [i.id, i]),
+    );
+    const composition = this.recipeState
+      .recipeDirectComposition()
+      .get(recipe.id);
     const reserved = this.reservedIngredients();
 
     if (!composition) {
@@ -569,9 +730,12 @@ export class OrderPanelComponent implements OnInit {
       if (ingredient) {
         const availableStock = ingredient.stock;
         const alreadyReserved = reserved.get(ing.ingredientId) || 0;
-        
-        if (availableStock < alreadyReserved + (ing.quantity * quantityToCheck)) {
-          this.notificationService.show(`Estoque insuficiente de "${ingredient.name}".`, 'error');
+
+        if (availableStock < alreadyReserved + ing.quantity * quantityToCheck) {
+          this.notificationService.show(
+            `Estoque insuficiente de "${ingredient.name}".`,
+            "error",
+          );
           return false;
         }
       }
@@ -584,8 +748,14 @@ export class OrderPanelComponent implements OnInit {
         const availableStock = ingredient.stock;
         const alreadyReserved = reserved.get(subIng.ingredientId) || 0;
 
-        if (availableStock < alreadyReserved + (subIng.quantity * quantityToCheck)) {
-          this.notificationService.show(`Estoque insuficiente da sub-receita pronta "${ingredient.name}".`, 'error');
+        if (
+          availableStock <
+          alreadyReserved + subIng.quantity * quantityToCheck
+        ) {
+          this.notificationService.show(
+            `Estoque insuficiente da sub-receita pronta "${ingredient.name}".`,
+            "error",
+          );
           return false;
         }
       }
@@ -597,13 +767,16 @@ export class OrderPanelComponent implements OnInit {
   // REPLACES OLD addToCart: Opens the Quick Add Modal instead
   openQuickAddModal(recipe: Recipe & { hasStock?: boolean }) {
     if (!recipe.is_available) {
-        this.notificationService.show(`"${recipe.name}" não está disponível no cardápio.`, 'warning');
-        return;
+      this.notificationService.show(
+        `"${recipe.name}" não está disponível no cardápio.`,
+        "warning",
+      );
+      return;
     }
-    
+
     // Initial Stock Check for 1 item
     if (!this.hasEnoughStockFor(recipe, 1)) {
-        return;
+      return;
     }
 
     const groups = this.getRecipeOptionGroups(recipe.id);
@@ -615,7 +788,7 @@ export class OrderPanelComponent implements OnInit {
 
     this.quickAddRecipe.set(recipe);
     this.quickAddQuantity.set(1);
-    this.quickAddNotes.set('');
+    this.quickAddNotes.set("");
     this.isQuickAddModalOpen.set(true);
   }
 
@@ -625,115 +798,129 @@ export class OrderPanelComponent implements OnInit {
   }
 
   cleanNotes(notes: string | null | undefined): string {
-      if (!notes) return '';
-      return notes
-          .replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, '')
-          .replace(/\n?\[AUX_RECIPE_ID:[^\]]*\]/g, '')
-          .replace(/\n?\[AUX_PREP_IDX:[^\]]*\]/g, '')
-          .trim();
+    if (!notes) return "";
+    return notes
+      .replace(/\n?\[OPT_RECIPE_IDS:[^\]]*\]/g, "")
+      .replace(/\n?\[AUX_RECIPE_ID:[^\]]*\]/g, "")
+      .replace(/\n?\[AUX_PREP_IDX:[^\]]*\]/g, "")
+      .trim();
   }
 
-  confirmCustomization(event: { options: IfoodOption[], notes: string }) {
+  confirmCustomization(event: { options: IfoodOption[]; notes: string }) {
     const recipe = this.customizingRecipe();
     if (!recipe) return;
 
     if (!this.hasEnoughStockFor(recipe, 1)) {
-        return;
+      return;
     }
 
-    this.shoppingCart.update(cart => [
-        ...cart, 
-        { id: uuidv4(), recipe, quantity: 1, notes: event.notes, options: event.options }
+    this.shoppingCart.update((cart) => [
+      ...cart,
+      {
+        id: uuidv4(),
+        recipe,
+        quantity: 1,
+        notes: event.notes,
+        options: event.options,
+      },
     ]);
 
     this.closeCustomizationModal();
-    this.recipeSearchTerm.set('');
+    this.recipeSearchTerm.set("");
   }
 
   closeQuickAddModal() {
     this.isQuickAddModalOpen.set(false);
     this.quickAddRecipe.set(null);
   }
-  
+
   updateQuickAddQuantity(change: number) {
-      const newQty = this.quickAddQuantity() + change;
-      if (newQty < 1) return;
-      
-      const recipe = this.quickAddRecipe();
-      if (recipe) {
-          // Check if we have stock for the NEW total quantity we want to add
-          // Note: reservedIngredients already counts what's in cart. 
-          // hasEnoughStockFor logic checks (Reserved + NewNeeded) <= Stock.
-          // Since we haven't added this batch to the cart yet, we check for newQty.
-          if (change > 0 && !this.hasEnoughStockFor(recipe, newQty)) {
-              return;
-          }
+    const newQty = this.quickAddQuantity() + change;
+    if (newQty < 1) return;
+
+    const recipe = this.quickAddRecipe();
+    if (recipe) {
+      // Check if we have stock for the NEW total quantity we want to add
+      // Note: reservedIngredients already counts what's in cart.
+      // hasEnoughStockFor logic checks (Reserved + NewNeeded) <= Stock.
+      // Since we haven't added this batch to the cart yet, we check for newQty.
+      if (change > 0 && !this.hasEnoughStockFor(recipe, newQty)) {
+        return;
       }
-      this.quickAddQuantity.set(newQty);
+    }
+    this.quickAddQuantity.set(newQty);
   }
 
   confirmQuickAdd() {
-      const recipe = this.quickAddRecipe();
-      const quantity = this.quickAddQuantity();
-      const notes = this.quickAddNotes().trim();
-      
-      if (!recipe) return;
+    const recipe = this.quickAddRecipe();
+    const quantity = this.quickAddQuantity();
+    const notes = this.quickAddNotes().trim();
 
-      // Final Check
-      if (!this.hasEnoughStockFor(recipe, quantity)) {
-          return;
-      }
+    if (!recipe) return;
 
-      this.shoppingCart.update(cart => [
-          ...cart, 
-          { id: uuidv4(), recipe, quantity, notes }
-      ]);
-      
-      this.closeQuickAddModal();
-      this.recipeSearchTerm.set(''); // Clear search on successful add for rapid next entry
-      // Optional: Sound effect for "beep" could go here
+    // Final Check
+    if (!this.hasEnoughStockFor(recipe, quantity)) {
+      return;
+    }
+
+    this.shoppingCart.update((cart) => [
+      ...cart,
+      { id: uuidv4(), recipe, quantity, notes },
+    ]);
+
+    this.closeQuickAddModal();
+    this.recipeSearchTerm.set(""); // Clear search on successful add for rapid next entry
+    // Optional: Sound effect for "beep" could go here
   }
-  
+
   // --- Standard Cart Actions ---
 
   addToCart(recipe: Recipe & { hasStock?: boolean }) {
-      // Legacy method alias - redirects to new flow
-      this.openQuickAddModal(recipe);
+    // Legacy method alias - redirects to new flow
+    this.openQuickAddModal(recipe);
   }
-  
+
   decrementFromCart(recipe: Recipe) {
     // Legacy support or fallback logic
-    const cartItem = this.shoppingCart().find(item => item.recipe.id === recipe.id && !item.notes);
+    const cartItem = this.shoppingCart().find(
+      (item) => item.recipe.id === recipe.id && !item.notes,
+    );
     if (cartItem) {
-        this.updateCartItemQuantity(cartItem.id, -1);
+      this.updateCartItemQuantity(cartItem.id, -1);
     }
   }
 
   updateCartItemQuantity(itemId: string, change: -1 | 1) {
-    const itemToUpdate = this.shoppingCart().find(item => item.id === itemId);
+    const itemToUpdate = this.shoppingCart().find((item) => item.id === itemId);
     if (!itemToUpdate) return;
-    
-    if (change === 1) { // Only check stock when increasing quantity
-        if (!this.hasEnoughStockFor(itemToUpdate.recipe)) {
-            return; 
-        }
+
+    if (change === 1) {
+      // Only check stock when increasing quantity
+      if (!this.hasEnoughStockFor(itemToUpdate.recipe)) {
+        return;
+      }
     }
 
-    this.shoppingCart.update(cart => 
-        cart.map(item => item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity + change) } : item)
-            .filter(item => item.quantity > 0)
+    this.shoppingCart.update((cart) =>
+      cart
+        .map((item) =>
+          item.id === itemId
+            ? { ...item, quantity: Math.max(0, item.quantity + change) }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
     );
   }
 
   removeFromCart(itemId: string) {
-      this.shoppingCart.update(cart => cart.filter(i => i.id !== itemId));
+    this.shoppingCart.update((cart) => cart.filter((i) => i.id !== itemId));
   }
 
   onCustomerCountChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const count = parseInt(input.value, 10);
     if (!isNaN(count) && count >= 0) {
-        this.customerCountChanged.emit(count);
+      this.customerCountChanged.emit(count);
     }
   }
 
@@ -746,95 +933,136 @@ export class OrderPanelComponent implements OnInit {
   closeNotesModal() {
     this.isNotesModalOpen.set(false);
     this.editingCartItemId.set(null);
-    this.noteInput.set('');
+    this.noteInput.set("");
   }
 
   saveNote() {
     const itemId = this.editingCartItemId();
     if (!itemId) return;
-    this.shoppingCart.update(cart => cart.map(item => item.id === itemId ? { ...item, notes: this.noteInput().trim() } : item));
+    this.shoppingCart.update((cart) =>
+      cart.map((item) =>
+        item.id === itemId ? { ...item, notes: this.noteInput().trim() } : item,
+      ),
+    );
     this.closeNotesModal();
   }
 
   async sendOrder() {
-    const order = this.currentOrder(), table = this.selectedTable(), employee = this.activeEmployee(), cart = this.shoppingCart();
+    const order = this.currentOrder(),
+      table = this.selectedTable(),
+      employee = this.activeEmployee(),
+      cart = this.shoppingCart();
     if (order && table && employee && cart.length > 0) {
-      const itemsToSend = cart.map(c => {
+      const itemsToSend = cart.map((c) => {
         let finalNotes = c.notes;
         let finalPriceOptions = 0;
         let finalCostOptions = 0;
         let optionRecipeIds: string[] = [];
 
         if (c.options && c.options.length > 0) {
-            const groups = this.getRecipeOptionGroups(c.recipe.id);
-            const groupedOptions = new Map<string, typeof c.options>();
-            c.options.forEach(opt => {
-                const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
-                arr.push(opt);
-                groupedOptions.set(opt.ifood_option_group_id, arr);
-                if (opt.ifood_product_id) {
-                    optionRecipeIds.push(opt.ifood_product_id);
-                    finalCostOptions += this.recipeState.recipeCosts().get(opt.ifood_product_id)?.totalCost ?? 0;
-                }
-            });
-
-            let hierarchyStr = '';
-            groupedOptions.forEach((opts, groupId) => {
-                const groupName = groups.find(g => g.id === groupId)?.name || 'Opções';
-                hierarchyStr += `\n>> ${groupName}:\n` + opts.map(o => `   • ${o.name}`).join('\n');
-            });
-
-            finalNotes = finalNotes ? `${finalNotes}\n${hierarchyStr}` : hierarchyStr.trim();
-            if (optionRecipeIds.length > 0) {
-                 finalNotes += `\n[OPT_RECIPE_IDS:${optionRecipeIds.join(',')}]`;
+          const groups = this.getRecipeOptionGroups(c.recipe.id);
+          const groupedOptions = new Map<string, typeof c.options>();
+          c.options.forEach((opt) => {
+            const arr = groupedOptions.get(opt.ifood_option_group_id) || [];
+            arr.push(opt);
+            groupedOptions.set(opt.ifood_option_group_id, arr);
+            if (opt.ifood_product_id) {
+              optionRecipeIds.push(opt.ifood_product_id);
+              finalCostOptions +=
+                this.recipeState.recipeCosts().get(opt.ifood_product_id)
+                  ?.totalCost ?? 0;
             }
-            finalPriceOptions = c.options.reduce((sum, opt) => sum + opt.price, 0);
+          });
+
+          let hierarchyStr = "";
+          groupedOptions.forEach((opts, groupId) => {
+            const groupName =
+              groups.find((g) => g.id === groupId)?.name || "Opções";
+            hierarchyStr +=
+              `\n>> ${groupName}:\n` +
+              opts.map((o) => `   • ${o.name}`).join("\n");
+          });
+
+          finalNotes = finalNotes
+            ? `${finalNotes}\n${hierarchyStr}`
+            : hierarchyStr.trim();
+          if (optionRecipeIds.length > 0) {
+            finalNotes += `\n[OPT_RECIPE_IDS:${optionRecipeIds.join(",")}]`;
+          }
+          finalPriceOptions = c.options.reduce(
+            (sum, opt) => sum + opt.price,
+            0,
+          );
         }
-        return { recipe: c.recipe, quantity: c.quantity, notes: finalNotes, optionsPrice: finalPriceOptions, optionsCost: finalCostOptions };
+        return {
+          recipe: c.recipe,
+          quantity: c.quantity,
+          notes: finalNotes,
+          optionsPrice: finalPriceOptions,
+          optionsCost: finalCostOptions,
+        };
       });
-      const result = await this.posDataService.addItemsToOrder(order.id, table.id, employee.id, itemsToSend as any);
+      const result = await this.posDataService.addItemsToOrder(
+        order.id,
+        table.id,
+        employee.id,
+        itemsToSend as any,
+      );
       if (result.success) this.shoppingCart.set([]);
-      else await this.notificationService.alert(`Falha ao enviar itens. Erro: ${result.error?.message}`);
+      else
+        await this.notificationService.alert(
+          `Falha ao enviar itens. Erro: ${result.error?.message}`,
+        );
     }
   }
 
   async startCheckout() {
     if (this.shoppingCart().length > 0) {
-      await this.notificationService.alert('Envie os itens no carrinho antes de fechar a conta.');
+      await this.notificationService.alert(
+        "Envie os itens no carrinho antes de fechar a conta.",
+      );
       return;
     }
     const confirmed = await this.notificationService.confirm(
-      `Tem certeza que deseja enviar a conta da Mesa ${this.selectedTable()?.number} para o caixa? A mesa ficará bloqueada para novos lançamentos.`, 
-      'Enviar para o Caixa?'
+      `Tem certeza que deseja enviar a conta da Mesa ${this.selectedTable()?.number} para o caixa? A mesa ficará bloqueada para novos lançamentos.`,
+      "Enviar para o Caixa?",
     );
     if (confirmed) {
-        this.checkoutStarted.emit();
+      this.checkoutStarted.emit();
     }
   }
 
   getOrderItemStatusClass(status: OrderItemStatus): string {
     switch (status) {
-      case 'PENDENTE': return 'text-warning';
-      case 'EM_PREPARO': return 'text-info';
-      case 'PRONTO': return 'text-success font-black';
-      case 'AGUARDANDO': return 'text-muted';
-      case 'CANCELADO': return 'text-danger line-through';
-      default: return 'text-muted';
+      case "PENDENTE":
+        return "text-warning";
+      case "EM_PREPARO":
+        return "text-info";
+      case "PRONTO":
+        return "text-success font-black";
+      case "AGUARDANDO":
+        return "text-muted";
+      case "CANCELADO":
+        return "text-danger line-through";
+      default:
+        return "text-muted";
     }
   }
-  
+
   // --- Discount Methods ---
   openDiscountModal(item: DisplayOrderItem) {
     this.editingDiscountItem.set(item);
     let firstItem: OrderItem;
-    
-    if ('items' in item) { // This is a GroupedOrderItem
+
+    if ("items" in item) {
+      // This is a GroupedOrderItem
       firstItem = item.items[0];
-    } else { // This is a SingleOrderItem
+    } else {
+      // This is a SingleOrderItem
       firstItem = item.item;
     }
-    
-    this.discountType.set(firstItem.discount_type || 'percentage');
+
+    this.discountType.set(firstItem.discount_type || "percentage");
     this.discountValue.set(firstItem.discount_value || null);
     this.isDiscountModalOpen.set(true);
   }
@@ -849,22 +1077,29 @@ export class OrderPanelComponent implements OnInit {
 
     let itemIds: string[];
 
-    if ('items' in item) { // This is a GroupedOrderItem
-      itemIds = item.items.map(i => i.id);
-    } else { // This is a SingleOrderItem
+    if ("items" in item) {
+      // This is a GroupedOrderItem
+      itemIds = item.items.map((i) => i.id);
+    } else {
+      // This is a SingleOrderItem
       itemIds = [item.item.id];
     }
-    
-    const { success, error } = await this.posDataService.applyDiscountToOrderItems(
+
+    const { success, error } =
+      await this.posDataService.applyDiscountToOrderItems(
         itemIds,
-        this.discountValue() !== null && this.discountValue()! > 0 ? this.discountType() : null,
-        this.discountValue()
-    );
+        this.discountValue() !== null && this.discountValue()! > 0
+          ? this.discountType()
+          : null,
+        this.discountValue(),
+      );
 
     if (success) {
       this.closeDiscountModal();
     } else {
-      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+      await this.notificationService.alert(
+        `Erro ao aplicar desconto: ${error?.message}`,
+      );
     }
   }
 
@@ -874,24 +1109,29 @@ export class OrderPanelComponent implements OnInit {
 
     let itemIds: string[];
 
-    if ('items' in item) { // This is a GroupedOrderItem
-      itemIds = item.items.map(i => i.id);
-    } else { // This is a SingleOrderItem
+    if ("items" in item) {
+      // This is a GroupedOrderItem
+      itemIds = item.items.map((i) => i.id);
+    } else {
+      // This is a SingleOrderItem
       itemIds = [item.item.id];
     }
 
-    const { success, error } = await this.posDataService.applyDiscountToOrderItems(itemIds, null, null);
+    const { success, error } =
+      await this.posDataService.applyDiscountToOrderItems(itemIds, null, null);
     if (success) {
       this.closeDiscountModal();
     } else {
-      await this.notificationService.alert(`Erro ao remover desconto: ${error?.message}`);
+      await this.notificationService.alert(
+        `Erro ao remover desconto: ${error?.message}`,
+      );
     }
   }
 
   // --- Global Discount Methods ---
   openGlobalDiscountModal() {
     const order = this.currentOrder();
-    this.globalDiscountType.set(order?.discount_type || 'percentage');
+    this.globalDiscountType.set(order?.discount_type || "percentage");
     this.globalDiscountValue.set(order?.discount_value || null);
     this.isGlobalDiscountModalOpen.set(true);
   }
@@ -903,31 +1143,34 @@ export class OrderPanelComponent implements OnInit {
   async saveGlobalDiscount() {
     const order = this.currentOrder();
     if (!order) return;
-    
+
     const value = this.globalDiscountValue();
     const type = this.globalDiscountType();
-    
-    const finalValue = (value === null || value <= 0) ? null : value;
+
+    const finalValue = value === null || value <= 0 ? null : value;
     const finalType = finalValue === null ? null : type;
 
-    const { success, error } = await this.posDataService.applyGlobalOrderDiscount(
-      order.id,
-      finalType,
-      finalValue
-    );
+    const { success, error } =
+      await this.posDataService.applyGlobalOrderDiscount(
+        order.id,
+        finalType,
+        finalValue,
+      );
 
     if (success) {
       this.closeGlobalDiscountModal();
     } else {
-      await this.notificationService.alert(`Erro ao aplicar desconto: ${error?.message}`);
+      await this.notificationService.alert(
+        `Erro ao aplicar desconto: ${error?.message}`,
+      );
     }
   }
 
   // --- Cancellation Methods ---
-  
+
   checkManagerAuth(action: () => void) {
     const employee = this.activeEmployee();
-    if (employee?.role === 'Gerente') {
+    if (employee?.role === "Gerente") {
       this.cancellationAuthorizer.set(employee);
       action();
     } else {
@@ -941,84 +1184,121 @@ export class OrderPanelComponent implements OnInit {
     // Execute the pending action
     const action = this.pendingCancellationAction();
     if (action) {
-      if (action.type === 'item' && action.item) {
+      if (action.type === "item" && action.item) {
         this.openItemCancellationReasonModal(action.item);
-      } else if (action.type === 'order') {
+      } else if (action.type === "order") {
         this.openOrderCancellationReasonModal();
       }
     }
   }
 
   initiateItemCancellation(item: DisplayOrderItem) {
-    this.pendingCancellationAction.set({ type: 'item', item });
+    this.pendingCancellationAction.set({ type: "item", item });
     this.checkManagerAuth(() => this.openItemCancellationReasonModal(item));
   }
 
   initiateOrderCancellation() {
-    this.pendingCancellationAction.set({ type: 'order' });
+    this.pendingCancellationAction.set({ type: "order" });
     this.checkManagerAuth(() => this.openOrderCancellationReasonModal());
   }
 
   openItemCancellationReasonModal(item: DisplayOrderItem) {
-    const name = 'items' in item ? item.recipeName : item.item.name;
+    const name = "items" in item ? item.recipeName : item.item.name;
     this.cancellationModalTitle.set(`Cancelar Item: ${name}`);
     this.isCancellationReasonModalOpen.set(true);
   }
 
   openOrderCancellationReasonModal() {
     const order = this.currentOrder();
-    const id = order ? `#${order.id.slice(0, 8)}` : '';
+    const id = order ? `#${order.id.slice(0, 8)}` : "";
     this.cancellationModalTitle.set(`Cancelar Pedido Completo ${id}`);
     this.isCancellationReasonModalOpen.set(true);
   }
 
-  async handleCancellationReasonConfirmed(result: { reason: string, returnToStock: boolean }) {
+  async handleCancellationReasonConfirmed(result: {
+    reason: string;
+    returnToStock: boolean;
+  }) {
     this.isCancellationReasonModalOpen.set(false);
     const action = this.pendingCancellationAction();
     const authorizer = this.cancellationAuthorizer();
-    
+
     // Safety check - should have authorizer by now (self or manager)
     const authId = authorizer ? authorizer.id : null;
 
-    if (action?.type === 'item' && action.item) {
-        await this.cancelItem(action.item, result.reason, authId, result.returnToStock);
-    } else if (action?.type === 'order') {
-        await this.cancelOrder(result.reason, authId, result.returnToStock);
+    if (action?.type === "item" && action.item) {
+      await this.cancelItem(
+        action.item,
+        result.reason,
+        authId,
+        result.returnToStock,
+      );
+    } else if (action?.type === "order") {
+      await this.cancelOrder(result.reason, authId, result.returnToStock);
     }
-    
+
     this.pendingCancellationAction.set(null);
     this.cancellationAuthorizer.set(null);
   }
 
-  async cancelItem(item: DisplayOrderItem, reason: string, employeeId: string | null, returnToStock: boolean) {
+  async cancelItem(
+    item: DisplayOrderItem,
+    reason: string,
+    employeeId: string | null,
+    returnToStock: boolean,
+  ) {
     let itemIds: string[];
-    if ('items' in item) { // Grouped
-        itemIds = item.items.map(i => i.id);
-    } else { // Single
-        itemIds = [item.item.id];
-    }
-    
-    const { success, error } = await this.posDataService.cancelOrderItems(itemIds, reason, employeeId, returnToStock);
-    
-    if (success) {
-        this.notificationService.show('Item(ns) cancelado(s) com sucesso.', 'success');
+    if ("items" in item) {
+      // Grouped
+      itemIds = item.items.map((i) => i.id);
     } else {
-        this.notificationService.show(`Erro ao cancelar: ${error?.message}`, 'error');
+      // Single
+      itemIds = [item.item.id];
+    }
+
+    const { success, error } = await this.posDataService.cancelOrderItems(
+      itemIds,
+      reason,
+      employeeId,
+      returnToStock,
+    );
+
+    if (success) {
+      this.notificationService.show(
+        "Item(ns) cancelado(s) com sucesso.",
+        "success",
+      );
+    } else {
+      this.notificationService.show(
+        `Erro ao cancelar: ${error?.message}`,
+        "error",
+      );
     }
   }
 
-  async cancelOrder(reason: string, employeeId: string | null, returnToStock: boolean) {
+  async cancelOrder(
+    reason: string,
+    employeeId: string | null,
+    returnToStock: boolean,
+  ) {
     const order = this.currentOrder();
     if (!order) return;
 
-    const { success, error } = await this.posDataService.cancelOrder(order.id, reason, employeeId, returnToStock);
-    
+    const { success, error } = await this.posDataService.cancelOrder(
+      order.id,
+      reason,
+      employeeId,
+      returnToStock,
+    );
+
     if (success) {
-        this.notificationService.show('Pedido cancelado com sucesso.', 'success');
-        this.closePanel.emit();
+      this.notificationService.show("Pedido cancelado com sucesso.", "success");
+      this.closePanel.emit();
     } else {
-        this.notificationService.show(`Erro ao cancelar pedido: ${error?.message}`, 'error');
+      this.notificationService.show(
+        `Erro ao cancelar pedido: ${error?.message}`,
+        "error",
+      );
     }
   }
-
 }

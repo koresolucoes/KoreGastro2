@@ -211,22 +211,18 @@ export class PosDataService {
             status: "PENDENTE" as OrderItemStatus,
             station_id: prep.station_id,
             status_timestamps,
-            price: isPrimary ? effectivePrice : calculatedOriginalPrice,
-            original_price: isPrimary
-              ? calculatedOriginalPrice
-              : calculatedOriginalPrice,
+            price: isPrimary ? effectivePrice : 0,
+            original_price: isPrimary ? calculatedOriginalPrice : 0,
             group_id: groupId,
             user_id: userId,
             discount_type:
-              (isPrimary && effectivePrice < calculatedOriginalPrice) ||
-              !isPrimary
+              isPrimary && effectivePrice < calculatedOriginalPrice
                 ? "amount"
                 : null,
-            discount_value: isPrimary
-              ? effectivePrice < calculatedOriginalPrice
+            discount_value:
+              isPrimary && effectivePrice < calculatedOriginalPrice
                 ? calculatedOriginalPrice - effectivePrice
-                : null
-              : calculatedOriginalPrice,
+                : null,
             added_by_employee_id: employeeId,
             unit_cost: isPrimary ? currentCost : 0,
           };
@@ -538,17 +534,15 @@ export class PosDataService {
         destOrderId = destOrder.id;
 
         // Update table customer counts
-        await supabase
-          .from("tables")
-          .upsert([
-            {
-              ...destinationTable,
-              status: "OCUPADA",
-              customer_count:
-                (destinationTable.customer_count || 0) +
-                (sourceTable.customer_count || 0),
-            },
-          ]);
+        await supabase.from("tables").upsert([
+          {
+            ...destinationTable,
+            status: "OCUPADA",
+            customer_count:
+              (destinationTable.customer_count || 0) +
+              (sourceTable.customer_count || 0),
+          },
+        ]);
       } else {
         // Create a new order for destination table
         const newOrderPayload = {
@@ -567,16 +561,14 @@ export class PosDataService {
         destOrderId = newOrderData.id;
 
         // Update destination table status
-        await supabase
-          .from("tables")
-          .upsert([
-            {
-              ...destinationTable,
-              status: "OCUPADA",
-              employee_id: sourceTable.employee_id,
-              customer_count: sourceTable.customer_count || 1,
-            },
-          ]);
+        await supabase.from("tables").upsert([
+          {
+            ...destinationTable,
+            status: "OCUPADA",
+            employee_id: sourceTable.employee_id,
+            customer_count: sourceTable.customer_count || 1,
+          },
+        ]);
       }
 
       const itemsToInsert: any[] = [];

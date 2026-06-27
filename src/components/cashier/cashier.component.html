@@ -679,7 +679,7 @@
                           <div class="flex-1">
                               <p class="font-black text-title text-base uppercase tracking-tight">{{ item.method }}</p>
                               <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-1">
-                                  Sistema: <span class="text-brand font-mono">{{ item.expected | currency:'BRL' }}</span>
+                                  Fechamento Cego
                               </p>
                           </div>
                           
@@ -692,25 +692,12 @@
                                          class="w-36 bg-surface-elevated border-2 border-transparent focus:border-brand/40 rounded-xl px-4 py-3 pl-10 text-title font-black font-mono text-right outline-none transition-all"
                                          placeholder="0.00">
                               </div>
-                              <div class="w-28 text-right bg-surface-elevated p-3 rounded-xl border border-subtle group-hover:border-brand/20 transition-all">
-                                  <p class="text-[8px] text-muted font-black uppercase tracking-widest mb-1">Diferença</p>
-                                  <p class="font-black font-mono text-sm tracking-tight" [class.text-success]="item.difference >= 0" [class.text-danger]="item.difference < 0">
-                                      {{ item.difference | currency:'BRL' }}
-                                  </p>
-                              </div>
                           </div>
                       </div>
                   }
               </div>
 
-              <!-- Total Difference Summary -->
-              <div class="p-6 bg-brand/5 rounded-3xl border border-brand/20 flex justify-between items-center">
-                  <span class="text-title font-black text-sm uppercase tracking-widest">Diferença Líquida (Quebra)</span>
-                  <span class="text-2xl font-black font-mono tracking-tighter" [class.text-success]="totalDifference() >= 0" [class.text-danger]="totalDifference() < 0">
-                      {{ totalDifference() | currency:'BRL' }}
-                  </span>
-              </div>
-
+              <!-- Total Difference Summary Hidden For Blind Closing -->
               <div>
                   <label class="block text-[10px] font-black text-muted uppercase tracking-widest mb-3">Observações do Encerramento</label>
                   <textarea [value]="closingNotes()" (input)="closingNotes.set($any($event.target).value)" rows="3" 

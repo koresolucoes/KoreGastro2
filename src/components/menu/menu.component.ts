@@ -170,7 +170,7 @@ export class MenuComponent implements OnInit {
       clearInterval(this.pollingInterval);
     }
     this.pollingInterval = setInterval(() => {
-      if (this.view() === "bill" || this.view() === "menu") {
+      if (this.view() === "table-bill" || this.view() === "menu") {
         this.refreshTableOrder();
       }
     }, 10000);

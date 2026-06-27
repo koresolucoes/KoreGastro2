@@ -333,7 +333,8 @@ export class DashboardComponent implements OnInit {
     const recipeCosts = this.recipeState.recipeCosts();
     return this.dashboardState.performanceCompletedOrders().flatMap(o => o.order_items).reduce((sum, item) => {
       if (item.status === 'CANCELADO') return sum;
-      const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+      // AUDIT: Usa unit_cost salvo na venda (furo de precisão temporal corrigido)
+      const cost = item.unit_cost && item.unit_cost > 0 ? item.unit_cost : (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
       return sum + (cost * item.quantity);
     }, 0);
   });
@@ -550,6 +551,8 @@ export class DashboardComponent implements OnInit {
       const hash = recipe.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const quantitySold = sales ? sales.quantity : (hasSales ? 0 : (hash % 15) + 3); 
       
+      // For Menu Engineering, we intentionally use the CURRENT cost (recipeCosts), 
+      // not historical, because we need to know the CURRENT profitability to make pricing decisions.
       const cost = recipeCosts.get(recipe.id)?.totalCost ?? 0;
       const margin = (recipe.price || 0) - cost;
       const marginPercent = recipe.price > 0 ? (margin / recipe.price) * 100 : 0;

@@ -303,7 +303,7 @@ export class CashierDataService {
                 }
 
                 const existing = itemMap.get(item.recipe_id) || { name: item.name, quantity: 0, revenue: 0, totalCost: 0 };
-                const itemCost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+                const itemCost = item.unit_cost && item.unit_cost > 0 ? item.unit_cost : (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
                 existing.quantity += item.quantity;
                 existing.revenue += item.price * item.quantity;
                 existing.totalCost += itemCost * item.quantity;
@@ -911,7 +911,7 @@ export class CashierDataService {
         if (dailyData.has(dateString)) {
              const orderCogs = o.order_items.reduce((sum: number, item: any) => {
                 if (item.status === 'CANCELADO') return sum;
-                const cost = recipeCosts.get(item.recipe_id)?.totalCost ?? 0;
+                const cost = item.unit_cost && item.unit_cost > 0 ? item.unit_cost : (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
                 return sum + (cost * item.quantity);
             }, 0);
             dailyData.get(dateString)!.cogs += orderCogs;

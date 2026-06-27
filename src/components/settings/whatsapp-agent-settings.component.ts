@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -70,6 +70,7 @@ import { supabase } from '../../services/supabase-client';
 export class WhatsappAgentSettingsComponent implements OnInit {
   private unitContextService = inject(UnitContextService);
   private notificationService = inject(NotificationService);
+  private cdr = inject(ChangeDetectorRef);
 
   isLoading = signal(false);
 
@@ -102,7 +103,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
 
     if (error && error.code === 'PGRST204') {
       console.warn("Table whatsapp_agent_configs missing agent_tone column. Schema reload required.");
-      this.autoCaptureCompanyData(storeId);
+      await this.autoCaptureCompanyData(storeId);
       return;
     }
 
@@ -112,10 +113,11 @@ export class WhatsappAgentSettingsComponent implements OnInit {
       this.restaurantHours = data.restaurant_hours || '';
       this.agentTone = data.agent_tone || 'educado e profissional';
       this.extraRules = data.extra_rules || '';
+      this.cdr.markForCheck();
     }
 
     if (!this.restaurantName || !this.restaurantAddress || !this.restaurantHours) {
-      this.autoCaptureCompanyData(storeId);
+      await this.autoCaptureCompanyData(storeId);
     }
   }
 
@@ -142,6 +144,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
         this.restaurantHours = "Aberto conforme programação.";
       }
     }
+    this.cdr.markForCheck();
   }
 
   async triggerAutoCapture() {
@@ -171,6 +174,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
     }
 
     this.isLoading.set(false);
+    this.cdr.markForCheck();
     this.notificationService.show('Dados capturados!', 'success');
   }
 
@@ -195,6 +199,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
       .upsert(payload, { onConflict: 'store_id' });
 
     this.isLoading.set(false);
+    this.cdr.markForCheck();
 
     if (error) {
       if (error.code === 'PGRST204' || error.code === 'PGRST205') {

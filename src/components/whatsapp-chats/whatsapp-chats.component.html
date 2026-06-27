@@ -1,19 +1,19 @@
 <div class="h-full flex flex-col bg-surface overflow-hidden">
-  <div class="flex items-center justify-between px-8 py-5 border-b border-subtle bg-surface-elevated shrink-0">
+  <div class="flex items-center justify-between px-4 py-3 sm:px-8 sm:py-5 border-b border-subtle bg-surface-elevated shrink-0">
     <div>
-      <h1 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
-        <a routerLink="/home" class="p-2 -ml-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95 flex items-center justify-center">
-            <span translate="no" class="notranslate material-symbols-outlined text-xl">arrow_back</span>
+      <h1 class="text-lg sm:text-2xl font-black text-title title-display tracking-tight flex items-center gap-2 sm:gap-3">
+        <a routerLink="/home" class="p-1 sm:p-2 -ml-1 sm:-ml-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95 flex items-center justify-center">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg sm:text-xl">arrow_back</span>
         </a>
-        <div class="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20">
-           <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-6 h-6">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20 shrink-0">
+           <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="w-5 h-5 sm:w-6 sm:h-6">
         </div>
-        WhatsApp IA & CRM
+        <span class="truncate">WhatsApp IA & CRM</span>
       </h1>
-      <p class="text-xs text-muted mt-1 font-medium ml-14">Acompanhe conversas, gerencie clientes e feche pedidos pelo chat.</p>
+      <p class="hidden sm:block text-xs text-muted mt-1 font-medium ml-14">Acompanhe conversas, gerencie clientes e feche pedidos pelo chat.</p>
     </div>
     @if(isConfigured() === true || isTesting()) {
-      <button (click)="isConfigModalOpen.set(true)" class="p-3 bg-surface hover:bg-surface-elevated border border-subtle text-title rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-2 shadow-sm">
+      <button (click)="isConfigModalOpen.set(true)" class="p-2 sm:p-3 bg-surface hover:bg-surface-elevated border border-subtle text-title rounded-2xl text-xs font-black transition-all active:scale-95 flex items-center gap-2 shadow-sm shrink-0 ml-2">
         <span translate="no" class="notranslate material-symbols-outlined text-sm">settings</span>
         <span class="hidden sm:inline">Configurações do Agente IA</span>
       </button>
@@ -102,7 +102,7 @@
      <div [class.hidden]="!selectedChatId() && !isTesting()" class="w-full md:w-auto flex-grow flex flex-col md:flex bg-surface relative min-h-0 h-full">
         @if(isTesting()) {
            <!-- TEST CHAT -->
-           <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10 border-b-brand/40">
+           <div class="h-16 border-b border-subtle bg-surface flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10 border-b-brand/40">
               <div class="flex items-center gap-2 sm:gap-3">
                  <button (click)="stopTesting()" class="md:hidden p-2 -ml-2 text-muted hover:text-title hover:bg-surface rounded-xl transition-all flex items-center justify-center shrink-0">
                     <span translate="no" class="notranslate material-symbols-outlined">arrow_back</span>
@@ -144,7 +144,7 @@
            </div>
         } @else if(selectedChatId()) {
            <!-- Chat Header -->
-           <div class="h-16 border-b border-subtle bg-surface/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10">
+           <div class="h-16 border-b border-subtle bg-surface flex items-center justify-between px-4 sm:px-6 shrink-0 absolute top-0 w-full z-10">
               <div class="flex items-center gap-1 sm:gap-3">
                  <button (click)="selectChat(null)" class="md:hidden p-2 -ml-2 text-muted hover:text-title hover:bg-surface rounded-xl transition-all flex items-center justify-center shrink-0">
                     <span translate="no" class="notranslate material-symbols-outlined">arrow_back</span>
