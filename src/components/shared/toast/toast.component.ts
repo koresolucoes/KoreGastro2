@@ -7,13 +7,14 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div 
-      class="flex items-center w-full max-w-sm p-4 gap-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-strong bg-surface-elevated/90 backdrop-blur-lg animate-in slide-in-from-bottom-4 fade-in duration-300 relative overflow-hidden"
+      class="flex items-center w-full max-w-sm p-4 gap-4 rounded-full shadow-2xl border border-strong bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 animate-in slide-in-from-top fade-in duration-300 relative overflow-hidden mx-auto"
+      [class.!bg-red-500]="type() === 'error'"
+      [class.!text-white]="type() === 'error'"
       role="alert">
       <!-- Glow effect based on type -->
-      <div class="absolute inset-y-0 left-0 w-1 shadow-inner opacity-75" [class]="glowClass()"></div>
       <div [innerHTML]="iconSvg()" class="shrink-0 flex items-center justify-center relative z-10"></div>
-      <div class="text-sm font-bold tracking-tight text-title flex-1 relative z-10">{{ message() }}</div>
-       <button type="button" (click)="close.emit()" class="ms-auto rounded-xl focus:ring-2 focus:ring-brand/50 p-2 inline-flex items-center justify-center h-8 w-8 text-muted hover:text-title hover-surface-elevated transition-colors bg-surface/50 backdrop-blur-sm relative z-10" aria-label="Close">
+      <div class="text-sm font-bold tracking-tight flex-1 relative z-10">{{ message() }}</div>
+       <button type="button" (click)="close.emit()" class="ms-auto rounded-full focus:ring-2 focus:ring-brand/50 p-2 inline-flex items-center justify-center h-8 w-8 hover:bg-white/20 transition-colors relative z-10" aria-label="Close">
         <span class="sr-only">Close</span>
         <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg>
     </button>

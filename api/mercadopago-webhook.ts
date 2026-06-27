@@ -36,9 +36,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
     const payload = request.body || {};
     console.log('[MercadoPago Webhook] Payload received:', JSON.stringify(payload));
     
-    const mpAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
+    const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
     if (!mpAccessToken) {
-       console.warn('[MercadoPago Webhook] MERCADO_PAGO_ACCESS_TOKEN is missing. Cannot fetch full resource data.');
+       console.warn('[MercadoPago Webhook] MERCADOPAGO_ACCESS_TOKEN is missing. Cannot fetch full resource data.');
     }
 
     if (payload.action === 'payment.updated' || payload.action === 'payment.created' || payload.type === 'payment') {

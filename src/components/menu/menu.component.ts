@@ -97,7 +97,7 @@ export class MenuComponent implements OnInit {
   activeCategorySlug = signal<string | null>(null);
 
   // Data
-  companyProfile = signal<Partial<CompanyProfile> | null>(null);
+  companyProfile = signal<(Partial<CompanyProfile> & { has_mp_integration?: boolean }) | null>(null);
   tableOrder = signal<Order | null>(null);
   sessionToken = signal<string | null>(null);
   recipes = signal<Recipe[]>([]);

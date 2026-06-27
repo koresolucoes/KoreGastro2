@@ -322,7 +322,7 @@ export class PublicDataService {
 
   async getPublicCompanyProfile(
     userId: string,
-  ): Promise<Partial<CompanyProfile> | null> {
+  ): Promise<Partial<CompanyProfile> & { has_mp_integration?: boolean } | null> {
     const { data, error } = await supabase
       .from("company_profile")
       .select("*") // Select all to bypass potential column-specific RLS issues
@@ -337,14 +337,21 @@ export class PublicDataService {
       return null;
     }
 
+    let hasMp = false;
+
     if (data) {
       // IMPORTANT: Explicitly remove sensitive fields before returning to the client.
       // This prevents exposing API keys or other private data.
       delete (data as any).external_api_key;
       delete (data as any).ifood_merchant_id;
+      
+      hasMp = !!(data as any).mp_access_token;
+      
+      delete (data as any).mp_access_token;
+      delete (data as any).mp_refresh_token;
     }
 
-    return data;
+    return data ? { ...data, has_mp_integration: hasMp } : null;
   }
 
   async getPublicReservationSettings(
@@ -399,17 +406,7 @@ export class PublicDataService {
     sessionToken: string,
   ): Promise<{ order: any | null; error: any }> {
     try {
-      // Tenta primeiro a função RPC (bypassa RLS via Security Definer no banco)
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        "get_order_by_session",
-        { p_session_token: sessionToken },
-      );
-
-      if (!rpcError && rpcData) {
-        return { order: rpcData, error: null };
-      }
-
-      // Se a RPC falhar (ex: não criada no banco ainda), tenta usar a API serverless (precisa de variável no Vercel/Node)
+      // Force using API route to bypass RLS properly and get all joins correctly mapped
       const response = await fetch(`/api/public-order?token=${sessionToken}`);
       if (!response.ok) {
         throw new Error(await response.text());

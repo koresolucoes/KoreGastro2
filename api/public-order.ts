@@ -81,7 +81,7 @@ export default async function handler(req: any, res: any) {
 
           const { data: company, error: companyError } = await supabase.from('company_profile').select('mp_access_token').eq('user_id', order.user_id).single();
           
-          const mpToken = company?.mp_access_token || process.env.MERCADO_PAGO_ACCESS_TOKEN;
+          const mpToken = company?.mp_access_token || process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
           if (!mpToken) {
               return res.status(400).json({ error: 'Mercado Pago não configurado para esta loja. Entre em contato com o restaurante.' });

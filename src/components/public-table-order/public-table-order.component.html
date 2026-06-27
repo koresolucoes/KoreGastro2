@@ -216,6 +216,7 @@
                 <div class="flex-1 overflow-y-auto mb-6 pr-2 -mr-2">
                     @if (checkoutStep() === 'METHOD') {
                         <div class="space-y-3">
+                            @if (companyProfile()?.has_mp_integration) {
                             <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'PIX'" [class.bg-brand/5]="checkoutMethod() === 'PIX'">
                                 <input type="radio" name="payment_method" value="PIX" [checked]="checkoutMethod() === 'PIX'" (change)="checkoutMethod.set('PIX')" class="peer sr-only">
                                 <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
@@ -231,6 +232,7 @@
                                     </div>
                                 }
                             </label>
+                            }
 
                             <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'WAITER'" [class.bg-brand/5]="checkoutMethod() === 'WAITER'">
                                 <input type="radio" name="payment_method" value="WAITER" [checked]="checkoutMethod() === 'WAITER'" (change)="checkoutMethod.set('WAITER')" class="peer sr-only">
@@ -364,15 +366,38 @@
                                 </div>
                             </label>
 
-                            <div class="bg-surface-elevated border border-subtle p-4 rounded-2xl flex items-center gap-4 text-left">
-                                <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
-                                    <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
+                            @if (isGeneratingPix()) {
+                                <div class="py-8 flex flex-col items-center justify-center">
+                                   <div class="w-10 h-10 border-4 border-subtle border-t-brand rounded-full animate-spin mb-4"></div>
+                                   <p class="text-muted font-medium">Gerando PIX Integrado...</p>
                                 </div>
-                                <div>
-                                    <h3 class="font-bold text-sm">Chave PIX</h3>
-                                    <p class="text-xs text-muted font-medium mt-1 truncate">kore@restaurante.com.br</p>
+                            } @else if (pixQrCodeBase64()) {
+                                <div class="bg-surface-elevated border border-subtle p-6 rounded-2xl flex flex-col items-center gap-4 text-center">
+                                    <h3 class="font-bold text-lg text-title">Escaneie para pagar</h3>
+                                    <div class="bg-white p-2 rounded-xl shadow-sm border border-subtle">
+                                        <img [src]="'data:image/png;base64,' + pixQrCodeBase64()" alt="PIX QR Code" class="w-48 h-48 object-contain">
+                                    </div>
+                                    <div class="w-full relative mt-2">
+                                        <p class="text-xs text-muted mb-2">Ou copie o código (Pix Copia e Cola)</p>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" [value]="pixQrCode()" readonly class="flex-1 text-xs bg-surface border border-subtle rounded-lg px-3 py-2 text-muted focus:outline-none truncate">
+                                            <button class="bg-[#32BCAD] text-white p-2 rounded-lg hover:bg-[#2BA093] transition-colors flex items-center justify-center" onclick="navigator.clipboard.writeText(document.querySelector('input[readonly]').value)">
+                                                <span translate="no" class="notranslate material-symbols-outlined text-sm">content_copy</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            } @else {
+                                <div class="bg-surface-elevated border border-subtle p-4 rounded-2xl flex items-center gap-4 text-left">
+                                    <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">qr_code_2</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-sm">Chave PIX</h3>
+                                        <p class="text-xs text-muted font-medium mt-1 truncate">kore@restaurante.com.br</p>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -394,8 +419,8 @@
                         <div class="flex gap-2">
                            <button (click)="checkoutStep.set('SPLIT')" class="bg-surface-elevated text-title p-4 rounded-2xl font-bold hover:bg-black/5 transition-all border border-subtle">Voltar</button>
                            <button (click)="confirmCheckout()" class="flex-1 bg-[#32BCAD] text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 transition-opacity active:scale-95 shadow-xl shadow-[#32BCAD]/20 flex justify-center items-center gap-2">
-                               <span translate="no" class="notranslate material-symbols-outlined">qr_code_scanner</span>
-                               Confirmar Pagamento PIX
+                               <span translate="no" class="notranslate material-symbols-outlined">verified</span>
+                               Já realizei o Pagamento
                            </button>
                         </div>
                     }

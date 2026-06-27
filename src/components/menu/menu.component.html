@@ -403,6 +403,7 @@
                 </div>
 
                 <div class="space-y-3">
+                    @if (companyProfile()?.has_mp_integration) {
                     <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'PIX'" [class.bg-brand/5]="checkoutMethod() === 'PIX'">
                         <input type="radio" name="payment_method" value="PIX" [checked]="checkoutMethod() === 'PIX'" (change)="checkoutMethod.set('PIX')" class="peer sr-only">
                         <div class="w-12 h-12 rounded-xl bg-[#32BCAD]/10 text-[#32BCAD] flex items-center justify-center shrink-0">
@@ -418,6 +419,7 @@
                             </div>
                         }
                     </label>
+                    }
 
                     <label class="flex items-start gap-4 p-4 border border-subtle rounded-2xl cursor-pointer hover:border-brand transition-colors bg-surface-elevated relative group" [class.border-brand]="checkoutMethod() === 'WAITER'" [class.bg-brand/5]="checkoutMethod() === 'WAITER'">
                         <input type="radio" name="payment_method" value="WAITER" [checked]="checkoutMethod() === 'WAITER'" (change)="checkoutMethod.set('WAITER')" class="peer sr-only">
