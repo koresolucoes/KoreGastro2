@@ -165,9 +165,9 @@
                                   <span translate="no" class="notranslate material-symbols-outlined text-[12px]">check_circle</span> Pago
                               </span>
                           } @else if (isConvocadoToday(employee)) {
-                              <span class="bg-brand/10 text-brand px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest cursor-default">
-                                  <span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span> Convocado
-                              </span>
+                              <button (click)="markFreelancerAttendance(employee); $event.stopPropagation()" class="bg-success/10 hover:bg-success/20 text-success px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest transition-colors">
+                                  Compareceu
+                              </button>
                               <button (click)="markFreelancerAbsence(employee); $event.stopPropagation()" class="bg-danger/10 hover:bg-danger/20 text-danger px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest transition-colors">
                                   Faltou
                               </button>
@@ -236,9 +236,9 @@
                              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">check_circle</span> Pago Hoje
                         </span>
                      } @else if (isConvocadoToday(employee)) {
-                         <span class="flex-1 bg-brand/10 text-brand px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest cursor-default">
-                              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">schedule</span> Convocado
-                         </span>
+                         <button (click)="markFreelancerAttendance(employee); $event.stopPropagation()" class="flex-1 bg-success/10 hover:bg-success/20 text-success px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors">
+                              Compareceu
+                         </button>
                          <button (click)="markFreelancerAbsence(employee); $event.stopPropagation()" class="flex-1 bg-danger/10 hover:bg-danger/20 text-danger px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors">
                               Faltou
                          </button>

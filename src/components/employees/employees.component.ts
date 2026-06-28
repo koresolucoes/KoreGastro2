@@ -10,10 +10,12 @@ import { EmployeeDetailsModalComponent } from './employee-details-modal/employee
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { TimeClockService } from '../../services/time-clock.service';
 
+import { RouterModule } from '@angular/router';
+
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmployeeDetailsModalComponent],
+  imports: [CommonModule, FormsModule, EmployeeDetailsModalComponent, RouterModule],
   templateUrl: './employees.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -210,6 +212,33 @@ export class EmployeesComponent implements OnInit {
           this.notificationService.show(`Falta registrada para ${emp.name}`, 'info');
       } catch (e: any) {
           this.notificationService.show(e.message || 'Erro ao registrar falta', 'error');
+      }
+  }
+
+  async markFreelancerAttendance(emp: Employee) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const calls = emp.bank_details?.calls || [];
+      const todayCallIndex = calls.findIndex(c => c.date === todayStr);
+      
+      let updatedCalls = [...calls];
+      if (todayCallIndex >= 0) {
+          updatedCalls[todayCallIndex] = { ...updatedCalls[todayCallIndex], status: 'compareceu' };
+      } else {
+          updatedCalls.push({ id: crypto.randomUUID(), date: todayStr, status: 'compareceu' });
+      }
+
+      const updatedBankDetails = {
+          ...(emp.bank_details || {}),
+          calls: updatedCalls
+      };
+      
+      try {
+          const res = await this.settingsDataService.updateEmployee({ ...emp, bank_details: updatedBankDetails }, null);
+          if (res.error) throw res.error;
+          this.supabaseStateService.loadBackOfficeData();
+          this.notificationService.show(`Presença registrada para ${emp.name}`, 'success');
+      } catch (e: any) {
+          this.notificationService.show(e.message || 'Erro ao registrar presença', 'error');
       }
   }
 

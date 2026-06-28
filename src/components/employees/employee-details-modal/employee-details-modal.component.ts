@@ -36,10 +36,20 @@ export class EmployeeDetailsModalComponent {
   // FIX: Inject HrStateService
   private hrState = inject(HrStateService);
 
-  activeTab = signal<'performance' | 'details'>('performance');
+  activeTab = signal<'performance' | 'details' | 'freelancer'>('performance');
   period = signal<'7d' | '30d'>('7d');
   isLoading = signal(true);
   stats = signal<EmployeeStats | null>(null);
+
+  isFreelancer = computed(() => {
+      const emp = this.employee();
+      return emp.salary_type === 'freelancer' || emp.roles?.name?.toLowerCase().includes('freelancer') || emp.roles?.name?.toLowerCase().includes('extra');
+  });
+
+  freelancerHistory = computed(() => {
+      const emp = this.employee();
+      return emp.bank_details?.calls || [];
+  });
 
   employeeRole = computed(() => {
     const emp = this.employee();
