@@ -242,7 +242,7 @@ export class InventoryDataService {
         p_user_id: userId,
         p_lot_id_for_exit: lotIdForExit,
         p_lot_number_for_entry: lotNumberForEntry,
-        p_expiration_date_for_entry: expirationDateForEntry,
+        p_expiration_date_for_entry: expirationDateForEntry
     });
 
     if (error) {

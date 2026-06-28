@@ -26,6 +26,8 @@ type PurchaseOrderFormState = {
     supplier_id: string | null;
     status: PurchaseOrderStatus;
     notes: string;
+    created_by_employee?: { name: string } | null;
+    received_by_employee?: { name: string } | null;
 };
 
 @Component({
@@ -170,7 +172,13 @@ export class PurchasingComponent implements OnInit {
 
     openEditModal(order: PurchaseOrder) {
         this.editingOrder.set(order);
-        this.orderForm.set({ supplier_id: order.supplier_id, status: order.status, notes: order.notes || '' });
+        this.orderForm.set({ 
+            supplier_id: order.supplier_id, 
+            status: order.status, 
+            notes: order.notes || '',
+            created_by_employee: order.created_by_employee,
+            received_by_employee: order.received_by_employee
+        });
         const items = (order.purchase_order_items || []).map(item => ({
             id: item.id,
             ingredient_id: item.ingredient_id,

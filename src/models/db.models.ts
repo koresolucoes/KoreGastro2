@@ -209,9 +209,10 @@ export interface Employee {
   created_at: string;
   user_id: string;
   current_clock_in_id: string | null;
-  salary_type?: 'mensal' | 'horista' | null;
+  salary_type?: 'mensal' | 'horista' | 'freelancer' | null;
   salary_rate?: number | null;
   overtime_rate_multiplier?: number | null;
+  pix_key?: string | null;
   birth_date?: string | null;
   cpf?: string | null;
   rg?: string | null;
@@ -222,7 +223,7 @@ export interface Employee {
   emergency_contact_phone?: string | null;
   hire_date?: string | null;
   termination_date?: string | null;
-  bank_details?: { bank?: string; agency?: string; account?: string; pix?: string } | null;
+  bank_details?: { bank?: string; agency?: string; account?: string; pix?: string; ratings?: number[]; last_called_at?: string; calls?: { id: string; date: string; status: 'convocado' | 'confirmado' | 'recusado' | 'compareceu' | 'faltou'; amount?: number; rating?: number }[] } | null;
   photo_url?: string | null;
   roles?: { id: string, name: string };
 }
@@ -533,6 +534,8 @@ export interface PurchaseOrder {
   user_id: string;
   created_by_employee_id?: string | null; // AUDIT
   received_by_employee_id?: string | null; // AUDIT
+  created_by_employee?: { name: string } | null;
+  received_by_employee?: { name: string } | null;
   suppliers?: { name: string };
   purchase_order_items?: PurchaseOrderItem[];
 }

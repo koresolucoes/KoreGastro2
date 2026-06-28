@@ -31,6 +31,24 @@
           }
       </div>
 
+      <!-- Card: Total Expenses -->
+      <div class="chef-surface p-6 border-l-4" style="border-left-color: var(--accent-brand);">
+          <div class="flex justify-between items-start">
+              <div>
+                  <p class="text-muted text-[10px] font-black uppercase tracking-widest">Gastos c/ Extras</p>
+                  <p class="text-4xl font-black text-title mt-2 data-mono">
+                      {{ totalFreelancerExpenses() | currency:'BRL':'symbol':'1.2-2' }}
+                  </p>
+              </div>
+              <div class="p-3 bg-brand/10 rounded-2xl border border-brand/20">
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand">payments</span>
+              </div>
+          </div>
+          <div class="mt-4 flex items-center gap-1.5 text-xs text-muted font-medium">
+             Total acumulado em pagamentos.
+          </div>
+      </div>
+
       <!-- Card: Pending Leaves -->
       <div class="chef-surface p-6 border-l-4" style="border-left-color: var(--accent-warning);">
           <div class="flex justify-between items-start">
@@ -76,6 +94,14 @@
   </div>
 
   <div class="chef-surface overflow-hidden">
+    <div class="border-b border-subtle flex flex-row">
+       <button (click)="activeTab.set('regulares')" [class.border-brand]="activeTab() === 'regulares'" [class.text-brand]="activeTab() === 'regulares'" class="flex-1 py-4 text-sm font-black uppercase tracking-widest border-b-2 border-transparent text-muted hover:text-title transition-all">
+          Equipe Fixa
+       </button>
+       <button (click)="activeTab.set('freelancers')" [class.border-brand]="activeTab() === 'freelancers'" [class.text-brand]="activeTab() === 'freelancers'" class="flex-1 py-4 text-sm font-black uppercase tracking-widest border-b-2 border-transparent text-muted hover:text-title transition-all flex items-center justify-center gap-2">
+          Freelancers / Extras
+       </button>
+    </div>
     <div class="p-4 bg-surface-elevated/30 border-b border-subtle">
       <div class="relative group">
         <input type="text" [value]="employeeSearchTerm()" (input)="employeeSearchTerm.set($any($event.target).value)" placeholder="Buscar funcionário por nome ou cargo..." class="w-full bg-surface border border-strong rounded-2xl pl-12 pr-4 py-3 text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner">
@@ -114,7 +140,15 @@
                   }
                   <span class="group-hover:text-brand">{{ employee.name }}</span>
                 </td>
-                <td class="px-6 py-4 text-body font-medium">{{ employee.role }}</td>
+                <td class="px-6 py-4 text-body font-medium">
+                  {{ employee.role }}
+                  @if (activeTab() === 'freelancers' && getAverageRating(employee) > 0) {
+                     <div class="flex items-center gap-0.5 text-warning bg-warning/10 px-1.5 py-0.5 rounded text-[9px] font-black w-max mt-1">
+                          <span translate="no" class="notranslate material-symbols-outlined text-[10px] star-icon" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24">star</span>
+                          {{ getAverageRating(employee) | number:'1.1-1' }}
+                     </div>
+                  }
+                </td>
                 <td class="px-6 py-4 text-muted data-mono text-xs">{{ employee.phone || 'Não informado' }}</td>
                 <td class="px-6 py-4 text-center">
                    @if (employeePendingDeletion()?.id === employee.id) {
@@ -125,6 +159,25 @@
                     </div>
                   } @else {
                     <div (click)="$event.stopPropagation()" class="flex gap-4 justify-center items-center">
+                      @if (activeTab() === 'freelancers') {
+                          @if (hasAttendedToday(employee)) {
+                              <span class="bg-success/10 text-success px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest cursor-default">
+                                  <span translate="no" class="notranslate material-symbols-outlined text-[12px]">check_circle</span> Pago
+                              </span>
+                          } @else if (isConvocadoToday(employee)) {
+                              <span class="bg-brand/10 text-brand px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest cursor-default">
+                                  <span translate="no" class="notranslate material-symbols-outlined text-[12px]">schedule</span> Convocado
+                              </span>
+                              <button (click)="markFreelancerAbsence(employee); $event.stopPropagation()" class="bg-danger/10 hover:bg-danger/20 text-danger px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest transition-colors">
+                                  Faltou
+                              </button>
+                          } @else {
+                              <button (click)="convocarFreelancer(employee); $event.stopPropagation()" class="bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] px-2 py-1 flex items-center justify-center gap-1 rounded text-[10px] font-black uppercase tracking-widest transition-colors">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                                  Convocar
+                              </button>
+                          }
+                      }
                       <button (click)="openEditModal(employee)" class="text-brand hover:underline font-bold text-xs">Editar</button>
                       <button (click)="requestDeleteEmployee(employee)" class="text-danger hover:underline font-bold text-xs opacity-60 hover:opacity-100">Excluir</button>
                     </div>
@@ -151,7 +204,15 @@
                   }
                 <div>
                   <p class="font-black text-title text-xl tracking-tight">{{ employee.name }}</p>
-                  <p class="text-xs font-bold text-brand uppercase tracking-widest">{{ employee.role }}</p>
+                  <div class="flex items-center gap-2">
+                      <p class="text-xs font-bold text-brand uppercase tracking-widest">{{ employee.role }}</p>
+                      @if (activeTab() === 'freelancers' && getAverageRating(employee) > 0) {
+                          <span class="flex items-center gap-0.5 text-warning bg-warning/10 px-1.5 py-0.5 rounded text-[9px] font-black w-max">
+                              <span translate="no" class="notranslate material-symbols-outlined text-[10px] star-icon" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24">star</span>
+                              {{ getAverageRating(employee) | number:'1.1-1' }}
+                          </span>
+                      }
+                  </div>
                 </div>
               </div>
             </div>
@@ -167,17 +228,40 @@
               </div>
             </div>
 
-            <div (click)="$event.stopPropagation()" class="flex justify-end gap-4 pt-4 border-t border-subtle">
-              @if (employeePendingDeletion()?.id === employee.id) {
-                <div class="flex gap-2 items-center w-full justify-end bg-danger/5 p-2 rounded-xl">
-                  <span class="text-xs font-bold text-danger px-1">Remover?</span>
-                  <button (click)="confirmDeleteEmployee()" class="px-4 py-1.5 font-bold rounded-lg bg-danger text-white text-[10px] uppercase">Sim</button>
-                  <button (click)="cancelDeleteEmployee()" class="px-4 py-1.5 font-bold rounded-lg bg-surface text-title text-[10px] uppercase border border-subtle">Não</button>
-                </div>
-              } @else {
-                <button (click)="openEditModal(employee)" class="text-brand hover:underline text-xs font-black uppercase tracking-widest">Editar</button>
-                <button (click)="requestDeleteEmployee(employee)" class="text-danger hover:underline text-xs font-black uppercase tracking-widest opacity-60">Excluir</button>
-              }
+            <div (click)="$event.stopPropagation()" class="flex flex-col gap-2 pt-4 border-t border-subtle">
+               @if (activeTab() === 'freelancers') {
+                   <div class="flex items-center gap-2 mb-2 w-full">
+                     @if (hasAttendedToday(employee)) {
+                        <span class="w-full bg-success/10 text-success px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest cursor-default">
+                             <span translate="no" class="notranslate material-symbols-outlined text-[16px]">check_circle</span> Pago Hoje
+                        </span>
+                     } @else if (isConvocadoToday(employee)) {
+                         <span class="flex-1 bg-brand/10 text-brand px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest cursor-default">
+                              <span translate="no" class="notranslate material-symbols-outlined text-[16px]">schedule</span> Convocado
+                         </span>
+                         <button (click)="markFreelancerAbsence(employee); $event.stopPropagation()" class="flex-1 bg-danger/10 hover:bg-danger/20 text-danger px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors">
+                              Faltou
+                         </button>
+                     } @else {
+                         <button (click)="convocarFreelancer(employee); $event.stopPropagation()" class="w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] px-4 py-2 flex items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                            Convocar via WhatsApp
+                         </button>
+                     }
+                   </div>
+               }
+               <div class="flex justify-end gap-4 mt-2">
+                 @if (employeePendingDeletion()?.id === employee.id) {
+                   <div class="flex gap-2 items-center w-full justify-end bg-danger/5 p-2 rounded-xl">
+                     <span class="text-xs font-bold text-danger px-1">Remover?</span>
+                     <button (click)="confirmDeleteEmployee()" class="px-4 py-1.5 font-bold rounded-lg bg-danger text-white text-[10px] uppercase">Sim</button>
+                     <button (click)="cancelDeleteEmployee()" class="px-4 py-1.5 font-bold rounded-lg bg-surface text-title text-[10px] uppercase border border-subtle">Não</button>
+                   </div>
+                 } @else {
+                   <button (click)="openEditModal(employee)" class="text-brand hover:underline text-xs font-black uppercase tracking-widest">Editar</button>
+                   <button (click)="requestDeleteEmployee(employee)" class="text-danger hover:underline text-xs font-black uppercase tracking-widest opacity-60">Excluir</button>
+                 }
+               </div>
             </div>
           </div>
         }
@@ -310,8 +394,9 @@
                   <label class="block text-[11px] font-black text-muted mb-1.5 uppercase tracking-wider">Tipo de Salário</label>
                   <select [value]="employeeForm().salary_type || ''" (change)="updateEmployeeFormField('salary_type', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2.5 text-title focus:ring-1 focus:ring-brand focus:border-brand outline-none shadow-inner appearance-none cursor-pointer">
                     <option value="">Não definido</option>
-                    <option value="mensal">Mensal</option>
+                    <option value="mensal">Mensal (Fixo)</option>
                     <option value="horista">Horista</option>
+                    <option value="freelancer">Freelancer/Extra</option>
                   </select>
                 </div>
                 <div>

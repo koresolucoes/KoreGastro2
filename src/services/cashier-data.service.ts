@@ -1001,4 +1001,40 @@ export class CashierDataService {
         };
     }
   }
+
+  async rateFreelancer(employeeId: string, rating: number, amount: number, currentBankDetails: any): Promise<{ success: boolean; error: any }> {
+    const userId = this.getActiveUnitId();
+    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
+
+    const ratings = currentBankDetails?.ratings || [];
+    const calls = currentBankDetails?.calls || [];
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Find today's call and mark as attended, or create a new one
+    const todayCallIndex = calls.findIndex((c: any) => c.date === todayStr);
+    let updatedCalls = [...calls];
+    
+    if (todayCallIndex >= 0) {
+        updatedCalls[todayCallIndex] = { ...updatedCalls[todayCallIndex], status: 'compareceu', amount };
+    } else {
+        updatedCalls.push({ id: crypto.randomUUID(), date: todayStr, status: 'compareceu', amount });
+    }
+
+    const updatedBankDetails = {
+      ...(currentBankDetails || {}),
+      ratings: rating > 0 ? [...ratings, rating] : ratings,
+      calls: updatedCalls,
+      last_called_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('employees')
+      .update({ bank_details: updatedBankDetails })
+      .eq('id', employeeId)
+      .eq('user_id', userId);
+
+    if (error) return { success: false, error };
+    return { success: true, error: null };
+  }
 }
+

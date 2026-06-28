@@ -15,8 +15,10 @@ interface PayrollData {
   scheduledHours: number;
   workedHours: number;
   overtimeHours: number;
+  nightHours: number;
   basePay: number;
   overtimePay: number;
+  nightPay: number;
   adjustmentsTotal: number;
   totalPay: number;
 }
@@ -33,6 +35,45 @@ function calculateDurationInMs(entry: TimeClockEntry): number {
         if (breakEnd > breakStart) breakDuration = breakEnd - breakStart;
     }
     return Math.max(0, totalDuration - breakDuration);
+}
+
+function calculateNightDurationInMs(entry: TimeClockEntry): number {
+    if (!entry.clock_out_time) return 0;
+    
+    const getNightMs = (startMs: number, endMs: number) => {
+        let current = startMs;
+        let nightMs = 0;
+        while (current < endMs) {
+            const date = new Date(current);
+            const hour = date.getHours();
+            // Night shift: 22h to 05h
+            const isNight = hour >= 22 || hour < 5;
+            
+            // Advance to the next hour boundary
+            const nextHourDate = new Date(current);
+            nextHourDate.setMinutes(0, 0, 0);
+            nextHourDate.setHours(hour + 1);
+            const nextHourMs = nextHourDate.getTime();
+            
+            const segmentEnd = Math.min(endMs, nextHourMs);
+            if (isNight) {
+                nightMs += (segmentEnd - current);
+            }
+            current = segmentEnd;
+        }
+        return nightMs;
+    };
+    
+    let totalNightMs = getNightMs(new Date(entry.clock_in_time).getTime(), new Date(entry.clock_out_time).getTime());
+    
+    let breakNightMs = 0;
+    if (entry.break_start_time && entry.break_end_time) {
+        breakNightMs = getNightMs(new Date(entry.break_start_time).getTime(), new Date(entry.break_end_time).getTime());
+    }
+    
+    // In Brazil, 1 night hour = 52.5 minutes. So the worked time in night is multiplied by (60 / 52.5) ~ 1.142857
+    const netNightMs = Math.max(0, totalNightMs - breakNightMs);
+    return netNightMs;
 }
 
 @Component({
@@ -184,8 +225,10 @@ export class PayrollComponent {
       }
 
       const totalWorkedMs = employeeEntries.reduce((acc, entry) => acc + calculateDurationInMs(entry), 0);
+      const totalNightMs = employeeEntries.reduce((acc, entry) => acc + calculateNightDurationInMs(entry), 0);
       const workedHours = totalWorkedMs / (1000 * 60 * 60);
       const overtimeHours = totalOvertimeMs / (1000 * 60 * 60);
+      const nightHours = (totalNightMs / (1000 * 60 * 60)) * (60 / 52.5); // 1.1428 multiplier for Brazilian night hour
 
       const employeeShifts = schedules.flatMap(s => s.shifts).filter(sh => sh.employee_id === employee.id && !sh.is_day_off);
       const scheduledHours = employeeShifts.reduce((acc, shift) => {
@@ -195,19 +238,23 @@ export class PayrollComponent {
           return acc + (end > start ? (end - start) / (1000 * 60 * 60) : 0);
       }, 0);
 
-      let basePay = 0, overtimePay = 0;
+      let basePay = 0, overtimePay = 0, nightPay = 0;
       const { salary_type, salary_rate, overtime_rate_multiplier } = employee;
 
       if (salary_type && salary_rate) {
           const regularHours = workedHours - overtimeHours;
+          const effectiveHourlyRate = salary_type === 'mensal' ? (salary_rate / 220) : salary_rate;
+          
           if (salary_type === 'mensal') {
-              const effectiveHourlyRate = salary_rate / 220; 
               basePay = salary_rate; // Fixed monthly salary
               overtimePay = overtimeHours * effectiveHourlyRate * (overtime_rate_multiplier || 1.5);
           } else { 
               basePay = regularHours * salary_rate;
               overtimePay = overtimeHours * salary_rate * (overtime_rate_multiplier || 1.5);
           }
+          
+          // Night Pay (Adicional Noturno) typically 20% on top of the hourly rate for the calculated night hours
+          nightPay = nightHours * effectiveHourlyRate * 0.20;
       }
 
       return {
@@ -215,10 +262,12 @@ export class PayrollComponent {
           scheduledHours,
           workedHours,
           overtimeHours,
+          nightHours,
           basePay,
           overtimePay,
+          nightPay,
           adjustmentsTotal,
-          totalPay: basePay + overtimePay + adjustmentsTotal
+          totalPay: basePay + overtimePay + nightPay + adjustmentsTotal
       };
     }).filter(p => p.workedHours > 0 || p.scheduledHours > 0 || p.adjustmentsTotal !== 0);
   });
@@ -227,8 +276,10 @@ export class PayrollComponent {
   totalScheduledHours = computed(() => this.payrollData().reduce((acc, p) => acc + p.scheduledHours, 0));
   totalWorkedHours = computed(() => this.payrollData().reduce((acc, p) => acc + p.workedHours, 0));
   totalOvertimeHours = computed(() => this.payrollData().reduce((acc, p) => acc + p.overtimeHours, 0));
+  totalNightHours = computed(() => this.payrollData().reduce((acc, p) => acc + p.nightHours, 0));
   totalBasePay = computed(() => this.payrollData().reduce((acc, p) => acc + p.basePay, 0));
   totalOvertimePay = computed(() => this.payrollData().reduce((acc, p) => acc + p.overtimePay, 0));
+  totalNightPay = computed(() => this.payrollData().reduce((acc, p) => acc + p.nightPay, 0));
   totalAdjustments = computed(() => this.payrollData().reduce((acc, p) => acc + p.adjustmentsTotal, 0));
   grandTotalPay = computed(() => this.payrollData().reduce((acc, p) => acc + p.totalPay, 0));
   

@@ -54,6 +54,13 @@
             <span translate="no" class="notranslate material-symbols-outlined text-lg">history</span>
             <span>Transações & Taxas</span>
           </button>
+
+          <button (click)="view.set('extras')" 
+                  class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap"
+                  [class.bg-brand]="view() === 'extras'" [class.text-white]="view() === 'extras'" [class.shadow-md]="view() === 'extras'" [class.text-muted]="view() !== 'extras'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">group</span>
+            <span>Acerto de Extras</span>
+          </button>
         </div>
       </div>
     </div>
@@ -604,6 +611,75 @@
             </div>
           </div>
         }
+        @case ('extras') {
+          <div class="chef-surface h-full flex flex-col border-subtle overflow-hidden">
+            <div class="p-6 border-b border-subtle flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-surface/40 backdrop-blur-xl">
+                <div>
+                    <h2 class="text-xl font-black text-title uppercase tracking-tight">Acerto de Extras (Freelancers)</h2>
+                    <p class="text-xs text-muted font-medium">Gestão de pagamentos rápidos para freelancers e extras.</p>
+                </div>
+                <div class="w-full xl:w-96 relative">
+                    <span translate="no" class="notranslate material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted">search</span>
+                    <input type="text" [value]="extraSearchTerm()" (input)="extraSearchTerm.set($any($event.target).value)" placeholder="Buscar freelancer para pagamento..." class="w-full bg-surface-elevated border border-strong rounded-xl pl-10 pr-4 py-3 text-title focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all shadow-inner">
+                </div>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                @if (freelancerEmployees().length === 0) {
+                     <div class="flex flex-col items-center justify-center h-64 text-center opacity-40">
+                        <span translate="no" class="notranslate material-symbols-outlined text-6xl mb-4">group_off</span>
+                        <p class="text-sm font-bold text-muted">Nenhum funcionário cadastrado como Freelancer/Extra.</p>
+                     </div>
+                } @else {
+                    <div class="space-y-4">
+                        @for (emp of freelancerEmployees(); track emp.id) {
+                            <div class="bg-surface border border-subtle p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-md transition-all">
+                                <div class="flex items-center gap-4">
+                                  <div class="w-12 h-12 rounded-xl bg-surface-elevated flex items-center justify-center border border-strong shadow-inner">
+                                       <span translate="no" class="notranslate material-symbols-outlined text-muted">person</span>
+                                  </div>
+                                  <div class="flex flex-col">
+                                      <span class="text-sm font-black text-title">{{ emp.name }}</span>
+                                      <div class="flex items-center gap-2">
+                                          <span class="text-xs text-muted font-bold">{{ emp.role || 'Freelancer' }}</span>
+                                          @if(getAverageRating(emp) > 0) {
+                                              <span class="flex items-center gap-0.5 text-warning bg-warning/10 px-1.5 py-0.5 rounded text-[9px] font-black">
+                                                  <span translate="no" class="notranslate material-symbols-outlined text-[10px] star-icon" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24">star</span>
+                                                  {{ getAverageRating(emp) | number:'1.1-1' }}
+                                              </span>
+                                          }
+                                      </div>
+                                      @if(emp.pix_key) {
+                                          <span class="text-[10px] text-brand font-mono font-bold">PIX: {{ emp.pix_key }}</span>
+                                      } @else if(emp.bank_details?.pix) {
+                                          <span class="text-[10px] text-brand font-mono font-bold">PIX: {{ emp.bank_details?.pix }}</span>
+                                      } @else {
+                                          <span class="text-[10px] text-danger font-mono font-bold">PIX Não Cadastrado</span>
+                                      }
+                                  </div>
+                                </div>
+                                <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                                   <div class="flex items-center gap-2">
+                                     <span class="text-[9px] uppercase font-black text-muted tracking-widest">Valor Diária</span>
+                                     <span class="text-lg font-black font-mono tracking-tight text-title">{{ (emp.salary_rate || 0) | currency:'BRL' }}</span>
+                                   </div>
+                                   <div class="flex items-center gap-2">
+                                     <button (click)="openPayExtraModal(emp)" class="w-full md:w-auto btn-primary py-2 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-brand/20 active:scale-95 transition-all flex items-center gap-2 justify-center">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-sm">payments</span>
+                                        Pagar Diária
+                                     </button>
+                                     <a [href]="getWhatsAppLink(emp)" target="_blank" class="w-full md:w-auto bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 py-2 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                                        Convocar
+                                     </a>
+                                   </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+          </div>
+        }
       }
     }
   </div>
@@ -618,6 +694,50 @@
     (closeModal)="closeQuickSalePaymentModal()"
     (paymentFinalized)="onQuickSalePaymentFinalized()">
   </app-payment-modal>
+}
+
+<!-- Pay Extra/Freelancer Modal -->
+@if (selectedExtraForPayment(); as emp) {
+  <div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" (click)="closePayExtraModal()">
+     <div class="chef-surface border-subtle p-8 w-full max-w-sm shadow-2xl transform transition-all animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+        <h3 class="text-2xl font-black text-title mb-6 text-center uppercase tracking-tight">Pagar Extra</h3>
+        <div class="space-y-6">
+            <div class="bg-surface-elevated p-4 rounded-xl border border-subtle">
+                <p class="text-[10px] text-muted font-black uppercase tracking-widest mb-1">Funcionário</p>
+                <p class="font-black text-title text-sm">{{ emp.name }}</p>
+                @if(emp.pix_key || emp.bank_details?.pix) {
+                    <p class="text-[10px] text-brand font-mono font-bold mt-1">PIX: {{ emp.pix_key || emp.bank_details?.pix }}</p>
+                }
+            </div>
+
+            <div>
+                <label class="block text-[9px] font-black text-muted uppercase tracking-widest mb-2">Valor do Pagamento</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-xs">R$</span>
+                    <input type="number" [value]="extraPaymentAmount()" (input)="extraPaymentAmount.set(+$any($event.target).value)" placeholder="0.00" class="w-full bg-surface-elevated border border-subtle rounded-xl px-4 py-3 pl-10 text-sm text-title font-bold focus:ring-2 focus:ring-brand outline-none transition-all">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[9px] font-black text-muted uppercase tracking-widest mb-2 text-center">Avaliação do Turno (Opcional)</label>
+                <div class="flex items-center justify-center gap-2">
+                    @for(star of [1,2,3,4,5]; track star) {
+                        <button (click)="extraPaymentRating.set(star)" class="transition-all hover:scale-110 active:scale-95 text-2xl" [class.text-warning]="extraPaymentRating() >= star" [class.text-muted]="extraPaymentRating() < star" [class.opacity-30]="extraPaymentRating() < star">
+                            <span translate="no" class="notranslate material-symbols-outlined star-icon" [style.font-variation-settings]="extraPaymentRating() >= star ? '\'FILL\' 1, \'wght\' 400, \'GRAD\' 0, \'opsz\' 24' : '\'FILL\' 0, \'wght\' 400, \'GRAD\' 0, \'opsz\' 24'">star</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <button (click)="confirmPayExtra()" [disabled]="!extraPaymentAmount()" class="w-full py-4 btn-primary rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-brand/20 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                <span translate="no" class="notranslate material-symbols-outlined text-sm">check_circle</span> Confirmar Pagamento
+            </button>
+            <button (click)="closePayExtraModal()" class="w-full py-3 bg-surface hover:bg-surface-elevated text-title border border-subtle rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
+                Cancelar
+            </button>
+        </div>
+     </div>
+  </div>
 }
 
 <!-- Standard Modals Reuse -->

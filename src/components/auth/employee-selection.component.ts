@@ -59,20 +59,14 @@ export class EmployeeSelectionComponent {
   }
 
   selectEmployee(employee: Employee) {
-    if (employee.pin) {
-      // PIN required, show PIN modal
-      this.selectedEmployee.set(employee);
-      this.pinInput.set('');
-      this.loginError.set(false);
-    } else { // No PIN required
-      if (!employee.current_clock_in_id) {
-        // No PIN, not clocked in -> show clock-in confirmation
-        this.confirmationEmployee.set(employee);
-      } else {
-        // No PIN, already clocked in -> just log in
-        this.handleSuccessfulLogin(employee);
-      }
+    if (!employee.pin || employee.pin.trim() === '') {
+        this.notificationService.show('Este funcionário não possui um PIN configurado. Solicite ao gerente.', 'error');
+        return;
     }
+    // PIN required, show PIN modal
+    this.selectedEmployee.set(employee);
+    this.pinInput.set('');
+    this.loginError.set(false);
   }
   
   private handleSuccessfulLogin(employee: Employee) {

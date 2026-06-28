@@ -81,10 +81,36 @@ export class EmployeesComponent implements OnInit {
       return alertsList;
   });
 
+  activeTab = signal<'regulares' | 'freelancers'>('regulares');
+
+  totalFreelancerExpenses = computed(() => {
+    let total = 0;
+    const allExtras = this.employees().filter(e => e.salary_type === 'freelancer' || e.roles?.name?.toLowerCase().includes('freelancer') || e.roles?.name?.toLowerCase().includes('extra'));
+    for (const emp of allExtras) {
+        if (emp.bank_details?.calls) {
+            for (const call of emp.bank_details.calls) {
+                if (call.amount) {
+                    total += call.amount;
+                }
+            }
+        }
+    }
+    return total;
+  });
+
   filteredEmployees = computed(() => {
     const term = this.employeeSearchTerm().toLowerCase();
-    if (!term) return this.employees();
-    return this.employees().filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term));
+    const tab = this.activeTab();
+    
+    let emps = this.employees();
+    if (tab === 'regulares') {
+      emps = emps.filter(e => e.salary_type !== 'freelancer' && !e.roles?.name?.toLowerCase().includes('freelancer') && !e.roles?.name?.toLowerCase().includes('extra'));
+    } else {
+      emps = emps.filter(e => e.salary_type === 'freelancer' || e.roles?.name?.toLowerCase().includes('freelancer') || e.roles?.name?.toLowerCase().includes('extra'));
+    }
+
+    if (!term) return emps;
+    return emps.filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term));
   });
 
   ngOnInit() {
@@ -107,6 +133,91 @@ export class EmployeesComponent implements OnInit {
   openDetailsModal(employee: Employee & { role: string }) {
     this.selectedEmployeeForDetails.set(employee);
     this.isDetailsModalOpen.set(true);
+  }
+
+  getAverageRating(emp: Employee): number {
+    const ratings = emp.bank_details?.ratings;
+    if (!ratings || ratings.length === 0) return 0;
+    const sum = ratings.reduce((a, b) => a + b, 0);
+    return sum / ratings.length;
+  }
+
+  async convocarFreelancer(emp: Employee) {
+    const phone = emp.phone ? emp.phone.replace(/\D/g, '') : '';
+    if (phone) {
+        const message = encodeURIComponent(`Olá ${emp.name}, temos disponibilidade para um turno extra hoje. Tem interesse em cobrir?`);
+        window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const calls = emp.bank_details?.calls || [];
+    
+    // Check if already called today
+    if (calls.some(c => c.date === todayStr)) return;
+    
+    const newCall = { id: crypto.randomUUID(), date: todayStr, status: 'convocado' as const };
+    const updatedBankDetails = {
+        ...(emp.bank_details || {}),
+        calls: [...calls, newCall],
+        last_called_at: new Date().toISOString()
+    };
+    
+    try {
+        const res = await this.settingsDataService.updateEmployee({ ...emp, bank_details: updatedBankDetails }, null);
+        if (res.error) throw res.error;
+        this.supabaseStateService.loadBackOfficeData();
+        this.notificationService.show(`Convocação registrada para ${emp.name}`, 'success');
+    } catch (e: any) {
+        this.notificationService.show(e.message || 'Erro ao registrar convocação', 'error');
+    }
+  }
+
+  isConvocadoToday(emp: Employee): boolean {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const calls = emp.bank_details?.calls || [];
+      const todayCall = calls.find(c => c.date === todayStr);
+      return todayCall ? true : false;
+  }
+  
+  hasAttendedToday(emp: Employee): boolean {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const calls = emp.bank_details?.calls || [];
+      const todayCall = calls.find(c => c.date === todayStr);
+      return todayCall?.status === 'compareceu';
+  }
+
+  async markFreelancerAbsence(emp: Employee) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const calls = emp.bank_details?.calls || [];
+      const todayCallIndex = calls.findIndex(c => c.date === todayStr);
+      
+      let updatedCalls = [...calls];
+      if (todayCallIndex >= 0) {
+          updatedCalls[todayCallIndex] = { ...updatedCalls[todayCallIndex], status: 'faltou' };
+      } else {
+          updatedCalls.push({ id: crypto.randomUUID(), date: todayStr, status: 'faltou' });
+      }
+
+      const updatedBankDetails = {
+          ...(emp.bank_details || {}),
+          calls: updatedCalls
+      };
+      
+      try {
+          const res = await this.settingsDataService.updateEmployee({ ...emp, bank_details: updatedBankDetails }, null);
+          if (res.error) throw res.error;
+          this.supabaseStateService.loadBackOfficeData();
+          this.notificationService.show(`Falta registrada para ${emp.name}`, 'info');
+      } catch (e: any) {
+          this.notificationService.show(e.message || 'Erro ao registrar falta', 'error');
+      }
+  }
+
+  getWhatsAppLink(emp: Employee): string {
+    const phone = emp.phone ? emp.phone.replace(/\D/g, '') : '';
+    if (!phone) return '#';
+    const message = encodeURIComponent(`Olá ${emp.name}, temos disponibilidade para um turno extra. Tem interesse em cobrir?`);
+    return `https://wa.me/55${phone}?text=${message}`;
   }
 
   openAddModal() {

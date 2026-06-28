@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal, effect, OnInit, OnDestroy, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrintingService } from '../../services/printing.service';
-import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory, OrderItem } from '../../models/db.models';
+import { Category, Order, Recipe, Transaction, CashierClosing, Table, DiscountType, Customer, FinancialCategory, OrderItem, Employee } from '../../models/db.models';
 import { PricingService } from '../../services/pricing.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { CashierDataService } from '../../services/cashier-data.service';
@@ -22,7 +22,7 @@ import { PosStateService } from '../../services/pos-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { FormsModule } from '@angular/forms';
 
-type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint' | 'transactions';
+type CashierView = 'payingTables' | 'quickSale' | 'cashDrawer' | 'reprint' | 'transactions' | 'extras';
 type CashDrawerView = 'movement' | 'closing';
 
 interface CartItem {
@@ -129,6 +129,31 @@ export class CashierComponent implements OnInit, OnDestroy {
   isTableOptionsModalOpen = signal(false);
   isDetailsModalOpen = signal(false);
   isCustomerSelectModalOpen = signal(false);
+
+  extraSearchTerm = signal<string>('');
+
+  // Extra Payment State
+  freelancerEmployees = computed(() => {
+    const term = this.extraSearchTerm().toLowerCase();
+    
+    // We only show freelancers who were called today by default, 
+    // unless the user is searching (then show all matching to allow manual add).
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    const allExtras = this.hrState.employees().filter(e => e.salary_type === 'freelancer' || e.roles?.name?.toLowerCase().includes('freelancer') || e.roles?.name?.toLowerCase().includes('extra'));
+    
+    if (term) {
+        return allExtras.filter(e => e.name.toLowerCase().includes(term) || (e.roles?.name || '').toLowerCase().includes(term));
+    }
+    
+    return allExtras.filter(e => {
+        const calls = e.bank_details?.calls || [];
+        return calls.some(c => c.date === todayStr);
+    });
+  });
+  selectedExtraForPayment = signal<Employee | null>(null);
+  extraPaymentAmount = signal<number | null>(null);
+  extraPaymentRating = signal<number>(0);
 
   selectedTableForPayment = signal<Table | null>(null);
   selectedTabForPayment = signal<Order | null>(null);
@@ -408,6 +433,58 @@ export class CashierComponent implements OnInit, OnDestroy {
 
   getVisibleItems(items?: OrderItem[]): OrderItem[] {
       return (items || []).filter(item => !this.isAuxiliaryItem(item));
+  }
+
+  // --- Extra Payment Methods ---
+  openPayExtraModal(emp: Employee) {
+    this.selectedExtraForPayment.set(emp);
+    this.extraPaymentAmount.set(emp.salary_rate || 0);
+  }
+
+  getWhatsAppLink(emp: Employee): string {
+    const phone = emp.phone ? emp.phone.replace(/\D/g, '') : '';
+    if (!phone) return '#';
+    const message = encodeURIComponent(`Olá ${emp.name}, temos disponibilidade para um turno extra. Tem interesse em cobrir?`);
+    return `https://wa.me/55${phone}?text=${message}`;
+  }
+
+  getAverageRating(emp: Employee): number {
+    const ratings = emp.bank_details?.ratings;
+    if (!ratings || ratings.length === 0) return 0;
+    const sum = ratings.reduce((a, b) => a + b, 0);
+    return sum / ratings.length;
+  }
+
+  closePayExtraModal() {
+    this.selectedExtraForPayment.set(null);
+    this.extraPaymentAmount.set(null);
+    this.extraPaymentRating.set(0);
+  }
+
+  async confirmPayExtra() {
+    const emp = this.selectedExtraForPayment();
+    const amount = this.extraPaymentAmount();
+    const rating = this.extraPaymentRating();
+    
+    if (!emp || !amount || amount <= 0) return;
+
+    this.notificationService.show('Processando pagamento...', 'info');
+    
+    try {
+      const description = `Pagamento Extra/Freelancer: ${emp.name}`;
+      const res = await this.cashierDataService.logTransaction(description, amount, 'Despesa');
+      
+      if (res.error) throw res.error;
+      
+      await this.cashierDataService.rateFreelancer(emp.id, rating, amount, emp.bank_details);
+
+      this.notificationService.show(`Pagamento de R$ ${amount.toFixed(2)} registrado com sucesso para ${emp.name}`, 'success');
+      
+      this.closePayExtraModal();
+    } catch (e: any) {
+       console.error("Error paying extra:", e);
+       this.notificationService.show(e.message || 'Erro ao registrar pagamento', 'error');
+    }
   }
 
   // --- Table Payment Methods ---
