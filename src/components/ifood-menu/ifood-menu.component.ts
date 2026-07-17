@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { PublicDataService } from '../../services/public-data.service';
 import { supabase } from '../../services/supabase-client';
+import { MenuStateService } from '../../services/menu-state.service';
 
 type SyncStatus = 'synced' | 'unsynced' | 'modified' | 'error' | 'syncing';
 
@@ -33,6 +34,7 @@ interface MappedLocalItem {
 export class IfoodMenuComponent implements OnInit {
   private ifoodState = inject(IfoodStateService);
   private recipeState = inject(RecipeStateService);
+  private menuState = inject(MenuStateService);
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
   private recipeDataService = inject(RecipeDataService);
@@ -408,10 +410,57 @@ export class IfoodMenuComponent implements OnInit {
     const productId = syncInfo?.ifood_product_id || `00000000-0000-4000-8000-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     const itemId = syncInfo?.ifood_item_id || `11111111-1111-4111-8111-${recipe.id.replace(/-/g, '').substring(0, 12)}`;
     
+    // Attempt to map optionGroups from the recipe's menu_item
+    let mappedOptionGroups: any[] = [];
+    let mappedOptions: any[] = [];
+    let productsArray = [ { id: productId, externalCode, name: recipe.name, description: recipe.description || '', serving: 'SERVES_1' } ];
+
+    const menuItem = this.menuState.items().find(i => i.recipe_id === recipe.id);
+    if (menuItem) {
+        const itemOptions = this.menuState.options().filter(o => o.menu_item_id === menuItem.id);
+        itemOptions.forEach(optGroup => {
+            mappedOptionGroups.push({
+                id: optGroup.id,
+                name: optGroup.name,
+                minQuantity: optGroup.min_choices || 0,
+                maxQuantity: optGroup.max_choices || 1,
+                status: 'AVAILABLE',
+                sequence: optGroup.display_order || 0
+            });
+
+            const choices = this.menuState.optionChoices().filter(c => c.menu_item_option_id === optGroup.id);
+            choices.forEach((choice, index) => {
+                const choiceProductId = choice.recipe_id || `00000000-0000-4000-8000-${choice.id.replace(/-/g, '').substring(0, 12)}`;
+                mappedOptions.push({
+                    id: choice.id,
+                    status: 'AVAILABLE',
+                    index: choice.display_order || index,
+                    productId: choiceProductId,
+                    price: { value: choice.additional_price || 0, originalValue: choice.additional_price || 0 },
+                    externalCode: choice.id,
+                    optionGroupId: optGroup.id
+                });
+
+                // Choice products must also exist in the products array
+                const choiceRecipe = choice.recipe_id ? this.recipeState.recipes().find(r => r.id === choice.recipe_id) : null;
+                const choiceName = choice.custom_name || choiceRecipe?.name || 'Opção';
+                
+                productsArray.push({
+                    id: choiceProductId,
+                    externalCode: choice.id,
+                    name: choiceName,
+                    description: '',
+                    serving: 'SERVES_1'
+                });
+            });
+        });
+    }
+
     return {
       item: { id: itemId, type: "DEFAULT", categoryId, status: "AVAILABLE", price: { value: recipe.price, originalValue: recipe.price }, externalCode, index: 0, productId },
-      products: [ { id: productId, externalCode, name: recipe.name, description: recipe.description || '', serving: 'SERVES_1' } ],
-      optionGroups: [], options: []
+      products: productsArray,
+      optionGroups: mappedOptionGroups, 
+      options: mappedOptions
     };
   }
   

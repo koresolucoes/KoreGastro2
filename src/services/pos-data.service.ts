@@ -211,20 +211,14 @@ export class PosDataService {
             status: "PENDENTE" as OrderItemStatus,
             station_id: prep.station_id,
             status_timestamps,
-            price: isPrimary ? effectivePrice : 0,
-            original_price: isPrimary ? calculatedOriginalPrice : 0,
+            price: effectivePrice,
+            original_price: calculatedOriginalPrice,
             group_id: groupId,
             user_id: userId,
-            discount_type:
-              isPrimary && effectivePrice < calculatedOriginalPrice
-                ? "amount"
-                : null,
-            discount_value:
-              isPrimary && effectivePrice < calculatedOriginalPrice
-                ? calculatedOriginalPrice - effectivePrice
-                : null,
+            discount_type: effectivePrice < calculatedOriginalPrice ? "amount" : null,
+            discount_value: effectivePrice < calculatedOriginalPrice ? calculatedOriginalPrice - effectivePrice : null,
             added_by_employee_id: employeeId,
-            unit_cost: isPrimary ? currentCost : 0,
+            unit_cost: currentCost,
           };
         });
       }

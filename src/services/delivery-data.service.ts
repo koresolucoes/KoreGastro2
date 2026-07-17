@@ -253,7 +253,7 @@ export class DeliveryDataService {
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
             return recipePreps.map((prep: any, prepIndex: number) => ({
-                order_id: orderId, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, 
+                order_id: orderId, recipe_id: prepIndex === 0 ? item.recipe.id : null, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, 
                 notes: prepIndex === 0 ? item.notes : null, // Add notes only to the first item of a group
                 status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
                 price: effectivePrice / recipePreps.length, 

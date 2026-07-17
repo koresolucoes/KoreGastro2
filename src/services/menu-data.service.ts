@@ -214,11 +214,54 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
 
+    let finalRecipeId = choice.recipe_id;
+
+    if (!finalRecipeId) {
+        // Find or create a dummy recipe
+        const { data: dummyRecipe } = await supabase.from('recipes')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('name', 'Opção Personalizada (Sistema)')
+            .limit(1)
+            .single();
+        
+        if (dummyRecipe) {
+            finalRecipeId = dummyRecipe.id;
+        } else {
+            // Need a category
+            const { data: cat } = await supabase.from('categories')
+                .select('id')
+                .eq('user_id', userId)
+                .limit(1)
+                .single();
+                
+            const catId = cat ? cat.id : '00000000-0000-0000-0000-000000000000'; // fallback, might fail but usually cat exists
+            
+            const { data: newDummy, error: dummyErr } = await supabase.from('recipes')
+                .insert({
+                    user_id: userId,
+                    name: 'Opção Personalizada (Sistema)',
+                    price: 0,
+                    category_id: catId,
+                    is_available: false,
+                    is_sub_recipe: true,
+                    unit: 'un'
+                })
+                .select('id')
+                .single();
+            if (newDummy) {
+                finalRecipeId = newDummy.id;
+            } else {
+                console.error('Error creating dummy recipe', dummyErr);
+            }
+        }
+    }
+
     const dbPayload: any = {
       id: choice.id || undefined,
       user_id: userId, 
       menu_item_option_id: choice.menu_item_option_id,
-      recipe_id: choice.recipe_id || null,
+      recipe_id: finalRecipeId,
       custom_name: choice.custom_name,
       additional_price: choice.additional_price,
       display_order: choice.display_order,

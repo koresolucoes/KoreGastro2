@@ -498,10 +498,10 @@ export class CashierDataService {
                 recipe_id: item.recipe.id,
                 name: `${item.recipe.name} (${prep.name})`,
                 quantity: item.quantity,
-                price: isPrimary ? item.effectivePrice : item.originalPrice,
-                original_price: isPrimary ? item.originalPrice : item.originalPrice,
-                discount_type: (isPrimary && (item.effectivePrice < item.originalPrice)) || !isPrimary ? 'amount' : null,
-                discount_value: isPrimary ? (item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null) : item.originalPrice,
+                price: item.effectivePrice,
+                original_price: item.originalPrice,
+                discount_type: item.effectivePrice < item.originalPrice ? "amount" : null,
+                discount_value: item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null,
                 notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
                 status: 'SERVIDO' as OrderItemStatus,
                 station_id: prep.station_id,
@@ -617,12 +617,12 @@ export class CashierDataService {
                 status: 'PENDENTE' as OrderItemStatus, 
                 station_id: prep.station_id, 
                 status_timestamps, 
-                price: isPrimary ? item.effectivePrice : item.originalPrice, 
-                original_price: isPrimary ? item.originalPrice : item.originalPrice,
+                price: item.effectivePrice, 
+                original_price: item.originalPrice,
                 group_id: groupId, 
                 user_id: userId,
-                discount_type: (isPrimary && (item.effectivePrice < item.originalPrice)) || !isPrimary ? 'amount' : null, 
-                discount_value: isPrimary ? (item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null) : item.originalPrice
+                discount_type: item.effectivePrice < item.originalPrice ? "amount" : null, 
+                discount_value: item.effectivePrice < item.originalPrice ? (item.originalPrice - item.effectivePrice) : null
                 };
             });
         } else if (fallbackStationId) {
@@ -711,11 +711,11 @@ export class CashierDataService {
                 return {
                 order_id: order.id, recipe_id: item.recipe.id, name: `${item.recipe.name} (${prep.name})`, quantity: item.quantity, notes: `${item.notes || ''} [AUX_RECIPE_ID:${item.recipe.id}] [AUX_PREP_IDX:${index}]`.trim(),
                 status: 'PENDENTE' as OrderItemStatus, station_id: prep.station_id, status_timestamps, 
-                price: isPrimary ? item.effectivePrice : item.recipe.price, 
-                original_price: isPrimary ? item.recipe.price : item.recipe.price,
+                price: item.effectivePrice, 
+                original_price: item.recipe.price,
                 group_id: groupId, user_id: userId,
-                discount_type: (isPrimary && (item.effectivePrice < item.recipe.price)) || !isPrimary ? 'amount' : null,
-                discount_value: isPrimary ? (item.effectivePrice < item.recipe.price ? (item.recipe.price - item.effectivePrice) : null) : item.recipe.price
+                discount_type: item.effectivePrice < item.recipe.price ? "amount" : null,
+                discount_value: item.effectivePrice < item.recipe.price ? (item.recipe.price - item.effectivePrice) : null
                 };
             });
         }

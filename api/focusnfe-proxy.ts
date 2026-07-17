@@ -155,7 +155,9 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string 
         presenca_comprador: "1",
         natureza_operacao: "VENDA AO CONSUMIDOR",
         cpf_destinatario: order.customers?.cpf?.replace(/[^\d]/g, '') || '',
-        items: (order.order_items || []).map((item: any, index: number) => {
+        items: (order.order_items || [])
+            .filter((item: any) => item.price > 0 && !(item.notes?.includes("[AUX_PREP_IDX:") && !item.notes?.includes("[AUX_PREP_IDX:0]")))
+            .map((item: any, index: number) => {
             const total = item.price * item.quantity;
             const estimatedTaxes = total * 0.30; // Estimate 30% for IBPT
             return {
