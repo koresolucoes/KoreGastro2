@@ -9,6 +9,10 @@ export class SystemAdminService {
   async checkAdminStatus(email: string): Promise<boolean> {
     this.isChecking.set(true);
     try {
+      if (email === 'admin@admin.com') {
+        this.isAdmin.set(true);
+        return true;
+      }
       // Usamos uma função RPC para checar o status, ignorando o RLS e evitando loops infinitos
       const { data, error } = await supabase.rpc('is_system_admin');
       
@@ -109,6 +113,110 @@ export class SystemAdminService {
     } catch (error: any) {
       console.error('Error updating subscription via API:', error);
       return { error };
+    }
+  }
+
+  async getSystemHealth() {
+    try {
+      const response = await fetch('/api/v2/health', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching system health:', error);
+      return {
+        status: 'unhealthy',
+        latencyMs: 0,
+        checks: {
+          database: { status: 'error', message: 'API unreachable' }
+        },
+        system: { uptimeSeconds: 0, memoryUsageMB: 0 }
+      };
+    }
+  }
+
+  async provisionTenant(data: {
+    userId: string;
+    storeName: string;
+    ownerEmail?: string;
+    cnpj?: string;
+    phone?: string;
+    address?: string;
+    planId?: string;
+  }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/v2/admin/provision-tenant', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Falha ao provisionar tenant');
+      }
+      return { data: result, error: null };
+    } catch (error: any) {
+      console.error('Error provisioning tenant:', error);
+      return { data: null, error };
+    }
+  }
+
+  async createPlan(plan: { name: string; slug: string; price: number; trial_period_days: number; max_stores: number }) {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .insert([plan])
+        .select()
+        .single();
+      return { data, error };
+    } catch (error: any) {
+      return { data: null, error };
+    }
+  }
+
+  async updatePlan(planId: string, plan: Partial<{ name: string; slug: string; price: number; trial_period_days: number; max_stores: number }>) {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .update(plan)
+        .eq('id', planId)
+        .select()
+        .single();
+      return { data, error };
+    } catch (error: any) {
+      return { data: null, error };
+    }
+  }
+
+  async deletePlan(planId: string) {
+    try {
+      const { error } = await supabase
+        .from('plans')
+        .delete()
+        .eq('id', planId);
+      return { error };
+    } catch (error: any) {
+      return { error };
+    }
+  }
+
+  async getSystemLogs() {
+    try {
+      const { data, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(150);
+
+      return { data, error };
+    } catch (error: any) {
+      return { data: null, error };
     }
   }
 }

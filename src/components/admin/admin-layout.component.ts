@@ -17,19 +17,53 @@ import { AuthService } from '../../services/auth.service';
             ChefOS Admin
           </h1>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-          <a routerLink="/admin/dashboard" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
-            <span translate="no" class="notranslate material-symbols-outlined">dashboard</span>
-            Visão Geral
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'overview' }" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" [routerLinkActiveOptions]="{ exact: false }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg">dashboard</span>
+            Visão Geral & MRR
           </a>
-          <a routerLink="/admin/manage" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
-            <span translate="no" class="notranslate material-symbols-outlined">manage_accounts</span>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'health' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-emerald-400">monitor_heart</span>
+            Saúde & Observabilidade
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'users' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-blue-400">group</span>
+            Usuários & Lojas
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'provisioning' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-amber-400">rocket_launch</span>
+            Provisionamento
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'plans' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-indigo-400">loyalty</span>
+            Planos & Preços
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'financial' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-teal-400">payments</span>
+            Financeiro SaaS
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'logs' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-rose-400">terminal</span>
+            Logs & Telemetria
+          </a>
+
+          <a routerLink="/admin/manage" routerLinkActive="bg-purple-600/20 text-purple-400 border-purple-500/50" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-purple-400">manage_accounts</span>
             Administradores
           </a>
-          <a routerLink="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent mt-8">
-            <span translate="no" class="notranslate material-symbols-outlined">exit_to_app</span>
-            Sair do Admin
-          </a>
+
+          <div class="pt-6 border-t border-gray-800/80 mt-4">
+            <a routerLink="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+              <span translate="no" class="notranslate material-symbols-outlined text-lg">exit_to_app</span>
+              Sair do Admin
+            </a>
+          </div>
         </nav>
       </aside>
       <!-- Main Content -->

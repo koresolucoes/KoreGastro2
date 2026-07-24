@@ -1,15 +1,18 @@
 
-import { ErrorHandler, Injectable } from '@angular/core';
+import { ErrorHandler, Injectable, inject } from '@angular/core';
+import { LoggerService } from './logger.service';
 
 @Injectable()
 export class GlobalErrorHandler implements ErrorHandler {
+  private logger = inject(LoggerService);
+
   handleError(error: any): void {
     const chunkFailedMessage = /Loading chunk [\d]+ failed/;
     const dynamicImportFailedMessage = /Failed to fetch dynamically imported module/;
-    const message = error ? error.message ? error.message : error.toString() : '';
+    const message = error ? (error.message ? error.message : error.toString()) : '';
 
     if (chunkFailedMessage.test(message) || dynamicImportFailedMessage.test(message)) {
-      console.error('Erro de carregamento de módulo detectado. Tentando recarregar...', error);
+      this.logger.warn('Erro de carregamento de módulo detectado. Tentando recarregar...', { error: message });
       
       // Verifica se já tentamos recarregar recentemente (evita loop infinito)
       const lastReload = sessionStorage.getItem('last_chunk_error_reload');
@@ -20,8 +23,11 @@ export class GlobalErrorHandler implements ErrorHandler {
           window.location.reload();
       }
     } else {
-        // Loga outros erros normalmente
-        console.error('Global Error:', error);
+        // Loga outros erros no serviço central de observabilidade
+        this.logger.error('Uncaught Global Error', error, {
+          source: 'GlobalErrorHandler'
+        });
     }
   }
 }
+

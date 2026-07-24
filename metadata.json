@@ -1,5 +1,8 @@
 {
-  "name": "sistema principal",
-  "description": "Um sistema de gestão de restaurantes completo para gerenciar vendas (PDV), cozinha (KDS), estoque, e mais. Criado para otimizar operações e melhorar a eficiência. ",
-  "requestFramePermissions": []
+  "name": "ChefOS",
+  "description": "Sistema Operacional completo para Gastronomia e Restaurantes: PDV, KDS, Estoque, iFood, FISCAL, RH e Gestão Multi-loja SaaS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
