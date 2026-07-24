@@ -258,6 +258,34 @@ export class InventoryDataService {
              console.error("Fallback update failed:", fallbackError);
              return { success: false, error: fallbackError };
         }
+
+        // FEFO Lot deduction fallback for stock exits
+        if (quantityChange < 0) {
+            if (lotIdForExit) {
+                const { data: targetLot } = await supabase.from('inventory_lots').select('quantity').eq('id', lotIdForExit).single();
+                if (targetLot) {
+                    const newLotQty = Math.max(0, targetLot.quantity + quantityChange);
+                    await supabase.from('inventory_lots').update({ quantity: newLotQty }).eq('id', lotIdForExit);
+                }
+            } else {
+                const { data: activeLots } = await supabase
+                    .from('inventory_lots')
+                    .select('id, quantity')
+                    .eq('ingredient_id', ingredientId)
+                    .gt('quantity', 0)
+                    .order('expiration_date', { ascending: true, nullsFirst: false });
+
+                if (activeLots && activeLots.length > 0) {
+                    let toDeduct = Math.abs(quantityChange);
+                    for (const lot of activeLots) {
+                        if (toDeduct <= 0) break;
+                        const deduct = Math.min(lot.quantity, toDeduct);
+                        await supabase.from('inventory_lots').update({ quantity: lot.quantity - deduct }).eq('id', lot.id);
+                        toDeduct -= deduct;
+                    }
+                }
+            }
+        }
     }
 
     // Furo 2: Update lot unit cost if provided
@@ -334,13 +362,25 @@ export class InventoryDataService {
           if (stationStock) {
               const consumedFromStation = Math.min(stationStock.quantity, remainingNeeded);
               if (consumedFromStation > 0) {
+                  const newStationQty = stationStock.quantity - consumedFromStation;
                   await supabase.from('station_stocks')
                       .update({ 
-                          quantity: stationStock.quantity - consumedFromStation,
+                          quantity: newStationQty,
                           updated_at: new Date().toISOString()
                       })
                       .eq('id', stationStock.id);
                   
+                  // AUDIT: Record station stock consumption in inventory_logs
+                  await supabase.from('inventory_logs').insert({
+                      user_id: userId,
+                      ingredient_id: ingredientId,
+                      employee_id: employeeId,
+                      quantity_change: -consumedFromStation,
+                      previous_balance: stationStock.quantity,
+                      new_balance: newStationQty,
+                      reason: `${reason} (Baixa Estoque Praça)`
+                  });
+
                   remainingNeeded -= consumedFromStation;
               }
           }
@@ -629,9 +669,28 @@ export class InventoryDataService {
                      .maybeSingle();
                  
                  if (stationStock) {
-                     await supabase.from('station_stocks').update({ quantity: stationStock.quantity + quantityNeeded }).eq('id', stationStock.id);
+                     const newStationQty = stationStock.quantity + quantityNeeded;
+                     await supabase.from('station_stocks').update({ quantity: newStationQty }).eq('id', stationStock.id);
+                     await supabase.from('inventory_logs').insert({
+                         user_id: userId,
+                         ingredient_id: ingredientId,
+                         employee_id: employeeId || null,
+                         quantity_change: quantityNeeded,
+                         previous_balance: stationStock.quantity,
+                         new_balance: newStationQty,
+                         reason: `${reason} (Estorno Praça)`
+                     });
                  } else {
                      await supabase.from('station_stocks').insert({ station_id: stationId, ingredient_id: ingredientId, quantity: quantityNeeded, user_id: userId });
+                     await supabase.from('inventory_logs').insert({
+                         user_id: userId,
+                         ingredient_id: ingredientId,
+                         employee_id: employeeId || null,
+                         quantity_change: quantityNeeded,
+                         previous_balance: 0,
+                         new_balance: quantityNeeded,
+                         reason: `${reason} (Estorno Praça)`
+                     });
                  }
              } else {
                  await this.adjustIngredientStock({

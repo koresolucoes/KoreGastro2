@@ -108,17 +108,19 @@ export class PaymentModalComponent {
 
   globalDiscountAmount = computed(() => {
     const order = this.lastKnownOrder();
-    if (!order || !order.discount_type || !order.discount_value) {
+    if (!order || !order.discount_type || !order.discount_value || order.discount_value <= 0) {
       return 0;
     }
+    const subtotal = this.orderSubtotalBeforeDiscount();
     if (order.discount_type === 'percentage') {
-      return this.orderSubtotalBeforeDiscount() * (order.discount_value / 100);
+      const pct = Math.min(100, Math.max(0, order.discount_value));
+      return (subtotal * pct) / 100;
     }
-    return order.discount_value;
+    return Math.min(subtotal, Math.max(0, order.discount_value));
   });
 
   orderSubtotal = computed(() => {
-    return this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount();
+    return Math.max(0, this.orderSubtotalBeforeDiscount() - this.globalDiscountAmount());
   });
   
   tipAmount = computed(() => this.serviceFeeApplied() ? this.orderSubtotal() * 0.1 : 0);
