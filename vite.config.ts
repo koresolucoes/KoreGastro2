@@ -178,7 +178,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      target: 'esnext'
+      target: 'esnext',
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.message && warning.message.includes('sourcemap')) return;
+          if (warning.code === 'SOURCEMAP_ERROR') return;
+          warn(warning);
+        }
+      }
     }
   };
 });
