@@ -366,22 +366,4 @@ export class OperationalAuthService {
 
     return '/home';
   }
-
-  // Novo método para tentar auto-login do gerente
-  attemptAutoLogin(employees: Employee[], roles: Role[]): boolean {
-    // 1. Encontrar cargo de Gerente
-    const managerRole = roles.find(r => r.name === 'Gerente');
-    if (!managerRole) return false;
-
-    // 2. Encontrar funcionário com esse cargo
-    // Prioriza "Gerente Principal" criado pelo sistema, ou qualquer gerente
-    const managerEmployee = employees.find(e => e.role_id === managerRole.id);
-    
-    if (managerEmployee) {
-        this.login(managerEmployee);
-        return true;
-    }
-
-    return false;
-  }
 }

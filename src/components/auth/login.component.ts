@@ -3,6 +3,7 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { OperationalAuthService } from '../../services/operational-auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -18,6 +19,7 @@ type AuthState = 'idle' | 'loading' | 'error';
 })
 export class LoginComponent {
   authService = inject(AuthService);
+  operationalAuth = inject(OperationalAuthService);
   // FIX: Explicitly type the injected Router to resolve property access errors.
   router: Router = inject(Router);
   notificationService = inject(NotificationService);
@@ -42,6 +44,10 @@ export class LoginComponent {
       if (error) {
         throw error;
       }
+      
+      // Force clearing of any previously selected employee so the user must select one again
+      this.operationalAuth.resetSession();
+      
       // On successful login, auth service's onAuthStateChange will trigger.
       // We will now redirect to the intended URL or the default employee selection screen.
       const returnUrl = this.router.routerState.snapshot.root.queryParams['returnUrl'];

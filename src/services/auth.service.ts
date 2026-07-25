@@ -94,6 +94,7 @@ export class AuthService {
    */
   async signOut(): Promise<{ error: any }> {
     this.demoService.disableDemoMode();
+    sessionStorage.removeItem('active_employee');
     // The `signOut` method call is correct for v2.
     // FIX: Cast supabase.auth to 'any' to bypass typing issues.
     const { error } = await (supabase.auth as any).signOut();

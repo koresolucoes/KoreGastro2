@@ -70,6 +70,7 @@ export class SupabaseStateService {
             if (this.unitContextService.activeUnitId()) {
                 this.unitContextService.activeUnitId.set(null);
             }
+            this.isDataLoaded.set(true); // Signal completion so guards don't hang for unauthenticated users
         }
     });
 
@@ -80,8 +81,6 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
         
         if (activeUnitId && !isDemo) {
-            // 1. Clear previous operator session immediately to prevent access leak
-            this.operationalAuthService.resetSession();
             this.isDataLoaded.set(false);
 
             try {
@@ -94,16 +93,10 @@ export class SupabaseStateService {
                 // 4. Start Realtime
                 this.subscribeToChanges(activeUnitId);
 
-                // 5. Attempt Auto-Login for Manager
+                // 5. If no employee is logged in, navigate to employee selection
+                // (otherwise let guards/current route handle it)
                 untracked(() => {
-                    const employees = this.hrState.employees();
-                    const roles = this.hrState.roles();
-                    
-                    const loggedIn = this.operationalAuthService.attemptAutoLogin(employees, roles);
-                    
-                    if (loggedIn) {
-                        this.router.navigate(['/dashboard']);
-                    } else {
+                    if (!this.operationalAuthService.activeEmployee()) {
                         this.router.navigate(['/employee-selection']);
                     }
                 });

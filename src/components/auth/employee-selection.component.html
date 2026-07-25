@@ -130,8 +130,12 @@
         </div>
       }
 
-      <!-- Official Website Link -->
-      <div class="text-center mt-10 pt-6 border-t border-subtle">
+      <!-- Official Website Link & Admin Access -->
+      <div class="text-center mt-10 pt-6 border-t border-subtle flex flex-col items-center gap-4">
+        <button (click)="logoutAdmin()" class="inline-flex items-center gap-2 text-sm font-bold text-brand hover:text-brand-light transition-colors bg-brand/10 hover:bg-brand/20 px-6 py-3 rounded-xl">
+          <span translate="no" class="notranslate material-symbols-outlined text-lg">admin_panel_settings</span>
+          Acesso Administrativo (Trocar de Conta)
+        </button>
         <p class="text-sm font-medium text-muted">
           Conheça o ChefOS -
           <a href="https://app.chefos.online" target="_blank" rel="noopener noreferrer" class="font-bold text-brand hover:text-brand-light transition-colors ml-1">

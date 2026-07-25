@@ -9,6 +9,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 
 @Component({
@@ -27,7 +28,14 @@ export class EmployeeSelectionComponent {
   private subscriptionState = inject(SubscriptionStateService);
   private hrState = inject(HrStateService);
 
+  private authService = inject(AuthService);
+
   hasActiveSubscription = this.subscriptionState.hasActiveSubscription;
+
+  async logoutAdmin() {
+    await this.authService.signOut();
+    this.router.navigate(['/login']);
+  }
   isDataLoaded = this.stateService.isDataLoaded;
   isTrialing = this.subscriptionState.isTrialing;
   trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
