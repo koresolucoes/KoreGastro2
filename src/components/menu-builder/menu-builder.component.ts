@@ -246,6 +246,18 @@ export class MenuBuilderComponent implements OnInit {
     this.editingItemData.set(null);
   }
 
+  toggleDietaryFlag(flag: string) {
+    this.editingItemData.update(d => {
+      if (!d) return d;
+      const flags = d.dietary_flags || [];
+      const hasFlag = flags.includes(flag);
+      return {
+        ...d,
+        dietary_flags: hasFlag ? flags.filter(f => f !== flag) : [...flags, flag]
+      };
+    });
+  }
+
   isUploadingImage = signal(false);
 
   async onImageUpload(event: any) {

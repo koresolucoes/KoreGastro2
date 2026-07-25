@@ -4,6 +4,43 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SystemAdminService } from '../../services/system-admin.service';
 import { NotificationService } from '../../services/notification.service';
+import { ALL_PERMISSION_KEYS } from '../../config/permissions';
+
+const PERMISSION_LABELS: Record<string, string> = {
+  '/dashboard': 'Painel Gerencial',
+  '/home': 'Início',
+  '/pos': 'PDV Frente de Caixa',
+  '/kds': 'KDS (Cozinha)',
+  '/ifood-kds': 'KDS (iFood)',
+  '/cashier': 'Controle de Caixa',
+  '/inventory': 'Estoque e Matéria-Prima',
+  '/requisitions': 'Requisições Internas',
+  '/purchasing': 'Compras',
+  '/suppliers': 'Fornecedores',
+  '/customers': 'Clientes e Fidelidade',
+  '/menu': 'Cardápio',
+  '/menu-builder': 'Construtor de Cardápio / QR Code',
+  '/ifood-menu': 'Gestão de Cardápio iFood',
+  '/ifood-store-manager': 'Gerenciador de Loja iFood',
+  '/technical-sheets': 'Fichas Técnicas',
+  '/mise-en-place': 'Mise-En-Place / Produção',
+  '/performance': 'Desempenho da Equipe',
+  '/reports': 'Relatórios Gerenciais',
+  '/employees': 'Gestão de Funcionários',
+  '/schedules': 'Escalas de Trabalho',
+  '/my-leave': 'Portal de Licenças',
+  '/my-profile': 'Meu Perfil',
+  '/payroll': 'Folha de Pagamento',
+  '/settings': 'Configurações',
+  '/reservations': 'Reservas de Mesas',
+  '/time-clock': 'Relógio de Ponto',
+  '/leave-management': 'Gestão de Licenças',
+  '/tutorials': 'Tutoriais',
+  '/delivery': 'Delivery Próprio',
+  '/checklists': 'Checklists de Qualidade',
+  '/temperatures': 'Controle de Temperaturas',
+  '/whatsapp-chats': 'Integração WhatsApp'
+};
 
 export type AdminTab = 'overview' | 'support' | 'users' | 'catalog' | 'health' | 'provisioning' | 'plans' | 'financial' | 'logs';
 
@@ -516,8 +553,8 @@ export type AdminTab = 'overview' | 'support' | 'users' | 'catalog' | 'health' |
                         </button>
                       </td>
                       <td class="py-3 px-3 text-right space-x-2">
-                        <button (click)="editMenuItemPrice(item)" class="bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white p-1.5 rounded-lg border border-indigo-500/20 transition-all" title="Alterar Preço">
-                          <span translate="no" class="notranslate material-symbols-outlined text-sm">attach_money</span>
+                        <button (click)="editMenuItemPrice(item)" class="bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white p-1.5 rounded-lg border border-indigo-500/20 transition-all" title="Editar Detalhes">
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">edit</span>
                         </button>
                       </td>
                     </tr>
@@ -894,9 +931,12 @@ export type AdminTab = 'overview' | 'support' | 'users' | 'catalog' | 'health' |
                     </ul>
                   </div>
 
-                  <div class="pt-4 border-t border-white/5 flex gap-2">
-                    <button (click)="deletePlan(plan)" class="text-red-400 hover:text-red-300 text-xs p-2 rounded-xl hover:bg-red-500/10 transition-all">
-                      Remover
+                  <div class="pt-4 border-t border-white/5 flex gap-2 justify-between">
+                    <button (click)="editPlan(plan)" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-500/10 transition-all">
+                      Editar Plano
+                    </button>
+                    <button (click)="deletePlan(plan)" class="text-red-400 hover:text-red-300 text-[10px] p-2 rounded-xl hover:bg-red-500/10 transition-all" title="Remover Plano">
+                      <span translate="no" class="notranslate material-symbols-outlined text-[15px]">delete</span>
                     </button>
                   </div>
                 </div>
@@ -993,6 +1033,200 @@ export type AdminTab = 'overview' | 'support' | 'users' | 'catalog' | 'health' |
         </div>
       }
 
+      <!-- Catalog Edit / Add Modals -->
+      @if (editingMenuItem()) {
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in p-4">
+          <div class="w-full max-w-md bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="flex justify-between items-center border-b border-white/10 p-4 bg-gray-950">
+              <h3 class="font-bold text-white text-base">
+                {{ isAddingMenuItem() ? 'Adicionar Produto ao Cardápio' : 'Editar Produto' }}
+              </h3>
+              <button (click)="isAddingMenuItem() ? cancelAddMenuItem() : cancelEditMenuItem()" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+              <div class="space-y-1">
+                <label class="font-bold text-xs text-gray-300">Nome do Produto</label>
+                <input type="text" [(ngModel)]="editingMenuItem()!.name" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Ex: Pizza Margherita">
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Preço (R$)</label>
+                  <input type="number" step="0.01" [(ngModel)]="editingMenuItem()!.price" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none">
+                </div>
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Tempo de Preparo (min)</label>
+                  <input type="number" [(ngModel)]="editingMenuItem()!.prep_time" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none">
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="font-bold text-xs text-gray-300">Categoria</label>
+                <input type="text" [(ngModel)]="editingMenuItem()!.category" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Ex: Pratos Principais">
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 mt-2">
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Preço Promocional (Opcional)</label>
+                  <input type="number" step="0.01" [(ngModel)]="editingMenuItem()!.promotional_price" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none">
+                </div>
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">SKU / Código</label>
+                  <input type="text" [(ngModel)]="editingMenuItem()!.sku" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Ex: PIZ-01">
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 mt-2">
+                <input type="checkbox" [(ngModel)]="editingMenuItem()!.is_available" id="itemAvailable" class="w-5 h-5 accent-orange-500 rounded cursor-pointer">
+                <label for="itemAvailable" class="font-bold text-sm text-white cursor-pointer select-none">Disponível para Venda</label>
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-white/10 bg-gray-950 flex justify-end gap-3">
+              <button (click)="isAddingMenuItem() ? cancelAddMenuItem() : cancelEditMenuItem()" class="px-4 py-2 text-gray-300 font-bold text-sm hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+              <button (click)="isAddingMenuItem() ? saveNewMenuItem() : saveEditedMenuItem()" [disabled]="isLoading()" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition-all disabled:opacity-50">
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Create Ticket Modal -->
+      @if (isCreatingTicket()) {
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in p-4">
+          <div class="w-full max-w-md bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="flex justify-between items-center border-b border-white/10 p-4 bg-gray-950">
+              <h3 class="font-bold text-white text-base">
+                Abrir Novo Chamado
+              </h3>
+              <button (click)="cancelCreateTicket()" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+              @if (newTicketProfile()) {
+                <div class="bg-white/5 p-3 rounded-xl">
+                  <p class="text-xs text-gray-400">Cliente</p>
+                  <p class="font-bold text-white">{{ newTicketProfile()?.full_name }}</p>
+                  <p class="text-[11px] text-gray-500">{{ newTicketProfile()?.email }}</p>
+                </div>
+              } @else {
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Selecionar Cliente</label>
+                  <select [ngModel]="newTicketProfile()?.id" (ngModelChange)="setNewTicketProfile($event)" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none">
+                    <option [value]="null">Selecione um cliente...</option>
+                    @for(rest of restaurants(); track rest.id) {
+                      <option [value]="rest.id">{{ rest.full_name }} ({{ rest.email }})</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <div class="space-y-1">
+                <label class="font-bold text-xs text-gray-300">Assunto do Chamado</label>
+                <input type="text" [(ngModel)]="newTicketSubject" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none" placeholder="Ex: Dúvida sobre plano">
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-white/10 bg-gray-950 flex justify-end gap-3">
+              <button (click)="cancelCreateTicket()" class="px-4 py-2 text-gray-300 font-bold text-sm hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+              <button (click)="saveNewTicket()" [disabled]="isLoading() || !newTicketProfile()" class="bg-cyan-600 hover:bg-cyan-500 text-gray-950 px-6 py-2 rounded-xl text-sm font-black uppercase shadow-lg transition-all disabled:opacity-50">
+                Abrir Chamado
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Edit Plan Modal -->
+      @if (editingPlan()) {
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in p-4">
+          <div class="w-full max-w-md bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-white/10 p-4 bg-gray-950 shrink-0">
+              <h3 class="font-bold text-white text-base">
+                Editar Plano: {{ editingPlan().name }}
+              </h3>
+              <button (click)="cancelEditPlan()" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <div class="p-6 space-y-4 overflow-y-auto">
+              <div class="space-y-1">
+                <label class="font-bold text-xs text-gray-300">Nome do Plano</label>
+                <input type="text" [(ngModel)]="editingPlan().name" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Slug / Código</label>
+                  <input type="text" [(ngModel)]="editingPlan().slug" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none font-mono text-[11px]">
+                </div>
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Preço (R$)</label>
+                  <input type="number" step="0.01" [(ngModel)]="editingPlan().price" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Máx. Lojas</label>
+                  <input type="number" [(ngModel)]="editingPlan().max_stores" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="space-y-1">
+                  <label class="font-bold text-xs text-gray-300">Dias Teste</label>
+                  <input type="number" [(ngModel)]="editingPlan().trial_period_days" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-white/10">
+                <h4 class="font-bold text-white text-sm mb-3">Módulos & Permissões</h4>
+                <div class="space-y-2">
+                  @for(mod of planModules; track mod.key) {
+                    <div class="flex items-center gap-3 bg-white/5 p-2.5 rounded-xl border border-white/10">
+                      <input 
+                        type="checkbox" 
+                        [id]="'mod_' + mod.key" 
+                        [checked]="editingPlan().activeModules?.includes(mod.key)"
+                        (change)="togglePlanModule(mod.key)"
+                        class="w-5 h-5 accent-indigo-500 rounded cursor-pointer"
+                      >
+                      <label [for]="'mod_' + mod.key" class="font-bold text-xs text-white cursor-pointer select-none flex-1">{{ mod.label }}</label>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="p-4 border-t border-white/10 bg-gray-950 flex justify-end gap-3 shrink-0">
+              <button (click)="cancelEditPlan()" class="px-4 py-2 text-gray-300 font-bold text-sm hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+              <button (click)="saveEditedPlan()" [disabled]="isLoading()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg transition-all disabled:opacity-50">
+                Salvar Plano
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Delete Plan Modal -->
+      @if (deletingPlan()) {
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in p-4">
+          <div class="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4">
+            <h3 class="font-bold text-white text-lg text-center">Confirmar Exclusão</h3>
+            <p class="text-sm text-gray-300 text-center">Tem certeza que deseja remover o plano <strong class="text-white">{{ deletingPlan().name }}</strong>?</p>
+            <div class="flex gap-3 justify-center pt-2">
+              <button (click)="deletingPlan.set(null)" class="px-4 py-2 text-gray-300 font-bold text-sm hover:bg-white/5 rounded-xl transition-all">Cancelar</button>
+              <button (click)="confirmDeletePlan()" class="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all">Sim, Remover</button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Edit Modal Drawer -->
       @if (selectedProfile()) {
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
@@ -1063,6 +1297,14 @@ export class AdminDashboardComponent implements OnInit {
   searchQuery = signal('');
   statusFilter = signal('all');
 
+  // Plan Editing State
+  editingPlan = signal<any>(null);
+  planModules = ALL_PERMISSION_KEYS.map(key => ({
+    key: key,
+    label: PERMISSION_LABELS[key] || key
+  }));
+
+  deletingPlan = signal<any>(null);
   // Selected Profile for edits
   selectedProfile = signal<any | null>(null);
   editStatus = signal('active');
@@ -1073,10 +1315,15 @@ export class AdminDashboardComponent implements OnInit {
   supportTickets = signal<any[]>([]);
   selectedTicket = signal<any | null>(null);
   replyText = '';
+  isCreatingTicket = signal(false);
+  newTicketProfile = signal<any>(null);
+  newTicketSubject = '';
 
   // Catalog Inspector State
   selectedCatalogTenantId = signal<string>('');
   tenantMenuItems = signal<any[]>([]);
+  editingMenuItem = signal<any>(null);
+  isAddingMenuItem = signal(false);
 
   // Provisioning Form
   provUserId = '';
@@ -1158,45 +1405,19 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   async openNewTicketPrompt() {
-    const clientName = prompt('Nome do Cliente:');
-    if (!clientName) return;
-    const storeName = prompt('Nome do Restaurante / Loja:');
-    const subject = prompt('Assunto / Dúvida do Cliente:');
-    
-    const newTicket = {
-      client_id: '00000000-0000-0000-0000-000000000000', // Need proper client ID here
-      store_name: storeName || 'Unidade Principal',
-      subject: subject || 'Atendimento via Suporte',
-      priority: 'Alta',
-      messages: [
-        { text: subject || 'Iniciado chamado direto com suporte.' }
-      ]
-    };
-    
-    await this.adminService.addSupportTicket(newTicket);
-    await await this.loadTickets();
-    this.notificationService.show('Novo chamado de atendimento criado!', 'success');
+    this.newTicketProfile.set(null);
+    this.newTicketSubject = '';
+    this.isCreatingTicket.set(true);
+  }
+
+  setNewTicketProfile(profileId: string) {
+    const profile = this.restaurants().find(p => p.id === profileId);
+    this.newTicketProfile.set(profile || null);
   }
 
   async openTicketForProfile(profile: any) {
-    const subject = prompt(`Abrir chamado para ${profile.full_name}:
-Assunto do Chamado:`);
-    if (!subject) return;
-    
-    const newTicket = {
-      client_id: profile.id,
-      store_name: profile.stores?.[0]?.name || 'Unidade Principal',
-      subject: subject || 'Atendimento Ativo (Suporte)',
-      priority: 'Média',
-      messages: [
-        { text: `Olá ${profile.full_name}, como podemos ajudar hoje?` }
-      ]
-    };
-    
-    await this.adminService.addSupportTicket(newTicket);
-    await await this.loadTickets();
-    this.activeTab.set("support");
-    this.notificationService.show("Chamado aberto com sucesso!", "success");
+    this.newTicketProfile.set(profile);
+    this.openNewTicketPrompt();
   }
 
   currentTenantMenuItems() {
@@ -1229,31 +1450,66 @@ Assunto do Chamado:`);
   }
 
   async editMenuItemPrice(item: any) {
-    const currentPrice = item.price;
-    const input = prompt(`Novo preço para "${item.name}" (R$):`, currentPrice.toFixed(2));
-    if (input !== null) {
-      const newPrice = parseFloat(input);
-      if (!isNaN(newPrice) && newPrice >= 0) {
-        const tenantId = this.selectedCatalogTenantId();
-        await this.adminService.updateTenantMenuItem(tenantId, item.id, { price: newPrice });
-        await this.changeCatalogTenant(tenantId);
-        this.notificationService.show(`Preço de "${item.name}" atualizado para R$ ${newPrice.toFixed(2)}`, 'success');
-      }
-    }
+    this.editingMenuItem.set({ ...item });
+  }
+
+  async saveEditedMenuItem() {
+    const item = this.editingMenuItem();
+    if (!item) return;
+    const tenantId = this.selectedCatalogTenantId();
+    if (!tenantId) return;
+
+    this.isLoading.set(true);
+    await this.adminService.updateTenantMenuItem(tenantId, item.id, { 
+      name: item.name,
+      price: item.price,
+      promotional_price: item.promotional_price || null,
+      sku: item.sku || null,
+      prep_time_in_minutes: item.prep_time || 15,
+      is_available: item.is_available,
+      category: item.category
+    });
+    await this.changeCatalogTenant(tenantId);
+    this.notificationService.show(`Produto "${item.name}" atualizado com sucesso`, 'success');
+    this.editingMenuItem.set(null);
+    this.isLoading.set(false);
+  }
+
+  cancelEditMenuItem() {
+    this.editingMenuItem.set(null);
   }
 
   async openAddMenuItemModal() {
+    this.isAddingMenuItem.set(true);
+    this.editingMenuItem.set({ name: '', category: 'Geral', price: 0, prep_time: 15, is_available: true });
+  }
+
+  async saveNewMenuItem() {
+    const item = this.editingMenuItem();
+    if (!item || !item.name) return;
     const tenantId = this.selectedCatalogTenantId();
     if (!tenantId) return;
-    const name = prompt('Nome do Produto:');
-    if (!name) return;
-    const category = prompt('Categoria (ex: Pizzas, Bebidas):', 'Geral');
-    const priceStr = prompt('Preço R$:', '25.00');
-    const price = parseFloat(priceStr || '0');
 
-    await this.adminService.addTenantMenuItem(tenantId, { name, category: category || 'Geral', price });
+    this.isLoading.set(true);
+    await this.adminService.addTenantMenuItem(tenantId, {
+      name: item.name,
+      category: item.category || 'Geral',
+      price: item.price,
+      promotional_price: item.promotional_price || null,
+      sku: item.sku || null,
+      prep_time_in_minutes: item.prep_time || 15,
+      is_available: item.is_available
+    });
+    
     await this.changeCatalogTenant(tenantId);
-    this.notificationService.show(`Item "${name}" adicionado ao cardápio do cliente com sucesso!`, 'success');
+    this.notificationService.show(`Item "${item.name}" adicionado ao cardápio com sucesso!`, 'success');
+    this.cancelAddMenuItem();
+    this.isLoading.set(false);
+  }
+
+  cancelAddMenuItem() {
+    this.isAddingMenuItem.set(false);
+    this.editingMenuItem.set(null);
   }
 
   extendClientSubscription(clientId: string, days: number) {
@@ -1309,38 +1565,102 @@ Assunto do Chamado:`);
     this.isProvisioning.set(false);
   }
 
-  async openCreatePlanModal() {
-    const name = prompt('Nome do Plano (ex: Pro Mensal):');
-    if (!name) return;
-    const slug = prompt('Slug do Plano (ex: pro-mensal):', name.toLowerCase().replace(/\s+/g, '-'));
-    const price = parseFloat(prompt('Preço Mensal R$:', '199.00') || '0');
-
-    const { error } = await this.adminService.createPlan({
-      name,
-      slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
-      price,
-      trial_period_days: 30,
-      max_stores: 3
+  async editPlan(plan: any) {
+    this.editingPlan.set({
+      ...plan,
+      activeModules: plan.plan_permissions?.map((p: any) => p.permission_key) || []
     });
+  }
 
-    if (error) {
-      this.notificationService.alert('Erro ao criar plano: ' + error.message);
+  cancelEditPlan() {
+    this.editingPlan.set(null);
+  }
+
+  togglePlanModule(moduleKey: string) {
+    const plan = this.editingPlan();
+    if (!plan) return;
+    
+    let modules = [...plan.activeModules];
+    if (modules.includes(moduleKey)) {
+      modules = modules.filter(m => m !== moduleKey);
     } else {
-      this.notificationService.show('Novo plano cadastrado!', 'success');
-      await this.loadData();
+      modules.push(moduleKey);
     }
+    this.editingPlan.set({ ...plan, activeModules: modules });
+  }
+
+  async saveEditedPlan() {
+    const plan = this.editingPlan();
+    if (!plan) return;
+    
+    this.isLoading.set(true);
+    let planId = plan.id;
+    
+    if (plan.id === 'new') {
+      const { data, error } = await this.adminService.createPlan({
+        name: plan.name,
+        slug: plan.slug || plan.name.toLowerCase().replace(/\s+/g, '-'),
+        price: plan.price,
+        trial_period_days: plan.trial_period_days,
+        max_stores: plan.max_stores
+      });
+      if (error) {
+        this.notificationService.alert('Erro ao criar plano: ' + error.message);
+        this.isLoading.set(false);
+        return;
+      }
+      planId = data.id;
+    } else {
+      const { error } = await this.adminService.updatePlan(plan.id, {
+        name: plan.name,
+        slug: plan.slug,
+        price: plan.price,
+        trial_period_days: plan.trial_period_days,
+        max_stores: plan.max_stores
+      });
+      if (error) {
+        this.notificationService.alert('Erro ao atualizar plano: ' + error.message);
+        this.isLoading.set(false);
+        return;
+      }
+    }
+    
+    await this.adminService.updatePlanPermissions(planId, plan.activeModules || []);
+    this.notificationService.show(plan.id === 'new' ? 'Plano criado com sucesso!' : 'Plano atualizado com sucesso!', 'success');
+    this.cancelEditPlan();
+    await this.loadData();
+    this.isLoading.set(false);
+  }
+
+  async openCreatePlanModal() {
+    this.editingPlan.set({
+      id: 'new',
+      name: '',
+      slug: '',
+      price: 0,
+      trial_period_days: 30,
+      max_stores: 1,
+      activeModules: []
+    });
   }
 
   async deletePlan(plan: any) {
-    if (confirm(`Remover o plano ${plan.name}?`)) {
-      const { error } = await this.adminService.deletePlan(plan.id);
-      if (error) {
-        this.notificationService.alert('Erro ao excluir plano: ' + error.message);
-      } else {
-        this.notificationService.show('Plano excluído com sucesso.', 'success');
-        await this.loadData();
-      }
+    this.deletingPlan.set(plan);
+  }
+  
+  async confirmDeletePlan() {
+    const plan = this.deletingPlan();
+    if (!plan) return;
+    this.deletingPlan.set(null);
+    this.isLoading.set(true);
+    const { error } = await this.adminService.deletePlan(plan.id);
+    if (error) {
+      this.notificationService.alert('Erro ao excluir plano: ' + error.message);
+    } else {
+      this.notificationService.show('Plano excluído com sucesso.', 'success');
+      await this.loadData();
     }
+    this.isLoading.set(false);
   }
 
   filteredRestaurants() {

@@ -1026,6 +1026,10 @@ export interface MenuItem {
   display_order: number;
   is_active: boolean;
   user_id: string;
+  sku?: string;
+  promotional_price?: number;
+  dietary_flags?: string[];
+  availability_schedule?: string;
   created_at: string;
   recipe?: Recipe; // Ficha Técnica Original
   options?: MenuItemOption[];

@@ -2,12 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
 import { MenuStateService } from './menu-state.service';
+import { AuditDataService } from './audit-data.service';
 import { Menu, MenuCategory, MenuItem, MenuItemOption, MenuItemOptionChoice } from '../models/db.models';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class MenuDataService {
   private unitContext = inject(UnitContextService);
   private menuState = inject(MenuStateService);
+  private auditService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
     return this.unitContext.activeUnitId();
@@ -110,6 +114,9 @@ export class MenuDataService {
       result = await supabase.from('menu_categories').insert(dbPayload);
     }
     if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
+    else {
+      this.auditService.logAction('MENU_CATEGORY_SAVED', `Categoria de cardápio ${category.id ? 'atualizada' : 'criada'}: ${category.name}`);
+    }
     return { success: !result.error, error: result.error };
   }
 
@@ -117,6 +124,9 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
     const { error } = await supabase.from('menu_categories').delete().eq('id', id).eq('user_id', userId);
+    if (!error) {
+      this.auditService.logAction('MENU_CATEGORY_DELETED', `Categoria de cardápio deletada: ${id}`);
+    }
     return { success: !error, error };
   }
 
@@ -151,7 +161,11 @@ export class MenuDataService {
       custom_price: item.custom_price,
       custom_image_url: item.custom_image_url,
       display_order: item.display_order,
-      is_active: item.is_active
+      is_active: item.is_active,
+      sku: item.sku,
+      promotional_price: item.promotional_price,
+      dietary_flags: item.dietary_flags,
+      availability_schedule: item.availability_schedule
     };
 
     // Remove undefined properties
@@ -164,6 +178,9 @@ export class MenuDataService {
        result = await supabase.from('menu_items').insert(dbPayload);
     }
     if (result.error) { console.error('SUPABASE DB ERROR:', JSON.stringify(result.error)); }
+    else {
+       this.auditService.logAction('MENU_ITEM_SAVED', `Produto ${item.id ? 'atualizado' : 'criado'}: ${item.custom_name || item.recipe_id}`);
+    }
     return { success: !result.error, error: result.error };
   }
 
@@ -171,6 +188,9 @@ export class MenuDataService {
     const userId = this.getActiveUnitId();
     if (!userId) return { success: false, error: 'No active unit' };
     const { error } = await supabase.from('menu_items').delete().eq('id', id).eq('user_id', userId);
+    if (!error) {
+       this.auditService.logAction('MENU_ITEM_DELETED', `Produto deletado: ${id}`);
+    }
     return { success: !error, error };
   }
 

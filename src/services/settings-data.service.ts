@@ -21,6 +21,8 @@ import { WebhookService } from "./webhook.service";
 import { UnitContextService } from "./unit-context.service";
 import { HrStateService } from "./hr-state.service";
 
+import { AuditDataService } from './audit-data.service';
+
 @Injectable({
   providedIn: "root",
 })
@@ -29,6 +31,7 @@ export class SettingsDataService {
   private webhookService = inject(WebhookService);
   private unitContextService = inject(UnitContextService);
   private hrState = inject(HrStateService);
+  private auditService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
     return this.unitContextService.activeUnitId();
@@ -268,6 +271,8 @@ export class SettingsDataService {
       .single();
     if (error) return { success: false, error, data: undefined };
 
+    this.auditService.logAction('EMPLOYEE_ADDED', `Funcionário adicionado: ${newEmployee.name}`);
+
     if (photoFile) {
       const fileExt = photoFile.name.split(".").pop();
       const path = `public/employee_photos/${newEmployee.id}.${fileExt}`;
@@ -326,11 +331,17 @@ export class SettingsDataService {
       .from("employees")
       .update(updateData)
       .eq("id", id!);
+    if (!error) {
+       this.auditService.logAction('EMPLOYEE_UPDATED', `Funcionário atualizado: ${updateData.name || id}`);
+    }
     return { success: !error, error };
   }
 
   async deleteEmployee(id: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from("employees").delete().eq("id", id);
+    if (!error) {
+       this.auditService.logAction('EMPLOYEE_DELETED', `Funcionário deletado: ${id}`);
+    }
     return { success: !error, error };
   }
 
@@ -382,6 +393,9 @@ export class SettingsDataService {
     const { error } = await supabase
       .from("company_profile")
       .upsert({ ...profileData, user_id: userId }, { onConflict: "user_id" });
+    if (!error) {
+       this.auditService.logAction('COMPANY_PROFILE_UPDATED', `Perfil da empresa atualizado`);
+    }
     return { success: !error, error };
   }
 

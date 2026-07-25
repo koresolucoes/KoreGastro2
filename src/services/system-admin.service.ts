@@ -1,10 +1,13 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { supabase } from './supabase-client';
+import { AuditDataService } from './audit-data.service';
 
 @Injectable({ providedIn: 'root' })
 export class SystemAdminService {
   isAdmin = signal<boolean>(false);
   isChecking = signal<boolean>(true);
+  
+  private auditService = inject(AuditDataService);
 
   async checkAdminStatus(email: string): Promise<boolean> {
     this.isChecking.set(true);
@@ -30,11 +33,17 @@ export class SystemAdminService {
 
   async addAdmin(email: string) {
     const { error } = await supabase.from('system_admins').insert([{ email }]);
+    if (!error) {
+       this.auditService.logAction('SYSTEM_ADMIN_ADDED', `Novo administrador do sistema adicionado: ${email}`);
+    }
     return { error };
   }
 
   async removeAdmin(email: string) {
     const { error } = await supabase.from('system_admins').delete().eq('email', email);
+    if (!error) {
+       this.auditService.logAction('SYSTEM_ADMIN_REMOVED', `Administrador do sistema removido: ${email}`);
+    }
     return { error };
   }
 
@@ -75,7 +84,7 @@ export class SystemAdminService {
     try {
       const { data, error } = await supabase
         .from('plans')
-        .select('*')
+        .select('*, plan_permissions(*)')
         .order('price', { ascending: true });
       return { data, error };
     } catch (error: any) {
@@ -173,6 +182,20 @@ export class SystemAdminService {
       return { data, error };
     } catch (error: any) {
       return { data: null, error };
+    }
+  }
+
+
+  async updatePlanPermissions(planId: string, permissionKeys: string[]) {
+    try {
+      await supabase.from('plan_permissions').delete().eq('plan_id', planId);
+      if (permissionKeys.length > 0) {
+        const inserts = permissionKeys.map(key => ({ plan_id: planId, permission_key: key }));
+        await supabase.from('plan_permissions').insert(inserts);
+      }
+      return { error: null };
+    } catch (error: any) {
+      return { error };
     }
   }
 
@@ -296,7 +319,7 @@ export class SystemAdminService {
     }
   }
 
-  async updateTenantMenuItem(tenantId: string, itemId: string, updates: Partial<{ name: string; price: number; is_available: boolean; category: string }>) {
+  async updateTenantMenuItem(tenantId: string, itemId: string, updates: Partial<{ name: string; price: number; promotional_price?: number; sku?: string; is_available: boolean; category: string; prep_time_in_minutes?: number }>) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await fetch('/api/v2/admin/tenant-menu', {
@@ -312,7 +335,7 @@ export class SystemAdminService {
     }
   }
 
-  async addTenantMenuItem(tenantId: string, item: { name: string; category: string; price: number; is_available?: boolean }) {
+  async addTenantMenuItem(tenantId: string, item: { name: string; category: string; price: number; promotional_price?: number | null; sku?: string | null; is_available?: boolean; prep_time_in_minutes?: number }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await fetch('/api/v2/admin/tenant-menu', {
