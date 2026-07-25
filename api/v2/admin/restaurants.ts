@@ -52,37 +52,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Forbidden: User is not a system admin' });
     }
 
-    // 3. Fetch all profiles and auth users
+    // 3. Fetch all auth users
+    const { data: { users }, error: authListError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authListError) {
+      console.error('Error fetching auth users:', authListError);
+      return res.status(500).json({ error: 'Failed to fetch users from Supabase Auth' });
+    }
+
+    const authUsers = users || [];
+    const authUserIds = authUsers.map(u => u.id);
+
+    // Fetch profiles for the users (if any)
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name, avatar_url, updated_at')
-      .order('updated_at', { ascending: false });
+      .in('id', authUserIds);
 
     if (profilesError) {
       console.warn('Profiles query error, proceeding with empty profiles array:', profilesError);
     }
 
     const rawProfiles = profiles || [];
-    const profileIds = rawProfiles.map(p => p.id);
+    
+    // Create a map of profiles for quick lookup
+    const profileMap = new Map<string, any>(rawProfiles.map((p: any) => [p.id, p]));
 
     // Fetch stores and subscriptions in parallel
     const [storesResult, subscriptionsResult] = await Promise.all([
-      profileIds.length > 0
-        ? supabaseAdmin.from('stores').select('id, name, owner_id, created_at').in('owner_id', profileIds)
+      authUserIds.length > 0
+        ? supabaseAdmin.from('stores').select('id, name, owner_id, created_at').in('owner_id', authUserIds)
         : Promise.resolve({ data: [], error: null }),
-      profileIds.length > 0
-        ? supabaseAdmin.from('subscriptions').select('id, user_id, plan_id, status, current_period_end').in('user_id', profileIds)
+      authUserIds.length > 0
+        ? supabaseAdmin.from('subscriptions').select('id, user_id, plan_id, status, current_period_end').in('user_id', authUserIds)
         : Promise.resolve({ data: [], error: null })
     ]);
 
     const stores = storesResult.data || [];
     const subscriptions = subscriptionsResult.data || [];
 
-    // Map existing profiles from DB
-    let mappedProfiles = rawProfiles.map((p: any) => {
-      const pStores = stores.filter((s: any) => s.owner_id === p.id);
+    // Map all auth users
+    let mappedProfiles = authUsers.map((u: any) => {
+      const p = profileMap.get(u.id) || {};
+      const pStores = stores.filter((s: any) => s.owner_id === u.id);
       const storeIds = pStores.map((s: any) => s.id);
-      const pSubscriptions = subscriptions.filter((sub: any) => sub.user_id === p.id || storeIds.includes(sub.user_id));
+      const pSubscriptions = subscriptions.filter((sub: any) => sub.user_id === u.id || storeIds.includes(sub.user_id));
 
       const uniqueSubs: any[] = [];
       const seenSubs = new Set<string>();
@@ -100,12 +114,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }));
 
       return {
-        id: p.id,
-        full_name: p.full_name || 'Usuário Cadastrado',
-        email: p.email || 'cliente@restaurante.com',
-        avatar_url: p.avatar_url,
+        id: u.id,
+        full_name: p.full_name || u.user_metadata?.full_name || 'Usuário Cadastrado',
+        email: u.email,
+        avatar_url: p.avatar_url || u.user_metadata?.avatar_url,
         role: 'Proprietário',
-        updated_at: p.updated_at,
+        updated_at: p.updated_at || u.updated_at || u.created_at,
         stores: mappedStores,
         bars: mappedStores,
         subscriptions: uniqueSubs.map((sub: any) => ({

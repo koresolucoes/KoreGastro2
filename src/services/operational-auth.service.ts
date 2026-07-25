@@ -324,7 +324,7 @@ export class OperationalAuthService {
     const routeKey = '/' + pathOnly.split('/')[1];
 
     // Special case for home: always allowed if logged in
-    if (routeKey === '/home') {
+    if (routeKey === '/home' || routeKey === '/support') {
         return true;
     }
 

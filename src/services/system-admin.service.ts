@@ -219,30 +219,52 @@ export class SystemAdminService {
   // --- CENTRAL DE ATENDIMENTO AO CLIENTE EM TEMPO REAL ---
   private supportTickets = signal<any[]>([]);
 
-  getSupportTickets() {
-    return this.supportTickets();
+  async getSupportTickets() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/v2/admin/support/tickets', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      return [];
+    }
   }
 
-  addSupportTicket(ticket: any) {
-    const current = this.supportTickets();
-    this.supportTickets.set([ticket, ...current]);
+  async addSupportTicket(ticket: any) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/v2/admin/support/tickets', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(ticket)
+      });
+    } catch (error) {
+      console.error('Error adding support ticket:', error);
+    }
   }
 
-  sendTicketReply(ticketId: string, replyText: string, newStatus?: string) {
-    const current = this.supportTickets();
-    const updated = current.map(t => {
-      if (t.id === ticketId) {
-        const msgs = [...t.messages, { sender: 'admin', text: replyText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }];
-        return {
-          ...t,
-          status: newStatus || 'in_progress',
-          messages: msgs,
-          updated_at: new Date().toISOString()
-        };
-      }
-      return t;
-    });
-    this.supportTickets.set(updated);
+  async sendTicketReply(ticketId: string, replyText: string, newStatus?: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/v2/admin/support/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ticket_id: ticketId, text: replyText, status_update: newStatus })
+      });
+    } catch (error) {
+      console.error('Error sending ticket reply:', error);
+    }
   }
 
   updateTicketStatus(ticketId: string, status: string) {

@@ -134,6 +134,7 @@ export class TopNavComponent {
         { name: 'Checklists', path: '/checklists', icon: 'playlist_add_check', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
         { name: 'Temperaturas', path: '/temperatures', icon: 'thermostat', roles: ['Gerente', 'Cozinha'] },
         { name: 'Tutoriais', path: '/tutorials', icon: 'school', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
+        { name: 'Suporte', path: '/support', icon: 'help_center', roles: ['Gerente', 'Caixa', 'Garçom', 'Cozinha'] },
       ]
     }
   ];
@@ -144,7 +145,7 @@ export class TopNavComponent {
     
     const isDemo = this.isDemoMode();
     const demoAllowedGroups = ['Salão & PDV', 'Cozinha & KDS', 'Gestão', 'Estoque', 'Rotinas', 'Delivery/iFood'];
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery', '/ifood-menu', '/ifood-store-manager', '/whatsapp-chats'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/checklists', '/temperatures', '/menu', '/menu-builder', '/ifood-kds', '/delivery', '/ifood-menu', '/ifood-store-manager', '/whatsapp-chats', '/support'];
 
     const filterLink = (link: NavLink): boolean => {
       if (isDemo) {

@@ -237,6 +237,11 @@ export const APP_ROUTES: Routes = [
     canActivate: [roleGuard] 
   },
   {
+    path: 'support',
+    loadComponent: () => import('./components/support-client/support-client.component').then(m => m.SupportClientComponent),
+    canActivate: [roleGuard]
+  },
+  {
     path: 'admin',
     loadComponent: () => import('./components/admin/admin-layout.component').then(m => m.AdminLayoutComponent),
     canActivate: [systemAdminGuard],

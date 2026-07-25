@@ -1094,7 +1094,7 @@ export class AdminDashboardComponent implements OnInit {
 
     await this.loadData();
     await this.refreshHealth();
-    this.loadTickets();
+    await this.loadTickets();
   }
 
   async loadData() {
@@ -1121,8 +1121,8 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  loadTickets() {
-    const tickets = this.adminService.getSupportTickets();
+  async loadTickets() {
+    const tickets = await this.adminService.getSupportTickets();
     this.supportTickets.set(tickets);
     if (tickets.length > 0 && !this.selectedTicket()) {
       this.selectedTicket.set(tickets[0]);
@@ -1137,12 +1137,12 @@ export class AdminDashboardComponent implements OnInit {
     return this.supportTickets().filter(t => t.status === 'in_progress').length;
   }
 
-  sendReply() {
+  async sendReply() {
     if (!this.replyText.trim() || !this.selectedTicket()) return;
     const ticketId = this.selectedTicket().id;
-    this.adminService.sendTicketReply(ticketId, this.replyText.trim(), 'in_progress');
+    await this.adminService.sendTicketReply(ticketId, this.replyText.trim(), 'in_progress');
     this.replyText = '';
-    this.loadTickets();
+    await await this.loadTickets();
     this.notificationService.show('Resposta enviada ao cliente com sucesso!', 'success');
   }
 
@@ -1150,58 +1150,51 @@ export class AdminDashboardComponent implements OnInit {
     this.replyText = text;
   }
 
-  changeTicketStatus(newStatus: string) {
+  async changeTicketStatus(newStatus: string) {
     if (!this.selectedTicket()) return;
-    this.adminService.updateTicketStatus(this.selectedTicket().id, newStatus);
-    this.loadTickets();
+    await this.adminService.updateTicketStatus(this.selectedTicket().id, newStatus);
+    await await this.loadTickets();
     this.notificationService.show(`Status do chamado alterado para: ${this.getTicketStatusText(newStatus)}`, 'info');
   }
 
-  openNewTicketPrompt() {
+  async openNewTicketPrompt() {
     const clientName = prompt('Nome do Cliente:');
     if (!clientName) return;
     const storeName = prompt('Nome do Restaurante / Loja:');
     const subject = prompt('Assunto / Dúvida do Cliente:');
-
+    
     const newTicket = {
-      id: 'ticket-' + Math.floor(100 + Math.random() * 900),
-      client_id: 'user-' + Date.now(),
-      client_name: clientName,
+      client_id: '00000000-0000-0000-0000-000000000000', // Need proper client ID here
       store_name: storeName || 'Unidade Principal',
       subject: subject || 'Atendimento via Suporte',
       priority: 'Alta',
-      status: 'open',
-      created_at: new Date().toISOString(),
       messages: [
-        { sender: 'client', text: subject || 'Iniciado chamado direto com suporte.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { text: subject || 'Iniciado chamado direto com suporte.' }
       ]
     };
-
-    this.adminService.addSupportTicket(newTicket);
-    this.loadTickets();
-    this.selectedTicket.set(newTicket);
+    
+    await this.adminService.addSupportTicket(newTicket);
+    await await this.loadTickets();
     this.notificationService.show('Novo chamado de atendimento criado!', 'success');
   }
 
-  openTicketForProfile(profile: any) {
-    const subject = prompt(`Abrir chamado para ${profile.full_name}:\nAssunto do Chamado:`);
+  async openTicketForProfile(profile: any) {
+    const subject = prompt(`Abrir chamado para ${profile.full_name}:
+Assunto do Chamado:`);
     if (!subject) return;
+    
     const newTicket = {
-      id: "ticket-" + Math.floor(100 + Math.random() * 900),
       client_id: profile.id,
-      client_name: profile.full_name,
-      store_name: profile.stores?.[0]?.name || "Unidade Principal",
-      subject: subject || "Atendimento Ativo (Suporte)",
-      priority: "Média",
-      status: "open",
-      created_at: new Date().toISOString(),
+      store_name: profile.stores?.[0]?.name || 'Unidade Principal',
+      subject: subject || 'Atendimento Ativo (Suporte)',
+      priority: 'Média',
       messages: [
-        { sender: "admin", text: `Olá ${profile.full_name}, como podemos ajudar hoje?`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }
+        { text: `Olá ${profile.full_name}, como podemos ajudar hoje?` }
       ]
     };
-    this.adminService.addSupportTicket(newTicket);
-    this.loadTickets();
-    this.selectedTicket.set(newTicket);
+    
+    await this.adminService.addSupportTicket(newTicket);
+    await await this.loadTickets();
     this.activeTab.set("support");
     this.notificationService.show("Chamado aberto com sucesso!", "success");
   }
