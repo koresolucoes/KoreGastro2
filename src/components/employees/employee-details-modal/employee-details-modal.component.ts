@@ -61,10 +61,6 @@ export class EmployeeDetailsModalComponent {
 
   printBadge() {
       const emp = this.employee();
-      if (!emp.bank_details?.matricula) {
-          alert('Este funcionário não possui Matrícula. Edite o funcionário para gerar uma.');
-          return;
-      }
       
       const printContents = document.getElementById('printable-badge')?.innerHTML;
       if (printContents) {

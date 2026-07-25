@@ -57,14 +57,18 @@ export class EmployeeSelectionComponent implements OnDestroy {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return [];
     
-    // Exact match on matricula
-    const exactMatricula = this.employees().filter(e => e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query);
-    if (exactMatricula.length === 1) return exactMatricula;
+    // Exact match on matricula or ID
+    const exactMatch = this.employees().filter(e => 
+        (e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query) || 
+        e.id === query
+    );
+    if (exactMatch.length === 1) return exactMatch;
 
     return this.employees().filter(e => 
       (e.bank_details?.matricula && e.bank_details.matricula.toLowerCase().includes(query)) ||
       (e.cpf && e.cpf.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) ||
-      e.name.toLowerCase().includes(query)
+      e.name.toLowerCase().includes(query) ||
+      e.id === query
     );
   });
 
@@ -85,11 +89,14 @@ export class EmployeeSelectionComponent implements OnDestroy {
         }
     });
     
-    // Auto-select if there's an exact match on matricula and it's unique
+    // Auto-select if there's an exact match on matricula or ID and it's unique
     effect(() => {
        const query = this.searchQuery().trim();
        if (query && !this.selectedEmployee()) {
-         const exact = this.employees().find(e => e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query.toLowerCase());
+         const exact = this.employees().find(e => 
+            (e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query.toLowerCase()) || 
+            e.id === query
+         );
          if (exact) {
              this.selectEmployee(exact);
          }
