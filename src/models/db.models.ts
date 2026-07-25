@@ -223,7 +223,7 @@ export interface Employee {
   emergency_contact_phone?: string | null;
   hire_date?: string | null;
   termination_date?: string | null;
-  bank_details?: { bank?: string; agency?: string; account?: string; pix?: string; ratings?: number[]; last_called_at?: string; calls?: { id: string; date: string; status: 'convocado' | 'confirmado' | 'recusado' | 'compareceu' | 'faltou'; amount?: number; rating?: number }[] } | null;
+  bank_details?: { bank?: string; agency?: string; account?: string; pix?: string; matricula?: string; ratings?: number[]; last_called_at?: string; calls?: { id: string; date: string; status: 'convocado' | 'confirmado' | 'recusado' | 'compareceu' | 'faltou'; amount?: number; rating?: number }[] } | null;
   photo_url?: string | null;
   roles?: { id: string, name: string };
 }

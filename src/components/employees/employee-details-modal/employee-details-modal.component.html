@@ -1,7 +1,7 @@
 <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" (click)="close.emit()">
   <div class="chef-surface border border-subtle rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95" (click)="$event.stopPropagation()">
     <!-- Header -->
-    <div class="p-6 border-b border-subtle bg-surface-elevated/30">
+    <div class="p-6 border-b border-subtle bg-surface-elevated/30 relative">
         <div class="flex justify-between items-start">
             <div class="flex items-center gap-4">
                 @if (employee().photo_url) {
@@ -14,11 +14,22 @@
                 <div>
                   <h3 class="text-2xl font-black text-title title-display">{{ employee().name }}</h3>
                   <p class="text-muted text-sm font-bold uppercase tracking-widest">{{ employeeRole() }}</p>
+                  @if (employee().bank_details?.matricula) {
+                     <p class="text-[10px] font-black text-muted uppercase tracking-widest mt-1">Matrícula: {{ employee().bank_details?.matricula }}</p>
+                  }
                 </div>
             </div>
-            <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger transition-all">
-              <span translate="no" class="notranslate material-symbols-outlined">close</span>
-            </button>
+            <div class="flex items-center gap-2">
+                @if (employee().bank_details?.matricula) {
+                <button (click)="printBadge()" class="px-4 py-2 bg-brand/10 text-brand hover:bg-brand hover:text-white rounded-xl transition-all flex items-center gap-2 font-black uppercase tracking-widest text-[10px] border border-brand/20 shadow-sm">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">badge</span>
+                    Imprimir Crachá
+                </button>
+                }
+                <button (click)="close.emit()" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger transition-all">
+                  <span translate="no" class="notranslate material-symbols-outlined">close</span>
+                </button>
+            </div>
         </div>
         <!-- Tabs -->
         <div class="mt-6 border-b border-subtle">
@@ -280,4 +291,17 @@
       <button (click)="close.emit()" class="px-8 py-3 bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-sm active:scale-95">Fechar Detalhes</button>
     </div>
   </div>
+
+  <!-- Hidden Printable Badge -->
+  @if (employee().bank_details?.matricula) {
+    <div id="printable-badge" class="hidden">
+        <div style="width: 250px; height: 400px; border: 2px solid #000; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; background: #fff; color: #000; text-align: center;">
+            <div style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 24px;">Controle de Acesso</div>
+            <qrcode [qrdata]="employee().bank_details?.matricula!" [width]="180" [errorCorrectionLevel]="'M'"></qrcode>
+            <div style="margin-top: 24px; font-size: 20px; font-weight: 900;">{{ employee().name }}</div>
+            <div style="margin-top: 8px; font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase;">{{ employeeRole() }}</div>
+            <div style="margin-top: 4px; font-size: 10px; font-weight: bold; color: #999;">MAT: {{ employee().bank_details?.matricula }}</div>
+        </div>
+    </div>
+  }
 </div>

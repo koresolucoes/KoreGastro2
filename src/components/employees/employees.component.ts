@@ -250,7 +250,8 @@ export class EmployeesComponent implements OnInit {
   }
 
   openAddModal() {
-    this.employeeForm.set({ role_id: this.roles()[0]?.id || null, pin: '', bank_details: {} });
+    const generatedMatricula = Math.floor(100000 + Math.random() * 900000).toString();
+    this.employeeForm.set({ role_id: this.roles()[0]?.id || null, pin: '', bank_details: { matricula: generatedMatricula } });
     this.editingEmployee.set(null);
     this.photoFile.set(null);
     this.photoPreviewUrl.set(null);

@@ -357,7 +357,7 @@
               <span translate="no" class="notranslate material-symbols-outlined text-brand">work</span>
               Dados Contratuais
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div class="lg:col-span-2">
                 <label class="block text-[11px] font-black text-muted mb-1.5 uppercase tracking-wider">Cargo *</label>
                 <div class="flex items-center gap-2">
@@ -371,6 +371,10 @@
                       <span translate="no" class="notranslate material-symbols-outlined">add</span>
                     </button>
                 </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-black text-muted mb-1.5 uppercase tracking-wider">Matrícula (ID)</label>
+                <input type="text" [value]="employeeForm().bank_details?.matricula || ''" (input)="updateBankDetailsField('matricula', $any($event.target).value)" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-2.5 text-title font-black focus:ring-1 focus:ring-brand focus:border-brand outline-none shadow-inner">
               </div>
               <div>
                 <label class="block text-[11px] font-black text-muted mb-1.5 uppercase tracking-wider">PIN (4 dígitos)</label>

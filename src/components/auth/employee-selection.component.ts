@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, signal, computed, inject, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, effect, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Employee } from '../../models/db.models';
@@ -11,6 +11,7 @@ import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
+import { Html5Qrcode } from 'html5-qrcode';
 
 @Component({
   selector: 'app-employee-selection',
@@ -19,7 +20,9 @@ import { Router, RouterLink } from '@angular/router';
   templateUrl: './employee-selection.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EmployeeSelectionComponent {
+export class EmployeeSelectionComponent implements OnDestroy {
+  @ViewChild('reader', { static: false }) readerElement?: ElementRef;
+  html5QrCode: Html5Qrcode | null = null;
   private stateService = inject(SupabaseStateService);
   private operationalAuth = inject(OperationalAuthService);
   private settingsDataService = inject(SettingsDataService);
@@ -49,8 +52,26 @@ export class EmployeeSelectionComponent {
   });
   
   // States for different stages
+  searchQuery = signal('');
+  searchResults = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    if (!query) return [];
+    
+    // Exact match on matricula
+    const exactMatricula = this.employees().filter(e => e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query);
+    if (exactMatricula.length === 1) return exactMatricula;
+
+    return this.employees().filter(e => 
+      (e.bank_details?.matricula && e.bank_details.matricula.toLowerCase().includes(query)) ||
+      (e.cpf && e.cpf.replace(/\D/g, '').includes(query.replace(/\D/g, ''))) ||
+      e.name.toLowerCase().includes(query)
+    );
+  });
+
   selectedEmployee = signal<Employee | null>(null); // For PIN entry
   confirmationEmployee = signal<Employee | null>(null); // For clock-in confirmation
+
+  isScanningQR = signal(false);
 
   pinInput = signal('');
   loginError = signal(false);
@@ -59,11 +80,21 @@ export class EmployeeSelectionComponent {
   constructor() {
     effect(() => {
         // Se os dados foram carregados e não há funcionários, redirecionar para onboarding
-        // Isso substitui o formulário "in-place" antigo
         if (this.isDataLoaded() && this.employees().length === 0) {
             this.router.navigate(['/onboarding']);
         }
     });
+    
+    // Auto-select if there's an exact match on matricula and it's unique
+    effect(() => {
+       const query = this.searchQuery().trim();
+       if (query && !this.selectedEmployee()) {
+         const exact = this.employees().find(e => e.bank_details?.matricula && e.bank_details.matricula.toLowerCase() === query.toLowerCase());
+         if (exact) {
+             this.selectEmployee(exact);
+         }
+       }
+    }, { allowSignalWrites: true });
   }
 
   selectEmployee(employee: Employee) {
@@ -73,6 +104,7 @@ export class EmployeeSelectionComponent {
     }
     // PIN required, show PIN modal
     this.selectedEmployee.set(employee);
+    this.searchQuery.set('');
     this.pinInput.set('');
     this.loginError.set(false);
   }
@@ -81,6 +113,55 @@ export class EmployeeSelectionComponent {
     this.operationalAuth.login(employee);
     const defaultRoute = this.operationalAuth.getDefaultRoute();
     this.router.navigate([defaultRoute]);
+  }
+
+  ngOnDestroy() {
+    this.stopScanner();
+  }
+
+  toggleScanner() {
+    if (this.isScanningQR()) {
+        this.stopScanner();
+    } else {
+        this.isScanningQR.set(true);
+        setTimeout(() => this.startScanner(), 100);
+    }
+  }
+
+  async startScanner() {
+    try {
+        this.html5QrCode = new Html5Qrcode('qr-reader');
+        await this.html5QrCode.start(
+            { facingMode: 'environment' },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            (decodedText) => this.onScanSuccess(decodedText),
+            (errorMessage) => {
+                // parse errors are ignored
+            }
+        );
+    } catch (err) {
+        console.error('Failed to start scanner:', err);
+        this.notificationService.alert('Não foi possível iniciar a câmera.');
+        this.stopScanner();
+    }
+  }
+
+  stopScanner() {
+    if (this.html5QrCode && this.html5QrCode.isScanning) {
+        this.html5QrCode.stop().then(() => {
+            this.html5QrCode?.clear();
+        }).catch(err => console.error('Failed to stop scanner:', err));
+    }
+    this.isScanningQR.set(false);
+  }
+
+  onScanSuccess(decodedText: string) {
+      // The QR code contains the matricula
+      this.searchQuery.set(decodedText);
+      this.stopScanner();
   }
 
   cancelPinLogin() {

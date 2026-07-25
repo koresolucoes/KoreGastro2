@@ -5,8 +5,8 @@ import { TimeClockService } from '../../../services/time-clock.service';
 import { supabase } from '../../../services/supabase-client';
 import { AuthService } from '../../../services/auth.service';
 import { UnitContextService } from '../../../services/unit-context.service';
-// FIX: Import HrStateService to access HR-related data
 import { HrStateService } from '../../../services/hr-state.service';
+import { QRCodeComponent } from 'angularx-qrcode';
 
 interface EmployeeStats {
   totalSales: number;
@@ -22,7 +22,7 @@ interface EmployeeStats {
 @Component({
   selector: 'app-employee-details-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, QRCodeComponent],
   templateUrl: './employee-details-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,6 +58,41 @@ export class EmployeeDetailsModalComponent {
     const rolesMap = new Map(this.hrState.roles().map(r => [r.id, r.name]));
     return rolesMap.get(emp.role_id) || 'Cargo Excluído';
   });
+
+  printBadge() {
+      const emp = this.employee();
+      if (!emp.bank_details?.matricula) {
+          alert('Este funcionário não possui Matrícula. Edite o funcionário para gerar uma.');
+          return;
+      }
+      
+      const printContents = document.getElementById('printable-badge')?.innerHTML;
+      if (printContents) {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+          
+          iframe.contentDocument?.write(`
+            <html>
+              <head>
+                <title>Imprimir Crachá - ${emp.name}</title>
+              </head>
+              <body style="display: flex; justify-content: center; padding: 2rem;">
+                ${printContents}
+              </body>
+            </html>
+          `);
+          iframe.contentDocument?.close();
+          
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 1000);
+          }, 500);
+      }
+  }
 
   constructor() {
     effect(() => {

@@ -63,7 +63,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const authUserIds = data.map((t: any) => t.client_id).filter((v: any, i: any, a: any) => a.indexOf(v) === i);
       let usersMap = new Map();
       if (authUserIds.length > 0) {
-          const { data: { users }, error: authListError } = await supabaseAdmin.auth.admin.listUsers();
+          const { data: authList, error: authListError } = await supabaseAdmin.auth.admin.listUsers();
+          const users = authList?.users as any[];
           if (!authListError && users) {
               const profilesResult = await supabaseAdmin.from('profiles').select('id, full_name').in('id', authUserIds);
               const profiles = profilesResult.data || [];
