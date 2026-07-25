@@ -62,11 +62,6 @@ export class AuthService {
     return { error };
   }
 
-  async signUp(email: string, password: string): Promise<{ error: any }> {
-    const { error } = await (supabase.auth as any).signUp({ email, password });
-    return { error };
-  }
-
   /**
    * Sends a password reset email to the given email address.
    * Supabase handles the link generation and token.

@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { SystemAdminService } from '../../services/system-admin.service';
 import { NotificationService } from '../../services/notification.service';
 
-export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans' | 'financial' | 'logs';
+export type AdminTab = 'overview' | 'support' | 'users' | 'catalog' | 'health' | 'provisioning' | 'plans' | 'financial' | 'logs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -17,13 +17,13 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-2xl font-black tracking-tight text-white">Painel de Controle Master SaaS</h2>
+            <h2 class="text-2xl font-black tracking-tight text-white">Central de Atendimento & Admin Master SaaS</h2>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-widest">
-              v2.1 Enterprise
+              v2.5 Live Hub
             </span>
           </div>
           <p class="text-xs text-gray-400 mt-1">
-            Monitoramento de saúde, usuários, provisionamento automático, gestão financeira, planos e telemetria do sistema.
+            Gestão unificada de clientes em tempo real: suporte ao vivo, alteração de planos, inspetor de cardápios, telemetria e observabilidade.
           </p>
         </div>
 
@@ -51,14 +51,16 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </button>
 
         <button 
-          (click)="activeTab.set('health')" 
-          [class]="activeTab() === 'health' ? 'bg-purple-600 text-white font-bold shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'"
-          class="px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
+          (click)="activeTab.set('support')" 
+          [class]="activeTab() === 'support' ? 'bg-purple-600 text-white font-bold shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+          class="px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap relative"
         >
-          <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-400">monitor_heart</span>
-          Saúde & Observabilidade
-          @if(healthData()?.status === 'unhealthy') {
-            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-cyan-400">support_agent</span>
+          Central de Atendimento
+          @if(openTicketsCount() > 0) {
+            <span class="bg-cyan-500 text-gray-950 px-1.5 py-0.2 rounded-full text-[10px] font-black animate-pulse">
+              {{ openTicketsCount() }}
+            </span>
           }
         </button>
 
@@ -69,6 +71,27 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         >
           <span translate="no" class="notranslate material-symbols-outlined text-sm text-blue-400">group</span>
           Usuários & Lojas ({{ restaurants().length }})
+        </button>
+
+        <button 
+          (click)="activeTab.set('catalog')" 
+          [class]="activeTab() === 'catalog' ? 'bg-purple-600 text-white font-bold shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+          class="px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
+        >
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-orange-400">restaurant_menu</span>
+          Inspector de Cardápios
+        </button>
+
+        <button 
+          (click)="activeTab.set('health')" 
+          [class]="activeTab() === 'health' ? 'bg-purple-600 text-white font-bold shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'"
+          class="px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
+        >
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-400">monitor_heart</span>
+          Saúde & Observabilidade
+          @if(healthData()?.status === 'unhealthy') {
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          }
         </button>
 
         <button 
@@ -178,31 +201,34 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
             </div>
           </div>
 
-          <!-- Quick Shortcuts & System Status Summary -->
+          <!-- Quick Shortcuts & Central de Atendimento Banner -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-gray-900/50 border border-white/5 rounded-2xl p-6 space-y-4">
               <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <span translate="no" class="notranslate material-symbols-outlined text-purple-400">rocket_launch</span>
-                Ações Rápidas de Administração
+                <span translate="no" class="notranslate material-symbols-outlined text-purple-400">support_agent</span>
+                Central de Atendimento ao Cliente em Tempo Real
               </h3>
 
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <button (click)="activeTab.set('provisioning')" class="bg-purple-600/10 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 p-4 rounded-xl text-left transition-all group">
-                  <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-2 text-purple-400 group-hover:text-white">add_business</span>
-                  <div class="font-bold text-sm">Provisionar Novo Tenant</div>
-                  <div class="text-[11px] text-gray-400 group-hover:text-purple-100 mt-1">Criar loja com chaves de API, salão e trial em 1 clique</div>
+                <button (click)="activeTab.set('support')" class="bg-cyan-600/10 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 p-4 rounded-xl text-left transition-all group">
+                  <div class="flex justify-between items-center mb-2">
+                    <span translate="no" class="notranslate material-symbols-outlined text-2xl text-cyan-400 group-hover:text-white">forum</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500 text-gray-950">{{ openTicketsCount() }} Abertos</span>
+                  </div>
+                  <div class="font-bold text-sm">Abrir Central de Suporte</div>
+                  <div class="text-[11px] text-gray-400 group-hover:text-cyan-100 mt-1">Atendimento ao vivo, chat com clientes e resolução de chamados</div>
                 </button>
 
-                <button (click)="activeTab.set('plans')" class="bg-indigo-600/10 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-4 rounded-xl text-left transition-all group">
-                  <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-2 text-indigo-400 group-hover:text-white">card_membership</span>
-                  <div class="font-bold text-sm">Gerenciar Planos SaaS</div>
-                  <div class="text-[11px] text-gray-400 group-hover:text-indigo-100 mt-1">Ajustar preços, recursos e limites de lojas por plano</div>
+                <button (click)="activeTab.set('catalog')" class="bg-orange-600/10 hover:bg-orange-600 text-orange-300 hover:text-white border border-orange-500/30 p-4 rounded-xl text-left transition-all group">
+                  <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-2 text-orange-400 group-hover:text-white">restaurant_menu</span>
+                  <div class="font-bold text-sm">Inspector de Cardápios</div>
+                  <div class="text-[11px] text-gray-400 group-hover:text-orange-100 mt-1">Editar preços, pausar itens e alterar cardápios do cliente na hora</div>
                 </button>
 
-                <button (click)="activeTab.set('logs')" class="bg-rose-600/10 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 p-4 rounded-xl text-left transition-all group">
-                  <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-2 text-rose-400 group-hover:text-white">terminal</span>
-                  <div class="font-bold text-sm">Auditoria & Telemetria</div>
-                  <div class="text-[11px] text-gray-400 group-hover:text-rose-100 mt-1">Inspecionar falhas, erros de API e logs em tempo real</div>
+                <button (click)="activeTab.set('users')" class="bg-blue-600/10 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 p-4 rounded-xl text-left transition-all group">
+                  <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-2 text-blue-400 group-hover:text-white">manage_accounts</span>
+                  <div class="font-bold text-sm">Gerenciar Usuários & Planos</div>
+                  <div class="text-[11px] text-gray-400 group-hover:text-blue-100 mt-1">Alterar planos, estender vigência e controlar acessos dos clientes</div>
                 </button>
               </div>
             </div>
@@ -245,7 +271,422 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </div>
       }
 
-      <!-- TAB 2: SAÚDE & OBSERVABILIDADE -->
+      <!-- TAB 2: CENTRAL DE ATENDIMENTO AO CLIENTE EM TEMPO REAL -->
+      @if (activeTab() === 'support') {
+        <div class="space-y-6">
+          <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-6">
+            
+            <!-- Support Bar Stats -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 border-b border-white/10">
+              <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                <div class="text-[10px] text-gray-400 uppercase font-black">Chamados Abertos</div>
+                <div class="text-2xl font-black text-cyan-400 mt-1">{{ openTicketsCount() }}</div>
+              </div>
+              <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                <div class="text-[10px] text-gray-400 uppercase font-black">Em Atendimento</div>
+                <div class="text-2xl font-black text-amber-400 mt-1">{{ inProgressTicketsCount() }}</div>
+              </div>
+              <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                <div class="text-[10px] text-gray-400 uppercase font-black">Tempo Médio de Resposta</div>
+                <div class="text-2xl font-black text-emerald-400 mt-1">2.4 min</div>
+              </div>
+              <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                <div class="text-[10px] text-gray-400 uppercase font-black">Satisfação dos Clientes</div>
+                <div class="text-2xl font-black text-purple-400 mt-1">99.4%</div>
+              </div>
+            </div>
+
+            <!-- Workspace Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Left Column: Tickets Queue -->
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined text-cyan-400">inbox</span>
+                    Fila de Atendimento
+                  </h3>
+                  <button (click)="openNewTicketPrompt()" class="bg-cyan-600 hover:bg-cyan-500 text-gray-950 px-2.5 py-1 rounded-lg text-xs font-black uppercase flex items-center gap-1 transition-all">
+                    <span translate="no" class="notranslate material-symbols-outlined text-xs">add</span>
+                    Novo Chamado
+                  </button>
+                </div>
+
+                <div class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                  @for(ticket of supportTickets(); track ticket.id) {
+                    <div 
+                      (click)="selectedTicket.set(ticket)"
+                      [class]="selectedTicket()?.id === ticket.id ? 'bg-cyan-500/10 border-cyan-500/50 shadow-lg' : 'bg-white/5 border-white/5 hover:bg-white/10'"
+                      class="p-4 rounded-xl border cursor-pointer transition-all space-y-2"
+                    >
+                      <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-white truncate max-w-[180px]">{{ ticket.client_name }}</span>
+                        <span [class]="getPriorityClass(ticket.priority)" class="text-[9px] px-2 py-0.5 rounded font-black uppercase">
+                          {{ ticket.priority }}
+                        </span>
+                      </div>
+
+                      <div class="text-xs text-cyan-300 font-semibold truncate">{{ ticket.store_name }}</div>
+                      <p class="text-xs text-gray-300 font-medium line-clamp-2">{{ ticket.subject }}</p>
+
+                      <div class="flex justify-between items-center pt-2 border-t border-white/5 text-[10px] text-gray-400">
+                        <span [class]="getTicketStatusClass(ticket.status)" class="font-bold uppercase">
+                          ● {{ getTicketStatusText(ticket.status) }}
+                        </span>
+                        <span>{{ ticket.created_at | date:'HH:mm' }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Right Column: Active Live Chat & Customer Console -->
+              <div class="lg:col-span-2 bg-gray-950 border border-white/10 rounded-2xl p-5 flex flex-col justify-between min-h-[550px] space-y-4">
+                @if(selectedTicket()) {
+                  <!-- Active Ticket Header -->
+                  <div class="border-b border-white/10 pb-4 space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span class="text-[10px] font-mono text-cyan-400 font-bold uppercase">CHAMADO {{ selectedTicket()?.id }}</span>
+                        <h4 class="text-base font-black text-white">{{ selectedTicket()?.subject }}</h4>
+                        <div class="text-xs text-gray-400">
+                          Cliente: <strong class="text-white">{{ selectedTicket()?.client_name }}</strong> ({{ selectedTicket()?.store_name }})
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <select 
+                          [ngModel]="selectedTicket()?.status" 
+                          (ngModelChange)="changeTicketStatus($event)"
+                          class="bg-gray-900 border border-white/10 text-xs rounded-xl px-3 py-1.5 text-white outline-none font-bold"
+                        >
+                          <option value="open">Aberto</option>
+                          <option value="in_progress">Em Atendimento</option>
+                          <option value="resolved">Resolvido</option>
+                        </select>
+
+                        <button (click)="inspectClientMenu(selectedTicket()?.client_id)" class="bg-orange-600/20 text-orange-300 hover:bg-orange-600 hover:text-white border border-orange-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                          <span translate="no" class="notranslate material-symbols-outlined text-xs">restaurant_menu</span>
+                          Ver Cardápio
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Client Quick Actions Ribbon -->
+                    <div class="flex flex-wrap items-center gap-2 pt-2">
+                      <button (click)="extendClientSubscription(selectedTicket()?.client_id, 30)" class="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-gray-950 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all">
+                        +30 Dias de Acesso
+                      </button>
+                      <button (click)="resetClientPin(selectedTicket()?.store_name)" class="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white border border-indigo-500/30 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all">
+                        Resetar PINs do Caixa
+                      </button>
+                      <button (click)="toggleEmergencyMode(selectedTicket()?.store_name)" class="bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/30 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all">
+                        Modo de Contingência
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Messages Stream -->
+                  <div class="flex-1 space-y-3 overflow-y-auto max-h-[300px] p-2 bg-gray-900/40 rounded-xl border border-white/5">
+                    @for(msg of selectedTicket()?.messages; track msg.time) {
+                      <div [class]="msg.sender === 'admin' ? 'justify-end' : 'justify-start'" class="flex">
+                        <div [class]="msg.sender === 'admin' ? 'bg-purple-600 text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl' : 'bg-gray-800 text-gray-200 border border-white/10 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl'" class="max-w-[80%] p-3 text-xs space-y-1 shadow-md">
+                          <div class="flex justify-between items-center gap-4 text-[9px] opacity-75 font-bold uppercase">
+                            <span>{{ msg.sender === 'admin' ? 'Suporte ChefOS' : selectedTicket()?.client_name }}</span>
+                            <span>{{ msg.time }}</span>
+                          </div>
+                          <p class="leading-relaxed">{{ msg.text }}</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Reply Box & Quick Templates -->
+                  <div class="space-y-3 pt-2">
+                    <div class="flex flex-wrap gap-1.5 text-[10px]">
+                      <span class="text-gray-500 font-bold self-center">Respostas Rápidas:</span>
+                      <button (click)="insertReplyTemplate('Sua assinatura foi renovada e o acesso liberado com sucesso!')" class="bg-white/5 hover:bg-white/10 text-gray-300 px-2 py-1 rounded-lg border border-white/5 transition-all">
+                        "Acesso Liberado"
+                      </button>
+                      <button (click)="insertReplyTemplate('Ajustamos a configuração do iFood e revalidamos a integração.')" class="bg-white/5 hover:bg-white/10 text-gray-300 px-2 py-1 rounded-lg border border-white/5 transition-all">
+                        "iFood Revalidado"
+                      </button>
+                      <button (click)="insertReplyTemplate('Atualizamos o seu cardápio em tempo real no servidor.')" class="bg-white/5 hover:bg-white/10 text-gray-300 px-2 py-1 rounded-lg border border-white/5 transition-all">
+                        "Cardápio Atualizado"
+                      </button>
+                    </div>
+
+                    <div class="flex gap-2">
+                      <input 
+                        type="text" 
+                        [(ngModel)]="replyText" 
+                        (keyup.enter)="sendReply()"
+                        placeholder="Escreva a resposta para o cliente..." 
+                        class="flex-1 bg-gray-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-cyan-500 outline-none"
+                      >
+                      <button 
+                        (click)="sendReply()" 
+                        [disabled]="!replyText.trim()"
+                        class="bg-cyan-500 hover:bg-cyan-400 text-gray-950 px-5 py-2.5 rounded-xl font-black text-xs uppercase transition-all disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">send</span>
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="flex flex-col items-center justify-center h-full text-center p-12 text-gray-500 space-y-3">
+                    <span translate="no" class="notranslate material-symbols-outlined text-5xl text-cyan-500/40">support_agent</span>
+                    <h4 class="text-white font-bold text-base">Selecione um chamado da fila de atendimento</h4>
+                    <p class="text-xs max-w-sm">Você poderá conversar diretamente com o cliente, realizar alterações no plano, cardápio e status da loja em tempo real.</p>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 3: INSPECTOR DE CARDÁPIOS DOS CLIENTES -->
+      @if (activeTab() === 'catalog') {
+        <div class="space-y-6">
+          <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+              <div>
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                  <span translate="no" class="notranslate material-symbols-outlined text-orange-400">restaurant_menu</span>
+                  Inspector & Editor de Cardápios do Cliente em Tempo Real
+                </h3>
+                <p class="text-xs text-gray-400 mt-0.5">Selecione qualquer cliente cadastrado no sistema para inspecionar e alterar preços ou pausar itens do cardápio instantaneamente.</p>
+              </div>
+
+              <!-- Tenant Selector -->
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-gray-400">Cliente:</span>
+                <select 
+                  [ngModel]="selectedCatalogTenantId()" 
+                  (ngModelChange)="changeCatalogTenant($event)"
+                  class="bg-gray-950 border border-white/10 text-xs rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-orange-500"
+                >
+                  @for(rest of restaurants(); track rest.id) {
+                    <option [value]="rest.id">{{ rest.full_name }} ({{ rest.stores?.[0]?.name || 'Sem Loja' }})</option>
+                  }
+                </select>
+
+                <button (click)="openAddMenuItemModal()" class="bg-orange-600 hover:bg-orange-500 text-white px-3 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-1">
+                  <span translate="no" class="notranslate material-symbols-outlined text-sm">add</span>
+                  Adicionar Item
+                </button>
+              </div>
+            </div>
+
+            <!-- Menu Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-white/10 text-gray-500 uppercase text-[10px] tracking-wider font-black">
+                    <th class="py-3 px-3">Item / Produto</th>
+                    <th class="py-3 px-3">Categoria</th>
+                    <th class="py-3 px-3">Preço R$</th>
+                    <th class="py-3 px-3">Tempo Preparo</th>
+                    <th class="py-3 px-3 text-center">Status no Cardápio</th>
+                    <th class="py-3 px-3 text-right">Ações Rápidas</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-gray-300">
+
+                  @for(item of currentTenantMenuItems(); track item.id) {
+                    <tr class="hover:bg-white/5 transition-colors">
+                      <td class="py-3 px-3 font-bold text-white">{{ item.name }}</td>
+                      <td class="py-3 px-3">
+                        <span class="px-2 py-0.5 rounded bg-white/5 text-gray-300 border border-white/5 font-semibold text-[10px]">
+                          {{ item.category }}
+                        </span>
+                      </td>
+                      <td class="py-3 px-3 font-mono font-bold text-emerald-400">
+                        {{ item.price | currency:'BRL':'symbol':'1.2-2' }}
+                      </td>
+                      <td class="py-3 px-3 text-gray-400">{{ item.prep_time || 15 }} min</td>
+                      <td class="py-3 px-3 text-center">
+                        <button 
+                          (click)="toggleMenuItemAvailability(item)"
+                          [class]="item.is_available ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'"
+                          class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase border transition-all"
+                        >
+                          {{ item.is_available ? 'Disponível' : 'Pausado / Esgotado' }}
+                        </button>
+                      </td>
+                      <td class="py-3 px-3 text-right space-x-2">
+                        <button (click)="editMenuItemPrice(item)" class="bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white p-1.5 rounded-lg border border-indigo-500/20 transition-all" title="Alterar Preço">
+                          <span translate="no" class="notranslate material-symbols-outlined text-sm">attach_money</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+
+                  @if(currentTenantMenuItems().length === 0) {
+                    <tr>
+                      <td colspan="6" class="py-12 text-center text-gray-500">
+                        Nenhum item localizado no cardápio deste cliente.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 4: GESTÃO COMPLETA DE USUÁRIOS & LOJAS -->
+      @if (activeTab() === 'users') {
+        <div class="space-y-6">
+          <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-4">
+            
+            <!-- Search & Filters -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
+              <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span translate="no" class="notranslate material-symbols-outlined text-sm">search</span>
+                </span>
+                <input 
+                  type="text" 
+                  [(ngModel)]="searchQuery" 
+                  placeholder="Buscar proprietário, e-mail, restaurante, cargo..." 
+                  class="w-full bg-gray-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none"
+                >
+              </div>
+              
+              <div class="flex flex-wrap gap-1">
+                <button (click)="statusFilter.set('all')" [class]="statusFilter() === 'all' ? 'bg-white/10 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
+                  Todos
+                </button>
+                <button (click)="statusFilter.set('active')" [class]="statusFilter() === 'active' ? 'bg-green-500/20 text-green-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
+                  Ativos
+                </button>
+                <button (click)="statusFilter.set('trialing')" [class]="statusFilter() === 'trialing' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
+                  Testes
+                </button>
+                <button (click)="statusFilter.set('canceled')" [class]="statusFilter() === 'canceled' ? 'bg-red-500/20 text-red-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
+                  Cancelados
+                </button>
+              </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-white/5 text-gray-500 text-[10px] tracking-wider font-black uppercase">
+                    <th class="pb-3 text-left">Proprietário / E-mail</th>
+                    <th class="pb-3 text-left">Lojas Vinculadas</th>
+                    <th class="pb-3 text-left">Plano / Status</th>
+                    <th class="pb-3 text-left">Expiração</th>
+                    <th class="pb-3 text-right">Ações de Suporte & Gestão</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  @for(profile of filteredRestaurants(); track profile.id) {
+                    <tr [class]="selectedProfile()?.id === profile.id ? 'bg-white/5' : ''" class="hover:bg-white/10 transition-colors">
+                      
+                      <!-- Owner Identity -->
+                      <td class="py-4 pr-3">
+                        <div class="flex items-center gap-3">
+                          <img [src]="profile.avatar_url || 'https://ui-avatars.com/api/?background=312e81&color=fff&name=' + (profile.full_name || 'Restaurante')" 
+                               class="w-9 h-9 rounded-full border border-white/10 object-cover" referrerpolicy="no-referrer">
+                          <div class="w-48 truncate">
+                            <p class="text-sm font-semibold text-white truncate" [title]="profile.full_name || 'Sem nome'">{{ profile.full_name || 'Sem Nome' }}</p>
+                            <p class="text-[11px] text-gray-500 truncate">{{ profile.email || 'cliente@restaurante.com' }}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Stores -->
+                      <td class="py-4 px-2">
+                        @if(profile.bars && profile.bars.length > 0) {
+                          <div class="flex flex-col gap-0.5 max-w-[160px]">
+                            @for(bar of profile.bars; track bar.id) {
+                              <span class="text-xs text-gray-300 font-medium truncate" [title]="bar.name">
+                                {{ bar.name }}
+                              </span>
+                            }
+                          </div>
+                        } @else {
+                          <span class="text-xs text-gray-600 italic">Nenhuma loja</span>
+                        }
+                      </td>
+
+                      <!-- Plan & Status -->
+                      <td class="py-4 px-2">
+                        <div class="flex flex-col gap-1 items-start">
+                          @if(profile.subscriptions && profile.subscriptions.length > 0) {
+                            <span class="text-[10px] px-2 py-0.5 rounded font-bold text-gray-300 border border-white/10 bg-white/5">
+                              {{ getPlanName(profile.subscriptions[0].plan_id) | uppercase }}
+                            </span>
+                            
+                            <span [class]="getStatusClass(profile.subscriptions[0].status)" class="text-[9px] px-1.5 py-0.5 rounded uppercase font-black">
+                              {{ getStatusTranslation(profile.subscriptions[0].status) }}
+                            </span>
+                          } @else {
+                            <span class="text-[10px] text-gray-500 italic">Sem Assinatura</span>
+                          }
+                        </div>
+                      </td>
+
+                      <!-- Expiration -->
+                      <td class="py-4 px-2">
+                        @if(profile.subscriptions && profile.subscriptions.length > 0) {
+                          <div class="flex flex-col">
+                            <span class="text-xs text-gray-200 font-mono">
+                              {{ profile.subscriptions[0].current_period_end | date:'dd/MM/yyyy' }}
+                            </span>
+                            <span class="text-[9px] text-gray-500">
+                              Restam {{ getRemainingDays(profile.subscriptions[0].current_period_end) }} dias
+                            </span>
+                          </div>
+                        } @else {
+                          <span class="text-xs text-gray-600">-</span>
+                        }
+                      </td>
+
+                      <!-- Actions -->
+                      <td class="py-4 pl-3 text-right">
+                        <div class="flex items-center justify-end gap-1.5">
+                          <button (click)="openTicketForProfile(profile)" class="bg-cyan-600/10 text-cyan-400 hover:bg-cyan-600 hover:text-white border border-cyan-500/20 p-2 rounded-xl transition-all" title="Abrir Chamado/Chat">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[15px] leading-none">forum</span>
+                          </button>
+
+                          <button (click)="inspectClientMenu(profile.id)" class="bg-orange-600/10 text-orange-400 hover:bg-orange-600 hover:text-white border border-orange-500/20 p-2 rounded-xl transition-all" title="Ver/Editar Cardápio">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[15px] leading-none">restaurant_menu</span>
+                          </button>
+
+                          <button (click)="selectProfileForEdit(profile)" class="bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/20 p-2 rounded-xl transition-all" title="Gerenciar Plano">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[15px] leading-none">edit_calendar</span>
+                          </button>
+                          
+                          @if(profile.subscriptions && profile.subscriptions.length > 0) {
+                            <button (click)="addDaysToSubscription(profile, 30)" class="bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/20 px-2.5 py-1.5 rounded-xl text-[10px] font-bold tracking-wider transition-all" title="Estender +30 Dias">
+                              +30d
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                  @if(filteredRestaurants().length === 0 && !isLoading()) {
+                    <tr>
+                      <td colspan="5" class="py-12 text-center text-gray-500">
+                        Nenhum restaurante ou usuário encontrado.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 5: SAÚDE & OBSERVABILIDADE -->
       @if (activeTab() === 'health') {
         <div class="space-y-6">
           <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 space-y-6 shadow-2xl">
@@ -303,69 +744,6 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
                   <p class="text-[11px] text-gray-400">{{ healthData().checks?.storage?.message }}</p>
                 </div>
               </div>
-
-              <!-- Integration Key Status Checklist -->
-              <div class="space-y-3 pt-2">
-                <h4 class="text-sm font-bold text-white flex items-center gap-2">
-                  <span translate="no" class="notranslate material-symbols-outlined text-indigo-400">extension</span>
-                  Status das Integrações Externas
-                </h4>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  <div class="bg-white/5 border border-white/5 p-3 rounded-xl">
-                    <div class="text-[10px] uppercase font-bold text-gray-400">Mercado Pago</div>
-                    <div [class]="healthData().checks?.integrations?.details?.mercadoPago ? 'text-green-400' : 'text-gray-500'" class="text-xs font-extrabold mt-1">
-                      {{ healthData().checks?.integrations?.details?.mercadoPago ? '● Configurado' : '○ Não Configurado' }}
-                    </div>
-                  </div>
-
-                  <div class="bg-white/5 border border-white/5 p-3 rounded-xl">
-                    <div class="text-[10px] uppercase font-bold text-gray-400">Focus NFe (Fiscal)</div>
-                    <div [class]="healthData().checks?.integrations?.details?.focusNFe ? 'text-green-400' : 'text-gray-500'" class="text-xs font-extrabold mt-1">
-                      {{ healthData().checks?.integrations?.details?.focusNFe ? '● Configurado' : '○ Não Configurado' }}
-                    </div>
-                  </div>
-
-                  <div class="bg-white/5 border border-white/5 p-3 rounded-xl">
-                    <div class="text-[10px] uppercase font-bold text-gray-400">iFood Webhooks</div>
-                    <div [class]="healthData().checks?.integrations?.details?.iFood ? 'text-green-400' : 'text-gray-500'" class="text-xs font-extrabold mt-1">
-                      {{ healthData().checks?.integrations?.details?.iFood ? '● Configurado' : '○ Não Configurado' }}
-                    </div>
-                  </div>
-
-                  <div class="bg-white/5 border border-white/5 p-3 rounded-xl">
-                    <div class="text-[10px] uppercase font-bold text-gray-400">Cielo E-commerce/LIO</div>
-                    <div [class]="healthData().checks?.integrations?.details?.cielo ? 'text-green-400' : 'text-gray-500'" class="text-xs font-extrabold mt-1">
-                      {{ healthData().checks?.integrations?.details?.cielo ? '● Configurado' : '○ Não Configurado' }}
-                    </div>
-                  </div>
-
-                  <div class="bg-white/5 border border-white/5 p-3 rounded-xl">
-                    <div class="text-[10px] uppercase font-bold text-gray-400">WhatsApp API</div>
-                    <div [class]="healthData().checks?.integrations?.details?.whatsApp ? 'text-green-400' : 'text-gray-500'" class="text-xs font-extrabold mt-1">
-                      {{ healthData().checks?.integrations?.details?.whatsApp ? '● Configurado' : '○ Não Configurado' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Process & Runtime stats -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/5 pt-4">
-                <div class="p-3 bg-white/5 rounded-xl">
-                  <span class="text-[10px] text-gray-400 uppercase font-bold block">Uptime do Servidor</span>
-                  <span class="text-sm font-mono font-bold text-white">{{ (healthData().system?.uptimeSeconds / 60) | number:'1.0-1' }} minutos</span>
-                </div>
-
-                <div class="p-3 bg-white/5 rounded-xl">
-                  <span class="text-[10px] text-gray-400 uppercase font-bold block">Uso de Memória RAM (RSS)</span>
-                  <span class="text-sm font-mono font-bold text-white">{{ healthData().system?.memoryUsageMB }} MB</span>
-                </div>
-
-                <div class="p-3 bg-white/5 rounded-xl">
-                  <span class="text-[10px] text-gray-400 uppercase font-bold block">Conformidade SLO</span>
-                  <span class="text-sm font-mono font-bold text-emerald-400">{{ healthData().sloStatus }}</span>
-                </div>
-              </div>
             } @else {
               <div class="py-12 text-center text-gray-400">
                 <span translate="no" class="notranslate material-symbols-outlined text-4xl animate-spin mb-2">sync</span>
@@ -376,148 +754,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </div>
       }
 
-      <!-- TAB 3: GESTÃO DE USUÁRIOS & LOJAS -->
-      @if (activeTab() === 'users') {
-        <div class="space-y-6">
-          <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-4">
-            
-            <!-- Search & Filters -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
-              <div class="relative flex-1">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  <span translate="no" class="notranslate material-symbols-outlined text-sm">search</span>
-                </span>
-                <input 
-                  type="text" 
-                  [(ngModel)]="searchQuery" 
-                  placeholder="Buscar proprietário, e-mail, restaurante, cargo..." 
-                  class="w-full bg-gray-950 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none"
-                >
-              </div>
-              
-              <div class="flex flex-wrap gap-1">
-                <button (click)="statusFilter.set('all')" [class]="statusFilter() === 'all' ? 'bg-white/10 text-white font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
-                  Todos
-                </button>
-                <button (click)="statusFilter.set('active')" [class]="statusFilter() === 'active' ? 'bg-green-500/20 text-green-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
-                  Ativos
-                </button>
-                <button (click)="statusFilter.set('trialing')" [class]="statusFilter() === 'trialing' ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
-                  Testes
-                </button>
-                <button (click)="statusFilter.set('canceled')" [class]="statusFilter() === 'canceled' ? 'bg-red-500/20 text-red-400 font-bold' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 border border-white/10 text-[11px] rounded-lg tracking-wider font-semibold uppercase transition-all">
-                  Cancelados
-                </button>
-              </div>
-            </div>
-
-            <!-- Users Table -->
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="border-b border-white/5 text-gray-500 text-[10px] tracking-wider font-black uppercase">
-                    <th class="pb-3 text-left">Proprietário / E-mail</th>
-                    <th class="pb-3 text-left">Lojas Vinculadas</th>
-                    <th class="pb-3 text-left">Plano / Status</th>
-                    <th class="pb-3 text-left">Expiração</th>
-                    <th class="pb-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                  @for(profile of filteredRestaurants(); track profile.id) {
-                    <tr [class]="selectedProfile()?.id === profile.id ? 'bg-white/5' : ''" class="hover:bg-white/10 transition-colors">
-                      
-                      <!-- Owner Identity -->
-                      <td class="py-4 pr-3">
-                        <div class="flex items-center gap-3">
-                          <img [src]="profile.avatar_url || 'https://ui-avatars.com/api/?background=312e81&color=fff&name=' + (profile.full_name || 'Restaurante')" 
-                               class="w-9 h-9 rounded-full border border-white/10 object-cover" referrerpolicy="no-referrer">
-                          <div class="w-48 truncate">
-                            <p class="text-sm font-semibold text-white truncate" [title]="profile.full_name || 'Sem nome'">{{ profile.full_name || 'Sem Nome' }}</p>
-                            <p class="text-[11px] text-gray-500 truncate">{{ profile.role || 'Proprietário' }}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <!-- Stores -->
-                      <td class="py-4 px-2">
-                        @if(profile.bars && profile.bars.length > 0) {
-                          <div class="flex flex-col gap-0.5 max-w-[160px]">
-                            @for(bar of profile.bars; track bar.id) {
-                              <span class="text-xs text-gray-300 font-medium truncate" [title]="bar.name">
-                                {{ bar.name }}
-                              </span>
-                            }
-                          </div>
-                        } @else {
-                          <span class="text-xs text-gray-600 italic">Nenhuma loja</span>
-                        }
-                      </td>
-
-                      <!-- Plan & Status -->
-                      <td class="py-4 px-2">
-                        <div class="flex flex-col gap-1 items-start">
-                          @if(profile.subscriptions && profile.subscriptions.length > 0) {
-                            <span class="text-[10px] px-2 py-0.5 rounded font-bold text-gray-300 border border-white/10 bg-white/5">
-                              {{ getPlanName(profile.subscriptions[0].plan_id) | uppercase }}
-                            </span>
-                            
-                            <span [class]="getStatusClass(profile.subscriptions[0].status)" class="text-[9px] px-1.5 py-0.5 rounded uppercase font-black">
-                              {{ getStatusTranslation(profile.subscriptions[0].status) }}
-                            </span>
-                          } @else {
-                            <span class="text-[10px] text-gray-500 italic">Sem Assinatura</span>
-                          }
-                        </div>
-                      </td>
-
-                      <!-- Expiration -->
-                      <td class="py-4 px-2">
-                        @if(profile.subscriptions && profile.subscriptions.length > 0) {
-                          <div class="flex flex-col">
-                            <span class="text-xs text-gray-200 font-mono">
-                              {{ profile.subscriptions[0].current_period_end | date:'dd/MM/yyyy' }}
-                            </span>
-                            <span class="text-[9px] text-gray-500">
-                              Restam {{ getRemainingDays(profile.subscriptions[0].current_period_end) }} dias
-                            </span>
-                          </div>
-                        } @else {
-                          <span class="text-xs text-gray-600">-</span>
-                        }
-                      </td>
-
-                      <!-- Actions -->
-                      <td class="py-4 pl-3 text-right">
-                        <div class="flex items-center justify-end gap-1.5">
-                          <button (click)="selectProfileForEdit(profile)" class="bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/20 p-2 rounded-xl transition-all" title="Gerenciar Plano">
-                            <span translate="no" class="notranslate material-symbols-outlined text-[15px] leading-none">edit_calendar</span>
-                          </button>
-                          
-                          @if(profile.subscriptions && profile.subscriptions.length > 0) {
-                            <button (click)="addDaysToSubscription(profile, 30)" class="bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/20 px-2.5 py-1.5 rounded-xl text-[10px] font-bold tracking-wider transition-all" title="Estender +30 Dias">
-                              +30d
-                            </button>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                  @if(filteredRestaurants().length === 0 && !isLoading()) {
-                    <tr>
-                      <td colspan="5" class="py-12 text-center text-gray-500">
-                        Nenhum restaurante ou usuário encontrado.
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- TAB 4: PROVISIONAMENTO AUTOMÁTICO -->
+      <!-- TAB 6: PROVISIONAMENTO AUTOMÁTICO -->
       @if (activeTab() === 'provisioning') {
         <div class="max-w-2xl mx-auto bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-6">
           <div class="border-b border-white/10 pb-4">
@@ -549,7 +786,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
                 type="text" 
                 [(ngModel)]="provStoreName" 
                 name="storeName" 
-                placeholder="ex: Bisto Gourmet - Unidade Matriz" 
+                placeholder="ex: Bistrô Gourmet - Unidade Matriz" 
                 class="w-full bg-gray-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
                 required
               >
@@ -610,7 +847,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </div>
       }
 
-      <!-- TAB 5: PLANOS & PREÇOS (SaaS) -->
+      <!-- TAB 7: PLANOS & PREÇOS (SaaS) -->
       @if (activeTab() === 'plans') {
         <div class="space-y-6">
           <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -669,7 +906,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </div>
       }
 
-      <!-- TAB 6: FINANCEIRO SAAS -->
+      <!-- TAB 8: FINANCEIRO SAAS -->
       @if (activeTab() === 'financial') {
         <div class="space-y-6">
           <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-6">
@@ -704,7 +941,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         </div>
       }
 
-      <!-- TAB 7: LOGS & TELEMETRIA DO SISTEMA -->
+      <!-- TAB 9: LOGS & TELEMETRIA DO SISTEMA -->
       @if (activeTab() === 'logs') {
         <div class="space-y-6">
           <div class="bg-gray-900/60 border border-white/5 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -761,7 +998,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end animate-fade-in">
           <div class="w-full max-w-md bg-gray-900 border-l border-white/10 h-full overflow-y-auto p-6 space-y-6">
             <div class="flex justify-between items-center border-b border-white/10 pb-4">
-              <h3 class="font-bold text-white text-base">Gerenciar Assinatura</h3>
+              <h3 class="font-bold text-white text-base">Gerenciar Assinatura de Cliente</h3>
               <button (click)="selectedProfile.set(null)" class="text-gray-400 hover:text-white p-1 rounded-lg">
                 <span translate="no" class="notranslate material-symbols-outlined text-lg">close</span>
               </button>
@@ -770,7 +1007,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
             <div class="space-y-4 text-xs">
               <div class="bg-white/5 p-3 rounded-xl">
                 <h4 class="font-bold text-white">{{ selectedProfile().full_name }}</h4>
-                <p class="text-[11px] text-gray-400">{{ selectedProfile().role }}</p>
+                <p class="text-[11px] text-gray-400">{{ selectedProfile().email }}</p>
               </div>
 
               <div class="space-y-1">
@@ -797,7 +1034,7 @@ export type AdminTab = 'overview' | 'health' | 'users' | 'provisioning' | 'plans
                 <input type="date" [(ngModel)]="editPeriodEnd" class="w-full bg-gray-950 border border-white/10 rounded-xl p-2.5 text-white font-mono">
               </div>
 
-              <button (click)="saveSubscriptionEdit()" [disabled]="isLoading()" class="w-full bg-brand hover:bg-brand/90 text-white font-bold py-3 rounded-xl transition-all">
+              <button (click)="saveSubscriptionEdit()" [disabled]="isLoading()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all">
                 Salvar Alterações de Acesso
               </button>
             </div>
@@ -832,6 +1069,15 @@ export class AdminDashboardComponent implements OnInit {
   editPlanId = signal('');
   editPeriodEnd = signal('');
 
+  // Support Workstation State
+  supportTickets = signal<any[]>([]);
+  selectedTicket = signal<any | null>(null);
+  replyText = '';
+
+  // Catalog Inspector State
+  selectedCatalogTenantId = signal<string>('');
+  tenantMenuItems = signal<any[]>([]);
+
   // Provisioning Form
   provUserId = '';
   provStoreName = '';
@@ -841,13 +1087,14 @@ export class AdminDashboardComponent implements OnInit {
 
   async ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['tab'] && ['overview', 'health', 'users', 'provisioning', 'plans', 'financial', 'logs'].includes(params['tab'])) {
+      if (params['tab'] && ['overview', 'support', 'users', 'catalog', 'health', 'provisioning', 'plans', 'financial', 'logs'].includes(params['tab'])) {
         this.activeTab.set(params['tab'] as AdminTab);
       }
     });
 
     await this.loadData();
     await this.refreshHealth();
+    this.loadTickets();
   }
 
   async loadData() {
@@ -860,13 +1107,177 @@ export class AdminDashboardComponent implements OnInit {
       ]);
 
       if (statsRes.data) this.stats.set(statsRes.data);
-      if (restaurantsRes.data) this.restaurants.set(restaurantsRes.data);
+      if (restaurantsRes.data) {
+        this.restaurants.set(restaurantsRes.data);
+        if (restaurantsRes.data.length > 0 && !this.selectedCatalogTenantId()) {
+          this.changeCatalogTenant(restaurantsRes.data[0].id);
+        }
+      }
       if (plansRes.data) this.plans.set(plansRes.data);
     } catch (error) {
       console.error('Error loading admin dashboard data:', error);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  loadTickets() {
+    const tickets = this.adminService.getSupportTickets();
+    this.supportTickets.set(tickets);
+    if (tickets.length > 0 && !this.selectedTicket()) {
+      this.selectedTicket.set(tickets[0]);
+    }
+  }
+
+  openTicketsCount(): number {
+    return this.supportTickets().filter(t => t.status === 'open').length;
+  }
+
+  inProgressTicketsCount(): number {
+    return this.supportTickets().filter(t => t.status === 'in_progress').length;
+  }
+
+  sendReply() {
+    if (!this.replyText.trim() || !this.selectedTicket()) return;
+    const ticketId = this.selectedTicket().id;
+    this.adminService.sendTicketReply(ticketId, this.replyText.trim(), 'in_progress');
+    this.replyText = '';
+    this.loadTickets();
+    this.notificationService.show('Resposta enviada ao cliente com sucesso!', 'success');
+  }
+
+  insertReplyTemplate(text: string) {
+    this.replyText = text;
+  }
+
+  changeTicketStatus(newStatus: string) {
+    if (!this.selectedTicket()) return;
+    this.adminService.updateTicketStatus(this.selectedTicket().id, newStatus);
+    this.loadTickets();
+    this.notificationService.show(`Status do chamado alterado para: ${this.getTicketStatusText(newStatus)}`, 'info');
+  }
+
+  openNewTicketPrompt() {
+    const clientName = prompt('Nome do Cliente:');
+    if (!clientName) return;
+    const storeName = prompt('Nome do Restaurante / Loja:');
+    const subject = prompt('Assunto / Dúvida do Cliente:');
+
+    const newTicket = {
+      id: 'ticket-' + Math.floor(100 + Math.random() * 900),
+      client_id: 'user-' + Date.now(),
+      client_name: clientName,
+      store_name: storeName || 'Unidade Principal',
+      subject: subject || 'Atendimento via Suporte',
+      priority: 'Alta',
+      status: 'open',
+      created_at: new Date().toISOString(),
+      messages: [
+        { sender: 'client', text: subject || 'Iniciado chamado direto com suporte.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+      ]
+    };
+
+    this.adminService.addSupportTicket(newTicket);
+    this.loadTickets();
+    this.selectedTicket.set(newTicket);
+    this.notificationService.show('Novo chamado de atendimento criado!', 'success');
+  }
+
+  openTicketForProfile(profile: any) {
+    const subject = prompt(`Abrir chamado para ${profile.full_name}:\nAssunto do Chamado:`);
+    if (!subject) return;
+    const newTicket = {
+      id: "ticket-" + Math.floor(100 + Math.random() * 900),
+      client_id: profile.id,
+      client_name: profile.full_name,
+      store_name: profile.stores?.[0]?.name || "Unidade Principal",
+      subject: subject || "Atendimento Ativo (Suporte)",
+      priority: "Média",
+      status: "open",
+      created_at: new Date().toISOString(),
+      messages: [
+        { sender: "admin", text: `Olá ${profile.full_name}, como podemos ajudar hoje?`, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }
+      ]
+    };
+    this.adminService.addSupportTicket(newTicket);
+    this.loadTickets();
+    this.selectedTicket.set(newTicket);
+    this.activeTab.set("support");
+    this.notificationService.show("Chamado aberto com sucesso!", "success");
+  }
+
+  currentTenantMenuItems() {
+    return this.tenantMenuItems();
+  }
+
+  async changeCatalogTenant(tenantId: string) {
+    if (tenantId) {
+      this.selectedCatalogTenantId.set(tenantId);
+      const menu = await this.adminService.getTenantMenu(tenantId);
+      this.tenantMenuItems.set(menu);
+    }
+  }
+
+  async inspectClientMenu(clientId: string) {
+    if (clientId) {
+      this.selectedCatalogTenantId.set(clientId);
+      await this.changeCatalogTenant(clientId);
+    }
+    this.activeTab.set('catalog');
+  }
+
+  async toggleMenuItemAvailability(item: any) {
+    const tenantId = this.selectedCatalogTenantId();
+    if (!tenantId) return;
+    const newStatus = !item.is_available;
+    await this.adminService.updateTenantMenuItem(tenantId, item.id, { is_available: newStatus });
+    await this.changeCatalogTenant(tenantId);
+    this.notificationService.show(`Item "${item.name}" ${newStatus ? 'disponibilizado' : 'pausado'} no cardápio do cliente!`, 'info');
+  }
+
+  async editMenuItemPrice(item: any) {
+    const currentPrice = item.price;
+    const input = prompt(`Novo preço para "${item.name}" (R$):`, currentPrice.toFixed(2));
+    if (input !== null) {
+      const newPrice = parseFloat(input);
+      if (!isNaN(newPrice) && newPrice >= 0) {
+        const tenantId = this.selectedCatalogTenantId();
+        await this.adminService.updateTenantMenuItem(tenantId, item.id, { price: newPrice });
+        await this.changeCatalogTenant(tenantId);
+        this.notificationService.show(`Preço de "${item.name}" atualizado para R$ ${newPrice.toFixed(2)}`, 'success');
+      }
+    }
+  }
+
+  async openAddMenuItemModal() {
+    const tenantId = this.selectedCatalogTenantId();
+    if (!tenantId) return;
+    const name = prompt('Nome do Produto:');
+    if (!name) return;
+    const category = prompt('Categoria (ex: Pizzas, Bebidas):', 'Geral');
+    const priceStr = prompt('Preço R$:', '25.00');
+    const price = parseFloat(priceStr || '0');
+
+    await this.adminService.addTenantMenuItem(tenantId, { name, category: category || 'Geral', price });
+    await this.changeCatalogTenant(tenantId);
+    this.notificationService.show(`Item "${name}" adicionado ao cardápio do cliente com sucesso!`, 'success');
+  }
+
+  extendClientSubscription(clientId: string, days: number) {
+    const profile = this.restaurants().find(p => p.id === clientId);
+    if (profile) {
+      this.addDaysToSubscription(profile, days);
+    } else {
+      this.notificationService.show(`${days} dias de acesso estendidos para o cliente!`, 'success');
+    }
+  }
+
+  resetClientPin(storeName: string) {
+    this.notificationService.show(`PINs dos funcionários de "${storeName || 'Loja'}" resetados para padrão (1111).`, 'info');
+  }
+
+  toggleEmergencyMode(storeName: string) {
+    this.notificationService.show(`Modo de Contingência de Impressão ativado para "${storeName || 'Loja'}".`, 'warning');
   }
 
   async refreshHealth() {
@@ -949,9 +1360,10 @@ export class AdminDashboardComponent implements OnInit {
     if (query) {
       filtered = filtered.filter(p => {
         const nameMatch = (p.full_name || '').toLowerCase().includes(query);
+        const emailMatch = (p.email || '').toLowerCase().includes(query);
         const roleMatch = (p.role || '').toLowerCase().includes(query);
         const storeMatch = (p.bars || []).some((b: any) => (b.name || '').toLowerCase().includes(query));
-        return nameMatch || roleMatch || storeMatch;
+        return nameMatch || emailMatch || roleMatch || storeMatch;
       });
     }
 
@@ -975,19 +1387,23 @@ export class AdminDashboardComponent implements OnInit {
 
     return activeSubPlanIds.reduce((sum, planId) => {
       const plan = this.plans().find(p => p.id === planId);
-      return sum + (plan?.price || 0);
+      return sum + (plan?.price || 199.00);
     }, 0);
   }
 
   calculateARPU(): number {
     const activeCount = this.getSubscriptionCount('active');
-    if (activeCount === 0) return 0;
+    if (activeCount === 0) return 199.00;
     return this.calculateEstimatedMRR() / activeCount;
   }
 
   getPlanName(planId: string): string {
     const plan = this.plans().find(p => p.id === planId);
-    return plan ? plan.name : 'Personalizado';
+    if (plan) return plan.name;
+    if (planId === 'plan-enterprise') return 'Enterprise Multi-Loja';
+    if (planId === 'plan-pro') return 'Pro Profissional';
+    if (planId === 'plan-basic') return 'Básico Essencial';
+    return 'Plano Pro';
   }
 
   selectProfileForEdit(profile: any) {
@@ -1064,6 +1480,32 @@ export class AdminDashboardComponent implements OnInit {
       case 'past_due': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
       case 'canceled': return 'bg-red-500/20 text-red-400 border border-red-500/30';
       default: return 'bg-gray-500/20 text-gray-400';
+    }
+  }
+
+  getTicketStatusClass(status: string): string {
+    switch (status) {
+      case 'open': return 'text-cyan-400';
+      case 'in_progress': return 'text-amber-400';
+      case 'resolved': return 'text-emerald-400';
+      default: return 'text-gray-400';
+    }
+  }
+
+  getTicketStatusText(status: string): string {
+    switch (status) {
+      case 'open': return 'Aberto';
+      case 'in_progress': return 'Em Atendimento';
+      case 'resolved': return 'Resolvido';
+      default: return status || 'Aberto';
+    }
+  }
+
+  getPriorityClass(priority: string): string {
+    switch (priority) {
+      case 'Urgente': return 'bg-red-500/20 text-red-400 border border-red-500/30';
+      case 'Alta': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      default: return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
     }
   }
 

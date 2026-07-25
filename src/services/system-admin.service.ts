@@ -9,10 +9,6 @@ export class SystemAdminService {
   async checkAdminStatus(email: string): Promise<boolean> {
     this.isChecking.set(true);
     try {
-      if (email === 'admin@admin.com') {
-        this.isAdmin.set(true);
-        return true;
-      }
       // Usamos uma função RPC para checar o status, ignorando o RLS e evitando loops infinitos
       const { data, error } = await supabase.rpc('is_system_admin');
       
@@ -217,6 +213,96 @@ export class SystemAdminService {
       return { data, error };
     } catch (error: any) {
       return { data: null, error };
+    }
+  }
+
+  // --- CENTRAL DE ATENDIMENTO AO CLIENTE EM TEMPO REAL ---
+  private supportTickets = signal<any[]>([]);
+
+  getSupportTickets() {
+    return this.supportTickets();
+  }
+
+  addSupportTicket(ticket: any) {
+    const current = this.supportTickets();
+    this.supportTickets.set([ticket, ...current]);
+  }
+
+  sendTicketReply(ticketId: string, replyText: string, newStatus?: string) {
+    const current = this.supportTickets();
+    const updated = current.map(t => {
+      if (t.id === ticketId) {
+        const msgs = [...t.messages, { sender: 'admin', text: replyText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }];
+        return {
+          ...t,
+          status: newStatus || 'in_progress',
+          messages: msgs,
+          updated_at: new Date().toISOString()
+        };
+      }
+      return t;
+    });
+    this.supportTickets.set(updated);
+  }
+
+  updateTicketStatus(ticketId: string, status: string) {
+    const current = this.supportTickets();
+    this.supportTickets.set(current.map(t => t.id === ticketId ? { ...t, status } : t));
+  }
+
+  async getTenantMenu(tenantId: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/v2/admin/tenant-menu?tenantId=${tenantId}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      const result = await response.json();
+      const items = result.data || [];
+      return items.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.categories?.name || 'Geral',
+        price: item.price,
+        is_available: item.is_available,
+        prep_time: item.prep_time_in_minutes || 15
+      }));
+    } catch (error) {
+      console.error('Error fetching tenant menu:', error);
+      return [];
+    }
+  }
+
+  async updateTenantMenuItem(tenantId: string, itemId: string, updates: Partial<{ name: string; price: number; is_available: boolean; category: string }>) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/v2/admin/tenant-menu', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: itemId, updates })
+      });
+    } catch (error) {
+      console.error('Error updating tenant menu item:', error);
+    }
+  }
+
+  async addTenantMenuItem(tenantId: string, item: { name: string; category: string; price: number; is_available?: boolean }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/v2/admin/tenant-menu', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tenantId, item })
+      });
+    } catch (error) {
+      console.error('Error adding tenant menu item:', error);
     }
   }
 }

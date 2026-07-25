@@ -56,42 +56,6 @@ export class LoginComponent {
     }
   }
 
-  async autoLoginAdmin() {
-    this.email.set('admin@admin.com');
-    this.password.set('admin123');
-    
-    this.authState.set('loading');
-    this.errorMessage.set('');
-
-    try {
-      let { error } = await this.authService.signInWithPassword(this.email(), this.password());
-      
-      // If login fails (user doesn't exist or not confirmed), try to create/confirm via backend
-      if (error) {
-        const createRes = await fetch('/api/create-test-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: this.email(), password: this.password() })
-        });
-        
-        if (createRes.ok) {
-          // Try to log in again after creation/confirmation
-          const { error: retryError } = await this.authService.signInWithPassword(this.email(), this.password());
-          if (retryError) throw retryError;
-        } else {
-          throw new Error('Falha ao criar usuário de teste no backend. Verifique as chaves do Supabase.');
-        }
-      }
-
-      // Check if admin is authorized
-      const returnUrl = this.router.routerState.snapshot.root.queryParams['returnUrl'] || '/admin/dashboard';
-      this.router.navigateByUrl(returnUrl);
-    } catch (error: any) {
-      this.errorMessage.set('Erro no login de teste. Certifique-se de que o backend tem acesso ao SUPABASE_SERVICE_ROLE_KEY.');
-      this.authState.set('error');
-    }
-  }
-
   async forgotPassword() {
     const { confirmed, value: email } = await this.notificationService.prompt(
       'Insira o e-mail da sua conta para enviarmos um link de recuperação de senha.',

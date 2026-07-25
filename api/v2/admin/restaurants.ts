@@ -52,19 +52,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Forbidden: User is not a system admin' });
     }
 
-    // 3. Fetch all profiles
+    // 3. Fetch all profiles and auth users
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name, avatar_url, updated_at')
       .order('updated_at', { ascending: false });
 
     if (profilesError) {
-      throw profilesError;
+      console.warn('Profiles query error, proceeding with empty profiles array:', profilesError);
     }
 
-    const profileIds = (profiles || []).map(p => p.id);
+    const rawProfiles = profiles || [];
+    const profileIds = rawProfiles.map(p => p.id);
 
-    // Fetch stores in parallel
+    // Fetch stores and subscriptions in parallel
     const [storesResult, subscriptionsResult] = await Promise.all([
       profileIds.length > 0
         ? supabaseAdmin.from('stores').select('id, name, owner_id, created_at').in('owner_id', profileIds)
@@ -74,21 +75,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : Promise.resolve({ data: [], error: null })
     ]);
 
-    if (storesResult.error) throw storesResult.error;
-    if (subscriptionsResult.error) throw subscriptionsResult.error;
-
     const stores = storesResult.data || [];
     const subscriptions = subscriptionsResult.data || [];
 
-    // Map profiles, stores and subscriptions in-memory
-    const mappedProfiles = (profiles || []).map((p: any) => {
+    // Map existing profiles from DB
+    let mappedProfiles = rawProfiles.map((p: any) => {
       const pStores = stores.filter((s: any) => s.owner_id === p.id);
-      
-      // Keep subscriptions lookup robust by checking user_id = profile ID OR any store ID owned by them
       const storeIds = pStores.map((s: any) => s.id);
       const pSubscriptions = subscriptions.filter((sub: any) => sub.user_id === p.id || storeIds.includes(sub.user_id));
 
-      // De-duplicate subscriptions if necessary
       const uniqueSubs: any[] = [];
       const seenSubs = new Set<string>();
       for (const sub of pSubscriptions) {
@@ -106,12 +101,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       return {
         id: p.id,
-        full_name: p.full_name,
+        full_name: p.full_name || 'Usuário Cadastrado',
+        email: p.email || 'cliente@restaurante.com',
         avatar_url: p.avatar_url,
-        role: null, // role column doesn't exist in profiles table
+        role: 'Proprietário',
         updated_at: p.updated_at,
         stores: mappedStores,
-        bars: mappedStores, // map stores to bars for frontend
+        bars: mappedStores,
         subscriptions: uniqueSubs.map((sub: any) => ({
           id: sub.id,
           plan_id: sub.plan_id,

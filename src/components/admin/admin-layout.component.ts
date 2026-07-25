@@ -23,14 +23,24 @@ import { AuthService } from '../../services/auth.service';
             Visão Geral & MRR
           </a>
 
-          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'health' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
-            <span translate="no" class="notranslate material-symbols-outlined text-lg text-emerald-400">monitor_heart</span>
-            Saúde & Observabilidade
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'support' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-cyan-400">support_agent</span>
+            Central de Atendimento
           </a>
 
           <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'users' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
             <span translate="no" class="notranslate material-symbols-outlined text-lg text-blue-400">group</span>
             Usuários & Lojas
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'catalog' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-orange-400">restaurant_menu</span>
+            Inspector de Cardápios
+          </a>
+
+          <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'health' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg text-emerald-400">monitor_heart</span>
+            Saúde & Observabilidade
           </a>
 
           <a routerLink="/admin/dashboard" [queryParams]="{ tab: 'provisioning' }" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-transparent">

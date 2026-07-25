@@ -20,7 +20,7 @@ export const systemAdminGuard: CanActivateFn = () => {
         return of(router.createUrlTree(['/login'], { queryParams: { returnUrl: '/admin' } }));
       }
       return adminService.checkAdminStatus(user.email).then(isAdmin => {
-        if (isAdmin || user.email === 'admin@admin.com') return true;
+        if (isAdmin) return true;
         return router.createUrlTree(['/dashboard']);
       });
     })
