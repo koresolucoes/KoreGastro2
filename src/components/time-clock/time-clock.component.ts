@@ -337,7 +337,12 @@ export class TimeClockComponent {
     
     openEditModal(entry: TimeClockEntry) {
         this.editingEntry.set(entry);
-        this.entryForm.set({ ...entry });
+        
+        let cleanedNotes = entry.notes || '';
+        // Remove trailing hash lines if they exist from older records
+        cleanedNotes = cleanedNotes.replace(/\[NSR: .*? \| TIPO: .*? \| HASH: .*?\]/g, '').trim();
+
+        this.entryForm.set({ ...entry, notes: cleanedNotes });
         this.isModalOpen.set(true);
     }
 

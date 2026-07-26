@@ -167,16 +167,13 @@ export class OperationalAuthService {
           nsr
       };
 
-      // 3. Salva no banco appending to notes
-      const notesLine = `\n[NSR: ${nsr} | TIPO: ${action} | HASH: ${hashHex}]`;
-      
-      // Pega as notas atuais
-      const { data: currentEntry } = await supabase.from('time_clock_entries').select('notes').eq('id', shiftId).single();
-      const currentNotes = currentEntry?.notes || '';
-      
-      await supabase.from('time_clock_entries').update({
-          notes: currentNotes + notesLine
-      }).eq('id', shiftId);
+      // 3. Salva no banco de logs do sistema (imutável, seguro)
+      await supabase.from('system_logs').insert({
+          user_id: employee.user_id,
+          employee_id: employee.id,
+          action: `PONTO_${action}`,
+          details: JSON.stringify({ nsr, hash: hashHex, timestamp, shiftId })
+      });
 
       // 4. Mostra o modal
       this.receiptService.showReceipt(receipt);
