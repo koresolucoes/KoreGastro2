@@ -7,8 +7,12 @@
 
   <div class="w-full max-w-md z-10">
     <div class="text-center mb-10">
-      <h1 class="text-4xl font-black text-title title-display tracking-tight mb-2">Ponto & Acesso</h1>
-      <p class="text-muted font-medium">Faça login para acessar o sistema.</p>
+      <div class="mb-4">
+         <p class="text-6xl font-black data-mono text-brand title-display">{{ currentTime() | date:'HH:mm:ss' }}</p>
+         <p class="text-sm font-bold text-muted uppercase tracking-widest mt-1">{{ currentTime() | date:'EEEE, dd \'de\' MMMM' }}</p>
+      </div>
+      <h1 class="text-3xl font-black text-title title-display tracking-tight mb-2">Controle de Acesso</h1>
+      <p class="text-muted font-medium text-sm">Registre seu ponto e acesse o sistema</p>
     </div>
 
     <!-- MAIN LOGIN FLOW -->

@@ -11,6 +11,7 @@ import { DemoService } from './demo.service';
 import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
 import { NotificationService } from './notification.service';
 import { SettingsStateService } from './settings-state.service';
+import { TimeClockReceiptService, TimeClockReceipt } from './time-clock-receipt.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -28,6 +29,7 @@ export class OperationalAuthService {
   private demoService = inject(DemoService);
   private notificationService = inject(NotificationService);
   private settingsState = inject(SettingsStateService);
+  private receiptService = inject(TimeClockReceiptService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
@@ -116,13 +118,16 @@ export class OperationalAuthService {
       if (!shift || !employee) return;
 
       const state = this.shiftButtonState().action;
+      const now = new Date().toISOString();
       
       switch (state) {
           case 'start_break':
-              await supabase.from('time_clock_entries').update({ break_start_time: new Date().toISOString() }).eq('id', shift.id);
+              await supabase.from('time_clock_entries').update({ break_start_time: now }).eq('id', shift.id);
+              await this.generateAndStoreReceipt(employee, 'INICIO_PAUSA', now, shift.id);
               break;
           case 'end_break':
-              await supabase.from('time_clock_entries').update({ break_end_time: new Date().toISOString() }).eq('id', shift.id);
+              await supabase.from('time_clock_entries').update({ break_end_time: now }).eq('id', shift.id);
+              await this.generateAndStoreReceipt(employee, 'FIM_PAUSA', now, shift.id);
               break;
           case 'end_shift':
               await this.clockOut();
@@ -131,6 +136,48 @@ export class OperationalAuthService {
       
       // Refresh shift state after action
       await this.loadActiveShift(employee);
+  }
+
+  private async generateAndStoreReceipt(
+      employee: Employee, 
+      action: 'INICIO_TURNO' | 'INICIO_PAUSA' | 'FIM_PAUSA' | 'FIM_TURNO',
+      timestamp: string,
+      shiftId: string
+  ): Promise<TimeClockReceipt> {
+      // 1. Gera o NSR simulado (uuid simplificado ou timestamp)
+      const nsr = String(Date.now());
+      
+      // 2. Prepara os dados para o Hash
+      const data = `${nsr}|${employee.id}|${action}|${timestamp}`;
+      const msgUint8 = new TextEncoder().encode(data);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const receipt: TimeClockReceipt = {
+          employeeName: employee.name,
+          matricula: employee.bank_details?.matricula || '',
+          cpf: employee.cpf || '',
+          action,
+          timestamp,
+          hash: hashHex,
+          nsr
+      };
+
+      // 3. Salva no banco appending to notes
+      const notesLine = `\n[NSR: ${nsr} | TIPO: ${action} | HASH: ${hashHex}]`;
+      
+      // Pega as notas atuais
+      const { data: currentEntry } = await supabase.from('time_clock_entries').select('notes').eq('id', shiftId).single();
+      const currentNotes = currentEntry?.notes || '';
+      
+      await supabase.from('time_clock_entries').update({
+          notes: currentNotes + notesLine
+      }).eq('id', shiftId);
+
+      // 4. Mostra o modal
+      this.receiptService.showReceipt(receipt);
+      return receipt;
   }
 
   private getCurrentLocation(): Promise<{ latitude: number, longitude: number }> {
@@ -217,7 +264,7 @@ export class OperationalAuthService {
         latitude: location?.latitude || null,
         longitude: location?.longitude || null,
       })
-      .select('id')
+      .select('id, clock_in_time')
       .single();
 
     if (error) {
@@ -232,6 +279,8 @@ export class OperationalAuthService {
       }
       return { success: false, error };
     }
+
+    await this.generateAndStoreReceipt(employee, 'INICIO_TURNO', newEntry.clock_in_time, newEntry.id);
 
     const { error: empError } = await supabase
         .from('employees')
@@ -260,12 +309,15 @@ export class OperationalAuthService {
           return { success: true, error: null };
       }
   
+      const outTime = new Date().toISOString();
       const { error } = await supabase
           .from('time_clock_entries')
-          .update({ clock_out_time: new Date().toISOString() })
+          .update({ clock_out_time: outTime })
           .eq('id', employee.current_clock_in_id);
   
       if (error) return { success: false, error };
+
+      await this.generateAndStoreReceipt(employee, 'FIM_TURNO', outTime, employee.current_clock_in_id);
   
       const { error: empError } = await supabase
           .from('employees')

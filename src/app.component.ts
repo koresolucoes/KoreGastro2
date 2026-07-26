@@ -6,6 +6,7 @@ import { SupabaseStateService } from './services/supabase-state.service';
 import { OperationalAuthService } from './services/operational-auth.service';
 import { NotificationModalComponent } from './components/notification-modal/notification-modal.component';
 import { ToastContainerComponent } from './components/shared/toast-container/toast-container.component';
+import { TimeClockReceiptModalComponent } from './components/shared/time-clock-receipt-modal/time-clock-receipt-modal.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
@@ -18,7 +19,7 @@ import { SubscriptionComponent } from './components/subscription/subscription.co
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent]
+  imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent, TimeClockReceiptModalComponent]
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);

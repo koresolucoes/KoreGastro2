@@ -81,7 +81,14 @@ export class EmployeeSelectionComponent implements OnDestroy {
   loginError = signal(false);
   pinDisplay = computed(() => '●'.repeat(this.pinInput().length));
 
+  currentTime = signal<Date>(new Date());
+  private timer: any;
+
   constructor() {
+    this.timer = setInterval(() => {
+      this.currentTime.set(new Date());
+    }, 1000);
+
     effect(() => {
         // Se os dados foram carregados e não há funcionários, redirecionar para onboarding
         if (this.isDataLoaded() && this.employees().length === 0) {
@@ -124,6 +131,9 @@ export class EmployeeSelectionComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.stopScanner();
+    if (this.timer) {
+        clearInterval(this.timer);
+    }
   }
 
   toggleScanner() {

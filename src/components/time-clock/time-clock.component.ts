@@ -124,6 +124,17 @@ export class TimeClockComponent {
         return this.formatDuration(durationMs);
     }
 
+    // Homologation Info Modal
+    isInfoModalOpen = signal(false);
+
+    openInfoModal() {
+        this.isInfoModalOpen.set(true);
+    }
+
+    closeInfoModal() {
+        this.isInfoModalOpen.set(false);
+    }
+    
     // --- Lateness Logic ---
     isLate(entry: TimeClockEntry): boolean {
         // Find schedule for this day/employee
@@ -194,6 +205,102 @@ export class TimeClockComponent {
         }
     }
     
+    printEspelhoPonto() {
+        const employeeId = this.filterEmployeeId();
+        if (employeeId === 'all') {
+            this.notificationService.alert('Selecione um funcionário específico para gerar o espelho de ponto.');
+            return;
+        }
+
+        const employee = this.employees().find(e => e.id === employeeId);
+        if (!employee) return;
+
+        const startDate = this.filterStartDate();
+        const endDate = this.filterEndDate();
+        const entries = this.filteredEntries();
+
+        let tableRows = '';
+        let totalMs = 0;
+
+        entries.forEach(entry => {
+            const date = new Date(entry.clock_in_time).toLocaleDateString('pt-BR');
+            const inTime = new Date(entry.clock_in_time).toLocaleTimeString('pt-BR');
+            const outTime = entry.clock_out_time ? new Date(entry.clock_out_time).toLocaleTimeString('pt-BR') : '-';
+            const breakIn = entry.break_start_time ? new Date(entry.break_start_time).toLocaleTimeString('pt-BR') : '-';
+            const breakOut = entry.break_end_time ? new Date(entry.break_end_time).toLocaleTimeString('pt-BR') : '-';
+            const dur = this.getFormattedDuration(entry);
+            
+            totalMs += this.calculateDurationInMs(entry);
+
+            tableRows += `
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${date}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${inTime}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${breakIn}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${breakOut}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${outTime}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${dur}</td>
+                </tr>
+            `;
+        });
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Espelho de Ponto - ${employee.name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                    h1 { font-size: 20px; text-align: center; }
+                    .header { margin-bottom: 20px; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; text-align: center; }
+                    th { background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; }
+                    .signature { margin-top: 50px; text-align: center; }
+                    .signature-line { border-top: 1px solid #000; width: 300px; margin: 0 auto 10px auto; }
+                </style>
+            </head>
+            <body>
+                <h1>Espelho de Ponto</h1>
+                <div class="header">
+                    <strong>Empregado:</strong> ${employee.name} <br>
+                    <strong>Matrícula:</strong> ${employee.bank_details?.matricula || 'N/A'} <br>
+                    <strong>CPF:</strong> ${employee.cpf || 'N/A'} <br>
+                    <strong>Período:</strong> ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')} <br>
+                    <strong>Total de Horas:</strong> ${this.formatDuration(totalMs)}
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Entrada</th>
+                            <th>Início Pausa</th>
+                            <th>Fim Pausa</th>
+                            <th>Saída</th>
+                            <th>Total (Dia)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    <p>Assinatura do Empregado</p>
+                </div>
+                
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
     openAddModal() {
         this.editingEntry.set(null);
         this.entryForm.set({
