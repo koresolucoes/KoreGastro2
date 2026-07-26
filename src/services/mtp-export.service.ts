@@ -60,7 +60,7 @@ export class MtpExportService {
       const dd = String(evt.time.getDate()).padStart(2, '0');
       const mm = String(evt.time.getMonth() + 1).padStart(2, '0');
       const yyyy = evt.time.getFullYear();
-      const dateStr = `${dd}${mm}${yyyy}`;
+      const dateStr = `${yyyy}${mm}${dd}`;
       const timeStr = evt.time.toTimeString().split(' ')[0].replace(/:/g, '').substring(0, 4) || '0000';
       content += `${nsrStr}3${dateStr}${timeStr}${evt.cpf}\r\n`; // Simplified record format
     });

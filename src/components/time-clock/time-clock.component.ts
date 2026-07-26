@@ -6,6 +6,7 @@ import { TimeClockService } from '../../services/time-clock.service';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { MtpExportService } from '../../services/mtp-export.service';
+import { supabase } from '../../services/supabase-client';
 
 declare var L: any; // Leaflet
 
@@ -223,7 +224,7 @@ export class TimeClockComponent {
         this.mtpExportService.exportAEJ(this.filteredEntries());
     }
 
-    printEspelhoPonto() {
+    async printEspelhoPonto() {
         const employeeId = this.filterEmployeeId();
         if (employeeId === 'all') {
             this.notificationService.alert('Selecione um funcionário específico para gerar o espelho de ponto.');
@@ -240,7 +241,21 @@ export class TimeClockComponent {
         let tableRows = '';
         let totalMs = 0;
 
-        entries.forEach(entry => {
+        const { data: logsData } = await supabase
+            .from('system_logs')
+            .select('action, details')
+            .eq('employee_id', employeeId)
+            .like('action', 'PONTO_%');
+
+        const logs = (logsData || []).map(l => {
+            try { 
+                const details = JSON.parse(l.details); 
+                details.action = l.action;
+                return details;
+            } catch (e) { return {}; }
+        });
+
+        for (const entry of entries) {
             const date = new Date(entry.clock_in_time).toLocaleDateString('pt-BR');
             const inTime = new Date(entry.clock_in_time).toLocaleTimeString('pt-BR');
             const outTime = entry.clock_out_time ? new Date(entry.clock_out_time).toLocaleTimeString('pt-BR') : '-';
@@ -250,17 +265,36 @@ export class TimeClockComponent {
             
             totalMs += this.calculateDurationInMs(entry);
 
+            const entryLogs = logs.filter(l => l.shiftId === entry.id);
+            let hashesHTML = entryLogs.map(l => {
+                const tipo = l.action ? l.action.replace('PONTO_', '') : '';
+                return `<div style="font-size: 9px; color: #666; font-family: monospace; text-align: left; line-height: 1.2;">[NSR: ${l.nsr}] [${tipo}] HASH: ${l.hash}</div>`;
+            }).join('');
+
+            // Backward compatibility for old hashes in notes
+            if (entry.notes && entry.notes.includes('[NSR:')) {
+                const oldHashes = entry.notes.match(/\[NSR: .*? \| TIPO: .*? \| HASH: .*?\]/g);
+                if (oldHashes) {
+                    hashesHTML += oldHashes.map(h => {
+                        return `<div style="font-size: 9px; color: #666; font-family: monospace; text-align: left; line-height: 1.2;">${h}</div>`;
+                    }).join('');
+                }
+            }
+
             tableRows += `
                 <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${date}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${inTime}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${breakIn}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${breakOut}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${outTime}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${dur}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${date}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${inTime}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${breakIn}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${breakOut}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${outTime}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">${dur}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; vertical-align: top;">
+                        <div style="margin-top: 4px;">${hashesHTML}</div>
+                    </td>
                 </tr>
             `;
-        });
+        }
 
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
@@ -299,6 +333,7 @@ export class TimeClockComponent {
                             <th>Fim Pausa</th>
                             <th>Saída</th>
                             <th>Total (Dia)</th>
+                            <th>Comprovantes de Registro (Hash/NSR)</th>
                         </tr>
                     </thead>
                     <tbody>
