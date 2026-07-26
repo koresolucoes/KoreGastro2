@@ -11,7 +11,7 @@
         <div class="space-y-3 text-sm font-mono mb-6">
           <div>
             <span class="font-bold text-black/50 text-[10px] uppercase block">Empregador (CNPJ)</span>
-            <span>A SER PREENCHIDO (CONFIG)</span>
+            <span>{{ companyProfile()?.cnpj || 'Não configurado' }}</span>
           </div>
           <div>
             <span class="font-bold text-black/50 text-[10px] uppercase block">Empregado</span>

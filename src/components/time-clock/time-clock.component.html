@@ -5,14 +5,23 @@
       <h1 class="text-3xl font-bold text-title title-display">Controle de Ponto</h1>
       <p class="text-muted mt-1 text-sm">Gerencie os registros de entrada e saída dos funcionários.</p>
     </div>
-    <div class="flex gap-3">
+    <div class="flex flex-wrap gap-3 items-center">
+        <button (click)="exportAFD()" class="px-4 py-3 rounded-2xl font-bold uppercase tracking-widest text-[10px] bg-surface-elevated border border-subtle text-muted hover:text-brand hover:border-brand/30 transition-all active:scale-95 flex items-center gap-1.5" title="Arquivo Fonte de Dados">
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px]">download</span>
+          AFD / MRP
+        </button>
+        <button (click)="exportAEJ()" class="px-4 py-3 rounded-2xl font-bold uppercase tracking-widest text-[10px] bg-surface-elevated border border-subtle text-muted hover:text-brand hover:border-brand/30 transition-all active:scale-95 flex items-center gap-1.5" title="Arquivo Eletrônico de Jornada">
+          <span translate="no" class="notranslate material-symbols-outlined text-[16px]">analytics</span>
+          AEJ
+        </button>
+        <div class="w-px h-8 bg-subtle mx-1 hidden md:block"></div>
         <button (click)="printEspelhoPonto()" class="px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs bg-surface border border-subtle text-muted hover:text-title hover:border-title transition-all active:scale-95 flex items-center gap-2">
           <span translate="no" class="notranslate material-symbols-outlined text-[20px]">print</span>
-          Espelho de Ponto
+          Espelho
         </button>
         <button (click)="openAddModal()" class="btn-primary font-bold py-3 px-6 rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-brand/20 active:scale-95 text-xs uppercase tracking-widest">
           <span translate="no" class="notranslate material-symbols-outlined text-[20px]">add_task</span>
-          Adicionar Registro
+          Novo
         </button>
     </div>
   </div>

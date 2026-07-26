@@ -12,6 +12,7 @@ import { MOCK_EMPLOYEES, MOCK_ROLES } from '../data/mock-data';
 import { NotificationService } from './notification.service';
 import { SettingsStateService } from './settings-state.service';
 import { TimeClockReceiptService, TimeClockReceipt } from './time-clock-receipt.service';
+import { NtpService } from './ntp.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -30,6 +31,7 @@ export class OperationalAuthService {
   private notificationService = inject(NotificationService);
   private settingsState = inject(SettingsStateService);
   private receiptService = inject(TimeClockReceiptService);
+  private ntpService = inject(NtpService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
@@ -118,7 +120,8 @@ export class OperationalAuthService {
       if (!shift || !employee) return;
 
       const state = this.shiftButtonState().action;
-      const now = new Date().toISOString();
+      const networkTime = await this.ntpService.getNetworkTime();
+      const now = networkTime.toISOString();
       
       switch (state) {
           case 'start_break':
@@ -256,11 +259,15 @@ export class OperationalAuthService {
         // Ignora erro se não for obrigatório
       }
     }
+    
+    const networkTime = await this.ntpService.getNetworkTime();
+    const inTime = networkTime.toISOString();
 
     const { data: newEntry, error } = await supabase
       .from('time_clock_entries')
       .insert({ 
         employee_id: employee.id,
+        clock_in_time: inTime,
         latitude: location?.latitude || null,
         longitude: location?.longitude || null,
       })
@@ -309,7 +316,8 @@ export class OperationalAuthService {
           return { success: true, error: null };
       }
   
-      const outTime = new Date().toISOString();
+      const networkTime = await this.ntpService.getNetworkTime();
+      const outTime = networkTime.toISOString();
       const { error } = await supabase
           .from('time_clock_entries')
           .update({ clock_out_time: outTime })

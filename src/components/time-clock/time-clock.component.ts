@@ -5,6 +5,7 @@ import { HrStateService } from '../../services/hr-state.service';
 import { TimeClockService } from '../../services/time-clock.service';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsStateService } from '../../services/settings-state.service';
+import { MtpExportService } from '../../services/mtp-export.service';
 
 declare var L: any; // Leaflet
 
@@ -33,6 +34,7 @@ export class TimeClockComponent {
     private timeClockService = inject(TimeClockService);
     private notificationService = inject(NotificationService);
     private settingsState = inject(SettingsStateService);
+    private mtpExportService = inject(MtpExportService);
 
     employees = this.hrState.employees;
     schedules = this.hrState.schedules;
@@ -205,6 +207,22 @@ export class TimeClockComponent {
         }
     }
     
+    exportAFD() {
+        if (this.filteredEntries().length === 0) {
+            this.notificationService.alert('Não há registros no período selecionado para exportar.');
+            return;
+        }
+        this.mtpExportService.exportAFD(this.filteredEntries());
+    }
+
+    exportAEJ() {
+        if (this.filteredEntries().length === 0) {
+            this.notificationService.alert('Não há registros no período selecionado para exportar.');
+            return;
+        }
+        this.mtpExportService.exportAEJ(this.filteredEntries());
+    }
+
     printEspelhoPonto() {
         const employeeId = this.filterEmployeeId();
         if (employeeId === 'all') {
@@ -244,10 +262,11 @@ export class TimeClockComponent {
             `;
         });
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
 
-        printWindow.document.write(`
+        iframe.contentDocument?.write(`
             <html>
             <head>
                 <title>Espelho de Ponto - ${employee.name}</title>
@@ -291,14 +310,16 @@ export class TimeClockComponent {
                     <div class="signature-line"></div>
                     <p>Assinatura do Empregado</p>
                 </div>
-                
-                <script>
-                    window.onload = function() { window.print(); window.close(); }
-                </script>
             </body>
             </html>
         `);
-        printWindow.document.close();
+        iframe.contentDocument?.close();
+        
+        setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+        }, 250);
     }
 
     openAddModal() {
