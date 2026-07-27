@@ -108,6 +108,7 @@ export interface TimeClockEntry {
   latitude: number | null;
   longitude: number | null;
   created_at: string;
+  signatures?: any; // To store digital signatures for each punch (clock_in, break_start, break_end, clock_out)
   employees?: { name: string };
 }
 

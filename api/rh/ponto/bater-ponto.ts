@@ -1,10 +1,34 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import { TimeClockEntry } from '../../../src/models/db.models.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
+
+// Helper to generate signature
+function generatePontoSignature(data: any): { hash: string, signature: string | null } {
+    const dataString = JSON.stringify(data);
+    const hash = crypto.createHash('sha256').update(dataString).digest('hex');
+    
+    let signature = null;
+    const privateKeyStr = process.env.COMPANY_CERT_PRIVATE_KEY;
+    
+    if (privateKeyStr) {
+        try {
+            const formattedKey = privateKeyStr.replace(/\\n/g, '\n');
+            const sign = crypto.createSign('SHA256');
+            sign.update(dataString);
+            sign.end();
+            signature = sign.sign(formattedKey, 'base64');
+        } catch (e) {
+            console.error('Error signing ponto:', e);
+        }
+    }
+    
+    return { hash, signature };
+}
 
 // Haversine formula to calculate distance between two lat/lon points in meters
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -73,7 +97,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const { data: employee, error: empError } = await supabase
             .from('employees')
-            .select('id, name, pin, current_clock_in_id')
+            .select('id, name, pin, current_clock_in_id, cpf')
             .eq('id', employeeId)
             .single();
         
@@ -87,7 +111,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         // --- Geolocation validation logic ---
         const { data: profile, error: profileError } = await supabase
           .from('company_profile')
-          .select('latitude, longitude, time_clock_radius')
+          .select('user_id, cnpj, latitude, longitude, time_clock_radius')
           .eq('user_id', restaurantId)
           .single();
 
@@ -108,17 +132,35 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
 
         const now = new Date().toISOString();
+        
+        const generateReceipt = (action: string) => {
+            const receiptData = {
+                employeeId: employee.id,
+                employeeName: employee.name,
+                employeeCpf: employee.cpf || '',
+                restaurantId: profile.user_id,
+                restaurantCnpj: profile.cnpj || '',
+                timestamp: now,
+                action: action,
+            };
+            return generatePontoSignature(receiptData);
+        };
 
         if (!employee.current_clock_in_id) { // Clocking in
+            const sigData = generateReceipt('clock_in');
+            const signatures = { clock_in: sigData };
+
             const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ 
                 employee_id: employeeId, 
                 user_id: restaurantId,
                 latitude: latitude || null,
-                longitude: longitude || null
+                longitude: longitude || null,
+                clock_in_time: now,
+                signatures: signatures
             }).select('id').single();
             if (insertError) throw insertError;
             await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
-            return response.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name });
+            return response.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
         } else { // Interacting with an active shift
             const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
             if (entryError || !activeEntry) {
@@ -127,16 +169,24 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 return response.status(409).json({ error: { message: 'Shift data out of sync. Please try again.' } });
             }
 
+            const currentSignatures = activeEntry.signatures || {};
+
             if (!activeEntry.break_start_time) { // Starting break
-                await supabase.from('time_clock_entries').update({ break_start_time: now }).eq('id', activeEntry.id);
-                return response.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name });
+                const sigData = generateReceipt('break_start');
+                currentSignatures.break_start = sigData;
+                await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                return response.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
             } else if (!activeEntry.break_end_time) { // Ending break
-                await supabase.from('time_clock_entries').update({ break_end_time: now }).eq('id', activeEntry.id);
-                return response.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name });
+                const sigData = generateReceipt('break_end');
+                currentSignatures.break_end = sigData;
+                await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                return response.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
             } else { // Clocking out
-                await supabase.from('time_clock_entries').update({ clock_out_time: now }).eq('id', activeEntry.id);
+                const sigData = generateReceipt('clock_out');
+                currentSignatures.clock_out = sigData;
+                await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
                 await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-                return response.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name });
+                return response.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
             }
         }
     } catch (error: any) {
