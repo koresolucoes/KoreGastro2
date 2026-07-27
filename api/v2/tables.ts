@@ -11,7 +11,7 @@ const tableSchema = z.object({
   y: z.number().optional().default(50),
   width: z.number().optional().default(80),
   height: z.number().optional().default(80),
-  status: z.enum(['LIVRE', 'OCUPADA', 'RESERVADA', 'FECHANDO']).optional().default('LIVRE'),
+  status: z.enum(['LIVRE', 'OCUPADA', 'PAGANDO', 'CHAMANDO_GARCOM']).optional().default('LIVRE'),
   customer_count: z.number().int().nonnegative().optional(),
   employee_id: z.string().uuid().nullable().optional()
 });

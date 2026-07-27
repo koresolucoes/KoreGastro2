@@ -2,9 +2,7 @@ export type WebhookEvent =
   | 'order.created'
   | 'order.updated'
   | 'stock.updated'
-  | 'customer.created'
-  | 'delivery.created'
-  | 'delivery.status_updated';
+  | 'customer.created';
 
 export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'un';
 export type TableStatus = 'LIVRE' | 'OCUPADA' | 'PAGANDO' | 'CHAMANDO_GARCOM';

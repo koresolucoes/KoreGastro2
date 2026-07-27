@@ -16,6 +16,7 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { Order } from '../../models/db.models';
+import { DashboardVisualizationsComponent } from './dashboard-visualizations.component';
 
 interface BaseWidget {
   id: string;
@@ -52,7 +53,11 @@ interface MenuEngineeringWidget extends BaseWidget {
   title: string;
 }
 
-type DashboardWidget = KpiWidget | ChartWidget | ListWidget | DreWidget | MenuEngineeringWidget;
+interface CustomVisualizationsWidget extends BaseWidget {
+  type: 'custom_visualizations';
+}
+
+type DashboardWidget = KpiWidget | ChartWidget | ListWidget | DreWidget | MenuEngineeringWidget | CustomVisualizationsWidget;
 type ReportPeriod = 'day' | 'week' | 'month';
 
 @Component({
@@ -62,6 +67,7 @@ type ReportPeriod = 'day' | 'week' | 'month';
     CommonModule, 
     SalesCogsChartComponent, 
     HourlySalesChartComponent,
+    DashboardVisualizationsComponent,
     CdkDropList,
     CdkDrag,
     RouterLink,
@@ -104,7 +110,7 @@ export class DashboardComponent implements OnInit {
   private defaultWidgetOrder = [
     'kpi_sales', 'kpi_profit', 'kpi_ticket', 'kpi_orders', 
     'kpi_occupancy', 'kpi_turnover', 'kpi_kds_time',
-    'dre_summary',
+    'dre_summary', 'custom_visualizations',
     'chart_sales_1', 'menu_engineering', 'list_top_items', 
     'chart_hourly_1', 'list_waiter_ranking',
     'list_recent_orders', 'list_payment_methods', 'list_low_stock'
@@ -216,6 +222,9 @@ export class DashboardComponent implements OnInit {
       },
       'menu_engineering': {
         type: 'menu_engineering', id: 'menu_engineering', cols: 2, title: 'Matriz BCG de Engenharia do Cardápio'
+      },
+      'custom_visualizations': {
+        type: 'custom_visualizations', id: 'custom_visualizations', cols: 2
       },
       'chart_sales_1': {
         type: 'chart_sales', id: 'chart_sales_1', cols: 2,

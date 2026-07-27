@@ -8,9 +8,7 @@ const ALL_WEBHOOK_EVENTS: readonly WebhookEvent[] = [
   'order.created',
   'order.updated',
   'stock.updated',
-  'customer.created',
-  'delivery.created',
-  'delivery.status_updated'
+  'customer.created'
 ];
 
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {

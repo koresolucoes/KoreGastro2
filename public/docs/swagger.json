@@ -158,7 +158,7 @@
             "name": "status",
             "in": "query",
             "required": false,
-            "schema": { "type": "string" }
+            "schema": { "type": "string", "enum": ["LIVRE", "OCUPADA", "PAGANDO", "CHAMANDO_GARCOM"] }
           }
         ],
         "responses": { "200": { "description": "Mesa(s) Retornada(s)" } }
@@ -177,7 +177,8 @@
                   "x": { "type": "number" },
                   "y": { "type": "number" },
                   "width": { "type": "number" },
-                  "height": { "type": "number" }
+                  "height": { "type": "number" },
+                  "status": { "type": "string", "enum": ["LIVRE", "OCUPADA", "PAGANDO", "CHAMANDO_GARCOM"] }
                 }
               }
             }
@@ -202,7 +203,7 @@
                 "type": "object",
                 "properties": {
                   "restaurantId": { "type": "string" },
-                  "status": { "type": "string" }
+                  "status": { "type": "string", "enum": ["LIVRE", "OCUPADA", "PAGANDO", "CHAMANDO_GARCOM"] }
                 }
               }
             }
@@ -227,6 +228,36 @@
           }
         ],
         "responses": { "204": { "description": "Excluido" } }
+      }
+    },
+    "/ingredients": {
+      "get": {
+        "summary": "Listar Ingredientes",
+        "parameters": [
+          { "name": "restaurantId", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "id", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Ingredientes retornados" } }
+      }
+    },
+    "/employees": {
+      "get": {
+        "summary": "Listar Funcionários",
+        "parameters": [
+          { "name": "restaurantId", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "id", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Funcionários retornados" } }
+      }
+    },
+    "/recipes": {
+      "get": {
+        "summary": "Listar Receitas e Fichas Técnicas",
+        "parameters": [
+          { "name": "restaurantId", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "id", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Receitas retornadas" } }
       }
     },
     "/catalog": {
@@ -354,7 +385,7 @@
             "name": "status",
             "in": "query",
             "required": false,
-            "schema": { "type": "string" }
+            "schema": { "type": "string", "enum": ["OPEN", "PAYING", "AWAITING", "COMPLETED", "CANCELLED"] }
           },
           {
             "name": "tableNumber",
@@ -396,13 +427,15 @@
                   "restaurantId": { "type": "string" },
                   "tableNumber": { "type": "number" },
                   "customerId": { "type": "string" },
+                  "orderType": { "type": "string", "enum": ["Dine-in", "QuickSale", "iFood-Delivery", "iFood-Takeout", "External-Delivery", "Tab"] },
                   "items": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
                         "externalCode": { "type": "string" },
-                        "quantity": { "type": "number" }
+                        "quantity": { "type": "number" },
+                        "status": { "type": "string", "enum": ["PENDENTE", "EM_PREPARO", "PRONTO", "SERVIDO", "AGUARDANDO", "CANCELADO"] }
                       }
                     }
                   }
@@ -566,7 +599,19 @@
       "post": {
         "summary": "Criar Reserva",
         "requestBody": {
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object",
+                "properties": {
+                  "customer_name": { "type": "string" },
+                  "party_size": { "type": "number" },
+                  "reservation_time": { "type": "string" },
+                  "status": { "type": "string", "enum": ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"] }
+                }
+              } 
+            } 
+          }
         },
         "responses": { "201": { "description": "OK" } }
       },
@@ -581,7 +626,16 @@
           }
         ],
         "requestBody": {
-          "content": { "application/json": { "schema": { "type": "object" } } }
+          "content": { 
+            "application/json": { 
+              "schema": { 
+                "type": "object",
+                "properties": {
+                  "status": { "type": "string", "enum": ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"] }
+                }
+              } 
+            } 
+          }
         },
         "responses": { "200": { "description": "OK" } }
       },
@@ -800,7 +854,7 @@
                   "url": { "type": "string", "example": "https://meu-sistema.com/webhook" },
                   "events": { 
                     "type": "array", 
-                    "items": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created", "delivery.created", "delivery.status_updated"] }
+                    "items": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created"] }
                   }
                 }
               }
@@ -821,7 +875,7 @@
                 "type": "object",
                 "properties": {
                   "url": { "type": "string" },
-                  "events": { "type": "array", "items": { "type": "string" } },
+                  "events": { "type": "array", "items": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created"] } },
                   "is_active": { "type": "boolean" }
                 }
               }
@@ -848,7 +902,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "event": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created", "delivery.created", "delivery.status_updated"] },
+                  "event": { "type": "string", "enum": ["order.created", "order.updated", "stock.updated", "customer.created"] },
                   "payload": { "type": "object", "description": "Dados do evento" }
                 }
               }

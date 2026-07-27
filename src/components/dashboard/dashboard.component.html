@@ -104,6 +104,13 @@
                </a>
             }
 
+            <!-- CUSTOM D3 VISUALIZATIONS WIDGET -->
+            @case ('custom_visualizations') {
+                <div class="h-full w-full flex">
+                    <app-dashboard-visualizations [salesData]="salesCogsData()" [topItemsData]="topSellingItems()" class="w-full"></app-dashboard-visualizations>
+                </div>
+            }
+
             <!-- CHART SALES WIDGET -->
             @case ('chart_sales') {
                 @let chart = $any(widget);
