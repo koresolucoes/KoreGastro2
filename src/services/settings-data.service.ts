@@ -271,6 +271,10 @@ export class SettingsDataService {
       .single();
     if (error) return { success: false, error, data: undefined };
 
+    if (newEmployee) {
+      this.hrState.employees.update((emps) => [...emps, newEmployee]);
+    }
+
     this.auditService.logAction('EMPLOYEE_ADDED', `Funcionário adicionado: ${newEmployee.name}`);
 
     if (photoFile) {
@@ -302,6 +306,11 @@ export class SettingsDataService {
         );
         return { success: true, error: null, data: newEmployee };
       }
+      if (updatedEmployee) {
+        this.hrState.employees.update((emps) =>
+          emps.map((e) => (e.id === updatedEmployee.id ? updatedEmployee : e))
+        );
+      }
       return { success: true, error: null, data: updatedEmployee };
     }
 
@@ -332,6 +341,9 @@ export class SettingsDataService {
       .update(updateData)
       .eq("id", id!);
     if (!error) {
+       this.hrState.employees.update((emps) =>
+         emps.map((e) => (e.id === id ? { ...e, ...updateData } : e))
+       );
        this.auditService.logAction('EMPLOYEE_UPDATED', `Funcionário atualizado: ${updateData.name || id}`);
     }
     return { success: !error, error };
@@ -340,6 +352,7 @@ export class SettingsDataService {
   async deleteEmployee(id: string): Promise<{ success: boolean; error: any }> {
     const { error } = await supabase.from("employees").delete().eq("id", id);
     if (!error) {
+       this.hrState.employees.update((emps) => emps.filter((e) => e.id !== id));
        this.auditService.logAction('EMPLOYEE_DELETED', `Funcionário deletado: ${id}`);
     }
     return { success: !error, error };
@@ -447,6 +460,9 @@ export class SettingsDataService {
       .insert({ name, user_id: userId })
       .select()
       .single();
+    if (!error && data) {
+      this.hrState.roles.update((roles) => [...roles, data]);
+    }
     return { success: !error, error, data };
   }
 
@@ -458,12 +474,23 @@ export class SettingsDataService {
       .from("roles")
       .update({ name })
       .eq("id", id);
+    if (!error) {
+      this.hrState.roles.update((roles) =>
+        roles.map((r) => (r.id === id ? { ...r, name } : r))
+      );
+    }
     return { success: !error, error };
   }
 
   async deleteRole(id: string): Promise<{ success: boolean; error: any }> {
     await supabase.from("role_permissions").delete().eq("role_id", id);
     const { error } = await supabase.from("roles").delete().eq("id", id);
+    if (!error) {
+      this.hrState.roles.update((roles) => roles.filter((r) => r.id !== id));
+      this.hrState.rolePermissions.update((perms) =>
+        perms.filter((p) => p.role_id !== id)
+      );
+    }
     return { success: !error, error };
   }
 
@@ -523,6 +550,18 @@ export class SettingsDataService {
     const { error } = await supabase
       .from("role_permissions")
       .insert(permissionsToInsert);
+
+    if (!error) {
+      const { data: updatedPermissions, error: refetchError } = await supabase
+        .from("role_permissions")
+        .select("*")
+        .eq("user_id", userId);
+      
+      if (!refetchError && updatedPermissions) {
+        this.hrState.rolePermissions.set(updatedPermissions);
+      }
+    }
+
     return { success: !error, error };
   }
 
