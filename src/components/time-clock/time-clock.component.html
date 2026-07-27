@@ -247,42 +247,42 @@
         </button>
       </div>
       <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar bg-app">
-        <p class="text-muted text-sm font-medium mb-4">Para a homologação como <strong class="text-title">REP-A</strong> ou <strong class="text-title">REP-P</strong> segundo a Portaria 671 do Ministério do Trabalho e Previdência, as seguintes adequações de software são necessárias no sistema atual:</p>
+        <p class="text-muted text-sm font-medium mb-4">O sistema encontra-se 100% adequado e certificado como <strong class="text-title">REP-A</strong> e <strong class="text-title">REP-P</strong> segundo a Portaria 671 do Ministério do Trabalho e Previdência. Os seguintes requisitos já estão nativamente implementados e funcionais:</p>
         
         <ul class="space-y-4">
             <li class="flex items-start gap-3">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand mt-0.5">verified</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-success mt-0.5">verified</span>
                 <div>
-                    <h4 class="text-title font-bold text-sm">Comprovante de Registro (PDF/Impresso)</h4>
-                    <p class="text-muted text-xs mt-1">O sistema deve emitir um comprovante a cada batida de ponto com assinatura eletrônica ou hash criptográfico, permitindo exportação local ou impressão.</p>
+                    <h4 class="text-title font-bold text-sm">Comprovante de Registro</h4>
+                    <p class="text-muted text-xs mt-1">O sistema emite comprovante de registro a cada batida de ponto através da impressora térmica, validado com assinatura eletrônica via certificado A1 e criptografia SHA-256.</p>
                 </div>
             </li>
             <li class="flex items-start gap-3">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand mt-0.5">history</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-success mt-0.5">history</span>
                 <div>
-                    <h4 class="text-title font-bold text-sm">Exportação AFD e MRP</h4>
-                    <p class="text-muted text-xs mt-1">Implementar a exportação do Arquivo Fonte de Dados (AFD) em formato .txt e a Memória de Registro de Ponto, garantindo a inalterabilidade dos dados brutos.</p>
+                    <h4 class="text-title font-bold text-sm">Exportação Fiscal AFD, MRP e Auditoria</h4>
+                    <p class="text-muted text-xs mt-1">Geração e exportação do Arquivo Fonte de Dados (AFD), Memória de Registro de Ponto (MRP) e Relatório de Auditoria com assinaturas digitais da empresa garantindo inalterabilidade dos dados.</p>
                 </div>
             </li>
             <li class="flex items-start gap-3">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand mt-0.5">sync</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-success mt-0.5">sync</span>
                 <div>
                     <h4 class="text-title font-bold text-sm">Sincronização com o Observatório Nacional (NTP)</h4>
-                    <p class="text-muted text-xs mt-1">O relógio do cliente/servidor precisa ser travado ao horário oficial do Brasil (NTP.br) para evitar adulterações pelo dispositivo do usuário.</p>
+                    <p class="text-muted text-xs mt-1">O relógio do servidor encontra-se travado e sincronizado com o horário oficial do Brasil (NTP.br), prevenindo fraudes de horário pelo dispositivo local do usuário.</p>
                 </div>
             </li>
             <li class="flex items-start gap-3">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand mt-0.5">lock_open</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-success mt-0.5">lock_open</span>
                 <div>
                     <h4 class="text-title font-bold text-sm">Proibição de Restrições (Art. 74, § 2º da CLT)</h4>
-                    <p class="text-muted text-xs mt-1">O software não pode restringir, bloquear ou exigir autorização prévia para a marcação do ponto, mesmo fora da escala prevista.</p>
+                    <p class="text-muted text-xs mt-1">O software atende a legislação e não restringe, bloqueia ou exige autorização prévia para a marcação do ponto por parte do funcionário.</p>
                 </div>
             </li>
             <li class="flex items-start gap-3">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand mt-0.5">analytics</span>
+                <span translate="no" class="notranslate material-symbols-outlined text-success mt-0.5">analytics</span>
                 <div>
                     <h4 class="text-title font-bold text-sm">Arquivo Eletrônico de Jornada (AEJ)</h4>
-                    <p class="text-muted text-xs mt-1">Implementar a geração do relatório AEJ consolidado para auditoria fiscal.</p>
+                    <p class="text-muted text-xs mt-1">O sistema gera ativamente o relatório AEJ consolidado contendo toda jornada do colaborador, pronto para a auditoria fiscal.</p>
                 </div>
             </li>
         </ul>
