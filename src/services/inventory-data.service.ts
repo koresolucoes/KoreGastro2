@@ -510,10 +510,25 @@ export class InventoryDataService {
     }
 
     const recipeCompositions = this.recipeState.recipeCosts();
+    const recipeIngredients = this.recipeState.recipeIngredients();
+    const recipePreparations = this.recipeState.recipePreparations();
     const processedGroupIds = new Set<string>();
     
     // Map: StationID -> { IngredientID -> TotalQty }
     const stationDeductions = new Map<string, Map<string, number>>();
+
+    const resolveStation = (recipeId: string, ingredientId: string, fallbackStationId: string | null): string => {
+        const directIng = recipeIngredients.find(ri => ri.recipe_id === recipeId && ri.ingredient_id === ingredientId);
+        if (directIng && directIng.preparation_id) {
+            const prep = recipePreparations.find(p => p.id === directIng.preparation_id);
+            if (prep && prep.station_id) return prep.station_id;
+        }
+        const prepsForRecipe = recipePreparations.filter(p => p.recipe_id === recipeId);
+        if (prepsForRecipe.length <= 1 && fallbackStationId) {
+            return fallbackStationId;
+        }
+        return 'CENTRAL';
+    };
 
     for (const item of orderItems) {
       if (!item.recipe_id || item.status === 'CANCELADO') continue;
@@ -524,19 +539,13 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        const targetStationId = item.station_id; 
-
-        if (!stationDeductions.has(targetStationId)) {
-            stationDeductions.set(targetStationId, new Map());
-        }
-        const stationMap = stationDeductions.get(targetStationId)!;
-
-        const addToMap = (ingId: string, qty: number) => {
-            stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-        };
-
         for (const [ingId, qty] of composition.rawIngredients.entries()) {
-          addToMap(ingId, qty * item.quantity);
+          const targetStationId = resolveStation(item.recipe_id, ingId, item.station_id);
+          if (!stationDeductions.has(targetStationId)) {
+              stationDeductions.set(targetStationId, new Map());
+          }
+          const stationMap = stationDeductions.get(targetStationId)!;
+          stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty * item.quantity);
         }
       }
       
@@ -548,16 +557,13 @@ export class InventoryDataService {
            for (const extraRecipeId of extraRecipeIds) {
                const extraComp = recipeCompositions.get(extraRecipeId);
                if (extraComp) {
-                   const targetStationId = item.station_id;
-                   if (!stationDeductions.has(targetStationId)) {
-                       stationDeductions.set(targetStationId, new Map());
-                   }
-                   const stationMap = stationDeductions.get(targetStationId)!;
-                   const addToMap = (ingId: string, qty: number) => {
-                       stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-                   };
                    for (const [ingId, qty] of extraComp.rawIngredients.entries()) {
-                     addToMap(ingId, qty * item.quantity);
+                     const targetStationId = resolveStation(extraRecipeId, ingId, item.station_id);
+                     if (!stationDeductions.has(targetStationId)) {
+                         stationDeductions.set(targetStationId, new Map());
+                     }
+                     const stationMap = stationDeductions.get(targetStationId)!;
+                     stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty * item.quantity);
                    }
                }
            }
@@ -571,13 +577,12 @@ export class InventoryDataService {
 
     try {
       const reason = `Venda Pedido #${orderId.slice(0, 8)}`;
-
       for (const [stationId, ingredientsNeeded] of stationDeductions.entries()) {
+        const actualStationId = stationId === 'CENTRAL' ? null : stationId;
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
-
              // AUDIT: Pass the employee who closed the order
-             await this.consumeStockFromStation(stationId, ingredientId, quantityNeeded, reason, closingEmployeeId || null);
+             await this.consumeStockFromStation(actualStationId, ingredientId, quantityNeeded, reason, closingEmployeeId || null);
         }
       }
       
@@ -593,10 +598,25 @@ export class InventoryDataService {
     if (!userId) return { success: false, error: { message: 'Active unit not found' } };
 
     const recipeCompositions = this.recipeState.recipeCosts();
+    const recipeIngredients = this.recipeState.recipeIngredients();
+    const recipePreparations = this.recipeState.recipePreparations();
     const processedGroupIds = new Set<string>();
     
     // Map: StationID -> { IngredientID -> TotalQty }
     const stationAdditions = new Map<string, Map<string, number>>();
+
+    const resolveStation = (recipeId: string, ingredientId: string, fallbackStationId: string | null): string => {
+        const directIng = recipeIngredients.find(ri => ri.recipe_id === recipeId && ri.ingredient_id === ingredientId);
+        if (directIng && directIng.preparation_id) {
+            const prep = recipePreparations.find(p => p.id === directIng.preparation_id);
+            if (prep && prep.station_id) return prep.station_id;
+        }
+        const prepsForRecipe = recipePreparations.filter(p => p.recipe_id === recipeId);
+        if (prepsForRecipe.length <= 1 && fallbackStationId) {
+            return fallbackStationId;
+        }
+        return 'CENTRAL';
+    };
 
     for (const item of orderItems) {
       if (!item.recipe_id) continue;
@@ -607,22 +627,15 @@ export class InventoryDataService {
       
       const composition = recipeCompositions.get(item.recipe_id);
       if (composition) {
-        const targetStationId = item.station_id; 
-
-        if (!stationAdditions.has(targetStationId)) {
-            stationAdditions.set(targetStationId, new Map());
-        }
-        const stationMap = stationAdditions.get(targetStationId)!;
-
-        const addToMap = (ingId: string, qty: number) => {
-            stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-        };
-
         for (const [ingId, qty] of composition.rawIngredients.entries()) {
-          addToMap(ingId, qty * item.quantity);
+          const targetStationId = resolveStation(item.recipe_id, ingId, item.station_id);
+          if (!stationAdditions.has(targetStationId)) {
+              stationAdditions.set(targetStationId, new Map());
+          }
+          const stationMap = stationAdditions.get(targetStationId)!;
+          stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty * item.quantity);
         }
       }
-
       // PARSE EXTRA OPTION RECIPE IDS from notes
       if (item.notes) {
         const optionMatch = item.notes.match(/\[OPT_RECIPE_IDS:([^\]]+)\]/);
@@ -631,16 +644,13 @@ export class InventoryDataService {
            for (const extraRecipeId of extraRecipeIds) {
                const extraComp = recipeCompositions.get(extraRecipeId);
                if (extraComp) {
-                   const targetStationId = item.station_id;
-                   if (!stationAdditions.has(targetStationId)) {
-                       stationAdditions.set(targetStationId, new Map());
-                   }
-                   const stationMap = stationAdditions.get(targetStationId)!;
-                   const addToMap = (ingId: string, qty: number) => {
-                       stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty);
-                   };
                    for (const [ingId, qty] of extraComp.rawIngredients.entries()) {
-                     addToMap(ingId, qty * item.quantity);
+                     const targetStationId = resolveStation(extraRecipeId, ingId, item.station_id);
+                     if (!stationAdditions.has(targetStationId)) {
+                         stationAdditions.set(targetStationId, new Map());
+                     }
+                     const stationMap = stationAdditions.get(targetStationId)!;
+                     stationMap.set(ingId, (stationMap.get(ingId) || 0) + qty * item.quantity);
                    }
                }
            }
@@ -654,8 +664,8 @@ export class InventoryDataService {
 
     try {
       const reason = `Estorno Cancelamento #${orderId.slice(0, 8)}`;
-
-      for (const [stationId, ingredientsNeeded] of stationAdditions.entries()) {
+      for (const [stationIdRaw, ingredientsNeeded] of stationAdditions.entries()) {
+        const stationId = stationIdRaw === 'CENTRAL' ? null : stationIdRaw;
         for (const [ingredientId, quantityNeeded] of ingredientsNeeded.entries()) {
              if (quantityNeeded <= 0) continue;
 

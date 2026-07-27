@@ -393,8 +393,14 @@ export class RecipeStateService {
   recipesWithStockStatus = computed(() => {
     // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
     const ingredientsStockMap = new Map<string, number>(
-      this.inventoryState.ingredients().map((i) => [i.id, i.stock]),
+      this.inventoryState.ingredients().map((i) => [i.id, i.stock || 0]),
     );
+
+    for (const ss of this.inventoryState.stationStocks()) {
+        const current = ingredientsStockMap.get(ss.ingredient_id) || 0;
+        ingredientsStockMap.set(ss.ingredient_id, current + (ss.quantity || 0));
+    }
+
     const directCompositions = this.recipeDirectComposition();
     const allRecipes = this.recipes();
 
