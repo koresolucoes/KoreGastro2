@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -17,6 +18,7 @@ type AuthState = 'idle' | 'loading' | 'error';
 })
 export class RegisterComponent {
   authService = inject(AuthService);
+  themeService = inject(ThemeService);
   router = inject(Router);
   notificationService = inject(NotificationService);
 
@@ -25,6 +27,10 @@ export class RegisterComponent {
   confirmPassword = signal('');
   authState = signal<AuthState>('idle');
   errorMessage = signal('');
+
+  toggleTheme() {
+    this.themeService.toggleTheme();
+  }
 
   async handleRegister() {
     if (!this.email() || !this.password() || !this.confirmPassword()) {

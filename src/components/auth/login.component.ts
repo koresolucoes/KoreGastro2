@@ -4,6 +4,7 @@ import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -20,6 +21,7 @@ type AuthState = 'idle' | 'loading' | 'error';
 export class LoginComponent {
   authService = inject(AuthService);
   operationalAuth = inject(OperationalAuthService);
+  themeService = inject(ThemeService);
   // FIX: Explicitly type the injected Router to resolve property access errors.
   router: Router = inject(Router);
   notificationService = inject(NotificationService);
@@ -28,6 +30,10 @@ export class LoginComponent {
   password = signal('');
   authState = signal<AuthState>('idle');
   errorMessage = signal('');
+
+  toggleTheme() {
+    this.themeService.toggleTheme();
+  }
 
   async handleLogin() {
     if (!this.email() || !this.password()) {

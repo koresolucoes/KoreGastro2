@@ -1,31 +1,48 @@
-<div class="relative flex items-center justify-center min-h-screen overflow-hidden">
-  <!-- Animated Background -->
-  <div class="absolute inset-0 z-0 animated-gradient-background"></div>
+<div class="relative flex items-center justify-center min-h-screen bg-app overflow-hidden p-6">
+  <!-- Theme Toggle Floating Button -->
+  <div class="absolute top-4 right-4 z-20">
+    <button (click)="toggleTheme()" type="button" 
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
+      <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
+        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+      </span>
+      <span class="hidden sm:inline">{{ themeService.currentTheme() === 'dark' ? 'Modo Claro' : 'Modo Escuro' }}</span>
+    </button>
+  </div>
+
+  <!-- Liquid Glow Background Orbs -->
+  <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-brand/20 blur-[120px] mix-blend-screen animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-brand/10 blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
+  </div>
 
   <!-- Content Container -->
-  <div class="relative z-10 w-full max-w-2xl p-8 text-center bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-700/50">
-    <h1 class="text-6xl font-extrabold text-white mb-4">
-      <span>Chef</span><span class="text-blue-500">OS</span>
+  <div class="relative z-10 w-full max-w-2xl p-8 sm:p-12 text-center bg-surface-elevated/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden">
+    <!-- Glow accent line top -->
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+
+    <h1 class="text-6xl font-black text-title tracking-tighter mb-4">
+      <span>Chef</span><span class="text-brand">OS</span>
     </h1>
-    <h2 class="text-3xl font-bold text-white mb-3">
+    <h2 class="text-3xl font-bold text-title tracking-tight mb-3">
       Bem-vindo à Demonstração
     </h2>
-    <p class="mt-2 text-lg text-gray-300 max-w-xl mx-auto">
+    <p class="mt-2 text-base text-muted max-w-xl mx-auto font-medium">
       Explore os principais recursos do nosso sistema de gestão em um ambiente interativo. Nenhuma alteração será salva.
     </p>
     
     <div class="mt-8">
       <button 
         (click)="startDemo()"
-        class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 transition-transform transform hover:scale-105">
-        Iniciar Demonstração
+        class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-black text-white bg-brand rounded-2xl shadow-lg shadow-brand/20 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-brand/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+        Iniciar Demonstração <span translate="no" class="notranslate material-symbols-outlined ml-2 text-2xl transition-transform group-hover:translate-x-1">play_circle</span>
       </button>
     </div>
 
-    <div class="text-center pt-8 mt-8 border-t border-gray-700">
-      <p class="text-sm text-gray-400">
+    <div class="text-center pt-8 mt-8 border-t border-subtle">
+      <p class="text-sm text-muted font-medium">
         Gostou do que viu?
-        <a href="https://app.chefos.online" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-400 hover:text-blue-300">
+        <a href="https://app.chefos.online" target="_blank" rel="noopener noreferrer" class="font-bold text-brand hover:text-brand-light ml-1 transition-colors">
           Crie sua conta e comece gratuitamente
         </a>
       </p>

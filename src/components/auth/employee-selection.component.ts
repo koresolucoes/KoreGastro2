@@ -10,6 +10,7 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { SettingsDataService } from '../../services/settings-data.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { Router, RouterLink } from '@angular/router';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -23,6 +24,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 export class EmployeeSelectionComponent implements OnDestroy {
   @ViewChild('reader', { static: false }) readerElement?: ElementRef;
   html5QrCode: Html5Qrcode | null = null;
+  public themeService = inject(ThemeService);
   private stateService = inject(SupabaseStateService);
   private operationalAuth = inject(OperationalAuthService);
   private settingsDataService = inject(SettingsDataService);
@@ -34,6 +36,10 @@ export class EmployeeSelectionComponent implements OnDestroy {
   private authService = inject(AuthService);
 
   hasActiveSubscription = this.subscriptionState.hasActiveSubscription;
+
+  toggleTheme() {
+    this.themeService.toggleTheme();
+  }
 
   async logoutAdmin() {
     await this.authService.signOut();

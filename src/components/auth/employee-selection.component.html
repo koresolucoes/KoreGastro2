@@ -1,25 +1,39 @@
-<div class="min-h-screen bg-surface flex flex-col justify-center items-center p-6 relative overflow-hidden">
+<div class="min-h-screen bg-app flex flex-col justify-center items-center p-6 relative overflow-hidden">
   
-  <!-- Decorative Background -->
-  <div class="absolute inset-0 z-0 opacity-20 pointer-events-none flex justify-center items-center">
-    <div class="w-[800px] h-[800px] bg-brand/30 rounded-full blur-[120px]"></div>
+  <!-- Theme Toggle Floating Button -->
+  <div class="absolute top-4 right-4 z-20">
+    <button (click)="toggleTheme()" type="button" 
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
+      <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
+        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+      </span>
+      <span class="hidden sm:inline">{{ themeService.currentTheme() === 'dark' ? 'Modo Claro' : 'Modo Escuro' }}</span>
+    </button>
+  </div>
+
+  <!-- Liquid Glow Background Orbs -->
+  <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-brand/20 blur-[120px] mix-blend-screen animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-brand/10 blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
   </div>
 
   <div class="w-full max-w-md z-10">
-    <div class="text-center mb-10">
+    <div class="text-center mb-8">
       <div class="mb-4">
-         <p class="text-6xl font-black data-mono text-brand title-display">{{ currentTime() | date:'HH:mm:ss' }}</p>
-         <p class="text-sm font-bold text-muted uppercase tracking-widest mt-1">{{ currentTime() | date:'EEEE, dd \'de\' MMMM' }}</p>
+         <p class="text-6xl font-black data-mono text-brand title-display drop-shadow-md">{{ currentTime() | date:'HH:mm:ss' }}</p>
+         <p class="text-xs font-bold text-muted uppercase tracking-widest mt-1.5">{{ currentTime() | date:'EEEE, dd \'de\' MMMM' }}</p>
       </div>
-      <h1 class="text-3xl font-black text-title title-display tracking-tight mb-2">Controle de Acesso</h1>
+      <h1 class="text-3xl font-black text-title title-display tracking-tight mb-1">Controle de Acesso</h1>
       <p class="text-muted font-medium text-sm">Registre seu ponto e acesse o sistema</p>
     </div>
 
     <!-- MAIN LOGIN FLOW -->
     @if (!selectedEmployee() && !confirmationEmployee()) {
-      <div class="chef-surface p-8 border-subtle shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        
-        <div class="mb-8 relative">
+      <div class="bg-surface-elevated/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        <!-- Glow accent line top -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+
+        <div class="mb-6 relative">
             <label class="block text-xs font-black text-muted mb-2 uppercase tracking-widest text-center">Identificação</label>
             <div class="relative group">
                 <input type="text" 
@@ -27,7 +41,7 @@
                        [value]="searchQuery()" 
                        (input)="searchQuery.set($any($event.target).value)" 
                        placeholder="Digite Matrícula, CPF ou Nome" 
-                       class="w-full bg-surface-elevated border-2 border-strong rounded-2xl pl-12 pr-12 py-4 text-center text-title font-bold placeholder-muted focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition-all shadow-inner text-lg">
+                       class="w-full bg-surface border-2 border-strong rounded-2xl pl-12 pr-12 py-4 text-center text-title font-bold placeholder-muted focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition-all shadow-inner text-lg">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
                     <span translate="no" class="notranslate material-symbols-outlined text-xl">badge</span>
                 </div>
@@ -48,7 +62,7 @@
                 </div>
             }
 
-            <p class="text-[11px] text-muted text-center mt-4 flex items-center justify-center gap-1.5 font-medium">
+            <p class="text-[11px] text-muted text-center mt-3 flex items-center justify-center gap-1.5 font-medium">
                 <span translate="no" class="notranslate material-symbols-outlined text-[16px]">qr_code_scanner</span>
                 Pode usar o leitor de QR Code do crachá
             </p>
@@ -57,13 +71,13 @@
         @if(searchQuery().length > 0) {
             <div class="mt-6 border-t border-subtle pt-6 animate-in slide-in-from-top-2">
                 <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Resultados ({{searchResults().length}})</p>
-                <div class="space-y-2 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
+                <div class="space-y-2 max-h-60 overflow-y-auto pr-1 hide-scrollbar">
                     @for (employee of searchResults(); track employee.id) {
-                        <button (click)="selectEmployee(employee)" class="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-brand/5 border border-transparent hover:border-brand/20 transition-all text-left group">
+                        <button (click)="selectEmployee(employee)" class="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-surface hover:bg-brand/10 border border-strong hover:border-brand/40 transition-all text-left group shadow-sm">
                             @if (employee.photo_url) {
                                 <img [src]="employee.photo_url" class="w-12 h-12 rounded-full object-cover shadow-sm border border-subtle">
                             } @else {
-                                <div class="w-12 h-12 rounded-full bg-surface-elevated flex items-center justify-center border border-subtle group-hover:bg-brand/10 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-surface-elevated flex items-center justify-center border border-strong group-hover:bg-brand/20 transition-colors">
                                     <span translate="no" class="notranslate material-symbols-outlined text-muted group-hover:text-brand">person</span>
                                 </div>
                             }
@@ -81,16 +95,18 @@
             </div>
         } @else {
             <div class="mt-6 border-t border-subtle pt-6">
-                <p class="text-xs text-center text-muted font-medium py-4">Digite sua identificação para continuar.</p>
+                <p class="text-xs text-center text-muted font-medium py-2">Digite sua identificação para continuar.</p>
             </div>
         }
       </div>
 
     <!-- PIN ENTRY -->
     } @else if (selectedEmployee() && !confirmationEmployee()) {
-      <div class="chef-surface p-8 border-subtle shadow-2xl relative overflow-hidden animate-in slide-in-from-right-8 duration-300">
-        
-        <button (click)="cancelPinLogin()" class="absolute top-4 left-4 p-2 rounded-xl text-muted hover:bg-surface-elevated hover:text-title transition-all z-10 flex items-center gap-1">
+      <div class="bg-surface-elevated/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong relative overflow-hidden animate-in slide-in-from-right-8 duration-300">
+        <!-- Glow accent line top -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+
+        <button (click)="cancelPinLogin()" class="absolute top-4 left-4 p-2 rounded-xl text-muted hover:bg-surface hover:text-title transition-all z-10 flex items-center gap-1 border border-transparent hover:border-strong">
           <span translate="no" class="notranslate material-symbols-outlined text-sm">arrow_back</span>
           <span class="text-[10px] font-black uppercase tracking-widest">Voltar</span>
         </button>
@@ -99,7 +115,7 @@
             @if (selectedEmployee()!.photo_url) {
                 <img [src]="selectedEmployee()!.photo_url" class="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-surface mb-4">
             } @else {
-                <div class="w-24 h-24 rounded-full bg-surface-elevated flex items-center justify-center shadow-inner border border-subtle mb-4">
+                <div class="w-24 h-24 rounded-full bg-surface flex items-center justify-center shadow-inner border border-strong mb-4">
                     <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted">person</span>
                 </div>
             }
@@ -113,8 +129,8 @@
             @for (i of [0, 1, 2, 3]; track i) {
               <div class="w-12 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-black shadow-inner transition-all duration-200"
                    [ngClass]="{
-                     'border-brand bg-brand/5 text-brand scale-110': pinInput().length > i,
-                     'border-strong bg-surface-elevated text-transparent': pinInput().length <= i,
+                     'border-brand bg-brand/10 text-brand scale-110 shadow-md': pinInput().length > i,
+                     'border-strong bg-surface text-muted/30': pinInput().length <= i,
                      'border-danger bg-danger/10 text-danger animate-shake': loginError()
                    }">
                 {{ pinInput().length > i ? '●' : '' }}
@@ -131,13 +147,13 @@
         <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
           @for (digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '']; track digit) {
             @if (digit === 'C') {
-              <button (click)="clearPin()" class="aspect-square rounded-2xl bg-surface-elevated text-muted font-black text-xl hover:bg-danger/10 hover:text-danger active:scale-95 transition-all flex items-center justify-center border border-subtle shadow-sm">
+              <button (click)="clearPin()" class="aspect-square rounded-2xl bg-surface text-muted font-black text-xl hover:bg-danger/10 hover:text-danger hover:border-danger/30 active:scale-95 transition-all flex items-center justify-center border border-strong shadow-sm">
                  <span translate="no" class="notranslate material-symbols-outlined">backspace</span>
               </button>
             } @else if (digit === '') {
               <div></div>
             } @else {
-              <button (click)="handlePinInput(digit)" class="aspect-square rounded-2xl bg-surface text-title font-black text-2xl hover:bg-brand/10 hover:text-brand hover:border-brand/30 active:scale-95 transition-all border border-subtle shadow-sm">
+              <button (click)="handlePinInput(digit)" class="aspect-square rounded-2xl bg-surface text-title font-black text-2xl hover:bg-brand/10 hover:text-brand hover:border-brand/40 active:scale-95 transition-all border border-strong shadow-sm">
                 {{ digit }}
               </button>
             }
@@ -147,7 +163,10 @@
 
     <!-- CLOCK IN CONFIRMATION -->
     } @else if (confirmationEmployee()) {
-        <div class="chef-surface p-8 border-subtle shadow-2xl animate-in slide-in-from-right-8 duration-300 text-center">
+        <div class="bg-surface-elevated/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong relative overflow-hidden animate-in slide-in-from-right-8 duration-300 text-center">
+             <!-- Glow accent line top -->
+             <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+
              <div class="w-20 h-20 rounded-full bg-warning/10 text-warning mx-auto flex items-center justify-center mb-6 shadow-inner border border-warning/20">
                 <span translate="no" class="notranslate material-symbols-outlined text-4xl">schedule</span>
             </div>
@@ -160,7 +179,7 @@
                     <span translate="no" class="notranslate material-symbols-outlined text-[18px]">login</span>
                     Bater Ponto & Entrar
                 </button>
-                <button (click)="cancelClockInConfirmation()" class="w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs bg-surface-elevated border border-strong text-muted hover:text-title hover:border-title transition-all active:scale-95">
+                <button (click)="cancelClockInConfirmation()" class="w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs bg-surface border border-strong text-muted hover:text-title hover:border-title transition-all active:scale-95">
                     Cancelar
                 </button>
             </div>
@@ -169,8 +188,8 @@
 
     <!-- ADMIN LINK -->
     <div class="mt-8 text-center animate-in fade-in">
-        <a href="javascript:void(0)" (click)="logoutAdmin()" class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-brand transition-colors px-4 py-2 rounded-xl hover:bg-brand/5">
-            <span translate="no" class="notranslate material-symbols-outlined text-[14px]">admin_panel_settings</span>
+        <a href="javascript:void(0)" (click)="logoutAdmin()" class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted hover:text-brand transition-colors px-4 py-2.5 rounded-full bg-surface-elevated/80 border border-strong shadow-sm hover:-translate-y-0.5">
+            <span translate="no" class="notranslate material-symbols-outlined text-base">admin_panel_settings</span>
             Acessar painel gerencial
         </a>
     </div>
@@ -185,3 +204,4 @@
     }
   </div>
 </div>
+

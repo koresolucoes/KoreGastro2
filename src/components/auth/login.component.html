@@ -1,4 +1,15 @@
 <div class="flex min-h-screen bg-app relative overflow-hidden">
+  <!-- Theme Toggle Floating Button -->
+  <div class="absolute top-4 right-4 z-20">
+    <button (click)="toggleTheme()" type="button" 
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
+      <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
+        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+      </span>
+      <span class="hidden sm:inline">{{ themeService.currentTheme() === 'dark' ? 'Modo Claro' : 'Modo Escuro' }}</span>
+    </button>
+  </div>
+
   <!-- Liquid Glow Background Orbs -->
   <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
     <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-brand/20 blur-[120px] mix-blend-screen animate-pulse"></div>

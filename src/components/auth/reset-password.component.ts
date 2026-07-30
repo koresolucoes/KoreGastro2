@@ -2,6 +2,7 @@
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -17,6 +18,7 @@ type ResetState = 'idle' | 'loading' | 'error' | 'success';
 })
 export class ResetPasswordComponent implements OnInit {
   authService = inject(AuthService);
+  themeService = inject(ThemeService);
   // FIX: Explicitly type the injected Router to resolve property access errors.
   router: Router = inject(Router);
   notificationService = inject(NotificationService);
@@ -26,6 +28,10 @@ export class ResetPasswordComponent implements OnInit {
   resetState = signal<ResetState>('idle');
   errorMessage = signal('');
   isSessionValid = signal(true); // Controla se a sessão do token é válida
+
+  toggleTheme() {
+    this.themeService.toggleTheme();
+  }
 
   ngOnInit() {
     // O cliente Supabase precisa de um momento para processar o fragmento da URL.
