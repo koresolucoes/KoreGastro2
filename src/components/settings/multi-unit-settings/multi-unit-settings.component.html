@@ -1,79 +1,166 @@
 
-<div class="chef-surface border border-subtle rounded-3xl p-8 mb-6 shadow-sm">
-  <div class="flex items-center gap-4 mb-6 border-b border-subtle pb-4">
+<div class="space-y-6">
+
+  <!-- Create New Store Card -->
+  <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm">
+    <div class="flex items-center gap-4 mb-6 border-b border-subtle pb-4">
       <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
-          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">group_add</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">storefront</span>
       </div>
       <div>
-          <h2 class="text-2xl font-black text-title title-display tracking-tight">Gestão de Equipe (Gestores)</h2>
-          <p class="text-muted text-sm font-medium">Adicione outros usuários como gestores desta loja. Eles terão acesso a todas as configurações e dados desta unidade. Para adicionar um usuário, ele já deve ter criado uma conta no ChefOS com o e-mail informado.</p>
+        <h2 class="text-2xl font-black text-title title-display tracking-tight">Criar Nova Unidade / Filial</h2>
+        <p class="text-muted text-sm font-medium">Cadastre uma nova loja ou filial sob sua gestão. A nova unidade terá um ambiente isolado com seus próprios cardápios, estoque e equipe.</p>
       </div>
-  </div>
+    </div>
 
-  <!-- Invite Form -->
-  <div class="bg-surface-elevated p-6 rounded-2xl mb-8 border border-strong shadow-inner">
-    <h3 class="font-black text-title mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
-        <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
-        Adicionar Novo Gestor
-    </h3>
-    <div class="flex flex-col sm:flex-row gap-4">
-      <input 
-        type="email" 
-        [value]="inviteEmail()" 
-        (input)="inviteEmail.set($any($event.target).value)" 
-        (keydown.enter)="inviteManager()"
-        placeholder="E-mail do usuário (ex: gerente@loja.com)" 
-        class="flex-1 bg-surface border border-subtle rounded-xl px-4 py-3 text-title placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors">
-      
-      <button 
-        (click)="inviteManager()" 
-        [disabled]="!inviteEmail().trim() || isInviting()" 
-        class="bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider px-8 py-3 rounded-xl disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center min-w-[140px] shadow-sm transform active:scale-95 transition-all border border-transparent">
-        @if(isInviting()) {
-           <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-        } @else {
-           <span>Adicionar</span>
-        }
-      </button>
+    <div class="bg-surface-elevated p-6 rounded-2xl border border-strong shadow-inner">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <input 
+          type="text" 
+          [value]="newStoreName()" 
+          (input)="newStoreName.set($any($event.target).value)" 
+          (keydown.enter)="createStore()"
+          placeholder="Nome da Nova Unidade (ex: Filial Centro, Delivery Moema)" 
+          class="flex-1 bg-surface border border-subtle rounded-xl px-4 py-3 text-title placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors">
+        
+        <button 
+          (click)="createStore()" 
+          [disabled]="!newStoreName().trim() || isCreatingStore()" 
+          class="bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider px-8 py-3 rounded-xl disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center min-w-[160px] shadow-sm transform active:scale-95 transition-all border border-transparent">
+          @if(isCreatingStore()) {
+             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          } @else {
+             <span class="flex items-center gap-2">
+               <span translate="no" class="notranslate material-symbols-outlined text-lg">add_business</span>
+               Criar Loja
+             </span>
+          }
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Managers List -->
-  <div>
-    <h3 class="font-black text-title mb-4 uppercase tracking-wider text-sm">Gestores com Acesso</h3>
-    @if (isLoading()) {
-       <div class="flex justify-center py-12">
-           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
-       </div>
-    } @else if (managers().length === 0) {
-        <div class="bg-surface-elevated/50 border border-dashed border-strong rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-            <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">group_off</span>
-            <p class="text-muted font-bold">Nenhum gestor adicional encontrado. Apenas você tem acesso.</p>
+  <!-- Clone Catalog Card -->
+  @if (otherUnits().length > 0) {
+    <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm">
+      <div class="flex items-center gap-4 mb-6 border-b border-subtle pb-4">
+        <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
+          <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">content_copy</span>
         </div>
-    } @else {
-        <div class="space-y-3">
-            @for (manager of managers(); track manager.permission_id) {
-                <div class="flex items-center justify-between bg-surface-elevated hover:bg-surface p-4 rounded-2xl border border-strong hover:border-brand/30 transition-all shadow-sm group">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center text-brand font-black text-xl border border-brand/20 shadow-inner group-hover:bg-brand/20 transition-colors">
-                            {{ manager.manager_name.charAt(0).toUpperCase() }}
-                        </div>
-                        <div>
-                            <p class="text-title font-bold">{{ manager.manager_name }}</p>
-                            <p class="text-xs text-muted font-mono mt-0.5">{{ manager.manager_email }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="px-3 py-1 bg-info/10 text-info text-[10px] font-black uppercase tracking-widest rounded-lg border border-info/20 shadow-sm">
-                            {{ manager.role === 'admin' ? 'Admin' : 'Gestor' }}
-                        </span>
-                        <button (click)="removeManager(manager)" class="p-2.5 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-all border border-transparent hover:border-danger/20 active:scale-95" title="Remover acesso">
-                            <span translate="no" class="notranslate material-symbols-outlined text-lg">person_remove</span>
-                        </button>
-                    </div>
-                </div>
+        <div>
+          <h2 class="text-2xl font-black text-title title-display tracking-tight">Clonar Cardápio & Insumos</h2>
+          <p class="text-muted text-sm font-medium">Copie categorias, fichas técnicas, preparos e insumos de outra unidade para a unidade atual. Itens existentes com o mesmo nome serão preservados.</p>
+        </div>
+      </div>
+
+      <div class="bg-surface-elevated p-6 rounded-2xl border border-strong shadow-inner">
+        <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+          <select 
+            [value]="selectedSourceStoreId()" 
+            (change)="selectedSourceStoreId.set($any($event.target).value)" 
+            class="flex-1 bg-surface border border-subtle rounded-xl px-4 py-3 text-title focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors">
+            <option value="">-- Selecione a Unidade de Origem --</option>
+            @for (unit of otherUnits(); track unit.id) {
+              <option [value]="unit.id">{{ unit.name }}</option>
             }
+          </select>
+
+          <button 
+            (click)="cloneMenu()" 
+            [disabled]="!selectedSourceStoreId() || isCloning()" 
+            class="bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider px-8 py-3 rounded-xl disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center min-w-[180px] shadow-sm transform active:scale-95 transition-all border border-transparent">
+            @if(isCloning()) {
+               <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            } @else {
+               <span class="flex items-center gap-2">
+                 <span translate="no" class="notranslate material-symbols-outlined text-lg">file_copy</span>
+                 Clonar Cardápio
+               </span>
+            }
+          </button>
         </div>
-    }
+      </div>
+    </div>
+  }
+
+  <!-- Team Management Card -->
+  <div class="chef-surface border border-subtle rounded-3xl p-8 shadow-sm">
+    <div class="flex items-center gap-4 mb-6 border-b border-subtle pb-4">
+        <div class="bg-brand/10 p-3 rounded-2xl border border-brand/20">
+            <span translate="no" class="notranslate material-symbols-outlined text-3xl text-brand">group_add</span>
+        </div>
+        <div>
+            <h2 class="text-2xl font-black text-title title-display tracking-tight">Gestão de Equipe (Gestores)</h2>
+            <p class="text-muted text-sm font-medium">Adicione outros usuários como gestores desta loja. Eles terão acesso a todas as configurações e dados desta unidade. Para adicionar um usuário, ele já deve ter criado uma conta no ChefOS com o e-mail informado.</p>
+        </div>
+    </div>
+
+    <!-- Invite Form -->
+    <div class="bg-surface-elevated p-6 rounded-2xl mb-8 border border-strong shadow-inner">
+      <h3 class="font-black text-title mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
+          <span translate="no" class="notranslate material-symbols-outlined text-brand">person_add</span>
+          Adicionar Novo Gestor
+      </h3>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <input 
+          type="email" 
+          [value]="inviteEmail()" 
+          (input)="inviteEmail.set($any($event.target).value)" 
+          (keydown.enter)="inviteManager()"
+          placeholder="E-mail do usuário (ex: gerente@loja.com)" 
+          class="flex-1 bg-surface border border-subtle rounded-xl px-4 py-3 text-title placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand shadow-sm transition-colors">
+        
+        <button 
+          (click)="inviteManager()" 
+          [disabled]="!inviteEmail().trim() || isInviting()" 
+          class="bg-brand hover:bg-brand-hover text-white font-black uppercase tracking-wider px-8 py-3 rounded-xl disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center min-w-[140px] shadow-sm transform active:scale-95 transition-all border border-transparent">
+          @if(isInviting()) {
+             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          } @else {
+             <span>Adicionar</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- Managers List -->
+    <div>
+      <h3 class="font-black text-title mb-4 uppercase tracking-wider text-sm">Gestores com Acesso</h3>
+      @if (isLoading()) {
+         <div class="flex justify-center py-12">
+             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+         </div>
+      } @else if (managers().length === 0) {
+          <div class="bg-surface-elevated/50 border border-dashed border-strong rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+              <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">group_off</span>
+              <p class="text-muted font-bold">Nenhum gestor adicional encontrado. Apenas você tem acesso.</p>
+          </div>
+      } @else {
+          <div class="space-y-3">
+              @for (manager of managers(); track manager.permission_id) {
+                  <div class="flex items-center justify-between bg-surface-elevated hover:bg-surface p-4 rounded-2xl border border-strong hover:border-brand/30 transition-all shadow-sm group">
+                      <div class="flex items-center gap-4">
+                          <div class="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center text-brand font-black text-xl border border-brand/20 shadow-inner group-hover:bg-brand/20 transition-colors">
+                              {{ manager.manager_name.charAt(0).toUpperCase() }}
+                          </div>
+                          <div>
+                              <p class="text-title font-bold">{{ manager.manager_name }}</p>
+                              <p class="text-xs text-muted font-mono mt-0.5">{{ manager.manager_email }}</p>
+                          </div>
+                      </div>
+                      <div class="flex items-center gap-4">
+                          <span class="px-3 py-1 bg-info/10 text-info text-[10px] font-black uppercase tracking-widest rounded-lg border border-info/20 shadow-sm">
+                              {{ manager.role === 'admin' ? 'Admin' : 'Gestor' }}
+                          </span>
+                          <button (click)="removeManager(manager)" class="p-2.5 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-all border border-transparent hover:border-danger/20 active:scale-95" title="Remover acesso">
+                              <span translate="no" class="notranslate material-symbols-outlined text-lg">person_remove</span>
+                          </button>
+                      </div>
+                  </div>
+              }
+          </div>
+      }
+    </div>
   </div>
+
 </div>

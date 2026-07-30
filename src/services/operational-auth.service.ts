@@ -13,6 +13,7 @@ import { NotificationService } from './notification.service';
 import { SettingsStateService } from './settings-state.service';
 import { TimeClockReceiptService, TimeClockReceipt } from './time-clock-receipt.service';
 import { NtpService } from './ntp.service';
+import { UnitContextService } from './unit-context.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -32,6 +33,7 @@ export class OperationalAuthService {
   private settingsState = inject(SettingsStateService);
   private receiptService = inject(TimeClockReceiptService);
   private ntpService = inject(NtpService);
+  private unitContextService = inject(UnitContextService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
   activeShift = signal<TimeClockEntry | null>(null);
@@ -43,6 +45,16 @@ export class OperationalAuthService {
     effect(() => {
       if (this.demoService.isDemoMode() && !this.activeEmployee()) {
         this.loginAsDemoUser();
+      }
+    });
+
+    // Auto-reset operator session when switching to a different store context
+    effect(() => {
+      const activeUnitId = this.unitContextService.activeUnitId();
+      const employee = this.activeEmployee();
+      if (employee && activeUnitId && employee.user_id && employee.user_id !== activeUnitId && !this.demoService.isDemoMode()) {
+        this.resetSession();
+        this.router.navigate(['/employee-selection']);
       }
     });
   }

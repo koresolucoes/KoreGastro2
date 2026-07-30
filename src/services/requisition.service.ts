@@ -205,16 +205,31 @@ export class RequisitionService {
     for (const item of requisition.requisition_items) {
       const qty = item.quantity_delivered || 0;
       if (qty > 0) {
-        
+        let targetIngredientId = item.ingredient_id;
+
         if (isExternalTransfer) {
-             // For external transfers, deduct stock from Matriz and add to Local Main Inventory
-             // Currently, both operations need to happen across different stores.
-             // Because InventoryService uses RLS heavily, we might need a dedicated RPC to do this securely,
-             // or just trust the active user session if they have permissions.
-             
+             // For external transfers, resolve the local ingredient by name in the active unit
+             const { data: origIng } = await supabase.from('ingredients')
+                 .select('name')
+                 .eq('id', item.ingredient_id)
+                 .maybeSingle();
+
+             if (origIng?.name) {
+                 const activeUnitId = this.getActiveUnitId();
+                 const { data: localIng } = await supabase.from('ingredients')
+                     .select('id')
+                     .eq('user_id', activeUnitId)
+                     .ilike('name', origIng.name)
+                     .maybeSingle();
+
+                 if (localIng?.id) {
+                     targetIngredientId = localIng.id;
+                 }
+             }
+
              // 1. ADD STUFF TO TARGET RESTAURANT (The one receiving)
              await this.inventoryDataService.adjustIngredientStock({
-                ingredientId: item.ingredient_id,
+                ingredientId: targetIngredientId,
                 quantityChange: qty, // ADDING stock!
                 reason: `Entrada via TRF Externa (Req #${requisitionId.slice(0,8)})`
              });
@@ -223,7 +238,7 @@ export class RequisitionService {
              if (requisition.station_id) {
                 // Deduct from Main Inventory (since it passed through)
                 await this.inventoryDataService.adjustIngredientStock({
-                    ingredientId: item.ingredient_id,
+                    ingredientId: targetIngredientId,
                     quantityChange: -qty,
                     reason: `Transferência Automática para Praça (Req #${requisitionId.slice(0,8)})`
                 });
@@ -232,7 +247,7 @@ export class RequisitionService {
                     .from('station_stocks')
                     .select('*')
                     .eq('station_id', requisition.station_id)
-                    .eq('ingredient_id', item.ingredient_id)
+                    .eq('ingredient_id', targetIngredientId)
                     .single();
 
                 if (existingStock) {
@@ -247,7 +262,7 @@ export class RequisitionService {
                     await supabase.from('station_stocks').insert({
                         user_id: requisition.user_id,
                         station_id: requisition.station_id,
-                        ingredient_id: item.ingredient_id,
+                        ingredient_id: targetIngredientId,
                         quantity: qty,
                         last_restock_date: new Date().toISOString()
                     });

@@ -33,12 +33,65 @@ export class MultiUnitSettingsComponent implements OnInit {
   selectedSourceStoreId = signal('');
   isCloning = signal(false);
 
+  // Store Creation
+  newStoreName = signal('');
+  isCreatingStore = signal(false);
+
   otherUnits = computed(() => 
     this.unitContext.availableUnits().filter(u => u.id !== this.unitContext.activeUnitId())
   );
 
   ngOnInit() {
     this.loadManagers();
+  }
+
+  async createStore() {
+    const name = this.newStoreName().trim();
+    if (!name) {
+      this.notificationService.show('Informe o nome da nova unidade.', 'warning');
+      return;
+    }
+
+    this.isCreatingStore.set(true);
+    const res = await this.settingsDataService.createNewStore(name);
+    if (res.success) {
+      this.notificationService.show(`Unidade "${name}" criada com sucesso!`, 'success');
+      this.newStoreName.set('');
+      const currentUserId = this.unitContext.activeUnitId();
+      if (currentUserId) {
+        await this.unitContext.loadContext(currentUserId);
+      }
+    } else {
+      this.notificationService.show(`Erro ao criar unidade: ${res.error?.message || 'Falha na criação'}`, 'error');
+    }
+    this.isCreatingStore.set(false);
+  }
+
+  async cloneMenu() {
+    const sourceStoreId = this.selectedSourceStoreId();
+    const targetStoreId = this.unitContext.activeUnitId();
+    if (!sourceStoreId) {
+      this.notificationService.show('Selecione uma loja de origem para clonar.', 'warning');
+      return;
+    }
+    if (!targetStoreId) return;
+
+    const sourceStore = this.unitContext.availableUnits().find(u => u.id === sourceStoreId);
+    const confirm = await this.notificationService.confirm(
+      `Tem certeza que deseja clonar o cardápio e insumos da unidade "${sourceStore?.name || sourceStoreId}" para esta unidade?`
+    );
+    if (!confirm) return;
+
+    this.isCloning.set(true);
+    const res = await this.recipeDataService.cloneStoreData(sourceStoreId, targetStoreId);
+    if (res.success) {
+      this.notificationService.show('Cardápio, preparos e insumos clonados com sucesso!', 'success');
+      this.selectedSourceStoreId.set('');
+      await this.supabaseState.loadEssentialData();
+    } else {
+      this.notificationService.show(`Erro ao clonar: ${res.error?.message || 'Falha ao duplicar dados'}`, 'error');
+    }
+    this.isCloning.set(false);
   }
 
   async loadManagers() {

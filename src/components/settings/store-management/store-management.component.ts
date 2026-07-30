@@ -85,7 +85,8 @@ export class StoreManagementComponent implements OnInit {
       
       try {
           if (this.editingStore()) {
-              const { success, error } = await this.settingsDataService.updateCompanyProfile({ company_name: name });
+              const storeId = this.editingStore()!.id;
+              const { success, error } = await this.settingsDataService.updateStoreName(storeId, name);
               
               if (success) {
                   this.notificationService.show('Nome da loja atualizado.', 'success');
@@ -93,7 +94,7 @@ export class StoreManagementComponent implements OnInit {
                   await this.unitContextService.loadContext(this.authService.currentUser()?.id!);
                   this.closeModal();
               } else {
-                  throw new Error(error?.message);
+                  throw new Error(error?.message || 'Erro ao atualizar nome da loja');
               }
 
           } else {

@@ -221,9 +221,8 @@ export class TopNavComponent {
   }
 
   openAddStoreModal() {
-      // Modal removed. Future integration can handle this directly or redirect to settings
-      alert('Funcionalidade indisponível momentaneamente. Gerencie lojas pelas Configurações.');
       this.isStoreDropdownOpen.set(false);
+      this.router.navigate(['/settings']);
   }
   
   async signOut() {

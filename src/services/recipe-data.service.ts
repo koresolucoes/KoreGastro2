@@ -249,6 +249,14 @@ export class RecipeDataService {
     if (!targetStoreId) return { success: false, error: { message: 'Active unit or user not found' } };
     if (sourceStoreId === targetStoreId) return { success: false, error: { message: 'Source and target stores are the same' } };
 
+    // Track created IDs for rollback in case of error
+    const createdStationIds: string[] = [];
+    const createdCategoryIds: string[] = [];
+    const createdRecipeIds: string[] = [];
+    const createdPrepIds: string[] = [];
+    const createdIngCategoryIds: string[] = [];
+    const createdIngredientIds: string[] = [];
+
     try {
       // 0. Fetch source & target stations
       const { data: sourceStations } = await supabase.from('stations').select('*').eq('user_id', sourceStoreId);
@@ -267,9 +275,11 @@ export class RecipeDataService {
                       name: st.name,
                       user_id: targetStoreId
                   }).select().single();
-                  if (!error && newSt) {
+                  if (error) throw error;
+                  if (newSt) {
                       stationIdMap.set(st.id, newSt.id);
                       existingStationsMap.set(lowerName, newSt.id);
+                      createdStationIds.push(newSt.id);
                   }
               }
           }
@@ -291,9 +301,11 @@ export class RecipeDataService {
                 const { data: newCat, error } = await supabase.from('categories')
                   .insert({ name: cat.name, image_url: cat.image_url, user_id: targetStoreId })
                   .select().single();
-                if (!error && newCat) {
+                if (error) throw error;
+                if (newCat) {
                     categoryIdMap.set(cat.id, newCat.id);
                     existingCategoriesMap.set(lowerName, newCat.id);
+                    createdCategoryIds.push(newCat.id);
                 }
             }
           }
@@ -341,9 +353,11 @@ export class RecipeDataService {
 
         if (recipesToInsert.length > 0) {
             const { data: insertedRecipes, error: insertRecError } = await supabase.from('recipes').insert(recipesToInsert).select();
+            if (insertRecError) throw insertRecError;
             
-            if (!insertRecError && insertedRecipes && insertedRecipes.length > 0) {
+            if (insertedRecipes && insertedRecipes.length > 0) {
                 insertedRecipes.forEach((newRec: any, i: number) => {
+                    createdRecipeIds.push(newRec.id);
                     const originalIdx = sourceRecsToInsertIdx[i];
                     const oldId = sourceRecipes[originalIdx].id;
                     recipeIdMap.set(oldId, newRec.id);
@@ -378,9 +392,11 @@ export class RecipeDataService {
                });
                
                if (prepsToInsert.length > 0) {
-                   const { data: insertedPreps } = await supabase.from('recipe_preparations').insert(prepsToInsert).select();
+                   const { data: insertedPreps, error: prepError } = await supabase.from('recipe_preparations').insert(prepsToInsert).select();
+                   if (prepError) throw prepError;
                    if (insertedPreps && insertedPreps.length > 0) {
                        insertedPreps.forEach((newPrep: any, i: number) => {
+                           createdPrepIds.push(newPrep.id);
                            const originalIdx = sourcePrepsToInsertIdx[i];
                            const oldId = sourcePreparations[originalIdx].id;
                            prepIdMap.set(oldId, newPrep.id);
@@ -409,19 +425,22 @@ export class RecipeDataService {
                       name: cat.name,
                       user_id: targetStoreId
                   }).select().single();
-                  if (!error && newCat) {
+                  if (error) throw error;
+                  if (newCat) {
                       ingCategoryIdMap.set(cat.id, newCat.id);
                       existingIngCatMap.set(lowerName, newCat.id);
+                      createdIngCategoryIds.push(newCat.id);
                   }
               }
           }
       }
 
-      // 6. Fetch source & target ingredients
+      // 6. Fetch source & target ingredients (Matched strictly by NAME + UNIT OF MEASURE)
       const { data: sourceIngredients } = await supabase.from('ingredients').select('*').eq('user_id', sourceStoreId);
       const { data: targetIngredients } = await supabase.from('ingredients').select('*').eq('user_id', targetStoreId);
       
-      const existingIngMap = new Map(targetIngredients?.map(i => [i.name.trim().toLowerCase(), i.id]) || []);
+      const makeIngKey = (name: string, unit: string) => `${(name || '').trim().toLowerCase()}___${(unit || '').trim().toLowerCase()}`;
+      const existingIngMap = new Map(targetIngredients?.map(i => [makeIngKey(i.name, i.unit), i.id]) || []);
       const ingredientIdMap = new Map<string, string>(); // old ingredient id -> new ingredient id
 
       if (sourceIngredients && sourceIngredients.length > 0) {
@@ -429,9 +448,9 @@ export class RecipeDataService {
           const sourceIngsToInsertIdx: number[] = [];
 
           sourceIngredients.forEach((ing, index) => {
-              const lowerName = ing.name.trim().toLowerCase();
-              if (existingIngMap.has(lowerName)) {
-                  ingredientIdMap.set(ing.id, existingIngMap.get(lowerName)!);
+              const ingKey = makeIngKey(ing.name, ing.unit);
+              if (existingIngMap.has(ingKey)) {
+                  ingredientIdMap.set(ing.id, existingIngMap.get(ingKey)!);
               } else {
                   ingredientsToInsert.push({
                       name: ing.name,
@@ -458,21 +477,22 @@ export class RecipeDataService {
           });
 
           if (ingredientsToInsert.length > 0) {
-              const { data: insertedIngs, error } = await supabase.from('ingredients').insert(ingredientsToInsert).select();
-              if (!error && insertedIngs) {
+              const { data: insertedIngs, error: ingError } = await supabase.from('ingredients').insert(ingredientsToInsert).select();
+              if (ingError) throw ingError;
+              if (insertedIngs) {
                   insertedIngs.forEach((newIng, i) => {
+                      createdIngredientIds.push(newIng.id);
                       const originalIdx = sourceIngsToInsertIdx[i];
                       const oldId = sourceIngredients[originalIdx].id;
                       ingredientIdMap.set(oldId, newIng.id);
-                      existingIngMap.set(newIng.name.trim().toLowerCase(), newIng.id);
+                      existingIngMap.set(makeIngKey(newIng.name, newIng.unit), newIng.id);
                   });
               }
           }
       }
 
-      // 7. Fetch and insert Recipe Ingredients (Ficha Técnica) ONLY for NEW recipes OR for EXISTING recipes IF they don't have ingredients yet
+      // 7. Fetch and insert Recipe Ingredients (Ficha Técnica)
       if (sourceRecipes && sourceRecipes.length > 0) {
-          // Instead of assuming, fetch all to be safe? Or just fetch recipe_ingredients for sourceRecipes
           const { data: sourceRecipeIngs } = await supabase.from('recipe_ingredients').select('*').in('recipe_id', sourceRecipes.map(r => r.id));
           const { data: targetRecipeIngs } = await supabase.from('recipe_ingredients').select('recipe_id, ingredient_id').eq('user_id', targetStoreId);
 
@@ -500,14 +520,26 @@ export class RecipeDataService {
               });
 
               if (recIngsToInsert.length > 0) {
-                  await supabase.from('recipe_ingredients').insert(recIngsToInsert);
+                  const { error: recIngError } = await supabase.from('recipe_ingredients').insert(recIngsToInsert);
+                  if (recIngError) throw recIngError;
               }
           }
       }
 
       return { success: true, error: null };
     } catch (error) {
-      console.error('Error cloning menu:', error);
+      console.error('Error cloning menu, executing atomic rollback:', error);
+      // Cleanup created resources to maintain store integrity
+      try {
+        if (createdPrepIds.length > 0) await supabase.from('recipe_preparations').delete().in('id', createdPrepIds);
+        if (createdRecipeIds.length > 0) await supabase.from('recipes').delete().in('id', createdRecipeIds);
+        if (createdIngredientIds.length > 0) await supabase.from('ingredients').delete().in('id', createdIngredientIds);
+        if (createdIngCategoryIds.length > 0) await supabase.from('ingredient_categories').delete().in('id', createdIngCategoryIds);
+        if (createdCategoryIds.length > 0) await supabase.from('categories').delete().in('id', createdCategoryIds);
+        if (createdStationIds.length > 0) await supabase.from('stations').delete().in('id', createdStationIds);
+      } catch (rollbackErr) {
+        console.error('Failed to perform full rollback during menu clone:', rollbackErr);
+      }
       return { success: false, error };
     }
   }

@@ -81,75 +81,111 @@ export class SettingsDataService {
       try {
         const newStoreId = response.store_id;
 
-        // 1. Get the current active store's 'Gerente' employee to copy the PIN
+        // 1. Fetch all roles from the source store
+        const { data: sourceRoles } = await supabase
+          .from('roles')
+          .select('*')
+          .eq('user_id', currentStoreId);
+
+        // 2. Fetch all role permissions from the source store
+        const { data: sourceRolePerms } = await supabase
+          .from('role_permissions')
+          .select('*')
+          .eq('user_id', currentStoreId);
+
+        // 3. Fetch default roles created in the new store (e.g. created by database RPC)
+        const { data: defaultNewRoles } = await supabase
+          .from('roles')
+          .select('*')
+          .eq('user_id', newStoreId);
+
+        const newRoleIdMap = new Map<string, string>(); // sourceRoleId -> newRoleId
+
+        if (sourceRoles && sourceRoles.length > 0) {
+          for (const sRole of sourceRoles) {
+            let targetRoleId: string | null = null;
+            const existingInNew = defaultNewRoles?.find(
+              (r: any) => r.name.trim().toLowerCase() === sRole.name.trim().toLowerCase()
+            );
+
+            if (existingInNew) {
+              targetRoleId = existingInNew.id;
+            } else {
+              // Create new custom role in the new store
+              const { data: createdRole } = await supabase
+                .from('roles')
+                .insert({
+                  name: sRole.name,
+                  description: sRole.description,
+                  is_system: sRole.is_system || false,
+                  user_id: newStoreId
+                })
+                .select('id')
+                .single();
+
+              if (createdRole) {
+                targetRoleId = createdRole.id;
+              }
+            }
+
+            if (targetRoleId) {
+              newRoleIdMap.set(sRole.id, targetRoleId);
+
+              // Clear default/existing permissions for this role in new store
+              await supabase
+                .from('role_permissions')
+                .delete()
+                .eq('role_id', targetRoleId);
+
+              // Copy exact permissions for this role
+              const permsForThisRole = sourceRolePerms?.filter((p: any) => p.role_id === sRole.id) || [];
+              let permsToInsertKeys = permsForThisRole.map((p: any) => p.permission_key);
+
+              // Fallback: If it's a manager role and had no explicit permissions stored, assign ALL_PERMISSION_KEYS
+              if (permsToInsertKeys.length === 0 && (sRole.name.toLowerCase().includes('gerente') || sRole.name.toLowerCase().includes('admin'))) {
+                permsToInsertKeys = ALL_PERMISSION_KEYS;
+              }
+
+              if (permsToInsertKeys.length > 0) {
+                const insertData = permsToInsertKeys.map((key: string) => ({
+                  role_id: targetRoleId,
+                  user_id: newStoreId,
+                  permission_key: key
+                }));
+                await supabase.from('role_permissions').insert(insertData);
+              }
+            }
+          }
+        }
+
+        // 4. Find the main manager/owner employee from current store to inherit PIN and credentials
         const { data: currentEmployees } = await supabase
           .from('employees')
-          .select('*, roles!inner(name)')
+          .select('*, roles(name)')
           .eq('user_id', currentStoreId);
 
         const currentManager = currentEmployees?.find((e: any) => 
           e.roles?.name?.toLowerCase().includes('gerente') || 
           e.roles?.name?.toLowerCase().includes('admin')
-        );
+        ) || currentEmployees?.[0];
 
         if (currentManager) {
-          // Update the new store's auto-generated employee with the same PIN and name
           const { data: newEmployees } = await supabase
             .from('employees')
             .select('*')
             .eq('user_id', newStoreId);
 
           if (newEmployees && newEmployees.length > 0) {
+            const mappedRoleId = currentManager.role_id ? newRoleIdMap.get(currentManager.role_id) : null;
             await supabase
               .from('employees')
               .update({
                 pin: currentManager.pin,
-                name: currentManager.name
+                name: currentManager.name,
+                ...(mappedRoleId ? { role_id: mappedRoleId } : {})
               })
               .eq('id', newEmployees[0].id);
           }
-        }
-
-        // 2. Give the new store's 'Gerente' role ALL permissions (or copy from parent)
-        const { data: newRoles } = await supabase
-          .from('roles')
-          .select('id, name')
-          .eq('user_id', newStoreId)
-          .ilike('name', '%Gerente%');
-
-        if (newRoles && newRoles.length > 0) {
-          const newGerenteRoleId = newRoles[0].id;
-
-          let permsToInsert: string[] = ALL_PERMISSION_KEYS;
-
-          if (currentManager && currentManager.role_id) {
-            // Copy exact permissions from current manager's role
-            const { data: currentPerms } = await supabase
-              .from('role_permissions')
-              .select('permission_key')
-              .eq('role_id', currentManager.role_id);
-
-            if (currentPerms && currentPerms.length > 0) {
-              permsToInsert = currentPerms.map((p: any) => p.permission_key);
-            }
-          }
-
-          // First delete existing default permissions from the RPC to avoid duplicates
-          await supabase
-            .from('role_permissions')
-            .delete()
-            .eq('role_id', newGerenteRoleId);
-
-          // Insert new ones
-          const insertData = permsToInsert.map(key => ({
-            role_id: newGerenteRoleId,
-            user_id: newStoreId,
-            permission_key: key
-          }));
-
-          await supabase
-            .from('role_permissions')
-            .insert(insertData);
         }
       } catch (err) {
         console.error('Error copying parent store configuration to new store:', err);
@@ -403,6 +439,13 @@ export class SettingsDataService {
       profileData.menu_header_url = publicUrl;
     }
 
+    if (profileData.company_name) {
+      await supabase
+        .from("stores")
+        .update({ name: profileData.company_name })
+        .eq("id", userId);
+    }
+
     const { error } = await supabase
       .from("company_profile")
       .upsert({ ...profileData, user_id: userId }, { onConflict: "user_id" });
@@ -410,6 +453,29 @@ export class SettingsDataService {
        this.auditService.logAction('COMPANY_PROFILE_UPDATED', `Perfil da empresa atualizado`);
     }
     return { success: !error, error };
+  }
+
+  async updateStoreName(
+    storeId: string,
+    name: string,
+  ): Promise<{ success: boolean; error: any }> {
+    const { error: storeError } = await supabase
+      .from("stores")
+      .update({ name })
+      .eq("id", storeId);
+
+    if (storeError) return { success: false, error: storeError };
+
+    const { error: profileError } = await supabase
+      .from("company_profile")
+      .update({ company_name: name })
+      .eq("user_id", storeId);
+
+    if (!profileError) {
+      this.auditService.logAction('STORE_NAME_UPDATED', `Nome da loja ${storeId} alterado para ${name}`);
+    }
+
+    return { success: true, error: null };
   }
 
   async regenerateExternalApiKey(): Promise<{
