@@ -1,6 +1,6 @@
 
 
-import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
@@ -30,34 +30,6 @@ export class LoginComponent {
   password = signal('');
   authState = signal<AuthState>('idle');
   errorMessage = signal('');
-
-  passwordStrength = computed(() => {
-    const p = this.password();
-    if (!p) return 0;
-    let strength = 0;
-    if (p.length >= 6) strength += 25;
-    if (p.length >= 8) strength += 25;
-    if (/[A-Z]/.test(p)) strength += 25;
-    if (/[0-9]/.test(p) || /[^A-Za-z0-9]/.test(p)) strength += 25;
-    return strength;
-  });
-
-  passwordStrengthLabel = computed(() => {
-    const s = this.passwordStrength();
-    if (s === 0) return '';
-    if (s <= 25) return 'Fraca';
-    if (s <= 50) return 'Razoável';
-    if (s <= 75) return 'Boa';
-    return 'Forte';
-  });
-
-  passwordStrengthColor = computed(() => {
-    const s = this.passwordStrength();
-    if (s <= 25) return 'bg-red-500';
-    if (s <= 50) return 'bg-yellow-500';
-    if (s <= 75) return 'bg-blue-500';
-    return 'bg-green-500';
-  });
 
   toggleTheme() {
     this.themeService.toggleTheme();

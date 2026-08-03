@@ -1,241 +1,458 @@
 
-<div class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-900 font-sans">
+<div class="min-h-screen bg-app text-body flex items-center justify-center p-4 relative overflow-hidden font-sans">
     
-    <!-- Animated Gradient Background -->
-    <div class="absolute inset-0 z-0 opacity-50 overflow-hidden pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] animate-blob"></div>
-        <div class="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-blue-500 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-teal-500 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-4000"></div>
+    <!-- Background Elements (Liquid Glass Glow) -->
+    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-brand/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-brand/10 rounded-full blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
     </div>
 
-    <!-- Liquid Glass Container -->
-    <div class="relative z-10 w-full max-w-5xl h-screen md:h-[85vh] flex flex-col md:flex-row backdrop-blur-3xl bg-white/5 border border-white/10 md:shadow-2xl md:rounded-[2rem] overflow-hidden">
+    <!-- Main Container -->
+    <div class="relative z-10 w-full max-w-6xl h-[90vh] bg-surface-elevated/80 backdrop-blur-xl border border-strong rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] flex flex-col md:flex-row overflow-hidden">
         
-        <!-- Mobile Progress Bar -->
-        <div class="md:hidden w-full bg-black/20 p-4 border-b border-white/10 flex flex-col gap-3 relative z-10">
-            <div class="flex justify-between items-center text-sm text-white">
-                <span class="font-bold">Passo {{ currentStep() + 1 }} de {{ steps.length }}</span>
-                <span class="font-medium opacity-80">{{ steps[currentStep()]?.title || 'Conclusão' }}</span>
+        <!-- Hover Gradient Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-50"></div>
+
+        <!-- Mobile Progress Bar (Visible only on small screens) -->
+        <div class="md:hidden w-full bg-surface-elevated/50 p-4 border-b border-subtle flex flex-col gap-2 relative z-10">
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-black text-title">Passo {{ currentStep() + 1 }} de {{ steps.length }}</span>
+                <span class="text-brand font-bold">{{ steps[currentStep()]?.title || 'Conclusão' }}</span>
             </div>
-            <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div class="bg-white h-1.5 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(255,255,255,0.8)]" [style.width]="((currentStep() + 1) / steps.length) * 100 + '%'"></div>
+            <div class="w-full bg-surface rounded-full h-2 shadow-inner">
+                <div class="bg-brand h-2 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(var(--brand-primary),0.5)]" [style.width]="((currentStep() + 1) / steps.length) * 100 + '%'"></div>
             </div>
         </div>
 
-        <!-- Left Sidebar / Steps Indicator (Hidden on Mobile) -->
-        <div class="hidden md:flex flex-col w-[35%] bg-black/20 p-10 border-r border-white/10 relative z-10">
-            <div class="flex items-center gap-4 mb-14">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                    <span translate="no" class="notranslate material-symbols-outlined text-white text-[24px]">restaurant</span>
-                </div>
-                <span class="text-2xl font-black text-white tracking-tight">Kore<span class="text-white/60">PDV</span></span>
+        <!-- Left Panel: Context & Progress (Hidden on Mobile) -->
+        <div class="w-1/4 bg-surface/50 border-r border-subtle p-8 flex-col justify-between hidden md:flex relative z-10 backdrop-blur-md">
+            <div>
+                <h1 class="text-4xl font-black mb-2 tracking-tighter text-title drop-shadow-sm">Chef<span class="text-brand">OS</span></h1>
+                <p class="text-muted text-sm font-medium uppercase tracking-widest">Configuração Inicial</p>
             </div>
-            
-            <div class="flex-1 space-y-8">
-                @for(stepItem of steps; track stepItem.id; let i = $index) {
-                    <div class="flex items-center gap-5 transition-all duration-500"
-                         [class.opacity-100]="i <= currentStep()"
-                         [class.opacity-40]="i > currentStep()">
-                        
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all duration-500 relative"
-                             [class.bg-white]="i < currentStep()"
-                             [class.text-slate-900]="i < currentStep()"
-                             [class.border-transparent]="i < currentStep()"
-                             
-                             [class.border-white]="i === currentStep()"
-                             [class.text-white]="i === currentStep()"
-                             [class.shadow-[0_0_15px_rgba(255,255,255,0.5)]]="i === currentStep()"
-                             
-                             [class.bg-transparent]="i >= currentStep()"
-                             [class.border-white/30]="i > currentStep()"
-                             [class.text-white]="i > currentStep()">
-                            
-                            @if(i < currentStep()) {
-                                <span translate="no" class="notranslate material-symbols-outlined text-[20px]">check</span>
-                            } @else {
-                                {{ i + 1 }}
-                            }
 
-                            <!-- Connecting Line -->
-                            @if(i < steps.length - 1) {
-                                <div class="absolute top-[40px] left-1/2 -translate-x-1/2 w-[2px] h-[32px] transition-colors duration-500"
-                                     [class.bg-white]="i < currentStep()"
-                                     [class.bg-white/10]="i >= currentStep()">
-                                </div>
-                            }
+            <div class="space-y-1 overflow-y-auto pr-2 custom-scrollbar flex-1 py-8">
+                @for(stepItem of steps; track stepItem.id; let i = $index) {
+                    <div class="group flex items-center gap-3 p-2.5 rounded-xl transition-all duration-300" 
+                         [class.bg-surface-elevated]="currentStep() === i"
+                         [class.shadow-sm]="currentStep() === i"
+                         [class.opacity-50]="currentStep() < i">
+                        
+                        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xs border-2 transition-all duration-300 shadow-sm"
+                            [class.bg-brand]="currentStep() > i"
+                            [class.border-brand]="currentStep() >= i"
+                            [class.border-strong]="currentStep() < i"
+                            [class.text-white]="currentStep() >= i"
+                            [class.text-muted]="currentStep() < i"
+                            [class.shadow-[0_0_10px_rgba(var(--brand-primary),0.4)]]="currentStep() === i">
+                            @if(currentStep() > i) { <span translate="no" class="notranslate material-symbols-outlined text-sm font-black">check</span> }
+                            @else { {{ i + 1 }} }
                         </div>
-                        <span class="font-medium text-white transition-all duration-500 tracking-wide"
-                              [class.text-xl]="i === currentStep()"
-                              [class.text-base]="i !== currentStep()">{{ stepItem.title }}</span>
+                        
+                        <div class="min-w-0">
+                            <p class="font-bold text-sm truncate transition-colors" [class.text-brand]="currentStep() === i" [class.text-title]="currentStep() !== i">{{ stepItem.title }}</p>
+                        </div>
                     </div>
+                    @if(i < steps.length - 1) {
+                        <div class="w-0.5 h-4 bg-strong ml-[1.125rem] my-0.5 opacity-50"></div>
+                    }
                 }
             </div>
-            
-            <!-- Bottom decorative element -->
-            <div class="mt-auto opacity-30">
-                <p class="text-xs text-white/70">© 2026 Kore Solutions</p>
+
+            <div class="text-xs text-muted pt-6 border-t border-subtle font-medium">
+                <p>&copy; 2024 ChefOS</p>
             </div>
         </div>
-        
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col relative z-10">
-            <div class="flex-1 overflow-y-auto p-6 md:p-14 text-white scrollbar-hide">
-                <ng-container [ngSwitch]="currentStep()">
-                     
-                     <!-- 0. WELCOME -->
-                     @case (0) {
-                        <div class="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto pb-10">
-                            <div class="w-24 h-24 bg-white/10 border border-white/20 rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-[0_0_30px_rgba(255,255,255,0.1)] backdrop-blur-md">
-                                <span translate="no" class="notranslate material-symbols-outlined text-5xl text-white">auto_awesome</span>
+
+        <!-- Right Panel: Dynamic Forms -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+            
+            <!-- Step Content Area -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-12 relative">
+                @switch (currentStep()) {
+                    
+                    <!-- 0. WELCOME -->
+                    @case (0) {
+                        <div class="h-full flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div class="w-32 h-32 bg-brand/10 border border-brand/20 rounded-full flex items-center justify-center mx-auto mb-8 relative shadow-[0_0_40px_rgba(var(--brand-primary),0.2)]">
+                                <span translate="no" class="notranslate material-symbols-outlined text-6xl text-brand drop-shadow-md animate-pulse">rocket_launch</span>
+                                <div class="absolute inset-0 rounded-full border border-brand/30 animate-ping opacity-50"></div>
                             </div>
-                            <h2 class="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">O futuro do seu restaurante.</h2>
-                            <p class="text-white/70 mb-14 text-lg md:text-xl font-medium leading-relaxed">Estruture seu negócio em menos de 2 minutos. Nós criamos um ambiente inteligente e pré-configurado para você.</p>
-                            
-                            <button (click)="nextStep()" class="group relative px-10 py-5 bg-white text-slate-900 font-bold rounded-2xl text-lg transition-all active:scale-95 flex items-center gap-3 overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)]">
-                                <span class="relative z-10">Começar Agora</span>
-                                <span translate="no" class="notranslate material-symbols-outlined text-[22px] relative z-10 transition-transform group-hover:translate-x-1">arrow_forward</span>
+                            <h2 class="text-4xl md:text-5xl font-black mb-4 text-title tracking-tight">Bem-vindo a bordo!</h2>
+                            <p class="text-muted mb-10 text-lg md:text-xl max-w-lg font-medium">Vamos configurar seu restaurante completo em poucos minutos. Você terá um sistema profissional pronto para vender.</p>
+                            <button (click)="nextStep()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-10 rounded-full text-lg shadow-lg shadow-brand/30 transition-all active:scale-95 flex items-center gap-2 group">
+                                Começar Configuração <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                             </button>
                         </div>
-                     }
+                    }
 
-                     <!-- 1. ESTABLISHMENT TYPE -->
-                     @case (1) {
-                         <div class="max-w-2xl mx-auto pt-4 md:pt-10">
-                             <div class="mb-12">
-                                 <h2 class="text-3xl md:text-4xl font-black mb-3 text-white tracking-tight">Qual o seu negócio?</h2>
-                                 <p class="text-white/70 text-lg font-medium">Isso nos ajuda a configurar o ambiente ideal para você.</p>
-                             </div>
-                             
-                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                 @for(type of establishmentTypes; track type.id) {
-                                     <label class="cursor-pointer group relative overflow-hidden rounded-2xl transition-all duration-300"
-                                            [class.scale-[1.02]]="data.establishmentType === type.id">
-                                         
-                                         <!-- Glass Background -->
-                                         <div class="absolute inset-0 bg-white/5 border backdrop-blur-md transition-all duration-300"
-                                              [class.border-white/50]="data.establishmentType === type.id"
-                                              [class.border-white/10]="data.establishmentType !== type.id"
-                                              [class.bg-white/10]="data.establishmentType === type.id"
-                                              class="group-hover:bg-white/10"></div>
-                                         
-                                         <input type="radio" name="estType" [(ngModel)]="data.establishmentType" [value]="type.id" class="hidden">
-                                         
-                                         <div class="relative p-6 flex items-start gap-5">
-                                             <div class="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 border border-white/20"
-                                                  [class.bg-white]="data.establishmentType === type.id"
-                                                  [class.text-slate-900]="data.establishmentType === type.id"
-                                                  [class.bg-white/10]="data.establishmentType !== type.id"
-                                                  [class.text-white]="data.establishmentType !== type.id">
-                                                 <span translate="no" class="notranslate material-symbols-outlined text-[28px]">{{ type.icon }}</span>
-                                             </div>
-                                             <div class="flex-1">
-                                                 <h3 class="font-bold text-xl text-white mb-1">{{ type.name }}</h3>
-                                                 <p class="text-sm text-white/60 font-medium leading-relaxed">{{ type.desc }}</p>
-                                             </div>
-                                         </div>
-                                     </label>
-                                 }
-                             </div>
-                         </div>
-                     }
+                    <!-- 1. IDENTIDADE -->
+                    @case (1) {
+                        <div class="max-w-xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">storefront</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Sobre seu Negócio</h2>
+                                <p class="text-muted text-base md:text-lg font-medium">Como seus clientes conhecerão seu restaurante?</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Nome do Restaurante</label>
+                                    <input type="text" [(ngModel)]="data.companyName" (keydown.enter)="nextStep()" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none text-lg md:text-xl placeholder-muted transition-all shadow-inner group-hover:border-brand/50" placeholder="Ex: Burguer King">
+                                </div>
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">CNPJ (Opcional)</label>
+                                    <input type="text" [(ngModel)]="data.cnpj" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none text-lg transition-all shadow-inner group-hover:border-brand/50" placeholder="00.000.000/0000-00">
+                                </div>
+                            </div>
+                        </div>
+                    }
 
-                     <!-- 2. IDENTIDADE -->
-                     @case (2) {
-                         <div class="max-w-xl mx-auto pt-4 md:pt-10">
-                             <div class="mb-12">
-                                 <h2 class="text-3xl md:text-4xl font-black mb-3 text-white tracking-tight">Detalhes</h2>
-                                 <p class="text-white/70 text-lg font-medium">Os dados públicos da sua empresa.</p>
-                             </div>
-                             
-                             <div class="space-y-8">
-                                 <div class="space-y-3">
-                                     <label class="block text-sm font-bold text-white/80">Nome do Estabelecimento</label>
-                                     <input type="text" [(ngModel)]="data.companyName" (keydown.enter)="nextStep()" 
-                                            class="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-white text-lg placeholder-white/30 backdrop-blur-md focus:ring-2 focus:ring-white/50 focus:border-white outline-none transition-all" 
-                                            placeholder="Ex: Kore PDV">
-                                 </div>
-                                 <div class="space-y-3">
-                                     <label class="block text-sm font-bold text-white/80">CNPJ (Opcional)</label>
-                                     <input type="text" [(ngModel)]="data.cnpj" (keydown.enter)="nextStep()" 
-                                            class="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-white text-lg placeholder-white/30 backdrop-blur-md focus:ring-2 focus:ring-white/50 focus:border-white outline-none transition-all" 
-                                            placeholder="00.000.000/0000-00">
-                                 </div>
-                             </div>
-                         </div>
-                     }
+                    <!-- 2. EQUIPE (CARGOS) -->
+                    @case (2) {
+                         <div class="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">groups</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Sua Equipe</h2>
+                                <p class="text-muted font-medium">Selecione quais funções operam no seu restaurante (nós criaremos os cargos para você).</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasWaiters" [class.border-strong]="!data.hasWaiters" [class.bg-brand/5]="data.hasWaiters">
+                                    <input type="checkbox" [(ngModel)]="data.hasWaiters" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasWaiters" [class.border-brand/30]="data.hasWaiters">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">person_apron</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg text-title">Garçons</h3>
+                                        <p class="text-xs text-muted font-medium">Atendimento nas mesas</p>
+                                    </div>
+                                    @if(data.hasWaiters) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                </label>
 
-                     <!-- 3. ACESSO (GERENTE) -->
-                     @case (3) {
-                          <div class="max-w-xl mx-auto pt-4 md:pt-10">
-                             <div class="mb-12">
-                                 <h2 class="text-3xl md:text-4xl font-black mb-3 text-white tracking-tight">Seu Acesso</h2>
-                                 <p class="text-white/70 text-lg font-medium">Crie sua senha (PIN) de gerente para acessar o sistema.</p>
-                             </div>
-                             
-                             <div class="space-y-8 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md relative overflow-hidden">
-                                 <!-- Decorative accent -->
-                                 <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full blur-2xl pointer-events-none"></div>
+                                <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasKitchen" [class.border-strong]="!data.hasKitchen" [class.bg-brand/5]="data.hasKitchen">
+                                    <input type="checkbox" [(ngModel)]="data.hasKitchen" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasKitchen" [class.border-brand/30]="data.hasKitchen">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">skillet</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg text-title">Cozinheiros</h3>
+                                        <p class="text-xs text-muted font-medium">Produção e KDS</p>
+                                    </div>
+                                    @if(data.hasKitchen) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                </label>
 
-                                 <div class="space-y-3 relative z-10">
-                                     <label class="block text-sm font-bold text-white/80">Seu Nome</label>
-                                     <input type="text" [(ngModel)]="data.managerName" 
-                                            class="w-full bg-black/20 border border-white/20 rounded-2xl px-5 py-4 text-white text-lg placeholder-white/30 focus:ring-2 focus:ring-white/50 focus:border-white outline-none transition-all" 
-                                            placeholder="Ex: João Silva">
-                                 </div>
-                                 
-                                 <div class="space-y-3 relative z-10">
-                                     <label class="block text-sm font-bold text-white/80">PIN de Acesso (4 dígitos)</label>
-                                     <div class="relative">
-                                         <input type="text" [(ngModel)]="data.managerPin" maxlength="4" pattern="\d*" (keydown.enter)="nextStep()"
-                                                class="w-full bg-black/20 border border-white/20 rounded-2xl px-5 py-4 text-white text-2xl font-mono tracking-[0.5em] placeholder-white/20 focus:ring-2 focus:ring-white/50 focus:border-white outline-none transition-all text-center" 
-                                                placeholder="••••">
-                                         @if(data.managerPin.length > 0 && data.managerPin.length < 4) {
-                                             <p class="text-red-300 text-xs font-medium absolute -bottom-6 left-2">Digite 4 números</p>
-                                         }
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
-                     }
+                                <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasDrivers" [class.border-strong]="!data.hasDrivers" [class.bg-brand/5]="data.hasDrivers">
+                                    <input type="checkbox" [(ngModel)]="data.hasDrivers" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasDrivers" [class.border-brand/30]="data.hasDrivers">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">two_wheeler</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg text-title">Entregadores</h3>
+                                        <p class="text-xs text-muted font-medium">Delivery próprio</p>
+                                    </div>
+                                    @if(data.hasDrivers) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                </label>
 
-                     <!-- 4. FINALIZING -->
-                     @case (4) {
-                          <div class="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto pb-10">
-                             <div class="relative w-32 h-32 mb-10">
-                                 <!-- Spinning rings -->
-                                 <div class="absolute inset-0 border-4 border-white/20 rounded-full border-t-white animate-spin"></div>
-                                 <div class="absolute inset-2 border-4 border-white/10 rounded-full border-b-white/60 animate-spin animation-delay-2000" style="animation-direction: reverse;"></div>
-                                 
-                                 <div class="absolute inset-0 flex items-center justify-center">
-                                     <span translate="no" class="notranslate material-symbols-outlined text-4xl text-white animate-pulse">settings</span>
-                                 </div>
-                             </div>
-                             
-                             <h2 class="text-3xl md:text-4xl font-black mb-4 text-white tracking-tight">Criando seu sistema...</h2>
-                             <p class="text-white/80 text-lg font-medium px-4 py-2 bg-white/10 rounded-full border border-white/10 backdrop-blur-md inline-block">
-                                 {{ loadingStatus() }}
-                             </p>
-                         </div>
-                     }
-                </ng-container>
+                                <label class="cursor-pointer bg-surface/50 border-2 rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-surface-elevated hover:shadow-md" [class.border-brand]="data.hasCashiers" [class.border-strong]="!data.hasCashiers" [class.bg-brand/5]="data.hasCashiers">
+                                    <input type="checkbox" [(ngModel)]="data.hasCashiers" class="hidden">
+                                    <div class="w-12 h-12 rounded-full bg-surface border border-subtle flex items-center justify-center text-title shadow-inner transition-colors" [class.text-brand]="data.hasCashiers" [class.border-brand/30]="data.hasCashiers">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-2xl">point_of_sale</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg text-title">Caixas</h3>
+                                        <p class="text-xs text-muted font-medium">Pagamentos e fechamento</p>
+                                    </div>
+                                    @if(data.hasCashiers) { <span translate="no" class="notranslate material-symbols-outlined text-brand ml-auto animate-in zoom-in">check_circle</span> }
+                                </label>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 3. SALÃO (LAYOUT) -->
+                    @case (3) {
+                         <div class="max-w-xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">table_restaurant</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Ambiente Físico</h2>
+                                <p class="text-muted text-base md:text-lg font-medium">Configure seu primeiro salão de atendimento.</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Nome do Ambiente</label>
+                                    <input type="text" [(ngModel)]="data.hallName" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none text-lg placeholder-muted transition-all shadow-inner group-hover:border-brand/50" placeholder="Ex: Salão Principal, Varanda...">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Quantidade de Mesas</label>
+                                    <div class="flex items-center bg-surface rounded-2xl border border-strong overflow-hidden h-16 shadow-inner">
+                                        <button (click)="data.tableCount = Math.max(1, data.tableCount - 1)" class="w-20 h-full bg-surface-elevated hover:bg-subtle text-title font-black text-3xl transition-colors flex items-center justify-center active:bg-strong">-</button>
+                                        <input type="number" [(ngModel)]="data.tableCount" class="w-full bg-transparent text-center text-title font-black text-2xl outline-none appearance-none" min="1">
+                                        <button (click)="data.tableCount = data.tableCount + 1" class="w-20 h-full bg-surface-elevated hover:bg-subtle text-title font-black text-3xl transition-colors flex items-center justify-center active:bg-strong">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 4. PRODUÇÃO (KDS) -->
+                    @case (4) {
+                         <div class="max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">soup_kitchen</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Estações de Produção</h2>
+                                <p class="text-muted font-medium">Defina onde os pedidos serão preparados. Isso cria as telas do KDS.</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                @for(station of data.stations; track $index) {
+                                    <div class="flex gap-3 group">
+                                        <input type="text" [(ngModel)]="data.stations[$index]" class="flex-1 bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all shadow-inner group-hover:border-brand/50" placeholder="Nome da Estação">
+                                        @if(data.stations.length > 1) {
+                                            <button (click)="removeStation($index)" class="p-4 bg-danger/10 text-danger rounded-2xl hover:bg-danger hover:text-white transition-colors border border-danger/20"><span translate="no" class="notranslate material-symbols-outlined">delete</span></button>
+                                        }
+                                    </div>
+                                }
+                                <br>
+                                <button (click)="addStation()" class="text-brand font-bold hover:text-brand-light flex items-center gap-2 mt-4 transition-colors">
+                                    <span translate="no" class="notranslate material-symbols-outlined">add_circle</span> Adicionar outra estação
+                                </button>
+                            </div>
+                            
+                            <div class="mt-10 p-5 bg-brand/5 border border-brand/20 rounded-2xl text-sm text-title font-medium flex gap-3 shadow-inner">
+                                <span translate="no" class="notranslate material-symbols-outlined text-brand">lightbulb</span>
+                                <p>Dica: Se você tem bar e cozinha separados, crie duas estações: "Cozinha" e "Bar".</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 5. CARDÁPIO RÁPIDO -->
+                    @case (5) {
+                         <div class="max-w-3xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">restaurant_menu</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Montar Cardápio Básico</h2>
+                                <p class="text-muted font-medium">Adicione alguns itens para começar. Você pode editar tudo depois.</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <!-- Categories -->
+                                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                    @for(cat of data.menuCategories; track $index) {
+                                        <button (click)="selectCategory($index)" 
+                                            class="px-5 py-2.5 rounded-full whitespace-nowrap transition-all border font-bold text-sm shadow-sm"
+                                            [class.bg-brand]="selectedCategoryIndex() === $index"
+                                            [class.text-white]="selectedCategoryIndex() === $index"
+                                            [class.border-brand]="selectedCategoryIndex() === $index"
+                                            [class.bg-surface]="selectedCategoryIndex() !== $index"
+                                            [class.text-title]="selectedCategoryIndex() !== $index"
+                                            [class.border-strong]="selectedCategoryIndex() !== $index"
+                                            [class.hover:border-brand/50]="selectedCategoryIndex() !== $index">
+                                            {{ cat.name }}
+                                        </button>
+                                    }
+                                    <button (click)="addCategory()" class="px-4 py-2.5 bg-surface/50 rounded-full hover:bg-surface-elevated text-title border border-dashed border-strong font-bold text-sm flex items-center gap-1 transition-colors">
+                                        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">add</span> Categoria
+                                    </button>
+                                </div>
+
+                                <!-- Active Category Editor -->
+                                @if(data.menuCategories.length > 0) {
+                                    <div class="bg-surface/50 p-6 md:p-8 rounded-[2rem] border border-strong shadow-inner">
+                                        <div class="mb-6">
+                                            <label class="text-xs text-brand uppercase font-black tracking-wider">Nome da Categoria</label>
+                                            <input type="text" [(ngModel)]="data.menuCategories[selectedCategoryIndex()].name" class="w-full bg-transparent border-b-2 border-subtle py-2 text-2xl font-black text-title focus:border-brand outline-none transition-colors">
+                                        </div>
+
+                                        <div class="space-y-4">
+                                            <div class="hidden md:grid grid-cols-12 gap-4 text-xs text-muted uppercase font-bold mb-2 pl-2">
+                                                <div class="col-span-6">Nome do Produto</div>
+                                                <div class="col-span-3">Preço (R$)</div>
+                                                <div class="col-span-3"></div>
+                                            </div>
+                                            
+                                            <!-- Desktop Table View -->
+                                            <div class="hidden md:block space-y-3">
+                                                @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
+                                                    <div class="grid grid-cols-12 gap-4 items-center group">
+                                                        <div class="col-span-6">
+                                                            <input type="text" [(ngModel)]="item.name" placeholder="Ex: X-Burguer" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all group-hover:border-brand/50 shadow-inner">
+                                                        </div>
+                                                        <div class="col-span-4">
+                                                            <input type="number" [(ngModel)]="item.price" placeholder="0.00" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all group-hover:border-brand/50 shadow-inner">
+                                                        </div>
+                                                        <div class="col-span-2 flex justify-end">
+                                                            <button (click)="removeItem(selectedCategoryIndex(), $index)" class="p-3 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"><span translate="no" class="notranslate material-symbols-outlined">delete</span></button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            <!-- Mobile Card View -->
+                                            <div class="md:hidden space-y-4">
+                                                @for(item of data.menuCategories[selectedCategoryIndex()].items; track $index) {
+                                                    <div class="bg-surface p-5 rounded-2xl border border-strong relative shadow-sm">
+                                                        <button (click)="removeItem(selectedCategoryIndex(), $index)" class="absolute top-3 right-3 text-muted hover:text-danger p-1 transition-colors">
+                                                            <span translate="no" class="notranslate material-symbols-outlined text-sm">close</span>
+                                                        </button>
+                                                        <div class="space-y-4 pt-1">
+                                                            <div>
+                                                                <label class="block text-xs font-bold text-title mb-1 ml-1">Nome do Produto</label>
+                                                                <input type="text" [(ngModel)]="item.name" class="w-full bg-surface-elevated border border-strong rounded-xl p-3 text-title outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner" placeholder="Ex: X-Burguer">
+                                                            </div>
+                                                            <div>
+                                                                <label class="block text-xs font-bold text-title mb-1 ml-1">Preço (R$)</label>
+                                                                <input type="number" [(ngModel)]="item.price" class="w-full bg-surface-elevated border border-strong rounded-xl p-3 text-title outline-none focus:border-brand focus:ring-1 focus:ring-brand shadow-inner" placeholder="0.00" step="0.01">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            <button (click)="addItemToCategory(selectedCategoryIndex())" class="w-full py-4 bg-surface border-2 border-dashed border-strong rounded-xl text-title font-bold hover:border-brand hover:text-brand transition-colors text-sm mt-6 flex items-center justify-center gap-2 group">
+                                                <span translate="no" class="notranslate material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform">add</span> Adicionar Produto nesta Categoria
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 6. IFOOD -->
+                    @case (6) {
+                        <div class="max-w-xl mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10 text-center">
+                            <div class="w-20 h-20 bg-red-600/10 border border-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                                <span class="text-3xl font-black text-red-500 tracking-tighter">ifood</span>
+                            </div>
+                            <h2 class="text-3xl font-black mb-4 text-title tracking-tight">Integração com iFood</h2>
+                            <p class="text-muted font-medium mb-8 text-lg">Se você já vende no iFood, conecte seus pedidos diretamente no app.</p>
+                            
+                            <div class="text-left bg-surface/50 p-6 md:p-8 rounded-[2rem] border border-strong mb-8 shadow-inner">
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Merchant ID (Opcional)</label>
+                                    <input type="text" [(ngModel)]="data.ifoodMerchantId" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none text-lg placeholder-muted transition-all shadow-inner group-hover:border-red-500/50" placeholder="Ex: e7364b-...">
+                                </div>
+                                <p class="text-xs text-muted mt-3 ml-1 font-medium flex items-center gap-1"><span translate="no" class="notranslate material-symbols-outlined text-[16px]">info</span> Pode ser configurado depois via Portal do Parceiro.</p>
+                            </div>
+                            
+                            <button (click)="nextStep()" class="text-muted hover:text-title font-bold underline transition-colors">Pular esta etapa por enquanto</button>
+                        </div>
+                    }
+
+                    <!-- 7. ACESSO (GERENTE) -->
+                    @case (7) {
+                         <div class="max-w-lg mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-brand/10 border border-brand/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-brand">admin_panel_settings</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">Acesso de Gerente</h2>
+                                <p class="text-muted text-base md:text-lg font-medium">Crie seu perfil operacional. Este PIN será usado para autorizar cancelamentos e abrir o caixa.</p>
+                            </div>
+                            
+                            
+                            <div class="space-y-6 bg-surface/50 p-6 md:p-8 rounded-[2rem] border border-strong shadow-inner">
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Seu Nome</label>
+                                    <input type="text" [(ngModel)]="data.managerName" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-title focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all shadow-inner group-hover:border-brand/50 text-lg" placeholder="Nome completo">
+                                </div>
+                                <div class="group">
+                                    <label class="block text-sm font-bold text-title mb-2 ml-1">Crie um PIN (4 dígitos)</label>
+                                    <input type="password" [(ngModel)]="data.managerPin" maxlength="4" (keydown.enter)="finish()" class="w-full bg-surface border border-strong rounded-2xl px-5 py-4 text-brand text-center text-4xl tracking-[1em] font-black focus:ring-2 focus:ring-brand/50 focus:border-brand outline-none transition-all shadow-inner group-hover:border-brand/50" placeholder="••••">
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 8. TRIAL PREMIUM -->
+                    @case (8) {
+                         <div class="max-w-lg mx-auto animate-in slide-in-from-right-8 duration-500 pt-4 md:pt-10">
+                            <div class="mb-8">
+                                <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-amber-500">workspace_premium</span>
+                                </div>
+                                <h2 class="text-3xl font-black mb-2 text-title tracking-tight">30 Dias Premium Grátis!</h2>
+                                <p class="text-muted text-base md:text-lg font-medium">Criamos um teste completo em sua nova conta, e você acessará todas as ferramentas premium durante os próximos 30 dias de forma automática e gratuita.</p>
+                            </div>
+                            
+                            <div class="space-y-4 bg-surface/50 p-6 md:p-8 rounded-[2rem] border border-strong shadow-inner">
+                                <div class="flex items-start gap-4">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
+                                    <div>
+                                        <p class="font-bold text-title">Gestão iFood Integrada</p>
+                                        <p class="text-sm text-muted">Controle total dos seus pedidos sem precisar do painel web.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-4">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
+                                    <div>
+                                        <p class="font-bold text-title">KDS & Controle de Caixas</p>
+                                        <p class="text-sm text-muted">Organize sua cozinha com telas de produção.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-4">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-green-500">check_circle</span>
+                                    <div>
+                                        <p class="font-bold text-title">Métricas Detalhadas</p>
+                                        <p class="text-sm text-muted">Entenda suas vendas com gráficos ricos e relatórios gerenciais.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- 9. FINALIZING -->
+                    @case (9) {
+                         <div class="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700 text-center">
+                            <div class="relative w-32 h-32 mb-10">
+                                <div class="absolute inset-0 border-4 border-subtle rounded-full"></div>
+                                <div class="absolute inset-0 border-4 border-brand rounded-full border-t-transparent animate-spin"></div>
+                                <div class="absolute inset-0 flex items-center justify-center bg-brand/10 rounded-full m-2 shadow-[0_0_30px_rgba(var(--brand-primary),0.3)]">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-5xl text-brand animate-pulse">settings</span>
+                                </div>
+                            </div>
+                            <h2 class="text-4xl font-black mb-4 text-title tracking-tight">Preparando a cozinha...</h2>
+                            <p class="text-muted text-lg max-w-md mx-auto font-medium">Estamos criando seu ambiente seguro e configurando todas as estações de trabalho.</p>
+                            
+                            <div class="mt-10 p-4 bg-surface rounded-2xl border border-strong shadow-inner min-w-[250px]">
+                                <p class="text-sm font-bold text-brand animate-pulse flex items-center justify-center gap-2">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">sync</span> {{ loadingStatus() }}
+                                </p>
+                            </div>
+                        </div>
+                    }
+                }
             </div>
 
             <!-- Footer Navigation -->
-            @if(currentStep() > 0 && currentStep() < 4) {
-                <div class="flex justify-between items-center p-6 md:px-14 border-t border-white/10 bg-black/20 backdrop-blur-md relative z-20">
-                    <button (click)="prevStep()" class="text-white/70 hover:text-white font-bold text-base flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-xl transition-all">
-                        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">arrow_back</span> Voltar
+            @if(currentStep() > 0 && currentStep() < 9) {
+                <div class="flex justify-between items-center p-6 md:px-10 border-t border-subtle bg-surface-elevated/80 backdrop-blur-xl z-20">
+                    <button (click)="prevStep()" class="text-muted hover:text-title font-bold flex items-center gap-2 px-5 py-3 rounded-2xl hover:bg-surface transition-all active:scale-95 group">
+                        <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:-translate-x-1">arrow_back</span> Voltar
                     </button>
                     
-                    @if(currentStep() === 3) {
-                        <button (click)="finish()" [disabled]="!isStepValid()" 
-                                class="bg-white text-slate-900 font-bold py-3.5 px-8 rounded-xl text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]">
-                            Concluir <span translate="no" class="notranslate material-symbols-outlined text-[20px]">check_circle</span>
+                    @if(currentStep() === 8) {
+                        <button (click)="finish()" [disabled]="!isStepValid()" class="bg-success hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
+                            Finalizar Setup <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:scale-110">check_circle</span>
+                        </button>
+                    } @else if(currentStep() === 7) {
+                        <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
+                            Próximo <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                         </button>
                     } @else {
-                        <button (click)="nextStep()" [disabled]="!isStepValid()" 
-                                class="bg-white/10 border border-white/20 hover:bg-white/20 text-white font-bold py-3.5 px-8 rounded-xl text-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 backdrop-blur-md">
-                            Avançar <span translate="no" class="notranslate material-symbols-outlined text-[20px]">arrow_forward</span>
+                        <button (click)="nextStep()" [disabled]="!isStepValid()" class="bg-brand hover:brightness-110 text-white font-black py-4 px-8 rounded-2xl shadow-lg shadow-brand/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-1 active:translate-y-0 group">
+                            Próximo <span translate="no" class="notranslate material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                         </button>
                     }
                 </div>
