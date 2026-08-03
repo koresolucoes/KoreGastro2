@@ -6,15 +6,16 @@
     </div>
     
     @if (selectedTable(); as table) {
-      <!-- Header / Top Bar -->
-      <div class="flex items-center justify-between p-4 bg-surface-elevated border-b border-subtle flex-shrink-0 z-20 shadow-sm relative">
-        <div class="flex items-center gap-4">
-            <h2 class="text-xl font-black text-title flex items-center gap-2 drop-shadow-sm">
+      <!-- Header / Top Bar (Cockpit Dashboard) -->
+      <div class="flex flex-col bg-surface-elevated border-b border-subtle flex-shrink-0 z-20 shadow-sm relative p-2.5 md:p-4 gap-2 md:gap-4">
+        <!-- Top row: Title and main actions -->
+        <div class="flex items-center justify-between px-0.5">
+            <h2 class="text-lg md:text-2xl font-black text-title flex items-center gap-1.5 md:gap-2 drop-shadow-sm">
                 @if(table.number > 0) {
-                    <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-80">table_restaurant</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-80 text-lg md:text-2xl">table_restaurant</span>
                     <span>Mesa {{ table.number }}</span>
                 } @else {
-                    <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-80">fastfood</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand opacity-80 text-lg md:text-2xl">fastfood</span>
                     <span>Venda Rápida</span>
                 }
                 
@@ -22,38 +23,56 @@
                     <span class="text-xs font-bold uppercase tracking-wider text-brand bg-brand/10 px-2 py-0.5 rounded-md border border-brand/20 ml-2 shadow-sm">{{ tabName }}</span>
                 }
             </h2>
+            <div class="flex items-center gap-1.5">
+                <button (click)="viewQrCodeClicked.emit()" class="text-muted hover:text-brand bg-surface border border-subtle p-2 md:p-2.5 rounded-lg md:rounded-xl hover-surface-elevated transition-colors shadow-sm" title="QR Code da Mesa">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px] md:text-xl">qr_code_scanner</span>
+                </button>
+                <button (click)="closePanel.emit()" class="text-muted hover:text-danger bg-surface border border-subtle p-2 md:p-2.5 rounded-lg md:rounded-xl hover-surface-elevated hover:border-danger/30 transition-colors shadow-sm" title="Fechar (ESC)">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px] md:text-xl">close</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Bottom row: Operational Dashboard -->
+        <div class="grid grid-cols-3 md:grid-cols-5 gap-1.5 md:gap-3">
+            <div class="bg-surface rounded-lg md:rounded-xl p-1.5 md:p-2.5 border border-subtle shadow-inner flex flex-col justify-center relative group cursor-pointer" (click)="associateCustomerClicked.emit()">
+                <span class="text-[8px] md:text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">Cliente</span>
+                <span class="text-[11px] md:text-sm font-black text-title truncate group-hover:text-brand transition-colors leading-tight">
+                    @if(currentOrder()?.customers; as customer) {
+                        {{ customer.name }}
+                    } @else {
+                        + Associar Cliente
+                    }
+                </span>
+            </div>
             
-            @if(table.number > 0) {
-                <div class="flex items-center bg-surface-elevated rounded-xl px-3 py-1.5 border border-subtle shadow-inner">
-                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-sm mr-1">group</span>
+            <div class="bg-surface rounded-lg md:rounded-xl p-1.5 md:p-2.5 border border-subtle shadow-inner flex flex-col justify-center">
+                <span class="text-[8px] md:text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">Pessoas</span>
+                <div class="flex items-center">
                     <input 
                         type="number"
                         [value]="table.customer_count || 1"
                         (change)="onCustomerCountChange($event)"
                         min="1"
-                        class="bg-transparent text-title font-black w-8 text-center text-sm focus:outline-none"
+                        class="bg-transparent text-title font-black w-full text-[11px] md:text-sm focus:outline-none leading-tight"
                     >
                 </div>
-            }
-        </div>
-        
-        <div class="flex items-center gap-2">
-            @if(currentOrder()?.customers; as customer) {
-                <button (click)="associateCustomerClicked.emit()" class="flex items-center gap-2 bg-brand/10 text-brand px-4 py-2 rounded-xl border border-brand/30 hover:bg-brand/20 transition-all shadow-sm active:scale-95">
-                    <span translate="no" class="notranslate material-symbols-outlined text-sm">person</span>
-                    <span class="text-sm font-bold max-w-[120px] truncate">{{ customer.name }}</span>
-                </button>
-            } @else {
-                 <button (click)="associateCustomerClicked.emit()" class="text-muted hover:text-brand bg-surface border border-subtle p-2.5 rounded-xl hover-surface-elevated transition-colors shadow-sm" title="Associar Cliente">
-                    <span translate="no" class="notranslate material-symbols-outlined text-xl">person_add</span>
-                </button>
-            }
-             <button (click)="viewQrCodeClicked.emit()" class="text-muted hover:text-brand bg-surface border border-subtle p-2.5 rounded-xl hover-surface-elevated transition-colors shadow-sm" title="QR Code da Mesa">
-                <span translate="no" class="notranslate material-symbols-outlined text-xl">qr_code_scanner</span>
-            </button>
-             <button (click)="closePanel.emit()" class="text-muted hover:text-danger bg-surface border border-subtle p-2.5 rounded-xl hover-surface-elevated hover:border-danger/30 transition-colors shadow-sm ml-2">
-                <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
-            </button>
+            </div>
+            
+            <div class="bg-surface rounded-lg md:rounded-xl p-1.5 md:p-2.5 border border-subtle shadow-inner flex flex-col justify-center hidden md:flex">
+                <span class="text-[8px] md:text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">Aberta há</span>
+                <span class="text-[11px] md:text-sm font-black text-title leading-tight">{{ orderOpenedTime() || '00:00' }}</span>
+            </div>
+            
+            <div class="bg-surface rounded-xl p-1.5 md:p-2.5 border border-subtle shadow-inner flex flex-col justify-center hidden md:flex">
+                <span class="text-[8px] md:text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">Garçom</span>
+                <span class="text-[11px] md:text-sm font-black text-title truncate leading-tight">{{ activeEmployee()?.name || 'Sistema' }}</span>
+            </div>
+            
+            <div class="bg-brand/5 rounded-lg md:rounded-xl p-1.5 md:p-2.5 border border-brand/20 shadow-inner flex flex-col justify-center">
+                <span class="text-[8px] md:text-[9px] uppercase tracking-widest text-brand font-bold mb-0.5">Consumo</span>
+                <span class="text-[11px] md:text-sm font-black text-brand data-mono leading-tight">{{ orderTotal() | currency:'BRL' }}</span>
+            </div>
         </div>
       </div>
 
@@ -64,105 +83,129 @@
         <!-- Logic: Always show on Desktop. On Mobile, show only if tab is 'menu' -->
         <div class="flex-1 flex flex-col min-w-0 bg-transparent md:flex" [class.hidden]="mobileTab() === 'cart'">
             <!-- Spotlight Search -->
-            <div class="p-6 pb-4">
+            <div class="p-2 md:p-6 pb-2 md:pb-4">
                 <div class="relative group">
-                    <span translate="no" class="notranslate absolute left-5 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-all material-symbols-outlined z-10 text-2xl font-bold">search</span>
+                    <span translate="no" class="notranslate absolute left-3 md:left-5 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-brand transition-all material-symbols-outlined z-10 text-[18px] md:text-2xl font-bold">search</span>
                     <div class="absolute -inset-1 bg-gradient-to-r from-brand/40 via-brand/20 to-brand/40 rounded-2xl opacity-0 group-focus-within:opacity-100 transition duration-500 blur-md pointer-events-none"></div>
                     <input 
                         type="text" 
                         [value]="recipeSearchTerm()" 
                         (input)="recipeSearchTerm.set($any($event.target).value)" 
-                        placeholder="Pesquisar pratos, bebidas ou códigos..." 
-                        class="relative w-full bg-surface-elevated text-title pl-14 pr-12 py-5 rounded-2xl border-2 border-transparent focus:border-brand/40 focus:bg-surface outline-none text-xl font-bold shadow-xl transition-all placeholder:text-muted focus:placeholder:text-muted/30 placeholder:font-medium demo-spotlight-input"
+                        placeholder="Pesquisar pratos, bebidas..." 
+                        class="relative w-full bg-surface-elevated text-title pl-9 pr-8 py-2 md:pl-14 md:pr-12 md:py-5 rounded-lg md:rounded-2xl border-2 border-transparent focus:border-brand/40 focus:bg-surface outline-none text-sm md:text-xl font-bold shadow-sm md:shadow-xl transition-all placeholder:text-muted focus:placeholder:text-muted/30 placeholder:font-medium demo-spotlight-input"
                     >
                     @if(recipeSearchTerm()) {
-                        <button (click)="recipeSearchTerm.set('')" class="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-danger z-10 p-2 rounded-xl hover:bg-danger/10 transition-all flex items-center justify-center">
-                            <span translate="no" class="notranslate material-symbols-outlined font-bold">close</span>
+                        <button (click)="recipeSearchTerm.set('')" class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-muted hover:text-danger z-10 p-1.5 md:p-2 rounded-lg md:rounded-xl hover:bg-danger/10 transition-all flex items-center justify-center">
+                            <span translate="no" class="notranslate material-symbols-outlined font-bold text-[18px] md:text-2xl">close</span>
                         </button>
                     }
                 </div>
             </div>
 
-            <!-- Categories (Pills) -->
-            <div class="px-6 py-2 flex gap-4 overflow-x-auto hide-scrollbar flex-shrink-0 pb-6 mask-fade-right">
-                <button (click)="selectCategory(null)" 
-                    class="px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border shadow-md tracking-[0.1em] uppercase flex items-center gap-2"
-                    [class.bg-brand]="selectedCategory() === null" 
-                    [class.text-white]="selectedCategory() === null"
-                    [class.border-brand]="selectedCategory() === null"
-                    [class.scale-105]="selectedCategory() === null"
-                    [class.bg-surface-elevated]="selectedCategory() !== null"
-                    [class.text-muted]="selectedCategory() !== null"
-                    [class.border-strong]="selectedCategory() !== null"
-                    [class.hover:border-brand/30]="selectedCategory() !== null">
-                    <span translate="no" class="notranslate material-symbols-outlined text-sm">grid_view</span>
-                    Todos
-                </button>
-                @for (category of categoriesWithIcons(); track category.id) {
-                    <button (click)="selectCategory(category)" 
-                        class="px-6 py-3 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all border shadow-md tracking-[0.1em] uppercase flex items-center gap-2"
-                        [class.bg-brand]="selectedCategory()?.id === category.id" 
-                        [class.text-white]="selectedCategory()?.id === category.id"
-                        [class.border-brand]="selectedCategory()?.id === category.id"
-                        [class.scale-105]="selectedCategory()?.id === category.id"
-                        [class.bg-surface-elevated]="selectedCategory()?.id !== category.id"
-                        [class.text-muted]="selectedCategory()?.id !== category.id"
-                        [class.border-strong]="selectedCategory()?.id !== category.id"
-                        [class.hover:border-brand/30]="selectedCategory()?.id !== category.id">
-                        <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ category.icon }}</span>
-                        {{ category.name }}
+            <!-- Categories (Pills) & View Mode -->
+            <div class="px-2 md:px-6 py-1 md:py-2 flex items-center justify-between pb-2 md:pb-4">
+                <div class="flex gap-1.5 md:gap-4 overflow-x-auto hide-scrollbar flex-1 mask-fade-right">
+                    <button (click)="selectCategory(null)" 
+                        class="px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[11px] font-black whitespace-nowrap transition-all border shadow-sm md:shadow-md tracking-[0.1em] uppercase flex items-center gap-1 md:gap-2"
+                        [class.bg-brand]="selectedCategory() === null" 
+                        [class.text-white]="selectedCategory() === null"
+                        [class.border-brand]="selectedCategory() === null"
+                        [class.scale-105]="selectedCategory() === null"
+                        [class.bg-surface-elevated]="selectedCategory() !== null"
+                        [class.text-muted]="selectedCategory() !== null"
+                        [class.border-strong]="selectedCategory() !== null"
+                        [class.hover:border-brand/30]="selectedCategory() !== null">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-sm">grid_view</span>
+                        Todos
                     </button>
-                }
+                    @for (category of categoriesWithIcons(); track category.id) {
+                        <button (click)="selectCategory(category)" 
+                            class="px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[11px] font-black whitespace-nowrap transition-all border shadow-sm md:shadow-md tracking-[0.1em] uppercase flex items-center gap-1 md:gap-2"
+                            [class.bg-brand]="selectedCategory()?.id === category.id" 
+                            [class.text-white]="selectedCategory()?.id === category.id"
+                            [class.border-brand]="selectedCategory()?.id === category.id"
+                            [class.scale-105]="selectedCategory()?.id === category.id"
+                            [class.bg-surface-elevated]="selectedCategory()?.id !== category.id"
+                            [class.text-muted]="selectedCategory()?.id !== category.id"
+                            [class.border-strong]="selectedCategory()?.id !== category.id"
+                            [class.hover:border-brand/30]="selectedCategory()?.id !== category.id">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[14px] md:text-sm">{{ category.icon }}</span>
+                            {{ category.name }}
+                        </button>
+                    }
+                </div>
+                
+                <div class="flex items-center bg-surface-elevated border border-subtle rounded-xl p-1 ml-4 shadow-sm flex-shrink-0 hidden md:flex">
+                    <button (click)="viewMode.set('compact')" class="p-1.5 rounded-lg transition-colors flex items-center justify-center" [class.bg-surface]="viewMode() === 'compact'" [class.shadow-sm]="viewMode() === 'compact'" [class.text-brand]="viewMode() === 'compact'" [class.text-muted]="viewMode() !== 'compact'" title="Modo Compacto">
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">view_list</span>
+                    </button>
+                    <button (click)="viewMode.set('visual')" class="p-1.5 rounded-lg transition-colors flex items-center justify-center" [class.bg-surface]="viewMode() === 'visual'" [class.shadow-sm]="viewMode() === 'visual'" [class.text-brand]="viewMode() === 'visual'" [class.text-muted]="viewMode() !== 'visual'" title="Modo Visual">
+                        <span translate="no" class="notranslate material-symbols-outlined text-sm">grid_view</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Recipe Grid (A Quadrilha) -->
-            <div class="flex-1 overflow-y-auto p-4 md:p-6 pt-2 pb-28 md:pb-6 hide-scrollbar">
-                <div class="grid grid-cols-2 gap-3 sm:gap-6">
+            <!-- Recipe Grid -->
+            <div class="flex-1 overflow-y-auto p-2 md:p-6 pt-1 md:pt-2 pb-28 md:pb-6 hide-scrollbar">
+                <div [class]="viewMode() === 'visual' ? 'grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2 md:gap-4' : 'grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2 md:gap-3'">
                     @for (recipe of filteredRecipes(); track recipe.id) {
                         <button 
                             (click)="openQuickAddModal(recipe)" 
-                            class="relative flex flex-col bg-surface border-2 border-strong/50 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-brand/50 hover:shadow-2xl hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300 text-left group h-full shadow-lg active:scale-95 demo-product-card"
+                            class="relative flex flex-col bg-surface border border-subtle rounded-xl md:rounded-2xl overflow-hidden hover:border-brand hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group h-full shadow-sm active:scale-[0.98] demo-product-card focus:outline-none focus:ring-2 focus:ring-brand"
                             [disabled]="!recipe.hasStock"
                             [class.opacity-60]="!recipe.hasStock"
                             [class.grayscale]="!recipe.hasStock"
                         >
-                            <div class="aspect-[16/10] w-full bg-surface-elevated relative overflow-hidden flex-shrink-0">
-                                @if (recipe.image_url) {
-                                    <img [src]="recipe.image_url" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500">
-                                } @else {
-                                    <div class="w-full h-full flex items-center justify-center text-muted/30 bg-surface-elevated">
-                                        <span translate="no" class="notranslate material-symbols-outlined text-4xl sm:text-6xl transition-transform group-hover:scale-110 duration-500">restaurant</span>
-                                    </div>
-                                }
-                                
-                                @if (!recipe.hasStock) {
-                                    <div class="absolute inset-0 bg-background/80 flex items-center justify-center backdrop-blur-sm z-20">
-                                        <span class="text-[9px] sm:text-[11px] font-black text-danger bg-danger/10 px-2 sm:px-3 py-1 rounded-md uppercase tracking-wider border border-danger/30">Esgotado</span>
-                                    </div>
-                                }
-                            </div>
-                            
-                            <div class="p-3 sm:p-4 flex-1 flex flex-col justify-between bg-surface relative z-10 w-full transition-colors group-hover:bg-surface-elevated border-t border-subtle/50">
-                                <div class="mb-2">
-                                    @if(recipe.external_code) {
-                                        <div class="text-[8px] sm:text-[9px] font-bold text-muted uppercase tracking-widest mb-1">{{ recipe.external_code }}</div>
+                            @if (viewMode() === 'visual') {
+                                <div class="aspect-[4/3] w-full bg-surface-elevated relative overflow-hidden flex-shrink-0">
+                                    @if (recipe.image_url) {
+                                        <img [src]="recipe.image_url" class="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" referrerpolicy="no-referrer">
+                                    } @else {
+                                        <div class="w-full h-full flex items-center justify-center text-muted/30 bg-surface-elevated">
+                                            <span translate="no" class="notranslate material-symbols-outlined text-4xl transition-transform group-hover:scale-110 duration-500">restaurant</span>
+                                        </div>
                                     }
-                                    <h3 class="font-bold text-title text-xs sm:text-sm leading-tight line-clamp-2 tracking-tight">{{ recipe.name }}</h3>
+                                    
+                                    @if (!recipe.hasStock) {
+                                        <div class="absolute inset-0 bg-background/80 flex items-center justify-center backdrop-blur-sm z-20">
+                                            <span class="text-[8px] md:text-[9px] font-black text-danger bg-danger/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded uppercase tracking-wider border border-danger/30">Esgotado</span>
+                                        </div>
+                                    } @else if (recipe.category_id === 'bebidas') {
+                                        <div class="absolute top-1.5 md:top-2 left-1.5 md:left-2 bg-info/90 backdrop-blur-sm text-white text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 rounded font-bold border border-info-hover z-10 flex items-center gap-1 shadow-sm">
+                                            <span translate="no" class="notranslate material-symbols-outlined text-[10px]">ac_unit</span> <span class="hidden md:inline">Gelado</span>
+                                        </div>
+                                    } @else {
+                                        <div class="absolute top-1.5 md:top-2 left-1.5 md:left-2 bg-surface/90 backdrop-blur-sm text-title text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 rounded font-bold border border-subtle z-10 flex items-center gap-1 shadow-sm">
+                                            <span translate="no" class="notranslate material-symbols-outlined text-[10px] text-warning">schedule</span> 15m
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            
+                            <div class="p-2 md:p-4 flex-1 flex flex-col justify-between bg-surface relative z-10 w-full transition-colors group-hover:bg-surface-elevated border-t border-transparent" [class.border-subtle]="viewMode() === 'visual'">
+                                <div class="mb-1 md:mb-2">
+                                    @if(recipe.external_code) {
+                                        <div class="text-[8px] md:text-[9px] font-bold text-muted uppercase tracking-widest mb-0.5 md:mb-1">{{ recipe.external_code }}</div>
+                                    }
+                                    <h3 class="font-bold text-title text-[11px] md:text-sm leading-tight tracking-tight" [class.line-clamp-2]="viewMode() === 'visual'" [class.line-clamp-1]="viewMode() === 'compact'">{{ recipe.name }}</h3>
+                                    @if(viewMode() === 'compact') {
+                                        <div class="flex items-center gap-1 mt-1 text-[9px] text-muted">
+                                            <span translate="no" class="notranslate material-symbols-outlined text-[10px] text-warning">schedule</span> 15m
+                                        </div>
+                                    }
                                 </div>
                                 
-                                <div class="flex items-center justify-between mt-auto pt-2">
-                                    <span class="font-black text-brand text-sm sm:text-base">{{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}</span>
-                                    
-                                    <div class="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span class="bg-brand/10 text-brand p-1.5 rounded-full flex items-center justify-center">
-                                            <span translate="no" class="notranslate material-symbols-outlined text-[14px] sm:text-[16px]">add</span>
-                                        </span>
-                                    </div>
+                                <div class="flex flex-col mt-auto">
+                                    <span class="font-black text-brand text-sm md:text-base transition-opacity group-hover:opacity-0">{{ (recipePrices().get(recipe.id) || recipe.price) | currency:'BRL' }}</span>
+                                </div>
+
+                                <div class="w-full bg-brand/10 text-brand text-xs font-black py-1.5 rounded-lg flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-3 left-0 right-0 mx-3" style="width: calc(100% - 24px)">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[14px]">add</span> Adicionar
                                 </div>
                             </div>
                             
                             @if (cartItemQuantities().get(recipe.id); as qty) {
-                                <div class="absolute top-2 right-2 bg-brand text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-lg border-2 border-white z-30 animate-in zoom-in">
+                                <div class="absolute top-2 right-2 bg-brand text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-lg border-2 border-white z-30 animate-in zoom-in">
                                     {{ qty }}
                                 </div>
                             }
@@ -183,12 +226,27 @@
         <!-- RIGHT: Cart & Actions (Sidebar on Desktop, Tab on Mobile) -->
         <div class="w-full md:w-80 bg-surface-elevated border-l border-subtle flex flex-col shadow-2xl z-20 md:flex h-full relative" [class.hidden]="mobileTab() === 'menu'">
             <!-- Cart Header -->
-            <div class="p-4 border-b border-subtle flex-shrink-0 bg-surface-elevated flex justify-between items-center">
-                <h3 class="font-black text-title text-base flex items-center gap-2 uppercase tracking-wide">
-                    <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt_long</span>
-                    Pedido Atual
-                </h3>
-                <span class="text-[10px] bg-brand/10 text-brand border border-brand/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{{ totalCartItems() }} Itens</span>
+            <div class="p-4 border-b border-subtle flex-shrink-0 bg-surface-elevated">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-black text-title text-base flex items-center gap-2 uppercase tracking-wide">
+                        <span translate="no" class="notranslate material-symbols-outlined text-brand">receipt_long</span>
+                        Pedido Atual
+                    </h3>
+                    <span class="text-[10px] bg-brand/10 text-brand border border-brand/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{{ totalCartItems() }} Itens</span>
+                </div>
+                
+                @if(currentOrder()?.order_items?.length) {
+                    <!-- Progress Bar -->
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-muted">
+                            <span>Progresso</span>
+                            <span>{{ orderProgress() }}% Pronto</span>
+                        </div>
+                        <div class="w-full bg-surface border border-subtle h-2 rounded-full overflow-hidden flex">
+                            <div class="bg-success h-full transition-all duration-500 ease-out" [style.width.%]="orderProgress()"></div>
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Cart Items List (Scrollable Area) -->
@@ -215,7 +273,17 @@
                                                     OBS: {{ cleanNotes(item.isGroup ? item.items[0].notes : item.item.notes) }}
                                                 </div>
                                             }
-                                            <div class="text-[9px] font-bold tracking-widest text-muted mt-2 uppercase">
+                                            <div class="text-[9px] font-bold tracking-widest mt-2 uppercase flex items-center gap-1" [ngClass]="getOrderItemStatusClass(item.isGroup ? item.items[0].status : item.item.status)">
+                                                <span translate="no" class="notranslate material-symbols-outlined text-[12px]">
+                                                    @switch (item.isGroup ? item.items[0].status : item.item.status) {
+                                                        @case ('PENDENTE') { schedule }
+                                                        @case ('EM_PREPARO') { soup_kitchen }
+                                                        @case ('PRONTO') { done }
+                                                        @case ('ENTREGUE') { done_all }
+                                                        @case ('CANCELADO') { block }
+                                                        @default { horizontal_rule }
+                                                    }
+                                                </span>
                                                 {{ item.isGroup ? item.items[0].status : item.item.status }}
                                             </div>
                                         </div>
@@ -295,37 +363,39 @@
                     </div>
                 }
 
-                <!-- AI Recommendations -->
-                @if (aiSuggestions().length > 0) {
-                    <div class="mt-4 px-2 py-2 text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-1.5 opacity-90 border-t border-subtle pt-4">
-                        <span translate="no" class="notranslate material-symbols-outlined text-[13px] animate-pulse">model_training</span> Sugestões Complementares (IA)
-                    </div>
-                    <div class="space-y-2 mt-2">
-                        @for (rec of aiSuggestions(); track rec.id) {
-                            <button (click)="openQuickAddModal(rec)" class="w-full relative overflow-hidden group bg-surface hover:bg-surface-elevated rounded-xl p-3 border border-brand/20 hover:border-brand/50 transition-all text-left shadow-sm flex items-center justify-between">
-                                <div class="absolute inset-0 bg-gradient-to-r from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <div class="flex flex-col relative z-10 w-2/3 pr-2">
-                                    <span class="text-xs font-bold text-title truncate group-hover:text-brand transition-colors">{{ rec.name }}</span>
-                                    <span class="text-[10px] text-muted line-clamp-1 mt-0.5">Combinação ideal para o seu pedido</span>
-                                </div>
-                                <div class="flex items-center gap-2 relative z-10">
-                                    <span class="text-[12px] font-black text-title">{{ rec.price | currency:'BRL' }}</span>
-                                    <div class="bg-brand/10 text-brand p-1 rounded-full group-hover:bg-brand group-hover:text-white transition-colors">
-                                        <span translate="no" class="notranslate material-symbols-outlined text-[12px]">add</span>
+                    <!-- AI Recommendations -->
+                    @if (aiSuggestions().length > 0) {
+                        <div class="mt-4 px-2 py-2 text-[10px] font-black text-brand uppercase tracking-widest flex items-center gap-1.5 opacity-90 border-t border-subtle pt-4">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[13px] animate-pulse">model_training</span> Sugestões Inteligentes
+                        </div>
+                        <div class="space-y-2 mt-2">
+                            @for (rec of aiSuggestions(); track rec.recipe.id) {
+                                <button (click)="openQuickAddModal(rec.recipe)" class="w-full relative overflow-hidden group bg-surface hover:bg-surface-elevated rounded-xl p-3 border border-brand/20 hover:border-brand/50 transition-all text-left shadow-sm flex items-center justify-between">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div class="flex flex-col relative z-10 w-2/3 pr-2">
+                                        <span class="text-[10px] text-brand font-bold mb-0.5 line-clamp-1">{{ rec.reason }}</span>
+                                        <span class="text-xs font-black text-title truncate group-hover:text-brand transition-colors">{{ rec.recipe.name }}</span>
                                     </div>
-                                </div>
-                            </button>
-                        }
-                    </div>
-                }
+                                    <div class="flex items-center gap-2 relative z-10">
+                                        <span class="text-[12px] font-black text-title">{{ rec.recipe.price | currency:'BRL' }}</span>
+                                        <div class="bg-brand/10 text-brand p-1 rounded-full group-hover:bg-brand group-hover:text-white transition-colors">
+                                            <span translate="no" class="notranslate material-symbols-outlined text-[12px]">add</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    }
 
             </div>
 
             <!-- Footer Actions -->
             <div class="p-4 bg-surface-elevated border-t border-subtle space-y-3 z-30 absolute bottom-[60px] left-0 right-0 md:relative md:bottom-auto shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
-                <div class="flex justify-between items-end mb-1">
-                    <span class="text-xs font-black uppercase tracking-widest text-muted">Total</span>
-                    <span class="text-3xl font-black text-title data-mono drop-shadow-sm">{{ orderTotal() | currency:'BRL' }}</span>
+                
+                <!-- Highlighted Total -->
+                <div class="flex justify-between items-center bg-title text-surface p-4 rounded-xl shadow-inner mb-3">
+                    <span class="text-xs font-black uppercase tracking-widest opacity-80">Total</span>
+                    <span class="text-3xl font-black data-mono tracking-tight">{{ orderTotal() | currency:'BRL' }}</span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 sm:gap-3">
@@ -341,10 +411,18 @@
                 </div>
                 
                  <div class="grid grid-cols-4 gap-2 mt-2">
-                    <button (click)="moveOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Mover</button>
-                    <button (click)="splitOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Dividir</button>
-                    <button (click)="openGlobalDiscountModal()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Descont.</button>
-                    <button (click)="initiateOrderCancellation()" class="py-2.5 bg-danger/10 hover:bg-danger/20 border border-danger/20 text-danger rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center">Canc.</button>
+                    <button (click)="moveOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center flex flex-col items-center gap-1">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">swap_horiz</span> Mover
+                    </button>
+                    <button (click)="splitOrderClicked.emit()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center flex flex-col items-center gap-1">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">call_split</span> Dividir
+                    </button>
+                    <button (click)="openGlobalDiscountModal()" class="py-2.5 bg-surface border border-subtle hover:bg-surface-elevated text-title rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center flex flex-col items-center gap-1">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">sell</span> Desconto
+                    </button>
+                    <button (click)="initiateOrderCancellation()" class="py-2.5 bg-danger/5 hover:bg-danger/10 border border-danger/20 text-danger rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm text-center flex flex-col items-center gap-1">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">cancel</span> Cancelar
+                    </button>
                  </div>
             </div>
         </div>

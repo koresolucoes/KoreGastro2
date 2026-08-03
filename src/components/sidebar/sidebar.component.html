@@ -1,5 +1,13 @@
 <!-- src/components/sidebar/sidebar.component.html -->
-<aside class="flex flex-col h-full bg-surface-elevated border-r border-subtle transition-all duration-300 relative" [class.w-64]="!isCollapsed()" [class.w-20]="isCollapsed()">
+@if (layoutService.isMobileSidebarOpen()) {
+  <div class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden" (click)="layoutService.closeMobileSidebar()"></div>
+}
+
+<aside class="flex flex-col h-full bg-surface-elevated border-r border-subtle transition-all duration-300 z-50 fixed md:relative inset-y-0 left-0 md:translate-x-0 shadow-2xl md:shadow-none" 
+  [class.w-64]="!isCollapsed()" 
+  [class.w-20]="isCollapsed()"
+  [class.-translate-x-full]="!layoutService.isMobileSidebarOpen()"
+  [class.translate-x-0]="layoutService.isMobileSidebarOpen()">
   
   <!-- Logo -->
   <div class="h-16 flex items-center px-4 border-b border-subtle shrink-0">
@@ -61,7 +69,7 @@
         }
         <div class="space-y-1">
           @for (link of group.children; track link.path) {
-            <a [routerLink]="link.path" routerLinkActive="bg-brand/15 text-brand font-bold border-brand" [routerLinkActiveOptions]="{exact: link.path === '/dashboard'}" class="relative flex items-center pl-2 pr-3 py-2.5 rounded-r-lg border-l-4 border-transparent text-body hover:bg-surface hover:text-title transition-all group overflow-hidden" [title]="isCollapsed() ? link.name : ''">
+            <a [routerLink]="link.path" (click)="layoutService.closeMobileSidebar()" routerLinkActive="bg-brand/15 text-brand font-bold border-brand" [routerLinkActiveOptions]="{exact: link.path === '/dashboard'}" class="relative flex items-center pl-2 pr-3 py-2.5 rounded-r-lg border-l-4 border-transparent text-body hover:bg-surface hover:text-title transition-all group overflow-hidden" [title]="isCollapsed() ? link.name : ''">
               <span translate="no" class="notranslate material-symbols-outlined text-[20px] shrink-0" [class.mr-3]="!isCollapsed()">{{ link.icon }}</span>
               @if (!isCollapsed()) {
                 <span class="text-sm whitespace-nowrap">{{ link.name }}</span>

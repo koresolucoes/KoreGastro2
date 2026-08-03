@@ -15,6 +15,8 @@ import { TopNavComponent } from './components/top-nav/top-nav.component';
 import { SubscriptionComponent } from './components/subscription/subscription.component';
 
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { LayoutService } from './services/layout.service';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -28,6 +30,7 @@ export class AppComponent implements OnInit {
   supabaseStateService = inject(SupabaseStateService);
   subscriptionStateService = inject(SubscriptionStateService);
   demoService = inject(DemoService);
+  layoutService = inject(LayoutService);
   router: Router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;

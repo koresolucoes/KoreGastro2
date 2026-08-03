@@ -1,20 +1,25 @@
-<nav class="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-subtle bg-surface-elevated shrink-0">
+<nav class="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-subtle bg-surface-elevated shrink-0 gap-3">
+  <!-- Mobile Menu Toggle -->
+  <button (click)="layoutService.toggleMobileSidebar()" class="md:hidden p-2 -ml-2 text-muted hover:text-title hover:bg-surface rounded-lg transition-colors focus:outline-none shrink-0" aria-label="Abrir menu">
+    <span translate="no" class="notranslate material-symbols-outlined text-[24px]">menu</span>
+  </button>
+
   <!-- Search trigger -->
   <div class="flex-1 max-w-xl">
-    <button (click)="openSearch($event)" class="w-full flex items-center gap-3 px-4 py-2 bg-surface border border-subtle rounded-xl text-muted hover:border-strong transition-all focus:outline-none focus:ring-2 focus:ring-brand shadow-sm">
-      <span translate="no" class="notranslate material-symbols-outlined text-[20px] text-brand">search</span>
-      <span class="text-sm flex-1 text-left">Buscar no ChefOS (PDV, Estoque, Fichas, Relatórios...)...</span>
-      <span class="text-[11px] font-mono font-bold bg-surface-elevated px-2 py-0.5 rounded border border-subtle hidden sm:block">Ctrl + K</span>
+    <button (click)="openSearch($event)" class="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 bg-surface border border-subtle rounded-xl text-muted hover:border-strong transition-all focus:outline-none focus:ring-2 focus:ring-brand shadow-sm">
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px] text-brand shrink-0">search</span>
+      <span class="text-[13px] sm:text-sm flex-1 text-left truncate">Buscar no ChefOS...</span>
+      <span class="text-[11px] font-mono font-bold bg-surface-elevated px-2 py-0.5 rounded border border-subtle hidden sm:block shrink-0">Ctrl + K</span>
     </button>
   </div>
 
   <!-- Right Actions -->
   <div class="flex items-center gap-2 md:gap-3 ml-4">
     <!-- Store Unit Selector in Top Nav -->
-    <div class="relative top-dropdown">
+    <div class="relative top-dropdown hidden md:block">
       <button (click)="toggleDropdown('unit', $event)" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-subtle hover:border-strong rounded-lg text-title text-xs font-semibold transition-all">
         <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
-        <span class="max-w-[130px] sm:max-w-[180px] truncate">{{ currentUnitName() || 'Matriz' }}</span>
+        <span class="max-w-[80px] sm:max-w-[130px] md:max-w-[180px] truncate">{{ currentUnitName() || 'Matriz' }}</span>
         <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted">arrow_drop_down</span>
       </button>
 
@@ -243,7 +248,7 @@
 
     <!-- Profile -->
     <div class="relative ml-1 top-dropdown">
-      <button (click)="toggleDropdown('user', $event)" class="flex items-center gap-2.5 hover:bg-surface p-1 pr-3 rounded-full border border-transparent hover:border-subtle transition-all focus:outline-none">
+      <button (click)="toggleDropdown('user', $event)" class="flex items-center gap-2.5 hover:bg-surface p-1 md:pr-3 rounded-full border border-transparent hover:border-subtle transition-all focus:outline-none">
         @if (activeEmployee()?.photo_url; as photoUrl) {
            <img [src]="photoUrl" alt="Foto" class="w-8 h-8 rounded-full object-cover ring-2 ring-brand/20">
         } @else {

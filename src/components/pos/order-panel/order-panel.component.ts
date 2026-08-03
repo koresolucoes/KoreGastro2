@@ -172,7 +172,10 @@ export class OrderPanelComponent implements OnInit {
     "vegano",
   ];
 
-  // AI Suggestions
+  // View Mode
+  viewMode = signal<"compact" | "visual">("visual");
+
+  // AI Suggestions with reasons
   aiSuggestions = computed(() => {
     const cart = this.shoppingCart();
     const orderItems = this.currentOrder()?.order_items || [];
@@ -183,7 +186,6 @@ export class OrderPanelComponent implements OnInit {
 
     if (allItemIds.size === 0) return [];
 
-    // Determine categories already in cart
     const cartCategories = new Set<string>();
     cart.forEach((i) => cartCategories.add(i.recipe.category_id!));
     orderItems.forEach((i) => {
@@ -191,7 +193,6 @@ export class OrderPanelComponent implements OnInit {
       if (recipe?.category_id) cartCategories.add(recipe.category_id);
     });
 
-    // Find available recipes not in cart and ideally not in the same category
     const available = this.filteredRecipes().filter(
       (r) => !allItemIds.has(r.id) && r.hasStock !== false,
     );
@@ -199,16 +200,82 @@ export class OrderPanelComponent implements OnInit {
       (r) => !cartCategories.has(r.category_id!),
     );
 
-    // Sort by price desc (Upsell bias) and return top 2
     crossSell.sort((a, b) => (b.price || 0) - (a.price || 0));
-    return crossSell.slice(0, 2);
+    
+    // Pick top 2 and assign reasons
+    return crossSell.slice(0, 2).map((recipe, index) => {
+      let reason = "⭐ Clientes também pediram";
+      if (index === 1) reason = "🔥 Promoção hoje";
+      if (recipe.category_id === 'bebidas' || recipe.category_id === 'drinks') reason = "🍺 Combina com seu pedido";
+      return { recipe, reason };
+    });
+  });
+
+  // Order Progress
+  orderProgress = computed(() => {
+    const order = this.currentOrder();
+    if (!order || !order.order_items || order.order_items.length === 0) return 0;
+    
+    const validItems = order.order_items.filter(i => i.status !== 'CANCELADO' && i.status !== 'PENDENTE');
+    if (validItems.length === 0) return 0;
+    
+    const readyItems = validItems.filter(i => i.status === 'PRONTO' || i.status === 'ENTREGUE');
+    return Math.round((readyItems.length / validItems.length) * 100);
+  });
+
+  // Order Duration
+  orderOpenedTime = computed(() => {
+    const order = this.currentOrder();
+    if (!order?.created_at) return null;
+    const created = new Date(order.created_at);
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   });
 
   ngOnInit() {
     this.menuDataService.loadAllMenuData().catch((err) => {
       console.error("Failed to load menu data in order panel", err);
     });
+
+    // Keyboard shortcuts
+    window.addEventListener("keydown", this.handleKeyDown);
   }
+
+  ngOnDestroy() {
+    window.removeEventListener("keydown", this.handleKeyDown);
+  }
+
+  handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "F2") {
+      event.preventDefault();
+      document.getElementById("searchInput")?.focus();
+    } else if (event.key === "F3") {
+      event.preventDefault();
+      this.startCheckout();
+    } else if (event.key === "F4") {
+      event.preventDefault();
+      this.openGlobalDiscountModal();
+    } else if (event.key === "F5") {
+      event.preventDefault();
+      this.splitOrderClicked.emit();
+    } else if (event.key === "Escape") {
+      if (this.isQuickAddModalOpen()) this.closeQuickAddModal();
+      else if (this.isCustomizationModalOpen()) this.closeCustomizationModal();
+      else if (this.isDiscountModalOpen()) this.closeDiscountModal();
+      else if (this.isGlobalDiscountModalOpen()) this.closeGlobalDiscountModal();
+      else if (this.isCancellationReasonModalOpen()) this.isCancellationReasonModalOpen.set(false);
+      else if (this.isManagerAuthModalOpen()) this.isManagerAuthModalOpen.set(false);
+      else if (this.isNotesModalOpen()) this.closeNotesModal();
+      else this.closePanel.emit();
+    } else if (event.ctrlKey && event.key === "e") {
+      event.preventDefault();
+      this.sendOrder();
+    }
+  };
 
   async loadOptionGroups(userId: string) {
     try {

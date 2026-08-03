@@ -10,6 +10,7 @@ import { RecipeStateService } from '../../services/recipe-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { NotificationService, SystemNotification, NotificationFilter, NotificationType } from '../../services/notification.service';
+import { LayoutService } from '../../services/layout.service';
 
 export interface SearchPageItem {
   name: string;
@@ -35,6 +36,7 @@ export class TopNavComponent {
   inventoryState = inject(InventoryStateService);
   posState = inject(PosStateService);
   notificationService = inject(NotificationService);
+  layoutService = inject(LayoutService);
   router: Router = inject(Router);
 
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;

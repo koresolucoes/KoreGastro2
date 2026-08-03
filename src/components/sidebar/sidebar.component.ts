@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
+import { LayoutService } from '../../services/layout.service';
 
 export interface NavLink {
   name: string;
@@ -30,6 +31,7 @@ export class SidebarComponent {
   operationalAuthService = inject(OperationalAuthService);
   demoService = inject(DemoService);
   unitContextService = inject(UnitContextService);
+  layoutService = inject(LayoutService);
   router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
