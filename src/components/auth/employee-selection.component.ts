@@ -12,7 +12,8 @@ import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { Router, RouterLink } from '@angular/router';
-import { Html5Qrcode } from 'html5-qrcode';
+// @ts-ignore
+import { Html5Qrcode } from 'html5-qrcode/cjs/html5-qrcode';
 
 @Component({
   selector: 'app-employee-selection',

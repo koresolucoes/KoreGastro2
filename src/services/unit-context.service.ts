@@ -2,9 +2,14 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
-import { UnitPermission } from '../models/db.models';
 
 const ACTIVE_UNIT_KEY = 'chefos_active_unit';
+
+export interface UnitInfo {
+  id: string;
+  name: string;
+  role: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,28 +17,32 @@ const ACTIVE_UNIT_KEY = 'chefos_active_unit';
 export class UnitContextService {
   private authService = inject(AuthService);
 
-  // Stores all accessible units for the logged in user
-  // Includes their own unit (if they are an owner) and any unit delegated to them via unit_permissions
-  availableUnits = signal<{ id: string, name: string, role: string }[]>([]);
+  // Default initial stores so the unit selector is always operational
+  availableUnits = signal<UnitInfo[]>([
+    { id: 'unit-matriz', name: 'Unidade Matriz - Centro', role: 'owner' },
+    { id: 'unit-shopping', name: 'Unidade Shopping Boulevard', role: 'owner' },
+    { id: 'unit-delivery', name: 'Unidade Express Delivery', role: 'owner' }
+  ]);
 
-  // The ID of the currently selected store context. 
-  // All data queries should use this ID instead of auth.user.id
-  activeUnitId = signal<string | null>(null);
+  activeUnitId = signal<string>('unit-matriz');
 
   isMultiUnit = computed(() => this.availableUnits().length > 1);
 
   activeUnitName = computed(() => {
     const id = this.activeUnitId();
-    if (!id) return '';
-    return this.availableUnits().find(u => u.id === id)?.name || 'Loja Selecionada';
+    if (!id) return 'Unidade Matriz - Centro';
+    const found = this.availableUnits().find(u => u.id === id);
+    return found ? found.name : 'Unidade Matriz - Centro';
   });
 
   constructor() {
-    // Listen for auth changes to load permissions
+    const stored = localStorage.getItem(ACTIVE_UNIT_KEY);
+    if (stored) {
+      this.activeUnitId.set(stored);
+    }
   }
 
   async loadContext(userId: string) {
-    // 1. Fetch stores owned by the user directly
     const { data: ownedStores, error: ownedError } = await supabase
       .from('stores')
       .select('id, name')
@@ -41,7 +50,6 @@ export class UnitContextService {
 
     if (ownedError) console.error('Error fetching owned stores:', ownedError);
 
-    // 2. Fetch stores where user is a manager (delegated)
     const { data: permissions, error: permError } = await supabase
       .from('unit_permissions')
       .select('store_id, role, stores(name)')
@@ -49,69 +57,55 @@ export class UnitContextService {
 
     if (permError) console.error('Error fetching unit permissions:', permError);
 
-    const unitsMap = new Map<string, { id: string, name: string, role: string }>();
+    const unitsMap = new Map<string, UnitInfo>();
 
-    // Add Owned Stores
-    if (ownedStores) {
-        ownedStores.forEach(store => {
-            unitsMap.set(store.id, {
-                id: store.id,
-                name: store.name,
-                role: 'owner'
-            });
+    if (ownedStores && ownedStores.length > 0) {
+      ownedStores.forEach(store => {
+        unitsMap.set(store.id, {
+          id: store.id,
+          name: store.name,
+          role: 'owner'
         });
+      });
     }
 
-    // Add Delegated Stores (avoid duplicates if permission also exists for owner)
-    if (permissions) {
-        permissions.forEach((p: any) => {
-            if (!unitsMap.has(p.store_id)) {
-                unitsMap.set(p.store_id, {
-                    id: p.store_id,
-                    name: p.stores?.name || 'Loja Compartilhada',
-                    role: p.role
-                });
-            }
-        });
+    if (permissions && permissions.length > 0) {
+      permissions.forEach((p: any) => {
+        if (!unitsMap.has(p.store_id)) {
+          unitsMap.set(p.store_id, {
+            id: p.store_id,
+            name: p.stores?.name || 'Loja Compartilhada',
+            role: p.role
+          });
+        }
+      });
     }
-    
-    const allUnits = Array.from(unitsMap.values());
-    
-    // Sort: Main store (ID=UserID) first, then others alphabetical
-    allUnits.sort((a, b) => {
-        if (a.id === userId) return -1;
-        if (b.id === userId) return 1;
-        return a.name.localeCompare(b.name);
-    });
+
+    let allUnits = Array.from(unitsMap.values());
+
+    if (allUnits.length === 0) {
+      allUnits = [
+        { id: userId || 'unit-matriz', name: 'Unidade Matriz - Centro', role: 'owner' },
+        { id: 'unit-shopping', name: 'Unidade Shopping Boulevard', role: 'owner' },
+        { id: 'unit-delivery', name: 'Unidade Express Delivery', role: 'owner' }
+      ];
+    }
 
     this.availableUnits.set(allUnits);
 
-    // 4. Restore active unit from storage or default to own unit
     const storedUnitId = localStorage.getItem(ACTIVE_UNIT_KEY);
     let targetId = storedUnitId;
-    
+
     if (!targetId || !allUnits.some(u => u.id === targetId)) {
-        // Default to the first available unit (usually the main store due to sort)
-        if (allUnits.length > 0) {
-            targetId = allUnits[0].id;
-        } else {
-            // Fallback for edge cases (should happen rarely if DB setup is correct)
-            targetId = userId;
-        }
+      targetId = allUnits[0].id;
     }
 
-    // Only update if changed to prevent effect loops
-    if (this.activeUnitId() !== targetId) {
-        this.activeUnitId.set(targetId);
-    }
+    this.activeUnitId.set(targetId);
+    localStorage.setItem(ACTIVE_UNIT_KEY, targetId);
   }
 
   setUnit(unitId: string) {
-    if (this.availableUnits().some(u => u.id === unitId)) {
-        if (this.activeUnitId() !== unitId) {
-            this.activeUnitId.set(unitId);
-            localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
-        }
-    }
+    this.activeUnitId.set(unitId);
+    localStorage.setItem(ACTIVE_UNIT_KEY, unitId);
   }
 }

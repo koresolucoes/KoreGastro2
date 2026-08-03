@@ -62,7 +62,7 @@ export class MultiUnitSettingsComponent implements OnInit {
         await this.unitContext.loadContext(currentUserId);
       }
     } else {
-      this.notificationService.show(`Erro ao criar unidade: ${res.error?.message || 'Falha na criação'}`, 'error');
+      this.notificationService.show(`Erro ao criar unidade: ${res.message || 'Falha na criação'}`, 'error');
     }
     this.isCreatingStore.set(false);
   }
@@ -89,7 +89,7 @@ export class MultiUnitSettingsComponent implements OnInit {
       this.selectedSourceStoreId.set('');
       await this.supabaseState.loadEssentialData();
     } else {
-      this.notificationService.show(`Erro ao clonar: ${res.error?.message || 'Falha ao duplicar dados'}`, 'error');
+      this.notificationService.show(`Erro ao clonar: ${res.message || 'Falha ao duplicar dados'}`, 'error');
     }
     this.isCloning.set(false);
   }

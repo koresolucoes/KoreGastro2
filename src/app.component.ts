@@ -14,12 +14,13 @@ import { DemoService } from './services/demo.service';
 import { TopNavComponent } from './components/top-nav/top-nav.component';
 import { SubscriptionComponent } from './components/subscription/subscription.component';
 
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [RouterOutlet, RouterLink, TopNavComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent, TimeClockReceiptModalComponent]
+  imports: [RouterOutlet, RouterLink, TopNavComponent, SidebarComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent, TimeClockReceiptModalComponent]
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);

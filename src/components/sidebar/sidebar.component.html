@@ -1,0 +1,85 @@
+<!-- src/components/sidebar/sidebar.component.html -->
+<aside class="flex flex-col h-full bg-surface-elevated border-r border-subtle transition-all duration-300 relative" [class.w-64]="!isCollapsed()" [class.w-20]="isCollapsed()">
+  
+  <!-- Logo -->
+  <div class="h-16 flex items-center px-4 border-b border-subtle shrink-0">
+    @if (!isCollapsed()) {
+      <div class="flex items-center gap-2 text-title w-full overflow-hidden whitespace-nowrap">
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl">restaurant_menu</span>
+        <span class="font-black text-xl tracking-tight">ChefOS</span>
+      </div>
+    } @else {
+      <div class="flex items-center justify-center w-full text-brand">
+         <span translate="no" class="notranslate material-symbols-outlined text-2xl">restaurant_menu</span>
+      </div>
+    }
+  </div>
+
+  <!-- Unit Selector -->
+  <div class="p-3 border-b border-subtle shrink-0 relative unit-selector">
+     <button (click)="toggleUnitSelector($event)" class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-surface/50 text-title transition-colors border border-subtle hover:border-strong">
+        <div class="flex items-center gap-2 overflow-hidden">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 animate-pulse"></div>
+            @if (!isCollapsed()) {
+              <span class="text-sm font-semibold truncate">{{ currentUnitName() || 'Selecione a loja' }}</span>
+            }
+        </div>
+        @if (!isCollapsed()) {
+          <span translate="no" class="notranslate material-symbols-outlined text-muted text-[18px]">unfold_more</span>
+        }
+     </button>
+
+      @if (isUnitSelectorOpen() && !isCollapsed()) {
+        <div class="absolute top-full left-3 right-3 mt-1 bg-surface-elevated border border-strong rounded-xl shadow-2xl z-50 overflow-hidden">
+           <div class="p-2.5 border-b border-subtle bg-surface/80 flex items-center justify-between">
+             <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Unidades & Lojas</p>
+             <span class="text-[10px] font-mono bg-brand/10 text-brand px-1.5 py-0.5 rounded font-bold">{{ availableUnits().length }}</span>
+           </div>
+           <div class="max-h-[220px] overflow-y-auto divide-y divide-subtle">
+             @for (unit of availableUnits(); track unit.id) {
+               <button (click)="switchUnit(unit.id, $event)" class="w-full text-left px-3.5 py-2.5 text-sm text-title hover:bg-surface flex items-center justify-between transition-colors">
+                 <div class="flex flex-col min-w-0 pr-2">
+                   <span class="font-semibold text-xs truncate">{{ unit.name }}</span>
+                   <span class="text-[9px] text-muted uppercase tracking-wider font-semibold">{{ unit.role === 'owner' ? 'Matriz' : 'Filial' }}</span>
+                 </div>
+                 @if (activeUnitId() === unit.id) {
+                   <span translate="no" class="notranslate material-symbols-outlined text-brand text-sm shrink-0">check_circle</span>
+                 }
+               </button>
+             }
+           </div>
+        </div>
+      }
+  </div>
+
+  <!-- Navigation Groups -->
+  <div class="flex-1 overflow-y-auto py-4 px-3 space-y-6 hide-scrollbar">
+    @for (group of navGroups(); track group.id) {
+      <div class="space-y-1">
+        @if (!isCollapsed()) {
+          <h4 class="text-[10px] font-bold text-muted uppercase tracking-[0.15em] px-3 mb-2">{{ group.name }}</h4>
+        }
+        <div class="space-y-1">
+          @for (link of group.children; track link.path) {
+            <a [routerLink]="link.path" routerLinkActive="bg-brand/10 text-brand font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-brand before:rounded-r-full" [routerLinkActiveOptions]="{exact: link.path === '/dashboard'}" class="relative flex items-center px-3 py-2 rounded-lg text-title/80 hover:bg-surface hover:text-title transition-all group overflow-hidden" [title]="isCollapsed() ? link.name : ''">
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px] shrink-0" [class.mr-3]="!isCollapsed()">{{ link.icon }}</span>
+              @if (!isCollapsed()) {
+                <span class="text-sm whitespace-nowrap">{{ link.name }}</span>
+              }
+            </a>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Collapse Toggle -->
+  <div class="p-3 border-t border-subtle shrink-0">
+     <button (click)="toggleSidebar()" class="w-full flex items-center p-2 rounded-lg text-muted hover:text-title hover:bg-surface/50 transition-colors" [class.justify-center]="isCollapsed()">
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">{{ isCollapsed() ? 'chevron_right' : 'arrow_back' }}</span>
+        @if (!isCollapsed()) {
+          <span class="ml-3 text-sm font-medium">Recolher</span>
+        }
+     </button>
+  </div>
+</aside>
