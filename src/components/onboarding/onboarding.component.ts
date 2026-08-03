@@ -54,31 +54,30 @@ export class OnboardingComponent {
 
   // Form Data Complex Object
   data = {
-    // Step 1: Company
+    // Step 1: Type
+    establishmentType: '',
+
+    // Step 2: Company
     companyName: '',
     cnpj: '',
     
-    // Step 2: Roles (Simplified to core operations)
-    hasWaiters: true,
-    hasKitchen: true,
-    hasDrivers: false,
-
-    // Step 3: Menu Core Structure
-    menuCategories: [
-        { name: 'Lanches', items: [{ name: 'X-Burguer', price: 25.00 }] },
-        { name: 'Bebidas', items: [{ name: 'Refrigerante', price: 6.00 }] }
-    ] as MenuCategory[],
-
-    // Step 4: Manager setup
+    // Step 3: Manager setup
     managerName: '',
     managerPin: ''
   };
 
+  establishmentTypes = [
+    { id: 'restaurant', name: 'Restaurante', icon: 'restaurant', desc: 'Mesas, comandas e cozinha' },
+    { id: 'fastfood', name: 'Fast Food', icon: 'fastfood', desc: 'Balcão, senhas e agilidade' },
+    { id: 'cafe', name: 'Cafeteria', icon: 'coffee', desc: 'Cafés, salgados e vitrine' },
+    { id: 'bar', name: 'Bar / Pub', icon: 'sports_bar', desc: 'Bebidas, porções e comandas' },
+    { id: 'pizzeria', name: 'Pizzaria', icon: 'local_pizza', desc: 'Pizzas, delivery e salão' }
+  ];
+
   steps = [
     { id: 'welcome', title: 'Boas-vindas' },
+    { id: 'type', title: 'Seu Negócio' },
     { id: 'company', title: 'Empresa' },
-    { id: 'roles', title: 'Operação' },
-    { id: 'menu', title: 'Cardápio Inicial' },
     { id: 'manager', title: 'Seu Acesso' },
     { id: 'finish', title: 'Configurando' }
   ];
@@ -96,10 +95,9 @@ export class OnboardingComponent {
   isStepValid(): boolean {
     switch (this.currentStep()) {
       case 0: return true;
-      case 1: return !!this.data.companyName;
-      case 2: return true; 
-      case 3: return this.data.menuCategories.length > 0;
-      case 4: return !!this.data.managerName && this.data.managerPin.length === 4;
+      case 1: return !!this.data.establishmentType;
+      case 2: return !!this.data.companyName;
+      case 3: return !!this.data.managerName && this.data.managerPin.length === 4;
       default: return false;
     }
   }
@@ -134,10 +132,72 @@ export class OnboardingComponent {
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(5); // Show loading screen
+    this.currentStep.set(4); // Show loading screen
     this.isProcessing.set(true);
 
     try {
+        // Auto Configure based on type
+        let stations = ['Cozinha'];
+        let categories = [{ name: 'Diversos', items: [{ name: 'Item Padrão', price: 10 }] }];
+        let hasWaiters = false;
+        let hasDrivers = false;
+        let tableCount = 10;
+        let hallName = 'Salão Principal';
+
+        switch (this.data.establishmentType) {
+            case 'restaurant':
+                stations = ['Cozinha Quente', 'Cozinha Fria', 'Bar'];
+                categories = [
+                    { name: 'Entradas', items: [{ name: 'Porção de Fritas', price: 25 }] },
+                    { name: 'Pratos Principais', items: [{ name: 'Filé à Parmegiana', price: 65 }] },
+                    { name: 'Bebidas', items: [{ name: 'Refrigerante Lata', price: 6 }] }
+                ];
+                hasWaiters = true;
+                tableCount = 20;
+                break;
+            case 'fastfood':
+                stations = ['Chapa', 'Fritadeira', 'Montagem'];
+                categories = [
+                    { name: 'Hambúrgueres', items: [{ name: 'X-Tudo', price: 30 }] },
+                    { name: 'Acompanhamentos', items: [{ name: 'Batata Frita', price: 15 }] },
+                    { name: 'Bebidas', items: [{ name: 'Refrigerante', price: 6 }] }
+                ];
+                hasWaiters = false;
+                tableCount = 5;
+                break;
+            case 'cafe':
+                stations = ['Cafeteira', 'Cozinha'];
+                categories = [
+                    { name: 'Cafés', items: [{ name: 'Espresso', price: 5 }] },
+                    { name: 'Salgados', items: [{ name: 'Coxinha', price: 8 }] },
+                    { name: 'Doces', items: [{ name: 'Fatia de Bolo', price: 12 }] }
+                ];
+                hasWaiters = false;
+                tableCount = 10;
+                break;
+            case 'bar':
+                stations = ['Bar', 'Cozinha'];
+                categories = [
+                    { name: 'Cervejas', items: [{ name: 'Cerveja 600ml', price: 14 }] },
+                    { name: 'Drinks', items: [{ name: 'Caipirinha', price: 20 }] },
+                    { name: 'Porções', items: [{ name: 'Frango a Passarinho', price: 45 }] }
+                ];
+                hasWaiters = true;
+                tableCount = 15;
+                break;
+            case 'pizzeria':
+                stations = ['Pizzaiolo', 'Forno'];
+                categories = [
+                    { name: 'Pizzas Salgadas', items: [{ name: 'Pizza Calabresa', price: 50 }] },
+                    { name: 'Pizzas Doces', items: [{ name: 'Pizza Brigadeiro', price: 55 }] },
+                    { name: 'Bebidas', items: [{ name: 'Refrigerante 2L', price: 12 }] }
+                ];
+                hasWaiters = true;
+                hasDrivers = true;
+                tableCount = 12;
+                break;
+        }
+
         // 1. Company Profile
         this.loadingStatus.set('Configurando perfil da empresa...');
         await this.settingsData.updateCompanyProfile({
@@ -148,22 +208,26 @@ export class OnboardingComponent {
         // 2. Roles
         this.loadingStatus.set('Criando cargos e permissões...');
         const rolesToCreate = ['Caixa']; // Always create Caixa
-        if (this.data.hasKitchen) rolesToCreate.push('Cozinha');
-        if (this.data.hasWaiters) rolesToCreate.push('Garçom');
-        if (this.data.hasDrivers) rolesToCreate.push('Entregador');
+        if (stations.some(s => s.toLowerCase().includes('cozinha') || s.toLowerCase().includes('chapa') || s.toLowerCase().includes('forno') || s.toLowerCase().includes('pizza'))) rolesToCreate.push('Cozinha');
+        if (hasWaiters) rolesToCreate.push('Garçom');
+        if (hasDrivers) rolesToCreate.push('Entregador');
 
         for (const roleName of rolesToCreate) {
              await this.settingsData.addRole(roleName);
         }
 
         // 3. Defaults: Stations & Hall
-        this.loadingStatus.set('Configurando ambiente padrão...');
-        const { data: station } = await this.settingsData.addStation('Cozinha') as any;
-        const defaultStationId = station?.id || null;
+        this.loadingStatus.set('Configurando estações e ambiente...');
+        
+        let defaultStationId = null;
+        for (const stationName of stations) {
+             const { data: station } = await this.settingsData.addStation(stationName) as any;
+             if (!defaultStationId && station) defaultStationId = station.id;
+        }
 
-        const { data: hall } = await this.posData.addHall('Salão Principal') as any;
+        const { data: hall } = await this.posData.addHall(hallName) as any;
         if (hall) {
-            const tables = Array.from({ length: 12 }, (_, i) => ({
+            const tables = Array.from({ length: tableCount }, (_, i) => ({
                 id: `temp-${uuidv4()}`,
                 number: i + 1,
                 hall_id: hall.id,
@@ -188,7 +252,7 @@ export class OnboardingComponent {
         }).select().single();
 
         let displayOrderCat = 0;
-        for (const cat of this.data.menuCategories) {
+        for (const cat of categories) {
             if (!cat.name) continue;
             const { data: categoryData } = await this.recipeData.addRecipeCategory(cat.name) as any;
             
@@ -282,7 +346,7 @@ export class OnboardingComponent {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(4); 
+        this.currentStep.set(3); 
     } finally {
         this.isProcessing.set(false);
     }
