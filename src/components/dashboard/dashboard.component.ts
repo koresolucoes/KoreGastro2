@@ -32,6 +32,9 @@ export interface LaunchpadCategory {
   id: string;
   title: string;
   icon: string;
+  iconBgClass: string;
+  textColorClass: string;
+  description: string;
   items: LaunchpadItem[];
 }
 
@@ -110,57 +113,180 @@ export class DashboardComponent implements OnInit {
   private demoService = inject(DemoService);
   private router = inject(Router);
   
+  userName = computed(() => {
+    const emp = this.operationalAuthService.activeEmployee();
+    if (emp?.name) {
+      return emp.name.split(' ')[0];
+    }
+    return 'Luciano';
+  });
+
+  greeting = computed(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  });
+
+  occupiedTablesCount = computed(() => {
+    const tables = this.posState.tables();
+    if (tables.length === 0) return 0;
+
+    const openDineInTableNumbers = new Set(
+      this.posState.openOrders()
+        .filter(o => o.table_number && (o.order_type === 'Dine-in' || !o.order_type))
+        .map(o => o.table_number)
+    );
+
+    return tables.filter(t => 
+      t.status === 'OCUPADA' || t.status === 'PAGANDO' || 
+      (openDineInTableNumbers.has(t.number) && t.status !== 'LIVRE')
+    ).length;
+  });
+
+  totalTablesCount = computed(() => {
+    return this.posState.tables().length;
+  });
+
+  delayedKitchenOrders = computed(() => {
+    const now = Date.now();
+    return this.posState.orders().filter(o => {
+      if (o.status !== 'OPEN') return false;
+      const hasActiveKitchenItems = o.order_items?.some(item => 
+        (item.status === 'PENDENTE' || item.status === 'EM_PREPARO')
+      );
+      if (!hasActiveKitchenItems) return false;
+      const startTime = o.timestamp ? new Date(o.timestamp).getTime() : now;
+      return (now - startTime) > 15 * 60 * 1000;
+    }).length;
+  });
+
+  activeDeliveriesCount = computed(() => {
+    return this.posState.orders().filter(o => (o.order_type === 'iFood-Delivery' || o.order_type === 'External-Delivery') && o.status === 'OPEN').length;
+  });
+
+  lowStockCount = computed(() => {
+    return this.inventoryState.ingredients().filter(i => i.stock < i.min_stock).length;
+  });
+
   private allCategories: LaunchpadCategory[] = [
     {
       id: 'vendas',
       title: 'Vendas & Atendimento',
       icon: 'point_of_sale',
+      iconBgClass: 'bg-rose-500/10 text-rose-500',
+      textColorClass: 'text-rose-500',
+      description: 'Gerencie vendas, pedidos, clientes e reservas.',
       items: [
-        { name: 'PDV', path: '/pos', icon: 'receipt_long', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Realize vendas, gerencie mesas e comandas.' },
-        { name: 'Delivery', path: '/delivery', icon: 'local_shipping', color: 'bg-rose-500 shadow-rose-500/20', description: 'Gerencie entregadores e status de delivery.' },
-        { name: 'Reservas', path: '/reservations', icon: 'calendar_month', color: 'bg-teal-500 shadow-teal-500/20', description: 'Gerencie reservas de mesas e eventos.' },
-        { name: 'Clientes', path: '/customers', icon: 'group', color: 'bg-indigo-500 shadow-indigo-500/20', description: 'Cadastros e histórico de clientes.' },
-        { name: 'Caixa', path: '/cashier', icon: 'point_of_sale', color: 'bg-blue-500 shadow-blue-500/20', description: 'Controle de fluxo de caixa e fechamentos.' },
+        { name: 'PDV', path: '/pos', icon: 'point_of_sale', color: 'bg-rose-500 shadow-rose-500/20', description: 'Realize vendas e gerencie atendimento.' },
+        { name: 'Salão & Mesas', path: '/pos', icon: 'table_restaurant', color: 'bg-pink-500 shadow-pink-500/20', description: 'Gestão de mesas e comandas.' },
+        { name: 'Clientes', path: '/customers', icon: 'group', color: 'bg-purple-500 shadow-purple-500/20', description: 'Cadastros e histórico de clientes.' },
+        { name: 'Reservas', path: '/reservations', icon: 'calendar_month', color: 'bg-rose-600 shadow-rose-600/20', description: 'Gerencie reservas de mesas.' },
+        { name: 'Caixa', path: '/cashier', icon: 'account_balance_wallet', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Controle de fluxo de caixa.' },
+      ]
+    },
+    {
+      id: 'delivery',
+      title: 'Delivery',
+      icon: 'local_shipping',
+      iconBgClass: 'bg-emerald-500/10 text-emerald-500',
+      textColorClass: 'text-emerald-500',
+      description: 'Gerencie delivery, integrações, cardápios e entregas.',
+      items: [
+        { name: 'Entregas', path: '/delivery', icon: 'local_shipping', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Painel geral de entregas.' },
+        { name: 'iFood KDS', path: '/ifood-kds', icon: 'two_wheeler', color: 'bg-red-500 shadow-red-500/20', description: 'Integração e pedidos iFood.' },
+        { name: 'Cardápio iFood', path: '/ifood-menu', icon: 'menu_book', color: 'bg-emerald-600 shadow-emerald-600/20', description: 'Gestão de cardápio iFood.' },
+        { name: 'Loja iFood', path: '/ifood-store-manager', icon: 'store', color: 'bg-teal-500 shadow-teal-500/20', description: 'Status e horários da loja.' },
       ]
     },
     {
       id: 'producao',
       title: 'Produção & Estoque',
-      icon: 'kitchen',
+      icon: 'restaurant',
+      iconBgClass: 'bg-amber-500/10 text-amber-500',
+      textColorClass: 'text-amber-500',
+      description: 'Controle produção, estoque, fichas técnicas e insumos.',
       items: [
         { name: 'Cozinha (KDS)', path: '/kds', icon: 'soup_kitchen', color: 'bg-orange-500 shadow-orange-500/20', description: 'Gerencie o preparo dos pedidos.' },
-        { name: 'Produtos', path: '/menu', icon: 'restaurant_menu', color: 'bg-amber-600 shadow-amber-600/20', description: 'Gerencie categorias e cardápio.' },
-        { name: 'Estoque', path: '/inventory', icon: 'inventory_2', color: 'bg-purple-500 shadow-purple-500/20', description: 'Controle de insumos e lotes.' },
-        { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', color: 'bg-lime-500 shadow-lime-500/20', description: 'Organização de ingredientes.' },
-        { name: 'Compras', path: '/purchasing', icon: 'shopping_cart', color: 'bg-cyan-600 shadow-cyan-600/20', description: 'Ordem de compras e cotações.' },
+        { name: 'Cardápio', path: '/menu', icon: 'restaurant_menu', color: 'bg-amber-600 shadow-amber-600/20', description: 'Gerencie produtos e preços.' },
+        { name: 'Estoque', path: '/inventory', icon: 'inventory_2', color: 'bg-yellow-600 shadow-yellow-600/20', description: 'Controle de insumos e saldos.' },
+        { name: 'Mise en Place', path: '/mise-en-place', icon: 'checklist', color: 'bg-lime-600 shadow-lime-600/20', description: 'Pré-preparo e porcionamento.' },
+        { name: 'Fichas Técnicas', path: '/technical-sheets', icon: 'menu_book', color: 'bg-orange-600 shadow-orange-600/20', description: 'Fichas técnicas e custos.' },
+        { name: 'Compras', path: '/purchasing', icon: 'shopping_cart', color: 'bg-amber-500 shadow-amber-500/20', description: 'Ordem de compras e cotações.' },
+        { name: 'Fornecedores', path: '/suppliers', icon: 'local_shipping', color: 'bg-amber-700 shadow-amber-700/20', description: 'Cadastro de fornecedores.' },
+      ]
+    },
+    {
+      id: 'rotina',
+      title: 'Rotina & Qualidade',
+      icon: 'fact_check',
+      iconBgClass: 'bg-purple-500/10 text-purple-500',
+      textColorClass: 'text-purple-500',
+      description: 'Padronize processos, checklists e qualidade.',
+      items: [
+        { name: 'Checklists', path: '/checklists', icon: 'fact_check', color: 'bg-purple-500 shadow-purple-500/20', description: 'Checklists de abertura e rotinas.' },
+        { name: 'Temperaturas', path: '/temperatures', icon: 'thermostat', color: 'bg-indigo-500 shadow-indigo-500/20', description: 'Controle térmico de geladeiras.' },
+        { name: 'Requisições', path: '/requisitions', icon: 'assignment', color: 'bg-violet-500 shadow-violet-500/20', description: 'Requisições internas de estoque.' },
       ]
     },
     {
       id: 'gestao',
       title: 'Gestão & Equipe',
-      icon: 'insights',
+      icon: 'groups',
+      iconBgClass: 'bg-blue-500/10 text-blue-500',
+      textColorClass: 'text-blue-500',
+      description: 'Gestão de equipe, escalas, permissões e desempenho.',
       items: [
-        { name: 'Desempenho', path: '/performance', icon: 'trending_up', color: 'bg-emerald-600 shadow-emerald-600/20', description: 'Indicadores financeiros e crescimento.' },
-        { name: 'Relatórios', path: '/reports', icon: 'analytics', color: 'bg-slate-500 shadow-slate-500/20', description: 'Análises detalhadas e exportação de dados.' },
-        { name: 'Funcionários', path: '/employees', icon: 'badge', color: 'bg-amber-500 shadow-amber-500/20', description: 'Gestão de equipe e permissões.' },
-        { name: 'Escalas', path: '/schedules', icon: 'calendar_view_week', color: 'bg-violet-500 shadow-violet-500/20', description: 'Visualize e gerencie as escalas.' },
-        { name: 'Ponto', path: '/time-clock', icon: 'schedule', color: 'bg-pink-500 shadow-pink-500/20', description: 'Registro e gestão de jornada.' },
+        { name: 'Funcionários', path: '/employees', icon: 'badge', color: 'bg-blue-500 shadow-blue-500/20', description: 'Gestão de equipe e permissões.' },
+        { name: 'Escalas', path: '/schedules', icon: 'calendar_view_week', color: 'bg-indigo-600 shadow-indigo-600/20', description: 'Visualize e gerencie as escalas.' },
+        { name: 'Ponto', path: '/time-clock', icon: 'schedule', color: 'bg-sky-500 shadow-sky-500/20', description: 'Registro e gestão de jornada.' },
+        { name: 'Folha', path: '/payroll', icon: 'payments', color: 'bg-blue-600 shadow-blue-600/20', description: 'Cálculo de folha e holerites.' },
+        { name: 'Ausências & Férias', path: '/leave-management', icon: 'event_available', color: 'bg-cyan-600 shadow-cyan-600/20', description: 'Gestão de férias e atestados.' },
+      ]
+    },
+    {
+      id: 'financeiro',
+      title: 'Financeiro',
+      icon: 'attach_money',
+      iconBgClass: 'bg-emerald-500/10 text-emerald-500',
+      textColorClass: 'text-emerald-500',
+      description: 'Contas, fluxo de caixa, DRE, pagamentos e recebimentos.',
+      items: [
+        { name: 'Desempenho', path: '/performance', icon: 'trending_up', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Indicadores financeiros e DRE.' },
+        { name: 'Caixa', path: '/cashier', icon: 'account_balance_wallet', color: 'bg-green-600 shadow-green-600/20', description: 'Lançamentos e conciliação.' },
+        { name: 'Assinatura', path: '/subscription', icon: 'card_membership', color: 'bg-teal-600 shadow-teal-600/20', description: 'Plano e faturamento ChefOS.' },
+      ]
+    },
+    {
+      id: 'relatorios',
+      title: 'Relatórios & BI',
+      icon: 'insights',
+      iconBgClass: 'bg-violet-500/10 text-violet-500',
+      textColorClass: 'text-violet-500',
+      description: 'Relatórios analíticos, indicadores e inteligência de dados.',
+      items: [
+        { name: 'Relatórios', path: '/reports', icon: 'analytics', color: 'bg-violet-500 shadow-violet-500/20', description: 'Análises detalhadas e relatórios.' },
+        { name: 'Desempenho BI', path: '/performance', icon: 'insights', color: 'bg-purple-600 shadow-purple-600/20', description: 'Inteligência de mercado e margens.' },
       ]
     },
     {
       id: 'sistema',
       title: 'Sistema',
       icon: 'settings',
+      iconBgClass: 'bg-slate-500/10 text-slate-500',
+      textColorClass: 'text-slate-500',
+      description: 'Configurações do sistema, integrações e preferências.',
       items: [
-        { name: 'Configurações', path: '/settings', icon: 'settings', color: 'bg-gray-500 shadow-gray-500/20', description: 'Ajustes do sistema.' },
-        { name: 'Tutoriais', path: '/tutorials', icon: 'play_circle', color: 'bg-indigo-400 shadow-indigo-400/20', description: 'Aprenda a utilizar os recursos.' },
+        { name: 'Configurações', path: '/settings', icon: 'settings', color: 'bg-slate-600 shadow-slate-600/20', description: 'Ajustes gerais do sistema.' },
+        { name: 'Tutoriais', path: '/tutorials', icon: 'play_circle', color: 'bg-slate-500 shadow-slate-500/20', description: 'Central de ajuda e vídeos.' },
+        { name: 'WhatsApp', path: '/whatsapp-chats', icon: 'chat', color: 'bg-emerald-500 shadow-emerald-500/20', description: 'Atendimento via WhatsApp.' },
       ]
     }
   ];
 
   visibleCategories = computed(() => {
     const isDemo = this.demoService.isDemoMode();
-    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/mise-en-place', '/checklists', '/temperatures', '/menu', '/customers', '/technical-sheets', '/purchasing', '/suppliers', '/employees', '/leave-management', '/my-leave', '/payroll', '/whatsapp-chats'];
+    const demoAllowedPaths = ['/dashboard', '/pos', '/cashier', '/kds', '/inventory', '/requisitions', '/mise-en-place', '/checklists', '/temperatures', '/menu', '/customers', '/technical-sheets', '/purchasing', '/suppliers', '/employees', '/leave-management', '/my-leave', '/payroll', '/whatsapp-chats', '/reports', '/performance', '/schedules', '/time-clock', '/reservations', '/settings', '/tutorials', '/subscription', '/ifood-kds', '/ifood-menu', '/ifood-store-manager', '/delivery'];
     
     return this.allCategories.map(cat => ({
       ...cat,
@@ -460,10 +586,9 @@ export class DashboardComponent implements OnInit {
   openOrdersCount = computed(() => this.posState.orders().filter(o => o.status === 'OPEN').length);
 
   occupancyRate = computed(() => {
-    const allTables = this.posState.tables();
-    if (allTables.length === 0) return 0;
-    const occupiedTablesCount = new Set(this.posState.openOrders().filter(o => o.table_number).map(o => o.table_number)).size;
-    return occupiedTablesCount / allTables.length;
+    const total = this.totalTablesCount();
+    if (total === 0) return 0;
+    return this.occupiedTablesCount() / total;
   });
 
   averageTurnoverTime = computed(() => {

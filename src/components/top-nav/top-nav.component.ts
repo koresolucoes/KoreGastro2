@@ -9,6 +9,7 @@ import { UnitContextService } from '../../services/unit-context.service';
 import { RecipeStateService } from '../../services/recipe-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { PosStateService } from '../../services/pos-state.service';
+import { NotificationService, SystemNotification, NotificationFilter, NotificationType } from '../../services/notification.service';
 
 export interface SearchPageItem {
   name: string;
@@ -33,6 +34,7 @@ export class TopNavComponent {
   recipeState = inject(RecipeStateService);
   inventoryState = inject(InventoryStateService);
   posState = inject(PosStateService);
+  notificationService = inject(NotificationService);
   router: Router = inject(Router);
 
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
@@ -50,6 +52,12 @@ export class TopNavComponent {
   openDropdown = signal<string | null>(null);
   isSearchOpen = signal(false);
   searchQuery = signal('');
+
+  // Notifications signals & computed getters
+  unreadCount = this.notificationService.unreadCount;
+  notifications = this.notificationService.filteredNotifications;
+  activeFilter = this.notificationService.activeFilter;
+  soundEnabled = this.notificationService.soundEnabled;
 
   systemPages: SearchPageItem[] = [
     { name: 'Visão Geral & Dashboard', path: '/dashboard', icon: 'dashboard', category: 'Painel' },
@@ -117,7 +125,7 @@ export class TopNavComponent {
       .slice(0, 4)
       .map(i => ({
         name: i.name,
-        detail: `Insumo - Estoque: ${i.current_stock || 0} ${i.unit || 'un'}`,
+        detail: `Insumo - Estoque: ${(i as any).current_stock ?? (i as any).stock ?? 0} ${i.unit || 'un'}`,
         path: '/inventory',
         icon: 'inventory_2'
       }));
@@ -130,24 +138,39 @@ export class TopNavComponent {
     if (!q) return [];
 
     const tables = (this.posState.tables() || [])
-      .filter(t => `mesa ${t.table_number}`.toLowerCase().includes(q) || t.table_number.toString().includes(q))
+      .filter(t => {
+        const num = (t as any).number ?? (t as any).table_number ?? '';
+        return `mesa ${num}`.toLowerCase().includes(q) || num.toString().includes(q);
+      })
       .slice(0, 3)
-      .map(t => ({
-        name: `Mesa ${t.table_number}`,
-        detail: `Status: ${t.status === 'OCCUPIED' ? 'Ocupada' : 'Livre'}`,
-        path: '/pos',
-        icon: 'table_restaurant'
-      }));
+      .map(t => {
+        const num = (t as any).number ?? (t as any).table_number ?? '';
+        const isOccupied = (t as any).status === 'OCCUPIED' || (t as any).status === 'occupied';
+        return {
+          name: `Mesa ${num}`,
+          detail: `Status: ${isOccupied ? 'Ocupada' : 'Livre'}`,
+          path: '/pos',
+          icon: 'table_restaurant'
+        };
+      });
 
     const orders = (this.posState.orders() || [])
-      .filter(o => `comanda ${o.order_number}`.toLowerCase().includes(q) || o.order_number?.toString().includes(q) || o.customer_name?.toLowerCase().includes(q))
+      .filter(o => {
+        const num = (o as any).order_number ?? (o as any).number ?? o.id ?? '';
+        const customer = (o as any).customer_name ?? (o as any).customer_info?.name ?? '';
+        return `comanda ${num}`.toLowerCase().includes(q) || num.toString().includes(q) || customer.toLowerCase().includes(q);
+      })
       .slice(0, 3)
-      .map(o => ({
-        name: `Comanda / Pedido #${o.order_number}`,
-        detail: o.customer_name ? `Cliente: ${o.customer_name}` : 'Atendimento Ativo',
-        path: '/pos',
-        icon: 'receipt'
-      }));
+      .map(o => {
+        const num = (o as any).order_number ?? (o as any).number ?? o.id ?? '';
+        const customer = (o as any).customer_name ?? (o as any).customer_info?.name ?? '';
+        return {
+          name: `Comanda / Pedido #${num}`,
+          detail: customer ? `Cliente: ${customer}` : 'Atendimento Ativo',
+          path: '/pos',
+          icon: 'receipt'
+        };
+      });
 
     return [...tables, ...orders];
   });
@@ -249,5 +272,65 @@ export class TopNavComponent {
   async handleShiftAction() {
     this.handleLinkClick();
     await this.operationalAuthService.handleShiftAction();
+  }
+
+  handleNotificationAction(notif: SystemNotification, event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.markAsRead(notif.id);
+    if (notif.actionUrl) {
+      this.router.navigate([notif.actionUrl]);
+      this.openDropdown.set(null);
+    }
+  }
+
+  setNotificationFilter(filter: NotificationFilter, event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.setFilter(filter);
+  }
+
+  toggleNotificationSound(event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.toggleSound();
+  }
+
+  markAllNotificationsAsRead(event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.markAllAsRead();
+  }
+
+  clearAllNotifications(event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.clearAll();
+  }
+
+  simulateNotification(category?: NotificationType, event?: Event) {
+    if (event) event.stopPropagation();
+    this.notificationService.simulateNotification(category);
+  }
+
+  getNotificationIcon(type: NotificationType): string {
+    switch (type) {
+      case 'waiter': return 'notifications_active';
+      case 'ifood': return 'takeout_dining';
+      case 'kds': return 'soup_kitchen';
+      case 'inventory': return 'inventory_2';
+      case 'rh': return 'badge';
+      case 'whatsapp': return 'chat';
+      case 'payment': return 'payments';
+      default: return 'info';
+    }
+  }
+
+  getNotificationBadgeClass(type: NotificationType, severity: string): string {
+    if (severity === 'error') return 'bg-danger/10 text-danger border-danger/20';
+    if (severity === 'warning') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+    if (type === 'ifood') return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+    if (type === 'whatsapp') return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    if (type === 'waiter') return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+    return 'bg-brand/10 text-brand border-brand/20';
+  }
+
+  getTimeAgo(date: Date): string {
+    return this.notificationService.getTimeAgo(date);
   }
 }

@@ -47,11 +47,199 @@
         </span>
     </button>
 
-    <!-- Notifications -->
-    <button class="relative text-muted hover:text-title p-2 rounded-full hover:bg-surface transition-colors focus:outline-none">
-      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">notifications</span>
-      <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-danger rounded-full ring-2 ring-surface-elevated"></span>
-    </button>
+    <!-- Notifications Center Dropdown -->
+    <div class="relative top-dropdown">
+      <button 
+        (click)="toggleDropdown('notifications', $event)" 
+        class="relative text-muted hover:text-title p-2 rounded-full hover:bg-surface transition-colors focus:outline-none"
+        title="Central de Notificações"
+      >
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">notifications</span>
+        @if (unreadCount() > 0) {
+          <span class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-danger text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-surface-elevated animate-pulse">
+            {{ unreadCount() > 99 ? '99+' : unreadCount() }}
+          </span>
+        }
+      </button>
+
+      @if (openDropdown() === 'notifications') {
+        <div class="absolute right-0 mt-2 w-80 sm:w-[420px] rounded-2xl shadow-2xl bg-surface-elevated border border-strong z-50 animate-in slide-in-from-top-2 overflow-hidden flex flex-col max-h-[85vh]">
+          
+          <!-- Header -->
+          <div class="px-4 py-3 border-b border-subtle bg-surface/60 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+              <span translate="no" class="notranslate material-symbols-outlined text-brand text-xl">notifications_active</span>
+              <div>
+                <h3 class="text-xs font-black text-title uppercase tracking-wider">Central de Notificações</h3>
+                <p class="text-[10px] text-muted">{{ unreadCount() }} não lidas no momento</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button 
+                (click)="toggleNotificationSound($event)" 
+                class="p-1.5 text-muted hover:text-title rounded-lg hover:bg-surface transition-colors" 
+                [title]="soundEnabled() ? 'Mutear Sons de Notificação' : 'Ativar Sons de Notificação'"
+              >
+                <span translate="no" class="notranslate material-symbols-outlined text-base">
+                  {{ soundEnabled() ? 'volume_up' : 'volume_off' }}
+                </span>
+              </button>
+              
+              <button 
+                (click)="markAllNotificationsAsRead($event)" 
+                class="p-1.5 text-muted hover:text-brand rounded-lg hover:bg-surface transition-colors" 
+                title="Marcar todas como lidas"
+              >
+                <span translate="no" class="notranslate material-symbols-outlined text-base">done_all</span>
+              </button>
+
+              <button 
+                (click)="clearAllNotifications($event)" 
+                class="p-1.5 text-muted hover:text-danger rounded-lg hover:bg-surface transition-colors" 
+                title="Limpar Notificações"
+              >
+                <span translate="no" class="notranslate material-symbols-outlined text-base">delete_sweep</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div class="px-3 py-2 border-b border-subtle bg-surface/30 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            <button 
+              (click)="setNotificationFilter('all', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'all' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              Todas ({{ notificationService.systemNotifications().length }})
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('unread', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 flex items-center gap-1"
+              [class]="activeFilter() === 'unread' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              Não lidas
+              @if (unreadCount() > 0) {
+                <span class="w-2 h-2 rounded-full bg-danger"></span>
+              }
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('waiter', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'waiter' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              Salão
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('ifood', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'ifood' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              iFood
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('inventory', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'inventory' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              Estoque
+            </button>
+          </div>
+
+          <!-- Notification List -->
+          <div class="divide-y divide-subtle overflow-y-auto max-h-[380px] p-1 space-y-1 custom-scrollbar">
+            @for (notif of notifications(); track notif.id) {
+              <div 
+                (click)="handleNotificationAction(notif, $event)"
+                class="p-3 rounded-xl hover:bg-surface cursor-pointer transition-all border border-transparent hover:border-subtle group relative"
+                [class.bg-brand/5]="!notif.read"
+              >
+                <div class="flex items-start gap-3">
+                  <!-- Category Icon -->
+                  <div [class]="'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-subtle ' + getNotificationBadgeClass(notif.type, notif.severity)">
+                    <span translate="no" class="notranslate material-symbols-outlined text-[18px]">
+                      {{ getNotificationIcon(notif.type) }}
+                    </span>
+                  </div>
+
+                  <!-- Details -->
+                  <div class="flex-1 min-w-0 pr-6">
+                    <div class="flex items-center justify-between gap-2 mb-0.5">
+                      <h4 class="text-xs font-bold text-title truncate group-hover:text-brand transition-colors flex items-center gap-1.5">
+                        {{ notif.title }}
+                        @if (!notif.read) {
+                          <span class="w-2 h-2 rounded-full bg-brand shrink-0"></span>
+                        }
+                      </h4>
+                      <span class="text-[10px] text-muted font-mono shrink-0">{{ getTimeAgo(notif.timestamp) }}</span>
+                    </div>
+
+                    <p class="text-[11px] text-muted line-clamp-2 leading-snug font-normal">
+                      {{ notif.message }}
+                    </p>
+
+                    @if (notif.actionLabel) {
+                      <div class="mt-2 flex items-center gap-1 text-[10px] font-bold text-brand group-hover:underline">
+                        <span>{{ notif.actionLabel }}</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-[12px]">arrow_forward</span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Single Dismiss Button -->
+                  <button 
+                    (click)="notificationService.removeNotification(notif.id); $event.stopPropagation()"
+                    class="absolute top-2 right-2 p-1 text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-surface-elevated"
+                    title="Remover"
+                  >
+                    <span translate="no" class="notranslate material-symbols-outlined text-sm">close</span>
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              <div class="py-10 px-4 text-center text-muted space-y-2">
+                <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted/40">notifications_off</span>
+                <p class="text-xs font-bold text-title">Nenhuma notificação encontrada</p>
+                <p class="text-[11px] text-muted">Ações operacionais no PDV, iFood ou Estoque gerarão alertas aqui.</p>
+              </div>
+            }
+          </div>
+
+          <!-- Footer with Live Test Simulation -->
+          <div class="px-3 py-2.5 border-t border-subtle bg-surface/80 shrink-0">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-bold uppercase text-muted tracking-wider">⚡ Testar Alertas em Tempo Real</span>
+              <span class="text-[10px] text-brand font-bold">ChefOS Live Sync</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1">
+              <button 
+                (click)="simulateNotification('waiter', $event)"
+                class="px-1.5 py-1 bg-surface border border-subtle hover:border-strong rounded-md text-[9px] font-bold text-title text-center transition-colors truncate"
+              >
+                🔔 Garçom
+              </button>
+              <button 
+                (click)="simulateNotification('ifood', $event)"
+                class="px-1.5 py-1 bg-surface border border-subtle hover:border-strong rounded-md text-[9px] font-bold text-title text-center transition-colors truncate"
+              >
+                🛵 iFood
+              </button>
+              <button 
+                (click)="simulateNotification('inventory', $event)"
+                class="px-1.5 py-1 bg-surface border border-subtle hover:border-strong rounded-md text-[9px] font-bold text-title text-center transition-colors truncate"
+              >
+                📦 Estoque
+              </button>
+            </div>
+          </div>
+
+        </div>
+      }
+    </div>
 
     <!-- Profile -->
     <div class="relative ml-1 top-dropdown">

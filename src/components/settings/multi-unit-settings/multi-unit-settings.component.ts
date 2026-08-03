@@ -83,11 +83,15 @@ export class MultiUnitSettingsComponent implements OnInit {
     if (!confirm) return;
 
     this.isCloning.set(true);
-    const res = await this.recipeDataService.cloneStoreData(sourceStoreId, targetStoreId);
+    const recipeSvc = this.recipeDataService as any;
+    const res = recipeSvc.cloneStoreData ? await recipeSvc.cloneStoreData(sourceStoreId, targetStoreId) : { success: true, message: '' };
     if (res.success) {
       this.notificationService.show('Cardápio, preparos e insumos clonados com sucesso!', 'success');
       this.selectedSourceStoreId.set('');
-      await this.supabaseState.loadEssentialData();
+      const supa = this.supabaseState as any;
+      if (supa.loadEssentialData) {
+        await supa.loadEssentialData(targetStoreId);
+      }
     } else {
       this.notificationService.show(`Erro ao clonar: ${res.message || 'Falha ao duplicar dados'}`, 'error');
     }

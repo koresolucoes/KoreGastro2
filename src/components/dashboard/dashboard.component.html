@@ -1,530 +1,650 @@
-
-<div class="container mx-auto h-full flex flex-col animate-in fade-in duration-500 max-w-7xl">
-  <!-- Header & Filters Modernized -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 no-print">
-    <div class="relative">
-      <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-brand rounded-full blur-[2px] opacity-80 hidden md:block"></div>
-      <h1 class="text-5xl md:text-6xl text-title title-display tracking-tighter leading-none mb-2">Painel de <span class="text-brand">Controle</span></h1>
-      <p class="text-muted text-sm md:text-base font-bold uppercase tracking-[0.2em] opacity-60">Inteligência Operacional em Tempo Real</p>
+<div class="container mx-auto h-full flex flex-col animate-in fade-in duration-500 max-w-7xl pb-16">
+  
+  <!-- 1. Header & Quick Actions -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 no-print">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-extrabold text-title tracking-tight flex items-center gap-2">
+        {{ greeting() }}, {{ userName() }}! <span class="text-2xl animate-bounce">👋</span>
+      </h1>
+      <p class="text-muted text-sm mt-1 font-medium opacity-80">Aqui está o resumo da sua operação hoje.</p>
     </div>
     
-    <div class="flex flex-wrap items-center gap-4 bg-surface-elevated/30 p-2 rounded-2xl border border-subtle backdrop-blur-md shadow-lg">
-      <div class="flex space-x-1 bg-surface/50 p-1 rounded-xl border border-strong shadow-inner">
-        <button (click)="setPeriod('day')" class="px-5 py-2 text-[10px] uppercase font-black tracking-widest rounded-lg transition-all" [class]="period() === 'day' ? 'bg-brand text-white shadow-lg' : 'text-muted hover:text-title hover:bg-surface-elevated'">Hoje</button>
-        <button (click)="setPeriod('week')" class="px-5 py-2 text-[10px] uppercase font-black tracking-widest rounded-lg transition-all" [class]="period() === 'week' ? 'bg-brand text-white shadow-lg' : 'text-muted hover:text-title hover:bg-surface-elevated'">Semana</button>
-        <button (click)="setPeriod('month')" class="px-5 py-2 text-[10px] uppercase font-black tracking-widest rounded-lg transition-all" [class]="period() === 'month' ? 'bg-brand text-white shadow-lg' : 'text-muted hover:text-title hover:bg-surface-elevated'">Mês</button>
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Period Selector -->
+      <div class="flex space-x-1 bg-surface-elevated p-1 rounded-2xl border border-subtle shadow-sm">
+        <button (click)="setPeriod('day')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'day' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Hoje</button>
+        <button (click)="setPeriod('week')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'week' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Semana</button>
+        <button (click)="setPeriod('month')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'month' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Mês</button>
       </div>
-      
+
+      <!-- Control Panel / Edit Layout Button -->
       <button 
         (click)="toggleEditMode()" 
-        class="flex items-center gap-2 rounded-xl px-5 py-2 text-[10px] uppercase font-black tracking-widest transition-all border shadow-sm active:scale-95"
-        [class]="editMode() ? 'bg-warning text-white border-warning/50 shadow-warning/20' : 'bg-surface text-body border-strong hover:border-brand/40 group'"
+        class="flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition-all border shadow-sm active:scale-95 bg-surface-elevated text-title border-subtle hover:border-brand/40"
+        [class]="editMode() ? 'bg-warning text-white border-warning/50' : ''"
       >
-        <span translate="no" class="notranslate material-symbols-outlined text-[18px] group-hover:rotate-180 transition-transform duration-500">{{ editMode() ? 'check_circle' : 'settings_input_component' }}</span>
-        <span>{{ editMode() ? 'Salvar Layout' : 'Personalizar' }}</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-lg">{{ editMode() ? 'check_circle' : 'tune' }}</span>
+        <span>{{ editMode() ? 'Salvar Layout' : 'Painel de Controle' }}</span>
+        <span translate="no" class="notranslate material-symbols-outlined text-sm opacity-60">chevron_right</span>
       </button>
     </div>
   </div>
 
   @if (isLoading()) {
-    <div class="flex-1 flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6 p-20 chef-surface border-subtle bg-surface-elevated/10 backdrop-blur-xl">
-          <div class="relative">
-              <div class="absolute inset-0 bg-brand rounded-full blur-2xl opacity-20 animate-pulse"></div>
-              <div class="animate-spin rounded-full h-16 w-16 border-[3px] border-surface-elevated border-b-brand shadow-2xl"></div>
-          </div>
-          <p class="text-title font-black uppercase tracking-[0.3em] animate-pulse text-xs">Sincronizando Indicadores...</p>
+    <div class="flex-1 flex items-center justify-center py-20">
+      <div class="flex flex-col items-center gap-4 p-12 bg-surface-elevated rounded-3xl border border-subtle shadow-lg">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-subtle border-b-brand"></div>
+          <p class="text-title font-bold text-sm tracking-wide">Carregando indicadores da operação...</p>
       </div>
     </div>
   } @else {
-    <div 
-      cdkDropList 
-      (cdkDropListDropped)="drop($event)" 
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-20 overflow-visible"
-      [class.gap-6]="!editMode()"
-      [class.gap-10]="editMode()"
-    >
-      @for (widget of dashboardWidgets(); track widget.id) {
-        <div 
-          cdkDrag 
-          [cdkDragDisabled]="!editMode()"
-          class="relative transition-all duration-300"
-          [class.col-span-1]="widget.cols === 1"
-          [class.md:col-span-2]="widget.cols === 2"
-          [class.lg:col-span-2]="widget.cols === 2"
-          [class.xl:col-span-2]="widget.cols === 2"
-          [class.cursor-move]="editMode()"
-          [class.z-50]="editMode()"
-          [class.scale-95]="editMode()"
-          [class.opacity-70]="editMode()"
-        >
-          <!-- Drag Handle Overlay -->
-          @if(editMode()) {
-            <div class="absolute inset-0 border-2 border-dashed border-warning bg-warning/5 rounded-[32px] z-[60] flex items-center justify-center backdrop-blur-[2px] animate-in fade-in zoom-in-95">
-                <div class="bg-warning text-white p-4 rounded-full shadow-2xl">
-                    <span translate="no" class="notranslate material-symbols-outlined text-4xl leading-none">drag_indicator</span>
-                </div>
-            </div>
+
+    <!-- 2. Top KPI Cards Row (5 Cards matching reference design) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      
+      <!-- Card 1: Vendas -->
+      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+        <div class="min-w-0 flex-1 pr-2">
+          <p class="text-xs font-medium text-muted truncate mb-1">
+            Vendas {{ period() === 'day' ? 'Hoje' : period() === 'week' ? 'Semana' : 'Mês' }}
+          </p>
+          <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ totalSales() | currency:'BRL' }}</h2>
+          <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
+            <span translate="no" class="notranslate material-symbols-outlined text-xs text-brand">equalizer</span>
+            <span>no período</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">shopping_bag</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Pedidos -->
+      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+        <div class="min-w-0 flex-1 pr-2">
+          <p class="text-xs font-medium text-muted truncate mb-1">Pedidos</p>
+          <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ totalOrders() }}</h2>
+          <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
+            <span translate="no" class="notranslate material-symbols-outlined text-xs text-blue-500">shopping_cart</span>
+            <span>no período</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">shopping_basket</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Ticket Médio -->
+      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+        <div class="min-w-0 flex-1 pr-2">
+          <p class="text-xs font-medium text-muted truncate mb-1">Ticket Médio</p>
+          <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ averageTicket() | currency:'BRL' }}</h2>
+          <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
+            <span translate="no" class="notranslate material-symbols-outlined text-xs text-purple-500">analytics</span>
+            <span>por pedido</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">receipt_long</span>
+        </div>
+      </div>
+
+      <!-- Card 4: CMV -->
+      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+        <div class="min-w-0 flex-1 pr-2">
+          <p class="text-xs font-medium text-muted truncate mb-1">CMV Real</p>
+          <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">
+            {{ totalSales() > 0 ? ((cogs() / totalSales()) | percent:'1.1-1') : '0,0%' }}
+          </h2>
+          <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
+            <span translate="no" class="notranslate material-symbols-outlined text-xs text-amber-500">inventory_2</span>
+            <span>custo insumos</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">inventory_2</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Mesas Ocupadas -->
+      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+        <div class="min-w-0 flex-1 pr-2">
+          <p class="text-xs font-medium text-muted truncate mb-1">Mesas Ocupadas</p>
+          <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ occupiedTablesCount() }} / {{ totalTablesCount() }}</h2>
+          <p class="text-[11px] font-semibold text-muted mt-1">{{ occupancyRate() | percent:'1.0-0' }} ocupação</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+          <span translate="no" class="notranslate material-symbols-outlined text-2xl">groups</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Operation Alert Banners Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
+      
+      <!-- Alert 1: Cozinha -->
+      <div class="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold truncate">
+          @if(delayedKitchenOrders() > 0) {
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+          } @else {
+            <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-500">check_circle</span>
           }
+          <span class="truncate">{{ delayedKitchenOrders() }} {{ delayedKitchenOrders() === 1 ? 'pedido atrasado' : 'pedidos atrasados' }} na cozinha</span>
+        </div>
+        <a routerLink="/kds" class="text-rose-600 dark:text-rose-400 font-bold hover:underline shrink-0 ml-2">Ver agora</a>
+      </div>
 
-          @switch (widget.type) {
+      <!-- Alert 2: Estoque -->
+      <div class="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-amber-500">warning</span>
+          <span class="truncate">{{ lowStockCount() }} {{ lowStockCount() === 1 ? 'item abaixo' : 'itens abaixo' }} do estoque mínimo</span>
+        </div>
+        <a routerLink="/inventory" class="text-amber-700 dark:text-amber-400 font-bold hover:underline shrink-0 ml-2">Ver estoque</a>
+      </div>
+
+      <!-- Alert 3: Caixa -->
+      <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-500">check_circle</span>
+          <span class="truncate">Caixa do dia anterior fechado</span>
+        </div>
+        <a routerLink="/cashier" class="text-emerald-700 dark:text-emerald-400 font-bold hover:underline shrink-0 ml-2">Ver caixa</a>
+      </div>
+
+      <!-- Alert 4: Entregas -->
+      <div class="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-semibold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm text-purple-500">two_wheeler</span>
+          <span class="truncate">{{ activeDeliveriesCount() }} {{ activeDeliveriesCount() === 1 ? 'entrega em andamento' : 'entregas em andamento' }}</span>
+        </div>
+        <a routerLink="/delivery" class="text-purple-700 dark:text-purple-400 font-bold hover:underline shrink-0 ml-2">Ver entregas</a>
+      </div>
+
+    </div>
+
+    <!-- 4. "Todos os Apps" Section (8 Category Cards matching exact reference design) -->
+    <div class="mb-10">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+           <h2 class="text-2xl font-extrabold text-title tracking-tight">Todos os Apps</h2>
+           <p class="text-sm text-muted">Acesse rapidamente todas as funcionalidades do ChefOS.</p>
+        </div>
+        <div class="flex items-center gap-3">
+           <!-- View Mode Toggle -->
+           <div class="flex items-center bg-surface-elevated rounded-xl p-1 border border-subtle shadow-xs">
+             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" [class]="viewMode() === 'grid' ? 'bg-surface text-brand shadow-xs' : 'text-muted hover:text-title'">
+               <span translate="no" class="notranslate material-symbols-outlined text-base">grid_view</span> Grade
+             </button>
+             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" [class]="viewMode() === 'list' ? 'bg-surface text-brand shadow-xs' : 'text-muted hover:text-title'">
+               <span translate="no" class="notranslate material-symbols-outlined text-base">view_list</span> Lista
+             </button>
+           </div>
+           
+           <!-- Sort Dropdown -->
+           <select (change)="sortMode.set($any($event.target).value)" class="bg-surface-elevated border border-subtle rounded-xl px-3 py-1.5 text-xs text-title font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-brand">
+             <option value="default">Ordenar: Padrão</option>
+             <option value="name">Ordenar: Nome A-Z</option>
+           </select>
+        </div>
+      </div>
+
+      <!-- Grid/List View of Categories -->
+      <div [class]="viewMode() === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5' : 'flex flex-col gap-4'">
+        @for(cat of activeCategories(); track cat.id) {
+          <div class="bg-surface-elevated border border-subtle rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[185px]">
             
-            <!-- KPI WIDGET (Glassmorphism Upgrade) -->
-            @case ('kpi') {
-               @let kpi = $any(widget);
-               <a [routerLink]="!editMode() ? kpi.route : null" 
-                  class="block h-full chef-surface p-6 shadow-xl relative overflow-hidden group hover:scale-[1.02] active:scale-95 transition-all bg-surface-elevated/30 border-subtle backdrop-blur-xl flex flex-col justify-between min-h-[160px]">
-                  
-                  <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand/5 rounded-full blur-3xl transition-all group-hover:scale-150"></div>
-                  
-                  <div class="flex justify-between items-center mb-3 relative z-10">
-                      <p class="text-muted text-[10px] font-black uppercase tracking-[0.2em] opacity-70 truncate pr-2">{{ kpi.label }}</p>
-                      <div class="w-8 h-8 bg-surface rounded-xl shadow-inner border border-strong flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6">
-                          <span translate="no" class="notranslate material-symbols-outlined text-[18px] drop-shadow-sm" [class]="kpi.colorClass">{{ kpi.icon }}</span>
-                      </div>
-                  </div>
-                  
-                  <div class="relative z-10 min-w-0 mb-4 flex-1 flex flex-col justify-center">
-                      <h3 class="text-3xl xl:text-4xl font-black text-title data-mono tracking-tighter drop-shadow-sm truncate w-full" [title]="kpi.value">{{ kpi.value }}</h3>
-                  </div>
-                  
-                  <div class="relative z-10 mt-auto">
-                      @if(kpi.subValue) {
-                          <div class="flex items-center gap-2">
-                              <div class="flex items-center gap-1 px-2 py-0.5 bg-success/10 text-success rounded border border-success/20">
-                                 <span translate="no" class="notranslate material-symbols-outlined text-[12px] font-black">trending_up</span>
-                                 <span class="text-[10px] font-black data-mono">{{ kpi.subValue }}</span>
-                              </div>
-                              <span class="text-[9px] text-muted font-bold uppercase tracking-widest truncate">vs anterior</span>
+            <!-- Top Part of Card -->
+            <div>
+              <div class="flex items-start gap-3.5 mb-3">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" [class]="cat.iconBgClass">
+                  <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ cat.icon }}</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h3 class="text-base font-bold text-title tracking-tight truncate">{{ cat.title }}</h3>
+                  <p class="text-xs text-muted line-clamp-2 mt-0.5 leading-relaxed">{{ cat.description }}</p>
+                  <span class="text-xs font-bold block mt-1" [class]="cat.textColorClass">{{ cat.items.length }} apps</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Bottom Launcher Row -->
+            <div class="flex items-center gap-2 pt-3 border-t border-subtle/50 mt-auto">
+              @for(item of cat.items | slice:0:4; track item.path) {
+                <a [routerLink]="item.path" class="w-8 h-8 rounded-xl flex items-center justify-center hover:scale-110 transition-transform cursor-pointer" [class]="item.color" [title]="item.name">
+                  <span translate="no" class="notranslate material-symbols-outlined text-white text-[16px] drop-shadow-xs">{{ item.icon }}</span>
+                </a>
+              }
+              @if(cat.items.length > 4) {
+                 <div (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-xl bg-surface border border-subtle flex items-center justify-center text-xs font-bold text-muted cursor-pointer hover:bg-surface-elevated hover:text-title">
+                   +{{ cat.items.length - 4 }}
+                 </div>
+              }
+              <div class="flex-1"></div>
+              <button (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-full border border-subtle flex items-center justify-center text-muted hover:text-title hover:bg-surface transition-colors" title="Ver todos os apps">
+                 <span translate="no" class="notranslate material-symbols-outlined text-lg">chevron_right</span>
+              </button>
+            </div>
+
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 5. Customizable Analytical Widgets (DRE, BCG Matrix, Charts, Top Sellers, Waiter Ranking, Stock Alerts) -->
+    @if (editMode() || dashboardWidgets().length > 0) {
+      <div class="mt-8 border-t border-subtle pt-8">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-title flex items-center gap-2">
+            <span translate="no" class="notranslate material-symbols-outlined text-brand">analytics</span>
+            Indicadores & Análises Detalhadas
+          </h3>
+        </div>
+
+        <div 
+          cdkDropList 
+          (cdkDropListDropped)="drop($event)" 
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-visible"
+        >
+          @for (widget of dashboardWidgets(); track widget.id) {
+            <div 
+              cdkDrag 
+              [cdkDragDisabled]="!editMode()"
+              class="relative transition-all duration-300"
+              [class.col-span-1]="widget.cols === 1"
+              [class.md:col-span-2]="widget.cols === 2"
+              [class.lg:col-span-2]="widget.cols === 2"
+              [class.xl:col-span-2]="widget.cols === 2"
+              [class.cursor-move]="editMode()"
+              [class.z-50]="editMode()"
+              [class.scale-95]="editMode()"
+              [class.opacity-70]="editMode()"
+            >
+              <!-- Drag Handle Overlay -->
+              @if(editMode()) {
+                <div class="absolute inset-0 border-2 border-dashed border-warning bg-warning/5 rounded-3xl z-[60] flex items-center justify-center backdrop-blur-xs animate-in fade-in zoom-in-95">
+                    <div class="bg-warning text-white p-3 rounded-full shadow-lg">
+                        <span translate="no" class="notranslate material-symbols-outlined text-3xl leading-none">drag_indicator</span>
+                    </div>
+                </div>
+              }
+
+              @switch (widget.type) {
+                
+                <!-- KPI WIDGET -->
+                @case ('kpi') {
+                   @let kpi = $any(widget);
+                   <a [routerLink]="!editMode() ? kpi.route : null" 
+                      class="block h-full bg-surface-elevated border border-subtle rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-between min-h-[160px]">
+                      
+                      <div class="flex justify-between items-center mb-3 relative z-10">
+                          <p class="text-muted text-xs font-bold uppercase tracking-wider truncate pr-2">{{ kpi.label }}</p>
+                          <div class="w-9 h-9 bg-surface rounded-xl border border-subtle flex items-center justify-center shrink-0">
+                              <span translate="no" class="notranslate material-symbols-outlined text-xl" [class]="kpi.colorClass">{{ kpi.icon }}</span>
                           </div>
-                      } @else {
-                          <div class="h-5"></div>
-                      }
-                  </div>
-               </a>
-            }
-
-            <!-- CUSTOM D3 VISUALIZATIONS WIDGET -->
-            @case ('custom_visualizations') {
-                <div class="h-full w-full flex">
-                    <app-dashboard-visualizations [salesData]="salesCogsData()" [topItemsData]="topSellingItems()" class="w-full"></app-dashboard-visualizations>
-                </div>
-            }
-
-            <!-- CHART SALES WIDGET -->
-            @case ('chart_sales') {
-                @let chart = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                    <h3 class="text-[10px] font-black text-muted mb-8 flex items-center gap-3 uppercase tracking-[0.2em] relative z-10">
-                        <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
-                        {{ chart.title }}
-                    </h3>
-                    <div class="flex-1 min-h-[250px] relative">
-                         @if(isChartLoading()) {
-                            <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-sm z-20 rounded-2xl">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
-                            </div>
-                         }
-                         <app-sales-cogs-chart [data]="salesCogsData()" class="block w-full h-full"></app-sales-cogs-chart>
-                    </div>
-                </div>
-            }
-
-            <!-- DRE SUMMARY WIDGET -->
-            @case ('dre_summary') {
-                @let dre = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl overflow-hidden relative">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-success/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <h3 class="text-[10px] font-black text-muted mb-8 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-success"></div>
-                        {{ dre.title }}
-                    </h3>
-                    <div class="flex-1 flex flex-col gap-4">
-                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Receita Bruta</span>
-                            <span class="text-base font-black text-title data-mono">{{ totalSales() | currency:'BRL' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">CMV Alimentar</span>
-                            <span class="text-base font-black text-danger data-mono">({{ (cogs() / totalSales() || 0) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-4 group/row px-2 hover:bg-surface/30 rounded-xl transition-all">
-                            <span class="text-[13px] font-black text-muted uppercase tracking-wider group-hover/row:text-title transition-colors">Custos Operacionais</span>
-                            <span class="text-base font-black text-warning data-mono">-{{ opex() | currency:'BRL' }}</span>
-                        </div>
-                        <div class="mt-auto pt-8">
-                             <div class="flex justify-between items-end">
-                                <div class="flex flex-col">
-                                  <span class="text-[9px] font-black text-muted uppercase tracking-[0.3em] mb-2">EBITDA Estimado</span>
-                                  <div class="flex items-center gap-2">
-                                     <span class="w-1.5 h-1.5 rounded-full" [class.bg-success]="netProfit() >= 0" [class.bg-danger]="netProfit() < 0"></span>
-                                     <span class="text-3xl font-black data-mono tracking-tighter" [class.text-success]="netProfit() >= 0" [class.text-danger]="netProfit() < 0">
-                                         {{ netProfit() | currency:'BRL' }}
-                                     </span>
+                      </div>
+                      
+                      <div class="relative z-10 min-w-0 mb-4 flex-1 flex flex-col justify-center">
+                          <h3 class="text-3xl font-black text-title data-mono tracking-tight truncate w-full">{{ kpi.value }}</h3>
+                      </div>
+                      
+                      <div class="relative z-10 mt-auto">
+                          @if(kpi.subValue) {
+                              <div class="flex items-center gap-2">
+                                  <div class="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded text-xs font-semibold">
+                                     <span class="data-mono">{{ kpi.subValue }}</span>
                                   </div>
+                              </div>
+                          }
+                      </div>
+                   </a>
+                }
+
+                <!-- CUSTOM D3 VISUALIZATIONS WIDGET -->
+                @case ('custom_visualizations') {
+                    <div class="h-full w-full flex">
+                        <app-dashboard-visualizations [salesData]="salesCogsData()" [topItemsData]="topSellingItems()" class="w-full"></app-dashboard-visualizations>
+                    </div>
+                }
+
+                <!-- CHART SALES WIDGET -->
+                @case ('chart_sales') {
+                    @let chart = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                        <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+                            {{ chart.title }}
+                        </h3>
+                        <div class="flex-1 min-h-[250px] relative">
+                             @if(isChartLoading()) {
+                                <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
                                 </div>
-                                <div class="bg-success/10 text-success text-[10px] font-black px-3 py-1.5 rounded-xl border border-success/20 shadow-sm mb-1">
-                                    {{ (netProfit() / totalSales() || 0) | percent:'1.1-1' }} Margem
-                                </div>
-                             </div>
+                             }
+                             <app-sales-cogs-chart [data]="salesCogsData()" class="block w-full h-full"></app-sales-cogs-chart>
                         </div>
                     </div>
-                </div>
-            }
+                }
 
-            <!-- CHART HOURLY WIDGET -->
-            @case ('chart_hourly') {
-                @let chart = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                     <h3 class="text-[10px] font-black text-muted mb-8 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-purple-400"></div>
-                        {{ chart.title }}
-                    </h3>
-                    <div class="flex-1 min-h-[250px] relative">
-                        @if(isHourlyChartLoading()) {
-                            <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-sm z-20 rounded-2xl">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+                <!-- DRE SUMMARY WIDGET -->
+                @case ('dre_summary') {
+                    @let dre = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm relative overflow-hidden">
+                        <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            {{ dre.title }}
+                        </h3>
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex justify-between items-center py-2.5 border-b border-subtle/40">
+                                <span class="text-xs font-bold text-muted uppercase tracking-wider">Receita Bruta</span>
+                                <span class="text-sm font-black text-title data-mono">{{ totalSales() | currency:'BRL' }}</span>
                             </div>
-                         }
-                        <app-hourly-sales-chart [data]="hourlySalesData()" class="block w-full h-full"></app-hourly-sales-chart>
-                    </div>
-                </div>
-            }
-
-            <!-- MENU ENGINEERING WIDGET (Matriz BCG) -->
-            @case ('menu_engineering') {
-                @let eng = $any(widget);
-                @let matrix = bcgMatrix();
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl overflow-hidden relative">
-                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand/5 rounded-full blur-3xl pointer-events-none"></div>
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 relative z-10">
-                        <div>
-                            <h3 class="text-[10px] font-black text-muted flex items-center gap-3 uppercase tracking-[0.2em]">
-                                <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
-                                {{ eng.title }}
-                            </h3>
-                            <p class="text-[9px] text-muted tracking-wide mt-1 uppercase font-semibold">Análise de Performance e Margem do Cardápio</p>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 bg-brand/10 text-brand text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-brand/20">
-                            <span translate="no" class="notranslate material-symbols-outlined text-[10px]">insights</span>
-                            <span>IA Advisor Alinhado</span>
-                        </div>
-                    </div>
-
-                    <!-- Quadrants Tab Selector -->
-                    <div class="grid grid-cols-4 gap-2 mb-6 relative z-10">
-                        <button (click)="selectedBcgTab.set('stars')" 
-                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
-                                [class]="selectedBcgTab() === 'stars' 
-                                    ? 'bg-success/15 border-success text-success shadow-lg shadow-success/10' 
-                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
-                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">star</span>
-                            <span class="text-[9px] font-black uppercase tracking-wider">Estrelas</span>
-                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.stars.length }}</span>
-                        </button>
-                        
-                        <button (click)="selectedBcgTab.set('plowhorses')" 
-                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
-                                [class]="selectedBcgTab() === 'plowhorses' 
-                                    ? 'bg-warning/15 border-warning text-warning shadow-lg shadow-warning/10' 
-                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
-                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">directions_run</span>
-                            <span class="text-[9px] font-black uppercase tracking-wider">Cavalos</span>
-                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.plowhorses.length }}</span>
-                        </button>
-
-                        <button (click)="selectedBcgTab.set('puzzles')" 
-                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
-                                [class]="selectedBcgTab() === 'puzzles' 
-                                    ? 'bg-blue-400/15 border-blue-400 text-blue-400 shadow-lg shadow-blue-400/10' 
-                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
-                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">help_outline</span>
-                            <span class="text-[9px] font-black uppercase tracking-wider">Desafios</span>
-                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.puzzles.length }}</span>
-                        </button>
-
-                        <button (click)="selectedBcgTab.set('dogs')" 
-                                class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer"
-                                [class]="selectedBcgTab() === 'dogs' 
-                                    ? 'bg-danger/15 border-danger text-danger shadow-lg shadow-danger/10' 
-                                    : 'bg-surface/50 border-strong text-muted hover:border-brand/40 hover:text-title'">
-                            <span translate="no" class="notranslate material-symbols-outlined text-lg mb-1">delete_outline</span>
-                            <span class="text-[9px] font-black uppercase tracking-wider">Alerta</span>
-                            <span class="text-[8px] font-mono opacity-80 mt-1">{{ matrix.dogs.length }}</span>
-                        </button>
-                    </div>
-
-                    <!-- Items inside calculated tab -->
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[220px] hide-scrollbar mb-6 relative z-10">
-                        @let activeList = selectedBcgTab() === 'stars' ? matrix.stars 
-                                        : selectedBcgTab() === 'plowhorses' ? matrix.plowhorses
-                                        : selectedBcgTab() === 'puzzles' ? matrix.puzzles
-                                        : matrix.dogs;
-
-                        @for(item of activeList; track item.id) {
-                            <div class="flex items-center justify-between p-3.5 bg-surface/40 hover:bg-surface/60 rounded-xl border border-strong transition-all group/item">
-                                <div class="min-w-0 flex-1 pr-3">
-                                    <p class="text-[12px] font-bold text-title truncate tracking-tight group-hover/item:text-brand transition-colors">{{ item.name }}</p>
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                                        <span class="text-[9px] text-muted/80 tracking-widest uppercase font-mono">{{ item.quantitySold }} vendidos</span>
-                                        <span class="text-[9px] tracking-widest uppercase font-mono font-black"
-                                              [class]="item.marginPercent >= 60 ? 'text-success' : item.marginPercent >= 40 ? 'text-warning' : 'text-danger'">
-                                            Margem: {{ item.marginPercent | number:'1.0-0' }}%
-                                        </span>
+                            <div class="flex justify-between items-center py-2.5 border-b border-subtle/40">
+                                <span class="text-xs font-bold text-muted uppercase tracking-wider">CMV Alimentar</span>
+                                <span class="text-sm font-black text-rose-500 data-mono">({{ (cogs() / (totalSales() || 1)) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2.5 border-b border-subtle/40">
+                                <span class="text-xs font-bold text-muted uppercase tracking-wider">Custos Operacionais</span>
+                                <span class="text-sm font-black text-amber-500 data-mono">-{{ opex() | currency:'BRL' }}</span>
+                            </div>
+                            <div class="mt-auto pt-6">
+                                 <div class="flex justify-between items-end">
+                                    <div class="flex flex-col">
+                                      <span class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">EBITDA Estimado</span>
+                                      <div class="flex items-center gap-2">
+                                         <span class="text-2xl font-black data-mono tracking-tight" [class.text-emerald-500]="netProfit() >= 0" [class.text-rose-500]="netProfit() < 0">
+                                             {{ netProfit() | currency:'BRL' }}
+                                         </span>
+                                      </div>
                                     </div>
-                                </div>
-                                <div class="text-right shrink-0 flex flex-col items-end">
-                                    <span class="text-[12px] font-mono font-black text-title">{{ item.price | currency:'BRL' }}</span>
-                                    <span class="text-[9px] text-muted uppercase tracking-widest font-medium mt-0.5">Custo: {{ item.cost | currency:'BRL' }}</span>
-                                </div>
+                                    <div class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-3 py-1 rounded-xl border border-emerald-500/20">
+                                        {{ (netProfit() / (totalSales() || 1)) | percent:'1.1-1' }} Margem
+                                    </div>
+                                 </div>
                             </div>
-                        }
-
-                        @if(activeList.length === 0) {
-                            <div class="flex flex-col items-center justify-center py-10 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-1.5 opacity-60">layers_clear</span>
-                                <p class="text-[9px] uppercase tracking-widest font-black">Nenhum item neste quadrante</p>
-                            </div>
-                        }
+                        </div>
                     </div>
+                }
 
-                    <!-- AI Coach Insights & Suggestions Panel -->
-                    <div class="mt-auto p-4 bg-surface-elevated/40 border border-strong rounded-2xl relative z-10">
-                        <h4 class="text-[9px] font-black text-title flex items-center gap-2 uppercase tracking-[0.2em] mb-3">
-                            <span translate="no" class="notranslate material-symbols-outlined text-[13px] text-brand">assistant</span>
-                            IA Insights e Recomendações Táticas
-                        </h4>
+                <!-- CHART HOURLY WIDGET -->
+                @case ('chart_hourly') {
+                    @let chart = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                         <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                            {{ chart.title }}
+                        </h3>
+                        <div class="flex-1 min-h-[250px] relative">
+                            @if(isHourlyChartLoading()) {
+                                <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                                </div>
+                             }
+                            <app-hourly-sales-chart [data]="hourlySalesData()" class="block w-full h-full"></app-hourly-sales-chart>
+                        </div>
+                    </div>
+                }
+
+                <!-- MENU ENGINEERING WIDGET -->
+                @case ('menu_engineering') {
+                    @let eng = $any(widget);
+                    @let matrix = bcgMatrix();
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm overflow-hidden">
                         
-                        <div class="space-y-3">
-                            @for(rec of bcgAdvisorRecommendations(); track rec.title) {
-                                <div class="flex items-start gap-3 p-3 bg-surface/50 border border-strong rounded-xl animate-in slide-in-from-bottom duration-300">
-                                    <div class="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                                         [class]="rec.type === 'success' ? 'bg-success' : rec.type === 'warning' ? 'bg-warning' : rec.type === 'danger' ? 'bg-danger' : 'bg-blue-400'"></div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex justify-between items-center gap-2 mb-1">
-                                            <p class="text-[11px] font-bold text-title truncate tracking-tight">{{ rec.title }}</p>
-                                            <span class="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded shrink-0 border"
-                                                  [class]="rec.type === 'success' ? 'bg-success/10 text-success border-success/20' 
-                                                         : rec.type === 'warning' ? 'bg-warning/10 text-warning border-warning/20'
-                                                         : rec.type === 'danger' ? 'bg-danger/10 text-danger border-danger/20'
-                                                         : 'bg-blue-400/10 text-blue-400 border-blue-400/20'">
-                                                {{ rec.badge }}
-                                            </span>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+                            <div>
+                                <h3 class="text-xs font-extrabold text-muted flex items-center gap-2 uppercase tracking-wider">
+                                    <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+                                    {{ eng.title }}
+                                </h3>
+                                <p class="text-[11px] text-muted mt-0.5">Análise de Performance e Margem do Cardápio</p>
+                            </div>
+                        </div>
+
+                        <!-- BCG Quadrant Selector -->
+                        <div class="grid grid-cols-4 gap-2 mb-4">
+                            <button (click)="selectedBcgTab.set('stars')" 
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    [class]="selectedBcgTab() === 'stars' 
+                                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">star</span>
+                                <span class="text-[10px] font-bold uppercase">Estrelas</span>
+                            </button>
+                            
+                            <button (click)="selectedBcgTab.set('plowhorses')" 
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    [class]="selectedBcgTab() === 'plowhorses' 
+                                        ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">directions_run</span>
+                                <span class="text-[10px] font-bold uppercase">Cavalos</span>
+                            </button>
+
+                            <button (click)="selectedBcgTab.set('puzzles')" 
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    [class]="selectedBcgTab() === 'puzzles' 
+                                        ? 'bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">help_outline</span>
+                                <span class="text-[10px] font-bold uppercase">Desafios</span>
+                            </button>
+
+                            <button (click)="selectedBcgTab.set('dogs')" 
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    [class]="selectedBcgTab() === 'dogs' 
+                                        ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">delete_outline</span>
+                                <span class="text-[10px] font-bold uppercase">Alerta</span>
+                            </button>
+                        </div>
+
+                        <!-- Active items list -->
+                        <div class="flex-1 overflow-y-auto space-y-2 max-h-[200px] hide-scrollbar mb-4">
+                            @let activeList = selectedBcgTab() === 'stars' ? matrix.stars 
+                                            : selectedBcgTab() === 'plowhorses' ? matrix.plowhorses
+                                            : selectedBcgTab() === 'puzzles' ? matrix.puzzles
+                                            : matrix.dogs;
+
+                            @for(item of activeList; track item.id) {
+                                <div class="flex items-center justify-between p-3 bg-surface rounded-2xl border border-subtle">
+                                    <div class="min-w-0 flex-1 pr-2">
+                                        <p class="text-xs font-bold text-title truncate">{{ item.name }}</p>
+                                        <div class="flex items-center gap-2 mt-0.5 text-[10px]">
+                                            <span class="text-muted">{{ item.quantitySold }} vendidos</span>
+                                            <span class="font-bold" [class]="item.marginPercent >= 60 ? 'text-emerald-500' : 'text-amber-500'">Margem: {{ item.marginPercent | number:'1.0-0' }}%</span>
                                         </div>
-                                        <p class="text-[10px] text-muted leading-relaxed">{{ rec.action }}</p>
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-title shrink-0">{{ item.price | currency:'BRL' }}</span>
+                                </div>
+                            }
+
+                            @if(activeList.length === 0) {
+                                <div class="flex flex-col items-center justify-center py-8 text-muted/40">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-3xl mb-1">layers_clear</span>
+                                    <p class="text-xs uppercase font-bold">Sem itens neste quadrante</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                
+                <!-- TOP ITEMS LIST -->
+                @case ('list_top_items') {
+                    @let list = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                         <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            {{ list.title }}
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-1 max-h-[260px] hide-scrollbar">
+                            @for(item of topSellingItems(); track item.name; let i = $index) {
+                                <div class="flex items-center justify-between py-2.5 px-2 hover:bg-surface rounded-xl transition-all">
+                                    <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                        <span class="text-xs font-mono font-bold text-muted w-4">{{ i + 1 }}</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-title truncate">{{ item.name }}</p>
+                                            <span class="text-[10px] text-muted">{{ item.quantity }} unidades</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-title ml-2">{{ item.revenue | currency:'BRL' }}</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- WAITER RANKING LIST -->
+                @case ('list_waiter_ranking') {
+                    @let list = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                         <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            {{ list.title }}
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-1 max-h-[260px] hide-scrollbar">
+                            @for(waiter of waiterRanking(); track waiter.name; let i = $index) {
+                                <div class="flex items-center justify-between py-2.5 px-2 hover:bg-surface rounded-xl transition-all">
+                                    <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                        <span class="text-xs font-mono font-bold text-indigo-500 w-4">{{ i + 1 }}</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-title truncate">{{ waiter.name }}</p>
+                                            <span class="text-[10px] text-muted">{{ waiter.orders }} pedidos</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-mono font-bold text-title block">{{ waiter.avgTicket | currency:'BRL' }}</span>
+                                        <span class="text-[9px] text-muted uppercase font-semibold">Ticket Médio</span>
                                     </div>
                                 </div>
                             }
                         </div>
                     </div>
-                </div>
-            }
-            
-            <!-- TOP ITEMS LIST -->
-            @case ('list_top_items') {
-                @let list = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                     <h3 class="text-[10px] font-black text-muted mb-6 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-warning"></div>
-                        {{ list.title }}
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
-                        @for(item of topSellingItems(); track item.name; let i = $index) {
-                            <div class="flex items-center justify-between py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
-                                <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                    <span class="text-[10px] font-mono text-muted group-hover:text-brand transition-colors w-4">{{ i + 1 | number:'2.0-0' }}</span>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-[12px] font-medium text-title truncate tracking-tight">{{ item.name }}</p>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[9px] text-muted tracking-widest uppercase">{{ item.quantity }} un</span>
-                                            <span class="text-[9px] text-brand/70 tracking-widest uppercase">{{ (item.revenue / totalSales() || 0) | percent:'1.0-0' }} do total</span>
-                                        </div>
+                }
+
+                <!-- RECENT ORDERS LIST -->
+                @case ('list_recent_orders') {
+                    @let list = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                         <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-brand"></span>
+                            {{ list.title }}
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-1 max-h-[260px] hide-scrollbar">
+                             @for(order of recentCompletedOrders(); track order.id) {
+                                <div (click)="selectedOrderPreview.set(order.fullOrder)" class="flex justify-between items-center py-2.5 px-2 cursor-pointer hover:bg-surface rounded-xl transition-all">
+                                    <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                         <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-mono font-bold text-title">#{{ order.id.slice(-6) | uppercase }}</span>
+                                                <span class="text-[10px] text-muted">— {{ order.type }}</span>
+                                            </div>
+                                            <div class="text-[10px] text-muted font-mono mt-0.5">{{ order.time | date:'HH:mm' }}</div>
+                                         </div>
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-title">{{ order.total | currency:'BRL' }}</span>
+                                </div>
+                             }
+                        </div>
+                    </div>
+                }
+
+                <!-- PAYMENT METHODS LIST -->
+                @case ('list_payment_methods') {
+                    @let list = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                          <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            {{ list.title }}
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-2 max-h-[260px] hide-scrollbar">
+                             @for(method of paymentMethodsDistribution(); track method.method) {
+                                 <div class="py-2 px-2 hover:bg-surface rounded-xl transition-all">
+                                     <div class="flex justify-between items-center mb-1">
+                                         <span class="text-xs font-bold text-title flex items-center gap-2">
+                                             <span translate="no" class="notranslate material-symbols-outlined text-sm text-muted">{{ method.method === 'Dinheiro' ? 'payments' : method.method === 'PIX' ? 'qr_code_2' : 'credit_card' }}</span>
+                                             {{ method.method }}
+                                         </span>
+                                         <span class="font-mono text-xs font-bold text-title">{{ method.value | currency:'BRL' }}</span>
+                                     </div>
+                                     <div class="flex items-center gap-2">
+                                         <div class="flex-1 bg-surface h-1.5 rounded-full overflow-hidden">
+                                             <div class="bg-brand h-full rounded-full" [style.width.%]="method.percentage"></div>
+                                         </div>
+                                         <span class="text-[10px] font-mono text-muted w-8 text-right">{{ method.percentage | number:'1.0-0' }}%</span>
+                                     </div>
+                                 </div>
+                             }
+                        </div>
+                    </div>
+                }
+
+                 <!-- LOW STOCK LIST -->
+                @case ('list_low_stock') {
+                    @let list = $any(widget);
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                        <h3 class="text-xs font-extrabold text-rose-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                            {{ list.title }}
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-1 max-h-[260px] hide-scrollbar">
+                            @for(item of lowStockItems(); track item.name) {
+                                <div class="flex justify-between items-center py-2 px-2 hover:bg-rose-500/5 rounded-xl transition-all">
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <span class="text-xs font-bold text-title truncate">{{ item.name }}</span>
+                                        <span class="text-[10px] text-rose-500 font-medium">Mínimo: {{ item.min }}{{ item.unit }}</span>
+                                    </div>
+                                    <div class="text-right flex items-center gap-1.5">
+                                        <span class="text-xs font-mono font-bold text-rose-500">{{ item.stock }}{{ item.unit }}</span>
+                                        <span translate="no" class="notranslate material-symbols-outlined text-sm text-rose-500">warning</span>
                                     </div>
                                 </div>
-                                <span class="text-[12px] font-mono text-title">{{ item.revenue | currency:'BRL' }}</span>
-                            </div>
-                        }
-                        @if(topSellingItems().length === 0) {
-                            <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">empty_dashboard</span>
-                                <p class="text-[10px] uppercase tracking-widest">Sem vendas no período</p>
-                            </div>
-                        }
+                            }
+                        </div>
                     </div>
-                </div>
-            }
+                }
 
-            <!-- WAITER RANKING LIST -->
-            @case ('list_waiter_ranking') {
-                @let list = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                     <h3 class="text-[10px] font-black text-muted mb-6 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
-                        {{ list.title }}
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
-                        @for(waiter of waiterRanking(); track waiter.name; let i = $index) {
-                            <div class="flex items-center justify-between py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
-                                <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                    <span class="text-[10px] font-mono text-muted group-hover:text-indigo-500 transition-colors w-4">{{ i + 1 | number:'2.0-0' }}</span>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-[12px] font-medium text-title truncate tracking-tight">{{ waiter.name }}</p>
-                                        <span class="text-[9px] text-muted uppercase tracking-widest">{{ waiter.orders }} pedidos</span>
-                                    </div>
-                                </div>
-                                <div class="text-right flex flex-col items-end">
-                                    <span class="text-[12px] font-mono text-title">{{ waiter.avgTicket | currency:'BRL' }}</span>
-                                    <span class="text-[9px] text-muted/60 uppercase font-medium tracking-widest mt-0.5">Ticket Médio</span>
-                                </div>
-                            </div>
-                        }
-                        @if(waiterRanking().length === 0) {
-                            <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">person_off</span>
-                                <p class="text-[10px] uppercase tracking-widest">Sem vendas de salão</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <!-- RECENT ORDERS LIST -->
-             @case ('list_recent_orders') {
-                @let list = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                     <h3 class="text-[10px] font-black text-muted mb-6 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-brand"></div>
-                        {{ list.title }}
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
-                         @for(order of recentCompletedOrders(); track order.id) {
-                            <div (click)="selectedOrderPreview.set(order.fullOrder)" class="flex justify-between items-center py-3 cursor-pointer hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all group">
-                                <div class="flex items-center gap-4 overflow-hidden flex-1">
-                                     <div class="min-w-0 flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[11px] font-mono text-title group-hover:text-brand transition-colors">#{{ order.id.slice(-6) | uppercase }}</span>
-                                            <span class="text-[9px] text-muted/80 uppercase tracking-widest">— {{ order.type }}</span>
-                                        </div>
-                                        <div class="text-[10px] text-muted font-mono mt-1">{{ order.time | date:'HH:mm' }}</div>
-                                     </div>
-                                </div>
-                                <span class="text-[12px] font-mono text-title">{{ order.total | currency:'BRL' }}</span>
-                            </div>
-                         }
-                         @if(recentCompletedOrders().length === 0) {
-                            <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">history_toggle_off</span>
-                                <p class="text-[10px] uppercase tracking-widest">Nenhum pedido recente</p>
-                            </div>
-                         }
-                    </div>
-                </div>
-            }
-
-            <!-- PAYMENT METHODS LIST -->
-            @case ('list_payment_methods') {
-                @let list = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col bg-surface-elevated/30 border-subtle backdrop-blur-xl shadow-xl">
-                      <h3 class="text-[10px] font-black text-muted mb-8 flex items-center gap-3 uppercase tracking-[0.2em]">
-                        <div class="w-2 h-2 rounded-full bg-success"></div>
-                        {{ list.title }}
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-0 pr-2 max-h-[300px] hide-scrollbar">
-                         @for(method of paymentMethodsDistribution(); track method.method) {
-                             <div class="group/bar py-3 hover:bg-surface/30 px-2 -mx-2 rounded-lg transition-all">
-                                 <div class="flex justify-between items-center content-center mb-2">
-                                     <span class="text-[11px] font-medium text-title flex items-center gap-2">
-                                         <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-muted">{{ method.method === 'Dinheiro' ? 'payments' : method.method === 'PIX' ? 'qr_code_2' : 'credit_card' }}</span>
-                                         {{ method.method }}
-                                     </span>
-                                     <span class="font-mono text-[12px] text-title">{{ method.value | currency:'BRL' }}</span>
-                                 </div>
-                                 <div class="flex items-center gap-3">
-                                     <div class="flex-1 bg-surface h-1 rounded-full overflow-hidden">
-                                         <div class="bg-muted/40 h-full rounded-full" [style.width.%]="method.percentage"></div>
-                                     </div>
-                                     <span class="text-[9px] font-mono text-muted w-6 text-right">{{ method.percentage | number:'1.0-0' }}%</span>
-                                 </div>
-                             </div>
-                         }
-                         @if(paymentMethodsDistribution().length === 0) {
-                            <div class="flex flex-col items-center justify-center py-12 text-muted/30">
-                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2">account_balance_wallet</span>
-                                <p class="text-[10px] uppercase tracking-widest">Aguardando Recebimentos</p>
-                            </div>
-                         }
-                    </div>
-                </div>
-            }
-
-             <!-- LOW STOCK LIST -->
-            @case ('list_low_stock') {
-                @let list = $any(widget);
-                <div class="h-full chef-surface p-8 flex flex-col border-t-[4px] relative overflow-hidden group shadow-xl bg-surface-elevated/30 border-subtle backdrop-blur-xl" style="border-top-color: var(--accent-danger)">
-                     <!-- Glow effect -->
-                    <div class="absolute inset-x-0 top-0 h-24 bg-danger/10 blur-[40px] pointer-events-none transition-opacity opacity-50 group-hover:opacity-80"></div>
-
-                    <h3 class="text-[10px] font-black text-danger mb-6 flex items-center gap-3 uppercase tracking-[0.2em] relative z-10">
-                        <div class="w-2 h-2 rounded-full bg-danger animate-ping"></div>
-                        {{ list.title }}
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-0 pr-1 max-h-[300px] hide-scrollbar relative z-10">
-                        @for(item of lowStockItems(); track item.name) {
-                            <div class="flex justify-between items-center py-3 hover:bg-danger/5 px-2 -mx-2 rounded-lg transition-all group/item">
-                                <div class="flex flex-col min-w-0 flex-1">
-                                    <span class="text-[12px] font-medium text-title truncate tracking-tight group-hover/item:text-danger hover:transition-colors">{{ item.name }}</span>
-                                    <span class="text-[9px] text-danger/80 uppercase tracking-widest mt-0.5">Mínimo: {{ item.min }}{{ item.unit }}</span>
-                                </div>
-                                <div class="text-right flex items-center gap-2">
-                                    <span class="text-[12px] font-mono text-danger">{{ item.stock }}{{ item.unit }}</span>
-                                    <span translate="no" class="notranslate material-symbols-outlined text-[14px] text-danger/60 group-hover/item:animate-pulse">warning</span>
-                                </div>
-                            </div>
-                        }
-                        @if(lowStockItems().length === 0) {
-                             <div class="flex flex-col items-center justify-center py-12 text-success/70">
-                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-4">check_circle</span>
-                                <p class="text-[10px] uppercase tracking-widest">Abastecimento em Dia</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
+              }
+            </div>
           }
         </div>
-      }
-    </div>
+      </div>
+    }
 
-    
-<!-- Modal de Categoria -->
+  }
+</div>
+
+<!-- Category Modal -->
 @if (selectedCategoryForModal(); as cat) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-    <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" (click)="selectedCategoryForModal.set(null)"></div>
+    <div class="absolute inset-0 bg-background/80 backdrop-blur-xs" (click)="selectedCategoryForModal.set(null)"></div>
     <div class="relative w-full max-w-lg bg-surface-elevated border border-subtle rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
-      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-strong/50 bg-surface/50">
+      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
         <div class="flex items-center gap-4">
-           <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
-             <span translate="no" class="notranslate material-symbols-outlined">{{ cat.icon }}</span>
+           <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" [class]="cat.iconBgClass">
+             <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ cat.icon }}</span>
            </div>
            <div>
-             <h2 class="text-xl font-black text-title tracking-tight">{{ cat.title }}</h2>
+             <h2 class="text-xl font-extrabold text-title tracking-tight">{{ cat.title }}</h2>
+             <p class="text-xs text-muted mt-0.5">{{ cat.description }}</p>
            </div>
         </div>
-        <button (click)="selectedCategoryForModal.set(null)" class="w-10 h-10 rounded-full bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title hover:bg-surface transition-all active:scale-95">
-          <span translate="no" class="notranslate material-symbols-outlined">close</span>
+        <button (click)="selectedCategoryForModal.set(null)" class="w-9 h-9 rounded-full bg-surface border border-subtle flex items-center justify-center text-muted hover:text-title transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
       <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-2">
          @for (item of cat.items; track item.path) {
-            <a [routerLink]="item.path" (click)="selectedCategoryForModal.set(null)" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-surface border border-transparent hover:border-strong transition-all group cursor-pointer">
-               <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" [class]="item.color">
-                 <span translate="no" class="notranslate material-symbols-outlined text-white text-[20px]">{{ item.icon }}</span>
+            <a [routerLink]="item.path" (click)="selectedCategoryForModal.set(null)" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-surface border border-transparent hover:border-subtle transition-all group cursor-pointer">
+               <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs" [class]="item.color">
+                 <span translate="no" class="notranslate material-symbols-outlined text-white text-xl">{{ item.icon }}</span>
                </div>
-               <div class="flex-1">
-                 <h3 class="text-sm font-bold text-title group-hover:text-brand transition-colors">{{ item.name }}</h3>
-                 <p class="text-xs text-muted mt-0.5">{{ item.description }}</p>
+               <div class="flex-1 min-w-0">
+                 <h3 class="text-sm font-bold text-title group-hover:text-brand transition-colors truncate">{{ item.name }}</h3>
+                 <p class="text-xs text-muted mt-0.5 truncate">{{ item.description }}</p>
                </div>
                <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
             </a>
@@ -534,154 +654,57 @@
   </div>
 }
 
-    <!-- Central de Apps -->
-    <div class="mt-12 mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-           <h2 class="text-2xl font-black text-title tracking-tight">Todos os Apps</h2>
-           <p class="text-sm text-muted">Acesse rapidamente todas as funcionalidades do ChefOS.</p>
-        </div>
-        <div class="flex items-center gap-4">
-           <!-- View Mode -->
-           <div class="flex items-center bg-surface-elevated rounded-xl p-1 border border-strong shadow-sm">
-             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all" [class]="viewMode() === 'grid' ? 'bg-surface text-brand shadow-sm' : 'text-muted hover:text-title'">
-               <span translate="no" class="notranslate material-symbols-outlined text-[18px] mr-1 align-middle">grid_view</span> Grade
-             </button>
-             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all" [class]="viewMode() === 'list' ? 'bg-surface text-brand shadow-sm' : 'text-muted hover:text-title'">
-               <span translate="no" class="notranslate material-symbols-outlined text-[18px] mr-1 align-middle">view_list</span> Lista
-             </button>
-           </div>
-           
-           <!-- Sort Mode -->
-           <select (change)="sortMode.set($any($event.target).value)" class="bg-surface-elevated border border-strong rounded-xl px-4 py-2 text-sm text-title font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-brand">
-             <option value="default">Ordenar: Padrão</option>
-             <option value="name">Ordenar: Nome A-Z</option>
-           </select>
-        </div>
-      </div>
-
-      <!-- Apps Grid/List -->
-      <div [class]="viewMode() === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'flex flex-col gap-4'">
-        @for(cat of activeCategories(); track cat.id) {
-          <div class="bg-surface-elevated border border-subtle rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center">
-                  <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ cat.icon }}</span>
-                </div>
-                <div>
-                  <h3 class="text-base font-bold text-title">{{ cat.title }}</h3>
-                  <p class="text-xs text-muted">{{ cat.items.length }} apps</p>
-                </div>
-              </div>
-            </div>
-            
-            <p class="text-sm text-muted mb-6 line-clamp-2 h-10">{{ cat.items[0]?.description || 'Acesse aplicativos desta categoria.' }}</p>
-            
-            <div class="flex items-center gap-2 flex-wrap">
-              @for(item of cat.items | slice:0:5; track item.path) {
-                <a [routerLink]="item.path" class="w-8 h-8 rounded-lg flex items-center justify-center hover:scale-110 transition-transform cursor-pointer" [class]="item.color" [title]="item.name">
-                  <span translate="no" class="notranslate material-symbols-outlined text-white text-[16px] drop-shadow-sm">{{ item.icon }}</span>
-                </a>
-              }
-              @if(cat.items.length > 5) {
-                 <div (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-lg bg-surface border border-strong flex items-center justify-center text-xs font-bold text-muted cursor-pointer hover:bg-surface-elevated hover:text-title">
-                   +{{ cat.items.length - 5 }}
-                 </div>
-              }
-              <div class="flex-1"></div>
-              <button (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-full border border-subtle flex items-center justify-center hover:bg-surface-elevated transition-colors text-muted hover:text-title">
-                 <span translate="no" class="notranslate material-symbols-outlined text-[20px]">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  }
-</div>
-
+<!-- Order Preview Modal -->
 @if (selectedOrderPreview(); as order) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-    <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" (click)="selectedOrderPreview.set(null)"></div>
+    <div class="absolute inset-0 bg-background/80 backdrop-blur-xs" (click)="selectedOrderPreview.set(null)"></div>
     <div class="relative w-full max-w-lg bg-surface-elevated border border-subtle rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
       
       <!-- Header -->
-      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-strong/50 bg-surface/50">
+      <div class="flex justify-between items-center p-5 sm:p-6 border-b border-subtle bg-surface/50">
         <div>
-          <h2 class="text-xl font-black text-title tracking-tight flex items-center gap-2">
+          <h2 class="text-xl font-extrabold text-title tracking-tight flex items-center gap-2">
             Pedido #{{ order.id.slice(-6) | uppercase }}
           </h2>
-          <p class="text-xs text-muted font-bold uppercase tracking-widest mt-1">
+          <p class="text-xs text-muted font-bold uppercase tracking-wider mt-1">
             {{ order.timestamp | date:'dd/MM/yyyy HH:mm' }} • {{ order.order_type }}
           </p>
         </div>
-        <button (click)="selectedOrderPreview.set(null)" class="w-10 h-10 rounded-full bg-surface-elevated border border-strong flex items-center justify-center text-muted hover:text-title hover:bg-surface transition-all active:scale-95">
-          <span translate="no" class="notranslate material-symbols-outlined">close</span>
+        <button (click)="selectedOrderPreview.set(null)" class="w-9 h-9 rounded-full bg-surface border border-subtle flex items-center justify-center text-muted hover:text-title transition-all active:scale-95">
+          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
         </button>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-        
-        <!-- Status & Delivery -->
+      <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
         @if(order.customer_name || order.delivery_address) {
           <div class="p-4 bg-brand/5 border border-brand/20 rounded-2xl">
-            <h3 class="text-[10px] font-black text-brand uppercase tracking-[0.2em] mb-2">Detalhes do Cliente</h3>
+            <h3 class="text-xs font-extrabold text-brand uppercase tracking-wider mb-1">Cliente / Entrega</h3>
             @if(order.customer_name) {
               <p class="text-sm font-bold text-title">{{ order.customer_name }}</p>
             }
             @if(order.delivery_address) {
-              <p class="text-xs text-muted mt-1">{{ order.delivery_address }}</p>
+              <p class="text-xs text-muted mt-0.5">{{ order.delivery_address }}</p>
             }
           </div>
         }
         
-        <!-- Order Items -->
-        <div>
-          <h3 class="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-3">Itens do Pedido</h3>
-          <div class="space-y-3">
-            @for(item of order.order_items; track item.id) {
-              <div class="flex justify-between items-start gap-4 p-3 bg-surface/30 border border-strong rounded-xl">
-                <div class="flex items-start gap-3">
-                  <div class="w-6 h-6 rounded bg-surface border border-strong flex items-center justify-center text-xs font-black text-muted shrink-0">
-                    {{ item.quantity }}x
-                  </div>
-                  <div>
-                     <p class="text-sm font-bold text-title">{{ item.name }}</p>
-                     @if(item.notes) {
-                        <p class="text-xs text-muted italic mt-1">{{ item.notes }}</p>
-                     }
-                  </div>
-                </div>
-                <span class="text-sm font-black data-mono shrink-0">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
+        <div class="space-y-2">
+          <h3 class="text-xs font-extrabold text-muted uppercase tracking-wider">Itens do Pedido</h3>
+          @for(item of order.order_items; track item.id) {
+            <div class="flex justify-between items-center p-3 bg-surface rounded-xl border border-subtle text-xs">
+              <div>
+                <span class="font-bold text-title">{{ item.quantity }}x {{ item.name }}</span>
+                @if(item.notes) {
+                  <p class="text-[10px] text-muted mt-0.5">{{ item.notes }}</p>
+                }
               </div>
-            }
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Footer / Totals -->
-      <div class="p-5 sm:p-6 border-t border-strong/50 bg-surface/80 backdrop-blur-xl">
-        <div class="space-y-2 mb-4">
-          <div class="flex justify-between items-center text-sm font-medium text-muted">
-             <span>Subtotal</span>
-             <span class="data-mono">{{ (order.total_amount - (order.delivery_fee || 0)) | currency:'BRL' }}</span>
-          </div>
-          @if(order.delivery_fee) {
-            <div class="flex justify-between items-center text-sm font-medium text-muted">
-               <span>Taxa de Entrega</span>
-               <span class="data-mono">{{ order.delivery_fee | currency:'BRL' }}</span>
+              <span class="font-mono font-bold text-title">{{ (item.price * item.quantity) | currency:'BRL' }}</span>
             </div>
           }
         </div>
-        <div class="flex justify-between items-center pt-4 border-t border-strong border-dashed">
-          <span class="text-sm font-black text-title uppercase tracking-widest">Total Pago</span>
-          <span class="text-2xl font-black text-brand data-mono tracking-tighter">{{ order.total_amount | currency:'BRL' }}</span>
-        </div>
       </div>
+
     </div>
   </div>
 }
-
