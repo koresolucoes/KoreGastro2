@@ -53,15 +53,15 @@
   </div>
 
   <!-- Navigation Groups -->
-  <div class="flex-1 overflow-y-auto py-4 px-3 space-y-6 hide-scrollbar">
+  <div class="flex-1 overflow-y-auto py-6 px-3 space-y-8 hide-scrollbar">
     @for (group of navGroups(); track group.id) {
-      <div class="space-y-1">
+      <div class="space-y-1.5">
         @if (!isCollapsed()) {
-          <h4 class="text-[10px] font-bold text-muted uppercase tracking-[0.15em] px-3 mb-2">{{ group.name }}</h4>
+          <h4 class="text-[11px] font-extrabold text-title uppercase tracking-[0.15em] px-3 mb-3">{{ group.name }}</h4>
         }
         <div class="space-y-1">
           @for (link of group.children; track link.path) {
-            <a [routerLink]="link.path" routerLinkActive="bg-brand/10 text-brand font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-brand before:rounded-r-full" [routerLinkActiveOptions]="{exact: link.path === '/dashboard'}" class="relative flex items-center px-3 py-2 rounded-lg text-title/80 hover:bg-surface hover:text-title transition-all group overflow-hidden" [title]="isCollapsed() ? link.name : ''">
+            <a [routerLink]="link.path" routerLinkActive="bg-brand/15 text-brand font-bold border-brand" [routerLinkActiveOptions]="{exact: link.path === '/dashboard'}" class="relative flex items-center pl-2 pr-3 py-2.5 rounded-r-lg border-l-4 border-transparent text-body hover:bg-surface hover:text-title transition-all group overflow-hidden" [title]="isCollapsed() ? link.name : ''">
               <span translate="no" class="notranslate material-symbols-outlined text-[20px] shrink-0" [class.mr-3]="!isCollapsed()">{{ link.icon }}</span>
               @if (!isCollapsed()) {
                 <span class="text-sm whitespace-nowrap">{{ link.name }}</span>

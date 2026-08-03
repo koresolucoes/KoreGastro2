@@ -259,6 +259,7 @@ export interface Table {
   command_number?: number | null;
   tab_name?: string | null;
   shape?: 'square' | 'circle';
+  seats?: number;
   created_at: string;
   user_id: string;
 }

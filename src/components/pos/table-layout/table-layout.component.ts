@@ -115,6 +115,12 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
       return order?.customers?.name || '';
   }
 
+  getTableTotal(table: Table): number {
+    const order = this.getTableOrder(table);
+    if (!order) return 0;
+    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
 
   onRightClick(event: MouseEvent, table: Table) {
     event.preventDefault();
@@ -134,9 +140,9 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
         }
 
         const columnCount = 8;
-        const tableWidth = 80;
-        const tableHeight = 80;
-        const gap = 20;
+        const tableWidth = 100;
+        const tableHeight = 100;
+        const gap = 40;
 
         const col = currentTablesInHall.length % columnCount;
         const row = Math.floor(currentTablesInHall.length / columnCount);
@@ -153,6 +159,8 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
             y: newY, 
             width: tableWidth, 
             height: tableHeight, 
+            shape: 'square',
+            seats: 4,
             created_at: new Date().toISOString(), 
             user_id: this.hall().user_id || ''
         };
@@ -186,6 +194,71 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     ));
   }
 
+  toggleTableSeats(tableId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.localTables.update(tables => tables.map(t => {
+      if (t.id === tableId) {
+        let seats = t.seats || 4;
+        seats = seats === 2 ? 4 : seats === 4 ? 6 : seats === 6 ? 8 : 2;
+        return { ...t, seats };
+      }
+      return t;
+    }));
+  }
+
+  getChairs(table: Table) {
+    const count = table.seats || 4;
+    return Array(count).fill(0).map((_, i) => i);
+  }
+
+  getChairStyle(table: Table, index: number, total: number) {
+    // Generate styles to position chairs around the table
+    // The table is relative, we position chairs absolutely, half-inside, half-outside
+    const isCircle = table.shape === 'circle';
+    let top = '50%';
+    let left = '50%';
+    let transform = '';
+    
+    if (isCircle) {
+      // Position evenly around the circle
+      const angle = (index / total) * 360;
+      const offset = (table.width / 2); 
+      return {
+        top: '50%',
+        left: '50%',
+        transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${offset}px)`
+      };
+    } else {
+      // Square positioning - position on the edge (0 or 100%) and translate(-50%, -50%)
+      if (total === 2) {
+        if (index === 0) { top = '0'; left = '50%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 1) { top = '100%'; left = '50%'; transform = 'translate(-50%, -50%)'; }
+      } else if (total === 4) {
+        if (index === 0) { top = '0'; left = '50%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 1) { top = '50%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
+        if (index === 2) { top = '100%'; left = '50%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
+        if (index === 3) { top = '50%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
+      } else if (total === 6) {
+        if (index === 0) { top = '0'; left = '30%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 1) { top = '0'; left = '70%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 2) { top = '50%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
+        if (index === 3) { top = '100%'; left = '70%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
+        if (index === 4) { top = '100%'; left = '30%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
+        if (index === 5) { top = '50%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
+      } else if (total === 8) {
+        if (index === 0) { top = '0'; left = '30%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 1) { top = '0'; left = '70%'; transform = 'translate(-50%, -50%)'; }
+        if (index === 2) { top = '30%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
+        if (index === 3) { top = '70%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
+        if (index === 4) { top = '100%'; left = '70%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
+        if (index === 5) { top = '100%'; left = '30%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
+        if (index === 6) { top = '70%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
+        if (index === 7) { top = '30%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
+      }
+      return { top, left, transform };
+    }
+  }
+
   autoArrange() {
     const container = this.desktopEditContainer?.nativeElement || this.desktopContainer?.nativeElement;
     if (!container) return;
@@ -195,7 +268,7 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     
     // Hardcoded size from padding/button space
     const containerWidth = container.clientWidth;
-    const gap = 30; // spacing between tables
+    const gap = 50; // spacing between tables
     let currentX = gap;
     let currentY = gap;
     let maxRowHeight = 0;
@@ -302,10 +375,11 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
   getStatusClass(status: TableStatus): string {
     switch (status) {
-      case 'LIVRE': return 'border border-success/50 bg-success/10 text-success hover:bg-success/20 backdrop-blur-md shadow-sm';
-      case 'OCUPADA': return 'border border-warning/50 bg-warning/10 text-warning hover:bg-warning/20 backdrop-blur-md shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
-      case 'PAGANDO': return 'border border-brand/50 bg-brand/10 text-brand hover:bg-brand/20 backdrop-blur-md shadow-[0_4px_20px_rgba(79,70,229,0.15)]';
-      default: return 'border border-subtle bg-surface text-muted backdrop-blur-md';
+      case 'LIVRE': return 'border-2 border-success/40 bg-success/10 text-success hover:bg-success/20 backdrop-blur-md shadow-sm';
+      case 'OCUPADA': return 'border-2 border-warning/60 bg-warning/10 text-warning hover:bg-warning/20 backdrop-blur-md shadow-[0_4px_20px_rgba(245,158,11,0.15)]';
+      case 'PAGANDO': return 'border-2 border-brand bg-brand/10 text-brand hover:bg-brand/20 backdrop-blur-md shadow-[0_4px_20px_rgba(79,70,229,0.15)] animate-pulse';
+      case 'CHAMANDO_GARCOM': return 'border-2 border-orange-500 bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 backdrop-blur-md animate-pulse shadow-lg ring-2 ring-orange-500/50';
+      default: return 'border-2 border-subtle bg-surface text-muted backdrop-blur-md';
     }
   }
 }
