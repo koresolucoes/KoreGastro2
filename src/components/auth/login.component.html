@@ -55,6 +55,18 @@
               [value]="password()" (input)="password.set($any($event.target).value)"
               class="block w-full px-4 py-3.5 text-base bg-surface border border-strong rounded-xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all" 
               placeholder="Sua senha">
+            
+            @if(password().length > 0) {
+              <div class="pt-1 space-y-1.5">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-bold text-muted">Força da senha</span>
+                  <span class="font-bold" [class.text-red-500]="passwordStrength() <= 25" [class.text-yellow-500]="passwordStrength() > 25 && passwordStrength() <= 50" [class.text-blue-500]="passwordStrength() > 50 && passwordStrength() <= 75" [class.text-green-500]="passwordStrength() > 75">{{ passwordStrengthLabel() }}</span>
+                </div>
+                <div class="w-full bg-surface-elevated rounded-full h-1.5 overflow-hidden flex">
+                  <div class="h-full transition-all duration-500 rounded-full" [ngClass]="passwordStrengthColor()" [style.width]="passwordStrength() + '%'"></div>
+                </div>
+              </div>
+            }
           </div>
         </div>
 
