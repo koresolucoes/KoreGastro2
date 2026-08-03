@@ -58,29 +58,18 @@ export class OnboardingComponent {
     companyName: '',
     cnpj: '',
     
-    // Step 2: Roles
+    // Step 2: Roles (Simplified to core operations)
     hasWaiters: true,
     hasKitchen: true,
     hasDrivers: false,
-    hasCashiers: true,
 
-    // Step 3: Hall
-    hallName: 'Salão Principal',
-    tableCount: 10,
-
-    // Step 4: Stations
-    stations: ['Cozinha'] as string[],
-
-    // Step 5: Menu
+    // Step 3: Menu Core Structure
     menuCategories: [
         { name: 'Lanches', items: [{ name: 'X-Burguer', price: 25.00 }] },
         { name: 'Bebidas', items: [{ name: 'Refrigerante', price: 6.00 }] }
     ] as MenuCategory[],
 
-    // Step 6: iFood
-    ifoodMerchantId: '',
-
-    // Step 7: Manager
+    // Step 4: Manager setup
     managerName: '',
     managerPin: ''
   };
@@ -88,14 +77,10 @@ export class OnboardingComponent {
   steps = [
     { id: 'welcome', title: 'Boas-vindas' },
     { id: 'company', title: 'Empresa' },
-    { id: 'roles', title: 'Equipe' },
-    { id: 'hall', title: 'Ambiente' },
-    { id: 'stations', title: 'Produção' },
-    { id: 'menu', title: 'Cardápio' },
-    { id: 'ifood', title: 'iFood' },
-    { id: 'manager', title: 'Acesso' },
-    { id: 'trial', title: 'Plano Premium' },
-    { id: 'finish', title: 'Conclusão' }
+    { id: 'roles', title: 'Operação' },
+    { id: 'menu', title: 'Cardápio Inicial' },
+    { id: 'manager', title: 'Seu Acesso' },
+    { id: 'finish', title: 'Configurando' }
   ];
 
   nextStep() {
@@ -112,13 +97,9 @@ export class OnboardingComponent {
     switch (this.currentStep()) {
       case 0: return true;
       case 1: return !!this.data.companyName;
-      case 2: return true; // Checkboxes always valid
-      case 3: return !!this.data.hallName && this.data.tableCount > 0;
-      case 4: return this.data.stations.length > 0 && this.data.stations.every(s => !!s);
-      case 5: return this.data.menuCategories.length > 0; // Basic check
-      case 6: return true; // Optional
-      case 7: return !!this.data.managerName && this.data.managerPin.length === 4;
-      case 8: return true; // Trial Premium info screen is always valid
+      case 2: return true; 
+      case 3: return this.data.menuCategories.length > 0;
+      case 4: return !!this.data.managerName && this.data.managerPin.length === 4;
       default: return false;
     }
   }
@@ -153,7 +134,7 @@ export class OnboardingComponent {
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(9); // Show loading screen
+    this.currentStep.set(5); // Show loading screen
     this.isProcessing.set(true);
 
     try {
@@ -162,56 +143,43 @@ export class OnboardingComponent {
         await this.settingsData.updateCompanyProfile({
             company_name: this.data.companyName,
             cnpj: this.data.cnpj,
-            ifood_merchant_id: this.data.ifoodMerchantId || null
         });
 
         // 2. Roles
         this.loadingStatus.set('Criando cargos e permissões...');
-        // Manager role is created by default by DB trigger or we ensure it exists
-        // Check/Create other roles
-        const rolesToCreate = [];
-        if (this.data.hasCashiers) rolesToCreate.push('Caixa');
+        const rolesToCreate = ['Caixa']; // Always create Caixa
         if (this.data.hasKitchen) rolesToCreate.push('Cozinha');
         if (this.data.hasWaiters) rolesToCreate.push('Garçom');
         if (this.data.hasDrivers) rolesToCreate.push('Entregador');
 
         for (const roleName of rolesToCreate) {
-             // We use addRole which handles duplication or simple insert
              await this.settingsData.addRole(roleName);
         }
 
-        // 3. Stations
-        this.loadingStatus.set('Configurando estações de produção...');
-        const stationMap = new Map<string, string>(); // Name -> ID
-        for (const stationName of this.data.stations) {
-            if (!stationName) continue;
-            const { data } = await this.settingsData.addStation(stationName) as any;
-            if (data) stationMap.set(stationName, data.id);
-        }
+        // 3. Defaults: Stations & Hall
+        this.loadingStatus.set('Configurando ambiente padrão...');
+        const { data: station } = await this.settingsData.addStation('Cozinha') as any;
+        const defaultStationId = station?.id || null;
 
-        // 4. Hall & Tables
-        this.loadingStatus.set('Criando salão e mesas...');
-        const { data: hall } = await this.posData.addHall(this.data.hallName) as any;
+        const { data: hall } = await this.posData.addHall('Salão Principal') as any;
         if (hall) {
-            const tables = Array.from({ length: this.data.tableCount }, (_, i) => ({
+            const tables = Array.from({ length: 12 }, (_, i) => ({
                 id: `temp-${uuidv4()}`,
                 number: i + 1,
                 hall_id: hall.id,
                 status: 'LIVRE' as const,
-                x: 50 + (i % 5) * 100,
-                y: 50 + Math.floor(i / 5) * 100,
+                x: 50 + (i % 4) * 100,
+                y: 50 + Math.floor(i / 4) * 100,
                 width: 80,
                 height: 80
             }));
             await this.posData.upsertTables(tables);
         }
 
-        // 5. Menu (Categories, Recipes, Ingredients)
-        this.loadingStatus.set('Cadastrando cardápio e estoque...');
-        const defaultStationId = stationMap.values().next().value || null; // Fallback
+        // 4. Menu (Categories, Recipes, Ingredients)
+        this.loadingStatus.set('Cadastrando cardápio inicial...');
         const userId = this.unitContext.activeUnitId();
 
-        // Cria o Cardápio Híbrido (PDV + Digital)
         const { data: virtualMenu } = await supabase.from('menus').insert({
              name: 'Cardápio Principal',
              type: 'pdv,tablet,delivery,qr',
@@ -225,7 +193,6 @@ export class OnboardingComponent {
             const { data: categoryData } = await this.recipeData.addRecipeCategory(cat.name) as any;
             
             if (categoryData) {
-                // Cria a categoria no Menu Digital
                 const { data: virtualCat } = await supabase.from('menu_categories').insert({
                      menu_id: virtualMenu?.id,
                      name: cat.name,
@@ -240,9 +207,9 @@ export class OnboardingComponent {
                     const { success, proxyRecipeId } = await this.inventoryData.addIngredient({
                         name: item.name,
                         unit: 'un',
-                        stock: 100, // Stock Gift
+                        stock: 100, 
                         min_stock: 10,
-                        cost: item.price * 0.3, // Estimated cost
+                        cost: item.price * 0.3,
                         is_sellable: true,
                         price: item.price,
                         pos_category_id: categoryData.id,
@@ -263,10 +230,9 @@ export class OnboardingComponent {
             }
         }
 
-        // 6. Manager Employee
+        // 5. Manager Employee
         this.loadingStatus.set('Criando seu acesso administrativo...');
         
-        // Find 'Gerente' role or create it
         const { data: roles } = await this.settingsData.getRoles();
         let managerRole = roles.find(r => r.name === 'Gerente');
         
@@ -277,7 +243,7 @@ export class OnboardingComponent {
         
         let managerDataResult = null;
         if (managerRole) {
-            await this.settingsData.grantAllPermissionsToRole(managerRole.id); // Ensure full access
+            await this.settingsData.grantAllPermissionsToRole(managerRole.id);
             const { data } = await this.settingsData.addEmployee({
                 name: this.data.managerName,
                 pin: this.data.managerPin,
@@ -286,12 +252,9 @@ export class OnboardingComponent {
             managerDataResult = data;
         }
 
-        // 7. Configurações concluídas
         this.loadingStatus.set('Registrando configurações do sistema...');
-
-        // Success!
         this.loadingStatus.set('Tudo pronto!');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
+        await new Promise(resolve => setTimeout(resolve, 1000)); 
         
         const unitId = this.unitContext.activeUnitId();
         if (unitId) {
@@ -299,11 +262,9 @@ export class OnboardingComponent {
              await this.supabaseState.loadEssentialData(unitId);
         }
 
-        // Auto-login the manager so they don't have to type the PIN manually
         if (managerDataResult) {
             this.opAuth.login(managerDataResult as any);
         } else {
-             // Fallback just in case
              const { data: managerData } = await supabase
                  .from('employees')
                  .select('*')
@@ -316,13 +277,12 @@ export class OnboardingComponent {
              }
         }
         
-        // Start the Guided Tour Demo Mode!
         this.demoMode.startSalesDemoTour();
 
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(8); // Go back to last editable step
+        this.currentStep.set(4); 
     } finally {
         this.isProcessing.set(false);
     }
